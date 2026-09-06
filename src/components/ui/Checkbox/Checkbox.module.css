@@ -49,7 +49,7 @@
 }
 
 .checkbox[data-hovered] .box {
-  border-color: var(--color-info);
+  border-color: var(--color-accent);
 }
 
 .checkbox[data-focus-visible] .box {

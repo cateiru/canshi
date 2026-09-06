@@ -57,7 +57,7 @@
 }
 
 .radio[data-hovered] .dot {
-  border-color: var(--color-info);
+  border-color: var(--color-accent);
 }
 
 .radio[data-focus-visible] .dot {
