@@ -23,7 +23,7 @@
 
 - `--color-bg`: #fff
 - `--color-ink`: #2e3142
-- `--color-accent`: #c2af32
+- `--color-accent`: #ec995a
 - `--color-success`: #52b355
 - `--color-warning`: #f2d14b
 - `--color-error`: #f25c4b

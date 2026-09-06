@@ -29,6 +29,10 @@
   border-color: var(--color-info);
 }
 
+.input:focus {
+  outline-color: transparent;
+}
+
 .input:focus-visible {
   outline-color: var(--color-accent);
 }
