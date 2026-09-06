@@ -1,0 +1,10 @@
+.card {
+  padding: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+  margin-bottom: var(--space-2);
+}
