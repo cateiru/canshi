@@ -1,0 +1,28 @@
+.frame {
+  position: relative;
+  box-sizing: border-box;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  background-color: var(--color-bg);
+}
+
+/* 猫耳の装飾: `___^__^___` を模して、左上の枠線上に耳を2つ配置する */
+.frame::before,
+.frame::after {
+  content: "";
+  position: absolute;
+  top: calc(-1 * var(--space-2));
+  width: 0;
+  height: 0;
+  border-left: var(--space-1) solid transparent;
+  border-right: var(--space-1) solid transparent;
+  border-bottom: var(--space-2) solid var(--color-ink);
+}
+
+.frame::before {
+  left: var(--space-2);
+}
+
+.frame::after {
+  left: calc(var(--space-2) + var(--space-3));
+}
