@@ -30,6 +30,37 @@ pnpm cf:deploy   # ビルド後、Cloudflare Workers へデプロイ
 
 デプロイ手順の詳細は [`docs/deploy.md`](docs/deploy.md) を参照。
 
+## ローカル開発環境（Docker Compose）
+
+`docker compose up` のみで、D1・R2 のローカルエミュレーションを含めた開発環境を起動できる。
+
+```bash
+docker compose up
+```
+
+- `http://localhost:3000` でアプリケーションにアクセスできる
+- シークレット等が必要になった場合は `.env.example` を `.env` にコピーして使う（`docker-compose.yml` は `.env` の有無にかかわらず動作する）
+- Next.js の開発サーバー（`next dev`）は `@opennextjs/cloudflare` の `initOpenNextCloudflareForDev()` により、
+  `wrangler.toml` に定義した D1（`DB`）・R2（`MEDIA_BUCKET`）バインディングをローカルエミュレーションとして利用する
+- ローカル D1・R2 のデータは `.wrangler/state/`（ホスト側にバインドマウント）に永続化され、
+  `docker compose down` → `up` を繰り返してもデータが保持される
+- ローカル環境は Cloudflare の実サービス（本番の D1・R2）には一切接続しない
+
+```bash
+docker compose down    # コンテナを停止
+docker compose down -v # node_modules 用の名前付きボリュームも含めて破棄する場合
+```
+
+## DB（Drizzle ORM + Cloudflare D1）
+
+```bash
+pnpm db:generate      # スキーマ定義（src/db/schema/）から SQL マイグレーションを生成
+pnpm db:migrate:local # ローカル D1 にマイグレーションを適用
+pnpm db:migrate:remote # 本番 D1 にマイグレーションを適用（docs/deploy.md 参照）
+```
+
+設計規約（`cat_id`・発生日時列・`media_assets`・`ai_evaluations` の使い方）は [`src/db/README.md`](src/db/README.md) を参照。
+
 ## ディレクトリ構成
 
 - `src/app/` — Next.js App Router のページ・レイアウト
