@@ -23,19 +23,19 @@
   box-shadow: 0 4px 12px rgb(46 49 66 / 15%);
 }
 
-.toast.info {
+.info {
   border-color: var(--color-info);
 }
 
-.toast.success {
+.success {
   border-color: var(--color-success);
 }
 
-.toast.warning {
+.warning {
   border-color: var(--color-warning);
 }
 
-.toast.error {
+.error {
   border-color: var(--color-error);
 }
 
