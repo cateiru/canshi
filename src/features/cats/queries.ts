@@ -9,6 +9,6 @@ export async function listCats() {
 
 export async function getCatById(id: string) {
   const db = getDb();
-  const [cat] = await db.select().from(cats).where(eq(cats.id, id));
+  const [cat] = await db.select().from(cats).where(eq(cats.id, id)).limit(1);
   return cat ?? null;
 }

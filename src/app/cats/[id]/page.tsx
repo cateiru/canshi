@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, Button, Card } from "@/components/ui";
+import { Badge, ButtonLink, Card } from "@/components/ui";
 import { deleteCatAction } from "@/features/cats/actions";
 import {
   calculateAge,
@@ -15,11 +14,11 @@ import styles from "./page.module.css";
 export const dynamic = "force-dynamic";
 
 type CatDetailPageProps = {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 };
 
 export default async function CatDetailPage({ params }: CatDetailPageProps) {
-  const { id } = await params;
+  const { id } = params;
   const cat = await getCatById(id);
 
   if (!cat) {
@@ -53,9 +52,9 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
       </Card>
 
       <div className={styles.actions}>
-        <Link href={`/cats/${cat.id}/edit`}>
-          <Button variant="secondary">編集する</Button>
-        </Link>
+        <ButtonLink href={`/cats/${cat.id}/edit`} variant="secondary">
+          編集する
+        </ButtonLink>
         <DeleteCatButton
           action={deleteCatAction.bind(null, cat.id)}
           catName={cat.name}

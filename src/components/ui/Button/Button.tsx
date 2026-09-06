@@ -7,15 +7,17 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
 };
 
+export function getButtonClassName(variant: ButtonVariant, className?: string) {
+  return [styles.button, styles[variant], className].filter(Boolean).join(" ");
+}
+
 export function Button({
   variant = "secondary",
   className,
   type = "button",
   ...props
 }: ButtonProps) {
-  const classes = [styles.button, styles[variant], className]
-    .filter(Boolean)
-    .join(" ");
+  const classes = getButtonClassName(variant, className);
 
   return <button type={type} className={classes} {...props} />;
 }

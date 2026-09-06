@@ -7,11 +7,11 @@ import styles from "../../page.module.css";
 export const dynamic = "force-dynamic";
 
 type EditCatPageProps = {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 };
 
 export default async function EditCatPage({ params }: EditCatPageProps) {
-  const { id } = await params;
+  const { id } = params;
   const cat = await getCatById(id);
 
   if (!cat) {

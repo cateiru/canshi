@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Badge, Button, Card } from "@/components/ui";
+import { Badge, ButtonLink, Card } from "@/components/ui";
 import {
   calculateAge,
   calculateDaysSinceAdoption,
@@ -18,18 +18,18 @@ export default async function CatsPage() {
     <main className={styles.main}>
       <div className={styles.header}>
         <h1>猫一覧</h1>
-        <Link href="/cats/new">
-          <Button variant="primary">猫を登録する</Button>
-        </Link>
+        <ButtonLink href="/cats/new" variant="primary">
+          猫を登録する
+        </ButtonLink>
       </div>
 
       {catList.length === 0 ? (
         <Card>
           <p>まだ猫が登録されていません。</p>
           <div className={styles.emptyActions}>
-            <Link href="/cats/new">
-              <Button variant="primary">最初の猫を登録する</Button>
-            </Link>
+            <ButtonLink href="/cats/new" variant="primary">
+              最初の猫を登録する
+            </ButtonLink>
           </div>
         </Card>
       ) : (
