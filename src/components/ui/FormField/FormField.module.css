@@ -33,10 +33,6 @@
   outline-color: var(--color-accent);
 }
 
-.input[data-focus-source="pointer"]:focus-visible {
-  outline-color: transparent;
-}
-
 .error {
   border-color: var(--color-error);
 }
