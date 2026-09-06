@@ -69,7 +69,8 @@ Web フォントは読み込まず、システムフォントのみを使用す�
 - ボタンは hover で `opacity: 0.85`、押下時（active）は `translateY(1px)` でわずかに沈み込ませる
 - フォーカスリングはマウスクリックでは出さず、キーボード操作時のみ `:focus-visible` で表示する
 - フォーカスリングは `--focus-ring-width`（太さ）・`--focus-ring-offset`（要素との余白）・`--color-accent`（色）で統一する
-- 入力欄は hover・focus で枠線を `--color-info` に変える（エラー状態は hover 時も `--color-error` を維持する）
+- 入力欄（FormField・Textarea）は hover・focus で枠線を `--color-info` に変える（エラー状態は hover 時も `--color-error` を維持する）
+- 入力欄以外のインタラクティブ要素（Checkbox・Radio・Select・Tabs など）の hover・選択時の強調色は `--color-accent` を使う
 - `prefers-reduced-motion: reduce` の環境では `--transition-base` を `0ms` にしてトランジションを無効化する（`globals.css` でグローバルに対応済み）
 
 ## バッジ
@@ -81,6 +82,18 @@ Web フォントは読み込まず、システムフォントのみを使用す�
   border: 1px solid var(--color-info);
   color: var(--color-ink);
   background-color: var(--color-bg);
+}
+```
+
+## Alert
+
+Alert はバッジと異なり、状態色（info・success・warning・error）で背景・枠線を塗りつぶし、文字色は `--color-bg` にする
+
+```css
+.alert {
+  border: 1px solid var(--color-info);
+  color: var(--color-bg);
+  background-color: var(--color-info);
 }
 ```
 
