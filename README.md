@@ -51,6 +51,16 @@ docker compose down    # コンテナを停止
 docker compose down -v # node_modules 用の名前付きボリュームも含めて破棄する場合
 ```
 
+## DB（Drizzle ORM + Cloudflare D1）
+
+```bash
+pnpm db:generate      # スキーマ定義（src/db/schema/）から SQL マイグレーションを生成
+pnpm db:migrate:local # ローカル D1 にマイグレーションを適用
+pnpm db:migrate:remote # 本番 D1 にマイグレーションを適用（docs/deploy.md 参照）
+```
+
+設計規約（`cat_id`・発生日時列・`media_assets`・`ai_evaluations` の使い方）は [`src/db/README.md`](src/db/README.md) を参照。
+
 ## ディレクトリ構成
 
 - `src/app/` — Next.js App Router のページ・レイアウト
