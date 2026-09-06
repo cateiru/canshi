@@ -11,7 +11,7 @@ export function Card({ title, className, children, ...props }: CardProps) {
 
   return (
     <CatEarFrame className={classes} {...props}>
-      {title ? <div className={styles.title}>{title}</div> : null}
+      {title ? <h2 className={styles.title}>{title}</h2> : null}
       {children}
     </CatEarFrame>
   );
