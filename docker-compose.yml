@@ -6,8 +6,7 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - path: .env
-        required: false
+      - .env
     environment:
       - WATCHPACK_POLLING=true
       - CI=true
