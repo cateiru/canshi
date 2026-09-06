@@ -1,0 +1,24 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - WATCHPACK_POLLING=true
+      - CI=true
+      # CI=true 環境では pnpm がストアをプロジェクト直下（ホスト側ボリューム）に
+      # 作成しようとするため、コンテナ内固定パスに明示する
+      - npm_config_store_dir=/root/.local/share/pnpm/store
+    volumes:
+      - .:/app
+      - app_node_modules:/app/node_modules
+      - ./.wrangler/state:/app/.wrangler/state
+    command: pnpm dev
+
+volumes:
+  app_node_modules:

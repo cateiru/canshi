@@ -6,3 +6,14 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "canshi-db"
+# 本番用の database_id は docs/deploy.md の手順で払い出し、デプロイ時に上書きする。
+# ローカル開発では wrangler / Miniflare がこの値を使わずローカル SQLite で完結する。
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "canshi-media"
