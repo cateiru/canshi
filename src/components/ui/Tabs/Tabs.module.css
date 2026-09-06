@@ -20,7 +20,6 @@
   font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
   color: var(--color-ink);
-  background-color: var(--color-bg);
   cursor: pointer;
   outline: none;
   transition: color var(--transition-base);
@@ -32,6 +31,7 @@
 
 .tab[data-selected] {
   border-color: var(--color-ink);
+  background-color: var(--color-bg);
 }
 
 .tab[data-focus-visible] {

@@ -5,7 +5,7 @@
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-base);
   padding: var(--space-3) var(--space-4);
-  color: var(--color-ink);
+  color: var(--color-bg);
   background-color: var(--color-bg);
   font-size: var(--text-sm);
   line-height: var(--line-height-body);
