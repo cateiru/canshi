@@ -13,8 +13,12 @@
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
-  overflow-y: auto;
   padding: var(--space-6);
+}
+
+.scrollArea {
+  max-height: calc(90vh - var(--space-6) * 2);
+  overflow-y: auto;
 }
 
 .title {

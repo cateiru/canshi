@@ -17,14 +17,27 @@
   font-size: var(--text-sm);
   color: var(--color-ink);
   background-color: var(--color-bg);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition:
+    border-color var(--transition-base),
+    outline-color var(--transition-base),
+    outline-offset var(--transition-base);
 }
 
-.input:focus {
-  outline: var(--border-width) solid var(--color-info);
-  outline-offset: 1px;
+.input:hover:not(:disabled) {
+  border-color: var(--color-info);
+}
+
+.input:focus-visible {
+  outline-color: var(--color-accent);
 }
 
 .error {
+  border-color: var(--color-error);
+}
+
+.error:hover:not(:disabled) {
   border-color: var(--color-error);
 }
 

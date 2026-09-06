@@ -36,4 +36,11 @@
   /* Shape */
   --radius-base: 4px;
   --border-width: 1px;
+
+  /* Motion */
+  --transition-base: 150ms ease;
+
+  /* Focus ring */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
 }

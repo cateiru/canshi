@@ -13,6 +13,25 @@
   cursor: pointer;
   color: var(--color-ink);
   background-color: var(--color-bg);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition:
+    opacity var(--transition-base),
+    transform var(--transition-base),
+    outline-color var(--transition-base),
+    outline-offset var(--transition-base);
+}
+
+.button:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.button:focus-visible {
+  outline-color: var(--color-accent);
 }
 
 .button:disabled {

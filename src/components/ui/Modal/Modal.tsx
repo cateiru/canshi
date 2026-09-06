@@ -45,12 +45,14 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
         aria-labelledby={title ? titleId : undefined}
         onClick={(event) => event.stopPropagation()}
       >
-        {title ? (
-          <div id={titleId} className={styles.title}>
-            {title}
-          </div>
-        ) : null}
-        {children}
+        <div className={styles.scrollArea}>
+          {title ? (
+            <div id={titleId} className={styles.title}>
+              {title}
+            </div>
+          ) : null}
+          {children}
+        </div>
       </CatEarFrame>
     </div>
   );

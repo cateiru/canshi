@@ -16,6 +16,18 @@ export function CatEarFrame({
 
   return (
     <div className={classes} {...props}>
+      {/* viewBox の座標はデザイントークン（space-1: 4 / space-2: 8 / space-3: 12）を px 換算した固定値 */}
+      <svg
+        className={styles.ears}
+        viewBox="0 0 28 8"
+        aria-hidden="true"
+        focusable="false"
+      >
+        {/* polyline にして底辺のストロークは描かず、frame 自体の border-top に馴染ませる */}
+        <polyline className={styles.ear} points="4,8 8,0 12,8" />
+        <polyline className={styles.ear} points="16,8 20,0 24,8" />
+      </svg>
+      <span className={`${styles.overlay} ${styles.ears}`} />
       {children}
     </div>
   );
