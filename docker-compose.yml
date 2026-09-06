@@ -5,11 +5,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    env_file:
-      - .env
     environment:
       - WATCHPACK_POLLING=true
       - CI=true
+      - NEXT_TELEMETRY_DISABLED=1
     volumes:
       - .:/app
       - app_node_modules:/app/node_modules
