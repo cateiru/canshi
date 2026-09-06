@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { CatEarFrame } from "../CatEarFrame/CatEarFrame";
 import styles from "./Modal.module.css";
 
@@ -13,6 +13,8 @@ export type ModalProps = {
 };
 
 export function Modal({ open, title, onClose, children }: ModalProps) {
+  const titleId = useId();
+
   useEffect(() => {
     if (!open) {
       return;
@@ -40,10 +42,14 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
         className={styles.modal}
         role="dialog"
         aria-modal="true"
-        aria-label={typeof title === "string" ? title : undefined}
+        aria-labelledby={title ? titleId : undefined}
         onClick={(event) => event.stopPropagation()}
       >
-        {title ? <div className={styles.title}>{title}</div> : null}
+        {title ? (
+          <div id={titleId} className={styles.title}>
+            {title}
+          </div>
+        ) : null}
         {children}
       </CatEarFrame>
     </div>

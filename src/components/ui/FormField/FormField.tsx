@@ -16,6 +16,13 @@ export function FormField({
 }: FormFieldProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
+  const errorMessageId = `${inputId}-error`;
+  const ariaDescribedBy = [
+    props["aria-describedby"],
+    errorMessage ? errorMessageId : undefined,
+  ]
+    .filter(Boolean)
+    .join(" ");
   const inputClasses = [styles.input, errorMessage && styles.error, className]
     .filter(Boolean)
     .join(" ");
@@ -28,11 +35,14 @@ export function FormField({
       <input
         id={inputId}
         className={inputClasses}
-        aria-invalid={errorMessage ? true : undefined}
         {...props}
+        aria-invalid={errorMessage ? true : undefined}
+        aria-describedby={ariaDescribedBy || undefined}
       />
       {errorMessage ? (
-        <span className={styles.errorMessage}>{errorMessage}</span>
+        <span id={errorMessageId} className={styles.errorMessage} role="alert">
+          {errorMessage}
+        </span>
       ) : null}
     </div>
   );
