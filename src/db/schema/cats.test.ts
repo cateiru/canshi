@@ -12,7 +12,7 @@ describe("cats テーブル", () => {
     const SQL = await initSqlJs();
     const sqlite = new SQL.Database();
     db = drizzle(sqlite);
-    migrate(db, { migrationsFolder: "./drizzle" });
+    await migrate(db, { migrationsFolder: "./drizzle" });
   });
 
   it("型安全に insert / select できる", async () => {
