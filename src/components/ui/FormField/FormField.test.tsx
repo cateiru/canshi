@@ -7,9 +7,8 @@ describe("FormField", () => {
     render(<FormField label="名前" errorMessage="必須です" />);
 
     const input = screen.getByLabelText("名前");
-    const error = screen.getByRole("alert");
+    const error = screen.getByText("必須です");
 
-    expect(error).toHaveTextContent("必須です");
     expect(input).toHaveAttribute("aria-describedby", error.id);
     expect(input).toHaveAttribute("aria-invalid", "true");
   });

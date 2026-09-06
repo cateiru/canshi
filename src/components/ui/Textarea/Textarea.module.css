@@ -10,27 +10,25 @@
 }
 
 .input {
+  resize: vertical;
+  min-height: 80px;
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-base);
   padding: var(--space-2) var(--space-3);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
+  line-height: var(--line-height-body);
   color: var(--color-ink);
   background-color: var(--color-bg);
   outline: var(--focus-ring-width) solid transparent;
   outline-offset: var(--focus-ring-offset);
   transition:
     border-color var(--transition-base),
-    outline-color var(--transition-base),
-    outline-offset var(--transition-base);
+    outline-color var(--transition-base);
 }
 
 .input:hover:not(:disabled) {
   border-color: var(--color-info);
-}
-
-.input:focus {
-  outline-color: transparent;
 }
 
 .input:focus-visible {
@@ -38,10 +36,6 @@
 }
 
 .input[data-invalid] {
-  border-color: var(--color-error);
-}
-
-.input[data-invalid]:hover:not(:disabled) {
   border-color: var(--color-error);
 }
 

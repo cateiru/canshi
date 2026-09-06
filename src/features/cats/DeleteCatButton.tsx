@@ -15,7 +15,7 @@ export function DeleteCatButton({ action, catName }: DeleteCatButtonProps) {
 
   return (
     <>
-      <Button variant="danger" onClick={() => setOpen(true)}>
+      <Button variant="danger" onPress={() => setOpen(true)}>
         削除する
       </Button>
       <Modal open={open} title="猫の削除" onClose={() => setOpen(false)}>
@@ -23,12 +23,12 @@ export function DeleteCatButton({ action, catName }: DeleteCatButtonProps) {
         <div className={styles.actions}>
           <Button
             variant="danger"
-            disabled={isPending}
-            onClick={() => startTransition(action)}
+            isDisabled={isPending}
+            onPress={() => startTransition(action)}
           >
             {isPending ? "削除中..." : "削除する"}
           </Button>
-          <Button variant="secondary" onClick={() => setOpen(false)}>
+          <Button variant="secondary" onPress={() => setOpen(false)}>
             キャンセル
           </Button>
         </div>

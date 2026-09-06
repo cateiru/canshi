@@ -13,8 +13,8 @@ describe("Button", () => {
     expect(screen.getByRole("button")).toHaveAttribute("type", "button");
   });
 
-  it("disabled を渡すと無効化される", () => {
-    render(<Button disabled>送信</Button>);
+  it("isDisabled を渡すと無効化される", () => {
+    render(<Button isDisabled>送信</Button>);
     expect(screen.getByRole("button")).toBeDisabled();
   });
 });

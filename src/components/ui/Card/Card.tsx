@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { CatEarFrame } from "../CatEarFrame/CatEarFrame";
+import { Heading } from "../Heading/Heading";
 import styles from "./Card.module.css";
 
 export type CardProps = HTMLAttributes<HTMLDivElement> & {
@@ -11,7 +12,11 @@ export function Card({ title, className, children, ...props }: CardProps) {
 
   return (
     <CatEarFrame className={classes} {...props}>
-      {title ? <h2 className={styles.title}>{title}</h2> : null}
+      {title ? (
+        <Heading level={2} size="md" className={styles.title}>
+          {title}
+        </Heading>
+      ) : null}
       {children}
     </CatEarFrame>
   );

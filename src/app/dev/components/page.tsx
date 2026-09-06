@@ -3,12 +3,21 @@
 import { notFound } from "next/navigation";
 import { useState } from "react";
 import {
+  Alert,
+  addToast,
   Badge,
   Button,
   Card,
   CatEarFrame,
+  Checkbox,
   FormField,
+  Heading,
   Modal,
+  Radio,
+  RadioGroup,
+  Select,
+  Tabs,
+  Textarea,
 } from "@/components/ui";
 import styles from "./page.module.css";
 
@@ -40,6 +49,23 @@ const TEXT_TOKENS = [
 ] as const;
 
 const BADGE_COLORS = ["info", "success", "warning", "error", "accent"] as const;
+const ALERT_COLORS = ["info", "success", "warning", "error"] as const;
+
+const SEX_OPTIONS = [
+  { value: "female", label: "メス" },
+  { value: "male", label: "オス" },
+  { value: "unknown", label: "不明" },
+];
+
+const TAB_ITEMS = [
+  {
+    id: "food",
+    label: "ごはん",
+    content: <p>2026-09-06 08:00 ドライフード 30g</p>,
+  },
+  { id: "weight", label: "体重", content: <p>2026-09-06 4.2kg</p> },
+  { id: "memo", label: "メモ", content: <p>健康診断は来月の予定。</p> },
+];
 
 export default function ComponentsPreviewPage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -93,12 +119,21 @@ export default function ComponentsPreviewPage() {
       </section>
 
       <section>
+        <h2>Heading</h2>
+        <div className={styles.formSample}>
+          <Heading level={1}>見出し xl（level 1）</Heading>
+          <Heading level={2}>見出し lg（level 2）</Heading>
+          <Heading level={3}>見出し md（level 3）</Heading>
+        </div>
+      </section>
+
+      <section>
         <h2>Button</h2>
         <div className={styles.row}>
           <Button variant="primary">primary</Button>
           <Button variant="secondary">secondary</Button>
           <Button variant="danger">danger</Button>
-          <Button variant="primary" disabled>
+          <Button variant="primary" isDisabled>
             disabled
           </Button>
         </div>
@@ -111,6 +146,17 @@ export default function ComponentsPreviewPage() {
             <Badge key={color} color={color}>
               {color}
             </Badge>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2>Alert</h2>
+        <div className={styles.formSample}>
+          {ALERT_COLORS.map((color) => (
+            <Alert key={color} color={color}>
+              {color} の Alert です。
+            </Alert>
           ))}
         </div>
       </section>
@@ -142,8 +188,76 @@ export default function ComponentsPreviewPage() {
       </section>
 
       <section>
+        <h2>Textarea</h2>
+        <div className={styles.formSample}>
+          <Textarea
+            label="メモ"
+            placeholder="気づいたことを記録する"
+            rows={4}
+          />
+          <Textarea label="診察内容" errorMessage="必須です" rows={4} />
+        </div>
+      </section>
+
+      <section>
+        <h2>Select</h2>
+        <div className={styles.formSample}>
+          <Select
+            label="性別"
+            options={SEX_OPTIONS}
+            placeholder="選択してください"
+          />
+        </div>
+      </section>
+
+      <section>
+        <h2>Checkbox</h2>
+        <div className={styles.formSample}>
+          <Checkbox>ドライフード</Checkbox>
+          <Checkbox defaultSelected>ウェットフード</Checkbox>
+          <Checkbox isDisabled>おやつ（無効）</Checkbox>
+        </div>
+      </section>
+
+      <section>
+        <h2>Radio</h2>
+        <RadioGroup label="性別" defaultValue="unknown">
+          <Radio value="female">メス</Radio>
+          <Radio value="male">オス</Radio>
+          <Radio value="unknown">不明</Radio>
+        </RadioGroup>
+      </section>
+
+      <section>
+        <h2>Tabs</h2>
+        <Tabs aria-label="猫の記録" items={TAB_ITEMS} />
+      </section>
+
+      <section>
+        <h2>Toast</h2>
+        <div className={styles.row}>
+          <Button
+            variant="primary"
+            onPress={() =>
+              addToast({ title: "保存しました", color: "success" })
+            }
+          >
+            成功トーストを表示
+          </Button>
+          <Button
+            variant="danger"
+            onPress={() =>
+              addToast({ title: "保存に失敗しました", color: "error" })
+            }
+          >
+            エラートーストを表示
+          </Button>
+        </div>
+      </section>
+
+      <section>
         <h2>Modal</h2>
-        <Button variant="primary" onClick={() => setModalOpen(true)}>
+        <Button variant="primary" onPress={() => setModalOpen(true)}>
           モーダルを開く
         </Button>
         <Modal
@@ -153,10 +267,10 @@ export default function ComponentsPreviewPage() {
         >
           <p>この記録を削除しますか？</p>
           <div className={styles.row}>
-            <Button variant="danger" onClick={() => setModalOpen(false)}>
+            <Button variant="danger" onPress={() => setModalOpen(false)}>
               削除する
             </Button>
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>
+            <Button variant="secondary" onPress={() => setModalOpen(false)}>
               キャンセル
             </Button>
           </div>
