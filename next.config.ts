@@ -7,4 +7,7 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-initOpenNextCloudflareForDev();
+// next build（本番ビルド）では実行せず、next dev 時のみ Cloudflare bindings を初期化する
+if (process.env.NODE_ENV === "development") {
+  initOpenNextCloudflareForDev();
+}
