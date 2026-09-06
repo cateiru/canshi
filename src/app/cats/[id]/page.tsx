@@ -14,11 +14,11 @@ import styles from "./page.module.css";
 export const dynamic = "force-dynamic";
 
 type CatDetailPageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export default async function CatDetailPage({ params }: CatDetailPageProps) {
-  const { id } = params;
+  const { id } = await params;
   const cat = await getCatById(id);
 
   if (!cat) {
