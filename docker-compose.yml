@@ -11,9 +11,6 @@ services:
     environment:
       - WATCHPACK_POLLING=true
       - CI=true
-      # CI=true 環境では pnpm がストアをプロジェクト直下（ホスト側ボリューム）に
-      # 作成しようとするため、コンテナ内固定パスに明示する
-      - npm_config_store_dir=/root/.local/share/pnpm/store
     volumes:
       - .:/app
       - app_node_modules:/app/node_modules
