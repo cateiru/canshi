@@ -35,11 +35,11 @@ pnpm cf:deploy   # ビルド後、Cloudflare Workers へデプロイ
 `docker compose up` のみで、D1・R2 のローカルエミュレーションを含めた開発環境を起動できる。
 
 ```bash
-cp .env.example .env  # 初回のみ
 docker compose up
 ```
 
 - `http://localhost:3000` でアプリケーションにアクセスできる
+- シークレット等が必要になった場合は `.env.example` を `.env` にコピーして使う（`docker-compose.yml` は `.env` の有無にかかわらず動作する）
 - Next.js の開発サーバー（`next dev`）は `@opennextjs/cloudflare` の `initOpenNextCloudflareForDev()` により、
   `wrangler.toml` に定義した D1（`DB`）・R2（`MEDIA_BUCKET`）バインディングをローカルエミュレーションとして利用する
 - ローカル D1・R2 のデータは `.wrangler/state/`（ホスト側にバインドマウント）に永続化され、
