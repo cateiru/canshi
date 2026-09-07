@@ -133,9 +133,14 @@ export default async function TimelinePage({
         </Card>
       ) : (
         <ul className={styles.list}>
-          {entries.map((entry) => (
+          {entries.map((entry, index) => (
             <li key={`${entry.type}-${entry.id}`}>
-              <TimelineEntryCard catId={catId} entry={entry} />
+              <TimelineEntryCard
+                catId={catId}
+                entry={entry}
+                isFirst={index === 0}
+                isLast={index === entries.length - 1}
+              />
             </li>
           ))}
         </ul>

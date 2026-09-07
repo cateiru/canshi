@@ -1,3 +1,46 @@
+.row {
+  display: grid;
+  grid-template-columns: var(--space-8) 1fr;
+  column-gap: var(--space-3);
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.railLine {
+  width: var(--border-width);
+  flex: 1 0 var(--space-2);
+  background-color: var(--color-accent);
+}
+
+.railLine[data-hidden="true"] {
+  background-color: transparent;
+}
+
+.dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: 50%;
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+  font-size: var(--text-lg);
+}
+
+.card {
+  margin: var(--space-2) 0;
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  background-color: var(--color-bg);
+}
+
 .header {
   display: flex;
   align-items: center;

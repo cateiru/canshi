@@ -1,27 +1,51 @@
-import { Badge, ButtonLink, Card } from "@/components/ui";
+import { Badge, ButtonLink } from "@/components/ui";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import { STATUS_LABEL } from "@/features/symptoms/labels";
-import { TIMELINE_TYPE_LABEL } from "./labels";
+import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "./labels";
 import type { TimelineEntry } from "./queries";
 import styles from "./TimelineEntryCard.module.css";
 
 type TimelineEntryCardProps = {
   catId: string;
   entry: TimelineEntry;
+  isFirst: boolean;
+  isLast: boolean;
 };
 
-export function TimelineEntryCard({ catId, entry }: TimelineEntryCardProps) {
+export function TimelineEntryCard({
+  catId,
+  entry,
+  isFirst,
+  isLast,
+}: TimelineEntryCardProps) {
+  const Icon = TIMELINE_TYPE_ICON[entry.type];
+
   return (
-    <Card>
-      <div className={styles.header}>
-        <Badge color="accent">{TIMELINE_TYPE_LABEL[entry.type]}</Badge>
-        <span className={styles.occurredAt}>
-          {formatDateTimeUtc(entry.occurredAt)}
+    <div className={styles.row}>
+      <div className={styles.rail} aria-hidden="true">
+        <span
+          className={styles.railLine}
+          data-hidden={isFirst ? "true" : undefined}
+        />
+        <span className={styles.dot}>
+          <Icon />
         </span>
+        <span
+          className={styles.railLine}
+          data-hidden={isLast ? "true" : undefined}
+        />
       </div>
-      {renderBody(catId, entry)}
-    </Card>
+      <div className={styles.card}>
+        <div className={styles.header}>
+          <Badge color="accent">{TIMELINE_TYPE_LABEL[entry.type]}</Badge>
+          <span className={styles.occurredAt}>
+            {formatDateTimeUtc(entry.occurredAt)}
+          </span>
+        </div>
+        {renderBody(catId, entry)}
+      </div>
+    </div>
   );
 }
 
