@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { Button, FormField, Select, Textarea } from "@/components/ui";
 import type { HospitalVisit, Symptom } from "@/db/schema";
-import { splitDateTimeUtc } from "@/features/shared/datetime";
+import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { HospitalVisitFormState } from "./actions";
 import styles from "./HospitalVisitForm.module.css";
 
@@ -31,7 +31,9 @@ export function HospitalVisitForm({
   // マウント時に一度だけ計算して固定する
   const [now] = useState(() => new Date());
   const { date: defaultVisitedDate, time: defaultVisitedTime } =
-    splitDateTimeUtc(hospitalVisit?.visitedAt ?? now);
+    hospitalVisit?.visitedAt
+      ? splitDateTimeUtc(hospitalVisit.visitedAt)
+      : getLocalNowParts(now);
   const defaultReserved = hospitalVisit?.reservedAt
     ? splitDateTimeUtc(hospitalVisit.reservedAt)
     : undefined;
