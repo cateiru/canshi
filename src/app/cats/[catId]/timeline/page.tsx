@@ -5,6 +5,8 @@ import { getCatById } from "@/features/cats/queries";
 import { TIMELINE_TYPE_LABEL } from "@/features/timeline/labels";
 import {
   listTimelineEntries,
+  MAX_PAGE,
+  normalizePositiveInt,
   TIMELINE_RECORD_TYPES,
   type TimelineRecordType,
 } from "@/features/timeline/queries";
@@ -19,9 +21,11 @@ function isTimelineRecordType(value: string): value is TimelineRecordType {
   return (TIMELINE_RECORD_TYPES as readonly string[]).includes(value);
 }
 
+// listTimelineEntries 内部で使われるのと同じクランプ処理を通すことで、
+// ページネーションリンクが実際にクエリされたページ番号とずれないようにする
 function parsePage(value: string | undefined): number {
   const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  return normalizePositiveInt(parsed, MAX_PAGE);
 }
 
 function buildTimelineHref(
@@ -30,6 +34,10 @@ function buildTimelineHref(
   page: number,
 ): string {
   const params = new URLSearchParams();
+  // 「絞り込みを実行した」ことを明示するマーカー。types が0件でも
+  // 必ず付与することで、ページ遷移時に「全チェックを外して絞り込んだ」状態と
+  // 「一度も絞り込んでいない」状態（＝全件表示）を区別できるようにする
+  params.set("filtered", "1");
   for (const type of selectedTypes) {
     params.append("types", type);
   }
@@ -39,7 +47,11 @@ function buildTimelineHref(
 
 type TimelinePageProps = {
   params: Promise<{ catId: string }>;
-  searchParams: Promise<{ types?: string | string[]; page?: string }>;
+  searchParams: Promise<{
+    types?: string | string[];
+    page?: string;
+    filtered?: string;
+  }>;
 };
 
 export default async function TimelinePage({
@@ -47,14 +59,23 @@ export default async function TimelinePage({
   searchParams,
 }: TimelinePageProps) {
   const { catId } = await params;
-  const { types: typesParam, page: pageParam } = await searchParams;
+  const {
+    types: typesParam,
+    page: pageParam,
+    filtered: filteredParam,
+  } = await searchParams;
   const cat = await getCatById(catId);
 
   if (!cat) {
     notFound();
   }
 
-  const hasTypesParam = typesParam != null;
+  // types パラメータの有無ではなく、絞り込みフォームが送信されたかどうかを
+  // 示す明示的なマーカーで判定する。ネイティブの GET フォーム送信では
+  // 未選択のチェックボックスがそもそも送られないため、「全チェックを外して
+  // 送信した」場合と「一度も絞り込んでいない」場合の両方で types パラメータが
+  // 欠落してしまい、types の有無だけでは区別できない
+  const hasTypesParam = filteredParam != null;
   const rawTypes =
     typesParam == null ? [] : ([] as string[]).concat(typesParam);
   const selectedTypes = hasTypesParam
@@ -81,6 +102,7 @@ export default async function TimelinePage({
 
       <Card title="絞り込み">
         <form action={`/cats/${catId}/timeline`} className={styles.filterForm}>
+          <input type="hidden" name="filtered" value="1" />
           <div className={styles.filterOptions}>
             {TIMELINE_RECORD_TYPES.map((type) => (
               <Checkbox

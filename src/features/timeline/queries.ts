@@ -234,7 +234,7 @@ export type ListTimelineEntriesOptions = {
   pageSize?: number;
 };
 
-const MAX_PAGE = 100_000;
+export const MAX_PAGE = 100_000;
 const MAX_PAGE_SIZE = 100;
 // page * pageSize（depth）は、この上限を超えないようクランプする。
 // MAX_PAGE・MAX_PAGE_SIZE の組み合わせをそのまま許すと depth が最大
@@ -246,7 +246,7 @@ const MAX_DEPTH = 2_000;
 // 計算に直接使われないよう、有限の正の整数に丸めてから使う。不正値
 // （非有限）は「最大の問い合わせ件数」ではなく最小値（1）にフォールバック
 // させ、意図（過大な読み出しを避ける）と逆の挙動にならないようにする
-function normalizePositiveInt(value: number, max: number): number {
+export function normalizePositiveInt(value: number, max: number): number {
   if (!Number.isFinite(value)) {
     return 1;
   }
