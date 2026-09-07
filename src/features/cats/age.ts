@@ -20,10 +20,11 @@ function toUtcYearMonthDay(date: Date): YearMonthDay {
 export type Age = {
   years: number;
   months: number;
+  days: number;
 };
 
 /**
- * 生年月日から満年齢（年・月）を計算する。
+ * 生年月日から満年齢（年・月・日）を計算する。
  * `now` は UTC の暦日として扱う（Cloudflare Workers のサーバー時刻を基準とする）。
  */
 export function calculateAge(birthDate: string, now: Date = new Date()): Age {
@@ -41,15 +42,37 @@ export function calculateAge(birthDate: string, now: Date = new Date()): Age {
     months += 12;
   }
 
-  return { years: Math.max(years, 0), months: Math.max(months, 0) };
+  years = Math.max(years, 0);
+  months = Math.max(months, 0);
+
+  const totalMonths = years * 12 + months;
+  const anchorUtc = Date.UTC(
+    birth.year,
+    birth.month - 1 + totalMonths,
+    birth.day,
+  );
+  const todayUtc = Date.UTC(today.year, today.month - 1, today.day);
+  const days = Math.max(
+    Math.round((todayUtc - anchorUtc) / (1000 * 60 * 60 * 24)),
+    0,
+  );
+
+  return { years, months, days };
 }
 
+/**
+ * 満年齢を表示用の文字列に変換する。
+ * 1歳未満の場合は日数まで表示する（例: 「3ヶ月と15日」「15日」）。
+ */
 export function formatAge(age: Age): string {
-  if (age.years === 0 && age.months === 0) {
-    return "0ヶ月";
-  }
   if (age.years === 0) {
-    return `${age.months}ヶ月`;
+    if (age.months === 0) {
+      return `${age.days}日`;
+    }
+    if (age.days === 0) {
+      return `${age.months}ヶ月`;
+    }
+    return `${age.months}ヶ月と${age.days}日`;
   }
   if (age.months === 0) {
     return `${age.years}歳`;
