@@ -1,0 +1,269 @@
+import { desc, eq } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import {
+  type FeedingRecord,
+  feedingRecords,
+  foodProducts,
+  type HospitalVisit,
+  hospitalVisits,
+  type MedicationDose,
+  medicationDoses,
+  medications,
+  type PoopRecord,
+  poopRecords,
+  type Symptom,
+  symptoms,
+  type VomitRecord,
+  vomitRecords,
+  type WeightRecord,
+  weightRecords,
+} from "@/db/schema";
+
+export const TIMELINE_RECORD_TYPES = [
+  "feeding",
+  "poop",
+  "weight",
+  "vomit",
+  "symptom",
+  "medicationDose",
+  "hospitalVisit",
+] as const;
+
+export type TimelineRecordType = (typeof TIMELINE_RECORD_TYPES)[number];
+
+type TimelineEntryOf<T extends TimelineRecordType, R> = {
+  id: string;
+  type: T;
+  occurredAt: Date;
+  record: R;
+};
+
+export type TimelineEntry =
+  | TimelineEntryOf<"feeding", FeedingRecord & { foodProductName: string }>
+  | TimelineEntryOf<"poop", PoopRecord>
+  | TimelineEntryOf<"weight", WeightRecord>
+  | TimelineEntryOf<"vomit", VomitRecord>
+  | TimelineEntryOf<"symptom", Symptom>
+  | TimelineEntryOf<
+      "medicationDose",
+      MedicationDose & { medicationName: string }
+    >
+  | TimelineEntryOf<"hospitalVisit", HospitalVisit>;
+
+async function fetchFeedingEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: feedingRecords.id,
+      catId: feedingRecords.catId,
+      foodProductId: feedingRecords.foodProductId,
+      foodProductName: foodProducts.name,
+      occurredAt: feedingRecords.occurredAt,
+      givenAmountG: feedingRecords.givenAmountG,
+      leftoverAmountG: feedingRecords.leftoverAmountG,
+      estimatedIntakeG: feedingRecords.estimatedIntakeG,
+      estimatedKcal: feedingRecords.estimatedKcal,
+      createdAt: feedingRecords.createdAt,
+      updatedAt: feedingRecords.updatedAt,
+    })
+    .from(feedingRecords)
+    .innerJoin(foodProducts, eq(feedingRecords.foodProductId, foodProducts.id))
+    .where(eq(feedingRecords.catId, catId))
+    .orderBy(desc(feedingRecords.occurredAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "feeding",
+    occurredAt: record.occurredAt,
+    record,
+  }));
+}
+
+async function fetchPoopEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(poopRecords)
+    .where(eq(poopRecords.catId, catId))
+    .orderBy(desc(poopRecords.occurredAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "poop",
+    occurredAt: record.occurredAt,
+    record,
+  }));
+}
+
+async function fetchWeightEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(weightRecords)
+    .where(eq(weightRecords.catId, catId))
+    .orderBy(desc(weightRecords.occurredAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "weight",
+    occurredAt: record.occurredAt,
+    record,
+  }));
+}
+
+async function fetchVomitEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(vomitRecords)
+    .where(eq(vomitRecords.catId, catId))
+    .orderBy(desc(vomitRecords.occurredAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "vomit",
+    occurredAt: record.occurredAt,
+    record,
+  }));
+}
+
+async function fetchSymptomEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(symptoms)
+    .where(eq(symptoms.catId, catId))
+    .orderBy(desc(symptoms.onsetAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "symptom",
+    occurredAt: record.onsetAt,
+    record,
+  }));
+}
+
+async function fetchMedicationDoseEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: medicationDoses.id,
+      catId: medicationDoses.catId,
+      medicationId: medicationDoses.medicationId,
+      medicationName: medications.name,
+      occurredAt: medicationDoses.occurredAt,
+      wasAdministered: medicationDoses.wasAdministered,
+      memo: medicationDoses.memo,
+      createdAt: medicationDoses.createdAt,
+      updatedAt: medicationDoses.updatedAt,
+    })
+    .from(medicationDoses)
+    .innerJoin(medications, eq(medicationDoses.medicationId, medications.id))
+    .where(eq(medicationDoses.catId, catId))
+    .orderBy(desc(medicationDoses.occurredAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "medicationDose",
+    occurredAt: record.occurredAt,
+    record,
+  }));
+}
+
+async function fetchHospitalVisitEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(hospitalVisits)
+    .where(eq(hospitalVisits.catId, catId))
+    .orderBy(desc(hospitalVisits.visitedAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "hospitalVisit",
+    occurredAt: record.visitedAt,
+    record,
+  }));
+}
+
+const FETCHERS: Record<
+  TimelineRecordType,
+  (catId: string, limit: number) => Promise<TimelineEntry[]>
+> = {
+  feeding: fetchFeedingEntries,
+  poop: fetchPoopEntries,
+  weight: fetchWeightEntries,
+  vomit: fetchVomitEntries,
+  symptom: fetchSymptomEntries,
+  medicationDose: fetchMedicationDoseEntries,
+  hospitalVisit: fetchHospitalVisitEntries,
+};
+
+export type ListTimelineEntriesOptions = {
+  /** 省略時はすべての種類を対象にする。空配列を渡した場合は何も表示しない */
+  types?: TimelineRecordType[];
+  page?: number;
+  pageSize?: number;
+};
+
+/**
+ * 各記録テーブルを個別に取得したうえで JS 側でマージ・並び替え・ページングする。
+ * 各テーブルから要求ページの深さ（page * pageSize）分だけ取得すれば、
+ * テーブルをまたいだ正しい降順の上位 N 件を再構成できる
+ * （ある記録が全体の上位 N 件に入るなら、そのテーブル自身の中でも上位 N 件に入るため）。
+ * 個人利用規模の D1 を前提としたシンプルな実装で、SQL の UNION ALL は使わない。
+ */
+export async function listTimelineEntries(
+  catId: string,
+  options: ListTimelineEntriesOptions = {},
+): Promise<{ entries: TimelineEntry[]; hasMore: boolean }> {
+  const types = options.types ?? TIMELINE_RECORD_TYPES;
+  const pageSize = options.pageSize ?? 20;
+  const page = Math.max(1, options.page ?? 1);
+  const depth = page * pageSize;
+
+  if (types.length === 0) {
+    return { entries: [], hasMore: false };
+  }
+
+  const results = await Promise.all(
+    types.map((type) => FETCHERS[type](catId, depth)),
+  );
+  const merged = results
+    .flat()
+    .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+
+  const start = (page - 1) * pageSize;
+  const entries = merged.slice(start, start + pageSize);
+  const hasMore = merged.length > start + pageSize;
+
+  return { entries, hasMore };
+}
