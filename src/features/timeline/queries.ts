@@ -236,12 +236,19 @@ export type ListTimelineEntriesOptions = {
 
 const MAX_PAGE = 100_000;
 const MAX_PAGE_SIZE = 100;
+// page * pageSize（depth）は、この上限を超えないようクランプする。
+// MAX_PAGE・MAX_PAGE_SIZE の組み合わせをそのまま許すと depth が最大
+// 10,000,000 になり得て、テーブルごとの .limit(...) と JS 側のソートに
+// 過大な負荷がかかるため、個人利用規模の D1 を前提に別途上限を設ける
+const MAX_DEPTH = 2_000;
 
 // 不正・過大な入力（Infinity・NaN・小数・巨大な値など）が limit/offset の
-// 計算に直接使われないよう、有限の正の整数に丸めてから使う
+// 計算に直接使われないよう、有限の正の整数に丸めてから使う。不正値
+// （非有限）は「最大の問い合わせ件数」ではなく最小値（1）にフォールバック
+// させ、意図（過大な読み出しを避ける）と逆の挙動にならないようにする
 function normalizePositiveInt(value: number, max: number): number {
   if (!Number.isFinite(value)) {
-    return max;
+    return 1;
   }
   const truncated = Math.trunc(value);
   return Math.min(Math.max(truncated, 1), max);
@@ -262,7 +269,7 @@ export async function listTimelineEntries(
   const types = [...new Set(options.types ?? TIMELINE_RECORD_TYPES)];
   const pageSize = normalizePositiveInt(options.pageSize ?? 20, MAX_PAGE_SIZE);
   const page = normalizePositiveInt(options.page ?? 1, MAX_PAGE);
-  const depth = page * pageSize;
+  const depth = Math.min(page * pageSize, MAX_DEPTH);
 
   if (types.length === 0) {
     return { entries: [], hasMore: false };
