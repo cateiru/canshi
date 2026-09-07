@@ -5,6 +5,8 @@ import { HospitalVisitForm } from "@/features/hospital-visits/HospitalVisitForm"
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "../page.module.css";
 
+export const dynamic = "force-dynamic";
+
 type NewHospitalVisitPageProps = {
   params: Promise<{ catId: string }>;
 };

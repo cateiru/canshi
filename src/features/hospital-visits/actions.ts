@@ -32,6 +32,22 @@ function parseFormData(formData: FormData) {
   });
 }
 
+async function verifySymptomBelongsToCat(
+  db: ReturnType<typeof getDb>,
+  symptomId: string | undefined,
+  catId: string,
+): Promise<boolean> {
+  if (symptomId == null) {
+    return true;
+  }
+  const [row] = await db
+    .select({ id: symptoms.id })
+    .from(symptoms)
+    .where(and(eq(symptoms.id, symptomId), eq(symptoms.catId, catId)))
+    .limit(1);
+  return row != null;
+}
+
 function buildValues(data: ReturnType<typeof hospitalVisitFormSchema.parse>) {
   return {
     symptomId: data.symptomId ?? null,
@@ -64,6 +80,10 @@ export async function createHospitalVisitAction(
   }
 
   const db = getDb();
+  if (!(await verifySymptomBelongsToCat(db, parsed.data.symptomId, catId))) {
+    return { formError: "関連する症状が見つかりませんでした" };
+  }
+
   await db.insert(hospitalVisits).values({
     catId,
     ...buildValues(parsed.data),
@@ -85,6 +105,10 @@ export async function updateHospitalVisitAction(
   }
 
   const db = getDb();
+  if (!(await verifySymptomBelongsToCat(db, parsed.data.symptomId, catId))) {
+    return { formError: "関連する症状が見つかりませんでした" };
+  }
+
   const result = await db
     .update(hospitalVisits)
     .set({ ...buildValues(parsed.data), updatedAt: new Date() })
@@ -110,11 +134,13 @@ export async function deleteHospitalVisitAction(
     db
       .update(symptoms)
       .set({ hospitalVisitId: null })
-      .where(eq(symptoms.hospitalVisitId, id)),
+      .where(and(eq(symptoms.hospitalVisitId, id), eq(symptoms.catId, catId))),
     db
       .update(medications)
       .set({ hospitalVisitId: null })
-      .where(eq(medications.hospitalVisitId, id)),
+      .where(
+        and(eq(medications.hospitalVisitId, id), eq(medications.catId, catId)),
+      ),
     db
       .delete(hospitalVisits)
       .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),

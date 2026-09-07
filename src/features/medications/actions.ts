@@ -3,7 +3,12 @@
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { medicationDoses, medications, symptoms } from "@/db/schema";
+import {
+  hospitalVisits,
+  medicationDoses,
+  medications,
+  symptoms,
+} from "@/db/schema";
 import { type MedicationFormFieldErrors, medicationFormSchema } from "./schema";
 
 export type MedicationFormState = {
@@ -11,20 +16,37 @@ export type MedicationFormState = {
   formError?: string;
 };
 
-async function verifySymptomBelongsToCat(
+async function verifyReferencesBelongToCat(
   db: ReturnType<typeof getDb>,
-  symptomId: string | undefined,
+  refs: { symptomId?: string; hospitalVisitId?: string },
   catId: string,
 ): Promise<boolean> {
-  if (symptomId == null) {
-    return true;
+  if (refs.symptomId != null) {
+    const [row] = await db
+      .select({ id: symptoms.id })
+      .from(symptoms)
+      .where(and(eq(symptoms.id, refs.symptomId), eq(symptoms.catId, catId)))
+      .limit(1);
+    if (!row) {
+      return false;
+    }
   }
-  const [row] = await db
-    .select({ id: symptoms.id })
-    .from(symptoms)
-    .where(and(eq(symptoms.id, symptomId), eq(symptoms.catId, catId)))
-    .limit(1);
-  return row != null;
+  if (refs.hospitalVisitId != null) {
+    const [row] = await db
+      .select({ id: hospitalVisits.id })
+      .from(hospitalVisits)
+      .where(
+        and(
+          eq(hospitalVisits.id, refs.hospitalVisitId),
+          eq(hospitalVisits.catId, catId),
+        ),
+      )
+      .limit(1);
+    if (!row) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function parseFormData(formData: FormData) {
@@ -51,8 +73,17 @@ export async function createMedicationAction(
   }
 
   const db = getDb();
-  if (!(await verifySymptomBelongsToCat(db, parsed.data.symptomId, catId))) {
-    return { formError: "関連する症状が見つかりませんでした" };
+  if (
+    !(await verifyReferencesBelongToCat(
+      db,
+      {
+        symptomId: parsed.data.symptomId,
+        hospitalVisitId: parsed.data.hospitalVisitId,
+      },
+      catId,
+    ))
+  ) {
+    return { formError: "関連する症状・通院記録が見つかりませんでした" };
   }
 
   await db.insert(medications).values({
@@ -82,8 +113,17 @@ export async function updateMedicationAction(
   }
 
   const db = getDb();
-  if (!(await verifySymptomBelongsToCat(db, parsed.data.symptomId, catId))) {
-    return { formError: "関連する症状が見つかりませんでした" };
+  if (
+    !(await verifyReferencesBelongToCat(
+      db,
+      {
+        symptomId: parsed.data.symptomId,
+        hospitalVisitId: parsed.data.hospitalVisitId,
+      },
+      catId,
+    ))
+  ) {
+    return { formError: "関連する症状・通院記録が見つかりませんでした" };
   }
 
   const result = await db

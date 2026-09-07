@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { medications, symptoms } from "@/db/schema";
+import { hospitalVisits, medications, symptoms } from "@/db/schema";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import { type SymptomFormFieldErrors, symptomFormSchema } from "./schema";
 
@@ -11,6 +11,27 @@ export type SymptomFormState = {
   fieldErrors?: SymptomFormFieldErrors;
   formError?: string;
 };
+
+async function verifyHospitalVisitBelongsToCat(
+  db: ReturnType<typeof getDb>,
+  hospitalVisitId: string | undefined,
+  catId: string,
+): Promise<boolean> {
+  if (hospitalVisitId == null) {
+    return true;
+  }
+  const [row] = await db
+    .select({ id: hospitalVisits.id })
+    .from(hospitalVisits)
+    .where(
+      and(
+        eq(hospitalVisits.id, hospitalVisitId),
+        eq(hospitalVisits.catId, catId),
+      ),
+    )
+    .limit(1);
+  return row != null;
+}
 
 function parseFormData(formData: FormData) {
   return symptomFormSchema.safeParse({
@@ -38,6 +59,16 @@ export async function createSymptomAction(
   }
 
   const db = getDb();
+  if (
+    !(await verifyHospitalVisitBelongsToCat(
+      db,
+      parsed.data.hospitalVisitId,
+      catId,
+    ))
+  ) {
+    return { formError: "関連する通院記録が見つかりませんでした" };
+  }
+
   await db.insert(symptoms).values({
     catId,
     symptomType: parsed.data.symptomType,
@@ -66,6 +97,16 @@ export async function updateSymptomAction(
   }
 
   const db = getDb();
+  if (
+    !(await verifyHospitalVisitBelongsToCat(
+      db,
+      parsed.data.hospitalVisitId,
+      catId,
+    ))
+  ) {
+    return { formError: "関連する通院記録が見つかりませんでした" };
+  }
+
   const result = await db
     .update(symptoms)
     .set({
