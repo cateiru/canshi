@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { Button, FormField, Select } from "@/components/ui";
 import type { FeedingRecord, FoodProduct } from "@/db/schema";
-import { splitDateTimeUtc } from "@/features/shared/datetime";
+import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { FeedingRecordFormState } from "./actions";
 import styles from "./FeedingRecordForm.module.css";
 
@@ -35,9 +35,12 @@ export function FeedingRecordForm({
       "",
   );
 
-  const { date: defaultDate, time: defaultTime } = splitDateTimeUtc(
-    feedingRecord?.occurredAt ?? new Date(),
-  );
+  // new Date() を毎レンダリングで評価すると defaultValue が再レンダリング
+  // のたびに変わってしまうため、マウント時に一度だけ計算する
+  const [now] = useState(() => new Date());
+  const { date: defaultDate, time: defaultTime } = feedingRecord?.occurredAt
+    ? splitDateTimeUtc(feedingRecord.occurredAt)
+    : getLocalNowParts(now);
 
   const foodProductOptions = foodProducts.map((foodProduct) => ({
     value: foodProduct.id,

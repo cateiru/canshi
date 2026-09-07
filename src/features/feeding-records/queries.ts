@@ -37,12 +37,14 @@ export async function getFeedingRecordById(id: string) {
  */
 export async function listRecentlyUsedFoodProductIds(catId: string, limit = 5) {
   const db = getDb();
+  // 直近の生レコードが同一商品に偏っていても limit 件のユニークIDを拾える
+  // よう、スキャン件数を limit に比例させる（最低20件は見る）
   const rows = await db
     .select({ foodProductId: feedingRecords.foodProductId })
     .from(feedingRecords)
     .where(eq(feedingRecords.catId, catId))
     .orderBy(desc(feedingRecords.occurredAt))
-    .limit(20);
+    .limit(Math.max(limit * 10, 20));
 
   const seen = new Set<string>();
   for (const row of rows) {
