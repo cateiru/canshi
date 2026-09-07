@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { cats, feedingRecords, poopRecords } from "@/db/schema";
+import { cats, feedingRecords, poopRecords, weightRecords } from "@/db/schema";
 import { type CatFormFieldErrors, catFormSchema } from "./schema";
 
 export type CatFormState = {
@@ -84,6 +84,7 @@ export async function deleteCatAction(id: string): Promise<void> {
   // 猫本体より先に紐づく記録を削除しておく
   await db.delete(feedingRecords).where(eq(feedingRecords.catId, id));
   await db.delete(poopRecords).where(eq(poopRecords.catId, id));
+  await db.delete(weightRecords).where(eq(weightRecords.catId, id));
   await db.delete(cats).where(eq(cats.id, id));
   redirect("/cats");
 }

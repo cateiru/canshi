@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { weightRecords } from "@/db/schema";
@@ -96,7 +96,7 @@ export async function updateWeightRecordAction(
       catWeightKg: resolveCatWeightKg(parsed.data),
       updatedAt: new Date(),
     })
-    .where(eq(weightRecords.id, id))
+    .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)))
     .returning({ id: weightRecords.id });
 
   if (result.length === 0) {
@@ -111,6 +111,8 @@ export async function deleteWeightRecordAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
-  await db.delete(weightRecords).where(eq(weightRecords.id, id));
+  await db
+    .delete(weightRecords)
+    .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)));
   redirect(`/cats/${catId}/weight-records`);
 }
