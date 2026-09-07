@@ -19,6 +19,24 @@ function isTimelineRecordType(value: string): value is TimelineRecordType {
   return (TIMELINE_RECORD_TYPES as readonly string[]).includes(value);
 }
 
+function parsePage(value: string | undefined): number {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function buildTimelineHref(
+  catId: string,
+  selectedTypes: TimelineRecordType[],
+  page: number,
+): string {
+  const params = new URLSearchParams();
+  for (const type of selectedTypes) {
+    params.append("types", type);
+  }
+  params.set("page", String(page));
+  return `/cats/${catId}/timeline?${params.toString()}`;
+}
+
 type TimelinePageProps = {
   params: Promise<{ catId: string }>;
   searchParams: Promise<{ types?: string | string[]; page?: string }>;
@@ -40,9 +58,9 @@ export default async function TimelinePage({
   const rawTypes =
     typesParam == null ? [] : ([] as string[]).concat(typesParam);
   const selectedTypes = hasTypesParam
-    ? rawTypes.filter(isTimelineRecordType)
+    ? [...new Set(rawTypes.filter(isTimelineRecordType))]
     : [...TIMELINE_RECORD_TYPES];
-  const page = Math.max(1, Number(pageParam) || 1);
+  const page = parsePage(pageParam);
 
   const { entries, hasMore } = await listTimelineEntries(catId, {
     types: selectedTypes,
@@ -50,11 +68,8 @@ export default async function TimelinePage({
     pageSize: PAGE_SIZE,
   });
 
-  const typesQuery = selectedTypes
-    .map((type) => `types=${encodeURIComponent(type)}`)
-    .join("&");
-  const prevHref = `/cats/${catId}/timeline?${typesQuery}&page=${page - 1}`;
-  const nextHref = `/cats/${catId}/timeline?${typesQuery}&page=${page + 1}`;
+  const prevHref = buildTimelineHref(catId, selectedTypes, page - 1);
+  const nextHref = buildTimelineHref(catId, selectedTypes, page + 1);
 
   return (
     <main className={styles.main}>

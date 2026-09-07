@@ -234,6 +234,19 @@ export type ListTimelineEntriesOptions = {
   pageSize?: number;
 };
 
+const MAX_PAGE = 100_000;
+const MAX_PAGE_SIZE = 100;
+
+// 不正・過大な入力（Infinity・NaN・小数・巨大な値など）が limit/offset の
+// 計算に直接使われないよう、有限の正の整数に丸めてから使う
+function normalizePositiveInt(value: number, max: number): number {
+  if (!Number.isFinite(value)) {
+    return max;
+  }
+  const truncated = Math.trunc(value);
+  return Math.min(Math.max(truncated, 1), max);
+}
+
 /**
  * 各記録テーブルを個別に取得したうえで JS 側でマージ・並び替え・ページングする。
  * 各テーブルから要求ページの深さ（page * pageSize）分だけ取得すれば、
@@ -245,9 +258,10 @@ export async function listTimelineEntries(
   catId: string,
   options: ListTimelineEntriesOptions = {},
 ): Promise<{ entries: TimelineEntry[]; hasMore: boolean }> {
-  const types = options.types ?? TIMELINE_RECORD_TYPES;
-  const pageSize = options.pageSize ?? 20;
-  const page = Math.max(1, options.page ?? 1);
+  // 呼び出し側から重複を含む types が渡される可能性があるため重複排除する
+  const types = [...new Set(options.types ?? TIMELINE_RECORD_TYPES)];
+  const pageSize = normalizePositiveInt(options.pageSize ?? 20, MAX_PAGE_SIZE);
+  const page = normalizePositiveInt(options.page ?? 1, MAX_PAGE);
   const depth = page * pageSize;
 
   if (types.length === 0) {
@@ -260,9 +274,12 @@ export async function listTimelineEntries(
   const results = await Promise.all(
     types.map((type) => FETCHERS[type](catId, depth + 1)),
   );
-  const merged = results
-    .flat()
-    .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+  const merged = results.flat().sort((a, b) => {
+    const byOccurredAt = b.occurredAt.getTime() - a.occurredAt.getTime();
+    // 同時刻のレコードが複数あると DB から返る順序が読み出しごとに変わり
+    // うるため、id を tie-breaker にしてページ間で結果を安定させる
+    return byOccurredAt !== 0 ? byOccurredAt : a.id.localeCompare(b.id);
+  });
 
   const start = (page - 1) * pageSize;
   const entries = merged.slice(start, start + pageSize);
