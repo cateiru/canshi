@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TbTimeline } from "react-icons/tb";
-import { Button, Card, Checkbox } from "@/components/ui";
+import { Breadcrumb, Button, Card, Checkbox } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { TIMELINE_TYPE_LABEL } from "@/features/timeline/labels";
@@ -98,9 +98,14 @@ export default async function TimelinePage({
 
   return (
     <main className={styles.main}>
-      <Link href={`/cats/${catId}`} className={styles.backLink}>
-        ← {cat.name}のページに戻る
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "タイムライン" },
+        ]}
+      />
 
       <RecordPageHeading icon={TbTimeline}>
         {cat.name}のタイムライン

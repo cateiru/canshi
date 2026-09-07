@@ -1,4 +1,4 @@
-import { ButtonLink, Card } from "@/components/ui";
+import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { deleteFoodProductAction } from "@/features/food-products/actions";
 import { DeleteFoodProductButton } from "@/features/food-products/DeleteFoodProductButton";
 import {
@@ -15,6 +15,10 @@ export default async function FoodProductsPage() {
 
   return (
     <main className={styles.main}>
+      <Breadcrumb
+        items={[{ label: "トップ", href: "/" }, { label: "ごはん商品一覧" }]}
+      />
+
       <div className={styles.header}>
         <h1>ごはん商品一覧</h1>
         <ButtonLink href="/food-products/new" variant="primary">

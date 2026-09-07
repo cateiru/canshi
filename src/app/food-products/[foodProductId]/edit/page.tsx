@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Breadcrumb } from "@/components/ui";
 import { updateFoodProductAction } from "@/features/food-products/actions";
 import { FoodProductForm } from "@/features/food-products/FoodProductForm";
 import { getFoodProductById } from "@/features/food-products/queries";
@@ -22,6 +23,14 @@ export default async function EditFoodProductPage({
 
   return (
     <main className={styles.main}>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "ごはん商品一覧", href: "/food-products" },
+          { label: "編集する" },
+        ]}
+      />
+
       <h1>{foodProduct.name}を編集する</h1>
       <FoodProductForm
         action={updateFoodProductAction.bind(null, foodProduct.id)}

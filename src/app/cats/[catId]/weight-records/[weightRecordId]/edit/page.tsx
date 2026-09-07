@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { updateWeightRecordAction } from "@/features/weight-records/actions";
 import { getWeightRecordById } from "@/features/weight-records/queries";
@@ -26,6 +27,16 @@ export default async function EditWeightRecordPage({
 
   return (
     <main className={styles.main}>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "体重記録", href: `/cats/${catId}/weight-records` },
+          { label: "編集する" },
+        ]}
+      />
+
       <h1>{cat.name}の体重記録を編集する</h1>
       <WeightRecordForm
         action={updateWeightRecordAction.bind(null, catId, weightRecord.id)}

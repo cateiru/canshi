@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { updatePoopRecordAction } from "@/features/poop-records/actions";
 import { PoopRecordForm } from "@/features/poop-records/PoopRecordForm";
@@ -26,6 +27,16 @@ export default async function EditPoopRecordPage({
 
   return (
     <main className={styles.main}>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "うんち記録", href: `/cats/${catId}/poop-records` },
+          { label: "編集する" },
+        ]}
+      />
+
       <h1>{cat.name}のうんち記録を編集する</h1>
       <PoopRecordForm
         action={updatePoopRecordAction.bind(null, catId, poopRecord.id)}

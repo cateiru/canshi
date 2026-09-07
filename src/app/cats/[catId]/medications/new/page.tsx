@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { createMedicationAction } from "@/features/medications/actions";
@@ -29,6 +30,16 @@ export default async function NewMedicationPage({
 
   return (
     <main className={styles.main}>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "服薬予定", href: `/cats/${catId}/medications` },
+          { label: "登録する" },
+        ]}
+      />
+
       <h1>{cat.name}の服薬予定を登録する</h1>
       <MedicationForm
         action={createMedicationAction.bind(null, catId)}

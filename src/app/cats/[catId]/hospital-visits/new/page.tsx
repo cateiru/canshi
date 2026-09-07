@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { createHospitalVisitAction } from "@/features/hospital-visits/actions";
 import { HospitalVisitForm } from "@/features/hospital-visits/HospitalVisitForm";
@@ -25,6 +26,16 @@ export default async function NewHospitalVisitPage({
 
   return (
     <main className={styles.main}>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "通院記録", href: `/cats/${catId}/hospital-visits` },
+          { label: "記録する" },
+        ]}
+      />
+
       <h1>{cat.name}の通院を記録する</h1>
       <HospitalVisitForm
         action={createHospitalVisitAction.bind(null, catId)}

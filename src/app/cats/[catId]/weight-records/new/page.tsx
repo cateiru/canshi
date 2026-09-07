@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { createWeightRecordAction } from "@/features/weight-records/actions";
 import { WeightRecordForm } from "@/features/weight-records/WeightRecordForm";
@@ -22,6 +23,16 @@ export default async function NewWeightRecordPage({
 
   return (
     <main className={styles.main}>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "体重記録", href: `/cats/${catId}/weight-records` },
+          { label: "記録する" },
+        ]}
+      />
+
       <h1>{cat.name}の体重を記録する</h1>
       <WeightRecordForm
         action={createWeightRecordAction.bind(null, catId)}

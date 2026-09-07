@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Badge, ButtonLink, Card } from "@/components/ui";
+import { Badge, Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import {
   calculateAge,
   calculateDaysSinceAdoption,
@@ -16,6 +16,10 @@ export default async function CatsPage() {
 
   return (
     <main className={styles.main}>
+      <Breadcrumb
+        items={[{ label: "トップ", href: "/" }, { label: "猫一覧" }]}
+      />
+
       <div className={styles.header}>
         <h1>猫一覧</h1>
         <ButtonLink href="/cats/new" variant="primary">

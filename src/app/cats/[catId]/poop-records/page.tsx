@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FaPoop } from "react-icons/fa";
-import { Badge, ButtonLink, Card } from "@/components/ui";
+import { Badge, Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deletePoopRecordAction } from "@/features/poop-records/actions";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
@@ -31,9 +30,14 @@ export default async function PoopRecordsPage({
 
   return (
     <main className={styles.main}>
-      <Link href={`/cats/${catId}`} className={styles.backLink}>
-        ← {cat.name}のページに戻る
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "うんち記録" },
+        ]}
+      />
 
       <div className={styles.header}>
         <RecordPageHeading icon={FaPoop}>

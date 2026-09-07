@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TbWeight } from "react-icons/tb";
-import { ButtonLink, Card } from "@/components/ui";
+import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
@@ -31,9 +30,14 @@ export default async function WeightRecordsPage({
 
   return (
     <main className={styles.main}>
-      <Link href={`/cats/${catId}`} className={styles.backLink}>
-        ← {cat.name}のページに戻る
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "体重記録" },
+        ]}
+      />
 
       <div className={styles.header}>
         <RecordPageHeading icon={TbWeight}>

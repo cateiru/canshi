@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, ButtonLink, Card, Heading } from "@/components/ui";
+import { Badge, Breadcrumb, ButtonLink, Card, Heading } from "@/components/ui";
 import { deleteCatAction } from "@/features/cats/actions";
 import {
   calculateAge,
@@ -29,9 +28,13 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
 
   return (
     <main className={styles.main}>
-      <Link href="/cats" className={styles.backLink}>
-        ← 猫一覧に戻る
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name },
+        ]}
+      />
 
       <h1>{cat.name}</h1>
 

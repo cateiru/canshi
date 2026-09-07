@@ -8,10 +8,6 @@
   padding: var(--space-8) var(--space-4);
 }
 
-.backLink {
-  font-size: var(--text-sm);
-}
-
 .filterForm {
   display: flex;
   flex-direction: column;

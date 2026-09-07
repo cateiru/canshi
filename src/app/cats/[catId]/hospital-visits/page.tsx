@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TbBuildingHospital } from "react-icons/tb";
-import { ButtonLink, Card } from "@/components/ui";
+import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deleteHospitalVisitAction } from "@/features/hospital-visits/actions";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
@@ -42,9 +41,14 @@ export default async function HospitalVisitsPage({
 
   return (
     <main className={styles.main}>
-      <Link href={`/cats/${catId}`} className={styles.backLink}>
-        ← {cat.name}のページに戻る
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "通院記録" },
+        ]}
+      />
 
       <div className={styles.header}>
         <RecordPageHeading icon={TbBuildingHospital}>

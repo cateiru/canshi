@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { updateHospitalVisitAction } from "@/features/hospital-visits/actions";
 import { HospitalVisitForm } from "@/features/hospital-visits/HospitalVisitForm";
@@ -29,6 +30,16 @@ export default async function EditHospitalVisitPage({
 
   return (
     <main className={styles.main}>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "通院記録", href: `/cats/${catId}/hospital-visits` },
+          { label: "編集する" },
+        ]}
+      />
+
       <h1>{cat.name}の通院記録を編集する</h1>
       <HospitalVisitForm
         action={updateHospitalVisitAction.bind(null, catId, hospitalVisit.id)}

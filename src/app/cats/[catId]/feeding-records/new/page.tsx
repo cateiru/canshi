@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ButtonLink, Card } from "@/components/ui";
+import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { createFeedingRecordAction } from "@/features/feeding-records/actions";
 import { FeedingRecordForm } from "@/features/feeding-records/FeedingRecordForm";
@@ -28,9 +28,19 @@ export default async function NewFeedingRecordPage({
     listRecentlyUsedFoodProductIds(catId),
   ]);
 
+  const breadcrumbItems = [
+    { label: "トップ", href: "/" },
+    { label: "猫一覧", href: "/cats" },
+    { label: cat.name, href: `/cats/${catId}` },
+    { label: "ごはん記録", href: `/cats/${catId}/feeding-records` },
+    { label: "記録する" },
+  ];
+
   if (foodProducts.length === 0) {
     return (
       <main className={styles.main}>
+        <Breadcrumb items={breadcrumbItems} />
+
         <h1>{cat.name}のごはんを記録する</h1>
         <Card>
           <p>先にごはん商品を登録してください。</p>
@@ -44,6 +54,8 @@ export default async function NewFeedingRecordPage({
 
   return (
     <main className={styles.main}>
+      <Breadcrumb items={breadcrumbItems} />
+
       <h1>{cat.name}のごはんを記録する</h1>
       <FeedingRecordForm
         action={createFeedingRecordAction.bind(null, catId)}

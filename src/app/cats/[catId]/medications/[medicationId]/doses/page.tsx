@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, ButtonLink, Card } from "@/components/ui";
+import { Badge, Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deleteMedicationDoseAction } from "@/features/medications/doseActions";
 import { listMedicationDoses } from "@/features/medications/doseQueries";
@@ -32,9 +31,15 @@ export default async function MedicationDosesPage({
 
   return (
     <main className={styles.main}>
-      <Link href={`/cats/${catId}/medications`} className={styles.backLink}>
-        ← {cat.name}の服薬予定一覧に戻る
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: "トップ", href: "/" },
+          { label: "猫一覧", href: "/cats" },
+          { label: cat.name, href: `/cats/${catId}` },
+          { label: "服薬予定", href: `/cats/${catId}/medications` },
+          { label: "投薬実績" },
+        ]}
+      />
 
       <div className={styles.header}>
         <h1>{medication.name}の投薬実績</h1>
