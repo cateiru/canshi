@@ -3,6 +3,8 @@ export * from "./cats";
 export * from "./feeding-records";
 export * from "./food-products";
 export * from "./media-assets";
+export * from "./medication-doses";
+export * from "./medications";
 export * from "./poop-records";
 export * from "./symptoms";
 export * from "./vomit-records";

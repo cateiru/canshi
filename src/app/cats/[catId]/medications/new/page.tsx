@@ -1,0 +1,34 @@
+import { notFound } from "next/navigation";
+import { getCatById } from "@/features/cats/queries";
+import { createMedicationAction } from "@/features/medications/actions";
+import { MedicationForm } from "@/features/medications/MedicationForm";
+import { listSymptoms } from "@/features/symptoms/queries";
+import styles from "../page.module.css";
+
+type NewMedicationPageProps = {
+  params: Promise<{ catId: string }>;
+};
+
+export default async function NewMedicationPage({
+  params,
+}: NewMedicationPageProps) {
+  const { catId } = await params;
+  const cat = await getCatById(catId);
+
+  if (!cat) {
+    notFound();
+  }
+
+  const symptomList = await listSymptoms(catId);
+
+  return (
+    <main className={styles.main}>
+      <h1>{cat.name}の服薬予定を登録する</h1>
+      <MedicationForm
+        action={createMedicationAction.bind(null, catId)}
+        symptoms={symptomList}
+        submitLabel="登録する"
+      />
+    </main>
+  );
+}
