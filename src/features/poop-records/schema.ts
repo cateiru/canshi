@@ -3,17 +3,22 @@ import { checkboxBooleanSchema } from "@/features/shared/checkbox";
 import { TIME_STRING_PATTERN } from "@/features/shared/datetime";
 
 const emptyToUndefined = (value: unknown) =>
-  typeof value === "string" && value.trim() === "" ? undefined : value;
+  value == null || (typeof value === "string" && value.trim() === "")
+    ? undefined
+    : value;
 
 export const poopRecordFormSchema = z.object({
   occurredDate: z.string().date("発生日の形式が正しくありません"),
   occurredTime: z
     .string()
     .regex(TIME_STRING_PATTERN, "発生時刻の形式が正しくありません"),
-  count: z.coerce
-    .number({ error: "回数を入力してください" })
-    .int("回数は整数で入力してください")
-    .min(1, "回数は1以上で入力してください"),
+  count: z.preprocess(
+    emptyToUndefined,
+    z.coerce
+      .number({ error: "回数を入力してください" })
+      .int("回数は整数で入力してください")
+      .min(1, "回数は1以上で入力してください"),
+  ),
   amount: z.preprocess(
     emptyToUndefined,
     z.string().trim().max(50, "量は50文字以内で入力してください").optional(),
