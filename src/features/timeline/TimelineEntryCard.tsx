@@ -109,7 +109,7 @@ function renderBody(catId: string, entry: TimelineEntry) {
             </ButtonLink>
             {record.hospitalVisitId ? (
               <ButtonLink
-                href={`/cats/${catId}/hospital-visits`}
+                href={`/cats/${catId}/hospital-visits/${record.hospitalVisitId}/edit`}
                 variant="secondary"
               >
                 関連する通院記録
@@ -149,7 +149,10 @@ function renderBody(catId: string, entry: TimelineEntry) {
               編集する
             </ButtonLink>
             {record.symptomId ? (
-              <ButtonLink href={`/cats/${catId}/symptoms`} variant="secondary">
+              <ButtonLink
+                href={`/cats/${catId}/symptoms/${record.symptomId}/edit`}
+                variant="secondary"
+              >
                 関連する症状記録
               </ButtonLink>
             ) : null}

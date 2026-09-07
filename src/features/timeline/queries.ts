@@ -254,8 +254,11 @@ export async function listTimelineEntries(
     return { entries: [], hasMore: false };
   }
 
+  // hasMore の判定用に、必要な深さより1件多く取得する。ちょうど depth 件で
+  // 打ち切ると、1つの記録種別だけで depth 件を超えるケースで「次のページが
+  // ある」ことを検出できない（false negative になる）ため
   const results = await Promise.all(
-    types.map((type) => FETCHERS[type](catId, depth)),
+    types.map((type) => FETCHERS[type](catId, depth + 1)),
   );
   const merged = results
     .flat()
