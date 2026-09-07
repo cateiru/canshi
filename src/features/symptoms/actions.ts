@@ -92,13 +92,17 @@ export async function deleteSymptomAction(
 ): Promise<void> {
   const db = getDb();
   // medications.symptom_id からの外部キー参照があるため、症状を削除する前に
-  // 参照している服薬予定の紐付けを外しておく
-  await db
-    .update(medications)
-    .set({ symptomId: null })
-    .where(and(eq(medications.symptomId, id), eq(medications.catId, catId)));
-  await db
-    .delete(symptoms)
-    .where(and(eq(symptoms.id, id), eq(symptoms.catId, catId)));
+  // 参照している服薬予定の紐付けを外しておく。2つの操作の間に別リクエストで
+  // 同じ症状を参照する medications が作成されると後段の削除が FK 制約で
+  // 失敗し得るため、db.batch でまとめて原子的に実行する
+  await db.batch([
+    db
+      .update(medications)
+      .set({ symptomId: null })
+      .where(and(eq(medications.symptomId, id), eq(medications.catId, catId))),
+    db
+      .delete(symptoms)
+      .where(and(eq(symptoms.id, id), eq(symptoms.catId, catId))),
+  ]);
   redirect(`/cats/${catId}/symptoms`);
 }
