@@ -35,7 +35,7 @@ export default async function EditFeedingRecordPage({
 
   return (
     <main className={styles.main}>
-      <h1>{cat.name}の給餌記録を編集する</h1>
+      <h1>{cat.name}のごはん記録を編集する</h1>
       <FeedingRecordForm
         action={updateFeedingRecordAction.bind(null, catId, feedingRecord.id)}
         foodProducts={foodProducts}

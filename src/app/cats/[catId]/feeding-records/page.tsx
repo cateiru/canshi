@@ -36,7 +36,7 @@ export default async function FeedingRecordsPage({
 
       <div className={styles.header}>
         <RecordPageHeading icon={TbMeat}>
-          {cat.name}の給餌記録
+          {cat.name}のごはん記録
         </RecordPageHeading>
         <ButtonLink
           href={`/cats/${catId}/feeding-records/new`}
@@ -48,7 +48,7 @@ export default async function FeedingRecordsPage({
 
       {records.length === 0 ? (
         <Card>
-          <p>まだ給餌記録がありません。</p>
+          <p>まだごはん記録がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink
               href={`/cats/${catId}/feeding-records/new`}
@@ -88,8 +88,8 @@ export default async function FeedingRecordsPage({
                       catId,
                       record.id,
                     )}
-                    title="給餌記録の削除"
-                    description="この給餌記録を削除しますか？この操作は取り消せません。"
+                    title="ごはん記録の削除"
+                    description="このごはん記録を削除しますか？この操作は取り消せません。"
                   />
                 </div>
               </Card>

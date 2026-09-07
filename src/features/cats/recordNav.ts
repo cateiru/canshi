@@ -28,7 +28,7 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
   {
     href: (catId) => `/cats/${catId}/feeding-records`,
     icon: TbMeat,
-    label: "給餌記録",
+    label: "ごはん記録",
   },
   {
     href: (catId) => `/cats/${catId}/poop-records`,

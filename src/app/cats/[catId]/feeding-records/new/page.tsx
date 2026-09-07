@@ -31,7 +31,7 @@ export default async function NewFeedingRecordPage({
   if (foodProducts.length === 0) {
     return (
       <main className={styles.main}>
-        <h1>{cat.name}の給餌を記録する</h1>
+        <h1>{cat.name}のごはんを記録する</h1>
         <Card>
           <p>先にごはん商品を登録してください。</p>
           <ButtonLink href="/food-products/new" variant="primary">
@@ -44,7 +44,7 @@ export default async function NewFeedingRecordPage({
 
   return (
     <main className={styles.main}>
-      <h1>{cat.name}の給餌を記録する</h1>
+      <h1>{cat.name}のごはんを記録する</h1>
       <FeedingRecordForm
         action={createFeedingRecordAction.bind(null, catId)}
         foodProducts={foodProducts}

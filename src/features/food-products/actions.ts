@@ -74,7 +74,7 @@ export async function deleteFoodProductAction(
 ): Promise<DeleteFoodProductResult> {
   const db = getDb();
   // food_product_id は ON DELETE 制約でこのまま削除すると失敗するため、
-  // 給餌記録から参照されている場合は削除せずにエラーを返す
+  // ごはん記録から参照されている場合は削除せずにエラーを返す
   const [inUse] = await db
     .select({ id: feedingRecords.id })
     .from(feedingRecords)
@@ -82,7 +82,7 @@ export async function deleteFoodProductAction(
     .limit(1);
 
   if (inUse) {
-    return { error: "この商品を使った給餌記録があるため削除できません" };
+    return { error: "この商品を使ったごはん記録があるため削除できません" };
   }
 
   await db.delete(foodProducts).where(eq(foodProducts.id, id));
