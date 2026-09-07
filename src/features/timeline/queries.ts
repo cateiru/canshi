@@ -254,6 +254,16 @@ export function normalizePositiveInt(value: number, max: number): number {
   return Math.min(Math.max(truncated, 1), max);
 }
 
+// depth（page * pageSize）が MAX_DEPTH を超えないようにするための、
+// pageSize に応じた最大ページ番号。MAX_PAGE までクランプしただけの page を
+// そのまま使うと、depth 側だけ MAX_DEPTH でクランプされて「実データが
+// あるのに常に空配列が返るページ」が発生するため、listTimelineEntries と
+// ページネーションリンク生成側（page.tsx）の両方でこの値を使って page 自体を
+// クランプし、クエリ結果とリンクのページ番号がずれないようにする
+export function maxPageForPageSize(pageSize: number): number {
+  return Math.max(Math.floor(MAX_DEPTH / pageSize), 1);
+}
+
 /**
  * 各記録テーブルを個別に取得したうえで JS 側でマージ・並び替え・ページングする。
  * 各テーブルから要求ページの深さ（page * pageSize）分だけ取得すれば、
@@ -268,8 +278,9 @@ export async function listTimelineEntries(
   // 呼び出し側から重複を含む types が渡される可能性があるため重複排除する
   const types = [...new Set(options.types ?? TIMELINE_RECORD_TYPES)];
   const pageSize = normalizePositiveInt(options.pageSize ?? 20, MAX_PAGE_SIZE);
-  const page = normalizePositiveInt(options.page ?? 1, MAX_PAGE);
-  const depth = Math.min(page * pageSize, MAX_DEPTH);
+  const requestedPage = normalizePositiveInt(options.page ?? 1, MAX_PAGE);
+  const page = Math.min(requestedPage, maxPageForPageSize(pageSize));
+  const depth = page * pageSize;
 
   if (types.length === 0) {
     return { entries: [], hasMore: false };

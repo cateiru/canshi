@@ -6,6 +6,7 @@ import { TIMELINE_TYPE_LABEL } from "@/features/timeline/labels";
 import {
   listTimelineEntries,
   MAX_PAGE,
+  maxPageForPageSize,
   normalizePositiveInt,
   TIMELINE_RECORD_TYPES,
   type TimelineRecordType,
@@ -25,7 +26,8 @@ function isTimelineRecordType(value: string): value is TimelineRecordType {
 // ページネーションリンクが実際にクエリされたページ番号とずれないようにする
 function parsePage(value: string | undefined): number {
   const parsed = Number.parseInt(value ?? "", 10);
-  return normalizePositiveInt(parsed, MAX_PAGE);
+  const normalized = normalizePositiveInt(parsed, MAX_PAGE);
+  return Math.min(normalized, maxPageForPageSize(PAGE_SIZE));
 }
 
 function buildTimelineHref(
