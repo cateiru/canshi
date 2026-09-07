@@ -107,8 +107,12 @@ function renderBody(catId: string, entry: TimelineEntry) {
       return (
         <div className={styles.body}>
           <p>
-            {record.count}回{record.hasBlood ? "・血液あり" : ""}
-            {record.hasForeignObject ? "・異物あり" : ""}
+            {[
+              record.hasBlood ? "血液あり" : null,
+              record.hasForeignObject ? "異物あり" : null,
+            ]
+              .filter(Boolean)
+              .join("・")}
           </p>
           <ButtonLink
             href={`/cats/${catId}/vomit-records/${record.id}/edit`}

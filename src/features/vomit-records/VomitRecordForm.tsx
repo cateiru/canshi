@@ -51,16 +51,6 @@ export function VomitRecordForm({
       </div>
 
       <FormField
-        name="count"
-        label="回数"
-        type="number"
-        inputMode="numeric"
-        defaultValue={vomitRecord?.count?.toString() ?? "1"}
-        errorMessage={state.fieldErrors?.count?.[0]}
-        isRequired
-      />
-
-      <FormField
         name="amount"
         label="量"
         defaultValue={vomitRecord?.amount ?? ""}

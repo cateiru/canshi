@@ -65,8 +65,6 @@ export default async function VomitRecordsPage({
             <li key={record.id}>
               <Card title={formatDateTimeUtc(record.occurredAt)}>
                 <dl className={styles.details}>
-                  <dt>回数</dt>
-                  <dd>{record.count}回</dd>
                   {record.amount ? (
                     <>
                       <dt>量</dt>

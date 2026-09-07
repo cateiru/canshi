@@ -25,7 +25,6 @@ describe("vomit_records テーブル", () => {
     await db.insert(vomitRecords).values({
       catId: cat.id,
       occurredAt: new Date("2026-09-07T08:00:00.000Z"),
-      count: 1,
       hasForeignObject: true,
     });
 

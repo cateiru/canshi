@@ -19,7 +19,6 @@ function parseFormData(formData: FormData) {
   return vomitRecordFormSchema.safeParse({
     occurredDate: formData.get("occurredDate"),
     occurredTime: formData.get("occurredTime"),
-    count: formData.get("count"),
     amount: formData.get("amount"),
     color: formData.get("color"),
     hasBlood: formData.get("hasBlood"),
@@ -48,7 +47,6 @@ export async function createVomitRecordAction(
       parsed.data.occurredDate,
       parsed.data.occurredTime,
     ),
-    count: parsed.data.count,
     amount: parsed.data.amount ?? null,
     color: parsed.data.color ?? null,
     hasBlood: parsed.data.hasBlood,
@@ -81,7 +79,6 @@ export async function updateVomitRecordAction(
         parsed.data.occurredDate,
         parsed.data.occurredTime,
       ),
-      count: parsed.data.count,
       amount: parsed.data.amount ?? null,
       color: parsed.data.color ?? null,
       hasBlood: parsed.data.hasBlood,

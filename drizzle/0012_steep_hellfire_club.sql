@@ -1,0 +1,1 @@
+ALTER TABLE `vomit_records` DROP COLUMN `count`;

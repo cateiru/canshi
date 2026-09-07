@@ -10,7 +10,6 @@ export const vomitRecords = sqliteTable("vomit_records", {
     .notNull()
     .references(() => cats.id),
   occurredAt: integer("occurred_at", { mode: "timestamp" }).notNull(),
-  count: integer("count").notNull(),
   amount: text("amount"),
   color: text("color"),
   hasBlood: integer("has_blood", { mode: "boolean" }).notNull().default(false),
