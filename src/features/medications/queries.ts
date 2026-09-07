@@ -27,7 +27,8 @@ export async function listMedicationsByHospitalVisitIds(
   const rows = await db
     .select()
     .from(medications)
-    .where(inArray(medications.hospitalVisitId, hospitalVisitIds));
+    .where(inArray(medications.hospitalVisitId, hospitalVisitIds))
+    .orderBy(desc(medications.startDate));
 
   for (const medication of rows) {
     if (medication.hospitalVisitId == null) {

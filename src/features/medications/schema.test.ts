@@ -19,6 +19,28 @@ describe("medicationFormSchema", () => {
     }
   });
 
+  it("hospitalVisitIdが空文字の場合はundefinedになる", () => {
+    const result = medicationFormSchema.safeParse({
+      ...validInput,
+      hospitalVisitId: "",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.hospitalVisitId).toBeUndefined();
+    }
+  });
+
+  it("hospitalVisitIdが指定されていればそのまま保持される", () => {
+    const result = medicationFormSchema.safeParse({
+      ...validInput,
+      hospitalVisitId: "hospital-visit-1",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.hospitalVisitId).toBe("hospital-visit-1");
+    }
+  });
+
   it("終了予定日を省略しても成功する", () => {
     const result = medicationFormSchema.safeParse({
       ...validInput,
