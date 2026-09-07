@@ -43,6 +43,13 @@
       "when": 1788744984383,
       "tag": "0005_strong_triathlon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1788745157906,
+      "tag": "0006_skinny_alice",
+      "breakpoints": true
     }
   ]
 }
