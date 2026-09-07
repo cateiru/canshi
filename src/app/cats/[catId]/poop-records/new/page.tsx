@@ -4,6 +4,8 @@ import { createPoopRecordAction } from "@/features/poop-records/actions";
 import { PoopRecordForm } from "@/features/poop-records/PoopRecordForm";
 import styles from "../page.module.css";
 
+export const dynamic = "force-dynamic";
+
 type NewPoopRecordPageProps = {
   params: Promise<{ catId: string }>;
 };
