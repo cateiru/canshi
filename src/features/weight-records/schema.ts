@@ -2,10 +2,15 @@ import { z } from "zod";
 import { TIME_STRING_PATTERN } from "@/features/shared/datetime";
 import { emptyToUndefined } from "@/features/shared/emptyToUndefined";
 
-const optionalPositiveNumber = (message: string) =>
+// 未入力（空文字・null）かどうかは refine 側の必須チェックに任せるため、
+// ここでは「数値として不正」と「0以下」を別メッセージで区別する
+const optionalPositiveNumber = (label: string) =>
   z.preprocess(
     emptyToUndefined,
-    z.coerce.number({ error: message }).positive(message).optional(),
+    z.coerce
+      .number({ error: `${label}は数値で入力してください` })
+      .positive(`${label}は0より大きい値を入力してください`)
+      .optional(),
   );
 
 export const weightRecordFormSchema = z
@@ -17,11 +22,9 @@ export const weightRecordFormSchema = z
     inputMethod: z.enum(["auto", "direct"], {
       error: "入力方法を選択してください",
     }),
-    combinedWeightKg: optionalPositiveNumber(
-      "人間を含んだ体重を入力してください",
-    ),
-    humanWeightKg: optionalPositiveNumber("人間だけの体重を入力してください"),
-    catWeightKg: optionalPositiveNumber("猫の体重を入力してください"),
+    combinedWeightKg: optionalPositiveNumber("人間を含んだ体重"),
+    humanWeightKg: optionalPositiveNumber("人間だけの体重"),
+    catWeightKg: optionalPositiveNumber("猫の体重"),
   })
   .refine(
     (data) =>

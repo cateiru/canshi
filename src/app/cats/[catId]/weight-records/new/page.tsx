@@ -4,6 +4,8 @@ import { createWeightRecordAction } from "@/features/weight-records/actions";
 import { WeightRecordForm } from "@/features/weight-records/WeightRecordForm";
 import styles from "../page.module.css";
 
+export const dynamic = "force-dynamic";
+
 type NewWeightRecordPageProps = {
   params: Promise<{ catId: string }>;
 };

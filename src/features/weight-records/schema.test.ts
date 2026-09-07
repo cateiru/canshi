@@ -52,4 +52,18 @@ describe("weightRecordFormSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("直接入力モードで猫の体重が0以下の場合、範囲エラーのメッセージになる", () => {
+    const result = weightRecordFormSchema.safeParse({
+      ...baseInput,
+      inputMethod: "direct",
+      catWeightKg: "0",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.catWeightKg?.[0]).toBe(
+        "猫の体重は0より大きい値を入力してください",
+      );
+    }
+  });
 });
