@@ -89,7 +89,14 @@ export async function deleteMedicationAction(
   // medication_doses から medications への外部キー制約があるため投薬実績も同時に削除する。
   // 2つの delete の間に別リクエストが割り込まないよう、D1 の batch で原子的に実行する
   await db.batch([
-    db.delete(medicationDoses).where(eq(medicationDoses.medicationId, id)),
+    db
+      .delete(medicationDoses)
+      .where(
+        and(
+          eq(medicationDoses.medicationId, id),
+          eq(medicationDoses.catId, catId),
+        ),
+      ),
     db
       .delete(medications)
       .where(and(eq(medications.id, id), eq(medications.catId, catId))),

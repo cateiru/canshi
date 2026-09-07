@@ -96,7 +96,7 @@ export async function deleteSymptomAction(
   await db
     .update(medications)
     .set({ symptomId: null })
-    .where(eq(medications.symptomId, id));
+    .where(and(eq(medications.symptomId, id), eq(medications.catId, catId)));
   await db
     .delete(symptoms)
     .where(and(eq(symptoms.id, id), eq(symptoms.catId, catId)));

@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { medicationDoses } from "@/db/schema";
+import { medicationDoses, medications } from "@/db/schema";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import {
   type MedicationDoseFormFieldErrors,
@@ -37,6 +37,19 @@ export async function createMedicationDoseAction(
   }
 
   const db = getDb();
+  // medicationId が catId に属することを確認してから登録する
+  // （URL の medicationId が改ざんされ、他猫の服薬予定に投薬実績が
+  // 紐付いてしまうのを防ぐ）
+  const [medication] = await db
+    .select({ id: medications.id })
+    .from(medications)
+    .where(and(eq(medications.id, medicationId), eq(medications.catId, catId)))
+    .limit(1);
+
+  if (!medication) {
+    return { formError: "服薬予定が見つかりませんでした" };
+  }
+
   await db.insert(medicationDoses).values({
     catId,
     medicationId,
@@ -76,7 +89,13 @@ export async function updateMedicationDoseAction(
       memo: parsed.data.memo ?? null,
       updatedAt: new Date(),
     })
-    .where(and(eq(medicationDoses.id, id), eq(medicationDoses.catId, catId)))
+    .where(
+      and(
+        eq(medicationDoses.id, id),
+        eq(medicationDoses.catId, catId),
+        eq(medicationDoses.medicationId, medicationId),
+      ),
+    )
     .returning({ id: medicationDoses.id });
 
   if (result.length === 0) {
@@ -94,6 +113,12 @@ export async function deleteMedicationDoseAction(
   const db = getDb();
   await db
     .delete(medicationDoses)
-    .where(and(eq(medicationDoses.id, id), eq(medicationDoses.catId, catId)));
+    .where(
+      and(
+        eq(medicationDoses.id, id),
+        eq(medicationDoses.catId, catId),
+        eq(medicationDoses.medicationId, medicationId),
+      ),
+    );
   redirect(`/cats/${catId}/medications/${medicationId}/doses`);
 }

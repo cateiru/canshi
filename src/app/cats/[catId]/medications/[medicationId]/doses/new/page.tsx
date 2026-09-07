@@ -5,6 +5,8 @@ import { MedicationDoseForm } from "@/features/medications/MedicationDoseForm";
 import { getMedicationById } from "@/features/medications/queries";
 import styles from "../page.module.css";
 
+export const dynamic = "force-dynamic";
+
 type NewMedicationDosePageProps = {
   params: Promise<{ catId: string; medicationId: string }>;
 };
