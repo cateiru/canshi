@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button, Checkbox, FormField, Textarea } from "@/components/ui";
 import type { VomitRecord } from "@/db/schema";
-import { splitDateTimeUtc } from "@/features/shared/datetime";
+import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { VomitRecordFormState } from "./actions";
 import styles from "./VomitRecordForm.module.css";
 
@@ -24,9 +24,10 @@ export function VomitRecordForm({
   submitLabel,
 }: VomitRecordFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
-  const { date: defaultDate, time: defaultTime } = splitDateTimeUtc(
-    vomitRecord?.occurredAt ?? new Date(),
-  );
+  const [now] = useState(() => new Date());
+  const { date: defaultDate, time: defaultTime } = vomitRecord?.occurredAt
+    ? splitDateTimeUtc(vomitRecord.occurredAt)
+    : getLocalNowParts(now);
 
   return (
     <form action={formAction} className={styles.form}>
