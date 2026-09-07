@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { Button, FormField, Radio, RadioGroup } from "@/components/ui";
 import type { WeightRecord } from "@/db/schema";
-import { splitDateTimeUtc } from "@/features/shared/datetime";
+import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { WeightRecordFormState } from "./actions";
 import styles from "./WeightRecordForm.module.css";
 
@@ -27,9 +27,10 @@ export function WeightRecordForm({
   const [inputMethod, setInputMethod] = useState<"auto" | "direct">(
     weightRecord?.inputMethod ?? "auto",
   );
-  const { date: defaultDate, time: defaultTime } = splitDateTimeUtc(
-    weightRecord?.occurredAt ?? new Date(),
-  );
+  const [now] = useState(() => new Date());
+  const { date: defaultDate, time: defaultTime } = weightRecord?.occurredAt
+    ? splitDateTimeUtc(weightRecord.occurredAt)
+    : getLocalNowParts(now);
 
   return (
     <form action={formAction} className={styles.form}>
