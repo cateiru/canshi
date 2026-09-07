@@ -1,0 +1,46 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-ink);
+  text-decoration: none;
+  text-align: center;
+  background-color: var(--color-bg);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition:
+    opacity var(--transition-base),
+    outline-color var(--transition-base),
+    outline-offset var(--transition-base);
+}
+
+.tile:hover {
+  opacity: 0.85;
+}
+
+.tile:focus-visible {
+  outline-color: var(--color-accent);
+}
+
+.icon {
+  width: var(--space-8);
+  height: var(--space-8);
+}
+
+.label {
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+}

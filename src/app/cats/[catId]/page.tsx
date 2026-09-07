@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Badge, ButtonLink, Card } from "@/components/ui";
+import { Badge, ButtonLink, Card, Heading } from "@/components/ui";
 import { deleteCatAction } from "@/features/cats/actions";
 import {
   calculateAge,
@@ -9,7 +9,7 @@ import {
 import { DeleteCatButton } from "@/features/cats/DeleteCatButton";
 import { SEX_LABEL } from "@/features/cats/labels";
 import { getCatById } from "@/features/cats/queries";
-import { RECORD_NAV_ITEMS } from "@/features/cats/recordNav";
+import { RecordNavGrid } from "@/features/cats/RecordNavGrid";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -52,19 +52,12 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
         </dl>
       </Card>
 
-      <Card title="記録">
-        <div className={styles.recordNav}>
-          {RECORD_NAV_ITEMS.map((item) => (
-            <ButtonLink
-              key={item.label}
-              href={item.href(cat.id)}
-              variant="secondary"
-            >
-              {item.label}
-            </ButtonLink>
-          ))}
-        </div>
-      </Card>
+      <section>
+        <Heading level={2} size="md" className={styles.recordHeading}>
+          記録
+        </Heading>
+        <RecordNavGrid catId={cat.id} />
+      </section>
 
       <div className={styles.actions}>
         <ButtonLink href={`/cats/${cat.id}/edit`} variant="secondary">
