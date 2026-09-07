@@ -9,4 +9,5 @@ export type RecordNavItem = {
 export const RECORD_NAV_ITEMS: RecordNavItem[] = [
   { href: (catId) => `/cats/${catId}/feeding-records`, label: "給餌記録" },
   { href: (catId) => `/cats/${catId}/poop-records`, label: "うんち記録" },
+  { href: (catId) => `/cats/${catId}/weight-records`, label: "体重記録" },
 ];
