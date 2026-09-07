@@ -57,16 +57,6 @@ export function PoopRecordForm({
         />
       </div>
 
-      <FormField
-        name="count"
-        label="回数"
-        type="number"
-        inputMode="numeric"
-        defaultValue={poopRecord?.count?.toString() ?? "1"}
-        errorMessage={state.fieldErrors?.count?.[0]}
-        isRequired
-      />
-
       <RadioGroup
         name="consistency"
         label="状態"

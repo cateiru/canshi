@@ -75,7 +75,7 @@ function renderBody(catId: string, entry: TimelineEntry) {
       return (
         <div className={styles.body}>
           <p>
-            {record.count}回 {CONSISTENCY_LABEL[record.consistency]}
+            {CONSISTENCY_LABEL[record.consistency]}
             {record.hasBlood ? "・血液あり" : ""}
             {record.hasForeignObject ? "・異物あり" : ""}
           </p>

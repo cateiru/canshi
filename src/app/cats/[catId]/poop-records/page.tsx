@@ -66,8 +66,6 @@ export default async function PoopRecordsPage({
             <li key={record.id}>
               <Card title={formatDateTimeUtc(record.occurredAt)}>
                 <dl className={styles.details}>
-                  <dt>回数</dt>
-                  <dd>{record.count}回</dd>
                   <dt>状態</dt>
                   <dd>{CONSISTENCY_LABEL[record.consistency]}</dd>
                   {record.amount ? (

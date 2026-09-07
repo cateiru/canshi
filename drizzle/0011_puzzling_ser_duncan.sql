@@ -1,0 +1,1 @@
+ALTER TABLE `poop_records` DROP COLUMN `count`;

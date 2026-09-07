@@ -16,7 +16,6 @@ function parseFormData(formData: FormData) {
   return poopRecordFormSchema.safeParse({
     occurredDate: formData.get("occurredDate"),
     occurredTime: formData.get("occurredTime"),
-    count: formData.get("count"),
     amount: formData.get("amount"),
     color: formData.get("color"),
     consistency: formData.get("consistency"),
@@ -46,7 +45,6 @@ export async function createPoopRecordAction(
       parsed.data.occurredDate,
       parsed.data.occurredTime,
     ),
-    count: parsed.data.count,
     amount: parsed.data.amount ?? null,
     color: parsed.data.color ?? null,
     consistency: parsed.data.consistency,
@@ -80,7 +78,6 @@ export async function updatePoopRecordAction(
         parsed.data.occurredDate,
         parsed.data.occurredTime,
       ),
-      count: parsed.data.count,
       amount: parsed.data.amount ?? null,
       color: parsed.data.color ?? null,
       consistency: parsed.data.consistency,

@@ -22,7 +22,6 @@ test("うんち記録の登録から一覧表示までできる", async ({ page 
 
   await page.getByLabel("発生日").fill("2026-09-07");
   await page.getByLabel("発生時刻").fill("08:00");
-  await page.getByLabel("回数").fill("2");
   await page.getByText("柔らかい").click();
   await page.getByLabel("量").fill("多め");
   await page.getByLabel("色").fill("茶色");
@@ -30,7 +29,6 @@ test("うんち記録の登録から一覧表示までできる", async ({ page 
   await page.getByRole("button", { name: "記録する" }).click();
 
   await expect(page).toHaveURL(/poop-records$/);
-  await expect(page.getByText("2回")).toBeVisible();
   await expect(page.getByText("柔らかい")).toBeVisible();
   await expect(page.getByText("多め")).toBeVisible();
   await expect(page.getByText("茶色")).toBeVisible();

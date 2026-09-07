@@ -10,7 +10,6 @@ export const poopRecords = sqliteTable("poop_records", {
     .notNull()
     .references(() => cats.id),
   occurredAt: integer("occurred_at", { mode: "timestamp" }).notNull(),
-  count: integer("count").notNull(),
   amount: text("amount"),
   color: text("color"),
   consistency: text("consistency", {

@@ -25,7 +25,6 @@ describe("poop_records テーブル", () => {
     await db.insert(poopRecords).values({
       catId: cat.id,
       occurredAt: new Date("2026-09-07T08:00:00.000Z"),
-      count: 1,
       consistency: "normal",
       hasBlood: true,
     });

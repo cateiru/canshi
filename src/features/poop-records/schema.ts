@@ -12,13 +12,6 @@ export const poopRecordFormSchema = z.object({
   occurredTime: z
     .string()
     .regex(TIME_STRING_PATTERN, "発生時刻の形式が正しくありません"),
-  count: z.preprocess(
-    emptyToUndefined,
-    z.coerce
-      .number({ error: "回数を入力してください" })
-      .int("回数は整数で入力してください")
-      .min(1, "回数は1以上で入力してください"),
-  ),
   amount: z.preprocess(
     emptyToUndefined,
     z.string().trim().max(50, "量は50文字以内で入力してください").optional(),
