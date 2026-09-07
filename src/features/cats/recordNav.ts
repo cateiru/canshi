@@ -13,4 +13,5 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
   { href: (catId) => `/cats/${catId}/vomit-records`, label: "嘔吐記録" },
   { href: (catId) => `/cats/${catId}/symptoms`, label: "症状記録" },
   { href: (catId) => `/cats/${catId}/medications`, label: "服薬記録" },
+  { href: (catId) => `/cats/${catId}/hospital-visits`, label: "通院記録" },
 ];

@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import { Button, FormField, Select } from "@/components/ui";
-import type { Medication, Symptom } from "@/db/schema";
+import type { HospitalVisit, Medication, Symptom } from "@/db/schema";
+import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import type { MedicationFormState } from "./actions";
 import styles from "./MedicationForm.module.css";
 
@@ -12,6 +13,7 @@ type MedicationFormProps = {
     formData: FormData,
   ) => Promise<MedicationFormState>;
   symptoms: Symptom[];
+  hospitalVisits: HospitalVisit[];
   medication?: Medication;
   submitLabel: string;
 };
@@ -21,6 +23,7 @@ const initialState: MedicationFormState = {};
 export function MedicationForm({
   action,
   symptoms,
+  hospitalVisits,
   medication,
   submitLabel,
 }: MedicationFormProps) {
@@ -31,6 +34,14 @@ export function MedicationForm({
     ...symptoms.map((symptom) => ({
       value: symptom.id,
       label: symptom.symptomType,
+    })),
+  ];
+
+  const hospitalVisitOptions = [
+    { value: "", label: "関連付けない" },
+    ...hospitalVisits.map((hospitalVisit) => ({
+      value: hospitalVisit.id,
+      label: hospitalVisitOptionLabel(hospitalVisit),
     })),
   ];
 
@@ -87,6 +98,14 @@ export function MedicationForm({
         options={symptomOptions}
         defaultSelectedKey={medication?.symptomId ?? ""}
         errorMessage={state.fieldErrors?.symptomId?.[0]}
+      />
+
+      <Select
+        name="hospitalVisitId"
+        label="処方元の通院記録"
+        options={hospitalVisitOptions}
+        defaultSelectedKey={medication?.hospitalVisitId ?? ""}
+        errorMessage={state.fieldErrors?.hospitalVisitId?.[0]}
       />
 
       {state.formError ? (

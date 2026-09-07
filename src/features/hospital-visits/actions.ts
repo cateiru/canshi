@@ -1,0 +1,108 @@
+"use server";
+
+import { eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { getDb } from "@/db/client";
+import { hospitalVisits } from "@/db/schema";
+import { combineDateTimeUtc } from "@/features/shared/datetime";
+import {
+  type HospitalVisitFormFieldErrors,
+  hospitalVisitFormSchema,
+} from "./schema";
+
+export type HospitalVisitFormState = {
+  fieldErrors?: HospitalVisitFormFieldErrors;
+  formError?: string;
+};
+
+function parseFormData(formData: FormData) {
+  return hospitalVisitFormSchema.safeParse({
+    symptomId: formData.get("symptomId"),
+    reservedDate: formData.get("reservedDate"),
+    reservedTime: formData.get("reservedTime"),
+    visitedDate: formData.get("visitedDate"),
+    visitedTime: formData.get("visitedTime"),
+    reason: formData.get("reason"),
+    diagnosis: formData.get("diagnosis"),
+    examinationResults: formData.get("examinationResults"),
+    treatment: formData.get("treatment"),
+    nextVisitDate: formData.get("nextVisitDate"),
+    nextVisitTime: formData.get("nextVisitTime"),
+    memo: formData.get("memo"),
+  });
+}
+
+function buildValues(data: ReturnType<typeof hospitalVisitFormSchema.parse>) {
+  return {
+    symptomId: data.symptomId ?? null,
+    reservedAt:
+      data.reservedDate != null && data.reservedTime != null
+        ? combineDateTimeUtc(data.reservedDate, data.reservedTime)
+        : null,
+    visitedAt: combineDateTimeUtc(data.visitedDate, data.visitedTime),
+    reason: data.reason,
+    diagnosis: data.diagnosis ?? null,
+    examinationResults: data.examinationResults ?? null,
+    treatment: data.treatment ?? null,
+    nextVisitAt:
+      data.nextVisitDate != null && data.nextVisitTime != null
+        ? combineDateTimeUtc(data.nextVisitDate, data.nextVisitTime)
+        : null,
+    memo: data.memo ?? null,
+  };
+}
+
+export async function createHospitalVisitAction(
+  catId: string,
+  _prevState: HospitalVisitFormState,
+  formData: FormData,
+): Promise<HospitalVisitFormState> {
+  const parsed = parseFormData(formData);
+
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const db = getDb();
+  await db.insert(hospitalVisits).values({
+    catId,
+    ...buildValues(parsed.data),
+  });
+
+  redirect(`/cats/${catId}/hospital-visits`);
+}
+
+export async function updateHospitalVisitAction(
+  catId: string,
+  id: string,
+  _prevState: HospitalVisitFormState,
+  formData: FormData,
+): Promise<HospitalVisitFormState> {
+  const parsed = parseFormData(formData);
+
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const db = getDb();
+  const result = await db
+    .update(hospitalVisits)
+    .set({ ...buildValues(parsed.data), updatedAt: new Date() })
+    .where(eq(hospitalVisits.id, id))
+    .returning({ id: hospitalVisits.id });
+
+  if (result.length === 0) {
+    return { formError: "通院記録が見つかりませんでした" };
+  }
+
+  redirect(`/cats/${catId}/hospital-visits`);
+}
+
+export async function deleteHospitalVisitAction(
+  catId: string,
+  id: string,
+): Promise<void> {
+  const db = getDb();
+  await db.delete(hospitalVisits).where(eq(hospitalVisits.id, id));
+  redirect(`/cats/${catId}/hospital-visits`);
+}

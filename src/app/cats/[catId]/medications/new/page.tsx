@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCatById } from "@/features/cats/queries";
+import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { createMedicationAction } from "@/features/medications/actions";
 import { MedicationForm } from "@/features/medications/MedicationForm";
 import { listSymptoms } from "@/features/symptoms/queries";
@@ -21,7 +22,10 @@ export default async function NewMedicationPage({
     notFound();
   }
 
-  const symptomList = await listSymptoms(catId);
+  const [symptomList, hospitalVisitList] = await Promise.all([
+    listSymptoms(catId),
+    listHospitalVisits(catId),
+  ]);
 
   return (
     <main className={styles.main}>
@@ -29,6 +33,7 @@ export default async function NewMedicationPage({
       <MedicationForm
         action={createMedicationAction.bind(null, catId)}
         symptoms={symptomList}
+        hospitalVisits={hospitalVisitList}
         submitLabel="登録する"
       />
     </main>

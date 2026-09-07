@@ -21,6 +21,7 @@ function parseFormData(formData: FormData) {
     appetiteNote: formData.get("appetiteNote"),
     energyNote: formData.get("energyNote"),
     status: formData.get("status"),
+    hospitalVisitId: formData.get("hospitalVisitId"),
     memo: formData.get("memo"),
   });
 }
@@ -45,6 +46,7 @@ export async function createSymptomAction(
     appetiteNote: parsed.data.appetiteNote ?? null,
     energyNote: parsed.data.energyNote ?? null,
     status: parsed.data.status,
+    hospitalVisitId: parsed.data.hospitalVisitId ?? null,
     memo: parsed.data.memo ?? null,
   });
 
@@ -73,6 +75,7 @@ export async function updateSymptomAction(
       appetiteNote: parsed.data.appetiteNote ?? null,
       energyNote: parsed.data.energyNote ?? null,
       status: parsed.data.status,
+      hospitalVisitId: parsed.data.hospitalVisitId ?? null,
       memo: parsed.data.memo ?? null,
       updatedAt: new Date(),
     })

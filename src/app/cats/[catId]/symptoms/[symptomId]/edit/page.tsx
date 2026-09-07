@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCatById } from "@/features/cats/queries";
+import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { updateSymptomAction } from "@/features/symptoms/actions";
 import { getSymptomById } from "@/features/symptoms/queries";
 import { SymptomForm } from "@/features/symptoms/SymptomForm";
@@ -24,11 +25,14 @@ export default async function EditSymptomPage({
     notFound();
   }
 
+  const hospitalVisitList = await listHospitalVisits(catId);
+
   return (
     <main className={styles.main}>
       <h1>{cat.name}の症状記録を編集する</h1>
       <SymptomForm
         action={updateSymptomAction.bind(null, catId, symptom.id)}
+        hospitalVisits={hospitalVisitList}
         symptom={symptom}
         submitLabel="更新する"
       />

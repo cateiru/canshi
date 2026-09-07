@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { Button, FormField, Select, Textarea } from "@/components/ui";
-import type { Symptom } from "@/db/schema";
+import type { HospitalVisit, Symptom } from "@/db/schema";
+import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { SymptomFormState } from "./actions";
 import styles from "./SymptomForm.module.css";
@@ -12,6 +13,7 @@ type SymptomFormProps = {
     state: SymptomFormState,
     formData: FormData,
   ) => Promise<SymptomFormState>;
+  hospitalVisits: HospitalVisit[];
   symptom?: Symptom;
   submitLabel: string;
 };
@@ -26,6 +28,7 @@ const STATUS_OPTIONS = [
 
 export function SymptomForm({
   action,
+  hospitalVisits,
   symptom,
   submitLabel,
 }: SymptomFormProps) {
@@ -34,6 +37,14 @@ export function SymptomForm({
   const { date: defaultDate, time: defaultTime } = symptom?.onsetAt
     ? splitDateTimeUtc(symptom.onsetAt)
     : getLocalNowParts(now);
+
+  const hospitalVisitOptions = [
+    { value: "", label: "関連付けない" },
+    ...hospitalVisits.map((hospitalVisit) => ({
+      value: hospitalVisit.id,
+      label: hospitalVisitOptionLabel(hospitalVisit),
+    })),
+  ];
 
   return (
     <form action={formAction} className={styles.form}>
@@ -79,6 +90,14 @@ export function SymptomForm({
         options={STATUS_OPTIONS}
         defaultSelectedKey={symptom?.status ?? "ongoing"}
         errorMessage={state.fieldErrors?.status?.[0]}
+      />
+
+      <Select
+        name="hospitalVisitId"
+        label="関連する通院記録"
+        options={hospitalVisitOptions}
+        defaultSelectedKey={symptom?.hospitalVisitId ?? ""}
+        errorMessage={state.fieldErrors?.hospitalVisitId?.[0]}
       />
 
       <FormField

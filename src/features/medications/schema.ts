@@ -26,6 +26,7 @@ export const medicationFormSchema = z
       emptyToUndefined,
       z.string().date("終了予定日の形式が正しくありません").optional(),
     ),
+    hospitalVisitId: z.preprocess(emptyToUndefined, z.string().optional()),
   })
   .refine((data) => data.endDate == null || data.endDate >= data.startDate, {
     message: "終了予定日は服用開始日以降にしてください",

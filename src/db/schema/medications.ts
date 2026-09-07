@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { cats } from "./cats";
+import { hospitalVisits } from "./hospital-visits";
 import { symptoms } from "./symptoms";
 
 /**
@@ -20,6 +21,10 @@ export const medications = sqliteTable("medications", {
   // 服用開始日・終了予定日は時刻を持たないため ISO8601 の日付文字列（YYYY-MM-DD）で保持する
   startDate: text("start_date").notNull(),
   endDate: text("end_date"),
+  // 13（通院記録）で後付けした、処方元の通院記録への外部キー
+  hospitalVisitId: text("hospital_visit_id").references(
+    () => hospitalVisits.id,
+  ),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

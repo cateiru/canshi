@@ -39,6 +39,7 @@ export const symptomFormSchema = z.object({
   status: z.enum(["ongoing", "improving", "resolved"], {
     error: "状態を選択してください",
   }),
+  hospitalVisitId: z.preprocess(emptyToUndefined, z.string().optional()),
   memo: z.preprocess(
     emptyToUndefined,
     z

@@ -11,6 +11,16 @@ export async function listMedications(catId: string) {
     .orderBy(desc(medications.startDate));
 }
 
+export async function listMedicationsByHospitalVisitId(
+  hospitalVisitId: string,
+) {
+  const db = getDb();
+  return db
+    .select()
+    .from(medications)
+    .where(eq(medications.hospitalVisitId, hospitalVisitId));
+}
+
 export async function getMedicationById(id: string) {
   const db = getDb();
   const [medication] = await db

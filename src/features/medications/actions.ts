@@ -35,6 +35,7 @@ function parseFormData(formData: FormData) {
     dosesPerDay: formData.get("dosesPerDay"),
     startDate: formData.get("startDate"),
     endDate: formData.get("endDate"),
+    hospitalVisitId: formData.get("hospitalVisitId"),
   });
 }
 
@@ -62,6 +63,7 @@ export async function createMedicationAction(
     dosesPerDay: parsed.data.dosesPerDay,
     startDate: parsed.data.startDate,
     endDate: parsed.data.endDate ?? null,
+    hospitalVisitId: parsed.data.hospitalVisitId ?? null,
   });
 
   redirect(`/cats/${catId}/medications`);
@@ -93,6 +95,7 @@ export async function updateMedicationAction(
       dosesPerDay: parsed.data.dosesPerDay,
       startDate: parsed.data.startDate,
       endDate: parsed.data.endDate ?? null,
+      hospitalVisitId: parsed.data.hospitalVisitId ?? null,
       updatedAt: new Date(),
     })
     .where(and(eq(medications.id, id), eq(medications.catId, catId)))

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
+import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { deleteMedicationAction } from "@/features/medications/actions";
 import { listMedications } from "@/features/medications/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
@@ -24,12 +26,19 @@ export default async function MedicationsPage({
     notFound();
   }
 
-  const [medicationList, symptomList] = await Promise.all([
+  const [medicationList, symptomList, hospitalVisitList] = await Promise.all([
     listMedications(catId),
     listSymptoms(catId),
+    listHospitalVisits(catId),
   ]);
   const symptomNameById = new Map(
     symptomList.map((symptom) => [symptom.id, symptom.symptomType]),
+  );
+  const hospitalVisitLabelById = new Map(
+    hospitalVisitList.map((visit) => [
+      visit.id,
+      hospitalVisitOptionLabel(visit),
+    ]),
   );
 
   return (
@@ -77,6 +86,16 @@ export default async function MedicationsPage({
                       <dd>
                         {symptomNameById.get(medication.symptomId) ??
                           "不明な症状"}
+                      </dd>
+                    </>
+                  ) : null}
+                  {medication.hospitalVisitId ? (
+                    <>
+                      <dt>処方元の通院記録</dt>
+                      <dd>
+                        {hospitalVisitLabelById.get(
+                          medication.hospitalVisitId,
+                        ) ?? "不明な通院記録"}
                       </dd>
                     </>
                   ) : null}
