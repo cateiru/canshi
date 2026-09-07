@@ -10,7 +10,8 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
     .click();
 
   await page.getByLabel("名前").fill(catName);
-  await page.getByLabel("性別").selectOption("female");
+  await page.getByLabel("性別").click();
+  await page.getByRole("option", { name: "メス" }).click();
   await page.getByLabel("生年月日").fill("2020-04-01");
   await page.getByLabel("猫種").fill("雑種");
   await page.getByLabel("お迎え日").fill("2020-06-01");
