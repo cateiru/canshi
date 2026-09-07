@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, ButtonLink, Card, Heading } from "@/components/ui";
 import { deleteCatAction } from "@/features/cats/actions";
@@ -28,6 +29,10 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
 
   return (
     <main className={styles.main}>
+      <Link href="/cats" className={styles.backLink}>
+        ← 猫一覧に戻る
+      </Link>
+
       <h1>{cat.name}</h1>
 
       <Card>
