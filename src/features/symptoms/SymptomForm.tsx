@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button, FormField, Select, Textarea } from "@/components/ui";
 import type { Symptom } from "@/db/schema";
-import { splitDateTimeUtc } from "@/features/shared/datetime";
+import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { SymptomFormState } from "./actions";
 import styles from "./SymptomForm.module.css";
 
@@ -30,9 +30,10 @@ export function SymptomForm({
   submitLabel,
 }: SymptomFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
-  const { date: defaultDate, time: defaultTime } = splitDateTimeUtc(
-    symptom?.onsetAt ?? new Date(),
-  );
+  const [now] = useState(() => new Date());
+  const { date: defaultDate, time: defaultTime } = symptom?.onsetAt
+    ? splitDateTimeUtc(symptom.onsetAt)
+    : getLocalNowParts(now);
 
   return (
     <form action={formAction} className={styles.form}>
