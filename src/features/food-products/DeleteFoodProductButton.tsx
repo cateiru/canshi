@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { addToast, Button, Modal } from "@/components/ui";
 import type { DeleteFoodProductResult } from "./actions";
@@ -14,15 +15,18 @@ export function DeleteFoodProductButton({
   action,
   foodProductName,
 }: DeleteFoodProductButtonProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
     startTransition(async () => {
       const result = await action();
+      setOpen(false);
       if (result?.error) {
         addToast({ title: result.error, color: "error" });
-        setOpen(false);
+      } else {
+        router.refresh();
       }
     });
   };

@@ -67,6 +67,8 @@ export async function updateFoodProductAction(
 
 export type DeleteFoodProductResult = { error?: string };
 
+// この Action は redirect せず、成功/失敗のどちらも戻り値で表現する。
+// 呼び出し側（クライアントコンポーネント）が結果を待ち受けて画面更新を行うため
 export async function deleteFoodProductAction(
   id: string,
 ): Promise<DeleteFoodProductResult> {
@@ -84,5 +86,5 @@ export async function deleteFoodProductAction(
   }
 
   await db.delete(foodProducts).where(eq(foodProducts.id, id));
-  redirect("/food-products");
+  return {};
 }
