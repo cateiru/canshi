@@ -34,6 +34,7 @@ export default async function HospitalVisitsPage({
     symptomList.map((symptom) => [symptom.id, symptom.symptomType]),
   );
   const prescribedMedicationsByVisit = await listMedicationsByHospitalVisitIds(
+    catId,
     visits.map((visit) => visit.id),
   );
 

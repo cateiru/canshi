@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { type Medication, medications } from "@/db/schema";
 
@@ -16,6 +16,7 @@ export async function listMedications(catId: string) {
  * 訪問件数ぶんクエリを発行する N+1 を避けるための一括取得。
  */
 export async function listMedicationsByHospitalVisitIds(
+  catId: string,
   hospitalVisitIds: string[],
 ): Promise<Map<string, Medication[]>> {
   const byVisitId = new Map<string, Medication[]>();
@@ -27,7 +28,12 @@ export async function listMedicationsByHospitalVisitIds(
   const rows = await db
     .select()
     .from(medications)
-    .where(inArray(medications.hospitalVisitId, hospitalVisitIds))
+    .where(
+      and(
+        eq(medications.catId, catId),
+        inArray(medications.hospitalVisitId, hospitalVisitIds),
+      ),
+    )
     .orderBy(desc(medications.startDate));
 
   for (const medication of rows) {
