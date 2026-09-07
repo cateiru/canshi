@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { symptoms } from "@/db/schema";
+import { hospitalVisits, medications, symptoms } from "@/db/schema";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import { type SymptomFormFieldErrors, symptomFormSchema } from "./schema";
 
@@ -11,6 +11,27 @@ export type SymptomFormState = {
   fieldErrors?: SymptomFormFieldErrors;
   formError?: string;
 };
+
+async function verifyHospitalVisitBelongsToCat(
+  db: ReturnType<typeof getDb>,
+  hospitalVisitId: string | undefined,
+  catId: string,
+): Promise<boolean> {
+  if (hospitalVisitId == null) {
+    return true;
+  }
+  const [row] = await db
+    .select({ id: hospitalVisits.id })
+    .from(hospitalVisits)
+    .where(
+      and(
+        eq(hospitalVisits.id, hospitalVisitId),
+        eq(hospitalVisits.catId, catId),
+      ),
+    )
+    .limit(1);
+  return row != null;
+}
 
 function parseFormData(formData: FormData) {
   return symptomFormSchema.safeParse({
@@ -21,6 +42,7 @@ function parseFormData(formData: FormData) {
     appetiteNote: formData.get("appetiteNote"),
     energyNote: formData.get("energyNote"),
     status: formData.get("status"),
+    hospitalVisitId: formData.get("hospitalVisitId"),
     memo: formData.get("memo"),
   });
 }
@@ -37,6 +59,16 @@ export async function createSymptomAction(
   }
 
   const db = getDb();
+  if (
+    !(await verifyHospitalVisitBelongsToCat(
+      db,
+      parsed.data.hospitalVisitId,
+      catId,
+    ))
+  ) {
+    return { formError: "関連する通院記録が見つかりませんでした" };
+  }
+
   await db.insert(symptoms).values({
     catId,
     symptomType: parsed.data.symptomType,
@@ -45,6 +77,7 @@ export async function createSymptomAction(
     appetiteNote: parsed.data.appetiteNote ?? null,
     energyNote: parsed.data.energyNote ?? null,
     status: parsed.data.status,
+    hospitalVisitId: parsed.data.hospitalVisitId ?? null,
     memo: parsed.data.memo ?? null,
   });
 
@@ -64,6 +97,16 @@ export async function updateSymptomAction(
   }
 
   const db = getDb();
+  if (
+    !(await verifyHospitalVisitBelongsToCat(
+      db,
+      parsed.data.hospitalVisitId,
+      catId,
+    ))
+  ) {
+    return { formError: "関連する通院記録が見つかりませんでした" };
+  }
+
   const result = await db
     .update(symptoms)
     .set({
@@ -73,6 +116,7 @@ export async function updateSymptomAction(
       appetiteNote: parsed.data.appetiteNote ?? null,
       energyNote: parsed.data.energyNote ?? null,
       status: parsed.data.status,
+      hospitalVisitId: parsed.data.hospitalVisitId ?? null,
       memo: parsed.data.memo ?? null,
       updatedAt: new Date(),
     })
@@ -91,8 +135,24 @@ export async function deleteSymptomAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
-  await db
-    .delete(symptoms)
-    .where(and(eq(symptoms.id, id), eq(symptoms.catId, catId)));
+  // medications.symptom_id / hospital_visits.symptom_id からの外部キー参照が
+  // あるため、症状を削除する前に参照している側の紐付けを外しておく。
+  // 3つの操作の間に別リクエストが割り込まないよう db.batch でまとめて
+  // 原子的に実行する
+  await db.batch([
+    db
+      .update(medications)
+      .set({ symptomId: null, updatedAt: new Date() })
+      .where(and(eq(medications.symptomId, id), eq(medications.catId, catId))),
+    db
+      .update(hospitalVisits)
+      .set({ symptomId: null })
+      .where(
+        and(eq(hospitalVisits.symptomId, id), eq(hospitalVisits.catId, catId)),
+      ),
+    db
+      .delete(symptoms)
+      .where(and(eq(symptoms.id, id), eq(symptoms.catId, catId))),
+  ]);
   redirect(`/cats/${catId}/symptoms`);
 }

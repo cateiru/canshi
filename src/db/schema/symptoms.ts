@@ -1,6 +1,12 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  type AnySQLiteColumn,
+  integer,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 import { cats } from "./cats";
+import { hospitalVisits } from "./hospital-visits";
 
 export const symptoms = sqliteTable("symptoms", {
   id: text("id")
@@ -19,6 +25,10 @@ export const symptoms = sqliteTable("symptoms", {
     enum: ["ongoing", "improving", "resolved"],
   }).notNull(),
   memo: text("memo"),
+  // 13（通院記録）で後付けした、紐付く通院記録への外部キー
+  hospitalVisitId: text("hospital_visit_id").references(
+    (): AnySQLiteColumn => hospitalVisits.id,
+  ),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

@@ -33,4 +33,26 @@ describe("symptomFormSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("hospitalVisitIdが空文字の場合はundefinedになる", () => {
+    const result = symptomFormSchema.safeParse({
+      ...validInput,
+      hospitalVisitId: "",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.hospitalVisitId).toBeUndefined();
+    }
+  });
+
+  it("hospitalVisitIdが指定されていればそのまま保持される", () => {
+    const result = symptomFormSchema.safeParse({
+      ...validInput,
+      hospitalVisitId: "hospital-visit-1",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.hospitalVisitId).toBe("hospital-visit-1");
+    }
+  });
 });

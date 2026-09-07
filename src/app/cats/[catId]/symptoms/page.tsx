@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
+import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import { deleteSymptomAction } from "@/features/symptoms/actions";
@@ -29,7 +31,16 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
     notFound();
   }
 
-  const records = await listSymptoms(catId);
+  const [records, hospitalVisitList] = await Promise.all([
+    listSymptoms(catId),
+    listHospitalVisits(catId),
+  ]);
+  const hospitalVisitLabelById = new Map(
+    hospitalVisitList.map((visit) => [
+      visit.id,
+      hospitalVisitOptionLabel(visit),
+    ]),
+  );
 
   return (
     <main className={styles.main}>
@@ -80,6 +91,15 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
                     <>
                       <dt>元気</dt>
                       <dd>{record.energyNote}</dd>
+                    </>
+                  ) : null}
+                  {record.hospitalVisitId ? (
+                    <>
+                      <dt>関連する通院記録</dt>
+                      <dd>
+                        {hospitalVisitLabelById.get(record.hospitalVisitId) ??
+                          "不明な通院記録"}
+                      </dd>
                     </>
                   ) : null}
                   {record.memo ? (

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCatById } from "@/features/cats/queries";
+import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { createSymptomAction } from "@/features/symptoms/actions";
 import { SymptomForm } from "@/features/symptoms/SymptomForm";
 import styles from "../page.module.css";
@@ -18,11 +19,14 @@ export default async function NewSymptomPage({ params }: NewSymptomPageProps) {
     notFound();
   }
 
+  const hospitalVisitList = await listHospitalVisits(catId);
+
   return (
     <main className={styles.main}>
       <h1>{cat.name}の症状を記録する</h1>
       <SymptomForm
         action={createSymptomAction.bind(null, catId)}
+        hospitalVisits={hospitalVisitList}
         submitLabel="記録する"
       />
     </main>
