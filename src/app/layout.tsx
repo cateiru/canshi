@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ToastRegionRoot } from "@/components/ui";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -11,7 +12,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        {children}
+        <ToastRegionRoot />
+      </body>
     </html>
   );
 }

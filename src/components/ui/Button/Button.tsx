@@ -1,15 +1,17 @@
-import type { ButtonHTMLAttributes } from "react";
-import styles from "./Button.module.css";
+"use client";
 
-export type ButtonVariant = "primary" | "secondary" | "danger";
+import {
+  Button as AriaButton,
+  type ButtonProps as AriaButtonProps,
+} from "react-aria-components";
+import { type ButtonVariant, getButtonClassName } from "./buttonStyles";
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+export type { ButtonVariant } from "./buttonStyles";
+
+export type ButtonProps = Omit<AriaButtonProps, "className"> & {
   variant?: ButtonVariant;
+  className?: string;
 };
-
-export function getButtonClassName(variant: ButtonVariant, className?: string) {
-  return [styles.button, styles[variant], className].filter(Boolean).join(" ");
-}
 
 export function Button({
   variant = "secondary",
@@ -19,5 +21,5 @@ export function Button({
 }: ButtonProps) {
   const classes = getButtonClassName(variant, className);
 
-  return <button type={type} className={classes} {...props} />;
+  return <AriaButton type={type} className={classes} {...props} />;
 }

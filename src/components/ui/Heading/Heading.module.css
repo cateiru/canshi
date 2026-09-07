@@ -1,0 +1,19 @@
+.heading {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+  color: var(--color-ink);
+}
+
+.xl {
+  font-size: var(--text-xl);
+}
+
+.lg {
+  font-size: var(--text-lg);
+}
+
+.md {
+  font-size: var(--text-md);
+}

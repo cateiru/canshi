@@ -69,7 +69,8 @@ Web フォントは読み込まず、システムフォントのみを使用す�
 - ボタンは hover で `opacity: 0.85`、押下時（active）は `translateY(1px)` でわずかに沈み込ませる
 - フォーカスリングはマウスクリックでは出さず、キーボード操作時のみ `:focus-visible` で表示する
 - フォーカスリングは `--focus-ring-width`（太さ）・`--focus-ring-offset`（要素との余白）・`--color-accent`（色）で統一する
-- 入力欄は hover・focus で枠線を `--color-info` に変える（エラー状態は hover 時も `--color-error` を維持する）
+- 入力欄（FormField・Textarea）は hover・focus で枠線を `--color-info` に変える（エラー状態は hover 時も `--color-error` を維持する）
+- 入力欄以外のインタラクティブ要素（Checkbox・Radio・Select・Tabs など）の hover・選択時の強調色は `--color-accent` を使う
 - `prefers-reduced-motion: reduce` の環境では `--transition-base` を `0ms` にしてトランジションを無効化する（`globals.css` でグローバルに対応済み）
 
 ## バッジ
@@ -83,3 +84,27 @@ Web フォントは読み込まず、システムフォントのみを使用す�
   background-color: var(--color-bg);
 }
 ```
+
+## Alert
+
+Alert はバッジと異なり、状態色（info・success・warning・error）で背景・枠線を塗りつぶし、文字色は `--color-bg` にする
+
+```css
+.alert {
+  border: 1px solid var(--color-info);
+  color: var(--color-bg);
+  background-color: var(--color-info);
+}
+```
+
+## コンポーネントの実装方針
+
+インタラクティブな UI コンポーネントは [react-aria-components](https://react-spectrum.adobe.com/react-aria/) をベースに実装する。
+
+- Button・FormField・Textarea・Select・Checkbox・Radio・Tabs・Modal・Heading・Toast は react-aria-components のコンポーネントをラップして実装する
+- 状態のスタイリングは `:hover` や `:disabled` などの擬似クラスではなく、react-aria-components が付与する `data-hovered` / `data-selected` / `data-focus-visible` などの `data-*` 属性セレクタを基本とする
+- react-aria-components の各コンポーネントは `"use client"` 境界を要求するため、これらをラップするコンポーネントのファイルにも `"use client"` を付与する
+- Badge・Card・CatEarFrame・Alert は react-aria-components に対応するプリミティブが存在しない純粋な装飾・表示用コンポーネントのため、素の HTML 要素のまま実装する（Card の見出しのみ、共通の Heading コンポーネントを利用する）
+- Toast はページ内の 1 箇所（ルートレイアウト）にのみ `ToastRegionRoot` をマウントし、`addToast()` で通知を積む
+
+コンポーネントの一覧・動作は `/dev/components`（開発時のみ表示）で確認できる。

@@ -30,7 +30,7 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
         label="名前"
         defaultValue={cat?.name}
         errorMessage={state.fieldErrors?.name?.[0]}
-        required
+        isRequired
       />
 
       <div className={styles.field}>
@@ -83,7 +83,7 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
         <p className={styles.errorMessage}>{state.formError}</p>
       ) : null}
 
-      <Button type="submit" variant="primary" disabled={isPending}>
+      <Button type="submit" variant="primary" isDisabled={isPending}>
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

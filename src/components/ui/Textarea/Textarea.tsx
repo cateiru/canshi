@@ -2,32 +2,38 @@
 
 import {
   FieldError,
-  Input,
   Label,
+  TextArea,
   TextField,
   type TextFieldProps,
 } from "react-aria-components";
-import styles from "./FormField.module.css";
+import styles from "./Textarea.module.css";
 
-export type FormFieldProps = TextFieldProps & {
+export type TextareaProps = TextFieldProps & {
   label: string;
   errorMessage?: string;
+  rows?: number;
   placeholder?: string;
 };
 
-export function FormField({
+export function Textarea({
   label,
   errorMessage,
-  placeholder,
   className,
+  rows,
+  placeholder,
   ...props
-}: FormFieldProps) {
+}: TextareaProps) {
   const classes = [styles.field, className].filter(Boolean).join(" ");
 
   return (
     <TextField {...props} isInvalid={!!errorMessage} className={classes}>
       <Label className={styles.label}>{label}</Label>
-      <Input className={styles.input} placeholder={placeholder} />
+      <TextArea
+        className={styles.input}
+        rows={rows}
+        placeholder={placeholder}
+      />
       {errorMessage ? (
         <FieldError className={styles.errorMessage}>{errorMessage}</FieldError>
       ) : null}
