@@ -20,6 +20,8 @@
   background-color: var(--color-bg);
   outline: var(--focus-ring-width) solid transparent;
   outline-offset: var(--focus-ring-offset);
+  /* 装飾用の要素のため、クリックは背後の input にそのまま届かせる */
+  pointer-events: none;
   transition:
     border-color var(--transition-base),
     outline-color var(--transition-base);
