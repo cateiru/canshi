@@ -6,6 +6,7 @@ import { getDb } from "@/db/client";
 import {
   cats,
   feedingRecords,
+  hospitalVisits,
   medicationDoses,
   medications,
   poopRecords,
@@ -90,7 +91,9 @@ export async function updateCatAction(
 export async function deleteCatAction(id: string): Promise<void> {
   const db = getDb();
   // 各記録テーブルは cats.id への外部キー制約（ON DELETE no action）を持つため、
-  // 猫本体より先に紐づく記録を削除しておく。medications.symptom_id が
+  // 猫本体より先に紐づく記録を削除しておく。symptoms と hospital_visits は
+  // 互いを参照しうるため、削除前にまず双方の紐付け（hospital_visit_id /
+  // symptom_id）を解除して循環を断ち切る。medications.symptom_id が
   // symptoms を参照しているため、medications（と、それに依存する
   // medicationDoses）は symptoms より先に削除する。途中で失敗して猫だけ残る
   // /一部の記録だけ消えるような中途半端な状態にならないよう、1つの
@@ -100,6 +103,19 @@ export async function deleteCatAction(id: string): Promise<void> {
     db.delete(poopRecords).where(eq(poopRecords.catId, id)),
     db.delete(weightRecords).where(eq(weightRecords.catId, id)),
     db.delete(vomitRecords).where(eq(vomitRecords.catId, id)),
+    db
+      .update(symptoms)
+      .set({ hospitalVisitId: null })
+      .where(eq(symptoms.catId, id)),
+    db
+      .update(medications)
+      .set({ hospitalVisitId: null })
+      .where(eq(medications.catId, id)),
+    db
+      .update(hospitalVisits)
+      .set({ symptomId: null })
+      .where(eq(hospitalVisits.catId, id)),
+    db.delete(hospitalVisits).where(eq(hospitalVisits.catId, id)),
     db.delete(medicationDoses).where(eq(medicationDoses.catId, id)),
     db.delete(medications).where(eq(medications.catId, id)),
     db.delete(symptoms).where(eq(symptoms.catId, id)),

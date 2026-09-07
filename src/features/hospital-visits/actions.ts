@@ -1,9 +1,9 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { hospitalVisits } from "@/db/schema";
+import { hospitalVisits, medications, symptoms } from "@/db/schema";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import {
   type HospitalVisitFormFieldErrors,
@@ -88,7 +88,7 @@ export async function updateHospitalVisitAction(
   const result = await db
     .update(hospitalVisits)
     .set({ ...buildValues(parsed.data), updatedAt: new Date() })
-    .where(eq(hospitalVisits.id, id))
+    .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
     .returning({ id: hospitalVisits.id });
 
   if (result.length === 0) {
@@ -103,6 +103,21 @@ export async function deleteHospitalVisitAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
-  await db.delete(hospitalVisits).where(eq(hospitalVisits.id, id));
+  // symptoms.hospital_visit_id / medications.hospital_visit_id からの外部キー
+  // 参照があるため、通院記録を削除する前に紐付けを解除しておく。3つの操作は
+  // db.batch でまとめて原子的に実行する
+  await db.batch([
+    db
+      .update(symptoms)
+      .set({ hospitalVisitId: null })
+      .where(eq(symptoms.hospitalVisitId, id)),
+    db
+      .update(medications)
+      .set({ hospitalVisitId: null })
+      .where(eq(medications.hospitalVisitId, id)),
+    db
+      .delete(hospitalVisits)
+      .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),
+  ]);
   redirect(`/cats/${catId}/hospital-visits`);
 }

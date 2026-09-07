@@ -4,7 +4,7 @@ import { ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deleteHospitalVisitAction } from "@/features/hospital-visits/actions";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
-import { listMedicationsByHospitalVisitId } from "@/features/medications/queries";
+import { listMedicationsByHospitalVisitIds } from "@/features/medications/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import { listSymptoms } from "@/features/symptoms/queries";
@@ -33,13 +33,8 @@ export default async function HospitalVisitsPage({
   const symptomNameById = new Map(
     symptomList.map((symptom) => [symptom.id, symptom.symptomType]),
   );
-  const prescribedMedicationsByVisit = new Map(
-    await Promise.all(
-      visits.map(
-        async (visit) =>
-          [visit.id, await listMedicationsByHospitalVisitId(visit.id)] as const,
-      ),
-    ),
+  const prescribedMedicationsByVisit = await listMedicationsByHospitalVisitIds(
+    visits.map((visit) => visit.id),
   );
 
   return (
