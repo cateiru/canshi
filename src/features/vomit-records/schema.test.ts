@@ -31,4 +31,17 @@ describe("vomitRecordFormSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("回数が未入力（空文字）の場合は必須エラーになる", () => {
+    const result = vomitRecordFormSchema.safeParse({
+      ...validInput,
+      count: "",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.count?.[0]).toBe(
+        "回数を入力してください",
+      );
+    }
+  });
 });

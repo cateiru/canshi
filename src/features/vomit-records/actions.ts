@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { vomitRecords } from "@/db/schema";
@@ -91,7 +91,7 @@ export async function updateVomitRecordAction(
       memo: parsed.data.memo ?? null,
       updatedAt: new Date(),
     })
-    .where(eq(vomitRecords.id, id))
+    .where(and(eq(vomitRecords.id, id), eq(vomitRecords.catId, catId)))
     .returning({ id: vomitRecords.id });
 
   if (result.length === 0) {
@@ -106,6 +106,8 @@ export async function deleteVomitRecordAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
-  await db.delete(vomitRecords).where(eq(vomitRecords.id, id));
+  await db
+    .delete(vomitRecords)
+    .where(and(eq(vomitRecords.id, id), eq(vomitRecords.catId, catId)));
   redirect(`/cats/${catId}/vomit-records`);
 }
