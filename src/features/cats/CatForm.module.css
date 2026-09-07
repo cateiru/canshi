@@ -5,27 +5,6 @@
   max-width: 800px;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.label {
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-bold);
-}
-
-.select {
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-base);
-  padding: var(--space-2) var(--space-3);
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  color: var(--color-ink);
-  background-color: var(--color-bg);
-}
-
 .errorMessage {
   font-size: var(--text-xs);
   color: var(--color-error);

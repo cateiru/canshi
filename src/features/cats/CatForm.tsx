@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button, FormField } from "@/components/ui";
+import { Button, FormField, Select } from "@/components/ui";
 import type { Cat } from "@/db/schema";
 import type { CatFormState } from "./actions";
 import styles from "./CatForm.module.css";
@@ -33,28 +33,13 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
         isRequired
       />
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="sex">
-          性別
-        </label>
-        <select
-          id="sex"
-          name="sex"
-          defaultValue={cat?.sex ?? "unknown"}
-          className={styles.select}
-        >
-          {SEX_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        {state.fieldErrors?.sex ? (
-          <span className={styles.errorMessage}>
-            {state.fieldErrors.sex[0]}
-          </span>
-        ) : null}
-      </div>
+      <Select
+        name="sex"
+        label="性別"
+        options={SEX_OPTIONS}
+        defaultSelectedKey={cat?.sex ?? "unknown"}
+        errorMessage={state.fieldErrors?.sex?.[0]}
+      />
 
       <FormField
         name="birthDate"
