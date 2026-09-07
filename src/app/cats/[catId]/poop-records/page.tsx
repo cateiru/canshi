@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FaPoop } from "react-icons/fa";
 import { Badge, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deletePoopRecordAction } from "@/features/poop-records/actions";
@@ -7,6 +8,7 @@ import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
 import { listPoopRecords } from "@/features/poop-records/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +36,9 @@ export default async function PoopRecordsPage({
       </Link>
 
       <div className={styles.header}>
-        <h1>{cat.name}のうんち記録</h1>
+        <RecordPageHeading icon={FaPoop}>
+          {cat.name}のうんち記録
+        </RecordPageHeading>
         <ButtonLink href={`/cats/${catId}/poop-records/new`} variant="primary">
           記録する
         </ButtonLink>

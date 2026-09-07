@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TbWeight } from "react-icons/tb";
 import { ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { deleteWeightRecordAction } from "@/features/weight-records/actions";
 import { INPUT_METHOD_LABEL } from "@/features/weight-records/labels";
 import { listWeightRecords } from "@/features/weight-records/queries";
@@ -34,7 +36,9 @@ export default async function WeightRecordsPage({
       </Link>
 
       <div className={styles.header}>
-        <h1>{cat.name}の体重記録</h1>
+        <RecordPageHeading icon={TbWeight}>
+          {cat.name}の体重記録
+        </RecordPageHeading>
         <ButtonLink
           href={`/cats/${catId}/weight-records/new`}
           variant="primary"

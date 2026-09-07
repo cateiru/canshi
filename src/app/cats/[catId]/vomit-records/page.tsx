@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TbToiletPaper } from "react-icons/tb";
 import { Badge, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { deleteVomitRecordAction } from "@/features/vomit-records/actions";
 import { listVomitRecords } from "@/features/vomit-records/queries";
 import styles from "./page.module.css";
@@ -33,7 +35,9 @@ export default async function VomitRecordsPage({
       </Link>
 
       <div className={styles.header}>
-        <h1>{cat.name}の嘔吐記録</h1>
+        <RecordPageHeading icon={TbToiletPaper}>
+          {cat.name}の嘔吐記録
+        </RecordPageHeading>
         <ButtonLink href={`/cats/${catId}/vomit-records/new`} variant="primary">
           記録する
         </ButtonLink>

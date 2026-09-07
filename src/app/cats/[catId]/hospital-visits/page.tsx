@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TbBuildingHospital } from "react-icons/tb";
 import { ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deleteHospitalVisitAction } from "@/features/hospital-visits/actions";
@@ -7,6 +8,7 @@ import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { listMedicationsByHospitalVisitIds } from "@/features/medications/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "./page.module.css";
 
@@ -45,7 +47,9 @@ export default async function HospitalVisitsPage({
       </Link>
 
       <div className={styles.header}>
-        <h1>{cat.name}の通院記録</h1>
+        <RecordPageHeading icon={TbBuildingHospital}>
+          {cat.name}の通院記録
+        </RecordPageHeading>
         <ButtonLink
           href={`/cats/${catId}/hospital-visits/new`}
           variant="primary"

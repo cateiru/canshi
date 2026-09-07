@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TbTemperature } from "react-icons/tb";
 import { Badge, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { deleteSymptomAction } from "@/features/symptoms/actions";
 import { STATUS_LABEL } from "@/features/symptoms/labels";
 import { listSymptoms } from "@/features/symptoms/queries";
@@ -49,7 +51,9 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
       </Link>
 
       <div className={styles.header}>
-        <h1>{cat.name}の症状記録</h1>
+        <RecordPageHeading icon={TbTemperature}>
+          {cat.name}の症状記録
+        </RecordPageHeading>
         <ButtonLink href={`/cats/${catId}/symptoms/new`} variant="primary">
           記録する
         </ButtonLink>

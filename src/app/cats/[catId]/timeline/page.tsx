@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TbTimeline } from "react-icons/tb";
 import { Button, Card, Checkbox } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { TIMELINE_TYPE_LABEL } from "@/features/timeline/labels";
 import {
   listTimelineEntries,
@@ -100,7 +102,9 @@ export default async function TimelinePage({
         ← {cat.name}のページに戻る
       </Link>
 
-      <h1>{cat.name}のタイムライン</h1>
+      <RecordPageHeading icon={TbTimeline}>
+        {cat.name}のタイムライン
+      </RecordPageHeading>
 
       <Card title="絞り込み">
         <form action={`/cats/${catId}/timeline`} className={styles.filterForm}>

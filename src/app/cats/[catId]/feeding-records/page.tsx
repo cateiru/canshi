@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TbMeat } from "react-icons/tb";
 import { ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deleteFeedingRecordAction } from "@/features/feeding-records/actions";
 import { listFeedingRecords } from "@/features/feeding-records/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +35,9 @@ export default async function FeedingRecordsPage({
       </Link>
 
       <div className={styles.header}>
-        <h1>{cat.name}の給餌記録</h1>
+        <RecordPageHeading icon={TbMeat}>
+          {cat.name}の給餌記録
+        </RecordPageHeading>
         <ButtonLink
           href={`/cats/${catId}/feeding-records/new`}
           variant="primary"

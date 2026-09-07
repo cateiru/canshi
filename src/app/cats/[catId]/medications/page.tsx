@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { RiCapsuleFill } from "react-icons/ri";
 import { ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
@@ -7,6 +8,7 @@ import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { deleteMedicationAction } from "@/features/medications/actions";
 import { listMedications } from "@/features/medications/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "./page.module.css";
 
@@ -48,7 +50,9 @@ export default async function MedicationsPage({
       </Link>
 
       <div className={styles.header}>
-        <h1>{cat.name}の服薬予定</h1>
+        <RecordPageHeading icon={RiCapsuleFill}>
+          {cat.name}の服薬予定
+        </RecordPageHeading>
         <ButtonLink href={`/cats/${catId}/medications/new`} variant="primary">
           服薬予定を登録する
         </ButtonLink>
