@@ -9,17 +9,18 @@ import {
 import { DeleteCatButton } from "@/features/cats/DeleteCatButton";
 import { SEX_LABEL } from "@/features/cats/labels";
 import { getCatById } from "@/features/cats/queries";
+import { RECORD_NAV_ITEMS } from "@/features/cats/recordNav";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
 type CatDetailPageProps = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ catId: string }>;
 };
 
 export default async function CatDetailPage({ params }: CatDetailPageProps) {
-  const { id } = await params;
-  const cat = await getCatById(id);
+  const { catId } = await params;
+  const cat = await getCatById(catId);
 
   if (!cat) {
     notFound();
@@ -49,6 +50,20 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
               : ""}
           </dd>
         </dl>
+      </Card>
+
+      <Card title="記録">
+        <div className={styles.recordNav}>
+          {RECORD_NAV_ITEMS.map((item) => (
+            <ButtonLink
+              key={item.label}
+              href={item.href(cat.id)}
+              variant="secondary"
+            >
+              {item.label}
+            </ButtonLink>
+          ))}
+        </div>
       </Card>
 
       <div className={styles.actions}>

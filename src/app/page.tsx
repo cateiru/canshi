@@ -9,6 +9,9 @@ export default function Home() {
       <ButtonLink href="/cats" variant="primary">
         猫一覧を見る
       </ButtonLink>
+      <ButtonLink href="/food-products" variant="secondary">
+        ごはん商品一覧を見る
+      </ButtonLink>
     </main>
   );
 }

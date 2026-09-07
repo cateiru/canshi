@@ -3,7 +3,14 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { cats } from "@/db/schema";
+import {
+  cats,
+  feedingRecords,
+  poopRecords,
+  symptoms,
+  vomitRecords,
+  weightRecords,
+} from "@/db/schema";
 import { type CatFormFieldErrors, catFormSchema } from "./schema";
 
 export type CatFormState = {
@@ -80,6 +87,13 @@ export async function updateCatAction(
 
 export async function deleteCatAction(id: string): Promise<void> {
   const db = getDb();
+  // 各記録テーブルは cats.id への外部キー制約（ON DELETE no action）を持つため、
+  // 猫本体より先に紐づく記録を削除しておく
+  await db.delete(feedingRecords).where(eq(feedingRecords.catId, id));
+  await db.delete(poopRecords).where(eq(poopRecords.catId, id));
+  await db.delete(weightRecords).where(eq(weightRecords.catId, id));
+  await db.delete(vomitRecords).where(eq(vomitRecords.catId, id));
+  await db.delete(symptoms).where(eq(symptoms.catId, id));
   await db.delete(cats).where(eq(cats.id, id));
   redirect("/cats");
 }
