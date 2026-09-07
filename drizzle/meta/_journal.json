@@ -15,6 +15,13 @@
       "when": 1788743360655,
       "tag": "0001_same_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788743764797,
+      "tag": "0002_blushing_the_hood",
+      "breakpoints": true
     }
   ]
 }
