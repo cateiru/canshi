@@ -8,6 +8,13 @@
       "when": 1788683601003,
       "tag": "0000_confused_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788743360655,
+      "tag": "0001_same_shocker",
+      "breakpoints": true
     }
   ]
 }
