@@ -6,6 +6,8 @@ import { getDb } from "@/db/client";
 import {
   cats,
   feedingRecords,
+  medicationDoses,
+  medications,
   poopRecords,
   symptoms,
   vomitRecords,
@@ -94,6 +96,8 @@ export async function deleteCatAction(id: string): Promise<void> {
   await db.delete(weightRecords).where(eq(weightRecords.catId, id));
   await db.delete(vomitRecords).where(eq(vomitRecords.catId, id));
   await db.delete(symptoms).where(eq(symptoms.catId, id));
+  await db.delete(medicationDoses).where(eq(medicationDoses.catId, id));
+  await db.delete(medications).where(eq(medications.catId, id));
   await db.delete(cats).where(eq(cats.id, id));
   redirect("/cats");
 }

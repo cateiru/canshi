@@ -42,4 +42,17 @@ describe("medicationFormSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("1日あたりの回数が未入力（空文字）の場合は必須エラーになる", () => {
+    const result = medicationFormSchema.safeParse({
+      ...validInput,
+      dosesPerDay: "",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.dosesPerDay?.[0]).toBe(
+        "1日あたりの回数を入力してください",
+      );
+    }
+  });
 });

@@ -14,10 +14,13 @@ export const medicationFormSchema = z
       .trim()
       .min(1, "1回量を入力してください")
       .max(50, "1回量は50文字以内で入力してください"),
-    dosesPerDay: z.coerce
-      .number({ error: "1日あたりの回数を入力してください" })
-      .int("1日あたりの回数は整数で入力してください")
-      .min(1, "1日あたりの回数は1以上で入力してください"),
+    dosesPerDay: z.preprocess(
+      emptyToUndefined,
+      z.coerce
+        .number({ error: "1日あたりの回数を入力してください" })
+        .int("1日あたりの回数は整数で入力してください")
+        .min(1, "1日あたりの回数は1以上で入力してください"),
+    ),
     startDate: z.string().date("服用開始日の形式が正しくありません"),
     endDate: z.preprocess(
       emptyToUndefined,

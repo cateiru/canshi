@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { symptoms } from "@/db/schema";
+import { medications, symptoms } from "@/db/schema";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import { type SymptomFormFieldErrors, symptomFormSchema } from "./schema";
 
@@ -91,6 +91,12 @@ export async function deleteSymptomAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
+  // medications.symptom_id からの外部キー参照があるため、症状を削除する前に
+  // 参照している服薬予定の紐付けを外しておく
+  await db
+    .update(medications)
+    .set({ symptomId: null })
+    .where(eq(medications.symptomId, id));
   await db
     .delete(symptoms)
     .where(and(eq(symptoms.id, id), eq(symptoms.catId, catId)));

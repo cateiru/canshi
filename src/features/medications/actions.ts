@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { medicationDoses, medications } from "@/db/schema";
@@ -71,7 +71,7 @@ export async function updateMedicationAction(
       endDate: parsed.data.endDate ?? null,
       updatedAt: new Date(),
     })
-    .where(eq(medications.id, id))
+    .where(and(eq(medications.id, id), eq(medications.catId, catId)))
     .returning({ id: medications.id });
 
   if (result.length === 0) {
@@ -86,8 +86,13 @@ export async function deleteMedicationAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
-  // medication_doses から medications への外部キー制約があるため、先に投薬実績を削除する
-  await db.delete(medicationDoses).where(eq(medicationDoses.medicationId, id));
-  await db.delete(medications).where(eq(medications.id, id));
+  // medication_doses から medications への外部キー制約があるため投薬実績も同時に削除する。
+  // 2つの delete の間に別リクエストが割り込まないよう、D1 の batch で原子的に実行する
+  await db.batch([
+    db.delete(medicationDoses).where(eq(medicationDoses.medicationId, id)),
+    db
+      .delete(medications)
+      .where(and(eq(medications.id, id), eq(medications.catId, catId))),
+  ]);
   redirect(`/cats/${catId}/medications`);
 }
