@@ -3,7 +3,11 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { feedingRecords, foodProducts } from "@/db/schema";
+import {
+  feedingPresetItems,
+  feedingRecordItems,
+  foodProducts,
+} from "@/db/schema";
 import {
   type FoodProductFormFieldErrors,
   foodProductFormSchema,
@@ -76,13 +80,27 @@ export async function deleteFoodProductAction(
   // food_product_id は ON DELETE 制約でこのまま削除すると失敗するため、
   // ごはん記録から参照されている場合は削除せずにエラーを返す
   const [inUse] = await db
-    .select({ id: feedingRecords.id })
-    .from(feedingRecords)
-    .where(eq(feedingRecords.foodProductId, id))
+    .select({ id: feedingRecordItems.id })
+    .from(feedingRecordItems)
+    .where(eq(feedingRecordItems.foodProductId, id))
     .limit(1);
 
   if (inUse) {
     return { error: "この商品を使ったごはん記録があるため削除できません" };
+  }
+
+  // プリセットから参照されている商品を削除すると、プリセットに壊れた参照
+  // （存在しない商品 ID）が残ってしまうため、こちらも同様にガードする
+  const [inUseByPreset] = await db
+    .select({ id: feedingPresetItems.id })
+    .from(feedingPresetItems)
+    .where(eq(feedingPresetItems.foodProductId, id))
+    .limit(1);
+
+  if (inUseByPreset) {
+    return {
+      error: "この商品を使ったプリセットがあるため削除できません",
+    };
   }
 
   await db.delete(foodProducts).where(eq(foodProducts.id, id));

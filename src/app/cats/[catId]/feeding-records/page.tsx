@@ -64,41 +64,60 @@ export default async function FeedingRecordsPage({
         </Card>
       ) : (
         <ul className={styles.list}>
-          {records.map((record) => (
-            <li key={record.id}>
-              <Card title={formatDateTimeUtc(record.occurredAt)}>
-                <dl className={styles.details}>
-                  <dt>商品</dt>
-                  <dd>{record.foodProductName}</dd>
-                  <dt>与えた量</dt>
-                  <dd>{record.givenAmountG} g</dd>
-                  <dt>残した量</dt>
-                  <dd>{record.leftoverAmountG} g</dd>
-                  <dt>推定摂取量</dt>
-                  <dd>{record.estimatedIntakeG} g</dd>
-                  <dt>推定摂取カロリー</dt>
-                  <dd>{record.estimatedKcal.toFixed(1)} kcal</dd>
-                </dl>
-                <div className={styles.cardActions}>
-                  <ButtonLink
-                    href={`/cats/${catId}/feeding-records/${record.id}/edit`}
-                    variant="secondary"
-                  >
-                    編集する
-                  </ButtonLink>
-                  <DeleteRecordButton
-                    action={deleteFeedingRecordAction.bind(
-                      null,
-                      catId,
-                      record.id,
-                    )}
-                    title="ごはん記録の削除"
-                    description="このごはん記録を削除しますか？この操作は取り消せません。"
-                  />
-                </div>
-              </Card>
-            </li>
-          ))}
+          {records.map((record) => {
+            const totalIntakeG = record.items.reduce(
+              (sum, item) => sum + item.estimatedIntakeG,
+              0,
+            );
+            const totalKcal = record.items.reduce(
+              (sum, item) => sum + item.estimatedKcal,
+              0,
+            );
+
+            return (
+              <li key={record.id}>
+                <Card title={formatDateTimeUtc(record.occurredAt)}>
+                  <ul className={styles.itemsList}>
+                    {record.items.map((item) => (
+                      <li key={item.id}>
+                        <dl className={styles.details}>
+                          <dt>商品</dt>
+                          <dd>{item.foodProductName}</dd>
+                          <dt>与えた量</dt>
+                          <dd>{item.givenAmountG} g</dd>
+                          <dt>残した量</dt>
+                          <dd>{item.leftoverAmountG} g</dd>
+                        </dl>
+                      </li>
+                    ))}
+                  </ul>
+                  <dl className={styles.details}>
+                    <dt>推定摂取量（合計）</dt>
+                    <dd>{totalIntakeG} g</dd>
+                    <dt>推定摂取カロリー（合計）</dt>
+                    <dd>{totalKcal.toFixed(1)} kcal</dd>
+                  </dl>
+                  <div className={styles.cardActions}>
+                    <ButtonLink
+                      href={`/cats/${catId}/feeding-records/${record.id}/edit`}
+                      variant="secondary"
+                    >
+                      編集する
+                    </ButtonLink>
+                    <DeleteRecordButton
+                      action={deleteFeedingRecordAction.bind(
+                        null,
+                        catId,
+                        record.id,
+                      )}
+                      title="ごはん記録の削除"
+                      description="このごはん記録を削除しますか？この操作は取り消せません。"
+                    />
+                  </div>
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       )}
     </main>

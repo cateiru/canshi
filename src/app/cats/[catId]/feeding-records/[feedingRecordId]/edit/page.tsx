@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { listFeedingPresets } from "@/features/feeding-presets/queries";
 import { updateFeedingRecordAction } from "@/features/feeding-records/actions";
 import { FeedingRecordForm } from "@/features/feeding-records/FeedingRecordForm";
 import {
@@ -29,10 +30,13 @@ export default async function EditFeedingRecordPage({
     notFound();
   }
 
-  const [foodProducts, recentlyUsedFoodProductIds] = await Promise.all([
-    listFoodProducts(),
-    listRecentlyUsedFoodProductIds(catId),
-  ]);
+  const [foodProducts, recentlyUsedFoodProductIds, presets] = await Promise.all(
+    [
+      listFoodProducts(),
+      listRecentlyUsedFoodProductIds(catId),
+      listFeedingPresets(),
+    ],
+  );
 
   return (
     <main className={styles.main}>
@@ -51,6 +55,7 @@ export default async function EditFeedingRecordPage({
         action={updateFeedingRecordAction.bind(null, catId, feedingRecord.id)}
         foodProducts={foodProducts}
         recentlyUsedFoodProductIds={recentlyUsedFoodProductIds}
+        presets={presets}
         feedingRecord={feedingRecord}
         submitLabel="更新する"
       />

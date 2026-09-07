@@ -8,13 +8,9 @@ const emptyToUndefined = (value: unknown) =>
     ? undefined
     : value;
 
-export const feedingRecordFormSchema = z
+export const feedingRecordItemFormSchema = z
   .object({
     foodProductId: z.string().trim().min(1, "商品を選択してください"),
-    occurredDate: z.string().date("発生日の形式が正しくありません"),
-    occurredTime: z
-      .string()
-      .regex(TIME_STRING_PATTERN, "発生時刻の形式が正しくありません"),
     givenAmountG: z.preprocess(
       emptyToUndefined,
       z.coerce
@@ -33,8 +29,28 @@ export const feedingRecordFormSchema = z
     path: ["leftoverAmountG"],
   });
 
+export const feedingRecordFormSchema = z.object({
+  occurredDate: z.string().date("発生日の形式が正しくありません"),
+  occurredTime: z
+    .string()
+    .regex(TIME_STRING_PATTERN, "発生時刻の形式が正しくありません"),
+  items: z
+    .array(feedingRecordItemFormSchema)
+    .min(1, "商品を1つ以上追加してください"),
+});
+
+export type FeedingRecordItemFormInput = z.infer<
+  typeof feedingRecordItemFormSchema
+>;
+
 export type FeedingRecordFormInput = z.infer<typeof feedingRecordFormSchema>;
 
-export type FeedingRecordFormFieldErrors = Partial<
-  Record<keyof FeedingRecordFormInput, string[]>
+export type FeedingRecordItemFieldErrors = Partial<
+  Record<keyof FeedingRecordItemFormInput, string[]>
 >;
+
+export type FeedingRecordFormFieldErrors = Partial<
+  Record<"occurredDate" | "occurredTime" | "items", string[]>
+> & {
+  itemErrors?: FeedingRecordItemFieldErrors[];
+};

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { listFeedingPresets } from "@/features/feeding-presets/queries";
 import { createFeedingRecordAction } from "@/features/feeding-records/actions";
 import { FeedingRecordForm } from "@/features/feeding-records/FeedingRecordForm";
 import { listRecentlyUsedFoodProductIds } from "@/features/feeding-records/queries";
@@ -23,10 +24,13 @@ export default async function NewFeedingRecordPage({
     notFound();
   }
 
-  const [foodProducts, recentlyUsedFoodProductIds] = await Promise.all([
-    listFoodProducts(),
-    listRecentlyUsedFoodProductIds(catId),
-  ]);
+  const [foodProducts, recentlyUsedFoodProductIds, presets] = await Promise.all(
+    [
+      listFoodProducts(),
+      listRecentlyUsedFoodProductIds(catId),
+      listFeedingPresets(),
+    ],
+  );
 
   const breadcrumbItems = [
     { label: "トップ", href: "/" },
@@ -61,6 +65,7 @@ export default async function NewFeedingRecordPage({
         action={createFeedingRecordAction.bind(null, catId)}
         foodProducts={foodProducts}
         recentlyUsedFoodProductIds={recentlyUsedFoodProductIds}
+        presets={presets}
         submitLabel="記録する"
       />
     </main>

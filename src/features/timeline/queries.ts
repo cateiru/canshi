@@ -1,7 +1,7 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
-  type FeedingRecord,
+  feedingRecordItems,
   feedingRecords,
   foodProducts,
   type HospitalVisit,
@@ -38,8 +38,25 @@ type TimelineEntryOf<T extends TimelineRecordType, R> = {
   record: R;
 };
 
+export type TimelineFeedingItem = {
+  id: string;
+  foodProductId: string;
+  foodProductName: string;
+  givenAmountG: number;
+  leftoverAmountG: number;
+  estimatedIntakeG: number;
+  estimatedKcal: number;
+};
+
+export type TimelineFeedingRecord = {
+  id: string;
+  catId: string;
+  occurredAt: Date;
+  items: TimelineFeedingItem[];
+};
+
 export type TimelineEntry =
-  | TimelineEntryOf<"feeding", FeedingRecord & { foodProductName: string }>
+  | TimelineEntryOf<"feeding", TimelineFeedingRecord>
   | TimelineEntryOf<"poop", PoopRecord>
   | TimelineEntryOf<"weight", WeightRecord>
   | TimelineEntryOf<"vomit", VomitRecord>
@@ -55,31 +72,68 @@ async function fetchFeedingEntries(
   limit: number,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
-  const rows = await db
+  const headers = await db
     .select({
       id: feedingRecords.id,
       catId: feedingRecords.catId,
-      foodProductId: feedingRecords.foodProductId,
-      foodProductName: foodProducts.name,
       occurredAt: feedingRecords.occurredAt,
-      givenAmountG: feedingRecords.givenAmountG,
-      leftoverAmountG: feedingRecords.leftoverAmountG,
-      estimatedIntakeG: feedingRecords.estimatedIntakeG,
-      estimatedKcal: feedingRecords.estimatedKcal,
-      createdAt: feedingRecords.createdAt,
-      updatedAt: feedingRecords.updatedAt,
     })
     .from(feedingRecords)
-    .innerJoin(foodProducts, eq(feedingRecords.foodProductId, foodProducts.id))
     .where(eq(feedingRecords.catId, catId))
     .orderBy(desc(feedingRecords.occurredAt))
     .limit(limit);
 
-  return rows.map((record) => ({
-    id: record.id,
+  if (headers.length === 0) {
+    return [];
+  }
+
+  const itemRows = await db
+    .select({
+      id: feedingRecordItems.id,
+      feedingRecordId: feedingRecordItems.feedingRecordId,
+      foodProductId: feedingRecordItems.foodProductId,
+      foodProductName: foodProducts.name,
+      givenAmountG: feedingRecordItems.givenAmountG,
+      leftoverAmountG: feedingRecordItems.leftoverAmountG,
+      estimatedIntakeG: feedingRecordItems.estimatedIntakeG,
+      estimatedKcal: feedingRecordItems.estimatedKcal,
+    })
+    .from(feedingRecordItems)
+    .innerJoin(
+      foodProducts,
+      eq(feedingRecordItems.foodProductId, foodProducts.id),
+    )
+    .where(
+      inArray(
+        feedingRecordItems.feedingRecordId,
+        headers.map((header) => header.id),
+      ),
+    )
+    .orderBy(feedingRecordItems.sortOrder);
+
+  const itemsByRecordId = new Map<string, TimelineFeedingItem[]>();
+  for (const row of itemRows) {
+    const list = itemsByRecordId.get(row.feedingRecordId) ?? [];
+    list.push({
+      id: row.id,
+      foodProductId: row.foodProductId,
+      foodProductName: row.foodProductName,
+      givenAmountG: row.givenAmountG,
+      leftoverAmountG: row.leftoverAmountG,
+      estimatedIntakeG: row.estimatedIntakeG,
+      estimatedKcal: row.estimatedKcal,
+    });
+    itemsByRecordId.set(row.feedingRecordId, list);
+  }
+
+  return headers.map((header) => ({
+    id: header.id,
     type: "feeding",
-    occurredAt: record.occurredAt,
-    record,
+    occurredAt: header.occurredAt,
+    record: {
+      ...header,
+      items: itemsByRecordId.get(header.id) ?? [],
+    },
   }));
 }
 

@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { feedingRecordFormSchema } from "./schema";
 
 const validInput = {
-  foodProductId: "food-1",
   occurredDate: "2026-09-07",
   occurredTime: "08:00",
-  givenAmountG: "30",
-  leftoverAmountG: "5",
+  items: [
+    { foodProductId: "food-1", givenAmountG: "30", leftoverAmountG: "5" },
+  ],
 };
 
 describe("feedingRecordFormSchema", () => {
@@ -15,10 +15,29 @@ describe("feedingRecordFormSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("複数商品を渡しても成功する", () => {
+    const result = feedingRecordFormSchema.safeParse({
+      ...validInput,
+      items: [
+        { foodProductId: "food-1", givenAmountG: "30", leftoverAmountG: "5" },
+        { foodProductId: "food-2", givenAmountG: "20", leftoverAmountG: "0" },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("商品が1つも無い場合は失敗する", () => {
+    const result = feedingRecordFormSchema.safeParse({
+      ...validInput,
+      items: [],
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("商品が未選択の場合は失敗する", () => {
     const result = feedingRecordFormSchema.safeParse({
       ...validInput,
-      foodProductId: "",
+      items: [{ ...validInput.items[0], foodProductId: "" }],
     });
     expect(result.success).toBe(false);
   });
@@ -26,8 +45,9 @@ describe("feedingRecordFormSchema", () => {
   it("残した量が与えた量より多い場合は失敗する", () => {
     const result = feedingRecordFormSchema.safeParse({
       ...validInput,
-      givenAmountG: "10",
-      leftoverAmountG: "20",
+      items: [
+        { foodProductId: "food-1", givenAmountG: "10", leftoverAmountG: "20" },
+      ],
     });
     expect(result.success).toBe(false);
   });

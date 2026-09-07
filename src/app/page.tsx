@@ -12,6 +12,9 @@ export default function Home() {
       <ButtonLink href="/food-products" variant="secondary">
         ごはん商品一覧を見る
       </ButtonLink>
+      <ButtonLink href="/feeding-presets" variant="secondary">
+        ごはんプリセット一覧を見る
+      </ButtonLink>
     </main>
   );
 }

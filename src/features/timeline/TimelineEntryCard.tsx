@@ -55,10 +55,12 @@ function renderBody(catId: string, entry: TimelineEntry) {
       const { record } = entry;
       return (
         <div className={styles.body}>
-          <p>
-            {record.foodProductName} 推定{record.estimatedIntakeG}g（
-            {record.estimatedKcal.toFixed(1)}kcal）
-          </p>
+          {record.items.map((item) => (
+            <p key={item.id}>
+              {item.foodProductName} 推定{item.estimatedIntakeG}g（
+              {item.estimatedKcal.toFixed(1)}kcal）
+            </p>
+          ))}
           <ButtonLink
             href={`/cats/${catId}/feeding-records/${record.id}/edit`}
             variant="secondary"
