@@ -42,6 +42,23 @@ describe("foodProductFormSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("カロリーが未入力（空文字）の場合は必須エラーになる", () => {
+    const result = foodProductFormSchema.safeParse({
+      name: "モンプチ",
+      kcalPer100g: "",
+      packageAmountG: "1500",
+      nutritionType: "complete",
+      textureType: "dry",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.kcalPer100g?.[0]).toBe(
+        "カロリー（kcal/100g）を入力してください",
+      );
+    }
+  });
+
   it("内容量が0以下の場合は失敗する", () => {
     const result = foodProductFormSchema.safeParse({
       name: "モンプチ",
