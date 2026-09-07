@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button, Modal } from "@/components/ui";
+import { addToast, Button, Modal } from "@/components/ui";
+import type { DeleteFoodProductResult } from "./actions";
 import styles from "./DeleteFoodProductButton.module.css";
 
 type DeleteFoodProductButtonProps = {
-  action: () => Promise<void>;
+  action: () => Promise<DeleteFoodProductResult>;
   foodProductName: string;
 };
 
@@ -15,6 +16,16 @@ export function DeleteFoodProductButton({
 }: DeleteFoodProductButtonProps) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const handleDelete = () => {
+    startTransition(async () => {
+      const result = await action();
+      if (result?.error) {
+        addToast({ title: result.error, color: "error" });
+        setOpen(false);
+      }
+    });
+  };
 
   return (
     <>
@@ -27,7 +38,7 @@ export function DeleteFoodProductButton({
           <Button
             variant="danger"
             isDisabled={isPending}
-            onPress={() => startTransition(action)}
+            onPress={handleDelete}
           >
             {isPending ? "削除中..." : "削除する"}
           </Button>

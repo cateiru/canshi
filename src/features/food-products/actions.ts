@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { foodProducts } from "@/db/schema";
+import { feedingRecords, foodProducts } from "@/db/schema";
 import {
   type FoodProductFormFieldErrors,
   foodProductFormSchema,
@@ -65,8 +65,24 @@ export async function updateFoodProductAction(
   redirect("/food-products");
 }
 
-export async function deleteFoodProductAction(id: string): Promise<void> {
+export type DeleteFoodProductResult = { error?: string };
+
+export async function deleteFoodProductAction(
+  id: string,
+): Promise<DeleteFoodProductResult> {
   const db = getDb();
+  // food_product_id は ON DELETE 制約でこのまま削除すると失敗するため、
+  // 給餌記録から参照されている場合は削除せずにエラーを返す
+  const [inUse] = await db
+    .select({ id: feedingRecords.id })
+    .from(feedingRecords)
+    .where(eq(feedingRecords.foodProductId, id))
+    .limit(1);
+
+  if (inUse) {
+    return { error: "この商品を使った給餌記録があるため削除できません" };
+  }
+
   await db.delete(foodProducts).where(eq(foodProducts.id, id));
   redirect("/food-products");
 }
