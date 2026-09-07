@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   Button,
   Checkbox,
@@ -10,7 +10,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import type { PoopRecord } from "@/db/schema";
-import { splitDateTimeUtc } from "@/features/shared/datetime";
+import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { PoopRecordFormState } from "./actions";
 import styles from "./PoopRecordForm.module.css";
 
@@ -31,9 +31,10 @@ export function PoopRecordForm({
   submitLabel,
 }: PoopRecordFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
-  const { date: defaultDate, time: defaultTime } = splitDateTimeUtc(
-    poopRecord?.occurredAt ?? new Date(),
-  );
+  const [now] = useState(() => new Date());
+  const { date: defaultDate, time: defaultTime } = poopRecord?.occurredAt
+    ? splitDateTimeUtc(poopRecord.occurredAt)
+    : getLocalNowParts(now);
 
   return (
     <form action={formAction} className={styles.form}>
