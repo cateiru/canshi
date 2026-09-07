@@ -4,6 +4,8 @@ import { createVomitRecordAction } from "@/features/vomit-records/actions";
 import { VomitRecordForm } from "@/features/vomit-records/VomitRecordForm";
 import styles from "../page.module.css";
 
+export const dynamic = "force-dynamic";
+
 type NewVomitRecordPageProps = {
   params: Promise<{ catId: string }>;
 };
