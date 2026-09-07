@@ -98,7 +98,7 @@ export async function deleteSymptomAction(
   await db.batch([
     db
       .update(medications)
-      .set({ symptomId: null })
+      .set({ symptomId: null, updatedAt: new Date() })
       .where(and(eq(medications.symptomId, id), eq(medications.catId, catId))),
     db
       .delete(symptoms)
