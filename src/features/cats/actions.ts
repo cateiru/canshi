@@ -90,16 +90,20 @@ export async function updateCatAction(
 export async function deleteCatAction(id: string): Promise<void> {
   const db = getDb();
   // 各記録テーブルは cats.id への外部キー制約（ON DELETE no action）を持つため、
-  // 猫本体より先に紐づく記録を削除しておく
-  // medications.symptom_id が symptoms を参照しているため、symptoms より先に
-  // medications（と、それに依存する medicationDoses）を削除する
-  await db.delete(feedingRecords).where(eq(feedingRecords.catId, id));
-  await db.delete(poopRecords).where(eq(poopRecords.catId, id));
-  await db.delete(weightRecords).where(eq(weightRecords.catId, id));
-  await db.delete(vomitRecords).where(eq(vomitRecords.catId, id));
-  await db.delete(medicationDoses).where(eq(medicationDoses.catId, id));
-  await db.delete(medications).where(eq(medications.catId, id));
-  await db.delete(symptoms).where(eq(symptoms.catId, id));
-  await db.delete(cats).where(eq(cats.id, id));
+  // 猫本体より先に紐づく記録を削除しておく。medications.symptom_id が
+  // symptoms を参照しているため、medications（と、それに依存する
+  // medicationDoses）は symptoms より先に削除する。途中で失敗して猫だけ残る
+  // /一部の記録だけ消えるような中途半端な状態にならないよう、1つの
+  // db.batch でまとめて原子的に実行する
+  await db.batch([
+    db.delete(feedingRecords).where(eq(feedingRecords.catId, id)),
+    db.delete(poopRecords).where(eq(poopRecords.catId, id)),
+    db.delete(weightRecords).where(eq(weightRecords.catId, id)),
+    db.delete(vomitRecords).where(eq(vomitRecords.catId, id)),
+    db.delete(medicationDoses).where(eq(medicationDoses.catId, id)),
+    db.delete(medications).where(eq(medications.catId, id)),
+    db.delete(symptoms).where(eq(symptoms.catId, id)),
+    db.delete(cats).where(eq(cats.id, id)),
+  ]);
   redirect("/cats");
 }

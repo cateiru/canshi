@@ -3,13 +3,29 @@
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { medicationDoses, medications } from "@/db/schema";
+import { medicationDoses, medications, symptoms } from "@/db/schema";
 import { type MedicationFormFieldErrors, medicationFormSchema } from "./schema";
 
 export type MedicationFormState = {
   fieldErrors?: MedicationFormFieldErrors;
   formError?: string;
 };
+
+async function verifySymptomBelongsToCat(
+  db: ReturnType<typeof getDb>,
+  symptomId: string | undefined,
+  catId: string,
+): Promise<boolean> {
+  if (symptomId == null) {
+    return true;
+  }
+  const [row] = await db
+    .select({ id: symptoms.id })
+    .from(symptoms)
+    .where(and(eq(symptoms.id, symptomId), eq(symptoms.catId, catId)))
+    .limit(1);
+  return row != null;
+}
 
 function parseFormData(formData: FormData) {
   return medicationFormSchema.safeParse({
@@ -34,6 +50,10 @@ export async function createMedicationAction(
   }
 
   const db = getDb();
+  if (!(await verifySymptomBelongsToCat(db, parsed.data.symptomId, catId))) {
+    return { formError: "関連する症状が見つかりませんでした" };
+  }
+
   await db.insert(medications).values({
     catId,
     symptomId: parsed.data.symptomId ?? null,
@@ -60,6 +80,10 @@ export async function updateMedicationAction(
   }
 
   const db = getDb();
+  if (!(await verifySymptomBelongsToCat(db, parsed.data.symptomId, catId))) {
+    return { formError: "関連する症状が見つかりませんでした" };
+  }
+
   const result = await db
     .update(medications)
     .set({
