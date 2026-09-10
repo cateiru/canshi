@@ -26,7 +26,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 `docs/plans/01_project_setup.md` で用意する `.env.example` を基準に、本番用の値を Cloudflare のシークレット管理（`wrangler secret put` 等）で設定する。
 
 - D1・R2 のバインディング名（`wrangler.toml` で定義）
-- Cloudflare Access の Team ドメイン・Audience タグ（`docs/plans/15_cloudflare_access.md` 参照）
+- Cloudflare Access の Team ドメイン・Audience タグ（下記「Cloudflare Access 設定」参照）
 - OpenAI API キー（第3段階の AI 機能実装時に追加）
 
 ## デプロイ手順（TODO）
@@ -75,10 +75,45 @@ MEDIA_STORAGE_LIMIT_BYTES = "10737418240"
 
 ## Cloudflare Access 設定
 
-対象ドメイン・アプリケーションの登録と許可ユーザーのポリシーは Cloudflare ダッシュボードで設定済み（2026-09 時点）。以下は未整理。
+対象ドメイン・アプリケーションの登録と許可ユーザーのポリシーは Cloudflare ダッシュボードで設定済み（2026-09 時点）。アプリケーション側でも `Cf-Access-Jwt-Assertion` の署名・issuer・audience・有効期限を検証し、Workers への直接アクセスを拒否する。
 
-- 許可するユーザー（メールアドレス等）の追加・削除の運用方法
-- `docs/plans/15_cloudflare_access.md` で実装する JWT 検証に必要な Team ドメイン・Audience タグの控え
+### Access アプリケーションと許可ポリシー
+
+1. Cloudflare Zero Trust ダッシュボードの「Access」→「Applications」で Self-hosted アプリケーションを作成し、CANSHI の公開ホスト名を登録する
+2. Allow ポリシーに利用を許可するメールアドレスまたはグループだけを登録する
+3. メンバー変更時はこの Allow ポリシーを更新し、アプリ内にはユーザー情報を持たせない
+4. アプリケーションの Overview から Application Audience（AUD）タグを控える
+5. Zero Trust の Team domain（`https://<team-name>.cloudflareaccess.com`）を控える
+
+Access は公開ホスト名へのリクエストをエッジで遮断する。アプリケーション側の JWT 検証は、`workers.dev` 等から Worker に直接到達した場合に備えた多層防御である。
+
+### Workers の環境変数
+
+Workers の Settings → Variables and Secrets に、次の Runtime 変数を設定する。どちらも秘密情報ではないが、環境ごとに異なるためリポジトリには値を保存しない。
+
+- `CLOUDFLARE_ACCESS_TEAM_DOMAIN`：`https://<team-name>.cloudflareaccess.com`
+- `CLOUDFLARE_ACCESS_AUD`：Access アプリケーションの AUD タグ
+
+`CLOUDFLARE_ACCESS_BYPASS` は本番環境に設定しない。未設定または `true` 以外では検証が有効になり、Team domain・AUD・JWT のいずれかが不正なら `403 Forbidden` を返す。
+
+`pnpm cf:deploy` は `--keep-vars` を付けてデプロイするため、ダッシュボード上の Runtime 変数を保持する。初回デプロイ前に上記2変数を設定する。
+
+### ローカル確認
+
+通常の `pnpm dev` と Docker Compose はカスタム Worker の入口を通らないため、従来どおり Access なしで動作する。Workers ランタイムでプレビューする場合は、ローカル専用の `.dev.vars` で検証をバイパスする。
+
+```bash
+cp .dev.vars.example .dev.vars
+pnpm cf:preview
+```
+
+本番相当の確認ではバイパスを削除し、Team domain と AUD を設定したうえで次を確認する。
+
+- 公開ホスト名を Access 経由で開くと画面・静的アセット・メディアを取得できる
+- JWT ヘッダーなしで Worker に直接アクセスすると `403 Forbidden` になる
+- 別アプリケーション向けまたは期限切れの JWT でも `403 Forbidden` になる
+
+公開鍵は `{Team domain}/cdn-cgi/access/certs` から取得し、Cloudflare の鍵ローテーションに追従する。取得した公開鍵は Worker isolate 内でキャッシュされる。
 
 ## 監視・運用（TODO）
 

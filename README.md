@@ -30,6 +30,15 @@ pnpm cf:deploy   # ビルド後、Cloudflare Workers へデプロイ
 
 デプロイ手順の詳細は [`docs/deploy.md`](docs/deploy.md) を参照。
 
+Workers のローカルプレビューでは Cloudflare Access JWT 検証を明示的にバイパスする。
+
+```bash
+cp .dev.vars.example .dev.vars
+pnpm cf:preview
+```
+
+`.dev.vars` はローカル専用であり、本番環境には設定しない。
+
 ## ローカル開発環境（Docker Compose）
 
 `docker compose up` のみで、D1・R2 のローカルエミュレーションを含めた開発環境を起動できる。
