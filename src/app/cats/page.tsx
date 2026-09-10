@@ -5,6 +5,7 @@ import {
   calculateDaysSinceAdoption,
   formatAge,
 } from "@/features/cats/age";
+import { CatAvatar } from "@/features/cats/CatAvatar";
 import { SEX_LABEL } from "@/features/cats/labels";
 import { listCats } from "@/features/cats/queries";
 import styles from "./page.module.css";
@@ -41,16 +42,25 @@ export default async function CatsPage() {
           {catList.map((cat) => (
             <li key={cat.id}>
               <Link href={`/cats/${cat.id}`} className={styles.cardLink}>
-                <Card title={cat.name}>
-                  <Badge>{SEX_LABEL[cat.sex]}</Badge>
-                  {cat.birthDate ? (
-                    <p>{formatAge(calculateAge(cat.birthDate))}</p>
-                  ) : null}
-                  {cat.adoptedAt ? (
-                    <p>
-                      お迎えから{calculateDaysSinceAdoption(cat.adoptedAt)}日
-                    </p>
-                  ) : null}
+                <Card title={cat.name} className={styles.card}>
+                  <div className={styles.cardBody}>
+                    <CatAvatar
+                      name={cat.name}
+                      profileMediaAssetId={cat.profileMediaAssetId}
+                    />
+                    <div>
+                      <Badge>{SEX_LABEL[cat.sex]}</Badge>
+                      {cat.birthDate ? (
+                        <p>{formatAge(calculateAge(cat.birthDate))}</p>
+                      ) : null}
+                      {cat.adoptedAt ? (
+                        <p>
+                          お迎えから{calculateDaysSinceAdoption(cat.adoptedAt)}
+                          日
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
                 </Card>
               </Link>
             </li>

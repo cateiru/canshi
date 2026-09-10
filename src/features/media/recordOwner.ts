@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  catPhotos,
   foodProducts,
   hospitalVisits,
   medications,
@@ -63,6 +64,14 @@ export async function resolveMediaRecordOwner(
         .select({ catId: hospitalVisits.catId })
         .from(hospitalVisits)
         .where(eq(hospitalVisits.id, recordId))
+        .limit(1);
+      return row ?? null;
+    }
+    case "cat_photo": {
+      const [row] = await db
+        .select({ catId: catPhotos.catId })
+        .from(catPhotos)
+        .where(eq(catPhotos.id, recordId))
         .limit(1);
       return row ?? null;
     }

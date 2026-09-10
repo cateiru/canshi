@@ -4,6 +4,7 @@ import { RiCapsuleFill } from "react-icons/ri";
 import {
   TbBuildingHospital,
   TbMeat,
+  TbPhoto,
   TbTemperature,
   TbTimeline,
   TbToiletPaper,
@@ -59,5 +60,10 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
     href: (catId) => `/cats/${catId}/hospital-visits`,
     icon: TbBuildingHospital,
     label: "通院記録",
+  },
+  {
+    href: (catId) => `/cats/${catId}/photos`,
+    icon: TbPhoto,
+    label: "写真",
   },
 ];

@@ -1,6 +1,8 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  type CatPhoto,
+  catPhotos,
   feedingRecordItems,
   feedingRecords,
   foodProducts,
@@ -18,6 +20,7 @@ import {
   type WeightRecord,
   weightRecords,
 } from "@/db/schema";
+import { CAT_PHOTO_MEDIA_TYPE } from "@/features/cat-photos/media";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
 import {
   listMediaAssetsForRecords,
@@ -37,6 +40,7 @@ export const TIMELINE_RECORD_TYPES = [
   "symptom",
   "medicationDose",
   "hospitalVisit",
+  "catPhoto",
 ] as const;
 
 export type TimelineRecordType = (typeof TIMELINE_RECORD_TYPES)[number];
@@ -53,6 +57,7 @@ const TIMELINE_MEDIA_RECORD_TYPES: Partial<
   symptom: SYMPTOM_MEDIA_TYPE,
   // 服薬は予定（medications）に添付するため、投薬実績（medicationDose）のエントリには表示しない
   hospitalVisit: HOSPITAL_VISIT_MEDIA_TYPE,
+  catPhoto: CAT_PHOTO_MEDIA_TYPE,
 };
 
 type TimelineEntryOf<T extends TimelineRecordType, R> = {
@@ -91,7 +96,8 @@ export type TimelineEntry =
       "medicationDose",
       MedicationDose & { medicationName: string }
     >
-  | TimelineEntryOf<"hospitalVisit", HospitalVisit>;
+  | TimelineEntryOf<"hospitalVisit", HospitalVisit>
+  | TimelineEntryOf<"catPhoto", CatPhoto>;
 
 async function fetchFeedingEntries(
   catId: string,
@@ -301,6 +307,27 @@ async function fetchHospitalVisitEntries(
   }));
 }
 
+async function fetchCatPhotoEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(catPhotos)
+    .where(eq(catPhotos.catId, catId))
+    .orderBy(desc(catPhotos.takenAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "catPhoto",
+    occurredAt: record.takenAt,
+    media: [],
+    record,
+  }));
+}
+
 const FETCHERS: Record<
   TimelineRecordType,
   (catId: string, limit: number) => Promise<TimelineEntry[]>
@@ -312,6 +339,7 @@ const FETCHERS: Record<
   symptom: fetchSymptomEntries,
   medicationDose: fetchMedicationDoseEntries,
   hospitalVisit: fetchHospitalVisitEntries,
+  catPhoto: fetchCatPhotoEntries,
 };
 
 export type ListTimelineEntriesOptions = {

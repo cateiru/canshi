@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { TbChevronLeft, TbChevronRight, TbVideo } from "react-icons/tb";
 import { Button, Modal } from "@/components/ui";
 import styles from "./MediaGallery.module.css";
@@ -21,6 +21,11 @@ export type MediaGalleryProps = {
   fit?: MediaGalleryFit;
   /** モーダルのタイトル（スクリーンリーダー向け） */
   title?: string;
+  /** サムネイルに印を付ける添付（プロフィール画像など）と、その印のラベル */
+  markedAssetId?: string | null;
+  markedLabel?: string;
+  /** モーダル内の操作ボタン（表示中の添付に対する操作） */
+  renderActions?: (asset: MediaAssetView) => ReactNode;
 };
 
 /**
@@ -31,6 +36,9 @@ export function MediaGallery({
   variant = "grid",
   fit = "contain",
   title = "添付",
+  markedAssetId,
+  markedLabel = "選択中",
+  renderActions,
 }: MediaGalleryProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -65,6 +73,9 @@ export function MediaGallery({
                 <span className={styles.badge} aria-hidden="true">
                   <TbVideo />
                 </span>
+              ) : null}
+              {markedAssetId != null && asset.id === markedAssetId ? (
+                <span className={styles.mark}>{markedLabel}</span>
               ) : null}
             </button>
           </li>
@@ -131,6 +142,9 @@ export function MediaGallery({
                 閉じる
               </Button>
             </div>
+            {renderActions ? (
+              <div className={styles.actions}>{renderActions(current)}</div>
+            ) : null}
           </div>
         ) : null}
       </Modal>

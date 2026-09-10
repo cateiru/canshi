@@ -1,3 +1,5 @@
+import { CAT_PHOTO_MEDIA_TYPE } from "@/features/cat-photos/media";
+import { syncCatProfileImage } from "@/features/cats/profileImage";
 import { resolveMediaRecordOwner } from "@/features/media/recordOwner";
 import {
   DEV_MEDIA_RECORD_TYPE,
@@ -69,6 +71,10 @@ export async function POST(request: Request) {
       file,
       thumbnail: thumbnail instanceof Blob ? thumbnail : null,
     });
+    if (recordType === CAT_PHOTO_MEDIA_TYPE && catId) {
+      // 写真を追加するたびに最新の写真でプロフィール画像を更新する（固定中は変更しない）
+      await syncCatProfileImage(catId);
+    }
     return Response.json({ asset: toMediaAssetView(asset) }, { status: 201 });
   } catch (error) {
     if (error instanceof MediaUploadError) {

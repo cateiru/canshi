@@ -199,6 +199,20 @@ function renderBody(catId: string, entry: TimelineEntry) {
         </div>
       );
     }
+    case "catPhoto": {
+      const { record } = entry;
+      return (
+        <div className={styles.body}>
+          {record.memo ? <p>{record.memo}</p> : null}
+          <ButtonLink
+            href={`/cats/${catId}/photos/${record.id}/edit`}
+            variant="secondary"
+          >
+            編集する
+          </ButtonLink>
+        </div>
+      );
+    }
     default: {
       const exhaustiveCheck: never = entry;
       return exhaustiveCheck;

@@ -115,3 +115,23 @@
   display: flex;
   gap: var(--space-2);
 }
+
+.mark {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-base);
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.6;
+  pointer-events: none;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

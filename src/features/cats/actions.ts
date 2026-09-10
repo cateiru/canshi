@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
+  catPhotos,
   cats,
   feedingRecords,
   hospitalVisits,
@@ -123,6 +124,7 @@ export async function deleteCatAction(id: string): Promise<void> {
     db.delete(medicationDoses).where(eq(medicationDoses.catId, id)),
     db.delete(medications).where(eq(medications.catId, id)),
     db.delete(symptoms).where(eq(symptoms.catId, id)),
+    db.delete(catPhotos).where(eq(catPhotos.catId, id)),
     db.delete(cats).where(eq(cats.id, id)),
   ]);
   redirect("/cats");

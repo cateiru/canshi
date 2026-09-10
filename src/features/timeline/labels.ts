@@ -4,6 +4,7 @@ import { RiCapsuleFill } from "react-icons/ri";
 import {
   TbBuildingHospital,
   TbMeat,
+  TbPhoto,
   TbTemperature,
   TbToiletPaper,
   TbWeight,
@@ -18,6 +19,7 @@ export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
   symptom: "症状",
   medicationDose: "服薬",
   hospitalVisit: "通院",
+  catPhoto: "写真",
 };
 
 export const TIMELINE_TYPE_ICON: Record<TimelineRecordType, IconType> = {
@@ -28,4 +30,5 @@ export const TIMELINE_TYPE_ICON: Record<TimelineRecordType, IconType> = {
   symptom: TbTemperature,
   medicationDose: RiCapsuleFill,
   hospitalVisit: TbBuildingHospital,
+  catPhoto: TbPhoto,
 };
