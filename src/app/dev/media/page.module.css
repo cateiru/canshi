@@ -1,0 +1,53 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fileLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.thumbnail {
+  display: block;
+  max-width: 256px;
+  height: auto;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+}
+
+.json {
+  width: 100%;
+  overflow-x: auto;
+  padding: var(--space-3);
+  font-size: var(--text-xs);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+}

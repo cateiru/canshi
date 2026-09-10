@@ -39,6 +39,39 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - ステージング環境を用意するかどうか
 - マイグレーション（`wrangler d1 migrations apply`）の本番適用フロー
 
+## R2 バケット（メディア）
+
+写真・動画の本体とサムネイルは `wrangler.toml` の `[[r2_buckets]]`（バインディング名 `MEDIA_BUCKET`、バケット名 `canshi-media`）に保存する。ローカル開発では Miniflare が `.wrangler/state` 配下にエミュレートするため、バケットの作成は不要。
+
+### 本番バケットの作成
+
+```sh
+wrangler r2 bucket create canshi-media
+```
+
+- バケットは非公開のまま運用する（パブリックアクセス・カスタムドメインは設定しない）。配信はアプリの `GET /media/[assetId]` 経由で行い、Cloudflare Access で保護する
+- オブジェクトキーは `{recordType}/{recordId}/{assetId}`（元データ）と `{recordType}/{recordId}/{assetId}.thumb.webp`（サムネイル）
+
+### 上限値
+
+1 ファイルあたりの上限と合計の保存容量は環境変数で上書きできる（既定値は画像 10 MB／動画 100 MB／合計 10 GB）。`wrangler.toml` の `[vars]` またはダッシュボードで設定する。
+
+```toml
+[vars]
+MEDIA_MAX_IMAGE_BYTES = "10485760"
+MEDIA_MAX_VIDEO_BYTES = "104857600"
+MEDIA_STORAGE_LIMIT_BYTES = "10737418240"
+```
+
+- 合計容量は `media_assets.size_bytes` と `thumbnail_size_bytes` の合計で判定する。R2 の実使用量とは独立した値のため、R2 側のオブジェクトを直接操作した場合はずれる
+- Workers のメモリ上限（128 MB）の都合上、動画の上限を 100 MB より大きくすることは推奨しない。アップロード時にリクエスト本体をメモリに展開するため、大きすぎる値はメモリ不足で失敗する
+- サムネイル生成（WASM）は CPU 時間を消費する。Workers Free プランの CPU 時間上限（10 ms／リクエスト）では大きな画像の処理が失敗するため、Paid プランを前提とする
+
+### 容量の監視
+
+- ダッシュボードの R2 ページでバケットの使用量を確認する。R2 の無料枠（10 GB／月）を超えないよう、`MEDIA_STORAGE_LIMIT_BYTES` は無料枠以下に保つ
+- 記録・猫の削除時にアプリが R2 のオブジェクトも削除するが、R2 の削除だけ失敗した場合は `media_assets` 行が残る（再度削除すれば片付く）。行の削除後に R2 側だけ残る孤立オブジェクトは発生しない設計だが、念のため定期的に `wrangler r2 object list` 等で確認する
+
 ## Cloudflare Access 設定
 
 対象ドメイン・アプリケーションの登録と許可ユーザーのポリシーは Cloudflare ダッシュボードで設定済み（2026-09 時点）。以下は未整理。

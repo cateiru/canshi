@@ -34,9 +34,16 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 ## 画像・動画（`media_assets`）
 
 - 画像・動画は個別の記録テーブルにカラムを持たせず、`media_assets` テーブルで一元管理する
-- `recordType`（例: `"poop_record"`）+ `recordId` の polymorphic な組で対象レコードに紐付ける
+- `recordType`（例: `"poop_record"`）+ `recordId` の polymorphic な組で対象レコードに紐付ける。使える `recordType` は `src/features/media/recordTypes.ts` で管理する
 - `catId` は猫に紐付かないメディア（ごはん商品画像など）を許容するため nullable
-- MVP では書き込みロジックを実装せず、テーブル定義のみ用意する。実際の R2 連携・アップロード実装は第2段階以降の PR で行う
+- 書き込み実装済み（`docs/plans/18_media_upload_foundation.md`）。R2 との連携・行の作成・削除は `src/features/media/storage.ts` に集約し、Route Handler・各記録の削除アクションはこれを通して操作する
+  - `objectKey`・`thumbnailObjectKey`：R2 のオブジェクトキー（`{recordType}/{recordId}/{assetId}` と `...{assetId}.thumb.webp`）
+  - `mimeType`：先頭バイトで判定した形式（`Content-Type` ヘッダは信用しない）
+  - `sizeBytes`・`thumbnailSizeBytes`：容量集計用。保存容量の上限判定は両者の `SUM` で行う
+  - `width`・`height`：画像本体、または動画サムネイルの寸法（EXIF の回転を適用後）
+  - `sortOrder`：同一レコード内の表示順
+  - `(record_type, record_id)` にインデックス
+- 記録を削除するときは、レコード本体より先に `deleteMediaAssetsByRecord(recordType, recordId)` を呼んで R2 のオブジェクトと行をまとめて削除する
 
 ## AI 評価結果（`ai_evaluations`）
 
