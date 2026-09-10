@@ -9,18 +9,27 @@ import {
 } from "@cf-wasm/photon/others";
 import photonWasm from "@cf-wasm/photon/photon.wasm?module";
 import type { ExifOrientation } from "./exif";
+import { calculateThumbnailSize } from "./thumbnailSize";
+
+export {
+  calculateThumbnailSize,
+  MAX_DECODE_PIXELS,
+  THUMBNAIL_MAX_EDGE,
+} from "./thumbnailSize";
 
 /**
  * 画像サムネイルの生成。Workers 上でアップロード時に同期生成する。
  * WASM の画像処理ライブラリ photon を使い、長辺 512px の WebP を出力する。
+ *
+ * photon は画像全体を RGBA に展開するため、高解像度の写真をそのまま渡すと Workers の
+ * メモリ上限（128 MB）を超える。呼び出し側はブラウザで縮小したサムネイル候補を渡すか、
+ * `MAX_DECODE_PIXELS` 以下であることをヘッダーで確認してから渡すこと
  *
  * `@cf-wasm/photon` の `workerd` / `node` エントリはそれぞれ静的 .wasm import と
  * 実行時コンパイル（Workers では禁止）に依存し、next dev（Node）・OpenNext（workerd）・
  * Vitest の 3 環境で共通に使えない。そのため `others` エントリに `?module` 付き import で
  * 得た `WebAssembly.Module` を渡して自前で初期化する
  */
-
-export const THUMBNAIL_MAX_EDGE = 512;
 
 export type ThumbnailResult = {
   bytes: Uint8Array;
@@ -36,26 +45,6 @@ function ensurePhoton() {
   if (!initPhoton.initialized) {
     initPhoton.sync({ module: photonWasm });
   }
-}
-
-/**
- * 長辺が maxEdge に収まるよう、アスペクト比を保ったサムネイルの寸法を計算する。
- * 元画像が maxEdge 以下ならそのままの寸法を返す
- */
-export function calculateThumbnailSize(
-  width: number,
-  height: number,
-  maxEdge: number = THUMBNAIL_MAX_EDGE,
-): { width: number; height: number } {
-  const longest = Math.max(width, height);
-  if (longest <= maxEdge) {
-    return { width, height };
-  }
-  const scale = maxEdge / longest;
-  return {
-    width: Math.max(1, Math.round(width * scale)),
-    height: Math.max(1, Math.round(height * scale)),
-  };
 }
 
 /**

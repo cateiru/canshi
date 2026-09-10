@@ -7,7 +7,8 @@ import {
   detachProfileImages,
   syncCatProfileImage,
 } from "@/features/cats/profileImage";
-import { sanitizeImage } from "./exif";
+import { type ExifOrientation, sanitizeImage } from "./exif";
+import { orientedDimensions, parseImageDimensions } from "./imageDimensions";
 import {
   formatBytes,
   hasStorageCapacity,
@@ -25,6 +26,7 @@ import {
 import { buildObjectKey, buildThumbnailObjectKey } from "./objectKey";
 import { nextMediaSortOrder, sumMediaStorageBytes } from "./queries";
 import { generateImageThumbnail } from "./thumbnail";
+import { MAX_DECODE_PIXELS } from "./thumbnailSize";
 
 /**
  * R2 と `media_assets` を扱う共通処理。
@@ -51,8 +53,9 @@ export type StoreMediaAssetInput = {
   /** アップロードされたファイル本体 */
   file: Blob;
   /**
-   * 動画の場合にブラウザ側で切り出した先頭フレーム画像。
-   * Workers 側では動画をデコードしないため、動画では必須
+   * ブラウザ側で縮小したサムネイル候補の画像。
+   * 動画は Workers 側でデコードしないため必須。画像は任意だが、これがない場合は
+   * `MAX_DECODE_PIXELS` 以下の画像しか Workers 側でデコードしない（メモリ上限対策）
    */
   thumbnail?: Blob | null;
 };
@@ -78,24 +81,96 @@ type PreparedOriginal = {
   height: number;
 };
 
-async function prepareImage(
-  file: Blob,
+type DecodedThumbnail = {
+  bytes: Uint8Array;
+  /** 回転補正後の入力画像の寸法 */
+  sourceWidth: number;
+  sourceHeight: number;
+};
+
+/**
+ * 画像をデコードして 512px の WebP サムネイルを作る。
+ * photon は画像全体を RGBA に展開するため、ヘッダーの寸法が `MAX_DECODE_PIXELS` を超える
+ * 画像はデコードせずに拒否する（Workers のメモリ上限を超えてクラッシュするのを防ぐ）
+ */
+function decodeThumbnail(
+  bytes: Uint8Array,
   mimeType: SupportedImageMimeType,
-): Promise<PreparedOriginal> {
-  const original = new Uint8Array(await file.arrayBuffer());
-  const { bytes, orientation } = sanitizeImage(original, mimeType);
-  let thumbnail: ReturnType<typeof generateImageThumbnail>;
+  orientation: ExifOrientation,
+  tooLargeMessage: string,
+): DecodedThumbnail {
+  const dimensions = parseImageDimensions(bytes, mimeType);
+  if (!dimensions) {
+    throw new MediaUploadError("画像を読み込めませんでした");
+  }
+  if (dimensions.width * dimensions.height > MAX_DECODE_PIXELS) {
+    throw new MediaUploadError(tooLargeMessage);
+  }
   try {
-    thumbnail = generateImageThumbnail(bytes, orientation);
+    const thumbnail = generateImageThumbnail(bytes, orientation);
+    return {
+      bytes: thumbnail.bytes,
+      sourceWidth: thumbnail.sourceWidth,
+      sourceHeight: thumbnail.sourceHeight,
+    };
   } catch {
     throw new MediaUploadError("画像を読み込めませんでした");
   }
+}
+
+/**
+ * ブラウザ側で縮小したサムネイル候補を検証し、元画像と同じ経路（メタデータ除去・512px 化）でサムネイルにする
+ */
+async function prepareThumbnailSource(
+  thumbnailSource: Blob,
+): Promise<DecodedThumbnail> {
+  const sniffed = await sniffBlob(thumbnailSource);
+  if (sniffed?.kind !== "image") {
+    throw new MediaUploadError("サムネイルが画像ではありません");
+  }
+  const { bytes, orientation } = sanitizeImage(
+    new Uint8Array(await thumbnailSource.arrayBuffer()),
+    sniffed.mimeType,
+  );
+  return decodeThumbnail(
+    bytes,
+    sniffed.mimeType,
+    orientation,
+    "サムネイル画像が大きすぎます",
+  );
+}
+
+async function prepareImage(
+  file: Blob,
+  mimeType: SupportedImageMimeType,
+  thumbnailSource: Blob | null | undefined,
+): Promise<PreparedOriginal> {
+  const original = new Uint8Array(await file.arrayBuffer());
+  const { bytes, orientation } = sanitizeImage(original, mimeType);
+  // 元画像の寸法はデコードせずヘッダーから読む（Orientation による 90 度回転を反映する）
+  const dimensions = parseImageDimensions(bytes, mimeType);
+  if (!dimensions) {
+    throw new MediaUploadError("画像を読み込めませんでした");
+  }
+  const oriented = orientedDimensions(dimensions, orientation);
+
+  // ブラウザ側で縮小した候補があればそれだけをデコードし、元画像はデコードしない。
+  // ない場合（古いクライアントやブラウザで縮小に失敗した場合）は小さい画像に限って Workers 側で生成する
+  const thumbnail =
+    thumbnailSource && thumbnailSource.size > 0
+      ? await prepareThumbnailSource(thumbnailSource)
+      : decodeThumbnail(
+          bytes,
+          mimeType,
+          orientation,
+          "画像が大きすぎるためサムネイルを作成できませんでした。もう一度お試しください",
+        );
   return {
     body: bytes,
     sizeBytes: bytes.byteLength,
     thumbnail: thumbnail.bytes,
-    width: thumbnail.sourceWidth,
-    height: thumbnail.sourceHeight,
+    width: oriented.width,
+    height: oriented.height,
   };
 }
 
@@ -106,19 +181,15 @@ async function prepareVideo(
   if (!thumbnailSource || thumbnailSource.size === 0) {
     throw new MediaUploadError("動画にはサムネイル画像を添えてください");
   }
-  const sniffed = await sniffBlob(thumbnailSource);
-  if (sniffed?.kind !== "image") {
-    throw new MediaUploadError("動画のサムネイルが画像ではありません");
-  }
-  // ブラウザが生成したサムネイルも元画像と同じ経路（メタデータ除去・512px 化）を通す
-  const prepared = await prepareImage(thumbnailSource, sniffed.mimeType);
+  const thumbnail = await prepareThumbnailSource(thumbnailSource);
   return {
     // 動画はメモリ上にコピーを作らず Blob のまま R2 に渡す
     body: file,
     sizeBytes: file.size,
-    thumbnail: prepared.thumbnail,
-    width: prepared.width,
-    height: prepared.height,
+    thumbnail: thumbnail.bytes,
+    // 動画の寸法は記録できないため、サムネイル（縮小済みフレーム）の寸法を表示レイアウト用に使う
+    width: thumbnail.sourceWidth,
+    height: thumbnail.sourceHeight,
   };
 }
 
@@ -153,7 +224,7 @@ export async function storeMediaAsset(
 
   const prepared =
     sniffed.kind === "image"
-      ? await prepareImage(file, sniffed.mimeType)
+      ? await prepareImage(file, sniffed.mimeType, input.thumbnail)
       : await prepareVideo(file, input.thumbnail);
 
   const usedBytes = await sumMediaStorageBytes();

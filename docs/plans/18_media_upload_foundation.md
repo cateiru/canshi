@@ -13,7 +13,7 @@
   - 元データは再エンコードせず、JPEG の APP1／APP2 セグメント、PNG の `eXIf`・`tEXt`・`iTXt`・`zTXt` チャンク、WebP の `EXIF`・`XMP ` チャンクをバイト列レベルで除去する（画質劣化を避けるため）
   - 動画のメタデータ除去は本 PR では行わない（後述の制約）
 - サムネイル生成
-  - 画像：Workers 上でアップロード時に同期生成する（WASM の画像処理ライブラリを利用。候補は `@cf-wasm/photon`）。長辺 512px の WebP とする
+  - 画像：ブラウザ側で長辺 1024px に縮小したサムネイル候補を元データと同時に送り、Workers 上で WASM の画像処理ライブラリ（`@cf-wasm/photon`）により長辺 512px の WebP にする。Workers は元画像をデコードしない（photon は画像全体を RGBA に展開するため、高解像度写真をそのまま処理すると Workers のメモリ上限 128 MB を超える）。候補がない場合は 4 MP 以下の画像に限って Workers 側で生成する
   - 動画：ブラウザ側で `<video>` + `<canvas>` により先頭フレームを切り出し、元データと同時にサムネイルとして送信する。Workers 側では動画のデコードを行わない
 - 配信用 Route Handler
   - `GET /media/[assetId]` で元データ、`GET /media/[assetId]/thumbnail` でサムネイルを R2 から取得し、ストリーミングで返す

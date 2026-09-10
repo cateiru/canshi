@@ -56,3 +56,39 @@ test("非対応の形式はエラーメッセージが表示される", async ({
   const card = page.getByRole("heading", { name: fileName }).locator("..");
   await expect(card.getByRole("alert")).toContainText("対応していない形式");
 });
+
+// Workers は元画像をデコードしない（メモリ上限対策）。4 MP を超える画像はブラウザ側で縮小した
+// サムネイル候補があれば登録でき、候補なしで API を直接呼んだ場合は拒否される
+test("4 MP を超える画像はブラウザ側の縮小経由で登録でき、縮小なしの直接アップロードは拒否される", async ({
+  page,
+}) => {
+  const large = Buffer.from(solidPng(4000, 3000, [0, 128, 255, 255]));
+
+  await page.goto("/dev/media");
+  const fileName = `large-${Date.now()}.png`;
+  await page.locator('input[type="file"]').setInputFiles({
+    name: fileName,
+    mimeType: "image/png",
+    buffer: large,
+  });
+  const card = page.getByRole("heading", { name: fileName }).locator("..");
+  await expect(card.locator("pre")).toContainText('"width": 4000');
+  await expect(card.locator("pre")).toContainText('"height": 3000');
+  const thumbnail = card.getByRole("img", { name: fileName });
+  await expect
+    .poll(() => thumbnail.evaluate((el: HTMLImageElement) => el.naturalWidth))
+    .toBe(512);
+  await card.getByRole("button", { name: "削除する" }).click();
+  await expect(page.getByRole("heading", { name: fileName })).toHaveCount(0);
+
+  const recordId = await page.locator('input[name="recordId"]').inputValue();
+  const response = await page.request.post("/api/media", {
+    multipart: {
+      recordType: "dev",
+      recordId,
+      file: { name: fileName, mimeType: "image/png", buffer: large },
+    },
+  });
+  expect(response.status()).toBe(400);
+  expect((await response.json()).error).toContain("画像が大きすぎる");
+});

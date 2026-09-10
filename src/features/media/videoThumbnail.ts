@@ -1,11 +1,15 @@
+import { drawToThumbnailCanvas } from "./imageThumbnail";
+
 /**
  * ブラウザ側で動画の先頭フレームを切り出し、サムネイル用の画像 Blob を作る。
  * Workers 上では動画をデコードしないため、動画のアップロード時は元データと一緒にこの画像を送る。
- * サムネイルのリサイズ・WebP 化はサーバー側で行うため、ここでは動画の解像度のまま JPEG に描画する
+ * 最終的な WebP 化はサーバー側で行うが、Workers のメモリ上限に収まるよう長辺は
+ * `CLIENT_THUMBNAIL_MAX_EDGE` まで縮小して JPEG に描画する
  */
 
 export type VideoThumbnail = {
   blob: Blob;
+  /** 動画の解像度（縮小前） */
   width: number;
   height: number;
 };
@@ -50,15 +54,11 @@ export function createVideoThumbnail(file: Blob): Promise<VideoThumbnail> {
         fail("動画の解像度を取得できませんでした");
         return;
       }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext("2d");
-      if (!context) {
+      const canvas = drawToThumbnailCanvas(video, width, height);
+      if (!canvas) {
         fail("サムネイルの描画に失敗しました");
         return;
       }
-      context.drawImage(video, 0, 0, width, height);
       canvas.toBlob(
         (blob) => {
           cleanup();
