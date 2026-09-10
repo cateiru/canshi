@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, inArray, like } from "drizzle-orm";
+import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { catPhotos, cats, mediaAssets } from "@/db/schema";
 import { CAT_PHOTO_MEDIA_TYPE } from "@/features/cat-photos/media";
@@ -81,10 +82,17 @@ export async function detachProfileImages(
     return [];
   }
   const db = getDb();
-  const affected = await db
-    .update(cats)
-    .set({ profileMediaAssetId: null })
-    .where(inArray(cats.profileMediaAssetId, assetIds))
-    .returning({ id: cats.id });
-  return affected.map((row) => row.id);
+  const catIds: string[] = [];
+  // D1 のバインドパラメーター上限を超えないよう、set の値 1 個分を差し引いて分割する
+  for (const ids of chunkForBoundParameters(assetIds, 1)) {
+    const affected = await db
+      .update(cats)
+      .set({ profileMediaAssetId: null })
+      .where(inArray(cats.profileMediaAssetId, ids))
+      .returning({ id: cats.id });
+    for (const row of affected) {
+      catIds.push(row.id);
+    }
+  }
+  return catIds;
 }
