@@ -1,10 +1,12 @@
+import { createImageThumbnail } from "./imageThumbnail";
 import { formatBytes, type MediaLimits } from "./limits";
 import { createVideoThumbnail } from "./videoThumbnail";
 import type { MediaAssetView } from "./view";
 
 /**
  * ブラウザからアップロード API（POST /api/media）を呼ぶクライアント側ヘルパー。
- * 動画の場合はサムネイルを生成して同時に送る
+ * サムネイル候補（縮小した画像）をブラウザ側で生成して同時に送る。
+ * Workers 側は元画像をデコードせずこの候補から最終サムネイルを作る（メモリ上限対策）
  */
 
 export const MEDIA_UPLOAD_ENDPOINT = "/api/media";
@@ -41,8 +43,15 @@ export async function uploadMedia({
   formData.set("recordId", recordId);
   formData.set("file", file);
   if (isVideoFile(file)) {
+    // 動画は Workers 側でデコードできないため必須。失敗したらアップロード自体を諦める
     const thumbnail = await createVideoThumbnail(file);
     formData.set("thumbnail", thumbnail.blob, "thumbnail.jpg");
+  } else {
+    // 画像はブラウザで縮小できなかった場合も送信し、小さい画像なら Workers 側で生成する
+    const thumbnail = await createImageThumbnail(file).catch(() => null);
+    if (thumbnail) {
+      formData.set("thumbnail", thumbnail, "thumbnail");
+    }
   }
 
   const response = await fetch(MEDIA_UPLOAD_ENDPOINT, {

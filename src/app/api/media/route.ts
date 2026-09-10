@@ -21,7 +21,7 @@ function jsonError(message: string, status: number) {
  *
  * - `file`：本体（必須）
  * - `recordType`・`recordId`：添付先レコード（必須。レコードが実在することを確認する）
- * - `thumbnail`：動画の場合にブラウザ側で切り出したフレーム画像（動画では必須）
+ * - `thumbnail`：ブラウザ側で縮小したサムネイル候補（動画では切り出したフレーム画像。動画では必須、画像では任意）
  */
 export async function POST(request: Request) {
   let formData: FormData;
