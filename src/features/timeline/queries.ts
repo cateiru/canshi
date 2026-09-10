@@ -25,6 +25,7 @@ import {
 import type { MediaRecordType } from "@/features/media/recordTypes";
 import { type MediaAssetView, toMediaAssetView } from "@/features/media/view";
 import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
+import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/media";
 import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
 
 export const TIMELINE_RECORD_TYPES = [
@@ -48,6 +49,7 @@ const TIMELINE_MEDIA_RECORD_TYPES: Partial<
 > = {
   poop: POOP_RECORD_MEDIA_TYPE,
   vomit: VOMIT_RECORD_MEDIA_TYPE,
+  symptom: SYMPTOM_MEDIA_TYPE,
 };
 
 type TimelineEntryOf<T extends TimelineRecordType, R> = {

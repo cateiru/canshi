@@ -2,7 +2,11 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
-import { createSymptomAction } from "@/features/symptoms/actions";
+import { resolveMediaLimits } from "@/features/media/limits";
+import {
+  createSymptomAction,
+  updateSymptomAction,
+} from "@/features/symptoms/actions";
 import { SymptomForm } from "@/features/symptoms/SymptomForm";
 import styles from "../page.module.css";
 
@@ -36,8 +40,11 @@ export default async function NewSymptomPage({ params }: NewSymptomPageProps) {
 
       <h1>{cat.name}の症状を記録する</h1>
       <SymptomForm
+        catId={catId}
         action={createSymptomAction.bind(null, catId)}
+        updateAction={updateSymptomAction.bind(null, catId)}
         hospitalVisits={hospitalVisitList}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="記録する"
       />
     </main>

@@ -4,12 +4,18 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { hospitalVisits, medications, symptoms } from "@/db/schema";
+import { deleteMediaAssetsByRecord } from "@/features/media/storage";
+import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
+import { SYMPTOM_MEDIA_TYPE } from "./media";
 import { type SymptomFormFieldErrors, symptomFormSchema } from "./schema";
 
-export type SymptomFormState = {
+/**
+ * 保存に成功すると `savedRecordId` を返す。写真・動画のアップロードと一覧への遷移は
+ * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
+ */
+export type SymptomFormState = MediaFormState & {
   fieldErrors?: SymptomFormFieldErrors;
-  formError?: string;
 };
 
 async function verifyHospitalVisitBelongsToCat(
@@ -69,19 +75,22 @@ export async function createSymptomAction(
     return { formError: "関連する通院記録が見つかりませんでした" };
   }
 
-  await db.insert(symptoms).values({
-    catId,
-    symptomType: parsed.data.symptomType,
-    onsetAt: combineDateTimeUtc(parsed.data.onsetDate, parsed.data.onsetTime),
-    frequencyOrSeverity: parsed.data.frequencyOrSeverity ?? null,
-    appetiteNote: parsed.data.appetiteNote ?? null,
-    energyNote: parsed.data.energyNote ?? null,
-    status: parsed.data.status,
-    hospitalVisitId: parsed.data.hospitalVisitId ?? null,
-    memo: parsed.data.memo ?? null,
-  });
+  const [created] = await db
+    .insert(symptoms)
+    .values({
+      catId,
+      symptomType: parsed.data.symptomType,
+      onsetAt: combineDateTimeUtc(parsed.data.onsetDate, parsed.data.onsetTime),
+      frequencyOrSeverity: parsed.data.frequencyOrSeverity ?? null,
+      appetiteNote: parsed.data.appetiteNote ?? null,
+      energyNote: parsed.data.energyNote ?? null,
+      status: parsed.data.status,
+      hospitalVisitId: parsed.data.hospitalVisitId ?? null,
+      memo: parsed.data.memo ?? null,
+    })
+    .returning({ id: symptoms.id });
 
-  redirect(`/cats/${catId}/symptoms`);
+  return { savedRecordId: created.id };
 }
 
 export async function updateSymptomAction(
@@ -127,7 +136,7 @@ export async function updateSymptomAction(
     return { formError: "記録が見つかりませんでした" };
   }
 
-  redirect(`/cats/${catId}/symptoms`);
+  return { savedRecordId: id };
 }
 
 export async function deleteSymptomAction(
@@ -135,6 +144,8 @@ export async function deleteSymptomAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
+  // 紐付く写真・動画（R2 のオブジェクトと media_assets 行）を先に削除する
+  await deleteMediaAssetsByRecord(SYMPTOM_MEDIA_TYPE, id);
   // medications.symptom_id / hospital_visits.symptom_id からの外部キー参照が
   // あるため、症状を削除する前に参照している側の紐付けを外しておく。
   // 3つの操作の間に別リクエストが割り込まないよう db.batch でまとめて
