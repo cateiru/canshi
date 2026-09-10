@@ -39,11 +39,12 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - ステージング環境を用意するかどうか
 - マイグレーション（`wrangler d1 migrations apply`）の本番適用フロー
 
-## Cloudflare Access 設定（TODO）
+## Cloudflare Access 設定
 
-- 対象ドメイン・アプリケーションの登録
-- 許可するユーザー（メールアドレス等）のポリシー設定・運用方法
-- `docs/plans/15_cloudflare_access.md` で実装する JWT 検証に必要な Team ドメイン・Audience タグの発行
+対象ドメイン・アプリケーションの登録と許可ユーザーのポリシーは Cloudflare ダッシュボードで設定済み（2026-09 時点）。以下は未整理。
+
+- 許可するユーザー（メールアドレス等）の追加・削除の運用方法
+- `docs/plans/15_cloudflare_access.md` で実装する JWT 検証に必要な Team ドメイン・Audience タグの控え
 
 ## 監視・運用（TODO）
 
