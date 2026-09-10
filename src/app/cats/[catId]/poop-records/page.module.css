@@ -52,3 +52,9 @@
   gap: var(--space-3);
   margin-top: var(--space-3);
 }
+
+/* MediaGallery（サムネイル一覧）の上に余白を取る */
+.badges + ul,
+.details + ul {
+  margin-top: var(--space-3);
+}

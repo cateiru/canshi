@@ -11,8 +11,15 @@
 
 .modal {
   width: 100%;
-  max-width: 480px;
   max-height: 90vh;
+}
+
+.md {
+  max-width: 480px;
+}
+
+.lg {
+  max-width: 960px;
 }
 
 .dialog {

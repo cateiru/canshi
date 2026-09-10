@@ -260,6 +260,18 @@ export async function deleteMediaAsset(assetId: string): Promise<void> {
 }
 
 /**
+ * 指定した猫に紐付くすべてのメディアを削除する。猫の削除時に呼ぶ
+ */
+export async function deleteMediaAssetsByCat(catId: string): Promise<void> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(mediaAssets)
+    .where(eq(mediaAssets.catId, catId));
+  await deleteAssets(rows);
+}
+
+/**
  * 指定レコードに紐付くメディアをまとめて削除する。
  * 各記録の削除アクションは、レコード本体を削除する前にこの関数を呼ぶ
  */

@@ -14,6 +14,7 @@ import {
   vomitRecords,
   weightRecords,
 } from "@/db/schema";
+import { deleteMediaAssetsByCat } from "@/features/media/storage";
 import { type CatFormFieldErrors, catFormSchema } from "./schema";
 
 export type CatFormState = {
@@ -90,6 +91,9 @@ export async function updateCatAction(
 
 export async function deleteCatAction(id: string): Promise<void> {
   const db = getDb();
+  // media_assets.cat_id が cats.id を参照しているため、猫に紐付くメディア（R2 のオブジェクトと行）を
+  // 先に削除する。R2 の削除に失敗した場合はここで例外になり、猫と記録は残る
+  await deleteMediaAssetsByCat(id);
   // 各記録テーブルは cats.id への外部キー制約（ON DELETE no action）を持つため、
   // 猫本体より先に紐づく記録を削除しておく。symptoms と hospital_visits は
   // 互いを参照しうるため、削除前にまず双方の紐付け（hospital_visit_id /

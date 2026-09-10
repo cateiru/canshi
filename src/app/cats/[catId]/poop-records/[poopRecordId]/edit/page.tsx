@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { resolveMediaLimits } from "@/features/media/limits";
+import { listMediaAssetsByRecord } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { updatePoopRecordAction } from "@/features/poop-records/actions";
+import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
 import { PoopRecordForm } from "@/features/poop-records/PoopRecordForm";
 import { getPoopRecordById } from "@/features/poop-records/queries";
 import styles from "../../page.module.css";
@@ -25,6 +29,11 @@ export default async function EditPoopRecordPage({
     notFound();
   }
 
+  const mediaAssets = await listMediaAssetsByRecord(
+    POOP_RECORD_MEDIA_TYPE,
+    poopRecord.id,
+  );
+
   return (
     <main className={styles.main}>
       <Breadcrumb
@@ -40,7 +49,10 @@ export default async function EditPoopRecordPage({
       <h1>{cat.name}のうんち記録を編集する</h1>
       <PoopRecordForm
         action={updatePoopRecordAction.bind(null, catId, poopRecord.id)}
+        catId={catId}
         poopRecord={poopRecord}
+        mediaAssets={mediaAssets.map(toMediaAssetView)}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="更新する"
       />
     </main>

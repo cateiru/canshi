@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
-import { createPoopRecordAction } from "@/features/poop-records/actions";
+import { resolveMediaLimits } from "@/features/media/limits";
+import {
+  createPoopRecordAction,
+  updatePoopRecordAction,
+} from "@/features/poop-records/actions";
 import { PoopRecordForm } from "@/features/poop-records/PoopRecordForm";
 import styles from "../page.module.css";
 
@@ -35,7 +39,10 @@ export default async function NewPoopRecordPage({
 
       <h1>{cat.name}のうんちを記録する</h1>
       <PoopRecordForm
+        catId={catId}
         action={createPoopRecordAction.bind(null, catId)}
+        updateAction={updatePoopRecordAction.bind(null, catId)}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="記録する"
       />
     </main>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import {
   Button,
   Checkbox,
@@ -10,27 +10,64 @@ import {
   Textarea,
 } from "@/components/ui";
 import type { PoopRecord } from "@/db/schema";
+import type { MediaLimits } from "@/features/media/limits";
+import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
+import { useMediaAttachments } from "@/features/media/useMediaAttachments";
+import { useMediaFormAction } from "@/features/media/useMediaFormAction";
+import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { PoopRecordFormState } from "./actions";
+import { POOP_RECORD_MEDIA_TYPE } from "./media";
 import styles from "./PoopRecordForm.module.css";
 
+type FormAction = (
+  state: PoopRecordFormState,
+  formData: FormData,
+) => Promise<PoopRecordFormState>;
+
 type PoopRecordFormProps = {
-  action: (
+  catId: string;
+  action: FormAction;
+  /**
+   * 新規作成でアップロードだけ失敗したときの再送信に使う更新 Action（記録 ID を除いて bind したもの）。
+   * 編集フォームでは不要
+   */
+  updateAction?: (
+    recordId: string,
     state: PoopRecordFormState,
     formData: FormData,
   ) => Promise<PoopRecordFormState>;
   poopRecord?: PoopRecord;
+  mediaAssets?: MediaAssetView[];
+  mediaLimits: MediaLimits;
   submitLabel: string;
 };
 
 const initialState: PoopRecordFormState = {};
 
 export function PoopRecordForm({
+  catId,
   action,
+  updateAction,
   poopRecord,
+  mediaAssets,
+  mediaLimits,
   submitLabel,
 }: PoopRecordFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const media = useMediaAttachments({
+    initial: mediaAssets,
+    limits: mediaLimits,
+  });
+  const [state, formAction, isPending] = useMediaFormAction({
+    action,
+    updateAction: updateAction
+      ? (recordId) => updateAction.bind(null, recordId)
+      : undefined,
+    initialState,
+    recordType: POOP_RECORD_MEDIA_TYPE,
+    media,
+    redirectTo: `/cats/${catId}/poop-records`,
+  });
   const [now] = useState(() => new Date());
   const { date: defaultDate, time: defaultTime } = poopRecord?.occurredAt
     ? splitDateTimeUtc(poopRecord.occurredAt)
@@ -97,6 +134,12 @@ export function PoopRecordForm({
       >
         異物が混じっていた
       </Checkbox>
+
+      <MediaAttachmentField
+        controller={media}
+        label="写真"
+        isDisabled={isPending}
+      />
 
       <FormField
         name="appetiteNote"

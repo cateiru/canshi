@@ -114,7 +114,6 @@ export default function MediaDevPage() {
             {log.asset ? (
               <div className={styles.result}>
                 <a href={log.asset.url} target="_blank" rel="noreferrer">
-                  {/* biome-ignore lint/performance/noImgElement: サムネイルは自前の配信エンドポイントで生成済みのサイズを返すため next/image の最適化は使わない */}
                   <img
                     src={log.asset.thumbnailUrl}
                     alt={log.fileName}

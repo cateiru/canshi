@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
-import { createVomitRecordAction } from "@/features/vomit-records/actions";
+import { resolveMediaLimits } from "@/features/media/limits";
+import {
+  createVomitRecordAction,
+  updateVomitRecordAction,
+} from "@/features/vomit-records/actions";
 import { VomitRecordForm } from "@/features/vomit-records/VomitRecordForm";
 import styles from "../page.module.css";
 
@@ -35,7 +39,10 @@ export default async function NewVomitRecordPage({
 
       <h1>{cat.name}の嘔吐を記録する</h1>
       <VomitRecordForm
+        catId={catId}
         action={createVomitRecordAction.bind(null, catId)}
+        updateAction={updateVomitRecordAction.bind(null, catId)}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="記録する"
       />
     </main>

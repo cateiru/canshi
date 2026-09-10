@@ -1,4 +1,5 @@
 import { Badge, ButtonLink } from "@/components/ui";
+import { MediaThumbnailStrip } from "@/features/media/MediaThumbnailStrip";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import { STATUS_LABEL } from "@/features/symptoms/labels";
@@ -43,6 +44,14 @@ export function TimelineEntryCard({
             {formatDateTimeUtc(entry.occurredAt)}
           </span>
         </div>
+        {entry.media.length > 0 ? (
+          <div className={styles.media}>
+            <MediaThumbnailStrip
+              assets={entry.media}
+              title={`${TIMELINE_TYPE_LABEL[entry.type]}の添付`}
+            />
+          </div>
+        ) : null}
         {renderBody(catId, entry)}
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
@@ -98,4 +98,51 @@ export async function nextMediaSortOrder(
       ),
     );
   return row?.max == null ? 0 : Number(row.max) + 1;
+}
+
+export type MediaRecordRef = { recordType: string; recordId: string };
+
+/**
+ * 記録種別をまたいで複数レコードのメディアをまとめて取得する（タイムライン用）。
+ * `${recordType}:${recordId}` をキーにしたマップで返す
+ */
+export async function listMediaAssetsForRecords(
+  refs: MediaRecordRef[],
+): Promise<Map<string, MediaAsset[]>> {
+  const grouped = new Map<string, MediaAsset[]>();
+  if (refs.length === 0) {
+    return grouped;
+  }
+  const idsByType = new Map<string, string[]>();
+  for (const ref of refs) {
+    const ids = idsByType.get(ref.recordType) ?? [];
+    ids.push(ref.recordId);
+    idsByType.set(ref.recordType, ids);
+  }
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(mediaAssets)
+    .where(
+      or(
+        ...[...idsByType.entries()].map(([recordType, ids]) =>
+          and(
+            eq(mediaAssets.recordType, recordType),
+            inArray(mediaAssets.recordId, ids),
+          ),
+        ),
+      ),
+    )
+    .orderBy(...ORDER);
+  for (const row of rows) {
+    const key = mediaRecordKey(row.recordType, row.recordId);
+    const list = grouped.get(key) ?? [];
+    list.push(row);
+    grouped.set(key, list);
+  }
+  return grouped;
+}
+
+export function mediaRecordKey(recordType: string, recordId: string) {
+  return `${recordType}:${recordId}`;
 }

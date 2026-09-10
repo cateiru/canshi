@@ -53,6 +53,10 @@
   color: var(--color-ink);
 }
 
+.media {
+  margin-top: var(--space-2);
+}
+
 .body {
   margin-top: var(--space-2);
   display: flex;

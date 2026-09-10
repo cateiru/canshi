@@ -2,10 +2,14 @@ import { notFound } from "next/navigation";
 import { TbToiletPaper } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { MediaGallery } from "@/features/media/MediaGallery";
+import { listMediaAssetsByRecords } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { deleteVomitRecordAction } from "@/features/vomit-records/actions";
+import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
 import { listVomitRecords } from "@/features/vomit-records/queries";
 import styles from "./page.module.css";
 
@@ -26,6 +30,10 @@ export default async function VomitRecordsPage({
   }
 
   const records = await listVomitRecords(catId);
+  const mediaByRecordId = await listMediaAssetsByRecords(
+    VOMIT_RECORD_MEDIA_TYPE,
+    records.map((record) => record.id),
+  );
 
   return (
     <main className={styles.main}>
@@ -104,6 +112,12 @@ export default async function VomitRecordsPage({
                     <Badge color="warning">異物あり</Badge>
                   ) : null}
                 </div>
+                <MediaGallery
+                  assets={(mediaByRecordId.get(record.id) ?? []).map(
+                    toMediaAssetView,
+                  )}
+                  title="嘔吐の写真"
+                />
                 <div className={styles.cardActions}>
                   <ButtonLink
                     href={`/cats/${catId}/vomit-records/${record.id}/edit`}
