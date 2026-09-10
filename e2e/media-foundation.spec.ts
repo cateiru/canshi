@@ -27,11 +27,11 @@ test("画像をアップロードするとサムネイルが配信され、削�
   await expect
     .poll(() => thumbnail.evaluate((el: HTMLImageElement) => el.naturalWidth))
     .toBe(512);
-  const thumbnailUrl = await thumbnail.getAttribute("src");
+  const thumbnailUrl = (await thumbnail.getAttribute("src")) ?? "";
   expect(thumbnailUrl).toMatch(/^\/media\/[^/]+\/thumbnail$/);
 
   const original = await page.request.get(
-    thumbnailUrl!.replace(/\/thumbnail$/, ""),
+    thumbnailUrl.replace(/\/thumbnail$/, ""),
   );
   expect(original.status()).toBe(200);
   expect(original.headers()["content-type"]).toBe("image/png");
@@ -39,7 +39,7 @@ test("画像をアップロードするとサムネイルが配信され、削�
   await card.getByRole("button", { name: "削除する" }).click();
   await expect(page.getByRole("heading", { name: fileName })).toHaveCount(0);
 
-  const afterDelete = await page.request.get(thumbnailUrl!);
+  const afterDelete = await page.request.get(thumbnailUrl);
   expect(afterDelete.status()).toBe(404);
 });
 
