@@ -1,31 +1,68 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Button, FormField, Select, Textarea } from "@/components/ui";
 import type { HospitalVisit, Symptom } from "@/db/schema";
+import type { MediaLimits } from "@/features/media/limits";
+import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
+import { useMediaAttachments } from "@/features/media/useMediaAttachments";
+import { useMediaFormAction } from "@/features/media/useMediaFormAction";
+import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { HospitalVisitFormState } from "./actions";
 import styles from "./HospitalVisitForm.module.css";
+import { HOSPITAL_VISIT_MEDIA_TYPE } from "./media";
+
+type FormAction = (
+  state: HospitalVisitFormState,
+  formData: FormData,
+) => Promise<HospitalVisitFormState>;
 
 type HospitalVisitFormProps = {
-  action: (
+  catId: string;
+  action: FormAction;
+  /**
+   * 新規作成でアップロードだけ失敗したときの再送信に使う更新 Action（記録 ID を除いて bind したもの）。
+   * 編集フォームでは不要
+   */
+  updateAction?: (
+    recordId: string,
     state: HospitalVisitFormState,
     formData: FormData,
   ) => Promise<HospitalVisitFormState>;
   symptoms: Symptom[];
   hospitalVisit?: HospitalVisit;
+  mediaAssets?: MediaAssetView[];
+  mediaLimits: MediaLimits;
   submitLabel: string;
 };
 
 const initialState: HospitalVisitFormState = {};
 
 export function HospitalVisitForm({
+  catId,
   action,
+  updateAction,
   symptoms,
   hospitalVisit,
+  mediaAssets,
+  mediaLimits,
   submitLabel,
 }: HospitalVisitFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const media = useMediaAttachments({
+    initial: mediaAssets,
+    limits: mediaLimits,
+  });
+  const [state, formAction, isPending] = useMediaFormAction({
+    action,
+    updateAction: updateAction
+      ? (recordId) => updateAction.bind(null, recordId)
+      : undefined,
+    initialState,
+    recordType: HOSPITAL_VISIT_MEDIA_TYPE,
+    media,
+    redirectTo: `/cats/${catId}/hospital-visits`,
+  });
   // 毎レンダリングで new Date() を評価すると FormField の defaultValue が
   // 再レンダリングのたびに変化し、ユーザーの入力が上書きされてしまうため、
   // マウント時に一度だけ計算して固定する
@@ -143,6 +180,12 @@ export function HospitalVisitForm({
           errorMessage={state.fieldErrors?.nextVisitTime?.[0]}
         />
       </div>
+
+      <MediaAttachmentField
+        controller={media}
+        label="診療明細などの写真"
+        isDisabled={isPending}
+      />
 
       <Textarea
         name="memo"

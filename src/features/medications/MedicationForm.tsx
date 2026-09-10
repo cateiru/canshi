@@ -1,33 +1,69 @@
 "use client";
 
-import { useActionState } from "react";
 import { Button, FormField, Select } from "@/components/ui";
 import type { HospitalVisit, Medication, Symptom } from "@/db/schema";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
+import type { MediaLimits } from "@/features/media/limits";
+import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
+import { useMediaAttachments } from "@/features/media/useMediaAttachments";
+import { useMediaFormAction } from "@/features/media/useMediaFormAction";
+import type { MediaAssetView } from "@/features/media/view";
 import type { MedicationFormState } from "./actions";
 import styles from "./MedicationForm.module.css";
+import { MEDICATION_MEDIA_TYPE } from "./media";
+
+type FormAction = (
+  state: MedicationFormState,
+  formData: FormData,
+) => Promise<MedicationFormState>;
 
 type MedicationFormProps = {
-  action: (
+  catId: string;
+  action: FormAction;
+  /**
+   * 新規作成でアップロードだけ失敗したときの再送信に使う更新 Action（記録 ID を除いて bind したもの）。
+   * 編集フォームでは不要
+   */
+  updateAction?: (
+    recordId: string,
     state: MedicationFormState,
     formData: FormData,
   ) => Promise<MedicationFormState>;
   symptoms: Symptom[];
   hospitalVisits: HospitalVisit[];
   medication?: Medication;
+  mediaAssets?: MediaAssetView[];
+  mediaLimits: MediaLimits;
   submitLabel: string;
 };
 
 const initialState: MedicationFormState = {};
 
 export function MedicationForm({
+  catId,
   action,
+  updateAction,
   symptoms,
   hospitalVisits,
   medication,
+  mediaAssets,
+  mediaLimits,
   submitLabel,
 }: MedicationFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const media = useMediaAttachments({
+    initial: mediaAssets,
+    limits: mediaLimits,
+  });
+  const [state, formAction, isPending] = useMediaFormAction({
+    action,
+    updateAction: updateAction
+      ? (recordId) => updateAction.bind(null, recordId)
+      : undefined,
+    initialState,
+    recordType: MEDICATION_MEDIA_TYPE,
+    media,
+    redirectTo: `/cats/${catId}/medications`,
+  });
 
   const symptomOptions = [
     { value: "", label: "関連付けない" },
@@ -106,6 +142,12 @@ export function MedicationForm({
         options={hospitalVisitOptions}
         defaultSelectedKey={medication?.hospitalVisitId ?? ""}
         errorMessage={state.fieldErrors?.hospitalVisitId?.[0]}
+      />
+
+      <MediaAttachmentField
+        controller={media}
+        label="処方箋・薬袋の写真"
+        isDisabled={isPending}
       />
 
       {state.formError ? (

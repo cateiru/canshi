@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Button, FormField, Select } from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
 import type { FeedingPresetWithItems } from "@/features/feeding-presets/queries";
+import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { FeedingRecordFormState } from "./actions";
 import styles from "./FeedingRecordForm.module.css";
@@ -22,6 +23,8 @@ type FeedingRecordFormProps = {
     formData: FormData,
   ) => Promise<FeedingRecordFormState>;
   foodProducts: FoodProduct[];
+  /** 商品 ID → 商品画像の URL（画像のない商品は含まない） */
+  foodProductImageUrls: Record<string, string>;
   recentlyUsedFoodProductIds: string[];
   presets: FeedingPresetWithItems[];
   feedingRecord?: FeedingRecordWithItems;
@@ -42,6 +45,7 @@ function createEmptyRow(foodProductId: string): ItemRow {
 export function FeedingRecordForm({
   action,
   foodProducts,
+  foodProductImageUrls,
   recentlyUsedFoodProductIds,
   presets,
   feedingRecord,
@@ -137,6 +141,11 @@ export function FeedingRecordForm({
                 variant="secondary"
                 onPress={() => addItem(foodProduct.id)}
               >
+                <FoodProductImage
+                  name={foodProduct.name}
+                  thumbnailUrl={foodProductImageUrls[foodProduct.id]}
+                  size="sm"
+                />
                 + {foodProduct.name}
               </Button>
             ))}
@@ -181,16 +190,28 @@ export function FeedingRecordForm({
                 ) : null}
               </div>
 
-              <Select
-                name={`items.${index}.foodProductId`}
-                label="商品"
-                options={foodProductOptions}
-                selectedKey={item.foodProductId}
-                onSelectionChange={(key) =>
-                  updateItem(index, { foodProductId: String(key) })
-                }
-                errorMessage={itemErrors?.foodProductId?.[0]}
-              />
+              <div className={styles.productRow}>
+                <FoodProductImage
+                  name={
+                    foodProducts.find(
+                      (foodProduct) => foodProduct.id === item.foodProductId,
+                    )?.name ?? "商品"
+                  }
+                  thumbnailUrl={foodProductImageUrls[item.foodProductId]}
+                />
+                <div className={styles.productSelect}>
+                  <Select
+                    name={`items.${index}.foodProductId`}
+                    label="商品"
+                    options={foodProductOptions}
+                    selectedKey={item.foodProductId}
+                    onSelectionChange={(key) =>
+                      updateItem(index, { foodProductId: String(key) })
+                    }
+                    errorMessage={itemErrors?.foodProductId?.[0]}
+                  />
+                </div>
+              </div>
 
               <div className={styles.row}>
                 <FormField

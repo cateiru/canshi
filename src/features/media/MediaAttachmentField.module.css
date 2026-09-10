@@ -1,0 +1,143 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.item {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+
+.item[data-error="true"] {
+  border-color: var(--color-error);
+}
+
+.thumbnail {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.badge {
+  position: absolute;
+  left: var(--space-1);
+  bottom: var(--space-1);
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-base);
+  background-color: var(--color-ink);
+  color: var(--color-bg);
+  font-size: var(--text-sm);
+}
+
+.remove {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: 50%;
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.remove:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.itemError {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2px var(--space-1);
+  font-size: var(--text-xs);
+  line-height: 1.3;
+  color: var(--color-bg);
+  background-color: var(--color-error);
+}
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  width: 96px;
+  height: 96px;
+  border: var(--border-width) dashed var(--color-ink);
+  border-radius: var(--radius-base);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.picker[data-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.picker:focus-within {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.pickerIcon {
+  font-size: var(--text-xl);
+}
+
+/* ネイティブの input は視覚的に隠し、ラベル経由で操作する（支援技術からは到達可能） */
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rejected {
+  margin-top: var(--space-1);
+}
+
+.rejectedList {
+  margin: 0;
+  padding-left: var(--space-4);
+}

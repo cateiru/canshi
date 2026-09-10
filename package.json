@@ -21,6 +21,7 @@
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote"
   },
   "dependencies": {
+    "@cf-wasm/photon": "^0.4.0",
     "drizzle-orm": "^0.45.2",
     "next": "16.3.4",
     "react": "19.2.8",

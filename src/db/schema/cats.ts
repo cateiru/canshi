@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  type AnySQLiteColumn,
+  integer,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
+import { mediaAssets } from "./media-assets";
 
 export const cats = sqliteTable("cats", {
   id: text("id")
@@ -11,6 +17,15 @@ export const cats = sqliteTable("cats", {
   birthDate: text("birth_date"),
   breed: text("breed"),
   adoptedAt: text("adopted_at"),
+  // プロフィール画像として使う写真（media_assets）。cats ⇄ media_assets が互いを参照するため
+  // AnySQLiteColumn で型の循環参照を回避する
+  profileMediaAssetId: text("profile_media_asset_id").references(
+    (): AnySQLiteColumn => mediaAssets.id,
+  ),
+  // true の間は写真を追加しても自動更新しない
+  isProfilePinned: integer("is_profile_pinned", { mode: "boolean" })
+    .notNull()
+    .default(false),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

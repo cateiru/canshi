@@ -5,7 +5,10 @@ import { listFeedingPresets } from "@/features/feeding-presets/queries";
 import { createFeedingRecordAction } from "@/features/feeding-records/actions";
 import { FeedingRecordForm } from "@/features/feeding-records/FeedingRecordForm";
 import { listRecentlyUsedFoodProductIds } from "@/features/feeding-records/queries";
-import { listFoodProducts } from "@/features/food-products/queries";
+import {
+  listFoodProductImageUrls,
+  listFoodProducts,
+} from "@/features/food-products/queries";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +33,9 @@ export default async function NewFeedingRecordPage({
       listRecentlyUsedFoodProductIds(catId),
       listFeedingPresets(),
     ],
+  );
+  const foodProductImageUrls = await listFoodProductImageUrls(
+    foodProducts.map((foodProduct) => foodProduct.id),
   );
 
   const breadcrumbItems = [
@@ -64,6 +70,7 @@ export default async function NewFeedingRecordPage({
       <FeedingRecordForm
         action={createFeedingRecordAction.bind(null, catId)}
         foodProducts={foodProducts}
+        foodProductImageUrls={foodProductImageUrls}
         recentlyUsedFoodProductIds={recentlyUsedFoodProductIds}
         presets={presets}
         submitLabel="記録する"

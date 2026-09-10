@@ -4,11 +4,15 @@ import { Badge, Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
+import { MediaGallery } from "@/features/media/MediaGallery";
+import { listMediaAssetsByRecords } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { deleteSymptomAction } from "@/features/symptoms/actions";
 import { STATUS_LABEL } from "@/features/symptoms/labels";
+import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/media";
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "./page.module.css";
 
@@ -36,6 +40,10 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
     listSymptoms(catId),
     listHospitalVisits(catId),
   ]);
+  const mediaByRecordId = await listMediaAssetsByRecords(
+    SYMPTOM_MEDIA_TYPE,
+    records.map((record) => record.id),
+  );
   const hospitalVisitLabelById = new Map(
     hospitalVisitList.map((visit) => [
       visit.id,
@@ -117,6 +125,12 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
                     </>
                   ) : null}
                 </dl>
+                <MediaGallery
+                  assets={(mediaByRecordId.get(record.id) ?? []).map(
+                    toMediaAssetView,
+                  )}
+                  title="症状の写真・動画"
+                />
                 <div className={styles.cardActions}>
                   <ButtonLink
                     href={`/cats/${catId}/symptoms/${record.id}/edit`}

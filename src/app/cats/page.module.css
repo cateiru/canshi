@@ -29,3 +29,9 @@
 .emptyActions {
   margin-top: var(--space-4);
 }
+
+.cardBody {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}

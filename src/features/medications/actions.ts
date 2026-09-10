@@ -9,11 +9,17 @@ import {
   medications,
   symptoms,
 } from "@/db/schema";
+import { deleteMediaAssetsByRecord } from "@/features/media/storage";
+import type { MediaFormState } from "@/features/media/useMediaFormAction";
+import { MEDICATION_MEDIA_TYPE } from "./media";
 import { type MedicationFormFieldErrors, medicationFormSchema } from "./schema";
 
-export type MedicationFormState = {
+/**
+ * 保存に成功すると `savedRecordId` を返す。写真のアップロードと一覧への遷移は
+ * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
+ */
+export type MedicationFormState = MediaFormState & {
   fieldErrors?: MedicationFormFieldErrors;
-  formError?: string;
 };
 
 async function verifyReferencesBelongToCat(
@@ -86,18 +92,21 @@ export async function createMedicationAction(
     return { formError: "関連する症状・通院記録が見つかりませんでした" };
   }
 
-  await db.insert(medications).values({
-    catId,
-    symptomId: parsed.data.symptomId ?? null,
-    name: parsed.data.name,
-    doseAmount: parsed.data.doseAmount,
-    dosesPerDay: parsed.data.dosesPerDay,
-    startDate: parsed.data.startDate,
-    endDate: parsed.data.endDate ?? null,
-    hospitalVisitId: parsed.data.hospitalVisitId ?? null,
-  });
+  const [created] = await db
+    .insert(medications)
+    .values({
+      catId,
+      symptomId: parsed.data.symptomId ?? null,
+      name: parsed.data.name,
+      doseAmount: parsed.data.doseAmount,
+      dosesPerDay: parsed.data.dosesPerDay,
+      startDate: parsed.data.startDate,
+      endDate: parsed.data.endDate ?? null,
+      hospitalVisitId: parsed.data.hospitalVisitId ?? null,
+    })
+    .returning({ id: medications.id });
 
-  redirect(`/cats/${catId}/medications`);
+  return { savedRecordId: created.id };
 }
 
 export async function updateMedicationAction(
@@ -145,7 +154,7 @@ export async function updateMedicationAction(
     return { formError: "服薬予定が見つかりませんでした" };
   }
 
-  redirect(`/cats/${catId}/medications`);
+  return { savedRecordId: id };
 }
 
 export async function deleteMedicationAction(
@@ -153,6 +162,8 @@ export async function deleteMedicationAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
+  // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
+  await deleteMediaAssetsByRecord(MEDICATION_MEDIA_TYPE, id);
   // medication_doses から medications への外部キー制約があるため投薬実績も同時に削除する。
   // 2つの delete の間に別リクエストが割り込まないよう、D1 の batch で原子的に実行する
   await db.batch([

@@ -1,20 +1,40 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Button, FormField, Select, Textarea } from "@/components/ui";
 import type { HospitalVisit, Symptom } from "@/db/schema";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
+import type { MediaLimits } from "@/features/media/limits";
+import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
+import { useMediaAttachments } from "@/features/media/useMediaAttachments";
+import { useMediaFormAction } from "@/features/media/useMediaFormAction";
+import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { SymptomFormState } from "./actions";
+import { SYMPTOM_MEDIA_TYPE } from "./media";
 import styles from "./SymptomForm.module.css";
 
+type FormAction = (
+  state: SymptomFormState,
+  formData: FormData,
+) => Promise<SymptomFormState>;
+
 type SymptomFormProps = {
-  action: (
+  catId: string;
+  action: FormAction;
+  /**
+   * 新規作成でアップロードだけ失敗したときの再送信に使う更新 Action（記録 ID を除いて bind したもの）。
+   * 編集フォームでは不要
+   */
+  updateAction?: (
+    recordId: string,
     state: SymptomFormState,
     formData: FormData,
   ) => Promise<SymptomFormState>;
   hospitalVisits: HospitalVisit[];
   symptom?: Symptom;
+  mediaAssets?: MediaAssetView[];
+  mediaLimits: MediaLimits;
   submitLabel: string;
 };
 
@@ -27,12 +47,30 @@ const STATUS_OPTIONS = [
 ];
 
 export function SymptomForm({
+  catId,
   action,
+  updateAction,
   hospitalVisits,
   symptom,
+  mediaAssets,
+  mediaLimits,
   submitLabel,
 }: SymptomFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const media = useMediaAttachments({
+    initial: mediaAssets,
+    limits: mediaLimits,
+    allowVideo: true,
+  });
+  const [state, formAction, isPending] = useMediaFormAction({
+    action,
+    updateAction: updateAction
+      ? (recordId) => updateAction.bind(null, recordId)
+      : undefined,
+    initialState,
+    recordType: SYMPTOM_MEDIA_TYPE,
+    media,
+    redirectTo: `/cats/${catId}/symptoms`,
+  });
   const [now] = useState(() => new Date());
   const { date: defaultDate, time: defaultTime } = symptom?.onsetAt
     ? splitDateTimeUtc(symptom.onsetAt)
@@ -98,6 +136,14 @@ export function SymptomForm({
         options={hospitalVisitOptions}
         defaultSelectedKey={symptom?.hospitalVisitId ?? ""}
         errorMessage={state.fieldErrors?.hospitalVisitId?.[0]}
+      />
+
+      <MediaAttachmentField
+        controller={media}
+        label="写真・動画"
+        allowVideo
+        description="動画は位置情報などのメタデータが残る場合があります（写真は自動で取り除きます）"
+        isDisabled={isPending}
       />
 
       <FormField

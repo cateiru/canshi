@@ -1,0 +1,28 @@
+.image {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  object-fit: cover;
+  background-color: var(--color-bg);
+  vertical-align: middle;
+}
+
+.sm {
+  width: 24px;
+  height: 24px;
+  font-size: var(--text-sm);
+}
+
+.md {
+  width: 64px;
+  height: 64px;
+  font-size: var(--text-xl);
+}
+
+.placeholder {
+  color: var(--color-ink);
+  opacity: 0.6;
+}

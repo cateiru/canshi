@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { resolveMediaLimits } from "@/features/media/limits";
+import { listMediaAssetsByRecord } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { updateVomitRecordAction } from "@/features/vomit-records/actions";
+import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
 import { getVomitRecordById } from "@/features/vomit-records/queries";
 import { VomitRecordForm } from "@/features/vomit-records/VomitRecordForm";
 import styles from "../../page.module.css";
@@ -25,6 +29,11 @@ export default async function EditVomitRecordPage({
     notFound();
   }
 
+  const mediaAssets = await listMediaAssetsByRecord(
+    VOMIT_RECORD_MEDIA_TYPE,
+    vomitRecord.id,
+  );
+
   return (
     <main className={styles.main}>
       <Breadcrumb
@@ -40,7 +49,10 @@ export default async function EditVomitRecordPage({
       <h1>{cat.name}の嘔吐記録を編集する</h1>
       <VomitRecordForm
         action={updateVomitRecordAction.bind(null, catId, vomitRecord.id)}
+        catId={catId}
         vomitRecord={vomitRecord}
+        mediaAssets={mediaAssets.map(toMediaAssetView)}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="更新する"
       />
     </main>

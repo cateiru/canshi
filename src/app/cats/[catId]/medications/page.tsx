@@ -4,7 +4,11 @@ import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
+import { MediaGallery } from "@/features/media/MediaGallery";
+import { listMediaAssetsByRecords } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { deleteMedicationAction } from "@/features/medications/actions";
+import { MEDICATION_MEDIA_TYPE } from "@/features/medications/media";
 import { listMedications } from "@/features/medications/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -32,6 +36,10 @@ export default async function MedicationsPage({
     listSymptoms(catId),
     listHospitalVisits(catId),
   ]);
+  const mediaByRecordId = await listMediaAssetsByRecords(
+    MEDICATION_MEDIA_TYPE,
+    medicationList.map((medication) => medication.id),
+  );
   const symptomNameById = new Map(
     symptomList.map((symptom) => [symptom.id, symptom.symptomType]),
   );
@@ -108,6 +116,13 @@ export default async function MedicationsPage({
                     </>
                   ) : null}
                 </dl>
+                <MediaGallery
+                  assets={(mediaByRecordId.get(medication.id) ?? []).map(
+                    toMediaAssetView,
+                  )}
+                  title="処方箋・薬袋の写真"
+                  fit="actual"
+                />
                 <div className={styles.cardActions}>
                   <ButtonLink
                     href={`/cats/${catId}/medications/${medication.id}/doses`}

@@ -1,29 +1,66 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Button, Checkbox, FormField, Textarea } from "@/components/ui";
 import type { VomitRecord } from "@/db/schema";
+import type { MediaLimits } from "@/features/media/limits";
+import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
+import { useMediaAttachments } from "@/features/media/useMediaAttachments";
+import { useMediaFormAction } from "@/features/media/useMediaFormAction";
+import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { VomitRecordFormState } from "./actions";
+import { VOMIT_RECORD_MEDIA_TYPE } from "./media";
 import styles from "./VomitRecordForm.module.css";
 
+type FormAction = (
+  state: VomitRecordFormState,
+  formData: FormData,
+) => Promise<VomitRecordFormState>;
+
 type VomitRecordFormProps = {
-  action: (
+  catId: string;
+  action: FormAction;
+  /**
+   * 新規作成でアップロードだけ失敗したときの再送信に使う更新 Action（記録 ID を除いて bind したもの）。
+   * 編集フォームでは不要
+   */
+  updateAction?: (
+    recordId: string,
     state: VomitRecordFormState,
     formData: FormData,
   ) => Promise<VomitRecordFormState>;
   vomitRecord?: VomitRecord;
+  mediaAssets?: MediaAssetView[];
+  mediaLimits: MediaLimits;
   submitLabel: string;
 };
 
 const initialState: VomitRecordFormState = {};
 
 export function VomitRecordForm({
+  catId,
   action,
+  updateAction,
   vomitRecord,
+  mediaAssets,
+  mediaLimits,
   submitLabel,
 }: VomitRecordFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const media = useMediaAttachments({
+    initial: mediaAssets,
+    limits: mediaLimits,
+  });
+  const [state, formAction, isPending] = useMediaFormAction({
+    action,
+    updateAction: updateAction
+      ? (recordId) => updateAction.bind(null, recordId)
+      : undefined,
+    initialState,
+    recordType: VOMIT_RECORD_MEDIA_TYPE,
+    media,
+    redirectTo: `/cats/${catId}/vomit-records`,
+  });
   const [now] = useState(() => new Date());
   const { date: defaultDate, time: defaultTime } = vomitRecord?.occurredAt
     ? splitDateTimeUtc(vomitRecord.occurredAt)
@@ -74,6 +111,12 @@ export function VomitRecordForm({
       >
         異物が混じっていた
       </Checkbox>
+
+      <MediaAttachmentField
+        controller={media}
+        label="写真"
+        isDisabled={isPending}
+      />
 
       <FormField
         name="appetiteNote"

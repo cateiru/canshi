@@ -46,3 +46,13 @@
 .details dd {
   margin: 0;
 }
+
+.cardBody {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.cardBody .details {
+  margin-top: 0;
+}

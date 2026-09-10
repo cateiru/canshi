@@ -4,12 +4,18 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { poopRecords } from "@/db/schema";
+import { deleteMediaAssetsByRecord } from "@/features/media/storage";
+import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
+import { POOP_RECORD_MEDIA_TYPE } from "./media";
 import { type PoopRecordFormFieldErrors, poopRecordFormSchema } from "./schema";
 
-export type PoopRecordFormState = {
+/**
+ * 保存に成功すると `savedRecordId` を返す。写真のアップロードと一覧への遷移は
+ * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
+ */
+export type PoopRecordFormState = MediaFormState & {
   fieldErrors?: PoopRecordFormFieldErrors;
-  formError?: string;
 };
 
 function parseFormData(formData: FormData) {
@@ -39,23 +45,26 @@ export async function createPoopRecordAction(
   }
 
   const db = getDb();
-  await db.insert(poopRecords).values({
-    catId,
-    occurredAt: combineDateTimeUtc(
-      parsed.data.occurredDate,
-      parsed.data.occurredTime,
-    ),
-    amount: parsed.data.amount ?? null,
-    color: parsed.data.color ?? null,
-    consistency: parsed.data.consistency,
-    hasBlood: parsed.data.hasBlood,
-    hasForeignObject: parsed.data.hasForeignObject,
-    appetiteNote: parsed.data.appetiteNote ?? null,
-    energyNote: parsed.data.energyNote ?? null,
-    memo: parsed.data.memo ?? null,
-  });
+  const [created] = await db
+    .insert(poopRecords)
+    .values({
+      catId,
+      occurredAt: combineDateTimeUtc(
+        parsed.data.occurredDate,
+        parsed.data.occurredTime,
+      ),
+      amount: parsed.data.amount ?? null,
+      color: parsed.data.color ?? null,
+      consistency: parsed.data.consistency,
+      hasBlood: parsed.data.hasBlood,
+      hasForeignObject: parsed.data.hasForeignObject,
+      appetiteNote: parsed.data.appetiteNote ?? null,
+      energyNote: parsed.data.energyNote ?? null,
+      memo: parsed.data.memo ?? null,
+    })
+    .returning({ id: poopRecords.id });
 
-  redirect(`/cats/${catId}/poop-records`);
+  return { savedRecordId: created.id };
 }
 
 export async function updatePoopRecordAction(
@@ -95,7 +104,7 @@ export async function updatePoopRecordAction(
     return { formError: "記録が見つかりませんでした" };
   }
 
-  redirect(`/cats/${catId}/poop-records`);
+  return { savedRecordId: id };
 }
 
 export async function deletePoopRecordAction(
@@ -103,6 +112,8 @@ export async function deletePoopRecordAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
+  // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
+  await deleteMediaAssetsByRecord(POOP_RECORD_MEDIA_TYPE, id);
   await db
     .delete(poopRecords)
     .where(and(eq(poopRecords.id, id), eq(poopRecords.catId, catId)));

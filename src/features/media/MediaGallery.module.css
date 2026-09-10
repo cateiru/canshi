@@ -1,0 +1,137 @@
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  position: relative;
+}
+
+.grid .item {
+  width: 96px;
+  height: 96px;
+}
+
+.strip {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.strip .item {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+}
+
+.thumbnailButton {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  overflow: hidden;
+  background-color: var(--color-bg);
+  cursor: pointer;
+}
+
+.thumbnailButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.thumbnail {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.badge {
+  position: absolute;
+  left: var(--space-1);
+  bottom: var(--space-1);
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-base);
+  background-color: var(--color-ink);
+  color: var(--color-bg);
+  font-size: var(--text-sm);
+  pointer-events: none;
+}
+
+.viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 70vh;
+  overflow: auto;
+  /* iOS でのピンチ拡大を許可する */
+  touch-action: pinch-zoom;
+}
+
+.media {
+  display: block;
+}
+
+.fit-contain .media {
+  max-width: 100%;
+  max-height: 70vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* 書類の文字を読むための等倍表示。はみ出す分はスクロールで見る */
+.fit-actual {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.fit-actual .media {
+  max-width: none;
+  max-height: none;
+  width: auto;
+  height: auto;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.pager {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.mark {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-base);
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.6;
+  pointer-events: none;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

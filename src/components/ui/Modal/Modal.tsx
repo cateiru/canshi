@@ -10,14 +10,24 @@ import {
 import { CatEarFrame } from "../CatEarFrame/CatEarFrame";
 import styles from "./Modal.module.css";
 
+export type ModalSize = "md" | "lg";
+
 export type ModalProps = {
   open: boolean;
   title?: ReactNode;
   onClose: () => void;
+  /** md: 確認ダイアログ向け（既定）。lg: 画像・動画の表示など幅を広く使う用途向け */
+  size?: ModalSize;
   children: ReactNode;
 };
 
-export function Modal({ open, title, onClose, children }: ModalProps) {
+export function Modal({
+  open,
+  title,
+  onClose,
+  size = "md",
+  children,
+}: ModalProps) {
   return (
     <ModalOverlay
       isOpen={open}
@@ -29,7 +39,7 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
       isDismissable
       className={styles.overlay}
     >
-      <AriaModal className={styles.modal}>
+      <AriaModal className={`${styles.modal} ${styles[size]}`}>
         <Dialog className={styles.dialog}>
           <CatEarFrame className={styles.panel}>
             <div className={styles.scrollArea}>

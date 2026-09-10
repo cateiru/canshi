@@ -47,3 +47,8 @@
   margin-top: var(--space-3);
   flex-wrap: wrap;
 }
+
+/* MediaGallery（サムネイル一覧）の上に余白を取る */
+.details + ul {
+  margin-top: var(--space-3);
+}

@@ -3,7 +3,10 @@ import { Breadcrumb } from "@/components/ui";
 import { updateFeedingPresetAction } from "@/features/feeding-presets/actions";
 import { FeedingPresetForm } from "@/features/feeding-presets/FeedingPresetForm";
 import { getFeedingPresetById } from "@/features/feeding-presets/queries";
-import { listFoodProducts } from "@/features/food-products/queries";
+import {
+  listFoodProductImageUrls,
+  listFoodProducts,
+} from "@/features/food-products/queries";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +28,10 @@ export default async function EditFeedingPresetPage({
     notFound();
   }
 
+  const foodProductImageUrls = await listFoodProductImageUrls(
+    foodProducts.map((foodProduct) => foodProduct.id),
+  );
+
   return (
     <main className={styles.main}>
       <Breadcrumb
@@ -39,6 +46,7 @@ export default async function EditFeedingPresetPage({
       <FeedingPresetForm
         action={updateFeedingPresetAction.bind(null, preset.id)}
         foodProducts={foodProducts}
+        foodProductImageUrls={foodProductImageUrls}
         preset={preset}
         submitLabel="更新する"
       />

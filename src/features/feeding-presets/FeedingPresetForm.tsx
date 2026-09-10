@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Button, FormField, Select } from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
+import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import type { FeedingPresetFormState } from "./actions";
 import styles from "./FeedingPresetForm.module.css";
 import type { FeedingPresetWithItems } from "./queries";
@@ -19,6 +20,8 @@ type FeedingPresetFormProps = {
     formData: FormData,
   ) => Promise<FeedingPresetFormState>;
   foodProducts: FoodProduct[];
+  /** 商品 ID → 商品画像の URL（画像のない商品は含まない） */
+  foodProductImageUrls: Record<string, string>;
   preset?: FeedingPresetWithItems;
   submitLabel: string;
 };
@@ -36,6 +39,7 @@ function createEmptyRow(foodProductId: string): ItemRow {
 export function FeedingPresetForm({
   action,
   foodProducts,
+  foodProductImageUrls,
   preset,
   submitLabel,
 }: FeedingPresetFormProps) {
@@ -101,16 +105,28 @@ export function FeedingPresetForm({
                 ) : null}
               </div>
 
-              <Select
-                name={`items.${index}.foodProductId`}
-                label="商品"
-                options={foodProductOptions}
-                selectedKey={item.foodProductId}
-                onSelectionChange={(key) =>
-                  updateItem(index, { foodProductId: String(key) })
-                }
-                errorMessage={itemErrors?.foodProductId?.[0]}
-              />
+              <div className={styles.productRow}>
+                <FoodProductImage
+                  name={
+                    foodProducts.find(
+                      (foodProduct) => foodProduct.id === item.foodProductId,
+                    )?.name ?? "商品"
+                  }
+                  thumbnailUrl={foodProductImageUrls[item.foodProductId]}
+                />
+                <div className={styles.productSelect}>
+                  <Select
+                    name={`items.${index}.foodProductId`}
+                    label="商品"
+                    options={foodProductOptions}
+                    selectedKey={item.foodProductId}
+                    onSelectionChange={(key) =>
+                      updateItem(index, { foodProductId: String(key) })
+                    }
+                    errorMessage={itemErrors?.foodProductId?.[0]}
+                  />
+                </div>
+              </div>
 
               <FormField
                 name={`items.${index}.givenAmountG`}

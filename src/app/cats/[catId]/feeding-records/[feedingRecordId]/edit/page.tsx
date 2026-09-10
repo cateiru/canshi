@@ -8,7 +8,10 @@ import {
   getFeedingRecordById,
   listRecentlyUsedFoodProductIds,
 } from "@/features/feeding-records/queries";
-import { listFoodProducts } from "@/features/food-products/queries";
+import {
+  listFoodProductImageUrls,
+  listFoodProducts,
+} from "@/features/food-products/queries";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +40,9 @@ export default async function EditFeedingRecordPage({
       listFeedingPresets(),
     ],
   );
+  const foodProductImageUrls = await listFoodProductImageUrls(
+    foodProducts.map((foodProduct) => foodProduct.id),
+  );
 
   return (
     <main className={styles.main}>
@@ -54,6 +60,7 @@ export default async function EditFeedingRecordPage({
       <FeedingRecordForm
         action={updateFeedingRecordAction.bind(null, catId, feedingRecord.id)}
         foodProducts={foodProducts}
+        foodProductImageUrls={foodProductImageUrls}
         recentlyUsedFoodProductIds={recentlyUsedFoodProductIds}
         presets={presets}
         feedingRecord={feedingRecord}

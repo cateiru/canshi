@@ -2,8 +2,12 @@ import { notFound } from "next/navigation";
 import { FaPoop } from "react-icons/fa";
 import { Badge, Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { MediaGallery } from "@/features/media/MediaGallery";
+import { listMediaAssetsByRecords } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { deletePoopRecordAction } from "@/features/poop-records/actions";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
+import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
 import { listPoopRecords } from "@/features/poop-records/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
@@ -27,6 +31,10 @@ export default async function PoopRecordsPage({
   }
 
   const records = await listPoopRecords(catId);
+  const mediaByRecordId = await listMediaAssetsByRecords(
+    POOP_RECORD_MEDIA_TYPE,
+    records.map((record) => record.id),
+  );
 
   return (
     <main className={styles.main}>
@@ -107,6 +115,12 @@ export default async function PoopRecordsPage({
                     <Badge color="warning">異物あり</Badge>
                   ) : null}
                 </div>
+                <MediaGallery
+                  assets={(mediaByRecordId.get(record.id) ?? []).map(
+                    toMediaAssetView,
+                  )}
+                  title="うんちの写真"
+                />
                 <div className={styles.cardActions}>
                   <ButtonLink
                     href={`/cats/${catId}/poop-records/${record.id}/edit`}

@@ -2,7 +2,11 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
+import { resolveMediaLimits } from "@/features/media/limits";
+import { listMediaAssetsByRecord } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { updateSymptomAction } from "@/features/symptoms/actions";
+import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/media";
 import { getSymptomById } from "@/features/symptoms/queries";
 import { SymptomForm } from "@/features/symptoms/SymptomForm";
 import styles from "../../page.module.css";
@@ -26,7 +30,10 @@ export default async function EditSymptomPage({
     notFound();
   }
 
-  const hospitalVisitList = await listHospitalVisits(catId);
+  const [hospitalVisitList, mediaAssets] = await Promise.all([
+    listHospitalVisits(catId),
+    listMediaAssetsByRecord(SYMPTOM_MEDIA_TYPE, symptom.id),
+  ]);
 
   return (
     <main className={styles.main}>
@@ -42,9 +49,12 @@ export default async function EditSymptomPage({
 
       <h1>{cat.name}の症状記録を編集する</h1>
       <SymptomForm
+        catId={catId}
         action={updateSymptomAction.bind(null, catId, symptom.id)}
         hospitalVisits={hospitalVisitList}
         symptom={symptom}
+        mediaAssets={mediaAssets.map(toMediaAssetView)}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="更新する"
       />
     </main>

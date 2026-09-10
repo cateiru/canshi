@@ -4,15 +4,21 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { hospitalVisits, medications, symptoms } from "@/db/schema";
+import { deleteMediaAssetsByRecord } from "@/features/media/storage";
+import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
+import { HOSPITAL_VISIT_MEDIA_TYPE } from "./media";
 import {
   type HospitalVisitFormFieldErrors,
   hospitalVisitFormSchema,
 } from "./schema";
 
-export type HospitalVisitFormState = {
+/**
+ * 保存に成功すると `savedRecordId` を返す。写真のアップロードと一覧への遷移は
+ * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
+ */
+export type HospitalVisitFormState = MediaFormState & {
   fieldErrors?: HospitalVisitFormFieldErrors;
-  formError?: string;
 };
 
 function parseFormData(formData: FormData) {
@@ -84,12 +90,15 @@ export async function createHospitalVisitAction(
     return { formError: "関連する症状が見つかりませんでした" };
   }
 
-  await db.insert(hospitalVisits).values({
-    catId,
-    ...buildValues(parsed.data),
-  });
+  const [created] = await db
+    .insert(hospitalVisits)
+    .values({
+      catId,
+      ...buildValues(parsed.data),
+    })
+    .returning({ id: hospitalVisits.id });
 
-  redirect(`/cats/${catId}/hospital-visits`);
+  return { savedRecordId: created.id };
 }
 
 export async function updateHospitalVisitAction(
@@ -119,7 +128,7 @@ export async function updateHospitalVisitAction(
     return { formError: "通院記録が見つかりませんでした" };
   }
 
-  redirect(`/cats/${catId}/hospital-visits`);
+  return { savedRecordId: id };
 }
 
 export async function deleteHospitalVisitAction(
@@ -127,6 +136,8 @@ export async function deleteHospitalVisitAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
+  // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
+  await deleteMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, id);
   // symptoms.hospital_visit_id / medications.hospital_visit_id からの外部キー
   // 参照があるため、通院記録を削除する前に紐付けを解除しておく。3つの操作は
   // db.batch でまとめて原子的に実行する

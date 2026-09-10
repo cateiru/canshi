@@ -3,7 +3,11 @@ import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { updateHospitalVisitAction } from "@/features/hospital-visits/actions";
 import { HospitalVisitForm } from "@/features/hospital-visits/HospitalVisitForm";
+import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
 import { getHospitalVisitById } from "@/features/hospital-visits/queries";
+import { resolveMediaLimits } from "@/features/media/limits";
+import { listMediaAssetsByRecord } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "../../page.module.css";
 
@@ -26,7 +30,10 @@ export default async function EditHospitalVisitPage({
     notFound();
   }
 
-  const symptomList = await listSymptoms(catId);
+  const [symptomList, mediaAssets] = await Promise.all([
+    listSymptoms(catId),
+    listMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, hospitalVisit.id),
+  ]);
 
   return (
     <main className={styles.main}>
@@ -42,9 +49,12 @@ export default async function EditHospitalVisitPage({
 
       <h1>{cat.name}の通院記録を編集する</h1>
       <HospitalVisitForm
+        catId={catId}
         action={updateHospitalVisitAction.bind(null, catId, hospitalVisit.id)}
         symptoms={symptomList}
         hospitalVisit={hospitalVisit}
+        mediaAssets={mediaAssets.map(toMediaAssetView)}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="更新する"
       />
     </main>

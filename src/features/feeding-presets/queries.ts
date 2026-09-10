@@ -1,11 +1,14 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { feedingPresetItems, feedingPresets, foodProducts } from "@/db/schema";
+import { listFoodProductImageUrls } from "@/features/food-products/queries";
 
 export type FeedingPresetItemWithProduct = {
   id: string;
   foodProductId: string;
   foodProductName: string;
+  /** 商品画像（サムネイル）の URL。未登録なら null */
+  foodProductImageUrl: string | null;
   givenAmountG: number;
 };
 
@@ -45,6 +48,10 @@ async function attachItems(
     )
     .orderBy(feedingPresetItems.sortOrder);
 
+  const imageUrls = await listFoodProductImageUrls([
+    ...new Set(itemRows.map((row) => row.foodProductId)),
+  ]);
+
   const itemsByPresetId = new Map<string, FeedingPresetItemWithProduct[]>();
   for (const row of itemRows) {
     const list = itemsByPresetId.get(row.presetId) ?? [];
@@ -52,6 +59,7 @@ async function attachItems(
       id: row.id,
       foodProductId: row.foodProductId,
       foodProductName: row.foodProductName,
+      foodProductImageUrl: imageUrls[row.foodProductId] ?? null,
       givenAmountG: row.givenAmountG,
     });
     itemsByPresetId.set(row.presetId, list);

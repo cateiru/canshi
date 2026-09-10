@@ -6,6 +6,7 @@ import {
   calculateDaysSinceAdoption,
   formatAge,
 } from "@/features/cats/age";
+import { CatAvatar } from "@/features/cats/CatAvatar";
 import { DeleteCatButton } from "@/features/cats/DeleteCatButton";
 import { SEX_LABEL } from "@/features/cats/labels";
 import { getCatById } from "@/features/cats/queries";
@@ -36,7 +37,14 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
         ]}
       />
 
-      <h1>{cat.name}</h1>
+      <div className={styles.profile}>
+        <CatAvatar
+          name={cat.name}
+          profileMediaAssetId={cat.profileMediaAssetId}
+          size="lg"
+        />
+        <h1>{cat.name}</h1>
+      </div>
 
       <Card>
         <Badge>{SEX_LABEL[cat.sex]}</Badge>

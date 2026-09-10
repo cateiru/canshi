@@ -1,6 +1,8 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  type CatPhoto,
+  catPhotos,
   feedingRecordItems,
   feedingRecords,
   foodProducts,
@@ -18,6 +20,17 @@ import {
   type WeightRecord,
   weightRecords,
 } from "@/db/schema";
+import { CAT_PHOTO_MEDIA_TYPE } from "@/features/cat-photos/media";
+import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
+import {
+  listMediaAssetsForRecords,
+  mediaRecordKey,
+} from "@/features/media/queries";
+import type { MediaRecordType } from "@/features/media/recordTypes";
+import { type MediaAssetView, toMediaAssetView } from "@/features/media/view";
+import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
+import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/media";
+import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
 
 export const TIMELINE_RECORD_TYPES = [
   "feeding",
@@ -27,15 +40,33 @@ export const TIMELINE_RECORD_TYPES = [
   "symptom",
   "medicationDose",
   "hospitalVisit",
+  "catPhoto",
 ] as const;
 
 export type TimelineRecordType = (typeof TIMELINE_RECORD_TYPES)[number];
+
+/**
+ * タイムラインの記録種別と media_assets.record_type の対応。
+ * 添付に対応した記録種別をここに追加すると、その種別のエントリにサムネイルが表示される
+ */
+const TIMELINE_MEDIA_RECORD_TYPES: Partial<
+  Record<TimelineRecordType, MediaRecordType>
+> = {
+  poop: POOP_RECORD_MEDIA_TYPE,
+  vomit: VOMIT_RECORD_MEDIA_TYPE,
+  symptom: SYMPTOM_MEDIA_TYPE,
+  // 服薬は予定（medications）に添付するため、投薬実績（medicationDose）のエントリには表示しない
+  hospitalVisit: HOSPITAL_VISIT_MEDIA_TYPE,
+  catPhoto: CAT_PHOTO_MEDIA_TYPE,
+};
 
 type TimelineEntryOf<T extends TimelineRecordType, R> = {
   id: string;
   type: T;
   occurredAt: Date;
   record: R;
+  /** エントリに紐付く写真・動画（添付に対応していない種別は常に空） */
+  media: MediaAssetView[];
 };
 
 export type TimelineFeedingItem = {
@@ -65,7 +96,8 @@ export type TimelineEntry =
       "medicationDose",
       MedicationDose & { medicationName: string }
     >
-  | TimelineEntryOf<"hospitalVisit", HospitalVisit>;
+  | TimelineEntryOf<"hospitalVisit", HospitalVisit>
+  | TimelineEntryOf<"catPhoto", CatPhoto>;
 
 async function fetchFeedingEntries(
   catId: string,
@@ -130,6 +162,7 @@ async function fetchFeedingEntries(
     id: header.id,
     type: "feeding",
     occurredAt: header.occurredAt,
+    media: [],
     record: {
       ...header,
       items: itemsByRecordId.get(header.id) ?? [],
@@ -153,6 +186,7 @@ async function fetchPoopEntries(
     id: record.id,
     type: "poop",
     occurredAt: record.occurredAt,
+    media: [],
     record,
   }));
 }
@@ -173,6 +207,7 @@ async function fetchWeightEntries(
     id: record.id,
     type: "weight",
     occurredAt: record.occurredAt,
+    media: [],
     record,
   }));
 }
@@ -193,6 +228,7 @@ async function fetchVomitEntries(
     id: record.id,
     type: "vomit",
     occurredAt: record.occurredAt,
+    media: [],
     record,
   }));
 }
@@ -213,6 +249,7 @@ async function fetchSymptomEntries(
     id: record.id,
     type: "symptom",
     occurredAt: record.onsetAt,
+    media: [],
     record,
   }));
 }
@@ -244,6 +281,7 @@ async function fetchMedicationDoseEntries(
     id: record.id,
     type: "medicationDose",
     occurredAt: record.occurredAt,
+    media: [],
     record,
   }));
 }
@@ -264,6 +302,28 @@ async function fetchHospitalVisitEntries(
     id: record.id,
     type: "hospitalVisit",
     occurredAt: record.visitedAt,
+    media: [],
+    record,
+  }));
+}
+
+async function fetchCatPhotoEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(catPhotos)
+    .where(eq(catPhotos.catId, catId))
+    .orderBy(desc(catPhotos.takenAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "catPhoto",
+    occurredAt: record.takenAt,
+    media: [],
     record,
   }));
 }
@@ -279,6 +339,7 @@ const FETCHERS: Record<
   symptom: fetchSymptomEntries,
   medicationDose: fetchMedicationDoseEntries,
   hospitalVisit: fetchHospitalVisitEntries,
+  catPhoto: fetchCatPhotoEntries,
 };
 
 export type ListTimelineEntriesOptions = {
@@ -354,8 +415,31 @@ export async function listTimelineEntries(
   });
 
   const start = (page - 1) * pageSize;
-  const entries = merged.slice(start, start + pageSize);
+  const entries = await attachMedia(merged.slice(start, start + pageSize));
   const hasMore = merged.length > start + pageSize;
 
   return { entries, hasMore };
+}
+
+/**
+ * 表示するページ分のエントリに、記録種別を横断して media_assets を引き当てる
+ */
+async function attachMedia(entries: TimelineEntry[]): Promise<TimelineEntry[]> {
+  const refs = entries.flatMap((entry) => {
+    const recordType = TIMELINE_MEDIA_RECORD_TYPES[entry.type];
+    return recordType ? [{ recordType, recordId: entry.id }] : [];
+  });
+  if (refs.length === 0) {
+    return entries;
+  }
+  const mediaByRecord = await listMediaAssetsForRecords(refs);
+  return entries.map((entry) => {
+    const recordType = TIMELINE_MEDIA_RECORD_TYPES[entry.type];
+    if (!recordType) {
+      return entry;
+    }
+    const assets =
+      mediaByRecord.get(mediaRecordKey(recordType, entry.id)) ?? [];
+    return { ...entry, media: assets.map(toMediaAssetView) };
+  });
 }
