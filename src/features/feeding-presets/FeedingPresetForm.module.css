@@ -35,3 +35,14 @@
   font-size: var(--text-xs);
   color: var(--color-error);
 }
+
+.productRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.productSelect {
+  flex: 1;
+  min-width: 0;
+}

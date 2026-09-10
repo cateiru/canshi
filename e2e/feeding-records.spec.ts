@@ -33,11 +33,11 @@ test("複数商品のごはん記録とプリセットからの自動入力が�
 
   await page.goto("/feeding-presets/new");
   await page.getByLabel("プリセット名").fill(presetName);
-  await page.getByLabel("商品").first().click();
+  await page.getByLabel("商品", { exact: true }).first().click();
   await page.getByRole("option", { name: wetProductName }).click();
   await page.getByLabel("与える量（g）").fill("45");
   await page.getByRole("button", { name: "商品を追加する" }).click();
-  await page.getByLabel("商品").nth(1).click();
+  await page.getByLabel("商品", { exact: true }).nth(1).click();
   await page.getByRole("option", { name: dryProductName }).click();
   await page.getByLabel("与える量（g）").nth(1).fill("20");
   await page.getByRole("button", { name: "登録する" }).click();

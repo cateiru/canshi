@@ -1,21 +1,26 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
   feedingPresetItems,
   feedingRecordItems,
   foodProducts,
 } from "@/db/schema";
+import { deleteMediaAssetsByRecord } from "@/features/media/storage";
+import type { MediaFormState } from "@/features/media/useMediaFormAction";
+import { FOOD_PRODUCT_MEDIA_TYPE } from "./media";
 import {
   type FoodProductFormFieldErrors,
   foodProductFormSchema,
 } from "./schema";
 
-export type FoodProductFormState = {
+/**
+ * 保存に成功すると `savedRecordId` を返す。商品画像のアップロードと一覧への遷移は
+ * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
+ */
+export type FoodProductFormState = MediaFormState & {
   fieldErrors?: FoodProductFormFieldErrors;
-  formError?: string;
 };
 
 function parseFormData(formData: FormData) {
@@ -39,9 +44,12 @@ export async function createFoodProductAction(
   }
 
   const db = getDb();
-  await db.insert(foodProducts).values(parsed.data);
+  const [created] = await db
+    .insert(foodProducts)
+    .values(parsed.data)
+    .returning({ id: foodProducts.id });
 
-  redirect("/food-products");
+  return { savedRecordId: created.id };
 }
 
 export async function updateFoodProductAction(
@@ -66,7 +74,7 @@ export async function updateFoodProductAction(
     return { formError: "商品が見つかりませんでした" };
   }
 
-  redirect("/food-products");
+  return { savedRecordId: id };
 }
 
 export type DeleteFoodProductResult = { error?: string };
@@ -103,6 +111,8 @@ export async function deleteFoodProductAction(
     };
   }
 
+  // 商品画像（R2 のオブジェクトと media_assets 行）を先に削除する
+  await deleteMediaAssetsByRecord(FOOD_PRODUCT_MEDIA_TYPE, id);
   await db.delete(foodProducts).where(eq(foodProducts.id, id));
   return {};
 }

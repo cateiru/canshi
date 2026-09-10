@@ -1,13 +1,19 @@
 import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { createFeedingPresetAction } from "@/features/feeding-presets/actions";
 import { FeedingPresetForm } from "@/features/feeding-presets/FeedingPresetForm";
-import { listFoodProducts } from "@/features/food-products/queries";
+import {
+  listFoodProductImageUrls,
+  listFoodProducts,
+} from "@/features/food-products/queries";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewFeedingPresetPage() {
   const foodProducts = await listFoodProducts();
+  const foodProductImageUrls = await listFoodProductImageUrls(
+    foodProducts.map((foodProduct) => foodProduct.id),
+  );
 
   const breadcrumbItems = [
     { label: "トップ", href: "/" },
@@ -39,6 +45,7 @@ export default async function NewFeedingPresetPage() {
       <FeedingPresetForm
         action={createFeedingPresetAction}
         foodProducts={foodProducts}
+        foodProductImageUrls={foodProductImageUrls}
         submitLabel="登録する"
       />
     </main>

@@ -1,6 +1,10 @@
 import { Breadcrumb } from "@/components/ui";
-import { createFoodProductAction } from "@/features/food-products/actions";
+import {
+  createFoodProductAction,
+  updateFoodProductAction,
+} from "@/features/food-products/actions";
 import { FoodProductForm } from "@/features/food-products/FoodProductForm";
+import { resolveMediaLimits } from "@/features/media/limits";
 import styles from "../page.module.css";
 
 export default function NewFoodProductPage() {
@@ -17,6 +21,8 @@ export default function NewFoodProductPage() {
       <h1>ごはん商品を登録する</h1>
       <FoodProductForm
         action={createFoodProductAction}
+        updateAction={updateFoodProductAction}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="登録する"
       />
     </main>

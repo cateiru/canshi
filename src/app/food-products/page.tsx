@@ -1,17 +1,24 @@
 import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { deleteFoodProductAction } from "@/features/food-products/actions";
 import { DeleteFoodProductButton } from "@/features/food-products/DeleteFoodProductButton";
+import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import {
   NUTRITION_TYPE_LABEL,
   TEXTURE_TYPE_LABEL,
 } from "@/features/food-products/labels";
-import { listFoodProducts } from "@/features/food-products/queries";
+import {
+  listFoodProductImageUrls,
+  listFoodProducts,
+} from "@/features/food-products/queries";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
 export default async function FoodProductsPage() {
   const foodProductList = await listFoodProducts();
+  const imageUrls = await listFoodProductImageUrls(
+    foodProductList.map((foodProduct) => foodProduct.id),
+  );
 
   return (
     <main className={styles.main}>
@@ -40,16 +47,22 @@ export default async function FoodProductsPage() {
           {foodProductList.map((foodProduct) => (
             <li key={foodProduct.id}>
               <Card title={foodProduct.name}>
-                <dl className={styles.details}>
-                  <dt>カロリー</dt>
-                  <dd>{foodProduct.kcalPer100g} kcal/100g</dd>
-                  <dt>内容量</dt>
-                  <dd>{foodProduct.packageAmountG} g</dd>
-                  <dt>区分</dt>
-                  <dd>{NUTRITION_TYPE_LABEL[foodProduct.nutritionType]}</dd>
-                  <dt>形状</dt>
-                  <dd>{TEXTURE_TYPE_LABEL[foodProduct.textureType]}</dd>
-                </dl>
+                <div className={styles.cardBody}>
+                  <FoodProductImage
+                    name={foodProduct.name}
+                    thumbnailUrl={imageUrls[foodProduct.id]}
+                  />
+                  <dl className={styles.details}>
+                    <dt>カロリー</dt>
+                    <dd>{foodProduct.kcalPer100g} kcal/100g</dd>
+                    <dt>内容量</dt>
+                    <dd>{foodProduct.packageAmountG} g</dd>
+                    <dt>区分</dt>
+                    <dd>{NUTRITION_TYPE_LABEL[foodProduct.nutritionType]}</dd>
+                    <dt>形状</dt>
+                    <dd>{TEXTURE_TYPE_LABEL[foodProduct.textureType]}</dd>
+                  </dl>
+                </div>
                 <div className={styles.cardActions}>
                   <ButtonLink
                     href={`/food-products/${foodProduct.id}/edit`}

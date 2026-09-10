@@ -3,6 +3,7 @@ import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { deleteFeedingPresetAction } from "@/features/feeding-presets/actions";
 import { DeleteFeedingPresetButton } from "@/features/feeding-presets/DeleteFeedingPresetButton";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
+import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +44,14 @@ export default async function FeedingPresetsPage() {
                 <dl className={styles.details}>
                   {preset.items.map((item) => (
                     <Fragment key={item.id}>
-                      <dt>{item.foodProductName}</dt>
+                      <dt className={styles.productName}>
+                        <FoodProductImage
+                          name={item.foodProductName}
+                          thumbnailUrl={item.foodProductImageUrl}
+                          size="sm"
+                        />
+                        {item.foodProductName}
+                      </dt>
                       <dd>{item.givenAmountG} g</dd>
                     </Fragment>
                   ))}

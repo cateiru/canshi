@@ -1,7 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { DEFAULT_MEDIA_LIMITS } from "@/features/media/limits";
 import type { FoodProductFormState } from "./actions";
 import { FoodProductForm } from "./FoodProductForm";
+
+// useMediaFormAction が使う App Router のフックをテスト用に差し替える
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
 
 describe("FoodProductForm", () => {
   it("送信時にテキスト・数値・区分（Select）の値がすべて FormData に含まれる", async () => {
@@ -12,7 +18,13 @@ describe("FoodProductForm", () => {
       ): Promise<FoodProductFormState> => ({}),
     );
 
-    render(<FoodProductForm action={action} submitLabel="登録する" />);
+    render(
+      <FoodProductForm
+        action={action}
+        mediaLimits={DEFAULT_MEDIA_LIMITS}
+        submitLabel="登録する"
+      />,
+    );
 
     fireEvent.change(screen.getByLabelText("商品名"), {
       target: { value: "モンプチ" },
