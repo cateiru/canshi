@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import type {
   MediaAttachmentsController,
   MediaCommitTarget,
@@ -50,19 +50,23 @@ export function useMediaFormAction<S extends MediaFormState>({
   redirectTo,
 }: UseMediaFormActionOptions<S>) {
   const router = useRouter();
+  // 新規作成に成功した記録の ID。
+  // 再送信で入力エラーになると Action の返す状態は `savedRecordId` を含まなくなるため、
+  // 状態とは別に保持して以後の送信では必ず同じ記録を更新する（記録の重複作成を防ぐ）
+  const savedRecordIdRef = useRef<string | null>(null);
 
   return useActionState<S, FormData>(
     async (previousState, formData) => {
       const previous = previousState as S;
       // 新規作成後にアップロードだけ失敗した場合、再送信で記録を二重に作らないよう更新 Action に切り替える
+      const savedRecordId = savedRecordIdRef.current;
       const effectiveAction =
-        previous.savedRecordId && updateAction
-          ? updateAction(previous.savedRecordId)
-          : action;
+        savedRecordId && updateAction ? updateAction(savedRecordId) : action;
       const result = await effectiveAction(previous, formData);
       if (!result.savedRecordId) {
         return result;
       }
+      savedRecordIdRef.current = result.savedRecordId;
 
       const { failed } = await media.commit({
         recordType,
