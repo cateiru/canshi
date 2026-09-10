@@ -18,6 +18,7 @@ import {
   type WeightRecord,
   weightRecords,
 } from "@/db/schema";
+import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
 import {
   listMediaAssetsForRecords,
   mediaRecordKey,
@@ -50,6 +51,8 @@ const TIMELINE_MEDIA_RECORD_TYPES: Partial<
   poop: POOP_RECORD_MEDIA_TYPE,
   vomit: VOMIT_RECORD_MEDIA_TYPE,
   symptom: SYMPTOM_MEDIA_TYPE,
+  // 服薬は予定（medications）に添付するため、投薬実績（medicationDose）のエントリには表示しない
+  hospitalVisit: HOSPITAL_VISIT_MEDIA_TYPE,
 };
 
 type TimelineEntryOf<T extends TimelineRecordType, R> = {

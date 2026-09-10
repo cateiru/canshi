@@ -3,7 +3,11 @@ import { TbBuildingHospital } from "react-icons/tb";
 import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deleteHospitalVisitAction } from "@/features/hospital-visits/actions";
+import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
+import { MediaGallery } from "@/features/media/MediaGallery";
+import { listMediaAssetsByRecords } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { listMedicationsByHospitalVisitIds } from "@/features/medications/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
@@ -34,10 +38,16 @@ export default async function HospitalVisitsPage({
   const symptomNameById = new Map(
     symptomList.map((symptom) => [symptom.id, symptom.symptomType]),
   );
-  const prescribedMedicationsByVisit = await listMedicationsByHospitalVisitIds(
-    catId,
-    visits.map((visit) => visit.id),
-  );
+  const [prescribedMedicationsByVisit, mediaByRecordId] = await Promise.all([
+    listMedicationsByHospitalVisitIds(
+      catId,
+      visits.map((visit) => visit.id),
+    ),
+    listMediaAssetsByRecords(
+      HOSPITAL_VISIT_MEDIA_TYPE,
+      visits.map((visit) => visit.id),
+    ),
+  ]);
 
   return (
     <main className={styles.main}>
@@ -140,6 +150,13 @@ export default async function HospitalVisitsPage({
                       </>
                     ) : null}
                   </dl>
+                  <MediaGallery
+                    assets={(mediaByRecordId.get(visit.id) ?? []).map(
+                      toMediaAssetView,
+                    )}
+                    title="診療明細などの写真"
+                    fit="actual"
+                  />
                   <div className={styles.cardActions}>
                     <ButtonLink
                       href={`/cats/${catId}/hospital-visits/${visit.id}/edit`}

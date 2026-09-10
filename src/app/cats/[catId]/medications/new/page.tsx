@@ -2,7 +2,11 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
-import { createMedicationAction } from "@/features/medications/actions";
+import { resolveMediaLimits } from "@/features/media/limits";
+import {
+  createMedicationAction,
+  updateMedicationAction,
+} from "@/features/medications/actions";
 import { MedicationForm } from "@/features/medications/MedicationForm";
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "../page.module.css";
@@ -42,9 +46,12 @@ export default async function NewMedicationPage({
 
       <h1>{cat.name}の服薬予定を登録する</h1>
       <MedicationForm
+        catId={catId}
         action={createMedicationAction.bind(null, catId)}
+        updateAction={updateMedicationAction.bind(null, catId)}
         symptoms={symptomList}
         hospitalVisits={hospitalVisitList}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="登録する"
       />
     </main>

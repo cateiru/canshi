@@ -1,8 +1,12 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
-import { createHospitalVisitAction } from "@/features/hospital-visits/actions";
+import {
+  createHospitalVisitAction,
+  updateHospitalVisitAction,
+} from "@/features/hospital-visits/actions";
 import { HospitalVisitForm } from "@/features/hospital-visits/HospitalVisitForm";
+import { resolveMediaLimits } from "@/features/media/limits";
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "../page.module.css";
 
@@ -38,8 +42,11 @@ export default async function NewHospitalVisitPage({
 
       <h1>{cat.name}の通院を記録する</h1>
       <HospitalVisitForm
+        catId={catId}
         action={createHospitalVisitAction.bind(null, catId)}
+        updateAction={updateHospitalVisitAction.bind(null, catId)}
         symptoms={symptomList}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="記録する"
       />
     </main>
