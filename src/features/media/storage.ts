@@ -1,5 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { and, eq, inArray } from "drizzle-orm";
+import { chunk, chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
 import { sanitizeImage } from "./exif";
@@ -25,6 +26,9 @@ import { generateImageThumbnail } from "./thumbnail";
  * R2 と `media_assets` を扱う共通処理。
  * アップロード API・各記録の削除アクションはこのモジュールを通して R2 を操作する
  */
+
+/** R2 の 1 回の delete で渡せるキー数の上限 */
+const R2_MAX_DELETE_KEYS = 1000;
 
 export class MediaUploadError extends Error {
   readonly status: number;
@@ -166,16 +170,23 @@ export async function storeMediaAsset(
   );
   const bucket = getBucket();
 
-  await Promise.all([
-    bucket.put(objectKey, prepared.body, {
-      httpMetadata: { contentType: sniffed.mimeType },
-    }),
-    bucket.put(thumbnailObjectKey, prepared.thumbnail, {
-      httpMetadata: { contentType: THUMBNAIL_MIME_TYPE },
-    }),
-  ]);
-
   try {
+    // 片方の put だけ成功した場合も catch で両方のキーを片付けるため、両方が完了するまで待つ
+    // （Promise.all だと先に失敗した時点で抜けてしまい、進行中の put が後から残る）
+    const putResults = await Promise.allSettled([
+      bucket.put(objectKey, prepared.body, {
+        httpMetadata: { contentType: sniffed.mimeType },
+      }),
+      bucket.put(thumbnailObjectKey, prepared.thumbnail, {
+        httpMetadata: { contentType: THUMBNAIL_MIME_TYPE },
+      }),
+    ]);
+    for (const result of putResults) {
+      if (result.status === "rejected") {
+        throw result.reason;
+      }
+    }
+
     const db = getDb();
     const sortOrder = await nextMediaSortOrder(recordType, recordId);
     const [created] = await db
@@ -197,7 +208,8 @@ export async function storeMediaAsset(
       .returning();
     return created;
   } catch (error) {
-    // 行の作成に失敗したら R2 に置いたオブジェクトを片付ける（失敗しても元のエラーを優先する）
+    // R2 への保存が一部失敗した場合や行の作成に失敗した場合は、R2 に置いたオブジェクトを片付ける
+    // （存在しないキーの削除は何もしないので、両方まとめて消してよい。失敗しても元のエラーを優先する）
     await bucket.delete([objectKey, thumbnailObjectKey]).catch(() => {});
     throw error;
   }
@@ -224,17 +236,16 @@ async function deleteAssets(assets: MediaAsset[]): Promise<void> {
   if (assets.length === 0) {
     return;
   }
-  const keys = objectKeysOf(assets);
-  if (keys.length > 0) {
-    await getBucket().delete(keys);
+  const bucket = getBucket();
+  for (const keys of chunk(objectKeysOf(assets), R2_MAX_DELETE_KEYS)) {
+    await bucket.delete(keys);
   }
   const db = getDb();
-  await db.delete(mediaAssets).where(
-    inArray(
-      mediaAssets.id,
-      assets.map((asset) => asset.id),
-    ),
-  );
+  const assetIds = assets.map((asset) => asset.id);
+  // D1 のバインドパラメーター上限を超えないよう分割して削除する
+  for (const ids of chunkForBoundParameters(assetIds)) {
+    await db.delete(mediaAssets).where(inArray(mediaAssets.id, ids));
+  }
 }
 
 /** 1 件削除。存在しない場合は何もしない */

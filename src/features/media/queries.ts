@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
 
@@ -46,20 +47,24 @@ export async function listMediaAssetsByRecords(
     return grouped;
   }
   const db = getDb();
-  const rows = await db
-    .select()
-    .from(mediaAssets)
-    .where(
-      and(
-        eq(mediaAssets.recordType, recordType),
-        inArray(mediaAssets.recordId, recordIds),
-      ),
-    )
-    .orderBy(...ORDER);
-  for (const row of rows) {
-    const list = grouped.get(row.recordId) ?? [];
-    list.push(row);
-    grouped.set(row.recordId, list);
+  // D1 のバインドパラメーター上限を超えないよう、recordType の 1 個分を差し引いて分割する。
+  // レコード単位で分割するので、同じレコードのメディアが複数のチャンクにまたがることはない
+  for (const ids of chunkForBoundParameters(recordIds, 1)) {
+    const rows = await db
+      .select()
+      .from(mediaAssets)
+      .where(
+        and(
+          eq(mediaAssets.recordType, recordType),
+          inArray(mediaAssets.recordId, ids),
+        ),
+      )
+      .orderBy(...ORDER);
+    for (const row of rows) {
+      const list = grouped.get(row.recordId) ?? [];
+      list.push(row);
+      grouped.set(row.recordId, list);
+    }
   }
   return grouped;
 }
