@@ -83,7 +83,9 @@ test("通院記録と服薬予定に書類の写真を添付し、等倍で閲�
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })
     .click();
-  await expect(page.getByText("まだ服薬予定が登録されていません。")).toBeVisible();
+  await expect(
+    page.getByText("まだ服薬予定が登録されていません。"),
+  ).toBeVisible();
   expect((await page.request.get(medicationSrc)).status()).toBe(404);
 
   await page.goto(page.url().replace(/medications$/, "hospital-visits"));
