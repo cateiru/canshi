@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
-import { chunkForBoundParameters } from "@/db/batch";
+import { chunkForBoundParameters, D1_MAX_BOUND_PARAMETERS } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
 
@@ -120,27 +120,60 @@ export async function listMediaAssetsForRecords(
     idsByType.set(ref.recordType, ids);
   }
   const db = getDb();
-  const rows = await db
-    .select()
-    .from(mediaAssets)
-    .where(
-      or(
-        ...[...idsByType.entries()].map(([recordType, ids]) =>
-          and(
-            eq(mediaAssets.recordType, recordType),
-            inArray(mediaAssets.recordId, ids),
+  for (const batch of packRecordRefs(idsByType)) {
+    const rows = await db
+      .select()
+      .from(mediaAssets)
+      .where(
+        or(
+          ...batch.map(([recordType, ids]) =>
+            and(
+              eq(mediaAssets.recordType, recordType),
+              inArray(mediaAssets.recordId, ids),
+            ),
           ),
         ),
-      ),
-    )
-    .orderBy(...ORDER);
-  for (const row of rows) {
-    const key = mediaRecordKey(row.recordType, row.recordId);
-    const list = grouped.get(key) ?? [];
-    list.push(row);
-    grouped.set(key, list);
+      )
+      .orderBy(...ORDER);
+    for (const row of rows) {
+      const key = mediaRecordKey(row.recordType, row.recordId);
+      const list = grouped.get(key) ?? [];
+      list.push(row);
+      grouped.set(key, list);
+    }
   }
   return grouped;
+}
+
+type RecordTypeClause = [recordType: string, recordIds: string[]];
+
+/**
+ * 記録種別ごとの ID 一覧を、1 クエリあたりのバインドパラメーター数
+ * （種別ごとに `recordType` の 1 個 + ID の個数）が D1 の上限に収まるようにまとめる。
+ * レコード単位で分けるので、同じレコードのメディアが複数のクエリにまたがることはない
+ */
+export function packRecordRefs(
+  idsByType: Map<string, string[]>,
+): RecordTypeClause[][] {
+  const batches: RecordTypeClause[][] = [];
+  let current: RecordTypeClause[] = [];
+  let currentParameters = 0;
+  for (const [recordType, allIds] of idsByType) {
+    for (const ids of chunkForBoundParameters(allIds, 1)) {
+      const parameters = ids.length + 1;
+      if (currentParameters + parameters > D1_MAX_BOUND_PARAMETERS) {
+        batches.push(current);
+        current = [];
+        currentParameters = 0;
+      }
+      current.push([recordType, ids]);
+      currentParameters += parameters;
+    }
+  }
+  if (current.length > 0) {
+    batches.push(current);
+  }
+  return batches;
 }
 
 export function mediaRecordKey(recordType: string, recordId: string) {
