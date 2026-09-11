@@ -1,17 +1,16 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import type { NotificationKind } from "@/db/schema";
-import { notificationPreferences, notificationSettings } from "@/db/schema";
+import { notificationPreferences } from "@/db/schema";
 import {
   type CatNotificationSettingsFormFieldErrors,
   catNotificationSettingsFormSchema,
   type NotificationPreferencesFormFieldErrors,
   notificationPreferencesFormSchema,
 } from "./settingsSchema";
+import { buildCatNotificationSettingsBatch } from "./settingsUpsert";
 
 export type NotificationPreferencesFormState = {
   fieldErrors?: NotificationPreferencesFormFieldErrors;
@@ -59,19 +58,15 @@ export type CatNotificationSettingsFormState = {
   formError?: string;
 };
 
-type KindSettingEntry = {
-  kind: Exclude<NotificationKind, "cleaning_due">;
-  isEnabled: boolean;
-  params: { months?: number; days?: number } | null;
-};
-
 /**
  * 猫ごとの通知設定を保存する。
  *
- * `notification_settings` の `(cat_id, kind, reference_id)` UNIQUE 制約は、SQLite が
- * NULL 同士を等しいとみなさないため `reference_id` が NULL の行（掃除以外の種類）どうしの
- * 重複を防げない。そのため `onConflictDoUpdate` は使わず、既存行を読んでから
- * 更新／挿入のどちらかを行う（`src/db/schema/notification-settings.test.ts` 参照）
+ * `notification_settings` の UNIQUE インデックスは `reference_id` が NULL の行と
+ * NULL でない行とで分かれている（`src/db/schema/notification-settings.ts` 参照）ため、
+ * それぞれを対象にした `onConflictDoUpdate` で保存できる（`buildCatNotificationSettingsBatch`
+ * 参照）。読んでから更新／挿入を選ぶ方式と違い、同時保存でも重複行や更新の取りこぼしが
+ * 起きない。複数項目の更新を1回の `db.batch` にまとめることで、途中失敗による
+ * 一部項目だけの保存も防ぐ
  */
 export async function updateCatNotificationSettingsAction(
   catId: string,
@@ -93,87 +88,14 @@ export async function updateCatNotificationSettingsAction(
   }
 
   const db = getDb();
-  const existingRows = await db
-    .select()
-    .from(notificationSettings)
-    .where(eq(notificationSettings.catId, catId));
+  const cleaningTargets = cleaningTargetIds.map((targetId) => ({
+    id: targetId,
+    isEnabled: formData.get(`cleaningEnabled_${targetId}`) === "on",
+  }));
 
-  const existingByKind = new Map<string, (typeof existingRows)[number]>();
-  const existingByTarget = new Map<string, (typeof existingRows)[number]>();
-  for (const row of existingRows) {
-    if (row.kind === "cleaning_due" && row.referenceId) {
-      existingByTarget.set(row.referenceId, row);
-    } else {
-      existingByKind.set(row.kind, row);
-    }
-  }
-
-  const kindEntries: KindSettingEntry[] = [
-    {
-      kind: "birthday_yearly",
-      isEnabled: parsed.data.birthdayYearlyEnabled,
-      params: null,
-    },
-    {
-      kind: "birthday_half_year",
-      isEnabled: parsed.data.birthdayHalfYearEnabled,
-      params: null,
-    },
-    {
-      kind: "days_milestone",
-      isEnabled: parsed.data.daysMilestoneEnabled,
-      params: null,
-    },
-    {
-      kind: "shampoo_elapsed",
-      isEnabled: parsed.data.shampooElapsedEnabled,
-      params: { months: parsed.data.shampooElapsedMonths },
-    },
-    {
-      kind: "weight_measurement",
-      isEnabled: parsed.data.weightMeasurementEnabled,
-      params: { days: parsed.data.weightMeasurementDays },
-    },
-  ];
-
-  for (const entry of kindEntries) {
-    const existing = existingByKind.get(entry.kind);
-    if (existing) {
-      await db
-        .update(notificationSettings)
-        .set({
-          isEnabled: entry.isEnabled,
-          params: entry.params,
-          updatedAt: new Date(),
-        })
-        .where(eq(notificationSettings.id, existing.id));
-    } else {
-      await db.insert(notificationSettings).values({
-        catId,
-        kind: entry.kind,
-        isEnabled: entry.isEnabled,
-        params: entry.params,
-      });
-    }
-  }
-
-  for (const targetId of cleaningTargetIds) {
-    const isEnabled = formData.get(`cleaningEnabled_${targetId}`) === "on";
-    const existing = existingByTarget.get(targetId);
-    if (existing) {
-      await db
-        .update(notificationSettings)
-        .set({ isEnabled, updatedAt: new Date() })
-        .where(eq(notificationSettings.id, existing.id));
-    } else {
-      await db.insert(notificationSettings).values({
-        catId,
-        kind: "cleaning_due",
-        referenceId: targetId,
-        isEnabled,
-      });
-    }
-  }
+  await db.batch(
+    buildCatNotificationSettingsBatch(db, catId, cleaningTargets, parsed.data),
+  );
 
   revalidatePath(`/cats/${catId}/notification-settings`);
   redirect(`/cats/${catId}/notification-settings`);
