@@ -13,6 +13,7 @@ import {
   poopRecords,
   symptoms,
   vomitRecords,
+  waterRecords,
   weightRecords,
 } from "@/db/schema";
 import { deleteMediaAssetsByCat } from "@/features/media/storage";
@@ -108,6 +109,7 @@ export async function deleteCatAction(id: string): Promise<void> {
     db.delete(poopRecords).where(eq(poopRecords.catId, id)),
     db.delete(weightRecords).where(eq(weightRecords.catId, id)),
     db.delete(vomitRecords).where(eq(vomitRecords.catId, id)),
+    db.delete(waterRecords).where(eq(waterRecords.catId, id)),
     db
       .update(symptoms)
       .set({ hospitalVisitId: null })
