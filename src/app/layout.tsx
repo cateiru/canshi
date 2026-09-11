@@ -5,6 +5,9 @@ import { ServiceWorkerRegistration } from "@/features/pwa/ServiceWorkerRegistrat
 import "@/styles/globals.css";
 import styles from "./layout.module.css";
 
+// NotificationBadge が getCloudflareContext() を使うため静的プリレンダリングできない
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "CANSHI",
   description: "愛猫の記録アプリ",
