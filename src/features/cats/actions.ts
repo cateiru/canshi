@@ -11,6 +11,7 @@ import {
   medicationDoses,
   medications,
   poopRecords,
+  shampooRecords,
   symptoms,
   vomitRecords,
   waterRecords,
@@ -110,6 +111,7 @@ export async function deleteCatAction(id: string): Promise<void> {
     db.delete(weightRecords).where(eq(weightRecords.catId, id)),
     db.delete(vomitRecords).where(eq(vomitRecords.catId, id)),
     db.delete(waterRecords).where(eq(waterRecords.catId, id)),
+    db.delete(shampooRecords).where(eq(shampooRecords.catId, id)),
     db
       .update(symptoms)
       .set({ hospitalVisitId: null })
