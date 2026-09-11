@@ -31,7 +31,7 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/" },
+          { label: "トップ", href: "/home" },
           { label: "猫一覧", href: "/cats" },
           { label: cat.name },
         ]}

@@ -34,7 +34,7 @@ export default async function EditFoodProductPage({
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/" },
+          { label: "トップ", href: "/home" },
           { label: "ごはん商品一覧", href: "/food-products" },
           { label: "編集する" },
         ]}

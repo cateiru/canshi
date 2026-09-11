@@ -41,7 +41,7 @@ export default async function NotificationsPage({
     <main className={styles.main}>
       <MarkNotificationsRead ids={unreadIds} />
       <Breadcrumb
-        items={[{ label: "トップ", href: "/" }, { label: "通知センター" }]}
+        items={[{ label: "トップ", href: "/home" }, { label: "通知センター" }]}
       />
 
       <h1>通知センター</h1>

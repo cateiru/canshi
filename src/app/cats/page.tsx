@@ -18,7 +18,7 @@ export default async function CatsPage() {
   return (
     <main className={styles.main}>
       <Breadcrumb
-        items={[{ label: "トップ", href: "/" }, { label: "猫一覧" }]}
+        items={[{ label: "トップ", href: "/home" }, { label: "猫一覧" }]}
       />
 
       <div className={styles.header}>

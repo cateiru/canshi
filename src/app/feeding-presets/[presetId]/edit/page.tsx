@@ -36,7 +36,7 @@ export default async function EditFeedingPresetPage({
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/" },
+          { label: "トップ", href: "/home" },
           { label: "ごはんプリセット一覧", href: "/feeding-presets" },
           { label: "編集する" },
         ]}

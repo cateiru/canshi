@@ -23,7 +23,7 @@ export default async function EditCatPage({ params }: EditCatPageProps) {
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/" },
+          { label: "トップ", href: "/home" },
           { label: "猫一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${cat.id}` },
           { label: "編集する" },

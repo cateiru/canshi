@@ -23,7 +23,10 @@ export default async function FoodProductsPage() {
   return (
     <main className={styles.main}>
       <Breadcrumb
-        items={[{ label: "トップ", href: "/" }, { label: "ごはん商品一覧" }]}
+        items={[
+          { label: "トップ", href: "/home" },
+          { label: "ごはん商品一覧" },
+        ]}
       />
 
       <div className={styles.header}>

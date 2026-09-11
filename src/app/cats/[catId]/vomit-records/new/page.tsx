@@ -29,7 +29,7 @@ export default async function NewVomitRecordPage({
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/" },
+          { label: "トップ", href: "/home" },
           { label: "猫一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "嘔吐記録", href: `/cats/${catId}/vomit-records` },
