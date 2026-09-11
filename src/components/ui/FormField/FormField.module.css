@@ -10,6 +10,7 @@
 }
 
 .input {
+  width: 100%;
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-base);
   padding: var(--space-2) var(--space-3);
