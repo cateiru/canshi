@@ -47,6 +47,8 @@ export default async function CatsPage() {
                     <CatAvatar
                       name={cat.name}
                       profileMediaAssetId={cat.profileMediaAssetId}
+                      profileCropX={cat.profileCropX}
+                      profileCropY={cat.profileCropY}
                     />
                     <div>
                       <Badge>{SEX_LABEL[cat.sex]}</Badge>

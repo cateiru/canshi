@@ -6,6 +6,9 @@ import styles from "./CatAvatar.module.css";
 type CatAvatarProps = {
   name: string;
   profileMediaAssetId: string | null;
+  /** 表示位置（object-position と同じ 0〜100 の百分率）。未指定なら中央 */
+  profileCropX?: number | null;
+  profileCropY?: number | null;
   size?: "sm" | "lg";
 };
 
@@ -15,6 +18,8 @@ type CatAvatarProps = {
 export function CatAvatar({
   name,
   profileMediaAssetId,
+  profileCropX,
+  profileCropY,
   size = "sm",
 }: CatAvatarProps) {
   return (
@@ -24,6 +29,9 @@ export function CatAvatar({
           src={mediaThumbnailUrl(profileMediaAssetId)}
           alt={`${name}のプロフィール画像`}
           className={styles.image}
+          style={{
+            objectPosition: `${profileCropX ?? 50}% ${profileCropY ?? 50}%`,
+          }}
         />
       ) : (
         <span

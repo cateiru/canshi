@@ -12,6 +12,8 @@
 .modal {
   width: 100%;
   max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .md {
@@ -22,20 +24,36 @@
   max-width: 960px;
 }
 
+/*
+ * dialog・panel は中身が1つだけの縦並び flex コンテナにして、min-height: 0 で
+ * 内容の実寸に縛られず縮められるようにする。こうすると .modal の max-height を
+ * 超えた分だけが自動的に .scrollArea に集約され、そこだけがスクロールする。
+ * （space-6 の2倍などを手計算していた旧実装は、CatEarFrame の margin-top 分を
+ * 数え忘れて操作ボタンが見切れる原因になっていた）
+ */
 .dialog {
   outline: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .panel {
   padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .scrollArea {
-  max-height: calc(90vh - var(--space-6) * 2);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   overflow-y: auto;
 }
 
 .title {
+  flex: none;
   font-size: var(--text-lg);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-heading);

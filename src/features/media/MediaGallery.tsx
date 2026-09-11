@@ -26,6 +26,8 @@ export type MediaGalleryProps = {
   markedLabel?: string;
   /** モーダル内の操作ボタン（表示中の添付に対する操作） */
   renderActions?: (asset: MediaAssetView) => ReactNode;
+  /** 「閉じる」ボタンの左に並べる操作ボタン（表示中の添付に対する操作） */
+  renderNavActions?: (asset: MediaAssetView) => ReactNode;
 };
 
 /**
@@ -39,6 +41,7 @@ export function MediaGallery({
   markedAssetId,
   markedLabel = "選択中",
   renderActions,
+  renderNavActions,
 }: MediaGalleryProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -138,9 +141,12 @@ export function MediaGallery({
               ) : (
                 <span />
               )}
-              <Button variant="secondary" onPress={() => setOpenIndex(null)}>
-                閉じる
-              </Button>
+              <div className={styles.navRight}>
+                {renderNavActions ? renderNavActions(current) : null}
+                <Button variant="secondary" onPress={() => setOpenIndex(null)}>
+                  閉じる
+                </Button>
+              </div>
             </div>
             {renderActions ? (
               <div className={styles.actions}>{renderActions(current)}</div>

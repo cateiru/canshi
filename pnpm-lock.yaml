@@ -11,6 +11,9 @@ importers:
       '@cf-wasm/photon':
         specifier: ^0.4.0
         version: 0.4.0
+      cropperjs:
+        specifier: ^1.6.3
+        version: 1.6.3
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@types/sql.js@1.4.11)(sql.js@1.14.2)
@@ -23,6 +26,9 @@ importers:
       react-aria-components:
         specifier: ^1.21.1
         version: 1.21.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react-cropper:
+        specifier: ^2.3.3
+        version: 2.3.3(react@19.2.8)
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
@@ -1991,6 +1997,9 @@ packages:
     resolution: {integrity: sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==}
     engines: {node: '>=18'}
 
+  cropperjs@1.6.3:
+    resolution: {integrity: sha512-BRb0PRIzjbfM5n+i6L2D85pSbXI/w6cnnwb9W9cRKgAmbiP+OjDeq+Irhd86IujZDXm/7JWECfscllFIdrlmfw==}
+
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
@@ -2754,6 +2763,11 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
       react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
+
+  react-cropper@2.3.3:
+    resolution: {integrity: sha512-zghiEYkUb41kqtu+2jpX2Ntigf+Jj1dF9ew4lAobPzI2adaPE31z0p+5TcWngK6TvmWQUwK3lj4G+NDh1PDQ1w==}
+    peerDependencies:
+      react: '>=17.0.2'
 
   react-dom@19.2.8:
     resolution: {integrity: sha512-rVprimfGBG3DR+Tq0IQG2DT5PxKth1WIGDmj5yPmlzr4YBe7uyE+Du4oVqTDXZSHGGGXRtTJEGSSePyQCMBglQ==}
@@ -5047,6 +5061,8 @@ snapshots:
 
   cookie@1.1.1: {}
 
+  cropperjs@1.6.3: {}
+
   cross-spawn@7.0.6:
     dependencies:
       path-key: 3.1.1
@@ -5760,6 +5776,11 @@ snapshots:
       react-dom: 19.2.8(react@19.2.8)
       react-stately: 3.50.0(react@19.2.8)
       use-sync-external-store: 1.6.0(react@19.2.8)
+
+  react-cropper@2.3.3(react@19.2.8):
+    dependencies:
+      cropperjs: 1.6.3
+      react: 19.2.8
 
   react-dom@19.2.8(react@19.2.8):
     dependencies:

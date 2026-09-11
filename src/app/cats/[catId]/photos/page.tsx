@@ -83,6 +83,8 @@ export default async function CatPhotosPage({ params }: CatPhotosPageProps) {
                     )}
                     profileAssetId={cat.profileMediaAssetId}
                     isProfilePinned={cat.isProfilePinned}
+                    profileCropX={cat.profileCropX}
+                    profileCropY={cat.profileCropY}
                     pinAction={pinProfileImageAction.bind(null, catId)}
                     unpinAction={unpinProfileImageAction.bind(null, catId)}
                   />

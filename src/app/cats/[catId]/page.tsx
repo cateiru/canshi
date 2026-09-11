@@ -41,6 +41,8 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
         <CatAvatar
           name={cat.name}
           profileMediaAssetId={cat.profileMediaAssetId}
+          profileCropX={cat.profileCropX}
+          profileCropY={cat.profileCropY}
           size="lg"
         />
         <h1>{cat.name}</h1>

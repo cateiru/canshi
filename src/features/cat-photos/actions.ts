@@ -4,6 +4,10 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { catPhotos, cats, mediaAssets } from "@/db/schema";
+import {
+  clampCropPercent,
+  type ProfileCrop,
+} from "@/features/cats/profileCrop";
 import { syncCatProfileImage } from "@/features/cats/profileImage";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
@@ -103,11 +107,13 @@ export async function deleteCatPhotoAction(
 export type ProfileImageActionResult = { error?: string };
 
 /**
- * 指定した写真をプロフィール画像として固定する。固定中は写真を追加しても自動更新しない
+ * 指定した写真をプロフィール画像として固定する。固定中は写真を追加しても自動更新しない。
+ * crop は表示位置（object-position と同じ 0〜100 の百分率）
  */
 export async function pinProfileImageAction(
   catId: string,
   assetId: string,
+  crop: ProfileCrop,
 ): Promise<ProfileImageActionResult> {
   const db = getDb();
   const [asset] = await db
@@ -129,6 +135,8 @@ export async function pinProfileImageAction(
     .set({
       profileMediaAssetId: asset.id,
       isProfilePinned: true,
+      profileCropX: clampCropPercent(crop.x),
+      profileCropY: clampCropPercent(crop.y),
       updatedAt: new Date(),
     })
     .where(eq(cats.id, catId));

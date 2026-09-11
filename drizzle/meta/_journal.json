@@ -127,6 +127,13 @@
       "when": 1789093147937,
       "tag": "0017_luxuriant_blizzard",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1789105849270,
+      "tag": "0018_chunky_human_fly",
+      "breakpoints": true
     }
   ]
 }

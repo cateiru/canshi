@@ -59,8 +59,13 @@ test("猫の写真を登録するとプロフィール画像が自動更新さ�
   await page.getByRole("button", { name: "猫の写真 1 を表示" }).nth(1).click();
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "プロフィール画像にする" })
+    .getByRole("button", { name: "プロフィールに固定" })
     .click();
+  const cropDialog = page.getByRole("dialog", {
+    name: "プロフィール画像の位置を選ぶ",
+  });
+  await cropDialog.getByRole("button", { name: "この位置に固定する" }).click();
+  await expect(cropDialog).toBeHidden();
   await expect(
     page.getByRole("dialog").getByText("プロフィール画像（固定中）"),
   ).toBeVisible();
@@ -84,11 +89,12 @@ test("猫の写真を登録するとプロフィール画像が自動更新さ�
     .getByRole("dialog")
     .getByRole("button", { name: "固定を解除して自動更新に戻す" })
     .click();
+  // 解除後はこの写真がプロフィール画像ではなくなるため、ボタン自体が消える
   await expect(
     page
       .getByRole("dialog")
-      .getByRole("button", { name: "プロフィール画像にする" }),
-  ).toBeVisible();
+      .getByRole("button", { name: "固定を解除して自動更新に戻す" }),
+  ).toBeHidden();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "閉じる" })

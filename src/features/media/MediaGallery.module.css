@@ -74,7 +74,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  max-height: 70vh;
+  /* 写真のサイズによってモーダルの大きさが変わらないよう、決まった高さに収める */
+  height: 420px;
+  max-height: 60vh;
   overflow: auto;
   /* iOS でのピンチ拡大を許可する */
   touch-action: pinch-zoom;
@@ -86,7 +88,7 @@
 
 .fit-contain .media {
   max-width: 100%;
-  max-height: 70vh;
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -108,6 +110,11 @@
 .nav {
   display: flex;
   justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.navRight {
+  display: flex;
   gap: var(--space-2);
 }
 

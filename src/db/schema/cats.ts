@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnySQLiteColumn,
   integer,
+  real,
   sqliteTable,
   text,
 } from "drizzle-orm/sqlite-core";
@@ -26,6 +27,10 @@ export const cats = sqliteTable("cats", {
   isProfilePinned: integer("is_profile_pinned", { mode: "boolean" })
     .notNull()
     .default(false),
+  // プロフィール画像の表示位置（CSS の object-position と同じ 0〜100 の百分率）。
+  // 未設定（null）なら中央（50, 50）として扱う
+  profileCropX: real("profile_crop_x"),
+  profileCropY: real("profile_crop_y"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
