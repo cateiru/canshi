@@ -143,6 +143,7 @@ export async function deleteCleaningTargetAction(
         and(
           eq(notifications.kind, "cleaning_due"),
           eq(notifications.referenceId, id),
+          eq(notifications.catId, catId),
         ),
       ),
     db
@@ -151,6 +152,7 @@ export async function deleteCleaningTargetAction(
         and(
           eq(notificationSettings.kind, "cleaning_due"),
           eq(notificationSettings.referenceId, id),
+          eq(notificationSettings.catId, catId),
         ),
       ),
     db
