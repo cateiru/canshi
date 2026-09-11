@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sql-js";
 import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
@@ -25,7 +26,8 @@ describe("cleaning_targets テーブル", () => {
     await db.insert(cleaningTargets).values({
       catId: cat.id,
       name: "猫砂",
-      frequencyDays: 7,
+      frequencyValue: 7,
+      frequencyUnit: "days",
     });
 
     const rows = await db.select().from(cleaningTargets);
@@ -33,5 +35,25 @@ describe("cleaning_targets テーブル", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].catId).toBe(cat.id);
     expect(rows[0].isActive).toBe(true);
+  });
+
+  it("frequencyUnit を省略すると days になる", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "みけ", sex: "male" })
+      .returning();
+
+    await db.insert(cleaningTargets).values({
+      catId: cat.id,
+      name: "フィルター",
+      frequencyValue: 2,
+    });
+
+    const rows = await db
+      .select()
+      .from(cleaningTargets)
+      .where(eq(cleaningTargets.catId, cat.id));
+
+    expect(rows[0].frequencyUnit).toBe("days");
   });
 });

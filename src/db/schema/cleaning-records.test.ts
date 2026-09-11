@@ -24,7 +24,7 @@ describe("cleaning_records テーブル", () => {
       .returning();
     const [target] = await db
       .insert(cleaningTargets)
-      .values({ catId: cat.id, name: "猫砂", frequencyDays: 7 })
+      .values({ catId: cat.id, name: "猫砂", frequencyValue: 7 })
       .returning();
 
     await db.insert(cleaningRecords).values({

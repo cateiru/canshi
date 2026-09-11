@@ -2,13 +2,36 @@ import { describe, expect, it } from "vitest";
 import { calculateNextDueAt, isCleaningOverdue } from "./calculations";
 
 describe("calculateNextDueAt", () => {
-  it("前回実施日 + 頻度日数を返す", () => {
-    const result = calculateNextDueAt(new Date("2026-09-01T00:00:00.000Z"), 7);
+  it("単位が「日」の場合、前回実施日 + 頻度日数を返す", () => {
+    const result = calculateNextDueAt(
+      new Date("2026-09-01T00:00:00.000Z"),
+      7,
+      "days",
+    );
     expect(result).toEqual(new Date("2026-09-08T00:00:00.000Z"));
   });
 
+  it("単位が「月」の場合、前回実施日の暦月後（同じ日）を返す", () => {
+    const result = calculateNextDueAt(
+      new Date("2026-09-07T08:00:00.000Z"),
+      2,
+      "months",
+    );
+    expect(result).toEqual(new Date("2026-11-07T08:00:00.000Z"));
+  });
+
+  it("単位が「月」で存在しない日になる場合、翌月に繰り越す", () => {
+    // 1/31 の1ヶ月後は2/31が存在しないため3/3になる（非うるう年）
+    const result = calculateNextDueAt(
+      new Date("2026-01-31T00:00:00.000Z"),
+      1,
+      "months",
+    );
+    expect(result).toEqual(new Date("2026-03-03T00:00:00.000Z"));
+  });
+
   it("未実施（前回実施日がない）場合は null を返す", () => {
-    expect(calculateNextDueAt(null, 7)).toBeNull();
+    expect(calculateNextDueAt(null, 7, "days")).toBeNull();
   });
 });
 

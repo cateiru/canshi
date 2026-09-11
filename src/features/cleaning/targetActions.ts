@@ -3,7 +3,11 @@
 import { and, eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { cleaningRecords, cleaningTargets } from "@/db/schema";
+import {
+  type CleaningTarget,
+  cleaningRecords,
+  cleaningTargets,
+} from "@/db/schema";
 import {
   type CleaningTargetFormFieldErrors,
   cleaningTargetFormSchema,
@@ -17,7 +21,8 @@ export type CleaningTargetFormState = {
 function parseFormData(formData: FormData) {
   return cleaningTargetFormSchema.safeParse({
     name: formData.get("name"),
-    frequencyDays: formData.get("frequencyDays"),
+    frequencyValue: formData.get("frequencyValue"),
+    frequencyUnit: formData.get("frequencyUnit"),
     isActive: formData.get("isActive"),
   });
 }
@@ -48,7 +53,8 @@ export async function createCleaningTargetAction(
   await db.insert(cleaningTargets).values({
     catId,
     name: parsed.data.name,
-    frequencyDays: parsed.data.frequencyDays,
+    frequencyValue: parsed.data.frequencyValue,
+    frequencyUnit: parsed.data.frequencyUnit,
     isActive: parsed.data.isActive,
     sortOrder: await nextSortOrder(catId),
   });
@@ -62,14 +68,16 @@ export async function createCleaningTargetAction(
 export async function createCleaningTargetFromPresetAction(
   catId: string,
   name: string,
-  frequencyDays: number,
+  frequencyValue: number,
+  frequencyUnit: CleaningTarget["frequencyUnit"],
   _formData: FormData,
 ): Promise<void> {
   const db = getDb();
   await db.insert(cleaningTargets).values({
     catId,
     name,
-    frequencyDays,
+    frequencyValue,
+    frequencyUnit,
     isActive: true,
     sortOrder: await nextSortOrder(catId),
   });
@@ -94,7 +102,8 @@ export async function updateCleaningTargetAction(
     .update(cleaningTargets)
     .set({
       name: parsed.data.name,
-      frequencyDays: parsed.data.frequencyDays,
+      frequencyValue: parsed.data.frequencyValue,
+      frequencyUnit: parsed.data.frequencyUnit,
       isActive: parsed.data.isActive,
       updatedAt: new Date(),
     })

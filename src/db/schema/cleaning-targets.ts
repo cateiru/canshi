@@ -10,7 +10,10 @@ export const cleaningTargets = sqliteTable("cleaning_targets", {
     .notNull()
     .references(() => cats.id),
   name: text("name").notNull(),
-  frequencyDays: integer("frequency_days").notNull(),
+  frequencyValue: integer("frequency_value").notNull(),
+  frequencyUnit: text("frequency_unit", { enum: ["days", "months"] })
+    .notNull()
+    .default("days"),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp" })

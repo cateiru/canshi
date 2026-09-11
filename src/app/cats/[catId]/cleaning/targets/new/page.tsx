@@ -48,7 +48,8 @@ export default async function NewCleaningTargetPage({
                 null,
                 catId,
                 preset.name,
-                preset.frequencyDays,
+                preset.frequencyValue,
+                preset.frequencyUnit,
               )}
             >
               <Button type="submit" variant="secondary">

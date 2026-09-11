@@ -376,12 +376,20 @@
           "notNull": true,
           "autoincrement": false
         },
-        "frequency_days": {
-          "name": "frequency_days",
+        "frequency_value": {
+          "name": "frequency_value",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "frequency_unit": {
+          "name": "frequency_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'days'"
         },
         "is_active": {
           "name": "is_active",

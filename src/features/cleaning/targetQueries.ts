@@ -67,7 +67,11 @@ export async function listCleaningTargetsWithStatus(
 
   return targets.map((target) => {
     const lastPerformedAt = lastPerformedByTarget.get(target.id) ?? null;
-    const nextDueAt = calculateNextDueAt(lastPerformedAt, target.frequencyDays);
+    const nextDueAt = calculateNextDueAt(
+      lastPerformedAt,
+      target.frequencyValue,
+      target.frequencyUnit,
+    );
     return {
       target,
       lastPerformedAt,
