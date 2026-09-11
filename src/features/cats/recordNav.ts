@@ -2,12 +2,15 @@ import type { IconType } from "react-icons";
 import { FaPoop } from "react-icons/fa";
 import { RiCapsuleFill } from "react-icons/ri";
 import {
+  TbBathFilled,
   TbBuildingHospital,
+  TbDropletFilled,
   TbMeat,
   TbPhoto,
   TbTemperature,
   TbTimeline,
   TbToiletPaper,
+  TbVacuumCleaner,
   TbWeight,
 } from "react-icons/tb";
 
@@ -45,6 +48,21 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
     href: (catId) => `/cats/${catId}/vomit-records`,
     icon: TbToiletPaper,
     label: "嘔吐記録",
+  },
+  {
+    href: (catId) => `/cats/${catId}/water-records`,
+    icon: TbDropletFilled,
+    label: "水の記録",
+  },
+  {
+    href: (catId) => `/cats/${catId}/shampoo-records`,
+    icon: TbBathFilled,
+    label: "シャンプー記録",
+  },
+  {
+    href: (catId) => `/cats/${catId}/cleaning`,
+    icon: TbVacuumCleaner,
+    label: "掃除記録",
   },
   {
     href: (catId) => `/cats/${catId}/symptoms`,

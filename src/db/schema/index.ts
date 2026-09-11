@@ -1,6 +1,8 @@
 export * from "./ai-evaluations";
 export * from "./cat-photos";
 export * from "./cats";
+export * from "./cleaning-records";
+export * from "./cleaning-targets";
 export * from "./feeding-presets";
 export * from "./feeding-records";
 export * from "./food-products";
@@ -9,6 +11,8 @@ export * from "./media-assets";
 export * from "./medication-doses";
 export * from "./medications";
 export * from "./poop-records";
+export * from "./shampoo-records";
 export * from "./symptoms";
 export * from "./vomit-records";
+export * from "./water-records";
 export * from "./weight-records";

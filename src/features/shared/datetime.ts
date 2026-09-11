@@ -38,3 +38,17 @@ export function getLocalNowParts(date: Date): { date: string; time: string } {
 }
 
 export const TIME_STRING_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/**
+ * 記録の発生日時（フォーム入力のローカル時計の数字をそのまま UTC として保存した値）と
+ * 比較・計算するための「現在時刻」を、サーバー側で取得する。Cloudflare Workers 上の
+ * `new Date()` は実際の UTC を返すため、そのまま比較すると JST の午前0時〜9時
+ * （実UTC日付が前日）で経過日数や期限判定が1日ずれる。MVP にはタイムゾーン設定がなく
+ * 常に JST 運用のため、実際の UTC 時刻に JST のオフセットを加算し、保存値と同じ
+ * 「naive UTC」の見た目に揃える。
+ */
+export function getNaiveUtcNow(now: Date = new Date()): Date {
+  return new Date(now.getTime() + JST_OFFSET_MS);
+}
