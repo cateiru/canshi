@@ -41,12 +41,20 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
         <RecordPageHeading icon={BroomIcon}>
           {cat.name}の掃除記録
         </RecordPageHeading>
-        <ButtonLink
-          href={`/cats/${catId}/cleaning/targets/new`}
-          variant="primary"
-        >
-          対象を追加する
-        </ButtonLink>
+        <div className={styles.headerActions}>
+          <ButtonLink
+            href={`/cats/${catId}/notification-settings`}
+            variant="secondary"
+          >
+            通知設定
+          </ButtonLink>
+          <ButtonLink
+            href={`/cats/${catId}/cleaning/targets/new`}
+            variant="primary"
+          >
+            対象を追加する
+          </ButtonLink>
+        </div>
       </div>
 
       {statuses.length === 0 ? (
