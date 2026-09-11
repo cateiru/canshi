@@ -23,6 +23,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   | `weight_records`     | `occurred_at`       |
   | `vomit_records`      | `occurred_at`       |
   | `water_records`      | `occurred_at`       |
+  | `shampoo_records`    | `performed_at`      |
   | `symptoms`           | `onset_at`          |
   | `medication_doses`   | `occurred_at`       |
   | `hospital_visits`    | `visited_at`        |

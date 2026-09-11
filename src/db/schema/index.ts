@@ -9,6 +9,7 @@ export * from "./media-assets";
 export * from "./medication-doses";
 export * from "./medications";
 export * from "./poop-records";
+export * from "./shampoo-records";
 export * from "./symptoms";
 export * from "./vomit-records";
 export * from "./water-records";

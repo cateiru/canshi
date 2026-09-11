@@ -156,6 +156,20 @@ function renderBody(catId: string, entry: TimelineEntry) {
         </div>
       );
     }
+    case "shampoo": {
+      const { record } = entry;
+      return (
+        <div className={styles.body}>
+          {record.memo ? <p>{record.memo}</p> : null}
+          <ButtonLink
+            href={`/cats/${catId}/shampoo-records/${record.id}/edit`}
+            variant="secondary"
+          >
+            編集する
+          </ButtonLink>
+        </div>
+      );
+    }
     case "symptom": {
       const { record } = entry;
       return (

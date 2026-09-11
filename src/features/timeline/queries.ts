@@ -13,7 +13,9 @@ import {
   medications,
   type PoopRecord,
   poopRecords,
+  type ShampooRecord,
   type Symptom,
+  shampooRecords,
   symptoms,
   type VomitRecord,
   vomitRecords,
@@ -40,6 +42,7 @@ export const TIMELINE_RECORD_TYPES = [
   "weight",
   "vomit",
   "water",
+  "shampoo",
   "symptom",
   "medicationDose",
   "hospitalVisit",
@@ -95,6 +98,7 @@ export type TimelineEntry =
   | TimelineEntryOf<"weight", WeightRecord>
   | TimelineEntryOf<"vomit", VomitRecord>
   | TimelineEntryOf<"water", WaterRecord>
+  | TimelineEntryOf<"shampoo", ShampooRecord>
   | TimelineEntryOf<"symptom", Symptom>
   | TimelineEntryOf<
       "medicationDose",
@@ -258,6 +262,27 @@ async function fetchWaterEntries(
   }));
 }
 
+async function fetchShampooEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(shampooRecords)
+    .where(eq(shampooRecords.catId, catId))
+    .orderBy(desc(shampooRecords.performedAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "shampoo",
+    occurredAt: record.performedAt,
+    media: [],
+    record,
+  }));
+}
+
 async function fetchSymptomEntries(
   catId: string,
   limit: number,
@@ -362,6 +387,7 @@ const FETCHERS: Record<
   weight: fetchWeightEntries,
   vomit: fetchVomitEntries,
   water: fetchWaterEntries,
+  shampoo: fetchShampooEntries,
   symptom: fetchSymptomEntries,
   medicationDose: fetchMedicationDoseEntries,
   hospitalVisit: fetchHospitalVisitEntries,
