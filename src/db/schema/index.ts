@@ -15,6 +15,7 @@ export * from "./notification-preferences";
 export * from "./notification-settings";
 export * from "./notifications";
 export * from "./poop-records";
+export * from "./push-deliveries";
 export * from "./push-subscriptions";
 export * from "./shampoo-records";
 export * from "./symptoms";

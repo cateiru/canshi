@@ -8,7 +8,12 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { cats, notifications, pushSubscriptions } from "@/db/schema";
+import {
+  cats,
+  notifications,
+  pushDeliveries,
+  pushSubscriptions,
+} from "@/db/schema";
 import { MAX_PUSH_FAILURE_COUNT } from "./defaults";
 import { sendPushToSubscription } from "./sendPush";
 
@@ -98,7 +103,7 @@ describe("sendPushToSubscription", () => {
     return notification;
   }
 
-  it("2xx を返したら lastUsedAt を更新し failureCount を 0 にリセットする", async () => {
+  it("2xx を返したら lastUsedAt を更新し failureCount を 0 にリセットし、push_deliveries に記録する", async () => {
     const subscription = await insertSubscription(2);
     const notification = await insertNotification();
     vi.stubGlobal(
@@ -106,14 +111,26 @@ describe("sendPushToSubscription", () => {
       vi.fn().mockResolvedValue(new Response(null, { status: 201 })),
     );
 
-    await sendPushToSubscription(db, subscription, notification, vapid);
+    const result = await sendPushToSubscription(
+      db,
+      subscription,
+      notification,
+      vapid,
+    );
 
+    expect(result).toEqual({ outcome: "sent" });
     const [updated] = await db
       .select()
       .from(pushSubscriptions)
       .where(eq(pushSubscriptions.id, subscription.id));
     expect(updated.failureCount).toBe(0);
     expect(updated.lastUsedAt).not.toBeNull();
+    const deliveries = await db
+      .select()
+      .from(pushDeliveries)
+      .where(eq(pushDeliveries.subscriptionId, subscription.id));
+    expect(deliveries).toHaveLength(1);
+    expect(deliveries[0].notificationId).toBe(notification.id);
   });
 
   it("410 を返したら購読を削除する", async () => {
@@ -124,8 +141,14 @@ describe("sendPushToSubscription", () => {
       vi.fn().mockResolvedValue(new Response(null, { status: 410 })),
     );
 
-    await sendPushToSubscription(db, subscription, notification, vapid);
+    const result = await sendPushToSubscription(
+      db,
+      subscription,
+      notification,
+      vapid,
+    );
 
+    expect(result).toEqual({ outcome: "removed" });
     const rows = await db
       .select()
       .from(pushSubscriptions)
@@ -141,8 +164,14 @@ describe("sendPushToSubscription", () => {
       vi.fn().mockResolvedValue(new Response(null, { status: 404 })),
     );
 
-    await sendPushToSubscription(db, subscription, notification, vapid);
+    const result = await sendPushToSubscription(
+      db,
+      subscription,
+      notification,
+      vapid,
+    );
 
+    expect(result).toEqual({ outcome: "removed" });
     const rows = await db
       .select()
       .from(pushSubscriptions)
@@ -150,16 +179,53 @@ describe("sendPushToSubscription", () => {
     expect(rows).toHaveLength(0);
   });
 
-  it("上限未満の失敗では failureCount を加算するだけで削除しない", async () => {
+  it.each([429, 500, 503])(
+    "%i を返したら failureCount を変更せず retriable を返す（呼び出し側のリトライに委ねる）",
+    async (status) => {
+      const subscription = await insertSubscription(1);
+      const notification = await insertNotification();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(new Response(null, { status })),
+      );
+
+      const result = await sendPushToSubscription(
+        db,
+        subscription,
+        notification,
+        vapid,
+      );
+
+      expect(result).toEqual({ outcome: "retriable", status });
+      const [unchanged] = await db
+        .select()
+        .from(pushSubscriptions)
+        .where(eq(pushSubscriptions.id, subscription.id));
+      expect(unchanged.failureCount).toBe(1);
+      const deliveries = await db
+        .select()
+        .from(pushDeliveries)
+        .where(eq(pushDeliveries.subscriptionId, subscription.id));
+      expect(deliveries).toHaveLength(0);
+    },
+  );
+
+  it("429／5xx 以外の失敗は上限未満なら failureCount を加算するだけで削除しない", async () => {
     const subscription = await insertSubscription(1);
     const notification = await insertNotification();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(new Response(null, { status: 500 })),
+      vi.fn().mockResolvedValue(new Response(null, { status: 400 })),
     );
 
-    await sendPushToSubscription(db, subscription, notification, vapid);
+    const result = await sendPushToSubscription(
+      db,
+      subscription,
+      notification,
+      vapid,
+    );
 
+    expect(result).toEqual({ outcome: "failed", status: 400 });
     const [updated] = await db
       .select()
       .from(pushSubscriptions)
@@ -167,16 +233,22 @@ describe("sendPushToSubscription", () => {
     expect(updated.failureCount).toBe(2);
   });
 
-  it("上限に達したら購読を削除する", async () => {
+  it("429／5xx 以外の失敗が上限に達したら購読を削除する", async () => {
     const subscription = await insertSubscription(MAX_PUSH_FAILURE_COUNT - 1);
     const notification = await insertNotification();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(new Response(null, { status: 500 })),
+      vi.fn().mockResolvedValue(new Response(null, { status: 400 })),
     );
 
-    await sendPushToSubscription(db, subscription, notification, vapid);
+    const result = await sendPushToSubscription(
+      db,
+      subscription,
+      notification,
+      vapid,
+    );
 
+    expect(result).toEqual({ outcome: "removed" });
     const rows = await db
       .select()
       .from(pushSubscriptions)
