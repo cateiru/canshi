@@ -38,7 +38,7 @@ pnpm cf:deploy   # ビルド後、Cloudflare Workers へデプロイ
 pnpm vapid:generate  # VAPID 鍵ペアを生成する（デプロイ環境ごとに1回）
 ```
 
-ローカルで通知の生成〜Push 送信までの一連の流れ（`src/workflows/notification.ts`）を確認するには、`wrangler dev` の `scheduled` ハンドラを手動起動する。
+ローカルで通知の生成〜Push 送信までの一連の流れ（`src/workflows/notification.ts`）を確認するには、`wrangler dev` の `scheduled` ハンドラを手動起動する。事前に `.dev.vars`（Git 管理対象外）へ `pnpm vapid:generate` の出力（`VAPID_SUBJECT`・`NEXT_PUBLIC_VAPID_PUBLIC_KEY`・`VAPID_PRIVATE_KEY`）を書いておく。
 
 ```bash
 pnpm cf:build   # .open-next/worker.js を生成（worker.ts がこれを import するため必要）

@@ -1,4 +1,4 @@
-import { and, desc, eq, lte, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   notificationPreferences,
@@ -116,4 +116,50 @@ export async function listPendingNotifications(
     .from(notifications)
     .where(and(...conditions))
     .orderBy(desc(notifications.dueAt));
+}
+
+/** 対応済み（`done`・`dismissed`）の通知一覧。直近に対応したものから並べる */
+export async function listResolvedNotifications(
+  catId?: string,
+  d1?: D1Database,
+) {
+  const db = getDb(d1);
+  const conditions = [
+    inArray(notifications.status, ["done", "dismissed"] as const),
+  ];
+  if (catId) {
+    conditions.push(eq(notifications.catId, catId));
+  }
+
+  return db
+    .select()
+    .from(notifications)
+    .where(and(...conditions))
+    .orderBy(desc(notifications.updatedAt));
+}
+
+/**
+ * 未読（`read_at` が NULL）の未対応通知の件数。ヘッダーのバッジ（`NotificationBadge`）が使う
+ */
+export async function countUnreadNotifications(
+  now: Date,
+  d1?: D1Database,
+): Promise<number> {
+  const db = getDb(d1);
+  const rows = await db
+    .select({ id: notifications.id })
+    .from(notifications)
+    .where(
+      and(
+        isNull(notifications.readAt),
+        or(
+          eq(notifications.status, "pending"),
+          and(
+            eq(notifications.status, "snoozed"),
+            lte(notifications.snoozedUntil, now),
+          ),
+        ),
+      ),
+    );
+  return rows.length;
 }

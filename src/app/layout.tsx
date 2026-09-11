@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { ToastRegionRoot } from "@/components/ui";
+import { NotificationBadge } from "@/features/notifications/NotificationBadge";
 import { ServiceWorkerRegistration } from "@/features/pwa/ServiceWorkerRegistration";
 import "@/styles/globals.css";
+import styles from "./layout.module.css";
 
 export const metadata: Metadata = {
   title: "CANSHI",
@@ -31,6 +33,9 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
+        <header className={styles.header}>
+          <NotificationBadge />
+        </header>
         {children}
         <ToastRegionRoot />
         <ServiceWorkerRegistration />
