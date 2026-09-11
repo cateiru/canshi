@@ -134,6 +134,13 @@
       "when": 1789105849270,
       "tag": "0018_chunky_human_fly",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1789110451858,
+      "tag": "0019_stale_polaris",
+      "breakpoints": true
     }
   ]
 }

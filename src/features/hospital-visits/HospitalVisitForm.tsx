@@ -71,9 +71,6 @@ export function HospitalVisitForm({
     hospitalVisit?.visitedAt
       ? splitDateTimeUtc(hospitalVisit.visitedAt)
       : getLocalNowParts(now);
-  const defaultReserved = hospitalVisit?.reservedAt
-    ? splitDateTimeUtc(hospitalVisit.reservedAt)
-    : undefined;
   const defaultNextVisit = hospitalVisit?.nextVisitAt
     ? splitDateTimeUtc(hospitalVisit.nextVisitAt)
     : undefined;
@@ -88,23 +85,6 @@ export function HospitalVisitForm({
 
   return (
     <form action={formAction} className={styles.form}>
-      <div className={styles.row}>
-        <FormField
-          name="reservedDate"
-          label="予約日"
-          type="date"
-          defaultValue={defaultReserved?.date ?? ""}
-          errorMessage={state.fieldErrors?.reservedDate?.[0]}
-        />
-        <FormField
-          name="reservedTime"
-          label="予約時刻"
-          type="time"
-          defaultValue={defaultReserved?.time ?? ""}
-          errorMessage={state.fieldErrors?.reservedTime?.[0]}
-        />
-      </div>
-
       <div className={styles.row}>
         <FormField
           name="visitedDate"

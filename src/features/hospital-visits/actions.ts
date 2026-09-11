@@ -24,8 +24,6 @@ export type HospitalVisitFormState = MediaFormState & {
 function parseFormData(formData: FormData) {
   return hospitalVisitFormSchema.safeParse({
     symptomId: formData.get("symptomId"),
-    reservedDate: formData.get("reservedDate"),
-    reservedTime: formData.get("reservedTime"),
     visitedDate: formData.get("visitedDate"),
     visitedTime: formData.get("visitedTime"),
     reason: formData.get("reason"),
@@ -57,10 +55,6 @@ async function verifySymptomBelongsToCat(
 function buildValues(data: ReturnType<typeof hospitalVisitFormSchema.parse>) {
   return {
     symptomId: data.symptomId ?? null,
-    reservedAt:
-      data.reservedDate != null && data.reservedTime != null
-        ? combineDateTimeUtc(data.reservedDate, data.reservedTime)
-        : null,
     visitedAt: combineDateTimeUtc(data.visitedDate, data.visitedTime),
     reason: data.reason,
     diagnosis: data.diagnosis ?? null,

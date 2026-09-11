@@ -16,7 +16,6 @@ export const hospitalVisits = sqliteTable("hospital_visits", {
     .notNull()
     .references(() => cats.id),
   symptomId: text("symptom_id").references((): AnySQLiteColumn => symptoms.id),
-  reservedAt: integer("reserved_at", { mode: "timestamp" }),
   // 受診日時。タイムライン集約における代表の発生日時列（src/db/README.md 参照）
   visitedAt: integer("visited_at", { mode: "timestamp" }).notNull(),
   reason: text("reason").notNull(),

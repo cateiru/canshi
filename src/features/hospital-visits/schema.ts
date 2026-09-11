@@ -14,8 +14,6 @@ const optionalTime = (message: string) =>
 export const hospitalVisitFormSchema = z
   .object({
     symptomId: z.preprocess(emptyToUndefined, z.string().optional()),
-    reservedDate: optionalDate("予約日の形式が正しくありません"),
-    reservedTime: optionalTime("予約時刻の形式が正しくありません"),
     visitedDate: z.string().date("受診日の形式が正しくありません"),
     visitedTime: z
       .string()
@@ -60,13 +58,6 @@ export const hospitalVisitFormSchema = z
         .optional(),
     ),
   })
-  .refine(
-    (data) => (data.reservedDate == null) === (data.reservedTime == null),
-    {
-      message: "予約日と予約時刻はどちらも入力するか、どちらも空にしてください",
-      path: ["reservedTime"],
-    },
-  )
   .refine(
     (data) => (data.nextVisitDate == null) === (data.nextVisitTime == null),
     {

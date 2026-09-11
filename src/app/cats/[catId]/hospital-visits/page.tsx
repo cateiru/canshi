@@ -95,12 +95,6 @@ export default async function HospitalVisitsPage({
                   <dl className={styles.details}>
                     <dt>受診日時</dt>
                     <dd>{formatDateTimeUtc(visit.visitedAt)}</dd>
-                    {visit.reservedAt ? (
-                      <>
-                        <dt>予約日時</dt>
-                        <dd>{formatDateTimeUtc(visit.reservedAt)}</dd>
-                      </>
-                    ) : null}
                     {visit.symptomId ? (
                       <>
                         <dt>関連する症状</dt>

@@ -1,0 +1,1 @@
+ALTER TABLE `hospital_visits` DROP COLUMN `reserved_at`;
