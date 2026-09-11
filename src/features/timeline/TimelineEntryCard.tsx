@@ -3,6 +3,7 @@ import { MediaThumbnailStrip } from "@/features/media/MediaThumbnailStrip";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import { STATUS_LABEL } from "@/features/symptoms/labels";
+import { SUBJECTIVE_AMOUNT_LABEL } from "@/features/water-records/labels";
 import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "./labels";
 import type { TimelineEntry } from "./queries";
 import styles from "./TimelineEntryCard.module.css";
@@ -125,6 +126,29 @@ function renderBody(catId: string, entry: TimelineEntry) {
           </p>
           <ButtonLink
             href={`/cats/${catId}/vomit-records/${record.id}/edit`}
+            variant="secondary"
+          >
+            編集する
+          </ButtonLink>
+        </div>
+      );
+    }
+    case "water": {
+      const { record } = entry;
+      return (
+        <div className={styles.body}>
+          <p>
+            {record.estimatedIntakeMl != null
+              ? `推定飲水量 ${record.estimatedIntakeMl}ml${
+                  record.hasSpill ? "（こぼれあり・参考値）" : ""
+                }`
+              : `給水量 ${record.suppliedAmountMl}ml`}
+            {record.subjectiveAmount
+              ? `・${SUBJECTIVE_AMOUNT_LABEL[record.subjectiveAmount]}`
+              : ""}
+          </p>
+          <ButtonLink
+            href={`/cats/${catId}/water-records/${record.id}/edit`}
             variant="secondary"
           >
             編集する

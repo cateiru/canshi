@@ -3,6 +3,7 @@ import { FaPoop } from "react-icons/fa";
 import { RiCapsuleFill } from "react-icons/ri";
 import {
   TbBuildingHospital,
+  TbDropletFilled,
   TbMeat,
   TbPhoto,
   TbTemperature,
@@ -16,6 +17,7 @@ export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
   poop: "うんち",
   weight: "体重",
   vomit: "嘔吐",
+  water: "水",
   symptom: "症状",
   medicationDose: "服薬",
   hospitalVisit: "通院",
@@ -27,6 +29,7 @@ export const TIMELINE_TYPE_ICON: Record<TimelineRecordType, IconType> = {
   poop: FaPoop,
   weight: TbWeight,
   vomit: TbToiletPaper,
+  water: TbDropletFilled,
   symptom: TbTemperature,
   medicationDose: RiCapsuleFill,
   hospitalVisit: TbBuildingHospital,

@@ -17,7 +17,9 @@ import {
   symptoms,
   type VomitRecord,
   vomitRecords,
+  type WaterRecord,
   type WeightRecord,
+  waterRecords,
   weightRecords,
 } from "@/db/schema";
 import { CAT_PHOTO_MEDIA_TYPE } from "@/features/cat-photos/media";
@@ -37,6 +39,7 @@ export const TIMELINE_RECORD_TYPES = [
   "poop",
   "weight",
   "vomit",
+  "water",
   "symptom",
   "medicationDose",
   "hospitalVisit",
@@ -91,6 +94,7 @@ export type TimelineEntry =
   | TimelineEntryOf<"poop", PoopRecord>
   | TimelineEntryOf<"weight", WeightRecord>
   | TimelineEntryOf<"vomit", VomitRecord>
+  | TimelineEntryOf<"water", WaterRecord>
   | TimelineEntryOf<"symptom", Symptom>
   | TimelineEntryOf<
       "medicationDose",
@@ -233,6 +237,27 @@ async function fetchVomitEntries(
   }));
 }
 
+async function fetchWaterEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(waterRecords)
+    .where(eq(waterRecords.catId, catId))
+    .orderBy(desc(waterRecords.occurredAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "water",
+    occurredAt: record.occurredAt,
+    media: [],
+    record,
+  }));
+}
+
 async function fetchSymptomEntries(
   catId: string,
   limit: number,
@@ -336,6 +361,7 @@ const FETCHERS: Record<
   poop: fetchPoopEntries,
   weight: fetchWeightEntries,
   vomit: fetchVomitEntries,
+  water: fetchWaterEntries,
   symptom: fetchSymptomEntries,
   medicationDose: fetchMedicationDoseEntries,
   hospitalVisit: fetchHospitalVisitEntries,

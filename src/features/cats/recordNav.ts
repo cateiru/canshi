@@ -3,6 +3,7 @@ import { FaPoop } from "react-icons/fa";
 import { RiCapsuleFill } from "react-icons/ri";
 import {
   TbBuildingHospital,
+  TbDropletFilled,
   TbMeat,
   TbPhoto,
   TbTemperature,
@@ -45,6 +46,11 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
     href: (catId) => `/cats/${catId}/vomit-records`,
     icon: TbToiletPaper,
     label: "嘔吐記録",
+  },
+  {
+    href: (catId) => `/cats/${catId}/water-records`,
+    icon: TbDropletFilled,
+    label: "水の記録",
   },
   {
     href: (catId) => `/cats/${catId}/symptoms`,

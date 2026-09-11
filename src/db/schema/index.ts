@@ -11,4 +11,5 @@ export * from "./medications";
 export * from "./poop-records";
 export * from "./symptoms";
 export * from "./vomit-records";
+export * from "./water-records";
 export * from "./weight-records";
