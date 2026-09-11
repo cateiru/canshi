@@ -18,6 +18,8 @@
   --text-md: 15px;
   --text-sm: 13px;
   --text-xs: 11px;
+  /* iOS Safari は16px未満の入力欄でフォーカス時に自動ズームする */
+  --text-input: 16px;
 
   --font-weight-bold: 700;
   --font-weight-regular: 400;

@@ -14,7 +14,7 @@
   border-radius: var(--radius-base);
   padding: var(--space-2) var(--space-3);
   font-family: var(--font-sans);
-  font-size: var(--text-sm);
+  font-size: var(--text-input);
   color: var(--color-ink);
   background-color: var(--color-bg);
   outline: var(--focus-ring-width) solid transparent;
