@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { FaPoop } from "react-icons/fa";
 import { Badge, Breadcrumb, ButtonLink, Card } from "@/components/ui";
+import { PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { MediaGallery } from "@/features/media/MediaGallery";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
@@ -48,7 +48,7 @@ export default async function PoopRecordsPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={FaPoop}>
+        <RecordPageHeading icon={PoopIcon}>
           {cat.name}のうんち記録
         </RecordPageHeading>
         <ButtonLink href={`/cats/${catId}/poop-records/new`} variant="primary">

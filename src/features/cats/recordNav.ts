@@ -1,6 +1,4 @@
 import type { IconType } from "react-icons";
-import { FaPoop } from "react-icons/fa";
-import { PiBroomBold } from "react-icons/pi";
 import { RiCapsuleFill } from "react-icons/ri";
 import {
   TbBath,
@@ -13,6 +11,7 @@ import {
   TbToiletPaper,
   TbWeight,
 } from "react-icons/tb";
+import { BroomIcon, PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
 
 export type RecordNavItem = {
   href: (catId: string) => string;
@@ -36,7 +35,7 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
   },
   {
     href: (catId) => `/cats/${catId}/poop-records`,
-    icon: FaPoop,
+    icon: PoopIcon,
     label: "うんち記録",
   },
   {
@@ -61,7 +60,7 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
   },
   {
     href: (catId) => `/cats/${catId}/cleaning`,
-    icon: PiBroomBold,
+    icon: BroomIcon,
     label: "掃除記録",
   },
   {

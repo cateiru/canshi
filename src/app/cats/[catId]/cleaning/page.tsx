@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { PiBroomBold } from "react-icons/pi";
 import { Badge, Breadcrumb, Button, ButtonLink, Card } from "@/components/ui";
+import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { quickCreateCleaningRecordAction } from "@/features/cleaning/recordActions";
 import { listCleaningTargetsWithStatus } from "@/features/cleaning/targetQueries";
@@ -38,7 +38,7 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={PiBroomBold}>
+        <RecordPageHeading icon={BroomIcon}>
           {cat.name}の掃除記録
         </RecordPageHeading>
         <ButtonLink

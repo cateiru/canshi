@@ -1,6 +1,4 @@
 import type { IconType } from "react-icons";
-import { FaPoop } from "react-icons/fa";
-import { PiBroomBold } from "react-icons/pi";
 import { RiCapsuleFill } from "react-icons/ri";
 import {
   TbBath,
@@ -12,6 +10,7 @@ import {
   TbToiletPaper,
   TbWeight,
 } from "react-icons/tb";
+import { BroomIcon, PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { TimelineRecordType } from "./queries";
 
 export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
@@ -30,12 +29,12 @@ export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
 
 export const TIMELINE_TYPE_ICON: Record<TimelineRecordType, IconType> = {
   feeding: TbMeat,
-  poop: FaPoop,
+  poop: PoopIcon,
   weight: TbWeight,
   vomit: TbToiletPaper,
   water: TbDroplet,
   shampoo: TbBath,
-  cleaning: PiBroomBold,
+  cleaning: BroomIcon,
   symptom: TbTemperature,
   medicationDose: RiCapsuleFill,
   hospitalVisit: TbBuildingHospital,
