@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>CANSHI アイコン</title>
+  <rect width="512" height="512" rx="64" fill="#ec995a" />
+  <path
+    d="M140 190 L96 84 L224 150 Z"
+    fill="#fff"
+    stroke="#2e3142"
+    stroke-width="16"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M372 190 L416 84 L288 150 Z"
+    fill="#fff"
+    stroke="#2e3142"
+    stroke-width="16"
+    stroke-linejoin="round"
+  />
+  <circle cx="256" cy="292" r="152" fill="#fff" stroke="#2e3142" stroke-width="16" />
+  <circle cx="203" cy="282" r="13" fill="#2e3142" />
+  <circle cx="309" cy="282" r="13" fill="#2e3142" />
+  <path d="M244 322 L268 322 L256 338 Z" fill="#2e3142" />
+</svg>

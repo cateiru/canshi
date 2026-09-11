@@ -61,6 +61,25 @@ pnpm db:migrate:remote # 本番 D1 にマイグレーションを適用（docs/d
 
 設計規約（`cat_id`・発生日時列・`media_assets`・`ai_evaluations` の使い方）は [`src/db/README.md`](src/db/README.md) を参照。
 
+## PWA
+
+ホーム画面に追加してインストールできる PWA として動作する。
+
+- Service Worker（`public/sw.js`）は本番ビルドでのみ登録される（`next dev` では HMR と競合するため登録しない）
+- キャッシュ対象は静的アセット（`/_next/static/`）とオフライン時のフォールバックページ（`/offline`）のみで、記録データを含むページ・API はキャッシュしない
+- キャッシュの構成を変更した場合は `public/sw.js` の `CACHE_VERSION` を上げること（`activate` 時に古いバージョンのキャッシュを破棄する）
+
+インストール可能であることを確認する手順は以下の通り。
+
+```bash
+pnpm cf:preview  # OpenNext ビルド後、wrangler でローカルプレビューを起動
+```
+
+1. Chrome で `pnpm cf:preview` が出力する URL を開く
+2. DevTools の Application タブ → Manifest で `Installability`（インストール可能かどうか）に警告が出ていないことを確認する
+   - Lighthouse に「PWA」カテゴリがある場合はそちらの監査を実行し、「インストール可能」の項目が満たされていることを確認してもよい（バージョンによってはカテゴリ自体が存在しない）
+3. アドレスバーのインストールアイコン（またはメニューの「アプリをインストール」）から実際にインストールし、standalone で起動することを確認する
+
 ## ディレクトリ構成
 
 - `src/app/` — Next.js App Router のページ・レイアウト
