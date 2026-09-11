@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { TbDropletFilled } from "react-icons/tb";
+import { TbDroplet } from "react-icons/tb";
 import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
@@ -43,7 +43,7 @@ export default async function WaterRecordsPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbDropletFilled}>
+        <RecordPageHeading icon={TbDroplet}>
           {cat.name}の水の記録
         </RecordPageHeading>
         <ButtonLink href={`/cats/${catId}/water-records/new`} variant="primary">

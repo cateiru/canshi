@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { TbBathFilled } from "react-icons/tb";
+import { TbBath } from "react-icons/tb";
 import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deleteShampooRecordAction } from "@/features/shampoo-records/actions";
@@ -44,7 +44,7 @@ export default async function ShampooRecordsPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbBathFilled}>
+        <RecordPageHeading icon={TbBath}>
           {cat.name}のシャンプー記録
         </RecordPageHeading>
         <ButtonLink

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { TbVacuumCleaner } from "react-icons/tb";
+import { PiBroomBold } from "react-icons/pi";
 import { Badge, Breadcrumb, Button, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { quickCreateCleaningRecordAction } from "@/features/cleaning/recordActions";
@@ -38,7 +38,7 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbVacuumCleaner}>
+        <RecordPageHeading icon={PiBroomBold}>
           {cat.name}の掃除記録
         </RecordPageHeading>
         <ButtonLink
