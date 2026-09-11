@@ -1,5 +1,10 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
+import {
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import { cats } from "./cats";
 import { NOTIFICATION_KINDS } from "./notification-kinds";
 
@@ -36,11 +41,15 @@ export const notificationSettings = sqliteTable(
       .default(sql`(unixepoch())`),
   },
   (table) => [
-    unique("notification_settings_cat_kind_reference_unique").on(
-      table.catId,
-      table.kind,
-      table.referenceId,
-    ),
+    // SQLite の UNIQUE 制約は NULL 同士を同値と扱わないため、reference_id が NULL の行は
+    // (cat_id, kind, reference_id) の UNIQUE だけでは重複を防げない。NULL 用と非 NULL 用の
+    // 部分 UNIQUE インデックスに分ける
+    uniqueIndex("notification_settings_cat_kind_null_reference_unique")
+      .on(table.catId, table.kind)
+      .where(sql`${table.referenceId} IS NULL`),
+    uniqueIndex("notification_settings_cat_kind_reference_unique")
+      .on(table.catId, table.kind, table.referenceId)
+      .where(sql`${table.referenceId} IS NOT NULL`),
   ],
 );
 

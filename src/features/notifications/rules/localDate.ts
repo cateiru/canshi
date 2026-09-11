@@ -114,3 +114,7 @@ export function diffDays(a: LocalDate, b: LocalDate): number {
   const bUtc = Date.UTC(b.year, b.month - 1, b.day);
   return Math.round((aUtc - bUtc) / MS_PER_DAY);
 }
+
+export function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}

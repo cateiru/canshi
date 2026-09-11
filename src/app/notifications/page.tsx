@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Breadcrumb, Tabs } from "@/components/ui";
 import { listCats } from "@/features/cats/queries";
-import { markNotificationsReadAction } from "@/features/notifications/actions";
 import { generateNotifications } from "@/features/notifications/generate";
+import { MarkNotificationsRead } from "@/features/notifications/MarkNotificationsRead";
 import { NotificationList } from "@/features/notifications/NotificationList";
 import {
   listPendingNotifications,
@@ -31,14 +31,15 @@ export default async function NotificationsPage({
     listCats(),
   ]);
 
-  // 表示する未対応通知のうち、未読のものをまとめて既読にする
+  // 表示する未対応通知のうち、未読のものは画面表示後（マウント後）にまとめて既読にする
+  // （`MarkNotificationsRead` 参照。ここではまだ既読化しない）
   const unreadIds = pending
     .filter((notification) => notification.readAt == null)
     .map((notification) => notification.id);
-  await markNotificationsReadAction(unreadIds);
 
   return (
     <main className={styles.main}>
+      <MarkNotificationsRead ids={unreadIds} />
       <Breadcrumb
         items={[{ label: "トップ", href: "/" }, { label: "通知センター" }]}
       />
