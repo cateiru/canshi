@@ -4,7 +4,7 @@ import { Badge, Breadcrumb, Button, ButtonLink, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { quickCreateCleaningRecordAction } from "@/features/cleaning/recordActions";
 import { listCleaningTargetsWithStatus } from "@/features/cleaning/targetQueries";
-import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -22,7 +22,7 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
     notFound();
   }
 
-  const statuses = await listCleaningTargetsWithStatus(catId, new Date());
+  const statuses = await listCleaningTargetsWithStatus(catId, getNaiveUtcNow());
   const activeStatuses = statuses.filter((status) => status.target.isActive);
   const inactiveStatuses = statuses.filter((status) => !status.target.isActive);
 

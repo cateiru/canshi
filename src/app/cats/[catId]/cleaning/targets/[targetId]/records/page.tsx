@@ -47,25 +47,29 @@ export default async function CleaningRecordsPage({
         <RecordPageHeading icon={TbVacuumCleaner}>
           {cleaningTarget.name}の実施記録
         </RecordPageHeading>
-        <ButtonLink
-          href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
-          variant="primary"
-        >
-          記録する
-        </ButtonLink>
+        {cleaningTarget.isActive ? (
+          <ButtonLink
+            href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
+            variant="primary"
+          >
+            記録する
+          </ButtonLink>
+        ) : null}
       </div>
 
       {records.length === 0 ? (
         <Card>
           <p>まだ実施記録がありません。</p>
-          <div className={styles.emptyActions}>
-            <ButtonLink
-              href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
-              variant="primary"
-            >
-              最初の記録をする
-            </ButtonLink>
-          </div>
+          {cleaningTarget.isActive ? (
+            <div className={styles.emptyActions}>
+              <ButtonLink
+                href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
+                variant="primary"
+              >
+                最初の記録をする
+              </ButtonLink>
+            </div>
+          ) : null}
         </Card>
       ) : (
         <ul className={styles.list}>

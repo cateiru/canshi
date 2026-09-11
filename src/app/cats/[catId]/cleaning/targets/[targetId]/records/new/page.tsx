@@ -21,7 +21,12 @@ export default async function NewCleaningRecordPage({
     getCleaningTargetById(targetId),
   ]);
 
-  if (!cat || !cleaningTarget || cleaningTarget.catId !== catId) {
+  if (
+    !cat ||
+    !cleaningTarget ||
+    cleaningTarget.catId !== catId ||
+    !cleaningTarget.isActive
+  ) {
     notFound();
   }
 

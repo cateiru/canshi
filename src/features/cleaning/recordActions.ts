@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { cleaningRecords, cleaningTargets } from "@/db/schema";
-import { combineDateTimeUtc } from "@/features/shared/datetime";
+import { combineDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {
   type CleaningRecordFormFieldErrors,
   cleaningRecordFormSchema,
@@ -36,8 +36,9 @@ export async function createCleaningRecordAction(
   }
 
   const db = getDb();
-  // cleaningTargetId が catId に属することを確認してから登録する
-  // （URL の cleaningTargetId が改ざんされ、他猫の掃除対象に記録が紐付いてしまうのを防ぐ）
+  // cleaningTargetId が catId に属し、かつ有効であることを確認してから登録する
+  // （URL の cleaningTargetId が改ざんされ、他猫や無効化済みの掃除対象に記録が
+  // 紐付いてしまうのを防ぐ。無効対象は編集・記録閲覧のみが仕様のため新規登録は拒否する）
   const [target] = await db
     .select({ id: cleaningTargets.id })
     .from(cleaningTargets)
@@ -45,6 +46,7 @@ export async function createCleaningRecordAction(
       and(
         eq(cleaningTargets.id, cleaningTargetId),
         eq(cleaningTargets.catId, catId),
+        eq(cleaningTargets.isActive, true),
       ),
     )
     .limit(1);
@@ -134,6 +136,7 @@ export async function quickCreateCleaningRecordAction(
   _formData: FormData,
 ): Promise<void> {
   const db = getDb();
+  // 無効化済みの掃除対象は編集・記録閲覧のみが仕様のため新規登録は拒否する
   const [target] = await db
     .select({ id: cleaningTargets.id })
     .from(cleaningTargets)
@@ -141,6 +144,7 @@ export async function quickCreateCleaningRecordAction(
       and(
         eq(cleaningTargets.id, cleaningTargetId),
         eq(cleaningTargets.catId, catId),
+        eq(cleaningTargets.isActive, true),
       ),
     )
     .limit(1);
@@ -149,7 +153,10 @@ export async function quickCreateCleaningRecordAction(
     await db.insert(cleaningRecords).values({
       catId,
       cleaningTargetId,
-      performedAt: new Date(),
+      // 手入力（combineDateTimeUtc）と同じ「naive UTC」の時刻モデルに揃える。
+      // サーバー側の new Date() は実際のUTCのため、そのまま保存すると
+      // JSTの時計とずれた時刻で記録されてしまう
+      performedAt: getNaiveUtcNow(),
     });
   }
 

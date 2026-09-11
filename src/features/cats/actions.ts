@@ -6,6 +6,8 @@ import { getDb } from "@/db/client";
 import {
   catPhotos,
   cats,
+  cleaningRecords,
+  cleaningTargets,
   feedingRecords,
   hospitalVisits,
   medicationDoses,
@@ -112,6 +114,10 @@ export async function deleteCatAction(id: string): Promise<void> {
     db.delete(vomitRecords).where(eq(vomitRecords.catId, id)),
     db.delete(waterRecords).where(eq(waterRecords.catId, id)),
     db.delete(shampooRecords).where(eq(shampooRecords.catId, id)),
+    // cleaning_records は cats・cleaning_targets の双方を参照するため、
+    // cleaning_targets より先に削除する
+    db.delete(cleaningRecords).where(eq(cleaningRecords.catId, id)),
+    db.delete(cleaningTargets).where(eq(cleaningTargets.catId, id)),
     db
       .update(symptoms)
       .set({ hospitalVisitId: null })
