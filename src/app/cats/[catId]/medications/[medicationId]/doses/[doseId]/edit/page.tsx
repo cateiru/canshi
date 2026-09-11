@@ -37,7 +37,7 @@ export default async function EditMedicationDosePage({
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/" },
+          { label: "トップ", href: "/home" },
           { label: "猫一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "服薬予定", href: `/cats/${catId}/medications` },

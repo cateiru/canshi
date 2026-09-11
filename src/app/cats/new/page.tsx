@@ -8,7 +8,7 @@ export default function NewCatPage() {
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/" },
+          { label: "トップ", href: "/home" },
           { label: "猫一覧", href: "/cats" },
           { label: "猫を登録する" },
         ]}

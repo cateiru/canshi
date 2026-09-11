@@ -12,7 +12,7 @@ export default function NewFoodProductPage() {
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/" },
+          { label: "トップ", href: "/home" },
           { label: "ごはん商品一覧", href: "/food-products" },
           { label: "登録する" },
         ]}

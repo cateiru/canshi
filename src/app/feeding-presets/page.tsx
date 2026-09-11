@@ -15,7 +15,7 @@ export default async function FeedingPresetsPage() {
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/" },
+          { label: "トップ", href: "/home" },
           { label: "ごはんプリセット一覧" },
         ]}
       />

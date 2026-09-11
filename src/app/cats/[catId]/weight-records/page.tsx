@@ -32,7 +32,7 @@ export default async function WeightRecordsPage({
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/" },
+          { label: "トップ", href: "/home" },
           { label: "猫一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "体重記録" },
