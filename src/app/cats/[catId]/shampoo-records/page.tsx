@@ -6,7 +6,7 @@ import { deleteShampooRecordAction } from "@/features/shampoo-records/actions";
 import { calculateElapsedDays } from "@/features/shampoo-records/calculations";
 import { listShampooRecords } from "@/features/shampoo-records/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
-import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -29,7 +29,7 @@ export default async function ShampooRecordsPage({
   const records = await listShampooRecords(catId);
   const elapsedDays =
     records.length > 0
-      ? calculateElapsedDays(records[0].performedAt, new Date())
+      ? calculateElapsedDays(records[0].performedAt, getNaiveUtcNow())
       : null;
 
   return (
