@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f7b88a57-664e-4efe-88f1-b50bcdb0243d",
+  "id": "59d192b6-9c22-4949-89ce-01519dffdf35",
   "prevId": "1f93664c-ca56-4beb-b0e5-8b984868c434",
   "tables": {
     "ai_evaluations": {
@@ -1743,7 +1743,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "push_deliveries_subscription_id_push_subscriptions_id_fk": {
@@ -1756,7 +1756,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
