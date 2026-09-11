@@ -81,6 +81,12 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
         <ButtonLink href={`/cats/${cat.id}/edit`} variant="secondary">
           編集する
         </ButtonLink>
+        <ButtonLink
+          href={`/cats/${cat.id}/notification-settings`}
+          variant="secondary"
+        >
+          通知設定
+        </ButtonLink>
         <DeleteCatButton
           action={deleteCatAction.bind(null, cat.id)}
           catName={cat.name}

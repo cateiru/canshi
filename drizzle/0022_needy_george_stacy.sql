@@ -1,0 +1,3 @@
+DROP INDEX `notification_settings_cat_kind_reference_unique`;--> statement-breakpoint
+CREATE UNIQUE INDEX `notification_settings_cat_kind_null_reference_unique` ON `notification_settings` (`cat_id`,`kind`) WHERE "notification_settings"."reference_id" IS NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX `notification_settings_cat_kind_reference_unique` ON `notification_settings` (`cat_id`,`kind`,`reference_id`) WHERE "notification_settings"."reference_id" IS NOT NULL;

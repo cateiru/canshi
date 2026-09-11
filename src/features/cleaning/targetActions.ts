@@ -7,6 +7,8 @@ import {
   type CleaningTarget,
   cleaningRecords,
   cleaningTargets,
+  notificationSettings,
+  notifications,
 } from "@/db/schema";
 import {
   type CleaningTargetFormFieldErrors,
@@ -123,7 +125,9 @@ export async function deleteCleaningTargetAction(
 ): Promise<void> {
   const db = getDb();
   // cleaning_records から cleaning_targets への外部キー制約があるため実施記録も同時に削除する。
-  // 2つの delete の間に別リクエストが割り込まないよう、D1 の batch で原子的に実行する
+  // notifications・notification_settings の reference_id もこの対象を指しうるため
+  // （`28`）、同じ batch でまとめて削除する。3つの delete の間に別リクエストが
+  // 割り込まないよう、D1 の batch で原子的に実行する
   await db.batch([
     db
       .delete(cleaningRecords)
@@ -131,6 +135,24 @@ export async function deleteCleaningTargetAction(
         and(
           eq(cleaningRecords.cleaningTargetId, id),
           eq(cleaningRecords.catId, catId),
+        ),
+      ),
+    db
+      .delete(notifications)
+      .where(
+        and(
+          eq(notifications.kind, "cleaning_due"),
+          eq(notifications.referenceId, id),
+          eq(notifications.catId, catId),
+        ),
+      ),
+    db
+      .delete(notificationSettings)
+      .where(
+        and(
+          eq(notificationSettings.kind, "cleaning_due"),
+          eq(notificationSettings.referenceId, id),
+          eq(notificationSettings.catId, catId),
         ),
       ),
     db
