@@ -9,6 +9,7 @@ import {
   TbPhoto,
   TbTemperature,
   TbToiletPaper,
+  TbVacuumCleaner,
   TbWeight,
 } from "react-icons/tb";
 import type { TimelineRecordType } from "./queries";
@@ -20,6 +21,7 @@ export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
   vomit: "嘔吐",
   water: "水",
   shampoo: "シャンプー",
+  cleaning: "掃除",
   symptom: "症状",
   medicationDose: "服薬",
   hospitalVisit: "通院",
@@ -33,6 +35,7 @@ export const TIMELINE_TYPE_ICON: Record<TimelineRecordType, IconType> = {
   vomit: TbToiletPaper,
   water: TbDropletFilled,
   shampoo: TbBathFilled,
+  cleaning: TbVacuumCleaner,
   symptom: TbTemperature,
   medicationDose: RiCapsuleFill,
   hospitalVisit: TbBuildingHospital,

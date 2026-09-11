@@ -10,6 +10,7 @@ import {
   TbTemperature,
   TbTimeline,
   TbToiletPaper,
+  TbVacuumCleaner,
   TbWeight,
 } from "react-icons/tb";
 
@@ -57,6 +58,11 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
     href: (catId) => `/cats/${catId}/shampoo-records`,
     icon: TbBathFilled,
     label: "シャンプー記録",
+  },
+  {
+    href: (catId) => `/cats/${catId}/cleaning`,
+    icon: TbVacuumCleaner,
+    label: "掃除記録",
   },
   {
     href: (catId) => `/cats/${catId}/symptoms`,

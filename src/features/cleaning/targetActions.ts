@@ -1,0 +1,131 @@
+"use server";
+
+import { and, eq, sql } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { getDb } from "@/db/client";
+import { cleaningRecords, cleaningTargets } from "@/db/schema";
+import {
+  type CleaningTargetFormFieldErrors,
+  cleaningTargetFormSchema,
+} from "./targetSchema";
+
+export type CleaningTargetFormState = {
+  fieldErrors?: CleaningTargetFormFieldErrors;
+  formError?: string;
+};
+
+function parseFormData(formData: FormData) {
+  return cleaningTargetFormSchema.safeParse({
+    name: formData.get("name"),
+    frequencyDays: formData.get("frequencyDays"),
+    isActive: formData.get("isActive"),
+  });
+}
+
+async function nextSortOrder(catId: string): Promise<number> {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      maxSortOrder: sql<number | null>`max(${cleaningTargets.sortOrder})`,
+    })
+    .from(cleaningTargets)
+    .where(eq(cleaningTargets.catId, catId));
+  return row?.maxSortOrder == null ? 0 : Number(row.maxSortOrder) + 1;
+}
+
+export async function createCleaningTargetAction(
+  catId: string,
+  _prevState: CleaningTargetFormState,
+  formData: FormData,
+): Promise<CleaningTargetFormState> {
+  const parsed = parseFormData(formData);
+
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const db = getDb();
+  await db.insert(cleaningTargets).values({
+    catId,
+    name: parsed.data.name,
+    frequencyDays: parsed.data.frequencyDays,
+    isActive: parsed.data.isActive,
+    sortOrder: await nextSortOrder(catId),
+  });
+
+  redirect(`/cats/${catId}/cleaning`);
+}
+
+/**
+ * 初回利用時のプリセット（猫砂・おしっこシート）をワンタップで追加する
+ */
+export async function createCleaningTargetFromPresetAction(
+  catId: string,
+  name: string,
+  frequencyDays: number,
+): Promise<void> {
+  const db = getDb();
+  await db.insert(cleaningTargets).values({
+    catId,
+    name,
+    frequencyDays,
+    isActive: true,
+    sortOrder: await nextSortOrder(catId),
+  });
+
+  redirect(`/cats/${catId}/cleaning`);
+}
+
+export async function updateCleaningTargetAction(
+  catId: string,
+  id: string,
+  _prevState: CleaningTargetFormState,
+  formData: FormData,
+): Promise<CleaningTargetFormState> {
+  const parsed = parseFormData(formData);
+
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const db = getDb();
+  const result = await db
+    .update(cleaningTargets)
+    .set({
+      name: parsed.data.name,
+      frequencyDays: parsed.data.frequencyDays,
+      isActive: parsed.data.isActive,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(cleaningTargets.id, id), eq(cleaningTargets.catId, catId)))
+    .returning({ id: cleaningTargets.id });
+
+  if (result.length === 0) {
+    return { formError: "掃除対象が見つかりませんでした" };
+  }
+
+  redirect(`/cats/${catId}/cleaning`);
+}
+
+export async function deleteCleaningTargetAction(
+  catId: string,
+  id: string,
+): Promise<void> {
+  const db = getDb();
+  // cleaning_records から cleaning_targets への外部キー制約があるため実施記録も同時に削除する。
+  // 2つの delete の間に別リクエストが割り込まないよう、D1 の batch で原子的に実行する
+  await db.batch([
+    db
+      .delete(cleaningRecords)
+      .where(
+        and(
+          eq(cleaningRecords.cleaningTargetId, id),
+          eq(cleaningRecords.catId, catId),
+        ),
+      ),
+    db
+      .delete(cleaningTargets)
+      .where(and(eq(cleaningTargets.id, id), eq(cleaningTargets.catId, catId))),
+  ]);
+  redirect(`/cats/${catId}/cleaning`);
+}

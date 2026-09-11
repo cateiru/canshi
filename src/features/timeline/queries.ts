@@ -2,7 +2,10 @@ import { desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   type CatPhoto,
+  type CleaningRecord,
   catPhotos,
+  cleaningRecords,
+  cleaningTargets,
   feedingRecordItems,
   feedingRecords,
   foodProducts,
@@ -43,6 +46,7 @@ export const TIMELINE_RECORD_TYPES = [
   "vomit",
   "water",
   "shampoo",
+  "cleaning",
   "symptom",
   "medicationDose",
   "hospitalVisit",
@@ -99,6 +103,7 @@ export type TimelineEntry =
   | TimelineEntryOf<"vomit", VomitRecord>
   | TimelineEntryOf<"water", WaterRecord>
   | TimelineEntryOf<"shampoo", ShampooRecord>
+  | TimelineEntryOf<"cleaning", CleaningRecord & { cleaningTargetName: string }>
   | TimelineEntryOf<"symptom", Symptom>
   | TimelineEntryOf<
       "medicationDose",
@@ -283,6 +288,40 @@ async function fetchShampooEntries(
   }));
 }
 
+async function fetchCleaningEntries(
+  catId: string,
+  limit: number,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: cleaningRecords.id,
+      catId: cleaningRecords.catId,
+      cleaningTargetId: cleaningRecords.cleaningTargetId,
+      cleaningTargetName: cleaningTargets.name,
+      performedAt: cleaningRecords.performedAt,
+      memo: cleaningRecords.memo,
+      createdAt: cleaningRecords.createdAt,
+      updatedAt: cleaningRecords.updatedAt,
+    })
+    .from(cleaningRecords)
+    .innerJoin(
+      cleaningTargets,
+      eq(cleaningRecords.cleaningTargetId, cleaningTargets.id),
+    )
+    .where(eq(cleaningRecords.catId, catId))
+    .orderBy(desc(cleaningRecords.performedAt))
+    .limit(limit);
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "cleaning",
+    occurredAt: record.performedAt,
+    media: [],
+    record,
+  }));
+}
+
 async function fetchSymptomEntries(
   catId: string,
   limit: number,
@@ -388,6 +427,7 @@ const FETCHERS: Record<
   vomit: fetchVomitEntries,
   water: fetchWaterEntries,
   shampoo: fetchShampooEntries,
+  cleaning: fetchCleaningEntries,
   symptom: fetchSymptomEntries,
   medicationDose: fetchMedicationDoseEntries,
   hospitalVisit: fetchHospitalVisitEntries,
