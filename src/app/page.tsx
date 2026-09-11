@@ -15,6 +15,9 @@ export default function Home() {
       <ButtonLink href="/feeding-presets" variant="secondary">
         ごはんプリセット一覧を見る
       </ButtonLink>
+      <ButtonLink href="/settings/notifications" variant="secondary">
+        通知設定を開く
+      </ButtonLink>
     </main>
   );
 }

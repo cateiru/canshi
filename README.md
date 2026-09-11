@@ -30,6 +30,25 @@ pnpm cf:deploy   # ビルド後、Cloudflare Workers へデプロイ
 
 デプロイ手順の詳細は [`docs/deploy.md`](docs/deploy.md) を参照。
 
+## Web Push（通知）
+
+生成された通知（`28`）を Web Push で端末に届ける仕組み。詳細は [`docs/plans/29_web_push.md`](docs/plans/29_web_push.md) と [`docs/deploy.md`](docs/deploy.md) を参照。
+
+```bash
+pnpm vapid:generate  # VAPID 鍵ペアを生成する（デプロイ環境ごとに1回）
+```
+
+ローカルで通知の生成〜Push 送信までの一連の流れ（`src/workflows/notification.ts`）を確認するには、`wrangler dev` の `scheduled` ハンドラを手動起動する。
+
+```bash
+pnpm cf:build   # .open-next/worker.js を生成（worker.ts がこれを import するため必要）
+npx wrangler dev --test-scheduled
+# 別ターミナルで
+curl "http://localhost:8787/__scheduled?cron=*/15+*+*+*+*"
+```
+
+VAPID 鍵（`.dev.vars`）が未設定の場合は通知の生成だけ行われ、Push 送信はスキップされる。
+
 ## ローカル開発環境（Docker Compose）
 
 `docker compose up` のみで、D1・R2 のローカルエミュレーションを含めた開発環境を起動できる。

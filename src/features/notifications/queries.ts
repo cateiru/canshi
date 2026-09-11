@@ -19,8 +19,10 @@ export type NotificationPreferencesValue = {
 };
 
 /** 行が無い場合は既定値（09:00・Asia/Tokyo）を返す */
-export async function getNotificationPreferences(): Promise<NotificationPreferencesValue> {
-  const db = getDb();
+export async function getNotificationPreferences(
+  d1?: D1Database,
+): Promise<NotificationPreferencesValue> {
+  const db = getDb(d1);
   const [row] = await db
     .select()
     .from(notificationPreferences)
@@ -37,8 +39,9 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
 export async function getResolvedSettingsForCat(
   catId: string,
   cleaningTargetIds: string[],
+  d1?: D1Database,
 ): Promise<ResolvedNotificationSettings> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select()
     .from(notificationSettings)
@@ -89,8 +92,12 @@ export async function getResolvedSettingsForCat(
  * 未対応（`pending`、または `snoozed` で `snoozedUntil` が到来済み）の通知一覧。
  * `src/features/notifications/status.ts` の `isNotificationPending` と同じ判定を SQL で行う
  */
-export async function listPendingNotifications(now: Date, catId?: string) {
-  const db = getDb();
+export async function listPendingNotifications(
+  now: Date,
+  catId?: string,
+  d1?: D1Database,
+) {
+  const db = getDb(d1);
   const conditions = [
     or(
       eq(notifications.status, "pending"),

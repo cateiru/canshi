@@ -1,11 +1,23 @@
 name = "canshi"
-main = ".open-next/worker.js"
+# OpenNext が生成する `.open-next/worker.js` の fetch ハンドラをラップし、
+# `scheduled`（`29` のスケジュール実行）と Workflow クラスを追加で export する
+# カスタムエントリポイント（`docs/plans/29_web_push.md` 参照）
+main = "src/worker.ts"
 compatibility_date = "2026-09-06"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+# 15分ごとに `scheduled` を起動し、NotificationWorkflow のインスタンスを作る
+[triggers]
+crons = ["*/15 * * * *"]
+
+[[workflows]]
+name = "notification-workflow"
+binding = "NOTIFICATION_WORKFLOW"
+class_name = "NotificationWorkflow"
 
 [[d1_databases]]
 binding = "DB"

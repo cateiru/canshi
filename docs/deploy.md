@@ -105,6 +105,36 @@ Access の設定は、ホスト名・パス単位、Worker 単位、Workers 全�
 
 詳細は [Cloudflare Access for Workers](https://developers.cloudflare.com/workers/configuration/cloudflare-access/) と [Access policies](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/) を参照する。
 
+## Web Push（VAPID 鍵）
+
+`29` の Web Push 送信（`src/features/push/`）に使う VAPID 鍵ペアは、デプロイ環境ごとに1回生成する。
+
+```sh
+pnpm vapid:generate
+```
+
+出力される2つの値の扱いが異なる点に注意する。
+
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`：クライアント（`PushSubscriptionToggle`）に埋め込まれるため、**ビルド時**に読める場所（`pnpm cf:build` を実行する環境の `.env.production.local` や CI の環境変数）に設定する必要がある。あわせて実行時（`src/workflows/notification.ts` が Push 送信に使う）にも必要なので、`wrangler secret put` でも設定する
+- `VAPID_PRIVATE_KEY`：サーバー側だけで使う秘密鍵。`wrangler secret put` で設定する（クライアントに公開してはいけない）
+- `VAPID_SUBJECT`：RFC 8292 が要求する連絡先（`mailto:` の管理者アドレスなど）。`wrangler secret put` で設定する
+
+```sh
+wrangler secret put NEXT_PUBLIC_VAPID_PUBLIC_KEY
+wrangler secret put VAPID_PRIVATE_KEY
+wrangler secret put VAPID_SUBJECT
+```
+
+いずれかが未設定の環境では、通知の生成（`28`）は動作するが Push 送信は自動的にスキップされる（`getVapidKeys` が `null` を返す）。
+
+ローカル開発では `.dev.vars`（Git 管理対象外）に同じ3つを設定する。`NEXT_PUBLIC_VAPID_PUBLIC_KEY` は `next dev`／`next build` のビルド時読み込み用に `.env` にも追記する（`.env.example` 参照）。
+
+### エントリポイントと定期実行
+
+`wrangler.toml` の `main` は `.open-next/worker.js` を直接ではなく、それをラップするカスタムエントリポイント `worker.ts`（リポジトリルート）を指す。`worker.ts` は OpenNext の `fetch` ハンドラに加えて `scheduled`（`[triggers] crons`、15分ごと）と `NotificationWorkflow`（`[[workflows]]`）を export する。デプロイ後、cron トリガーが実際に有効になるまで最大15分のグローバル伝播遅延がある。
+
+ローカルでの動作確認手順は [`README.md`](../README.md#web-push通知) を参照。
+
 ## 監視・運用（TODO）
 
 - エラー監視・ログの方針

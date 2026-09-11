@@ -37,8 +37,9 @@ export async function getCleaningTargetById(id: string) {
 export async function listCleaningTargetsWithStatus(
   catId: string,
   now: Date,
+  d1?: D1Database,
 ): Promise<CleaningTargetWithStatus[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const targets = await db
     .select()
     .from(cleaningTargets)

@@ -9,6 +9,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "icons:generate": "node scripts/generate-icons.mjs",
+    "vapid:generate": "node scripts/generate-vapid-keys.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -22,6 +23,7 @@
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "^2.0.0",
     "@cf-wasm/photon": "^0.4.0",
     "cropperjs": "^1.6.3",
     "drizzle-orm": "^0.45.2",

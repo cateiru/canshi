@@ -66,3 +66,46 @@ self.addEventListener("fetch", (event) => {
 
   // それ以外（API・記録データを含むページ等）はキャッシュせず素通しする
 });
+
+// `29` の Web Push。通知本文は `src/features/notifications/messages.ts` が
+// 生成した { title, body, url } を JSON でそのまま送っている（`src/features/push/sendPush.ts`）
+self.addEventListener("push", (event) => {
+  if (!event.data) {
+    return;
+  }
+
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    return;
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: "/icons/icon-192.png",
+      data: { url: payload.url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url ?? "/";
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url === url && "focus" in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(url);
+        }
+      }),
+  );
+});
