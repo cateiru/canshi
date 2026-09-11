@@ -50,6 +50,13 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 記録を削除するときは、レコード本体より先に `deleteMediaAssetsByRecord(recordType, recordId)` を呼んで R2 のオブジェクトと行をまとめて削除する
 - `cats.profile_media_asset_id` はプロフィール画像として使う `media_assets` 行への参照（nullable）。`cats` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/cats/profileImage.ts`）。`is_profile_pinned` が false の間は、写真記録（`cat_photos`）の追加・削除のたびに最新の写真へ自動更新する
 
+## 通知（`notifications`・`notification_settings`・`notification_preferences`）
+
+- `28` で追加した、通知条件の判定結果を保持するテーブル群
+- `notifications`・`notification_settings` は `cat_id` を持つが、記録テーブルではない（猫自身の行動・状態の記録ではなく、アプリが生成した通知・その設定のため）。タイムライン機能（`14`）の集約対象からは除外する（「共通カラム規約」の代表の発生日時列の一覧にも含めない）
+- `notification_preferences` は猫に紐付かない、アプリ全体で 1 行だけの設定（通知時刻・タイムゾーン）
+- 詳細な判定ロジックは `src/features/notifications/` を参照
+
 ## AI 評価結果（`ai_evaluations`）
 
 - AI 評価結果も個別の記録テーブルにカラムを持たせず、`ai_evaluations` テーブルで一元管理する

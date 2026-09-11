@@ -12,6 +12,8 @@ import {
   hospitalVisits,
   medicationDoses,
   medications,
+  notificationSettings,
+  notifications,
   poopRecords,
   shampooRecords,
   symptoms,
@@ -135,6 +137,8 @@ export async function deleteCatAction(id: string): Promise<void> {
     db.delete(medications).where(eq(medications.catId, id)),
     db.delete(symptoms).where(eq(symptoms.catId, id)),
     db.delete(catPhotos).where(eq(catPhotos.catId, id)),
+    db.delete(notifications).where(eq(notifications.catId, id)),
+    db.delete(notificationSettings).where(eq(notificationSettings.catId, id)),
     db.delete(cats).where(eq(cats.id, id)),
   ]);
   redirect("/cats");
