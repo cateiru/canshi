@@ -56,6 +56,25 @@ describe("notification_settings テーブル", () => {
     ).rejects.toThrow();
   });
 
+  it("reference_id が NULL の場合も同じ cat_id・kind の組は重複して insert できない", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "くろ", sex: "female" })
+      .returning();
+
+    await db.insert(notificationSettings).values({
+      catId: cat.id,
+      kind: "birthday_yearly",
+    });
+
+    await expect(
+      db.insert(notificationSettings).values({
+        catId: cat.id,
+        kind: "birthday_yearly",
+      }),
+    ).rejects.toThrow();
+  });
+
   it("reference_id が異なれば同じ cat_id・kind でも insert できる（掃除対象ごとの設定）", async () => {
     const [cat] = await db
       .insert(cats)
