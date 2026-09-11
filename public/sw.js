@@ -93,13 +93,16 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url ?? "/";
+  // notification.url は `/cats/...` のような相対パスだが、WindowClient.url は絶対 URL
+  // なので、比較の前に同じ形式へ正規化する
+  const targetUrl = new URL(url, self.location.origin).href;
 
   event.waitUntil(
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
         for (const client of clientList) {
-          if (client.url === url && "focus" in client) {
+          if (client.url === targetUrl && "focus" in client) {
             return client.focus();
           }
         }

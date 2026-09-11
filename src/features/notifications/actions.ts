@@ -2,7 +2,7 @@
 
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { notifications } from "@/db/schema";
+import { notifications, pushDeliveries } from "@/db/schema";
 
 export type NotificationActionResult = { error?: string };
 
@@ -42,7 +42,10 @@ export async function dismissNotificationAction(
 /**
  * 通知を延期する。`snoozedUntil` の到来後は `status` を書き換えなくても未対応として扱われる
  * （`src/features/notifications/status.ts` の `isNotificationPending` 参照）。
- * 延期後の再通知のため `readAt`・`pushedAt` もあわせて未対応状態へ戻す
+ * 延期後の再通知のため `readAt`・`pushedAt` もあわせて未対応状態へ戻す。
+ * `push_deliveries` の行（`29` の送信済み記録）も削除しないと、`pushedAt` を null に
+ * 戻しても Workflow が「この購読へは送信済み」と判断して再送しない（`src/workflows/notification.ts`
+ * の `delivered` 参照）ため、期日到来後に Push が届かなくなる
  */
 export async function snoozeNotificationAction(
   id: string,
@@ -50,16 +53,19 @@ export async function snoozeNotificationAction(
 ): Promise<NotificationActionResult> {
   try {
     const db = getDb();
-    await db
-      .update(notifications)
-      .set({
-        status: "snoozed",
-        snoozedUntil,
-        readAt: null,
-        pushedAt: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(notifications.id, id));
+    await db.batch([
+      db
+        .update(notifications)
+        .set({
+          status: "snoozed",
+          snoozedUntil,
+          readAt: null,
+          pushedAt: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(notifications.id, id)),
+      db.delete(pushDeliveries).where(eq(pushDeliveries.notificationId, id)),
+    ]);
     return {};
   } catch (error) {
     console.error("通知の延期処理に失敗しました", error);
