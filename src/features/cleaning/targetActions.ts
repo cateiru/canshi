@@ -63,6 +63,7 @@ export async function createCleaningTargetFromPresetAction(
   catId: string,
   name: string,
   frequencyDays: number,
+  _formData: FormData,
 ): Promise<void> {
   const db = getDb();
   await db.insert(cleaningTargets).values({

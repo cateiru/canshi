@@ -131,6 +131,7 @@ export async function deleteCleaningRecordAction(
 export async function quickCreateCleaningRecordAction(
   catId: string,
   cleaningTargetId: string,
+  _formData: FormData,
 ): Promise<void> {
   const db = getDb();
   const [target] = await db
