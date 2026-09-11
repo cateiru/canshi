@@ -8,16 +8,8 @@
   padding: var(--space-8) var(--space-4);
 }
 
-.filterForm {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.filterOptions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
+.dateFilterLabel {
+  font-weight: var(--font-weight-bold);
 }
 
 .list {

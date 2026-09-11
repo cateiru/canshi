@@ -1,60 +1,84 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TbTimeline } from "react-icons/tb";
-import { Breadcrumb, Button, Card, Checkbox } from "@/components/ui";
+import { Breadcrumb, Card } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { TIMELINE_TYPE_LABEL } from "@/features/timeline/labels";
+import { buildTimelineHref } from "@/features/timeline/href";
 import {
-  listTimelineEntries,
+  listTimelineForMonth,
   MAX_PAGE,
-  maxPageForPageSize,
   normalizePositiveInt,
-  TIMELINE_RECORD_TYPES,
-  type TimelineRecordType,
 } from "@/features/timeline/queries";
+import { TimelineCalendar } from "@/features/timeline/TimelineCalendar";
 import { TimelineEntryCard } from "@/features/timeline/TimelineEntryCard";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 20;
+const YM_PATTERN = /^(\d{4})-(\d{2})$/;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-function isTimelineRecordType(value: string): value is TimelineRecordType {
-  return (TIMELINE_RECORD_TYPES as readonly string[]).includes(value);
-}
-
-// listTimelineEntries 内部で使われるのと同じクランプ処理を通すことで、
-// ページネーションリンクが実際にクエリされたページ番号とずれないようにする
+// listTimelineForMonth 内部でも同じ上限でクランプされるが、リンク生成側の
+// page パラメータが極端な値（Infinity・巨大な数値など）にならないよう
+// あらかじめ丸めておく
 function parsePage(value: string | undefined): number {
   const parsed = Number.parseInt(value ?? "", 10);
-  const normalized = normalizePositiveInt(parsed, MAX_PAGE);
-  return Math.min(normalized, maxPageForPageSize(PAGE_SIZE));
+  return normalizePositiveInt(parsed, MAX_PAGE);
 }
 
-function buildTimelineHref(
-  catId: string,
-  selectedTypes: TimelineRecordType[],
-  page: number,
-): string {
-  const params = new URLSearchParams();
-  // 「絞り込みを実行した」ことを明示するマーカー。types が0件でも
-  // 必ず付与することで、ページ遷移時に「全チェックを外して絞り込んだ」状態と
-  // 「一度も絞り込んでいない」状態（＝全件表示）を区別できるようにする
-  params.set("filtered", "1");
-  for (const type of selectedTypes) {
-    params.append("types", type);
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+// 不正な ym（書式違反・範囲外の年月）が Date.UTC に渡って異常な範囲を
+// 走査しないよう、パース失敗時は常に fallback（現在の年月）を使う
+function parseYm(
+  value: string | undefined,
+  fallback: { year: number; month: number },
+): { year: number; month: number } {
+  const match = value == null ? null : YM_PATTERN.exec(value);
+  if (!match) {
+    return fallback;
   }
-  params.set("page", String(page));
-  return `/cats/${catId}/timeline?${params.toString()}`;
+  const year = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  if (year < 1970 || year > 2999 || month < 1 || month > 12) {
+    return fallback;
+  }
+  return { year, month };
+}
+
+function shiftYm(
+  year: number,
+  month: number,
+  delta: number,
+): { year: number; month: number } {
+  const total = year * 12 + (month - 1) + delta;
+  return { year: Math.floor(total / 12), month: (total % 12) + 1 };
+}
+
+// date は「表示中の月（ym）に属する日付」のときだけ有効にする。書式違反や
+// 月をまたいだ古い date パラメータ（例えば前月選択中に月送りリンクを踏んだ場合）は
+// 無視し、月全体の表示にフォールバックする
+function parseSelectedDate(
+  value: string | undefined,
+  ym: string,
+): string | null {
+  if (value == null || !DATE_PATTERN.test(value)) {
+    return null;
+  }
+  return value.slice(0, 7) === ym ? value : null;
 }
 
 type TimelinePageProps = {
   params: Promise<{ catId: string }>;
   searchParams: Promise<{
-    types?: string | string[];
     page?: string;
-    filtered?: string;
+    ym?: string;
+    date?: string;
   }>;
 };
 
@@ -63,38 +87,64 @@ export default async function TimelinePage({
   searchParams,
 }: TimelinePageProps) {
   const { catId } = await params;
-  const {
-    types: typesParam,
-    page: pageParam,
-    filtered: filteredParam,
-  } = await searchParams;
+  const { page: pageParam, ym: ymParam, date: dateParam } = await searchParams;
   const cat = await getCatById(catId);
 
   if (!cat) {
     notFound();
   }
 
-  // types パラメータの有無ではなく、絞り込みフォームが送信されたかどうかを
-  // 示す明示的なマーカーで判定する。ネイティブの GET フォーム送信では
-  // 未選択のチェックボックスがそもそも送られないため、「全チェックを外して
-  // 送信した」場合と「一度も絞り込んでいない」場合の両方で types パラメータが
-  // 欠落してしまい、types の有無だけでは区別できない
-  const hasTypesParam = filteredParam != null;
-  const rawTypes =
-    typesParam == null ? [] : ([] as string[]).concat(typesParam);
-  const selectedTypes = hasTypesParam
-    ? [...new Set(rawTypes.filter(isTimelineRecordType))]
-    : [...TIMELINE_RECORD_TYPES];
   const page = parsePage(pageParam);
 
-  const { entries, hasMore } = await listTimelineEntries(catId, {
-    types: selectedTypes,
-    page,
-    pageSize: PAGE_SIZE,
+  // サーバーの実UTC時刻ではなく、記録の保存値と同じ「naive UTC」の現在時刻を
+  // 基準にする（datetime.ts の getNaiveUtcNow を参照）。実UTCのまま使うと
+  // JST 0時〜9時台にカレンダーの既定表示月・今日のハイライトが1日ずれる
+  const nowDateKey = splitDateTimeUtc(getNaiveUtcNow()).date;
+  const currentMonth = {
+    year: Number.parseInt(nowDateKey.slice(0, 4), 10),
+    month: Number.parseInt(nowDateKey.slice(5, 7), 10),
+  };
+  const { year, month } = parseYm(ymParam, currentMonth);
+  const ym = `${year}-${pad2(month)}`;
+  const selectedDate = parseSelectedDate(dateParam, ym);
+
+  const { entries, hasMore, datesByDay } = await listTimelineForMonth(
+    catId,
+    year,
+    month,
+    {
+      page,
+      pageSize: PAGE_SIZE,
+      date: selectedDate ?? undefined,
+    },
+  );
+
+  const prevHref = buildTimelineHref(catId, {
+    page: page - 1,
+    ym,
+    date: selectedDate ?? undefined,
+  });
+  const nextHref = buildTimelineHref(catId, {
+    page: page + 1,
+    ym,
+    date: selectedDate ?? undefined,
+  });
+  const prevMonth = shiftYm(year, month, -1);
+  const nextMonth = shiftYm(year, month, 1);
+  // 月を移動すると選択中の日付は別の月に属することになるため、date は
+  // 引き継がず月全体の表示に戻す。ページも 1 に戻す
+  const prevMonthHref = buildTimelineHref(catId, {
+    page: 1,
+    ym: `${prevMonth.year}-${pad2(prevMonth.month)}`,
+  });
+  const nextMonthHref = buildTimelineHref(catId, {
+    page: 1,
+    ym: `${nextMonth.year}-${pad2(nextMonth.month)}`,
   });
 
-  const prevHref = buildTimelineHref(catId, selectedTypes, page - 1);
-  const nextHref = buildTimelineHref(catId, selectedTypes, page + 1);
+  const emptyMessage = selectedDate
+    ? `${selectedDate.slice(0, 4)}年${Number.parseInt(selectedDate.slice(5, 7), 10)}月${Number.parseInt(selectedDate.slice(8, 10), 10)}日の記録がありません。`
+    : `${year}年${month}月の記録がありません。`;
 
   return (
     <main className={styles.main}>
@@ -111,30 +161,31 @@ export default async function TimelinePage({
         {cat.name}のタイムライン
       </RecordPageHeading>
 
-      <Card title="絞り込み">
-        <form action={`/cats/${catId}/timeline`} className={styles.filterForm}>
-          <input type="hidden" name="filtered" value="1" />
-          <div className={styles.filterOptions}>
-            {TIMELINE_RECORD_TYPES.map((type) => (
-              <Checkbox
-                key={type}
-                name="types"
-                value={type}
-                defaultSelected={selectedTypes.includes(type)}
-              >
-                {TIMELINE_TYPE_LABEL[type]}
-              </Checkbox>
-            ))}
-          </div>
-          <Button type="submit" variant="primary">
-            絞り込む
-          </Button>
-        </form>
+      <Card title="カレンダー">
+        <TimelineCalendar
+          catId={catId}
+          year={year}
+          month={month}
+          ym={ym}
+          datesByDay={datesByDay}
+          todayKey={nowDateKey}
+          selectedDate={selectedDate}
+          prevHref={prevMonthHref}
+          nextHref={nextMonthHref}
+        />
       </Card>
+
+      {selectedDate ? (
+        <p className={styles.dateFilterLabel}>
+          {selectedDate.slice(0, 4)}年
+          {Number.parseInt(selectedDate.slice(5, 7), 10)}月
+          {Number.parseInt(selectedDate.slice(8, 10), 10)}日の記録
+        </p>
+      ) : null}
 
       {entries.length === 0 ? (
         <Card>
-          <p>表示できる記録がありません。</p>
+          <p>{emptyMessage}</p>
         </Card>
       ) : (
         <ul className={styles.list}>

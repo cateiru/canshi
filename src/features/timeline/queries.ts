@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   type CatPhoto,
@@ -36,6 +36,7 @@ import {
 import type { MediaRecordType } from "@/features/media/recordTypes";
 import { type MediaAssetView, toMediaAssetView } from "@/features/media/view";
 import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
+import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/media";
 import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
 
@@ -112,9 +113,11 @@ export type TimelineEntry =
   | TimelineEntryOf<"hospitalVisit", HospitalVisit>
   | TimelineEntryOf<"catPhoto", CatPhoto>;
 
+type DateRange = { start: Date; end: Date };
+
 async function fetchFeedingEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const headers = await db
@@ -124,9 +127,14 @@ async function fetchFeedingEntries(
       occurredAt: feedingRecords.occurredAt,
     })
     .from(feedingRecords)
-    .where(eq(feedingRecords.catId, catId))
-    .orderBy(desc(feedingRecords.occurredAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(feedingRecords.catId, catId),
+        gte(feedingRecords.occurredAt, range.start),
+        lt(feedingRecords.occurredAt, range.end),
+      ),
+    )
+    .orderBy(desc(feedingRecords.occurredAt));
 
   if (headers.length === 0) {
     return [];
@@ -185,15 +193,20 @@ async function fetchFeedingEntries(
 
 async function fetchPoopEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const rows = await db
     .select()
     .from(poopRecords)
-    .where(eq(poopRecords.catId, catId))
-    .orderBy(desc(poopRecords.occurredAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(poopRecords.catId, catId),
+        gte(poopRecords.occurredAt, range.start),
+        lt(poopRecords.occurredAt, range.end),
+      ),
+    )
+    .orderBy(desc(poopRecords.occurredAt));
 
   return rows.map((record) => ({
     id: record.id,
@@ -206,15 +219,20 @@ async function fetchPoopEntries(
 
 async function fetchWeightEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const rows = await db
     .select()
     .from(weightRecords)
-    .where(eq(weightRecords.catId, catId))
-    .orderBy(desc(weightRecords.occurredAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(weightRecords.catId, catId),
+        gte(weightRecords.occurredAt, range.start),
+        lt(weightRecords.occurredAt, range.end),
+      ),
+    )
+    .orderBy(desc(weightRecords.occurredAt));
 
   return rows.map((record) => ({
     id: record.id,
@@ -227,15 +245,20 @@ async function fetchWeightEntries(
 
 async function fetchVomitEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const rows = await db
     .select()
     .from(vomitRecords)
-    .where(eq(vomitRecords.catId, catId))
-    .orderBy(desc(vomitRecords.occurredAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(vomitRecords.catId, catId),
+        gte(vomitRecords.occurredAt, range.start),
+        lt(vomitRecords.occurredAt, range.end),
+      ),
+    )
+    .orderBy(desc(vomitRecords.occurredAt));
 
   return rows.map((record) => ({
     id: record.id,
@@ -248,15 +271,20 @@ async function fetchVomitEntries(
 
 async function fetchWaterEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const rows = await db
     .select()
     .from(waterRecords)
-    .where(eq(waterRecords.catId, catId))
-    .orderBy(desc(waterRecords.occurredAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(waterRecords.catId, catId),
+        gte(waterRecords.occurredAt, range.start),
+        lt(waterRecords.occurredAt, range.end),
+      ),
+    )
+    .orderBy(desc(waterRecords.occurredAt));
 
   return rows.map((record) => ({
     id: record.id,
@@ -269,15 +297,20 @@ async function fetchWaterEntries(
 
 async function fetchShampooEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const rows = await db
     .select()
     .from(shampooRecords)
-    .where(eq(shampooRecords.catId, catId))
-    .orderBy(desc(shampooRecords.performedAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(shampooRecords.catId, catId),
+        gte(shampooRecords.performedAt, range.start),
+        lt(shampooRecords.performedAt, range.end),
+      ),
+    )
+    .orderBy(desc(shampooRecords.performedAt));
 
   return rows.map((record) => ({
     id: record.id,
@@ -290,7 +323,7 @@ async function fetchShampooEntries(
 
 async function fetchCleaningEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const rows = await db
@@ -309,9 +342,14 @@ async function fetchCleaningEntries(
       cleaningTargets,
       eq(cleaningRecords.cleaningTargetId, cleaningTargets.id),
     )
-    .where(eq(cleaningRecords.catId, catId))
-    .orderBy(desc(cleaningRecords.performedAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(cleaningRecords.catId, catId),
+        gte(cleaningRecords.performedAt, range.start),
+        lt(cleaningRecords.performedAt, range.end),
+      ),
+    )
+    .orderBy(desc(cleaningRecords.performedAt));
 
   return rows.map((record) => ({
     id: record.id,
@@ -324,15 +362,20 @@ async function fetchCleaningEntries(
 
 async function fetchSymptomEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const rows = await db
     .select()
     .from(symptoms)
-    .where(eq(symptoms.catId, catId))
-    .orderBy(desc(symptoms.onsetAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(symptoms.catId, catId),
+        gte(symptoms.onsetAt, range.start),
+        lt(symptoms.onsetAt, range.end),
+      ),
+    )
+    .orderBy(desc(symptoms.onsetAt));
 
   return rows.map((record) => ({
     id: record.id,
@@ -345,7 +388,7 @@ async function fetchSymptomEntries(
 
 async function fetchMedicationDoseEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const rows = await db
@@ -362,9 +405,14 @@ async function fetchMedicationDoseEntries(
     })
     .from(medicationDoses)
     .innerJoin(medications, eq(medicationDoses.medicationId, medications.id))
-    .where(eq(medicationDoses.catId, catId))
-    .orderBy(desc(medicationDoses.occurredAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(medicationDoses.catId, catId),
+        gte(medicationDoses.occurredAt, range.start),
+        lt(medicationDoses.occurredAt, range.end),
+      ),
+    )
+    .orderBy(desc(medicationDoses.occurredAt));
 
   return rows.map((record) => ({
     id: record.id,
@@ -377,15 +425,20 @@ async function fetchMedicationDoseEntries(
 
 async function fetchHospitalVisitEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const rows = await db
     .select()
     .from(hospitalVisits)
-    .where(eq(hospitalVisits.catId, catId))
-    .orderBy(desc(hospitalVisits.visitedAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(hospitalVisits.catId, catId),
+        gte(hospitalVisits.visitedAt, range.start),
+        lt(hospitalVisits.visitedAt, range.end),
+      ),
+    )
+    .orderBy(desc(hospitalVisits.visitedAt));
 
   return rows.map((record) => ({
     id: record.id,
@@ -398,15 +451,20 @@ async function fetchHospitalVisitEntries(
 
 async function fetchCatPhotoEntries(
   catId: string,
-  limit: number,
+  range: DateRange,
 ): Promise<TimelineEntry[]> {
   const db = getDb();
   const rows = await db
     .select()
     .from(catPhotos)
-    .where(eq(catPhotos.catId, catId))
-    .orderBy(desc(catPhotos.takenAt))
-    .limit(limit);
+    .where(
+      and(
+        eq(catPhotos.catId, catId),
+        gte(catPhotos.takenAt, range.start),
+        lt(catPhotos.takenAt, range.end),
+      ),
+    )
+    .orderBy(desc(catPhotos.takenAt));
 
   return rows.map((record) => ({
     id: record.id,
@@ -419,7 +477,7 @@ async function fetchCatPhotoEntries(
 
 const FETCHERS: Record<
   TimelineRecordType,
-  (catId: string, limit: number) => Promise<TimelineEntry[]>
+  (catId: string, range: DateRange) => Promise<TimelineEntry[]>
 > = {
   feeding: fetchFeedingEntries,
   poop: fetchPoopEntries,
@@ -434,20 +492,23 @@ const FETCHERS: Record<
   catPhoto: fetchCatPhotoEntries,
 };
 
-export type ListTimelineEntriesOptions = {
-  /** 省略時はすべての種類を対象にする。空配列を渡した場合は何も表示しない */
-  types?: TimelineRecordType[];
+export type ListTimelineForMonthOptions = {
   page?: number;
   pageSize?: number;
+  /** 指定すると、一覧（entries・hasMore）を月内のこの日付（YYYY-MM-DD）だけに絞り込む。
+   * カレンダー用の datesByDay は指定の有無にかかわらず月全体を対象にする */
+  date?: string;
+};
+
+export type ListTimelineForMonthResult = {
+  entries: TimelineEntry[];
+  hasMore: boolean;
+  /** 記録がある日付ごとの記録種別一覧（カレンダー表示用、月全体が対象） */
+  datesByDay: Map<string, TimelineRecordType[]>;
 };
 
 export const MAX_PAGE = 100_000;
 const MAX_PAGE_SIZE = 100;
-// page * pageSize（depth）は、この上限を超えないようクランプする。
-// MAX_PAGE・MAX_PAGE_SIZE の組み合わせをそのまま許すと depth が最大
-// 10,000,000 になり得て、テーブルごとの .limit(...) と JS 側のソートに
-// 過大な負荷がかかるため、個人利用規模の D1 を前提に別途上限を設ける
-const MAX_DEPTH = 2_000;
 
 // 不正・過大な入力（Infinity・NaN・小数・巨大な値など）が limit/offset の
 // 計算に直接使われないよう、有限の正の整数に丸めてから使う。不正値
@@ -461,43 +522,56 @@ export function normalizePositiveInt(value: number, max: number): number {
   return Math.min(Math.max(truncated, 1), max);
 }
 
-// depth（page * pageSize）が MAX_DEPTH を超えないようにするための、
-// pageSize に応じた最大ページ番号。MAX_PAGE までクランプしただけの page を
-// そのまま使うと、depth 側だけ MAX_DEPTH でクランプされて「実データが
-// あるのに常に空配列が返るページ」が発生するため、listTimelineEntries と
-// ページネーションリンク生成側（page.tsx）の両方でこの値を使って page 自体を
-// クランプし、クエリ結果とリンクのページ番号がずれないようにする
-export function maxPageForPageSize(pageSize: number): number {
-  return Math.max(Math.floor(MAX_DEPTH / pageSize), 1);
+function getMonthRangeUtc(year: number, month: number): DateRange {
+  return {
+    start: new Date(Date.UTC(year, month - 1, 1)),
+    end: new Date(Date.UTC(year, month, 1)),
+  };
 }
 
 /**
- * 各記録テーブルを個別に取得したうえで JS 側でマージ・並び替え・ページングする。
- * 各テーブルから要求ページの深さ（page * pageSize）分だけ取得すれば、
- * テーブルをまたいだ正しい降順の上位 N 件を再構成できる
- * （ある記録が全体の上位 N 件に入るなら、そのテーブル自身の中でも上位 N 件に入るため）。
- * 個人利用規模の D1 を前提としたシンプルな実装で、SQL の UNION ALL は使わない。
+ * 発生日時は `splitDateTimeUtc` と同じ基準（保存値をそのまま UTC の年月日として扱う）で
+ * 日付に振り分ける。カレンダー表示用。
  */
-export async function listTimelineEntries(
-  catId: string,
-  options: ListTimelineEntriesOptions = {},
-): Promise<{ entries: TimelineEntry[]; hasMore: boolean }> {
-  // 呼び出し側から重複を含む types が渡される可能性があるため重複排除する
-  const types = [...new Set(options.types ?? TIMELINE_RECORD_TYPES)];
-  const pageSize = normalizePositiveInt(options.pageSize ?? 20, MAX_PAGE_SIZE);
-  const requestedPage = normalizePositiveInt(options.page ?? 1, MAX_PAGE);
-  const page = Math.min(requestedPage, maxPageForPageSize(pageSize));
-  const depth = page * pageSize;
-
-  if (types.length === 0) {
-    return { entries: [], hasMore: false };
+function buildDatesByDay(
+  entries: TimelineEntry[],
+): Map<string, TimelineRecordType[]> {
+  const typesByDate = new Map<string, Set<TimelineRecordType>>();
+  for (const entry of entries) {
+    const key = splitDateTimeUtc(entry.occurredAt).date;
+    const set = typesByDate.get(key) ?? new Set<TimelineRecordType>();
+    set.add(entry.type);
+    typesByDate.set(key, set);
   }
 
-  // hasMore の判定用に、必要な深さより1件多く取得する。ちょうど depth 件で
-  // 打ち切ると、1つの記録種別だけで depth 件を超えるケースで「次のページが
-  // ある」ことを検出できない（false negative になる）ため
+  const ordered = new Map<string, TimelineRecordType[]>();
+  for (const [date, set] of typesByDate) {
+    ordered.set(
+      date,
+      TIMELINE_RECORD_TYPES.filter((type) => set.has(type)),
+    );
+  }
+  return ordered;
+}
+
+/**
+ * 指定した年月の記録を、各テーブルを個別に取得したうえで JS 側でマージ・並び替えして返す。
+ * 月という自然な範囲で区切っているため、件数は個人利用規模の D1 を前提とすればテーブルごとの
+ * limit なしで扱える程度に収まる想定で、SQL の UNION ALL は使わない。
+ * カレンダー用の datesByDay は、`date` で1日に絞り込む前の月全体のエントリから求めるため、
+ * 一覧を特定の日に絞り込んでもカレンダーには月全体のアイコンが残る。
+ */
+export async function listTimelineForMonth(
+  catId: string,
+  year: number,
+  month: number, // 1-12
+  options: ListTimelineForMonthOptions = {},
+): Promise<ListTimelineForMonthResult> {
+  const pageSize = normalizePositiveInt(options.pageSize ?? 20, MAX_PAGE_SIZE);
+
+  const range = getMonthRangeUtc(year, month);
   const results = await Promise.all(
-    types.map((type) => FETCHERS[type](catId, depth + 1)),
+    TIMELINE_RECORD_TYPES.map((type) => FETCHERS[type](catId, range)),
   );
   const merged = results.flat().sort((a, b) => {
     const byOccurredAt = b.occurredAt.getTime() - a.occurredAt.getTime();
@@ -506,11 +580,24 @@ export async function listTimelineEntries(
     return byOccurredAt !== 0 ? byOccurredAt : a.id.localeCompare(b.id);
   });
 
-  const start = (page - 1) * pageSize;
-  const entries = await attachMedia(merged.slice(start, start + pageSize));
-  const hasMore = merged.length > start + pageSize;
+  const datesByDay = buildDatesByDay(merged);
 
-  return { entries, hasMore };
+  const filtered = options.date
+    ? merged.filter(
+        (entry) => splitDateTimeUtc(entry.occurredAt).date === options.date,
+      )
+    : merged;
+
+  const maxPage = Math.max(Math.ceil(filtered.length / pageSize), 1);
+  const page = Math.min(
+    normalizePositiveInt(options.page ?? 1, MAX_PAGE),
+    maxPage,
+  );
+  const start = (page - 1) * pageSize;
+  const entries = await attachMedia(filtered.slice(start, start + pageSize));
+  const hasMore = filtered.length > start + pageSize;
+
+  return { entries, hasMore, datesByDay };
 }
 
 /**
