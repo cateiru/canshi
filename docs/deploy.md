@@ -18,7 +18,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - R2 バケット
   - メディア（写真・動画）用バケット（非公開）
   - ISR・SSG のキャッシュ用バケット（メディア用とは分離する。`docs/idea/index.md` の方針）
-- Cloudflare Access のアプリケーション設定（対象ドメイン、許可ポリシー）
+- Cloudflare Workers 全体の Access 設定と許可ポリシー
 - Cloudflare Workflows（定期通知が実装される第2段階以降で必要）
 
 ## 環境変数・シークレット
@@ -26,7 +26,6 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 `docs/plans/01_project_setup.md` で用意する `.env.example` を基準に、本番用の値を Cloudflare のシークレット管理（`wrangler secret put` 等）で設定する。
 
 - D1・R2 のバインディング名（`wrangler.toml` で定義）
-- Cloudflare Access の Team ドメイン・Audience タグ（`docs/plans/15_cloudflare_access.md` 参照）
 - OpenAI API キー（第3段階の AI 機能実装時に追加）
 
 ## デプロイ手順（TODO）
@@ -75,10 +74,36 @@ MEDIA_STORAGE_LIMIT_BYTES = "10737418240"
 
 ## Cloudflare Access 設定
 
-対象ドメイン・アプリケーションの登録と許可ユーザーのポリシーは Cloudflare ダッシュボードで設定済み（2026-09 時点）。以下は未整理。
+Cloudflare ダッシュボードの Workers & Pages で、Workers 全体を保護する設定を `All traffic` として設定済み（2026-09 時点）。この設定により、既存・新規 Worker の本番 URL とプレビュー URL へのリクエストは、Worker が実行される前に Access で評価される。
 
-- 許可するユーザー（メールアドレス等）の追加・削除の運用方法
-- `docs/plans/15_cloudflare_access.md` で実装する JWT 検証に必要な Team ドメイン・Audience タグの控え
+CANSHI はこのエッジでの保護を利用する。アプリケーション内で `Cf-Access-Jwt-Assertion` を検証する処理や、そのための Team ドメイン・Audience タグの環境変数は不要。
+
+### 設定の確認
+
+1. Cloudflare ダッシュボードの Workers & Pages を開く。
+2. Overview の **Protect all Workers** で、保護対象が **All traffic** になっていることを確認する。
+3. 適用されている Access ポリシーが、意図したユーザーまたはグループだけを許可していることを確認する。
+4. Workers & Pages から CANSHI の Worker を開き、Worker 単位で公開設定や Bypass ポリシーが追加されていないことを確認する。
+5. Zero Trust の Access controls > Applications で、CANSHI のホスト名・パスに対する、意図しない公開設定や Bypass ポリシーがないことを確認する。
+
+Access の設定は、ホスト名・パス単位、Worker 単位、Workers 全体の順に具体的なものが優先される。Workers 全体を保護していても、より具体的な設定で公開するとその経路が保護されないため、設定変更時は手順 4・5 も確認する。
+
+### 許可ユーザーの追加・削除
+
+1. Zero Trust の Access controls > Policies を開く。
+2. Workers 全体の Access に適用している再利用可能なポリシーを開く。
+3. Include ルールのメールアドレスまたはグループを更新して保存する。
+4. 次の動作確認を実施する。
+
+許可対象の具体的なメールアドレスやグループは機密性のある運用情報として扱い、リポジトリには記載しない。
+
+### 動作確認
+
+- ログアウト状態または許可対象外のアカウントで、カスタムドメイン、`workers.dev`、プレビュー URL を開き、Access のログイン画面または拒否画面が表示されることを確認する
+- 許可対象のアカウントで認証し、同じ URL から CANSHI を利用できることを確認する
+- Worker や公開経路を追加したとき、および Access ポリシーを変更したときは再確認する
+
+詳細は [Cloudflare Access for Workers](https://developers.cloudflare.com/workers/configuration/cloudflare-access/) と [Access policies](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/) を参照する。
 
 ## 監視・運用（TODO）
 

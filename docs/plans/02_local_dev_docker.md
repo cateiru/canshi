@@ -15,7 +15,7 @@
 ## 対象外
 
 - 本番・ステージング環境のデプロイ構成（`docs/deploy.md`）
-- Cloudflare Access のローカル無効化以外のアクセス制御（`15`）
+- Cloudflare Access の本番設定・運用確認（`15`）
 
 ## 依存 PR
 

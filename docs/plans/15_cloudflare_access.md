@@ -1,19 +1,24 @@
-# 15. Cloudflare Access によるアクセス制限
+# 15. Cloudflare Access 設定の確認・文書化
 
 ## 目的
 
-MVP の最終 PR として、Cloudflare Access によるアクセス制限をアプリケーションに組み込む。Access のポリシー設定自体（ゾーン・グループ・メールアドレス許可リストなど）は運用上の設定情報のため `docs/deploy.md` に記載し、本 PR はアプリケーション側の対応に限定する。
+MVP の最終 PR として、Cloudflare Workers 全体に設定済みの Cloudflare Access が CANSHI のすべての公開経路を保護していることを確認し、設定・運用・動作確認の手順を `docs/deploy.md` に文書化する。
+
+Cloudflare Access はリクエストを Worker の実行前に評価するため、アプリケーション内で Access JWT を重ねて検証しない。アプリ内のユーザー管理・認可も実装しない。
 
 ## スコープ
 
-- Cloudflare Access が発行する JWT（`Cf-Access-Jwt-Assertion` ヘッダー）の検証ミドルウェアを追加し、Access を経由していないリクエストを多層防御として弾く（Access 自体がエッジで遮断するため必須ではないが、直接 Workers にアクセスされた場合の保険として実装する）
-- ローカル開発（`02` の Docker Compose 環境）では Access の検証をスキップする設定を用意する
-- `docs/deploy.md` に、Cloudflare Access のポリシー設定手順（アプリ内では管理しないユーザー許可リストの運用含む）へのリンク・記載を追加する
+- Cloudflare ダッシュボードで Workers 全体の Access が `All traffic` に設定されていることを確認する
+- CANSHI のカスタムドメイン、`workers.dev`、プレビュー URL が同じ Access ポリシーで保護されていることを確認する
+- Worker 単位またはホスト名・パス単位に、意図しない公開設定や Bypass ポリシーがないことを確認する
+- 許可ユーザーの追加・削除と、Access の動作確認手順を `docs/deploy.md` に記載する
 
 ## 対象外
 
+- アプリケーション内での Access JWT の解析・検証
+- Access JWT 検証用の Team ドメイン・Audience タグの環境変数
 - アプリ内のユーザー管理・認可（`docs/idea/index.md` の方針どおり実装しない）
-- Cloudflare Access のポリシー自体の設定手順の詳細（`docs/deploy.md` に記載）
+- Access ポリシーや許可ユーザーの値をリポジトリで管理すること
 
 ## 依存 PR
 
@@ -22,14 +27,16 @@ MVP の最終 PR として、Cloudflare Access によるアクセス制限をア
 
 ## 注意事項
 
-本 PR より前の MVP 実装（`03`〜`14`、`04` の開発確認用プレビュールート含む）には Cloudflare Access によるアクセス制限がかかっていない。それらのプレビュー環境を、本 PR が完了するまで公開ホスト名（第三者がアクセス可能な URL）に公開しないこと。
+Access の設定はリポジトリ外の Cloudflare ダッシュボードで管理される。Worker やドメインを追加したとき、および Access ポリシーを変更したときは、本計画の受け入れ条件を再確認すること。
+
+Access はホスト名・パス単位、Worker 単位、アカウント内の Workers 全体の順に具体的な設定が優先される。Workers 全体を保護していても、より具体的な公開設定や Bypass ポリシーを追加すると、その経路が保護されない可能性がある。
 
 ## 変更・追加内容
 
-- `src/middleware.ts`（もしくは同等の仕組み）に Access JWT 検証を追加
-- 環境変数（Access の Team ドメイン、Audience タグなど）の追加
-- ローカル開発用のバイパス設定
-- `docs/deploy.md` への追記
+- `docs/deploy.md` に現在の Access 設定と保護対象を記載する
+- `docs/deploy.md` に許可ユーザーの運用手順と動作確認手順を記載する
+- Access JWT のアプリ内検証を前提としていた計画書の記述を修正する
+- アプリケーションコード、環境変数、シークレットは追加しない
 
 ## DB マイグレーション
 
@@ -37,6 +44,9 @@ MVP の最終 PR として、Cloudflare Access によるアクセス制限をア
 
 ## 受け入れ条件
 
-- Access を経由しないリクエスト（JWT が無い、または検証に失敗する）はアプリケーションレベルでも拒否される
-- ローカル開発環境では Access 検証をスキップしたまま従来どおり動作する
-- 本番相当の環境（Workers プレビュー）で Access 経由のアクセスのみ許可されることを確認する
+- Workers 全体の Access が `All traffic` に設定されている
+- 許可対象のユーザーは CANSHI にアクセスでき、許可対象外のユーザーは Worker が実行される前に拒否される
+- カスタムドメイン、`workers.dev`、プレビュー URL のすべてが Access で保護されている
+- Worker 単位またはホスト名・パス単位に、意図しない公開設定や Bypass ポリシーがない
+- 許可ユーザーの追加・削除方法と動作確認手順が `docs/deploy.md` に記載されている
+- Access のためのアプリケーションコードや環境変数を追加せず、ローカル環境が従来どおり起動する

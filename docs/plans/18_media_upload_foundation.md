@@ -18,7 +18,7 @@
 - 配信用 Route Handler
   - `GET /media/[assetId]` で元データ、`GET /media/[assetId]/thumbnail` でサムネイルを R2 から取得し、ストリーミングで返す
   - `Cache-Control: private, max-age=...` を付与し、共有キャッシュには載せない（Cloudflare Access の保護対象のため）
-  - アクセス確認は Cloudflare Access（ダッシュボードで設定済み。エッジで遮断される）に委ね、本 PR では検証ロジックを持たない。`15` のアプリ側 JWT 検証は多層防御の保険であり、本 PR の前提ではない
+  - アクセス確認は Workers 全体に設定済みの Cloudflare Access に委ね、本 PR では検証ロジックを持たない
 - 上限の設定
   - 1 ファイルあたりの上限：画像 10 MB、動画 100 MB（暫定値。環境変数 `MEDIA_MAX_IMAGE_BYTES`・`MEDIA_MAX_VIDEO_BYTES` で上書き可能にする）
   - 保存容量の上限：合計 10 GB（暫定値。R2 の無料枠を基準にする。環境変数 `MEDIA_STORAGE_LIMIT_BYTES` で上書き可能にする）
@@ -40,7 +40,7 @@
 ## 依存 PR
 
 - `03`（DB スキーマ基盤・`media_assets` テーブル）
-- `15`（Cloudflare Access）は前提としない。Access のポリシーはダッシュボードで設定済みのため、配信エンドポイントはアプリ側の実装なしでエッジで保護される。`15` が先に完了していれば、そのミドルウェアがそのまま配信エンドポイントにも適用される
+- `15`（Cloudflare Access 設定の確認・文書化）はコード上の依存ではない。Access のポリシーは Workers 全体に設定済みのため、配信エンドポイントはアプリ側の実装なしでエッジで保護される
 
 ## 変更・追加内容
 
