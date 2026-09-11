@@ -41,7 +41,8 @@ export async function dismissNotificationAction(
 
 /**
  * 通知を延期する。`snoozedUntil` の到来後は `status` を書き換えなくても未対応として扱われる
- * （`src/features/notifications/status.ts` の `isNotificationPending` 参照）
+ * （`src/features/notifications/status.ts` の `isNotificationPending` 参照）。
+ * 延期後の再通知のため `readAt`・`pushedAt` もあわせて未対応状態へ戻す
  */
 export async function snoozeNotificationAction(
   id: string,
@@ -51,7 +52,13 @@ export async function snoozeNotificationAction(
     const db = getDb();
     await db
       .update(notifications)
-      .set({ status: "snoozed", snoozedUntil, updatedAt: new Date() })
+      .set({
+        status: "snoozed",
+        snoozedUntil,
+        readAt: null,
+        pushedAt: null,
+        updatedAt: new Date(),
+      })
       .where(eq(notifications.id, id));
     return {};
   } catch (error) {
