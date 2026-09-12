@@ -105,20 +105,25 @@ export function WeightIcon(props: RecordIconProps) {
 }
 
 export function VomitIcon(props: RecordIconProps) {
+  const face =
+    "M4 9V3l5 3a12 12 0 0 1 6 0l5-3v6a6 6 0 0 1 1 3c0 3.5-4 6-9 6s-9-2.5-9-6a6 6 0 0 1 1-3Z";
+  const vomit = "M10 15h4l.5 4H16a1.5 1.5 0 0 1 0 3H8a1.5 1.5 0 0 1 0-3h1.5Z";
+
   return (
     <RecordIcon
       {...props}
       fills={
         <>
-          <path
-            fill="#f5dfb7"
-            d="M6 3h12c1.657 0 3 3.134 3 7v10l-3-1-3 2-3-3-3 2V10Z"
-          />
-          <ellipse fill="#fff4df" cx="6" cy="10" rx="3" ry="7" />
+          <path fill="#f5dfb7" d={face} />
+          <path fill="#f4b0a3" d="M5.5 5.5v3l2-1.5Zm13 0v3l-2-1.5Z" />
+          <path fill="#b2d3aa" d={vomit} />
         </>
       }
     >
-      <path d="M3 10a3 7 0 1 0 6 0a3 7 0 1 0-6 0M21 10c0-3.866-1.343-7-3-7M6 3h12M21 10v10l-3-1-3 2-3-3-3 2V10M6 10h.01" />
+      <path d="M9.5 17.8C5.7 17.1 3 14.9 3 12a6 6 0 0 1 1-3V3l5 3a12 12 0 0 1 6 0l5-3v6a6 6 0 0 1 1 3c0 2.9-2.7 5.1-6.5 5.8" />
+      <path d="m7 10 2 1.5L7 13m10-3-2 1.5 2 1.5" />
+      <path d="m2 14 2 .5m18-.5-2 .5" />
+      <path d={vomit} />
     </RecordIcon>
   );
 }
