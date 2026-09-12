@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { TbMeat } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
@@ -12,6 +13,7 @@ import {
   listFoodProductImageUrls,
   listFoodProducts,
 } from "@/features/food-products/queries";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +58,9 @@ export default async function EditFeedingRecordPage({
         ]}
       />
 
-      <h1>{cat.name}のごはん記録を編集する</h1>
+      <RecordPageHeading icon={TbMeat}>
+        {cat.name}のごはん記録を編集する
+      </RecordPageHeading>
       <FeedingRecordForm
         action={updateFeedingRecordAction.bind(null, catId, feedingRecord.id)}
         foodProducts={foodProducts}

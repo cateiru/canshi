@@ -60,7 +60,32 @@ test("複数商品のごはん記録とプリセットからの自動入力が�
   await expect(page).toHaveURL(/feeding-records$/);
   await expect(page.getByText(wetProductName)).toBeVisible();
   await expect(page.getByText(dryProductName)).toBeVisible();
-  await expect(page.getByText("推定摂取量（合計）")).toBeVisible();
+  const summary = page.getByLabel("食事の合計（推定）");
+  await expect(summary).toContainText("60g");
+  await expect(summary).toContainText("112.0kcal");
+
+  await page.getByRole("link", { name: "編集する", exact: true }).click();
+  await expect(page.getByLabel("与えた量（g）").first()).toHaveValue("45");
+  await expect(page.getByLabel("残した量（g）").first()).toHaveValue("5");
+  await page.getByRole("button", { name: "商品 2を削除" }).click();
+  await expect(page.getByLabel("与えた量（g）")).toHaveCount(1);
+  await page.getByRole("button", { name: "更新する" }).click();
+  await expect(page).toHaveURL(/feeding-records$/);
+  await expect(summary).toContainText("40g");
+  await expect(summary).toContainText("36.0kcal");
+
+  await page.getByRole("button", { name: "削除する", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "キャンセル" })
+    .click();
+  await expect(summary).toBeVisible();
+  await page.getByRole("button", { name: "削除する", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "削除する" })
+    .click();
+  await expect(page.getByText("まだごはん記録がありません。")).toBeVisible();
 
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
