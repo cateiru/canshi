@@ -15,6 +15,21 @@
   align-items: center;
 }
 
+.recordIcons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+
+.recordIconSample {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+}
+
 .swatchRow {
   display: flex;
   flex-wrap: wrap;

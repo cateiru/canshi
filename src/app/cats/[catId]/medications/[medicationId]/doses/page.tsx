@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { RiCapsuleFill } from "react-icons/ri";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
+import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteMedicationDoseAction } from "@/features/medications/doseActions";
 import { listMedicationDoses } from "@/features/medications/doseQueries";
@@ -45,7 +45,7 @@ export default async function MedicationDosesPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={RiCapsuleFill}>
+        <RecordPageHeading icon={MedicationIcon}>
           {medication.name}の投薬実績
         </RecordPageHeading>
         <ButtonLink
@@ -60,7 +60,7 @@ export default async function MedicationDosesPage({
 
       {doses.length === 0 ? (
         <div className={styles.emptyState}>
-          <RiCapsuleFill aria-hidden="true" size={32} />
+          <MedicationIcon aria-hidden="true" size={32} />
           <p>まだ投薬実績がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink

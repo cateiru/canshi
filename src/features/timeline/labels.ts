@@ -1,16 +1,18 @@
 import type { IconType } from "react-icons";
-import { RiCapsuleFill } from "react-icons/ri";
 import {
-  TbBath,
-  TbBuildingHospital,
-  TbDroplet,
-  TbMeat,
-  TbPhoto,
-  TbTemperature,
-  TbToiletPaper,
-  TbWeight,
-} from "react-icons/tb";
-import { BroomIcon, PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
+  BroomIcon,
+  FeedingIcon,
+  HospitalIcon,
+  MedicationIcon,
+  PhotoIcon,
+  PoopIcon,
+  ShampooIcon,
+  SymptomIcon,
+  VomitIcon,
+  WaterIcon,
+  WeightIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
+
 import type { TimelineRecordType } from "./queries";
 
 export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
@@ -27,16 +29,16 @@ export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
   catPhoto: "写真",
 };
 
-export const TIMELINE_TYPE_ICON: Record<TimelineRecordType, IconType> = {
-  feeding: TbMeat,
+export const TIMELINE_TYPE_ICON = {
+  feeding: FeedingIcon,
   poop: PoopIcon,
-  weight: TbWeight,
-  vomit: TbToiletPaper,
-  water: TbDroplet,
-  shampoo: TbBath,
+  weight: WeightIcon,
+  vomit: VomitIcon,
+  water: WaterIcon,
+  shampoo: ShampooIcon,
   cleaning: BroomIcon,
-  symptom: TbTemperature,
-  medicationDose: RiCapsuleFill,
-  hospitalVisit: TbBuildingHospital,
-  catPhoto: TbPhoto,
-};
+  symptom: SymptomIcon,
+  medicationDose: MedicationIcon,
+  hospitalVisit: HospitalIcon,
+  catPhoto: PhotoIcon,
+} satisfies Record<TimelineRecordType, IconType>;

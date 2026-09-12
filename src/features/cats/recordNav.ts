@@ -1,17 +1,18 @@
 import type { IconType } from "react-icons";
-import { RiCapsuleFill } from "react-icons/ri";
+import { TbTimeline } from "react-icons/tb";
 import {
-  TbBath,
-  TbBuildingHospital,
-  TbDroplet,
-  TbMeat,
-  TbPhoto,
-  TbTemperature,
-  TbTimeline,
-  TbToiletPaper,
-  TbWeight,
-} from "react-icons/tb";
-import { BroomIcon, PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
+  BroomIcon,
+  FeedingIcon,
+  HospitalIcon,
+  MedicationIcon,
+  PhotoIcon,
+  PoopIcon,
+  ShampooIcon,
+  SymptomIcon,
+  VomitIcon,
+  WaterIcon,
+  WeightIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
 
 export type RecordNavItem = {
   href: (catId: string) => string;
@@ -30,7 +31,7 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
   },
   {
     href: (catId) => `/cats/${catId}/feeding-records`,
-    icon: TbMeat,
+    icon: FeedingIcon,
     label: "ごはん記録",
   },
   {
@@ -40,22 +41,22 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
   },
   {
     href: (catId) => `/cats/${catId}/weight-records`,
-    icon: TbWeight,
+    icon: WeightIcon,
     label: "体重記録",
   },
   {
     href: (catId) => `/cats/${catId}/vomit-records`,
-    icon: TbToiletPaper,
+    icon: VomitIcon,
     label: "嘔吐記録",
   },
   {
     href: (catId) => `/cats/${catId}/water-records`,
-    icon: TbDroplet,
+    icon: WaterIcon,
     label: "水の記録",
   },
   {
     href: (catId) => `/cats/${catId}/shampoo-records`,
-    icon: TbBath,
+    icon: ShampooIcon,
     label: "シャンプー記録",
   },
   {
@@ -65,22 +66,22 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
   },
   {
     href: (catId) => `/cats/${catId}/symptoms`,
-    icon: TbTemperature,
+    icon: SymptomIcon,
     label: "症状記録",
   },
   {
     href: (catId) => `/cats/${catId}/medications`,
-    icon: RiCapsuleFill,
+    icon: MedicationIcon,
     label: "服薬記録",
   },
   {
     href: (catId) => `/cats/${catId}/hospital-visits`,
-    icon: TbBuildingHospital,
+    icon: HospitalIcon,
     label: "通院記録",
   },
   {
     href: (catId) => `/cats/${catId}/photos`,
-    icon: TbPhoto,
+    icon: PhotoIcon,
     label: "写真",
   },
 ];

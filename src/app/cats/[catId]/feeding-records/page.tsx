@@ -3,11 +3,11 @@ import {
   TbBowlSpoon,
   TbClock,
   TbFlame,
-  TbMeat,
   TbPencil,
   TbPlus,
 } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteFeedingRecordAction } from "@/features/feeding-records/actions";
 import { listFeedingRecords } from "@/features/feeding-records/queries";
@@ -55,7 +55,7 @@ export default async function FeedingRecordsPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbMeat}>
+        <RecordPageHeading icon={FeedingIcon}>
           {cat.name}のごはん記録
         </RecordPageHeading>
         <ButtonLink

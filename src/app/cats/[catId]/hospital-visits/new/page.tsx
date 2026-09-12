@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbBuildingHospital } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import {
   createHospitalVisitAction,
@@ -42,7 +42,7 @@ export default async function NewHospitalVisitPage({
         ]}
       />
 
-      <RecordPageHeading icon={TbBuildingHospital}>
+      <RecordPageHeading icon={HospitalIcon}>
         {cat.name}の通院を記録する
       </RecordPageHeading>
       <HospitalVisitForm

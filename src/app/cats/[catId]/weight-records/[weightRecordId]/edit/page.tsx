@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbWeight } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { updateWeightRecordAction } from "@/features/weight-records/actions";
@@ -39,7 +39,7 @@ export default async function EditWeightRecordPage({
         ]}
       />
 
-      <RecordPageHeading icon={TbWeight}>
+      <RecordPageHeading icon={WeightIcon}>
         {cat.name}の体重記録を編集する
       </RecordPageHeading>
       <WeightRecordForm

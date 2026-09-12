@@ -28,8 +28,9 @@
   width: var(--space-8);
   height: var(--space-8);
   border-radius: 50%;
-  background-color: var(--color-accent);
-  color: var(--color-bg);
+  border: var(--border-width) solid var(--color-accent);
+  background-color: var(--color-bg);
+  color: var(--color-ink);
   font-size: var(--text-lg);
 }
 

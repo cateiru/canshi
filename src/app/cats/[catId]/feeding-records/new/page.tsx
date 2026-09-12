@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbMeat } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
 import { createFeedingRecordAction } from "@/features/feeding-records/actions";
@@ -53,7 +53,7 @@ export default async function NewFeedingRecordPage({
       <main className={styles.main}>
         <Breadcrumb items={breadcrumbItems} />
 
-        <RecordPageHeading icon={TbMeat}>
+        <RecordPageHeading icon={FeedingIcon}>
           {cat.name}のごはんを記録する
         </RecordPageHeading>
         <div className={styles.emptyState}>
@@ -74,7 +74,7 @@ export default async function NewFeedingRecordPage({
     <main className={styles.main}>
       <Breadcrumb items={breadcrumbItems} />
 
-      <RecordPageHeading icon={TbMeat}>
+      <RecordPageHeading icon={FeedingIcon}>
         {cat.name}のごはんを記録する
       </RecordPageHeading>
       <FeedingRecordForm

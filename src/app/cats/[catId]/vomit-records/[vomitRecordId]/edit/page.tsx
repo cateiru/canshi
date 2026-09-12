@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbToiletPaper } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { listMediaAssetsByRecord } from "@/features/media/queries";
@@ -48,7 +48,7 @@ export default async function EditVomitRecordPage({
         ]}
       />
 
-      <RecordPageHeading icon={TbToiletPaper}>
+      <RecordPageHeading icon={VomitIcon}>
         {cat.name}の嘔吐記録を編集する
       </RecordPageHeading>
       <VomitRecordForm

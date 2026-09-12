@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbMeat } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
 import { updateFeedingRecordAction } from "@/features/feeding-records/actions";
@@ -58,7 +58,7 @@ export default async function EditFeedingRecordPage({
         ]}
       />
 
-      <RecordPageHeading icon={TbMeat}>
+      <RecordPageHeading icon={FeedingIcon}>
         {cat.name}のごはん記録を編集する
       </RecordPageHeading>
       <FeedingRecordForm

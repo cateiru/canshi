@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbBath } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { updateShampooRecordAction } from "@/features/shampoo-records/actions";
 import { getShampooRecordById } from "@/features/shampoo-records/queries";
@@ -39,7 +39,7 @@ export default async function EditShampooRecordPage({
         ]}
       />
 
-      <RecordPageHeading icon={TbBath}>
+      <RecordPageHeading icon={ShampooIcon}>
         {cat.name}のシャンプー記録を編集する
       </RecordPageHeading>
       <ShampooRecordForm
