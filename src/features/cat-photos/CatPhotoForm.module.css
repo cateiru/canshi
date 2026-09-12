@@ -6,17 +6,19 @@
 }
 
 .row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-2);
 }
 
 .row > * {
-  flex: 1;
   min-width: 0;
 }
 
 .row input {
   padding-inline: var(--space-2);
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .errorMessage {
