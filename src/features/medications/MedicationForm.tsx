@@ -1,5 +1,6 @@
 "use client";
 
+import { TbCheck } from "react-icons/tb";
 import { Button, FormField, Select } from "@/components/ui";
 import type { HospitalVisit, Medication, Symptom } from "@/db/schema";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
@@ -129,6 +130,7 @@ export function MedicationForm({
       </div>
 
       <Select
+        className={styles.select}
         name="symptomId"
         label="関連する症状"
         options={symptomOptions}
@@ -137,6 +139,7 @@ export function MedicationForm({
       />
 
       <Select
+        className={styles.select}
         name="hospitalVisitId"
         label="処方元の通院記録"
         options={hospitalVisitOptions}
@@ -154,7 +157,13 @@ export function MedicationForm({
         <p className={styles.errorMessage}>{state.formError}</p>
       ) : null}
 
-      <Button type="submit" variant="primary" isDisabled={isPending}>
+      <Button
+        type="submit"
+        variant="primary"
+        className={styles.submitButton}
+        isDisabled={isPending}
+      >
+        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>
