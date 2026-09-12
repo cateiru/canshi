@@ -60,7 +60,9 @@ export default async function ShampooRecordsPage({
       {elapsedDays != null ? (
         <p className={styles.elapsed}>
           <TbBath aria-hidden="true" size={20} />
-          前回のシャンプーから<strong>{elapsedDays}</strong>日経過
+          <span>
+            前回のシャンプーから<strong>{elapsedDays}</strong>日経過
+          </span>
         </p>
       ) : null}
 
