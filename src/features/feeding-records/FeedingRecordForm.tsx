@@ -1,6 +1,14 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import {
+  TbCalendar,
+  TbCheck,
+  TbHistory,
+  TbPlus,
+  TbStack2,
+  TbX,
+} from "react-icons/tb";
 import { Button, FormField, Select } from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
 import type { FeedingPresetWithItems } from "@/features/feeding-presets/queries";
@@ -112,18 +120,50 @@ export function FeedingRecordForm({
 
   return (
     <form action={formAction} className={styles.form}>
+      <section
+        className={styles.dateSection}
+        aria-labelledby="feeding-date-heading"
+      >
+        <h2 id="feeding-date-heading" className={styles.sectionHeading}>
+          <TbCalendar aria-hidden="true" size={18} />
+          食事の日時
+        </h2>
+        <div className={styles.row}>
+          <FormField
+            name="occurredDate"
+            label="日付"
+            type="date"
+            defaultValue={defaultDate}
+            errorMessage={state.fieldErrors?.occurredDate?.[0]}
+            isRequired
+          />
+          <FormField
+            name="occurredTime"
+            label="時刻"
+            type="time"
+            defaultValue={defaultTime}
+            errorMessage={state.fieldErrors?.occurredTime?.[0]}
+            isRequired
+          />
+        </div>
+      </section>
+
       {presets.length > 0 ? (
         <div className={styles.quickSelect}>
-          <span className={styles.quickSelectLabel}>プリセットから選ぶ</span>
+          <h2 className={styles.sectionHeading}>
+            <TbStack2 aria-hidden="true" size={18} />
+            プリセット
+          </h2>
           <div className={styles.quickSelectOptions}>
             {presets.map((preset) => (
               <Button
                 key={preset.id}
                 type="button"
                 variant="secondary"
+                className={styles.quickSelectButton}
                 onPress={() => applyPreset(preset)}
               >
-                {preset.name}
+                <span className={styles.quickSelectName}>{preset.name}</span>
               </Button>
             ))}
           </div>
@@ -132,75 +172,60 @@ export function FeedingRecordForm({
 
       {recentFoodProducts.length > 0 ? (
         <div className={styles.quickSelect}>
-          <span className={styles.quickSelectLabel}>よく使う商品を追加</span>
+          <h2 className={styles.sectionHeading}>
+            <TbHistory aria-hidden="true" size={18} />
+            最近使った商品
+          </h2>
           <div className={styles.quickSelectOptions}>
             {recentFoodProducts.map((foodProduct) => (
               <Button
                 key={foodProduct.id}
                 type="button"
                 variant="secondary"
+                className={styles.quickSelectButton}
+                aria-label={`${foodProduct.name}を追加`}
                 onPress={() => addItem(foodProduct.id)}
               >
-                <FoodProductImage
-                  name={foodProduct.name}
-                  thumbnailUrl={foodProductImageUrls[foodProduct.id]}
-                  size="sm"
-                />
-                + {foodProduct.name}
+                <span className={styles.productImage}>
+                  <FoodProductImage
+                    name={foodProduct.name}
+                    thumbnailUrl={foodProductImageUrls[foodProduct.id]}
+                    size="sm"
+                  />
+                </span>
+                <span className={styles.quickSelectName}>
+                  {foodProduct.name}
+                </span>
+                <TbPlus aria-hidden="true" size={16} />
               </Button>
             ))}
           </div>
         </div>
       ) : null}
 
-      <div className={styles.row}>
-        <FormField
-          name="occurredDate"
-          label="発生日"
-          type="date"
-          defaultValue={defaultDate}
-          errorMessage={state.fieldErrors?.occurredDate?.[0]}
-          isRequired
-        />
-        <FormField
-          name="occurredTime"
-          label="発生時刻"
-          type="time"
-          defaultValue={defaultTime}
-          errorMessage={state.fieldErrors?.occurredTime?.[0]}
-          isRequired
-        />
-      </div>
-
       <div className={styles.itemsList}>
         {items.map((item, index) => {
           const itemErrors = state.fieldErrors?.itemErrors?.[index];
           return (
-            <div key={item.key} className={styles.itemCard}>
-              <div className={styles.itemHeader}>
-                <span className={styles.itemHeaderLabel}>商品 {index + 1}</span>
-                {items.length > 1 ? (
-                  <Button
-                    type="button"
-                    variant="danger"
-                    onPress={() => removeItem(index)}
-                  >
-                    削除
-                  </Button>
-                ) : null}
-              </div>
-
+            <fieldset
+              key={item.key}
+              className={styles.itemCard}
+              aria-label={`商品 ${index + 1}`}
+            >
               <div className={styles.productRow}>
-                <FoodProductImage
-                  name={
-                    foodProducts.find(
-                      (foodProduct) => foodProduct.id === item.foodProductId,
-                    )?.name ?? "商品"
-                  }
-                  thumbnailUrl={foodProductImageUrls[item.foodProductId]}
-                />
+                <span className={styles.productImage}>
+                  <FoodProductImage
+                    name={
+                      foodProducts.find(
+                        (foodProduct) => foodProduct.id === item.foodProductId,
+                      )?.name ?? "商品"
+                    }
+                    thumbnailUrl={foodProductImageUrls[item.foodProductId]}
+                  />
+                </span>
                 <div className={styles.productSelect}>
                   <Select
+                    className={styles.foodSelect}
                     name={`items.${index}.foodProductId`}
                     label="商品"
                     options={foodProductOptions}
@@ -211,6 +236,19 @@ export function FeedingRecordForm({
                     errorMessage={itemErrors?.foodProductId?.[0]}
                   />
                 </div>
+                {items.length > 1 ? (
+                  <span className={styles.removeAction} title="この商品を削除">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className={styles.removeButton}
+                      aria-label={`商品 ${index + 1}を削除`}
+                      onPress={() => removeItem(index)}
+                    >
+                      <TbX aria-hidden="true" size={20} />
+                    </Button>
+                  </span>
+                ) : null}
               </div>
 
               <div className={styles.row}>
@@ -239,7 +277,7 @@ export function FeedingRecordForm({
                   isRequired
                 />
               </div>
-            </div>
+            </fieldset>
           );
         })}
       </div>
@@ -251,8 +289,10 @@ export function FeedingRecordForm({
       <Button
         type="button"
         variant="secondary"
+        className={styles.addButton}
         onPress={() => addItem(foodProducts[0]?.id ?? "")}
       >
+        <TbPlus aria-hidden="true" size={18} />
         商品を追加する
       </Button>
 
@@ -260,7 +300,13 @@ export function FeedingRecordForm({
         <p className={styles.errorMessage}>{state.formError}</p>
       ) : null}
 
-      <Button type="submit" variant="primary" isDisabled={isPending}>
+      <Button
+        type="submit"
+        variant="primary"
+        className={styles.submitButton}
+        isDisabled={isPending}
+      >
+        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

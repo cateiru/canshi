@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
+import { TbMeat } from "react-icons/tb";
+import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
 import { createFeedingRecordAction } from "@/features/feeding-records/actions";
@@ -9,6 +10,7 @@ import {
   listFoodProductImageUrls,
   listFoodProducts,
 } from "@/features/food-products/queries";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -51,13 +53,19 @@ export default async function NewFeedingRecordPage({
       <main className={styles.main}>
         <Breadcrumb items={breadcrumbItems} />
 
-        <h1>{cat.name}のごはんを記録する</h1>
-        <Card>
+        <RecordPageHeading icon={TbMeat}>
+          {cat.name}のごはんを記録する
+        </RecordPageHeading>
+        <div className={styles.emptyState}>
           <p>先にごはん商品を登録してください。</p>
-          <ButtonLink href="/food-products/new" variant="primary">
+          <ButtonLink
+            href="/food-products/new"
+            variant="primary"
+            className={styles.createButton}
+          >
             商品を登録する
           </ButtonLink>
-        </Card>
+        </div>
       </main>
     );
   }
@@ -66,7 +74,9 @@ export default async function NewFeedingRecordPage({
     <main className={styles.main}>
       <Breadcrumb items={breadcrumbItems} />
 
-      <h1>{cat.name}のごはんを記録する</h1>
+      <RecordPageHeading icon={TbMeat}>
+        {cat.name}のごはんを記録する
+      </RecordPageHeading>
       <FeedingRecordForm
         action={createFeedingRecordAction.bind(null, catId)}
         foodProducts={foodProducts}
