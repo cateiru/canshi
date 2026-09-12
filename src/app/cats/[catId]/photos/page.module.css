@@ -8,62 +8,105 @@
   padding: var(--space-8) var(--space-4);
 }
 
-.header {
+.header,
+.recordHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.main .createButton {
+  border: 0;
+  border-radius: 8px;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+.note {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  font-size: var(--text-sm);
+  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-6);
   list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.record,
+.emptyState {
+  padding: var(--space-6);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
 }
 
 .emptyActions {
-  margin-top: var(--space-4);
-}
-
-.details {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-1) var(--space-4);
-  margin: var(--space-3) 0 0;
-}
-
-.details dt {
-  font-weight: var(--font-weight-bold);
-}
-
-.details dd {
-  margin: 0;
-}
-
-.badges {
-  display: flex;
-  gap: var(--space-2);
   margin-top: var(--space-2);
+}
+
+.recordDate {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
 }
 
 .cardActions {
   display: flex;
-  gap: var(--space-3);
-  margin-top: var(--space-3);
+  gap: var(--space-1);
+  margin-left: auto;
 }
 
-/* MediaGallery（サムネイル一覧）の上に余白を取る */
-.badges + ul,
-.details + ul {
-  margin-top: var(--space-3);
+.cardActions .iconButton {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-ink);
 }
 
-.note {
-  margin: 0;
+.cardActions .iconButton:hover {
+  background: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
+}
+
+.memo {
+  margin: var(--space-3) 0 0;
   font-size: var(--text-sm);
+  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  overflow-wrap: anywhere;
 }
 
 .gallery {
   margin-top: var(--space-3);
+}
+
+@media (max-width: 480px) {
+  .record,
+  .emptyState {
+    padding: var(--space-4);
+  }
+
+  .recordDate {
+    font-size: var(--text-sm);
+  }
 }
