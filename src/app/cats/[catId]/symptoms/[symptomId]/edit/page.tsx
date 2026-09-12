@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
+import { TbTemperature } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { listMediaAssetsByRecord } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { updateSymptomAction } from "@/features/symptoms/actions";
 import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/media";
 import { getSymptomById } from "@/features/symptoms/queries";
@@ -47,7 +49,9 @@ export default async function EditSymptomPage({
         ]}
       />
 
-      <h1>{cat.name}の症状記録を編集する</h1>
+      <RecordPageHeading icon={TbTemperature}>
+        {cat.name}の症状記録を編集する
+      </RecordPageHeading>
       <SymptomForm
         catId={catId}
         action={updateSymptomAction.bind(null, catId, symptom.id)}

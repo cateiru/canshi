@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
+import { RiCapsuleFill } from "react-icons/ri";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { updateMedicationDoseAction } from "@/features/medications/doseActions";
 import { getMedicationDoseById } from "@/features/medications/doseQueries";
 import { MedicationDoseForm } from "@/features/medications/MedicationDoseForm";
 import { getMedicationById } from "@/features/medications/queries";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +51,9 @@ export default async function EditMedicationDosePage({
         ]}
       />
 
-      <h1>{medication.name}の投薬実績を編集する</h1>
+      <RecordPageHeading icon={RiCapsuleFill}>
+        {medication.name}の投薬実績を編集する
+      </RecordPageHeading>
       <MedicationDoseForm
         action={updateMedicationDoseAction.bind(
           null,

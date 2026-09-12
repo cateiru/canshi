@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { TbPhoto } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import {
   createCatPhotoAction,
@@ -7,6 +8,7 @@ import {
 import { CatPhotoForm } from "@/features/cat-photos/CatPhotoForm";
 import { getCatById } from "@/features/cats/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +39,9 @@ export default async function NewCatPhotoPage({
         ]}
       />
 
-      <h1>{cat.name}の写真を追加する</h1>
+      <RecordPageHeading icon={TbPhoto}>
+        {cat.name}の写真を追加する
+      </RecordPageHeading>
       <CatPhotoForm
         catId={catId}
         action={createCatPhotoAction.bind(null, catId)}

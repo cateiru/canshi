@@ -134,8 +134,7 @@ export default async function HospitalVisitsPage({
                       <div>
                         <dt>関連する症状</dt>
                         <dd>
-                          {symptomNameById.get(visit.symptomId) ??
-                            "不明な症状"}
+                          {symptomNameById.get(visit.symptomId) ?? "不明な症状"}
                         </dd>
                       </div>
                     ) : null}

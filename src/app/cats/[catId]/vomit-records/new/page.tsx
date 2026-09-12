@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { TbToiletPaper } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import {
   createVomitRecordAction,
   updateVomitRecordAction,
@@ -37,7 +39,9 @@ export default async function NewVomitRecordPage({
         ]}
       />
 
-      <h1>{cat.name}の嘔吐を記録する</h1>
+      <RecordPageHeading icon={TbToiletPaper}>
+        {cat.name}の嘔吐を記録する
+      </RecordPageHeading>
       <VomitRecordForm
         catId={catId}
         action={createVomitRecordAction.bind(null, catId)}

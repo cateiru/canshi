@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { TbDroplet } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { createWaterRecordAction } from "@/features/water-records/actions";
 import { WaterRecordForm } from "@/features/water-records/WaterRecordForm";
 import styles from "../page.module.css";
@@ -33,7 +35,9 @@ export default async function NewWaterRecordPage({
         ]}
       />
 
-      <h1>{cat.name}の水を記録する</h1>
+      <RecordPageHeading icon={TbDroplet}>
+        {cat.name}の水を記録する
+      </RecordPageHeading>
       <WaterRecordForm
         action={createWaterRecordAction.bind(null, catId)}
         submitLabel="記録する"

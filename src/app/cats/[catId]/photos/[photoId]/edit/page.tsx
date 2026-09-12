@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { TbPhoto } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { updateCatPhotoAction } from "@/features/cat-photos/actions";
 import { CatPhotoForm } from "@/features/cat-photos/CatPhotoForm";
@@ -8,6 +9,7 @@ import { getCatById } from "@/features/cats/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { listMediaAssetsByRecord } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +48,9 @@ export default async function EditCatPhotoPage({
         ]}
       />
 
-      <h1>{cat.name}の写真を編集する</h1>
+      <RecordPageHeading icon={TbPhoto}>
+        {cat.name}の写真を編集する
+      </RecordPageHeading>
       <CatPhotoForm
         catId={catId}
         action={updateCatPhotoAction.bind(null, catId, catPhoto.id)}

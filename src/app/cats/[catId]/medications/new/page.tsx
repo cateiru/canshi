@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { RiCapsuleFill } from "react-icons/ri";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
@@ -8,6 +9,7 @@ import {
   updateMedicationAction,
 } from "@/features/medications/actions";
 import { MedicationForm } from "@/features/medications/MedicationForm";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "../page.module.css";
 
@@ -44,7 +46,9 @@ export default async function NewMedicationPage({
         ]}
       />
 
-      <h1>{cat.name}の服薬予定を登録する</h1>
+      <RecordPageHeading icon={RiCapsuleFill}>
+        {cat.name}の服薬予定を登録する
+      </RecordPageHeading>
       <MedicationForm
         catId={catId}
         action={createMedicationAction.bind(null, catId)}

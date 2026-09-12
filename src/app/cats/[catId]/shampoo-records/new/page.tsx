@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
+import { TbBath } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { createShampooRecordAction } from "@/features/shampoo-records/actions";
 import { ShampooRecordForm } from "@/features/shampoo-records/ShampooRecordForm";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +35,9 @@ export default async function NewShampooRecordPage({
         ]}
       />
 
-      <h1>{cat.name}のシャンプーを記録する</h1>
+      <RecordPageHeading icon={TbBath}>
+        {cat.name}のシャンプーを記録する
+      </RecordPageHeading>
       <ShampooRecordForm
         action={createShampooRecordAction.bind(null, catId)}
         submitLabel="記録する"

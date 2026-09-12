@@ -100,9 +100,7 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
               >
                 <div className={styles.recordHeader}>
                   <div className={styles.titleGroup}>
-                    <h2 className={styles.recordTitle}>
-                      {record.symptomType}
-                    </h2>
+                    <h2 className={styles.recordTitle}>{record.symptomType}</h2>
                     <Badge color={STATUS_BADGE_COLOR[record.status]}>
                       {STATUS_LABEL[record.status]}
                     </Badge>
@@ -118,11 +116,7 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
                       <TbPencil aria-hidden="true" size={20} />
                     </ButtonLink>
                     <DeleteRecordButton
-                      action={deleteSymptomAction.bind(
-                        null,
-                        catId,
-                        record.id,
-                      )}
+                      action={deleteSymptomAction.bind(null, catId, record.id)}
                       title="症状記録の削除"
                       description="この症状記録を削除しますか？この操作は取り消せません。"
                       iconOnly

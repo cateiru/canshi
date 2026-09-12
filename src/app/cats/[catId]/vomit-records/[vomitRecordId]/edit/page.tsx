@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
+import { TbToiletPaper } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { listMediaAssetsByRecord } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { updateVomitRecordAction } from "@/features/vomit-records/actions";
 import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
 import { getVomitRecordById } from "@/features/vomit-records/queries";
@@ -46,7 +48,9 @@ export default async function EditVomitRecordPage({
         ]}
       />
 
-      <h1>{cat.name}の嘔吐記録を編集する</h1>
+      <RecordPageHeading icon={TbToiletPaper}>
+        {cat.name}の嘔吐記録を編集する
+      </RecordPageHeading>
       <VomitRecordForm
         action={updateVomitRecordAction.bind(null, catId, vomitRecord.id)}
         catId={catId}
