@@ -29,7 +29,17 @@
 
 .input[type="date"],
 .input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
   text-align: center;
+}
+
+/* Safari は type=date/time のネイティブUIに、指定した幅を無視する
+   独自の最小幅（日本語ロケールで 200px 超）を要求する。appearance:none で
+   ネイティブUIをリセットし、幅をこちらの指定どおりに描画させる */
+.input[type="date"]::-webkit-datetime-edit,
+.input[type="time"]::-webkit-datetime-edit {
+  min-width: 0;
 }
 
 .input:hover:not(:disabled) {
