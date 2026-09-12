@@ -6,12 +6,12 @@ export type RecordIconProps = IconBaseProps & {
   monochrome?: boolean;
 };
 
-// 既存の Tabler アイコンと同じ 24px グリッド・2px 線・丸い線端。
+// 24px グリッド・1.5px 線・丸い線端。SVG のまま描画し、拡大時も鮮明に保つ。
 const outlineAttributes = {
   viewBox: "0 0 24 24",
   fill: "none",
   stroke: "currentColor",
-  strokeWidth: "2",
+  strokeWidth: "1.5",
   strokeLinecap: "round",
   strokeLinejoin: "round",
 };
@@ -40,66 +40,113 @@ function RecordIcon({
   );
 }
 
-// Tabler Icons (MIT) のパスを基に、輪郭とカラーの塗りを重ねる。
-// 出典・ライセンスは同ディレクトリの LICENSE.tabler を参照。
+// 猫の塗りと輪郭を分け、単色表示でも道具と顔を見分けられるようにする。
+const catFace =
+  "M5 7V2l4 2.5a12 12 0 0 1 6 0L19 2v5a4 4 0 0 1 1 2.5c0 3-3.5 5-8 5s-8-2-8-5A4 4 0 0 1 5 7Z";
+
+function CatFill({ transform }: { transform?: string }) {
+  return (
+    <>
+      <path fill="#f5dfb7" d={catFace} transform={transform} />
+      <path
+        fill="#f4b0a3"
+        d="M6.5 4.5v2l2-1Zm11 0v2l-2-1Z"
+        transform={transform}
+      />
+    </>
+  );
+}
+
+function CatOutline({
+  transform,
+  expression = "happy",
+}: {
+  transform?: string;
+  expression?: "happy" | "calm" | "unwell";
+}) {
+  const eyes = {
+    happy: "m7 9 1-1 1 1m6 0 1-1 1 1",
+    calm: "M8 9h.01M16 9h.01",
+    unwell: "m7 8 2 1-2 1m10-2-2 1 2 1",
+  };
+
+  return (
+    <g transform={transform}>
+      <path d={catFace} />
+      <path d={eyes[expression]} />
+      <path d={expression === "unwell" ? "M11 12h2" : "m11 11 1 1 1-1"} />
+    </g>
+  );
+}
+
 export function FeedingIcon(props: RecordIconProps) {
+  const bowl = "M3 16h18l-1.5 4a3 3 0 0 1-2.8 2H7.3a3 3 0 0 1-2.8-2Z";
+
   return (
     <RecordIcon
       {...props}
       fills={
         <>
-          <path
-            fill="#f5dfb7"
-            d="M13.62 8.382l1.966-1.967a2 2 0 1 1 3.414-1.415a2 2 0 1 1-1.413 3.414l-1.82 1.821Z"
-          />
-          <path
-            fill="#e99a70"
-            d="M12.975 21.425c3.905-3.906 4.855-9.288 2.121-12.021c-2.733-2.734-8.115-1.784-12.02 2.121Z"
-          />
-          <path
-            fill="#f4b0a3"
-            d="M5.904 18.596c2.733 2.734 5.9 4 7.07 2.829c1.172-1.172-.094-4.338-2.828-7.071c-2.733-2.734-5.9-4-7.07-2.829c-1.172 1.172.094 4.338 2.828 7.071"
-          />
+          <CatFill />
+          <path fill="#e99a70" d={bowl} />
         </>
       }
     >
-      <path d="M13.62 8.382l1.966-1.967a2 2 0 1 1 3.414-1.415a2 2 0 1 1-1.413 3.414l-1.82 1.821" />
-      <path d="M5.904 18.596c2.733 2.734 5.9 4 7.07 2.829c1.172-1.172-.094-4.338-2.828-7.071c-2.733-2.734-5.9-4-7.07-2.829c-1.172 1.172.094 4.338 2.828 7.071" />
-      <path d="M7.5 16l1 1M12.975 21.425c3.905-3.906 4.855-9.288 2.121-12.021c-2.733-2.734-8.115-1.784-12.02 2.121" />
+      <CatOutline />
+      <path d={bowl} />
+      <path d="M10 19h4" />
     </RecordIcon>
   );
 }
 
 export function PoopIcon(props: RecordIconProps) {
+  const catTransform = "translate(-1 1) scale(.8)";
+  const poop =
+    "M16 14c-1-1.5 2-2 1-4 3 .5 4 2.5 3 4a2 2 0 0 1 1 4h-6a2 2 0 0 1 1-4Z";
+  const tray = "M2 18h20l-1 4H3Z";
+
   return (
     <RecordIcon
       {...props}
       fills={
-        <path
-          fill="#c99a72"
-          d="M8 10c-1-3 5-3 4-7 4 1 6 4 4 7a3 3 0 0 1 2 5 3 3 0 0 1 0 6H6a3 3 0 0 1 0-6 3 3 0 0 1 2-5Z"
-        />
+        <>
+          <path fill="#f5dfb7" d="M5 12.5c-1.5 1.5-2 3.5-1 5.5h8l-1-5.5Z" />
+          <CatFill transform={catTransform} />
+          <path fill="#c99a72" d={poop} />
+          <path fill="#d7c4e9" d={tray} />
+        </>
       }
     >
-      <path d="M8 10c-1-3 5-3 4-7 4 1 6 4 4 7a3 3 0 0 1 2 5 3 3 0 0 1 0 6H6a3 3 0 0 1 0-6 3 3 0 0 1 2-5Z" />
-      <path d="M8 10h5M6 15h10" />
+      <path d="M5 12.5c-1.5 1.5-2 3.5-1 5.5m7-5.5 1 5.5M7 15v3" />
+      <CatOutline transform={catTransform} expression="calm" />
+      <path d={poop} />
+      <path d={tray} />
     </RecordIcon>
   );
 }
 
 export function WeightIcon(props: RecordIconProps) {
+  const catTransform = "translate(1.2 0) scale(.9)";
+  const pan = "M3 13h18l-2 2H5Z";
+  const scale = "M8 15h8l2 7H6Z";
+
   return (
     <RecordIcon
       {...props}
       fills={
-        <path
-          fill="#b9ace8"
-          d="M6.835 9h10.33a1 1 0 0 1 .984.821l1.637 9a1 1 0 0 1-.984 1.179H5.198a1 1 0 0 1-.984-1.179l1.637-9a1 1 0 0 1 .984-.821"
-        />
+        <>
+          <CatFill transform={catTransform} />
+          <path fill="#b9ace8" d={scale} />
+          <path fill="#d7c4e9" d={pan} />
+          <circle fill="#fff4df" cx="12" cy="18.5" r="2" />
+        </>
       }
     >
-      <path d="M9 6a3 3 0 1 0 6 0a3 3 0 1 0-6 0" />
-      <path d="M6.835 9h10.33a1 1 0 0 1 .984.821l1.637 9a1 1 0 0 1-.984 1.179H5.198a1 1 0 0 1-.984-1.179l1.637-9a1 1 0 0 1 .984-.821" />
+      <CatOutline transform={catTransform} expression="calm" />
+      <path d={scale} />
+      <path d={pan} />
+      <circle cx="12" cy="18.5" r="2" />
+      <path d="m12 18.5 1-1" />
     </RecordIcon>
   );
 }
@@ -129,115 +176,163 @@ export function VomitIcon(props: RecordIconProps) {
 }
 
 export function WaterIcon(props: RecordIconProps) {
-  const drop =
-    "M7.502 19.423c2.602 2.105 6.395 2.105 8.996 0c2.602-2.105 3.262-5.708 1.566-8.546l-4.89-7.26c-.42-.625-1.287-.803-1.936-.397a1.376 1.376 0 0 0-.41.397l-4.893 7.26c-1.695 2.838-1.035 6.441 1.567 8.546";
+  const bowl = "M3 17h18l-1.5 3a3 3 0 0 1-2.7 2H7.2a3 3 0 0 1-2.7-2Z";
+  const drop = "M20 10s-2 2.5-2 3.5a2 2 0 0 0 4 0c0-1-2-3.5-2-3.5Z";
+  const catTransform = "translate(-1 2) scale(.85)";
+
   return (
-    <RecordIcon {...props} fills={<path fill="#8dcde9" d={drop} />}>
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <CatFill transform={catTransform} />
+          <path fill="#8dcde9" d={bowl} />
+          <path fill="#8dcde9" d={drop} />
+          <path fill="#f4b0a3" d="M8 14v1.5a1.5 1.5 0 0 0 3 0v-1.5Z" />
+        </>
+      }
+    >
+      <CatOutline transform={catTransform} />
+      <path d={bowl} />
       <path d={drop} />
+      <path d="M8 14v1.5a1.5 1.5 0 0 0 3 0v-1.5" />
     </RecordIcon>
   );
 }
 
 export function ShampooIcon(props: RecordIconProps) {
-  const bath =
-    "M4 12h16a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-3a1 1 0 0 1 1-1";
+  const catTransform = "translate(0 1) scale(.85)";
+  const bath = "M2 15h20v2a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4Z";
+
   return (
-    <RecordIcon {...props} fills={<path fill="#91d4c4" d={bath} />}>
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <CatFill transform={catTransform} />
+          <path fill="#91d4c4" d={bath} />
+          <circle fill="#d0eef3" cx="20" cy="5" r="2" />
+          <circle fill="#d0eef3" cx="21" cy="11" r="1" />
+        </>
+      }
+    >
+      <CatOutline transform={catTransform} />
       <path d={bath} />
-      <path d="M6 12V5a2 2 0 0 1 2-2h3v2.25M4 21l1-1.5M20 21l-1-1.5" />
+      <path d="M5 21v1m14-1v1" />
+      <circle cx="20" cy="5" r="2" />
+      <circle cx="21" cy="11" r="1" />
     </RecordIcon>
   );
 }
 
 export function BroomIcon(props: RecordIconProps) {
+  const catTransform = "translate(-1 2) scale(.75)";
+  const broom = "m16 13 4 1 2 7h-9Z";
+
   return (
     <RecordIcon
       {...props}
       fills={
         <>
-          <path fill="#e99a70" d="m9 11 2-3 5 4-2 3Z" />
-          <path fill="#f2d17b" d="m9 11 5 4-3 6c-3 0-6-2-8-4Z" />
+          <path fill="#f5dfb7" d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5Z" />
+          <CatFill transform={catTransform} />
+          <path fill="#f2d17b" d={broom} />
+          <path fill="#e99a70" d="m16 13 4 1 .571 2-5.321-1Z" />
         </>
       }
     >
-      <path d="m13.5 10 6.5-7" />
-      <path d="m9 11 2-3 5 4-2 3" />
-      <path d="m9 11 5 4-3 6c-3 0-6-2-8-4Z" />
-      <path d="m8 16-2 3m5-1-1 3" />
+      <path d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5M7 17v4M4 20c-3 0-3-3-2-4" />
+      <CatOutline transform={catTransform} />
+      <path d="m20 3-2 10.5" />
+      <path d={broom} />
+      <path d="m15.25 15 5.321 1" strokeLinecap="butt" />
+      <path d="M18 18v3" />
     </RecordIcon>
   );
 }
 
 export function SymptomIcon(props: RecordIconProps) {
+  const catTransform = "translate(-1 4) scale(.85)";
+  const thermometer = "M18 16V5a2 2 0 0 1 4 0v11a3 3 0 1 1-4 0Z";
+
   return (
     <RecordIcon
       {...props}
       fills={
         <>
-          <path fill="#ffe5df" d="M10 13.5a4 4 0 1 0 4 0V5a2 2 0 0 0-4 0v8.5" />
-          <path fill="#f4a397" d="M10 9h4v4.5a4 4 0 1 1-4 0Z" />
+          <CatFill transform={catTransform} />
+          <ellipse fill="#f4b0a3" cx="4.5" cy="14" rx="1.5" ry="1" />
+          <ellipse fill="#f4b0a3" cx="13.5" cy="14" rx="1.5" ry="1" />
+          <path fill="#ffe5df" d={thermometer} />
+          <path fill="#f4a397" d="M18 12h4v4a3 3 0 1 1-4 0Z" />
         </>
       }
     >
-      <path d="M10 13.5a4 4 0 1 0 4 0V5a2 2 0 0 0-4 0v8.5M10 9h4" />
+      <CatOutline transform={catTransform} expression="unwell" />
+      <path d={thermometer} />
     </RecordIcon>
   );
 }
 
 export function MedicationIcon(props: RecordIconProps) {
-  const pill = "M4.5 12.5l8-8a4.94 4.94 0 0 1 7 7l-8 8a4.94 4.94 0 0 1-7-7";
   return (
     <RecordIcon
       {...props}
       fills={
         <>
-          <path fill="#fff4df" d={pill} />
-          <path fill="#739fdf" d="m8.5 8.5 4-4a4.94 4.94 0 0 1 7 7l-4 4Z" />
+          <CatFill />
+          <rect fill="#fff4df" x="4" y="15" width="16" height="7" rx="3.5" />
+          <path fill="#739fdf" d="M12 15h4.5a3.5 3.5 0 0 1 0 7H12Z" />
         </>
       }
     >
-      <path d={pill} />
-      <path d="m8.5 8.5 7 7" />
+      <CatOutline />
+      <rect x="4" y="15" width="16" height="7" rx="3.5" />
+      <path d="M12 15v7" />
     </RecordIcon>
   );
 }
 
 export function HospitalIcon(props: RecordIconProps) {
+  const catTransform = "translate(3.5 10) scale(.65)";
+
   return (
     <RecordIcon
       {...props}
       fills={
         <>
-          <path fill="#b7d7ee" d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16Z" />
-          <path fill="#f4fbff" d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4Z" />
+          <rect fill="#b7d7ee" x="2" y="6" width="20" height="16" rx="3" />
+          <CatFill transform={catTransform} />
         </>
       }
     >
-      <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4M10 9h4M12 7v4" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <rect x="2" y="6" width="20" height="16" rx="3" />
+      <CatOutline transform={catTransform} expression="calm" />
+      <path d="M16 10h4m-2-2v4" />
     </RecordIcon>
   );
 }
 
 export function PhotoIcon(props: RecordIconProps) {
+  const catTransform = "translate(3 5) scale(.75)";
+
   return (
     <RecordIcon
       {...props}
       fills={
         <>
           <rect fill="#d0e9f4" x="3" y="3" width="18" height="18" rx="3" />
-          <path
-            fill="#b2d3aa"
-            d="m14 14 1-1c.928-.893 2.072-.893 3 0l3 3v2a3 3 0 0 1-3 3h-4Z"
-          />
-          <path
-            fill="#8cbea4"
-            d="m3 16 5-5c.928-.893 2.072-.893 3 0l5 5 2 5H6a3 3 0 0 1-3-3Z"
-          />
-          <circle fill="#f2d17b" cx="15" cy="8" r="2" />
+          <path fill="#f5dfb7" d="M7 18c0-4 10-4 10 0Z" />
+          <CatFill transform={catTransform} />
+          <path fill="#fff4df" d="M3 18h18a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3Z" />
         </>
       }
     >
-      <path d="M15 8h.01M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6M3 16l5-5c.928-.893 2.072-.893 3 0l5 5M14 14l1-1c.928-.893 2.072-.893 3 0l3 3" />
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M7 18c0-4 10-4 10 0" />
+      <CatOutline transform={catTransform} />
+      <path d="M3 18h18" />
     </RecordIcon>
   );
 }
