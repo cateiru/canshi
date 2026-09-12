@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbPhoto } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { updateCatPhotoAction } from "@/features/cat-photos/actions";
 import { CatPhotoForm } from "@/features/cat-photos/CatPhotoForm";
 import { CAT_PHOTO_MEDIA_TYPE } from "@/features/cat-photos/media";
@@ -48,7 +48,7 @@ export default async function EditCatPhotoPage({
         ]}
       />
 
-      <RecordPageHeading icon={TbPhoto}>
+      <RecordPageHeading icon={PhotoIcon}>
         {cat.name}の写真を編集する
       </RecordPageHeading>
       <CatPhotoForm

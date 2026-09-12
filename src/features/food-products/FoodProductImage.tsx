@@ -1,4 +1,5 @@
-import { TbMeat } from "react-icons/tb";
+import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
+
 import styles from "./FoodProductImage.module.css";
 
 type FoodProductImageProps = {
@@ -28,7 +29,7 @@ export function FoodProductImage({
       aria-label={`${name}の画像なし`}
       className={`${className} ${styles.placeholder}`}
     >
-      <TbMeat aria-hidden="true" />
+      <FeedingIcon aria-hidden="true" />
     </span>
   );
 }

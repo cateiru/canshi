@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { RiCapsuleFill } from "react-icons/ri";
 import { Breadcrumb } from "@/components/ui";
+import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
@@ -46,7 +46,7 @@ export default async function NewMedicationPage({
         ]}
       />
 
-      <RecordPageHeading icon={RiCapsuleFill}>
+      <RecordPageHeading icon={MedicationIcon}>
         {cat.name}の服薬予定を登録する
       </RecordPageHeading>
       <MedicationForm

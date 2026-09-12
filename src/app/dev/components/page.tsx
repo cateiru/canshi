@@ -19,6 +19,12 @@ import {
   Tabs,
   Textarea,
 } from "@/components/ui";
+import {
+  TIMELINE_TYPE_ICON,
+  TIMELINE_TYPE_LABEL,
+} from "@/features/timeline/labels";
+import type { TimelineRecordType } from "@/features/timeline/queries";
+import { TimelineCalendar } from "@/features/timeline/TimelineCalendar";
 import styles from "./page.module.css";
 
 const COLOR_TOKENS = [
@@ -78,6 +84,44 @@ export default function ComponentsPreviewPage() {
     <main className={styles.main}>
       <h1>コンポーネントプレビュー</h1>
       <p>開発時のみ表示される、デザインシステムの確認用ページ。</p>
+
+      <section>
+        <h2>記録アイコン</h2>
+        <div className={styles.recordIcons}>
+          {Object.entries(TIMELINE_TYPE_ICON).map(([type, Icon]) => (
+            <div key={type} className={styles.recordIconSample}>
+              <span>{TIMELINE_TYPE_LABEL[type as TimelineRecordType]}</span>
+              <div className={styles.row}>
+                <Icon size={32} aria-hidden="true" />
+                <Icon size={24} aria-hidden="true" />
+                <Icon size={18} aria-hidden="true" />
+                <Icon size={14} monochrome aria-hidden="true" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2>タイムラインカレンダー</h2>
+        <TimelineCalendar
+          catId="preview"
+          year={2026}
+          month={9}
+          ym="2026-09"
+          todayKey="2026-09-12"
+          selectedDate="2026-09-13"
+          prevHref="/dev/components"
+          nextHref="/dev/components"
+          datesByDay={
+            new Map([
+              ["2026-09-12", ["feeding", "poop", "weight", "vomit", "water"]],
+              ["2026-09-13", ["shampoo", "cleaning", "symptom"]],
+              ["2026-09-14", ["medicationDose", "hospitalVisit", "catPhoto"]],
+            ])
+          }
+        />
+      </section>
 
       <section>
         <h2>カラートークン</h2>

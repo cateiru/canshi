@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { TbClock, TbDroplet, TbPencil, TbPlus } from "react-icons/tb";
+import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { WaterIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
@@ -43,7 +44,7 @@ export default async function WaterRecordsPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbDroplet}>
+        <RecordPageHeading icon={WaterIcon}>
           {cat.name}の水の記録
         </RecordPageHeading>
         <ButtonLink
@@ -58,7 +59,7 @@ export default async function WaterRecordsPage({
 
       {records.length === 0 ? (
         <div className={styles.emptyState}>
-          <TbDroplet aria-hidden="true" size={32} />
+          <WaterIcon aria-hidden="true" size={32} />
           <p>まだ水の記録がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink
@@ -112,7 +113,7 @@ export default async function WaterRecordsPage({
                 <dl className={styles.summary} aria-label="給水の合計">
                   <div>
                     <dt>
-                      <TbDroplet aria-hidden="true" size={18} />
+                      <WaterIcon aria-hidden="true" size={18} />
                       給水量
                     </dt>
                     <dd>
@@ -122,7 +123,7 @@ export default async function WaterRecordsPage({
                   </div>
                   <div>
                     <dt>
-                      <TbDroplet aria-hidden="true" size={18} />
+                      <WaterIcon aria-hidden="true" size={18} />
                       推定飲水量
                       {record.hasSpill ? (
                         <span className={styles.estimate}>（参考値）</span>

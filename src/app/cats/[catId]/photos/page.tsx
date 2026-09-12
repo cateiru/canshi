@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { TbClock, TbPencil, TbPhoto, TbPlus } from "react-icons/tb";
+import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import {
   deleteCatPhotoAction,
   pinProfileImageAction,
@@ -49,7 +50,7 @@ export default async function CatPhotosPage({ params }: CatPhotosPageProps) {
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbPhoto}>{cat.name}の写真</RecordPageHeading>
+        <RecordPageHeading icon={PhotoIcon}>{cat.name}の写真</RecordPageHeading>
         <ButtonLink
           href={`/cats/${catId}/photos/new`}
           variant="primary"
@@ -68,7 +69,7 @@ export default async function CatPhotosPage({ params }: CatPhotosPageProps) {
 
       {photos.length === 0 ? (
         <div className={styles.emptyState}>
-          <TbPhoto aria-hidden="true" size={32} />
+          <PhotoIcon aria-hidden="true" size={32} />
           <p>まだ写真がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink

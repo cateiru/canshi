@@ -1,0 +1,7 @@
+.monochrome .fills {
+  opacity: 0.18;
+}
+
+.monochrome .fills > * {
+  fill: currentColor;
+}

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { TbBath, TbClock, TbPencil, TbPlus } from "react-icons/tb";
+import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteShampooRecordAction } from "@/features/shampoo-records/actions";
 import { calculateElapsedDays } from "@/features/shampoo-records/calculations";
@@ -44,7 +45,7 @@ export default async function ShampooRecordsPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbBath}>
+        <RecordPageHeading icon={ShampooIcon}>
           {cat.name}のシャンプー記録
         </RecordPageHeading>
         <ButtonLink
@@ -59,7 +60,7 @@ export default async function ShampooRecordsPage({
 
       {elapsedDays != null ? (
         <p className={styles.elapsed}>
-          <TbBath aria-hidden="true" size={20} />
+          <ShampooIcon aria-hidden="true" size={20} />
           <span>
             前回のシャンプーから<strong>{elapsedDays}</strong>日経過
           </span>
@@ -68,7 +69,7 @@ export default async function ShampooRecordsPage({
 
       {records.length === 0 ? (
         <div className={styles.emptyState}>
-          <TbBath aria-hidden="true" size={32} />
+          <ShampooIcon aria-hidden="true" size={32} />
           <p>まだシャンプー記録がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink

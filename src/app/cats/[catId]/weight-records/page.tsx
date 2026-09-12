@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { TbClock, TbPencil, TbPlus, TbWeight } from "react-icons/tb";
+import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
@@ -40,7 +41,7 @@ export default async function WeightRecordsPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbWeight}>
+        <RecordPageHeading icon={WeightIcon}>
           {cat.name}の体重記録
         </RecordPageHeading>
         <ButtonLink
@@ -55,7 +56,7 @@ export default async function WeightRecordsPage({
 
       {records.length === 0 ? (
         <div className={styles.emptyState}>
-          <TbWeight aria-hidden="true" size={32} />
+          <WeightIcon aria-hidden="true" size={32} />
           <p>まだ体重記録がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink
@@ -108,7 +109,7 @@ export default async function WeightRecordsPage({
 
                 <dl className={styles.summary}>
                   <dt>
-                    <TbWeight aria-hidden="true" size={18} />
+                    <WeightIcon aria-hidden="true" size={18} />
                     体重
                   </dt>
                   <dd>

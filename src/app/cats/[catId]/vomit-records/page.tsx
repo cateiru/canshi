@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { TbClock, TbPencil, TbPlus, TbToiletPaper } from "react-icons/tb";
+import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
+import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { MediaGallery } from "@/features/media/MediaGallery";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
@@ -47,7 +48,7 @@ export default async function VomitRecordsPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbToiletPaper}>
+        <RecordPageHeading icon={VomitIcon}>
           {cat.name}の嘔吐記録
         </RecordPageHeading>
         <ButtonLink
@@ -62,7 +63,7 @@ export default async function VomitRecordsPage({
 
       {records.length === 0 ? (
         <div className={styles.emptyState}>
-          <TbToiletPaper aria-hidden="true" size={32} />
+          <VomitIcon aria-hidden="true" size={32} />
           <p>まだ嘔吐記録がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink

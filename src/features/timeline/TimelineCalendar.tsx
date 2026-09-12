@@ -126,7 +126,7 @@ export function TimelineCalendar({
           const Icon = TIMELINE_TYPE_ICON[type];
           return (
             <li key={type} className={styles.legendItem}>
-              <Icon aria-hidden="true" />
+              <Icon monochrome aria-hidden="true" />
               {TIMELINE_TYPE_LABEL[type]}
             </li>
           );
@@ -176,7 +176,7 @@ function DayCell({
           <span className={styles.icons} aria-hidden="true">
             {visibleTypes.map((type) => {
               const Icon = TIMELINE_TYPE_ICON[type];
-              return <Icon key={type} className={styles.icon} />;
+              return <Icon key={type} monochrome className={styles.icon} />;
             })}
             {hiddenCount > 0 ? (
               <span className={styles.moreCount}>+{hiddenCount}</span>

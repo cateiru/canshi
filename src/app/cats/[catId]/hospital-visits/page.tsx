@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { TbBuildingHospital, TbClock, TbPencil, TbPlus } from "react-icons/tb";
+import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteHospitalVisitAction } from "@/features/hospital-visits/actions";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
@@ -61,7 +62,7 @@ export default async function HospitalVisitsPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbBuildingHospital}>
+        <RecordPageHeading icon={HospitalIcon}>
           {cat.name}の通院記録
         </RecordPageHeading>
         <ButtonLink
@@ -76,7 +77,7 @@ export default async function HospitalVisitsPage({
 
       {visits.length === 0 ? (
         <div className={styles.emptyState}>
-          <TbBuildingHospital aria-hidden="true" size={32} />
+          <HospitalIcon aria-hidden="true" size={32} />
           <p>まだ通院記録がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink

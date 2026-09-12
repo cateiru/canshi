@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { TbClock, TbPencil, TbPlus, TbTemperature } from "react-icons/tb";
+import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
+import { SymptomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
@@ -63,7 +64,7 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbTemperature}>
+        <RecordPageHeading icon={SymptomIcon}>
           {cat.name}の症状記録
         </RecordPageHeading>
         <ButtonLink
@@ -78,7 +79,7 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
 
       {records.length === 0 ? (
         <div className={styles.emptyState}>
-          <TbTemperature aria-hidden="true" size={32} />
+          <SymptomIcon aria-hidden="true" size={32} />
           <p>まだ症状記録がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink

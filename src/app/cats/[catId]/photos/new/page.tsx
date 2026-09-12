@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbPhoto } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import {
   createCatPhotoAction,
   updateCatPhotoAction,
@@ -39,7 +39,7 @@ export default async function NewCatPhotoPage({
         ]}
       />
 
-      <RecordPageHeading icon={TbPhoto}>
+      <RecordPageHeading icon={PhotoIcon}>
         {cat.name}の写真を追加する
       </RecordPageHeading>
       <CatPhotoForm

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { RiCapsuleFill } from "react-icons/ri";
 import { TbActivity, TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
@@ -63,7 +63,7 @@ export default async function MedicationsPage({
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={RiCapsuleFill}>
+        <RecordPageHeading icon={MedicationIcon}>
           {cat.name}の服薬予定
         </RecordPageHeading>
         <ButtonLink
@@ -78,7 +78,7 @@ export default async function MedicationsPage({
 
       {medicationList.length === 0 ? (
         <div className={styles.emptyState}>
-          <RiCapsuleFill aria-hidden="true" size={32} />
+          <MedicationIcon aria-hidden="true" size={32} />
           <p>まだ服薬予定が登録されていません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink

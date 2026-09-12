@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { RiCapsuleFill } from "react-icons/ri";
 import { Breadcrumb } from "@/components/ui";
+import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { createMedicationDoseAction } from "@/features/medications/doseActions";
 import { MedicationDoseForm } from "@/features/medications/MedicationDoseForm";
@@ -43,7 +43,7 @@ export default async function NewMedicationDosePage({
         ]}
       />
 
-      <RecordPageHeading icon={RiCapsuleFill}>
+      <RecordPageHeading icon={MedicationIcon}>
         {medication.name}の投薬実績を記録する
       </RecordPageHeading>
       <MedicationDoseForm
