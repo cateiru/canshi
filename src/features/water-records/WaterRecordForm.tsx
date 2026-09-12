@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { TbCheck } from "react-icons/tb";
 import {
   Button,
   Checkbox,
@@ -111,6 +112,7 @@ export function WaterRecordForm({
       </Checkbox>
 
       <Select
+        className={styles.select}
         name="subjectiveAmount"
         label="主観評価"
         defaultSelectedKey={waterRecord?.subjectiveAmount ?? ""}
@@ -130,7 +132,13 @@ export function WaterRecordForm({
         <p className={styles.errorMessage}>{state.formError}</p>
       ) : null}
 
-      <Button type="submit" variant="primary" isDisabled={isPending}>
+      <Button
+        type="submit"
+        variant="primary"
+        className={styles.submitButton}
+        isDisabled={isPending}
+      >
+        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbBath } from "react-icons/tb";
-import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
+import { TbBath, TbClock, TbPencil, TbPlus } from "react-icons/tb";
+import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deleteShampooRecordAction } from "@/features/shampoo-records/actions";
 import { calculateElapsedDays } from "@/features/shampoo-records/calculations";
@@ -50,58 +50,82 @@ export default async function ShampooRecordsPage({
         <ButtonLink
           href={`/cats/${catId}/shampoo-records/new`}
           variant="primary"
+          className={styles.createButton}
         >
+          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>
 
       {elapsedDays != null ? (
-        <Card>
-          <p>前回のシャンプーから{elapsedDays}日経過</p>
-        </Card>
+        <p className={styles.elapsed}>
+          <TbBath aria-hidden="true" size={20} />
+          前回のシャンプーから<strong>{elapsedDays}</strong>日経過
+        </p>
       ) : null}
 
       {records.length === 0 ? (
-        <Card>
+        <div className={styles.emptyState}>
+          <TbBath aria-hidden="true" size={32} />
           <p>まだシャンプー記録がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink
               href={`/cats/${catId}/shampoo-records/new`}
               variant="primary"
+              className={styles.createButton}
             >
               最初の記録をする
             </ButtonLink>
           </div>
-        </Card>
+        </div>
       ) : (
         <ul className={styles.list}>
           {records.map((record) => (
             <li key={record.id}>
-              <Card title={formatDateTimeUtc(record.performedAt)}>
+              <article
+                className={styles.record}
+                aria-label={formatDateTimeUtc(record.performedAt)}
+              >
+                <div className={styles.recordHeader}>
+                  <h2 className={styles.recordDate}>
+                    <TbClock aria-hidden="true" size={18} />
+                    <time dateTime={record.performedAt.toISOString()}>
+                      {formatDateTimeUtc(record.performedAt)}
+                    </time>
+                  </h2>
+                  <div className={styles.cardActions}>
+                    <ButtonLink
+                      href={`/cats/${catId}/shampoo-records/${record.id}/edit`}
+                      variant="secondary"
+                      className={styles.iconButton}
+                      aria-label="編集する"
+                      title="編集する"
+                    >
+                      <TbPencil aria-hidden="true" size={20} />
+                    </ButtonLink>
+                    <DeleteRecordButton
+                      action={deleteShampooRecordAction.bind(
+                        null,
+                        catId,
+                        record.id,
+                      )}
+                      title="シャンプー記録の削除"
+                      description="このシャンプー記録を削除しますか？この操作は取り消せません。"
+                      iconOnly
+                      className={styles.iconButton}
+                    />
+                  </div>
+                </div>
+
                 {record.memo ? (
                   <dl className={styles.details}>
-                    <dt>備考</dt>
-                    <dd>{record.memo}</dd>
+                    <div>
+                      <dt>備考</dt>
+                      <dd>{record.memo}</dd>
+                    </div>
                   </dl>
                 ) : null}
-                <div className={styles.cardActions}>
-                  <ButtonLink
-                    href={`/cats/${catId}/shampoo-records/${record.id}/edit`}
-                    variant="secondary"
-                  >
-                    編集する
-                  </ButtonLink>
-                  <DeleteRecordButton
-                    action={deleteShampooRecordAction.bind(
-                      null,
-                      catId,
-                      record.id,
-                    )}
-                    title="シャンプー記録の削除"
-                    description="このシャンプー記録を削除しますか？この操作は取り消せません。"
-                  />
-                </div>
-              </Card>
+              </article>
             </li>
           ))}
         </ul>

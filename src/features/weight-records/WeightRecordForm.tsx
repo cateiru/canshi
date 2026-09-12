@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { TbCheck } from "react-icons/tb";
 import { Button, FormField, Radio, RadioGroup } from "@/components/ui";
 import type { WeightRecord } from "@/db/schema";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
@@ -100,7 +101,13 @@ export function WeightRecordForm({
         <p className={styles.errorMessage}>{state.formError}</p>
       ) : null}
 
-      <Button type="submit" variant="primary" isDisabled={isPending}>
+      <Button
+        type="submit"
+        variant="primary"
+        className={styles.submitButton}
+        isDisabled={isPending}
+      >
+        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>
