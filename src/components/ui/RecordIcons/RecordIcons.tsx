@@ -186,8 +186,8 @@ export function MedicationIcon(props: RecordIconProps) {
       {...props}
       fills={
         <>
-          <path fill="#e1d9f5" d={pill} />
-          <path fill="#a5b9ec" d="m8.5 8.5 4-4a4.94 4.94 0 0 1 7 7l-4 4Z" />
+          <path fill="#fff4df" d={pill} />
+          <path fill="#739fdf" d="m8.5 8.5 4-4a4.94 4.94 0 0 1 7 7l-4 4Z" />
         </>
       }
     >
