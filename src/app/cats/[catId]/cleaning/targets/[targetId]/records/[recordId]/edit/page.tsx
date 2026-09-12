@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
+import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { CleaningRecordForm } from "@/features/cleaning/CleaningRecordForm";
 import { updateCleaningRecordAction } from "@/features/cleaning/recordActions";
 import { getCleaningRecordById } from "@/features/cleaning/recordQueries";
 import { getCleaningTargetById } from "@/features/cleaning/targetQueries";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +52,9 @@ export default async function EditCleaningRecordPage({
         ]}
       />
 
-      <h1>{cleaningTarget.name}の記録を編集する</h1>
+      <RecordPageHeading icon={BroomIcon}>
+        {cleaningTarget.name}の記録を編集する
+      </RecordPageHeading>
       <CleaningRecordForm
         action={updateCleaningRecordAction.bind(
           null,

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
+import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
+import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteCleaningRecordAction } from "@/features/cleaning/recordActions";
@@ -51,56 +52,79 @@ export default async function CleaningRecordsPage({
           <ButtonLink
             href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
             variant="primary"
+            className={styles.createButton}
           >
+            <TbPlus aria-hidden="true" size={18} />
             記録する
           </ButtonLink>
         ) : null}
       </div>
 
       {records.length === 0 ? (
-        <Card>
+        <div className={styles.emptyState}>
+          <BroomIcon aria-hidden="true" size={32} />
           <p>まだ実施記録がありません。</p>
           {cleaningTarget.isActive ? (
             <div className={styles.emptyActions}>
               <ButtonLink
                 href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
                 variant="primary"
+                className={styles.createButton}
               >
                 最初の記録をする
               </ButtonLink>
             </div>
           ) : null}
-        </Card>
+        </div>
       ) : (
         <ul className={styles.list}>
           {records.map((record) => (
             <li key={record.id}>
-              <Card title={formatDateTimeUtc(record.performedAt)}>
+              <article
+                className={styles.record}
+                aria-label={formatDateTimeUtc(record.performedAt)}
+              >
+                <div className={styles.recordHeader}>
+                  <h2 className={styles.recordDate}>
+                    <TbClock aria-hidden="true" size={18} />
+                    <time dateTime={record.performedAt.toISOString()}>
+                      {formatDateTimeUtc(record.performedAt)}
+                    </time>
+                  </h2>
+                  <div className={styles.cardActions}>
+                    <ButtonLink
+                      href={`/cats/${catId}/cleaning/targets/${targetId}/records/${record.id}/edit`}
+                      variant="secondary"
+                      className={styles.iconButton}
+                      aria-label="編集する"
+                      title="編集する"
+                    >
+                      <TbPencil aria-hidden="true" size={20} />
+                    </ButtonLink>
+                    <DeleteRecordButton
+                      action={deleteCleaningRecordAction.bind(
+                        null,
+                        catId,
+                        targetId,
+                        record.id,
+                      )}
+                      title="掃除記録の削除"
+                      description="この掃除記録を削除しますか？この操作は取り消せません。"
+                      iconOnly
+                      className={styles.iconButton}
+                    />
+                  </div>
+                </div>
+
                 {record.memo ? (
                   <dl className={styles.details}>
-                    <dt>備考</dt>
-                    <dd>{record.memo}</dd>
+                    <div>
+                      <dt>備考</dt>
+                      <dd>{record.memo}</dd>
+                    </div>
                   </dl>
                 ) : null}
-                <div className={styles.cardActions}>
-                  <ButtonLink
-                    href={`/cats/${catId}/cleaning/targets/${targetId}/records/${record.id}/edit`}
-                    variant="secondary"
-                  >
-                    編集する
-                  </ButtonLink>
-                  <DeleteRecordButton
-                    action={deleteCleaningRecordAction.bind(
-                      null,
-                      catId,
-                      targetId,
-                      record.id,
-                    )}
-                    title="掃除記録の削除"
-                    description="この掃除記録を削除しますか？この操作は取り消せません。"
-                  />
-                </div>
-              </Card>
+              </article>
             </li>
           ))}
         </ul>
