@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
+import { TbTemperature } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import {
   createSymptomAction,
   updateSymptomAction,
@@ -38,7 +40,9 @@ export default async function NewSymptomPage({ params }: NewSymptomPageProps) {
         ]}
       />
 
-      <h1>{cat.name}の症状を記録する</h1>
+      <RecordPageHeading icon={TbTemperature}>
+        {cat.name}の症状を記録する
+      </RecordPageHeading>
       <SymptomForm
         catId={catId}
         action={createSymptomAction.bind(null, catId)}

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { TbBuildingHospital } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { updateHospitalVisitAction } from "@/features/hospital-visits/actions";
@@ -8,6 +9,7 @@ import { getHospitalVisitById } from "@/features/hospital-visits/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { listMediaAssetsByRecord } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "../../page.module.css";
 
@@ -47,7 +49,9 @@ export default async function EditHospitalVisitPage({
         ]}
       />
 
-      <h1>{cat.name}の通院記録を編集する</h1>
+      <RecordPageHeading icon={TbBuildingHospital}>
+        {cat.name}の通院記録を編集する
+      </RecordPageHeading>
       <HospitalVisitForm
         catId={catId}
         action={updateHospitalVisitAction.bind(null, catId, hospitalVisit.id)}

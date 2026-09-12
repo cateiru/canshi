@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { RiCapsuleFill } from "react-icons/ri";
-import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
+import { TbActivity, TbPencil, TbPlus } from "react-icons/tb";
+import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
@@ -65,88 +66,119 @@ export default async function MedicationsPage({
         <RecordPageHeading icon={RiCapsuleFill}>
           {cat.name}の服薬予定
         </RecordPageHeading>
-        <ButtonLink href={`/cats/${catId}/medications/new`} variant="primary">
+        <ButtonLink
+          href={`/cats/${catId}/medications/new`}
+          variant="primary"
+          className={styles.createButton}
+        >
+          <TbPlus aria-hidden="true" size={18} />
           服薬予定を登録する
         </ButtonLink>
       </div>
 
       {medicationList.length === 0 ? (
-        <Card>
+        <div className={styles.emptyState}>
+          <RiCapsuleFill aria-hidden="true" size={32} />
           <p>まだ服薬予定が登録されていません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink
               href={`/cats/${catId}/medications/new`}
               variant="primary"
+              className={styles.createButton}
             >
               最初の服薬予定を登録する
             </ButtonLink>
           </div>
-        </Card>
+        </div>
       ) : (
         <ul className={styles.list}>
           {medicationList.map((medication) => (
             <li key={medication.id}>
-              <Card title={medication.name}>
+              <article className={styles.record} aria-label={medication.name}>
+                <div className={styles.recordHeader}>
+                  <h2 className={styles.recordTitle}>{medication.name}</h2>
+                  <div className={styles.cardActions}>
+                    <ButtonLink
+                      href={`/cats/${catId}/medications/${medication.id}/edit`}
+                      variant="secondary"
+                      className={styles.iconButton}
+                      aria-label="編集する"
+                      title="編集する"
+                    >
+                      <TbPencil aria-hidden="true" size={20} />
+                    </ButtonLink>
+                    <DeleteRecordButton
+                      action={deleteMedicationAction.bind(
+                        null,
+                        catId,
+                        medication.id,
+                      )}
+                      title="服薬予定の削除"
+                      description="この服薬予定を削除しますか？関連する投薬実績も参照できなくなります。"
+                      iconOnly
+                      className={styles.iconButton}
+                    />
+                  </div>
+                </div>
+
                 <dl className={styles.details}>
-                  <dt>1回量</dt>
-                  <dd>{medication.doseAmount}</dd>
-                  <dt>1日の回数</dt>
-                  <dd>{medication.dosesPerDay}回</dd>
-                  <dt>服用期間</dt>
-                  <dd>
-                    {medication.startDate} 〜 {medication.endDate ?? "終了未定"}
-                  </dd>
+                  <div>
+                    <dt>1回量</dt>
+                    <dd>{medication.doseAmount}</dd>
+                  </div>
+                  <div>
+                    <dt>1日の回数</dt>
+                    <dd>{medication.dosesPerDay}回</dd>
+                  </div>
+                  <div>
+                    <dt>服用期間</dt>
+                    <dd>
+                      {medication.startDate} 〜{" "}
+                      {medication.endDate ?? "終了未定"}
+                    </dd>
+                  </div>
                   {medication.symptomId ? (
-                    <>
+                    <div>
                       <dt>関連する症状</dt>
                       <dd>
                         {symptomNameById.get(medication.symptomId) ??
                           "不明な症状"}
                       </dd>
-                    </>
+                    </div>
                   ) : null}
                   {medication.hospitalVisitId ? (
-                    <>
+                    <div>
                       <dt>処方元の通院記録</dt>
                       <dd>
                         {hospitalVisitLabelById.get(
                           medication.hospitalVisitId,
                         ) ?? "不明な通院記録"}
                       </dd>
-                    </>
+                    </div>
                   ) : null}
                 </dl>
-                <MediaGallery
-                  assets={(mediaByRecordId.get(medication.id) ?? []).map(
-                    toMediaAssetView,
-                  )}
-                  title="処方箋・薬袋の写真"
-                  fit="actual"
-                />
-                <div className={styles.cardActions}>
+
+                <div className={styles.media}>
+                  <MediaGallery
+                    assets={(mediaByRecordId.get(medication.id) ?? []).map(
+                      toMediaAssetView,
+                    )}
+                    title="処方箋・薬袋の写真"
+                    fit="actual"
+                  />
+                </div>
+
+                <div className={styles.primaryAction}>
                   <ButtonLink
                     href={`/cats/${catId}/medications/${medication.id}/doses`}
                     variant="primary"
+                    className={styles.dosesButton}
                   >
-                    投薬実績
+                    <TbActivity aria-hidden="true" size={18} />
+                    投薬実績を見る
                   </ButtonLink>
-                  <ButtonLink
-                    href={`/cats/${catId}/medications/${medication.id}/edit`}
-                    variant="secondary"
-                  >
-                    編集する
-                  </ButtonLink>
-                  <DeleteRecordButton
-                    action={deleteMedicationAction.bind(
-                      null,
-                      catId,
-                      medication.id,
-                    )}
-                    title="服薬予定の削除"
-                    description="この服薬予定を削除しますか？関連する投薬実績も参照できなくなります。"
-                  />
                 </div>
-              </Card>
+              </article>
             </li>
           ))}
         </ul>

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
+import { PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
 import {
@@ -7,6 +8,7 @@ import {
   updatePoopRecordAction,
 } from "@/features/poop-records/actions";
 import { PoopRecordForm } from "@/features/poop-records/PoopRecordForm";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +39,9 @@ export default async function NewPoopRecordPage({
         ]}
       />
 
-      <h1>{cat.name}のうんちを記録する</h1>
+      <RecordPageHeading icon={PoopIcon}>
+        {cat.name}のうんちを記録する
+      </RecordPageHeading>
       <PoopRecordForm
         catId={catId}
         action={createPoopRecordAction.bind(null, catId)}

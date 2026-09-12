@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
-import { Breadcrumb, Button, Card } from "@/components/ui";
+import { TbPlus, TbStack2 } from "react-icons/tb";
+import { Breadcrumb, Button } from "@/components/ui";
+import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { CleaningTargetForm } from "@/features/cleaning/CleaningTargetForm";
 import { CLEANING_TARGET_PRESETS } from "@/features/cleaning/presets";
@@ -7,6 +9,7 @@ import {
   createCleaningTargetAction,
   createCleaningTargetFromPresetAction,
 } from "@/features/cleaning/targetActions";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -37,9 +40,15 @@ export default async function NewCleaningTargetPage({
         ]}
       />
 
-      <h1>{cat.name}の掃除対象を追加する</h1>
+      <RecordPageHeading icon={BroomIcon}>
+        {cat.name}の掃除対象を追加する
+      </RecordPageHeading>
 
-      <Card title="よく使う対象をワンタップで追加">
+      <section className={styles.section}>
+        <h2 className={styles.sectionHeading}>
+          <TbStack2 aria-hidden="true" size={18} />
+          よく使う対象をワンタップで追加
+        </h2>
         <div className={styles.presets}>
           {CLEANING_TARGET_PRESETS.map((preset) => (
             <form
@@ -58,14 +67,18 @@ export default async function NewCleaningTargetPage({
             </form>
           ))}
         </div>
-      </Card>
+      </section>
 
-      <Card title="対象を作成する">
+      <section className={styles.section}>
+        <h2 className={styles.sectionHeading}>
+          <TbPlus aria-hidden="true" size={18} />
+          対象を作成する
+        </h2>
         <CleaningTargetForm
           action={createCleaningTargetAction.bind(null, catId)}
           submitLabel="追加する"
         />
-      </Card>
+      </section>
     </main>
   );
 }

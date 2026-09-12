@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
-import { Badge, Breadcrumb, ButtonLink, Card } from "@/components/ui";
+import { RiCapsuleFill } from "react-icons/ri";
+import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
+import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deleteMedicationDoseAction } from "@/features/medications/doseActions";
 import { listMedicationDoses } from "@/features/medications/doseQueries";
 import { getMedicationById } from "@/features/medications/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -42,55 +45,81 @@ export default async function MedicationDosesPage({
       />
 
       <div className={styles.header}>
-        <h1>{medication.name}の投薬実績</h1>
+        <RecordPageHeading icon={RiCapsuleFill}>
+          {medication.name}の投薬実績
+        </RecordPageHeading>
         <ButtonLink
           href={`/cats/${catId}/medications/${medicationId}/doses/new`}
           variant="primary"
+          className={styles.createButton}
         >
+          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>
 
       {doses.length === 0 ? (
-        <Card>
+        <div className={styles.emptyState}>
+          <RiCapsuleFill aria-hidden="true" size={32} />
           <p>まだ投薬実績がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink
               href={`/cats/${catId}/medications/${medicationId}/doses/new`}
               variant="primary"
+              className={styles.createButton}
             >
               最初の実績を記録する
             </ButtonLink>
           </div>
-        </Card>
+        </div>
       ) : (
         <ul className={styles.list}>
           {doses.map((dose) => (
             <li key={dose.id}>
-              <Card title={formatDateTimeUtc(dose.occurredAt)}>
-                <Badge color={dose.wasAdministered ? "success" : "warning"}>
-                  {dose.wasAdministered ? "投薬できた" : "投薬できなかった"}
-                </Badge>
-                {dose.memo ? <p>{dose.memo}</p> : null}
-                <div className={styles.cardActions}>
-                  <ButtonLink
-                    href={`/cats/${catId}/medications/${medicationId}/doses/${dose.id}/edit`}
-                    variant="secondary"
-                  >
-                    編集する
-                  </ButtonLink>
-                  <DeleteRecordButton
-                    action={deleteMedicationDoseAction.bind(
-                      null,
-                      catId,
-                      medicationId,
-                      dose.id,
-                    )}
-                    title="投薬実績の削除"
-                    description="この投薬実績を削除しますか？この操作は取り消せません。"
-                  />
+              <article
+                className={styles.record}
+                aria-label={formatDateTimeUtc(dose.occurredAt)}
+              >
+                <div className={styles.recordHeader}>
+                  <h2 className={styles.recordDate}>
+                    <TbClock aria-hidden="true" size={18} />
+                    <time dateTime={dose.occurredAt.toISOString()}>
+                      {formatDateTimeUtc(dose.occurredAt)}
+                    </time>
+                  </h2>
+                  <div className={styles.cardActions}>
+                    <ButtonLink
+                      href={`/cats/${catId}/medications/${medicationId}/doses/${dose.id}/edit`}
+                      variant="secondary"
+                      className={styles.iconButton}
+                      aria-label="編集する"
+                      title="編集する"
+                    >
+                      <TbPencil aria-hidden="true" size={20} />
+                    </ButtonLink>
+                    <DeleteRecordButton
+                      action={deleteMedicationDoseAction.bind(
+                        null,
+                        catId,
+                        medicationId,
+                        dose.id,
+                      )}
+                      title="投薬実績の削除"
+                      description="この投薬実績を削除しますか？この操作は取り消せません。"
+                      iconOnly
+                      className={styles.iconButton}
+                    />
+                  </div>
                 </div>
-              </Card>
+
+                <div className={styles.badges}>
+                  <Badge color={dose.wasAdministered ? "success" : "warning"}>
+                    {dose.wasAdministered ? "投薬できた" : "投薬できなかった"}
+                  </Badge>
+                </div>
+
+                {dose.memo ? <p className={styles.memo}>{dose.memo}</p> : null}
+              </article>
             </li>
           ))}
         </ul>

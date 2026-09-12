@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
+import { PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { listMediaAssetsByRecord } from "@/features/media/queries";
@@ -8,6 +9,7 @@ import { updatePoopRecordAction } from "@/features/poop-records/actions";
 import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
 import { PoopRecordForm } from "@/features/poop-records/PoopRecordForm";
 import { getPoopRecordById } from "@/features/poop-records/queries";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +48,9 @@ export default async function EditPoopRecordPage({
         ]}
       />
 
-      <h1>{cat.name}のうんち記録を編集する</h1>
+      <RecordPageHeading icon={PoopIcon}>
+        {cat.name}のうんち記録を編集する
+      </RecordPageHeading>
       <PoopRecordForm
         action={updatePoopRecordAction.bind(null, catId, poopRecord.id)}
         catId={catId}

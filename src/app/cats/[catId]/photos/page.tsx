@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbPhoto } from "react-icons/tb";
-import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
+import { TbClock, TbPencil, TbPhoto, TbPlus } from "react-icons/tb";
+import { Breadcrumb, ButtonLink } from "@/components/ui";
 import {
   deleteCatPhotoAction,
   pinProfileImageAction,
@@ -50,7 +50,12 @@ export default async function CatPhotosPage({ params }: CatPhotosPageProps) {
 
       <div className={styles.header}>
         <RecordPageHeading icon={TbPhoto}>{cat.name}の写真</RecordPageHeading>
-        <ButtonLink href={`/cats/${catId}/photos/new`} variant="primary">
+        <ButtonLink
+          href={`/cats/${catId}/photos/new`}
+          variant="primary"
+          className={styles.createButton}
+        >
+          <TbPlus aria-hidden="true" size={18} />
           写真を追加する
         </ButtonLink>
       </div>
@@ -62,20 +67,58 @@ export default async function CatPhotosPage({ params }: CatPhotosPageProps) {
       </p>
 
       {photos.length === 0 ? (
-        <Card>
+        <div className={styles.emptyState}>
+          <TbPhoto aria-hidden="true" size={32} />
           <p>まだ写真がありません。</p>
           <div className={styles.emptyActions}>
-            <ButtonLink href={`/cats/${catId}/photos/new`} variant="primary">
+            <ButtonLink
+              href={`/cats/${catId}/photos/new`}
+              variant="primary"
+              className={styles.createButton}
+            >
               最初の写真を追加する
             </ButtonLink>
           </div>
-        </Card>
+        </div>
       ) : (
         <ul className={styles.list}>
           {photos.map((photo) => (
             <li key={photo.id}>
-              <Card title={formatDateTimeUtc(photo.takenAt)}>
-                {photo.memo ? <p>{photo.memo}</p> : null}
+              <article
+                className={styles.record}
+                aria-label={formatDateTimeUtc(photo.takenAt)}
+              >
+                <div className={styles.recordHeader}>
+                  <h2 className={styles.recordDate}>
+                    <TbClock aria-hidden="true" size={18} />
+                    <time dateTime={photo.takenAt.toISOString()}>
+                      {formatDateTimeUtc(photo.takenAt)}
+                    </time>
+                  </h2>
+                  <div className={styles.cardActions}>
+                    <ButtonLink
+                      href={`/cats/${catId}/photos/${photo.id}/edit`}
+                      variant="secondary"
+                      className={styles.iconButton}
+                      aria-label="編集する"
+                      title="編集する"
+                    >
+                      <TbPencil aria-hidden="true" size={20} />
+                    </ButtonLink>
+                    <DeleteRecordButton
+                      action={deleteCatPhotoAction.bind(null, catId, photo.id)}
+                      title="写真の削除"
+                      description="この写真の記録を削除しますか？添付した写真もすべて削除されます。この操作は取り消せません。"
+                      iconOnly
+                      className={styles.iconButton}
+                    />
+                  </div>
+                </div>
+
+                {photo.memo ? (
+                  <p className={styles.memo}>{photo.memo}</p>
+                ) : null}
+
                 <div className={styles.gallery}>
                   <CatPhotoGallery
                     assets={(mediaByRecordId.get(photo.id) ?? []).map(
@@ -89,20 +132,7 @@ export default async function CatPhotosPage({ params }: CatPhotosPageProps) {
                     unpinAction={unpinProfileImageAction.bind(null, catId)}
                   />
                 </div>
-                <div className={styles.cardActions}>
-                  <ButtonLink
-                    href={`/cats/${catId}/photos/${photo.id}/edit`}
-                    variant="secondary"
-                  >
-                    編集する
-                  </ButtonLink>
-                  <DeleteRecordButton
-                    action={deleteCatPhotoAction.bind(null, catId, photo.id)}
-                    title="写真の削除"
-                    description="この写真の記録を削除しますか？添付した写真もすべて削除されます。この操作は取り消せません。"
-                  />
-                </div>
-              </Card>
+              </article>
             </li>
           ))}
         </ul>

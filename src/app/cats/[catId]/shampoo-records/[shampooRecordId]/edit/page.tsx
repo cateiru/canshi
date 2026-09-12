@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
+import { TbBath } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { updateShampooRecordAction } from "@/features/shampoo-records/actions";
 import { getShampooRecordById } from "@/features/shampoo-records/queries";
 import { ShampooRecordForm } from "@/features/shampoo-records/ShampooRecordForm";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +39,9 @@ export default async function EditShampooRecordPage({
         ]}
       />
 
-      <h1>{cat.name}のシャンプー記録を編集する</h1>
+      <RecordPageHeading icon={TbBath}>
+        {cat.name}のシャンプー記録を編集する
+      </RecordPageHeading>
       <ShampooRecordForm
         action={updateShampooRecordAction.bind(null, catId, shampooRecord.id)}
         shampooRecord={shampooRecord}

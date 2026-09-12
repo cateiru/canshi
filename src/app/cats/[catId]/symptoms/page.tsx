@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbTemperature } from "react-icons/tb";
-import { Badge, Breadcrumb, ButtonLink, Card } from "@/components/ui";
+import { TbClock, TbPencil, TbPlus, TbTemperature } from "react-icons/tb";
+import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
@@ -66,85 +66,117 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
         <RecordPageHeading icon={TbTemperature}>
           {cat.name}の症状記録
         </RecordPageHeading>
-        <ButtonLink href={`/cats/${catId}/symptoms/new`} variant="primary">
+        <ButtonLink
+          href={`/cats/${catId}/symptoms/new`}
+          variant="primary"
+          className={styles.createButton}
+        >
+          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>
 
       {records.length === 0 ? (
-        <Card>
+        <div className={styles.emptyState}>
+          <TbTemperature aria-hidden="true" size={32} />
           <p>まだ症状記録がありません。</p>
           <div className={styles.emptyActions}>
-            <ButtonLink href={`/cats/${catId}/symptoms/new`} variant="primary">
+            <ButtonLink
+              href={`/cats/${catId}/symptoms/new`}
+              variant="primary"
+              className={styles.createButton}
+            >
               最初の記録をする
             </ButtonLink>
           </div>
-        </Card>
+        </div>
       ) : (
         <ul className={styles.list}>
           {records.map((record) => (
             <li key={record.id}>
-              <Card title={record.symptomType}>
-                <Badge color={STATUS_BADGE_COLOR[record.status]}>
-                  {STATUS_LABEL[record.status]}
-                </Badge>
+              <article
+                className={styles.record}
+                aria-label={record.symptomType}
+              >
+                <div className={styles.recordHeader}>
+                  <div className={styles.titleGroup}>
+                    <h2 className={styles.recordTitle}>{record.symptomType}</h2>
+                    <Badge color={STATUS_BADGE_COLOR[record.status]}>
+                      {STATUS_LABEL[record.status]}
+                    </Badge>
+                  </div>
+                  <div className={styles.cardActions}>
+                    <ButtonLink
+                      href={`/cats/${catId}/symptoms/${record.id}/edit`}
+                      variant="secondary"
+                      className={styles.iconButton}
+                      aria-label="編集する"
+                      title="編集する"
+                    >
+                      <TbPencil aria-hidden="true" size={20} />
+                    </ButtonLink>
+                    <DeleteRecordButton
+                      action={deleteSymptomAction.bind(null, catId, record.id)}
+                      title="症状記録の削除"
+                      description="この症状記録を削除しますか？この操作は取り消せません。"
+                      iconOnly
+                      className={styles.iconButton}
+                    />
+                  </div>
+                </div>
+
+                <p className={styles.meta}>
+                  <TbClock aria-hidden="true" size={16} />
+                  <time dateTime={record.onsetAt.toISOString()}>
+                    {formatDateTimeUtc(record.onsetAt)}
+                  </time>
+                </p>
+
                 <dl className={styles.details}>
-                  <dt>発症日時</dt>
-                  <dd>{formatDateTimeUtc(record.onsetAt)}</dd>
                   {record.frequencyOrSeverity ? (
-                    <>
+                    <div>
                       <dt>回数・程度</dt>
                       <dd>{record.frequencyOrSeverity}</dd>
-                    </>
+                    </div>
                   ) : null}
                   {record.appetiteNote ? (
-                    <>
+                    <div>
                       <dt>食欲</dt>
                       <dd>{record.appetiteNote}</dd>
-                    </>
+                    </div>
                   ) : null}
                   {record.energyNote ? (
-                    <>
+                    <div>
                       <dt>元気</dt>
                       <dd>{record.energyNote}</dd>
-                    </>
+                    </div>
                   ) : null}
                   {record.hospitalVisitId ? (
-                    <>
+                    <div>
                       <dt>関連する通院記録</dt>
                       <dd>
                         {hospitalVisitLabelById.get(record.hospitalVisitId) ??
                           "不明な通院記録"}
                       </dd>
-                    </>
+                    </div>
                   ) : null}
                   {record.memo ? (
-                    <>
+                    <div>
                       <dt>備考</dt>
                       <dd>{record.memo}</dd>
-                    </>
+                    </div>
                   ) : null}
                 </dl>
-                <MediaGallery
-                  assets={(mediaByRecordId.get(record.id) ?? []).map(
-                    toMediaAssetView,
-                  )}
-                  title="症状の写真・動画"
-                />
-                <div className={styles.cardActions}>
-                  <ButtonLink
-                    href={`/cats/${catId}/symptoms/${record.id}/edit`}
-                    variant="secondary"
-                  >
-                    編集する
-                  </ButtonLink>
-                  <DeleteRecordButton
-                    action={deleteSymptomAction.bind(null, catId, record.id)}
-                    title="症状記録の削除"
-                    description="この症状記録を削除しますか？この操作は取り消せません。"
+
+                <div className={styles.media}>
+                  <MediaGallery
+                    assets={(mediaByRecordId.get(record.id) ?? []).map(
+                      toMediaAssetView,
+                    )}
+                    title="症状の写真・動画"
                   />
                 </div>
-              </Card>
+              </article>
             </li>
           ))}
         </ul>

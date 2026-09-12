@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { Badge, Breadcrumb, Button, ButtonLink, Card } from "@/components/ui";
+import { TbPencil, TbPlus } from "react-icons/tb";
+import { Badge, Breadcrumb, Button, ButtonLink } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { quickCreateCleaningRecordAction } from "@/features/cleaning/recordActions";
@@ -52,48 +53,73 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
             href={`/cats/${catId}/cleaning/targets/new`}
             variant="primary"
           >
+            <TbPlus aria-hidden="true" size={18} />
             対象を追加する
           </ButtonLink>
         </div>
       </div>
 
       {statuses.length === 0 ? (
-        <Card>
+        <div className={styles.emptyState}>
+          <BroomIcon aria-hidden="true" size={32} />
           <p>まだ掃除対象が登録されていません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink
               href={`/cats/${catId}/cleaning/targets/new`}
               variant="primary"
+              className={styles.createButton}
             >
               最初の対象を追加する
             </ButtonLink>
           </div>
-        </Card>
+        </div>
       ) : (
         <ul className={styles.list}>
           {activeStatuses.map((status) => (
             <li key={status.target.id}>
-              <Card title={status.target.name}>
+              <article
+                className={styles.record}
+                aria-label={status.target.name}
+              >
+                <div className={styles.recordHeader}>
+                  <h2 className={styles.recordTitle}>{status.target.name}</h2>
+                  <ButtonLink
+                    href={`/cats/${catId}/cleaning/targets/${status.target.id}/edit`}
+                    variant="secondary"
+                    className={styles.iconButton}
+                    aria-label="編集する"
+                    title="編集する"
+                  >
+                    <TbPencil aria-hidden="true" size={20} />
+                  </ButtonLink>
+                </div>
+
                 <dl className={styles.details}>
-                  <dt>前回の実施日</dt>
-                  <dd>
-                    {status.lastPerformedAt
-                      ? formatDateTimeUtc(status.lastPerformedAt)
-                      : "未実施"}
-                  </dd>
-                  <dt>次回の予定日</dt>
-                  <dd>
-                    {status.nextDueAt
-                      ? formatDateTimeUtc(status.nextDueAt)
-                      : "未定（未実施のため）"}
-                  </dd>
+                  <div>
+                    <dt>前回の実施日</dt>
+                    <dd>
+                      {status.lastPerformedAt
+                        ? formatDateTimeUtc(status.lastPerformedAt)
+                        : "未実施"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>次回の予定日</dt>
+                    <dd>
+                      {status.nextDueAt
+                        ? formatDateTimeUtc(status.nextDueAt)
+                        : "未定（未実施のため）"}
+                    </dd>
+                  </div>
                 </dl>
+
                 {status.isOverdue ? (
-                  <div className={styles.badgeRow}>
+                  <div className={styles.badges}>
                     <Badge color="warning">期限超過</Badge>
                   </div>
                 ) : null}
-                <div className={styles.cardActions}>
+
+                <div className={styles.actions}>
                   <form
                     action={quickCreateCleaningRecordAction.bind(
                       null,
@@ -111,14 +137,8 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                   >
                     記録を見る
                   </ButtonLink>
-                  <ButtonLink
-                    href={`/cats/${catId}/cleaning/targets/${status.target.id}/edit`}
-                    variant="secondary"
-                  >
-                    編集する
-                  </ButtonLink>
                 </div>
-              </Card>
+              </article>
             </li>
           ))}
         </ul>
@@ -130,22 +150,31 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
           <ul className={styles.list}>
             {inactiveStatuses.map((status) => (
               <li key={status.target.id} className={styles.inactive}>
-                <Card title={status.target.name}>
-                  <div className={styles.cardActions}>
+                <article
+                  className={styles.record}
+                  aria-label={status.target.name}
+                >
+                  <div className={styles.recordHeader}>
+                    <h2 className={styles.recordTitle}>{status.target.name}</h2>
+                    <ButtonLink
+                      href={`/cats/${catId}/cleaning/targets/${status.target.id}/edit`}
+                      variant="secondary"
+                      className={styles.iconButton}
+                      aria-label="編集する"
+                      title="編集する"
+                    >
+                      <TbPencil aria-hidden="true" size={20} />
+                    </ButtonLink>
+                  </div>
+                  <div className={styles.actions}>
                     <ButtonLink
                       href={`/cats/${catId}/cleaning/targets/${status.target.id}/records`}
                       variant="secondary"
                     >
                       記録を見る
                     </ButtonLink>
-                    <ButtonLink
-                      href={`/cats/${catId}/cleaning/targets/${status.target.id}/edit`}
-                      variant="secondary"
-                    >
-                      編集する
-                    </ButtonLink>
                   </div>
-                </Card>
+                </article>
               </li>
             ))}
           </ul>

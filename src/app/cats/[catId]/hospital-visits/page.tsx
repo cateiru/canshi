@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbBuildingHospital } from "react-icons/tb";
-import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
+import { TbBuildingHospital, TbClock, TbPencil, TbPlus } from "react-icons/tb";
+import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { deleteHospitalVisitAction } from "@/features/hospital-visits/actions";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
@@ -67,23 +67,27 @@ export default async function HospitalVisitsPage({
         <ButtonLink
           href={`/cats/${catId}/hospital-visits/new`}
           variant="primary"
+          className={styles.createButton}
         >
+          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>
 
       {visits.length === 0 ? (
-        <Card>
+        <div className={styles.emptyState}>
+          <TbBuildingHospital aria-hidden="true" size={32} />
           <p>まだ通院記録がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink
               href={`/cats/${catId}/hospital-visits/new`}
               variant="primary"
+              className={styles.createButton}
             >
               最初の記録をする
             </ButtonLink>
           </div>
-        </Card>
+        </div>
       ) : (
         <ul className={styles.list}>
           {visits.map((visit) => {
@@ -91,84 +95,101 @@ export default async function HospitalVisitsPage({
               prescribedMedicationsByVisit.get(visit.id) ?? [];
             return (
               <li key={visit.id}>
-                <Card title={visit.reason}>
+                <article className={styles.record} aria-label={visit.reason}>
+                  <div className={styles.recordHeader}>
+                    <h2 className={styles.recordTitle}>{visit.reason}</h2>
+                    <div className={styles.cardActions}>
+                      <ButtonLink
+                        href={`/cats/${catId}/hospital-visits/${visit.id}/edit`}
+                        variant="secondary"
+                        className={styles.iconButton}
+                        aria-label="編集する"
+                        title="編集する"
+                      >
+                        <TbPencil aria-hidden="true" size={20} />
+                      </ButtonLink>
+                      <DeleteRecordButton
+                        action={deleteHospitalVisitAction.bind(
+                          null,
+                          catId,
+                          visit.id,
+                        )}
+                        title="通院記録の削除"
+                        description="この通院記録を削除しますか？この操作は取り消せません。"
+                        iconOnly
+                        className={styles.iconButton}
+                      />
+                    </div>
+                  </div>
+
+                  <p className={styles.meta}>
+                    <TbClock aria-hidden="true" size={16} />
+                    <time dateTime={visit.visitedAt.toISOString()}>
+                      {formatDateTimeUtc(visit.visitedAt)}
+                    </time>
+                  </p>
+
                   <dl className={styles.details}>
-                    <dt>受診日時</dt>
-                    <dd>{formatDateTimeUtc(visit.visitedAt)}</dd>
                     {visit.symptomId ? (
-                      <>
+                      <div>
                         <dt>関連する症状</dt>
                         <dd>
                           {symptomNameById.get(visit.symptomId) ?? "不明な症状"}
                         </dd>
-                      </>
+                      </div>
                     ) : null}
                     {visit.diagnosis ? (
-                      <>
+                      <div>
                         <dt>診断・所見</dt>
                         <dd>{visit.diagnosis}</dd>
-                      </>
+                      </div>
                     ) : null}
                     {visit.examinationResults ? (
-                      <>
+                      <div>
                         <dt>検査と結果</dt>
                         <dd>{visit.examinationResults}</dd>
-                      </>
+                      </div>
                     ) : null}
                     {visit.treatment ? (
-                      <>
+                      <div>
                         <dt>注射・処置</dt>
                         <dd>{visit.treatment}</dd>
-                      </>
+                      </div>
                     ) : null}
                     {prescribedMedications.length > 0 ? (
-                      <>
+                      <div>
                         <dt>処方薬</dt>
                         <dd>
                           {prescribedMedications
                             .map((medication) => medication.name)
                             .join("、")}
                         </dd>
-                      </>
+                      </div>
                     ) : null}
                     {visit.nextVisitAt ? (
-                      <>
+                      <div>
                         <dt>次回受診予定</dt>
                         <dd>{formatDateTimeUtc(visit.nextVisitAt)}</dd>
-                      </>
+                      </div>
                     ) : null}
                     {visit.memo ? (
-                      <>
+                      <div>
                         <dt>備考</dt>
                         <dd>{visit.memo}</dd>
-                      </>
+                      </div>
                     ) : null}
                   </dl>
-                  <MediaGallery
-                    assets={(mediaByRecordId.get(visit.id) ?? []).map(
-                      toMediaAssetView,
-                    )}
-                    title="診療明細などの写真"
-                    fit="actual"
-                  />
-                  <div className={styles.cardActions}>
-                    <ButtonLink
-                      href={`/cats/${catId}/hospital-visits/${visit.id}/edit`}
-                      variant="secondary"
-                    >
-                      編集する
-                    </ButtonLink>
-                    <DeleteRecordButton
-                      action={deleteHospitalVisitAction.bind(
-                        null,
-                        catId,
-                        visit.id,
+
+                  <div className={styles.media}>
+                    <MediaGallery
+                      assets={(mediaByRecordId.get(visit.id) ?? []).map(
+                        toMediaAssetView,
                       )}
-                      title="通院記録の削除"
-                      description="この通院記録を削除しますか？この操作は取り消せません。"
+                      title="診療明細などの写真"
+                      fit="actual"
                     />
                   </div>
-                </Card>
+                </article>
               </li>
             );
           })}

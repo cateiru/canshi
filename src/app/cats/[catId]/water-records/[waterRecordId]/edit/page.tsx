@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { TbDroplet } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { updateWaterRecordAction } from "@/features/water-records/actions";
 import { getWaterRecordById } from "@/features/water-records/queries";
 import { WaterRecordForm } from "@/features/water-records/WaterRecordForm";
@@ -37,7 +39,9 @@ export default async function EditWaterRecordPage({
         ]}
       />
 
-      <h1>{cat.name}の水の記録を編集する</h1>
+      <RecordPageHeading icon={TbDroplet}>
+        {cat.name}の水の記録を編集する
+      </RecordPageHeading>
       <WaterRecordForm
         action={updateWaterRecordAction.bind(null, catId, waterRecord.id)}
         waterRecord={waterRecord}
