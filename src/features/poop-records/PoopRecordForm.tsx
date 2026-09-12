@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { TbCheck } from "react-icons/tb";
 import {
   Button,
   Checkbox,
@@ -167,7 +168,13 @@ export function PoopRecordForm({
         <p className={styles.errorMessage}>{state.formError}</p>
       ) : null}
 
-      <Button type="submit" variant="primary" isDisabled={isPending}>
+      <Button
+        type="submit"
+        variant="primary"
+        className={styles.submitButton}
+        isDisabled={isPending}
+      >
+        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>
