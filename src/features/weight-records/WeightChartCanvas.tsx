@@ -29,6 +29,38 @@ function useIsCompact(): boolean {
   return isCompact;
 }
 
+/** Y軸の縦線の一番上に単位ラベルを表示するカスタムレイヤー */
+function YAxisUnitLabel() {
+  return (
+    <text
+      x={-30}
+      y={-16}
+      textAnchor="start"
+      style={{
+        fill: "var(--color-ink)",
+        fontFamily: "var(--font-sans)",
+        fontSize: 11,
+      }}
+    >
+      (kg)
+    </text>
+  );
+}
+
+const LAYERS = [
+  "grid",
+  "markers",
+  "axes",
+  "areas",
+  "crosshair",
+  "lines",
+  "points",
+  "slices",
+  "mesh",
+  "legends",
+  YAxisUnitLabel,
+] as const;
+
 function formatAxisDateUtc(value: Date): string {
   return new Intl.DateTimeFormat("ja-JP", {
     timeZone: "UTC",
@@ -121,7 +153,7 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
   return (
     <ResponsiveLine
       data={data}
-      margin={{ top: 16, right: 24, bottom: 40, left: 60 }}
+      margin={{ top: 26, right: 10, bottom: 40, left: 34 }}
       xScale={{ type: "time", precision: "day", useUTC: true }}
       xFormat={(value) => splitDateTimeUtc(value as Date).date}
       yScale={{ type: "linear", min: yMin, max: yMax }}
@@ -129,11 +161,7 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
         format: (value) => formatAxisDateUtc(value as Date),
         tickValues: Math.min(points.length, 6),
       }}
-      axisLeft={{
-        legend: "体重 (kg)",
-        legendPosition: "middle",
-        legendOffset: -48,
-      }}
+      layers={LAYERS}
       colors={["var(--color-accent)"]}
       lineWidth={4}
       enableArea={true}
