@@ -325,14 +325,14 @@ export function PhotoIcon(props: RecordIconProps) {
       fills={
         <>
           <rect fill="#d0e9f4" x="3" y="3" width="18" height="18" rx="3" />
-          <path fill="#f5dfb7" d="M7 18c0-4 10-4 10 0Z" />
+          <path fill="#f5dfb7" d="M8 18c0-1 .8-1.8 2-2h4c1.2.2 2 1 2 2Z" />
           <CatFill transform={catTransform} />
           <path fill="#fff4df" d="M3 18h18a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3Z" />
         </>
       }
     >
       <rect x="3" y="3" width="18" height="18" rx="3" />
-      <path d="M7 18c0-4 10-4 10 0" />
+      <path d="M8 18c0-1 .8-1.8 2-2m4 0c1.2.2 2 1 2 2" strokeLinecap="butt" />
       <CatOutline transform={catTransform} />
       <path d="M3 18h18" />
     </RecordIcon>
