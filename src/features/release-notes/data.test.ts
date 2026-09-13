@@ -18,12 +18,12 @@ describe("sortReleaseNotes", () => {
     expect(sorted.map((note) => note.version)).toEqual(["0.2.0", "0.1.0"]);
   });
 
-  it("同じ日付なら記載順を保つ", () => {
+  it("同じ日付なら後から記載した方を新しいものとして先に表示する", () => {
     const sorted = sortReleaseNotes([
       { version: "0.1.0", date: "2026-01-01", title: "先", items: ["a"] },
       { version: "0.1.1", date: "2026-01-01", title: "後", items: ["b"] },
     ]);
 
-    expect(sorted.map((note) => note.version)).toEqual(["0.1.0", "0.1.1"]);
+    expect(sorted.map((note) => note.version)).toEqual(["0.1.1", "0.1.0"]);
   });
 });

@@ -5,12 +5,12 @@ import styles from "./Footer.module.css";
 export function Footer() {
   return (
     <footer className={styles.footer}>
-      <div className={styles.row}>
-        <Link href="/release-notes" className={styles.link}>
-          更新情報
-        </Link>
-        <span className={styles.version}>v{version}</span>
-      </div>
+      <Link
+        href="/release-notes"
+        className={`${styles.link} ${styles.version}`}
+      >
+        v{version}
+      </Link>
       <p className={styles.copyright}>
         © 2026{" "}
         <a
