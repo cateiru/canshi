@@ -33,6 +33,11 @@ const nivoTheme = {
         stroke: "color-mix(in srgb, var(--color-ink) 20%, var(--color-bg))",
       },
     },
+    legend: {
+      text: {
+        fill: "var(--color-ink)",
+      },
+    },
   },
   grid: {
     line: {
@@ -63,7 +68,7 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
   return (
     <ResponsiveLine
       data={data}
-      margin={{ top: 16, right: 24, bottom: 40, left: 48 }}
+      margin={{ top: 16, right: 24, bottom: 40, left: 60 }}
       xScale={{ type: "time", precision: "day", useUTC: true }}
       xFormat={(value) => splitDateTimeUtc(value as Date).date}
       yScale={{ type: "linear", min: "auto", max: "auto", nice: true }}
@@ -72,10 +77,14 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
         tickValues: Math.min(points.length, 6),
       }}
       axisLeft={{
-        format: (value) => `${value}kg`,
+        legend: "体重 (kg)",
+        legendPosition: "middle",
+        legendOffset: -48,
       }}
       colors={["var(--color-accent)"]}
       lineWidth={2}
+      enableArea={true}
+      areaOpacity={0.15}
       pointSize={points.length <= 2 ? 8 : 5}
       pointBorderWidth={2}
       pointBorderColor={{ from: "serieColor" }}
