@@ -1,58 +1,81 @@
 .main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-4);
+  composes: page from "../../features/shared/PageLayout.module.css";
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+  composes: header from "../../features/shared/PageLayout.module.css";
 }
 
 .list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  list-style: none;
+  composes: list from "../../features/shared/PageLayout.module.css";
 }
 
 .emptyActions {
-  margin-top: var(--space-4);
+  margin-top: var(--space-2);
 }
 
 .cardActions {
+  composes: actions from "../../features/shared/PageLayout.module.css";
+}
+
+.emptyState {
+  composes: emptyState from "../../features/shared/PageLayout.module.css";
+}
+
+.iconButton {
+  composes: iconButton from "../../features/shared/PageLayout.module.css";
+}
+
+.productCard {
+  composes: surface from "../../features/shared/Surface.module.css";
+}
+
+.productHeader {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-3);
-  margin-top: var(--space-3);
 }
 
-.details {
+.productHeader > :first-child {
+  width: 48px;
+  height: 48px;
+}
+
+.productTitle {
+  flex: 1;
+  min-width: 120px;
+  font-size: var(--text-md);
+}
+
+.cardActions {
+  margin-left: auto;
+}
+
+.category {
+  margin: var(--space-3) 0;
+  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+}
+
+.summary {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-1) var(--space-4);
-  margin: var(--space-3) 0 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: 12px;
+  background: var(--color-bg);
 }
 
-.details dt {
+.summary dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1);
+  font-size: var(--text-xl);
   font-weight: var(--font-weight-bold);
 }
 
-.details dd {
-  margin: 0;
-}
-
-.cardBody {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-4);
-}
-
-.cardBody .details {
-  margin-top: 0;
+.summary dd span {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
 }

@@ -85,41 +85,48 @@ export function TimelineCalendar({
         </Link>
       </div>
 
-      <table className={styles.grid}>
-        <caption className={styles.srOnly}>
-          {year}年{month}月のタイムラインカレンダー
-        </caption>
-        <thead>
-          <tr>
-            {WEEKDAY_LABELS.map((label) => (
-              <th key={label} scope="col" className={styles.weekday}>
-                {label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {weeks.map((week) => (
-            <tr key={week.find((cell) => cell != null)?.dateKey ?? "blank"}>
-              {week.map((cell, cellIndex) =>
-                cell ? (
-                  <DayCell
-                    key={cell.dateKey}
-                    catId={catId}
-                    ym={ym}
-                    cell={cell}
-                    isToday={cell.dateKey === todayKey}
-                    isSelected={cell.dateKey === selectedDate}
-                  />
-                ) : (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: 月末・月初の空白セルは値を持たず順序も変わらない
-                  <td key={cellIndex} className={styles.dayBlank} />
-                ),
-              )}
+      <section
+        className={styles.scrollArea}
+        aria-label="日付を選択"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: 横スクロールするカレンダーをキーボードでも操作できるようにする
+        tabIndex={0}
+      >
+        <table className={styles.grid}>
+          <caption className={styles.srOnly}>
+            {year}年{month}月のタイムラインカレンダー
+          </caption>
+          <thead>
+            <tr>
+              {WEEKDAY_LABELS.map((label) => (
+                <th key={label} scope="col" className={styles.weekday}>
+                  {label}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {weeks.map((week) => (
+              <tr key={week.find((cell) => cell != null)?.dateKey ?? "blank"}>
+                {week.map((cell, cellIndex) =>
+                  cell ? (
+                    <DayCell
+                      key={cell.dateKey}
+                      catId={catId}
+                      ym={ym}
+                      cell={cell}
+                      isToday={cell.dateKey === todayKey}
+                      isSelected={cell.dateKey === selectedDate}
+                    />
+                  ) : (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: 月末・月初の空白セルは値を持たず順序も変わらない
+                    <td key={cellIndex} className={styles.dayBlank} />
+                  ),
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
 
       <ul className={styles.legend}>
         {TIMELINE_RECORD_TYPES.map((type) => {

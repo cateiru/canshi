@@ -38,12 +38,18 @@ export function TimelineEntryCard({
           data-hidden={isLast ? "true" : undefined}
         />
       </div>
-      <div className={styles.card}>
+      <article
+        className={styles.card}
+        aria-label={`${TIMELINE_TYPE_LABEL[entry.type]} ${formatDateTimeUtc(entry.occurredAt)}`}
+      >
         <div className={styles.header}>
           <Badge color="accent">{TIMELINE_TYPE_LABEL[entry.type]}</Badge>
-          <span className={styles.occurredAt}>
+          <time
+            className={styles.occurredAt}
+            dateTime={entry.occurredAt.toISOString()}
+          >
             {formatDateTimeUtc(entry.occurredAt)}
-          </span>
+          </time>
         </div>
         {entry.media.length > 0 ? (
           <div className={styles.media}>
@@ -54,7 +60,7 @@ export function TimelineEntryCard({
           </div>
         ) : null}
         {renderBody(catId, entry)}
-      </div>
+      </article>
     </div>
   );
 }

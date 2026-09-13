@@ -1,12 +1,83 @@
 .main {
+  composes: page from "../../features/shared/PageLayout.module.css";
+}
+
+.welcome {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 var(--space-4);
-  gap: 1rem;
+  gap: var(--space-4);
+  padding: 64px var(--space-6);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  text-align: center;
+}
+
+.logo {
+  display: block;
+  width: 64px;
+  height: 64px;
+}
+
+.brand {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.16em;
+}
+
+.description {
+  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+}
+
+.welcome > a {
+  margin-top: var(--space-2);
+  min-height: 48px;
+}
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.link {
+  composes: link from "../settings/page.module.css";
+}
+
+.link > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.link h2 {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-md);
+}
+
+.link p {
+  font-size: var(--text-sm);
+  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+}
+
+.link > svg {
+  flex-shrink: 0;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-accent);
+}
+
+@media (max-width: 600px) {
+  .menu {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .welcome {
+    padding: var(--space-8) var(--space-4);
+  }
+}
+
+.welcome h2 {
+  font-size: var(--text-xl);
 }

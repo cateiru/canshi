@@ -13,9 +13,10 @@ describe("ReleaseNotesPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: `v${latest.version} ${latest.title}`,
+        name: latest.title,
       }),
     ).toBeInTheDocument();
+    expect(screen.getByText(`v${latest.version}`)).toBeInTheDocument();
     expect(screen.getByText(latest.items[0])).toBeInTheDocument();
   });
 });

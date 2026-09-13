@@ -1,8 +1,11 @@
-import { Breadcrumb, Card, Heading } from "@/components/ui";
+import { TbBell } from "react-icons/tb";
+import { Breadcrumb } from "@/components/ui";
 import { NotificationPreferencesForm } from "@/features/notifications/NotificationPreferencesForm";
 import { getNotificationPreferences } from "@/features/notifications/queries";
 import { listTimezoneOptions } from "@/features/notifications/settingsQueries";
 import { PushSubscriptionToggle } from "@/features/push/PushSubscriptionToggle";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
+import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -21,25 +24,20 @@ export default async function NotificationSettingsPage() {
         ]}
       />
 
-      <h1>通知設定</h1>
+      <RecordPageHeading icon={TbBell}>通知設定</RecordPageHeading>
+      <p>お知らせを受け取る時刻と、この端末への通知を設定します。</p>
 
-      <Card>
-        <Heading level={2} size="md">
-          通知時刻・タイムゾーン
-        </Heading>
+      <Surface title="通知時刻・タイムゾーン">
         <NotificationPreferencesForm
           notifyTime={preferences.notifyTime}
           timezone={preferences.timezone}
           timezoneOptions={timezoneOptions}
         />
-      </Card>
+      </Surface>
 
-      <Card>
-        <Heading level={2} size="md">
-          この端末での通知
-        </Heading>
+      <Surface title="この端末での通知">
         <PushSubscriptionToggle />
-      </Card>
+      </Surface>
     </main>
   );
 }

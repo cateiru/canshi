@@ -1,25 +1,13 @@
 .main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-4);
+  composes: page from "../../features/shared/PageLayout.module.css";
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+  composes: header from "../../features/shared/PageLayout.module.css";
 }
 
 .list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  list-style: none;
+  composes: list from "../../features/shared/PageLayout.module.css";
 }
 
 .emptyActions {
@@ -27,28 +15,71 @@
 }
 
 .cardActions {
-  display: flex;
-  gap: var(--space-3);
-  margin-top: var(--space-3);
+  composes: actions from "../../features/shared/PageLayout.module.css";
+  margin-top: var(--space-4);
+}
+
+.emptyState {
+  composes: emptyState from "../../features/shared/PageLayout.module.css";
+}
+
+.iconButton {
+  composes: iconButton from "../../features/shared/PageLayout.module.css";
+}
+
+.preset {
+  composes: surface from "../../features/shared/Surface.module.css";
+}
+
+.presetName {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-lg);
 }
 
 .details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.product {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-1) var(--space-4);
-  margin: var(--space-3) 0 0;
-}
-
-.details dt {
-  font-weight: var(--font-weight-bold);
-}
-
-.details dd {
-  margin: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .productName {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  min-width: 0;
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.productName > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.productName > :first-child {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.product dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.product dd span {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
 }

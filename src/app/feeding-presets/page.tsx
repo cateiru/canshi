@@ -1,9 +1,11 @@
-import { Fragment } from "react";
-import { Breadcrumb, ButtonLink, Card } from "@/components/ui";
+import { TbClipboardList, TbPencil, TbPlus } from "react-icons/tb";
+import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { deleteFeedingPresetAction } from "@/features/feeding-presets/actions";
 import { DeleteFeedingPresetButton } from "@/features/feeding-presets/DeleteFeedingPresetButton";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
+import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -22,54 +24,65 @@ export default async function FeedingPresetsPage() {
       />
 
       <div className={styles.header}>
-        <h1>ごはんプリセット一覧</h1>
+        <RecordPageHeading icon={TbClipboardList}>
+          ごはんプリセット一覧
+        </RecordPageHeading>
         <ButtonLink href="/feeding-presets/new" variant="primary">
+          <TbPlus aria-hidden="true" size={18} />
           プリセットを登録する
         </ButtonLink>
       </div>
 
       {presets.length === 0 ? (
-        <Card>
+        <Surface className={styles.emptyState}>
+          <TbClipboardList aria-hidden="true" size={32} />
           <p>まだプリセットが登録されていません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink href="/feeding-presets/new" variant="primary">
               最初のプリセットを登録する
             </ButtonLink>
           </div>
-        </Card>
+        </Surface>
       ) : (
         <ul className={styles.list}>
           {presets.map((preset) => (
             <li key={preset.id}>
-              <Card title={preset.name}>
+              <article className={styles.preset} aria-label={preset.name}>
+                <h2 className={styles.presetName}>{preset.name}</h2>
                 <dl className={styles.details}>
                   {preset.items.map((item) => (
-                    <Fragment key={item.id}>
+                    <div key={item.id} className={styles.product}>
                       <dt className={styles.productName}>
                         <FoodProductImage
                           name={item.foodProductName}
                           thumbnailUrl={item.foodProductImageUrl}
-                          size="sm"
                         />
-                        {item.foodProductName}
+                        <span>{item.foodProductName}</span>
                       </dt>
-                      <dd>{item.givenAmountG} g</dd>
-                    </Fragment>
+                      <dd>
+                        {item.givenAmountG}
+                        <span>g</span>
+                      </dd>
+                    </div>
                   ))}
                 </dl>
                 <div className={styles.cardActions}>
                   <ButtonLink
                     href={`/feeding-presets/${preset.id}/edit`}
                     variant="secondary"
+                    className={styles.iconButton}
+                    aria-label="編集する"
+                    title="編集する"
                   >
-                    編集する
+                    <TbPencil aria-hidden="true" size={20} />
                   </ButtonLink>
                   <DeleteFeedingPresetButton
                     action={deleteFeedingPresetAction.bind(null, preset.id)}
                     presetName={preset.name}
+                    className={styles.iconButton}
                   />
                 </div>
-              </Card>
+              </article>
             </li>
           ))}
         </ul>

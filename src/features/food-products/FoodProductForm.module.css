@@ -1,11 +1,11 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-6);
   max-width: 800px;
 }
 
 .errorMessage {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--color-error);
 }

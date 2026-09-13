@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { TbCheck, TbPlus, TbX } from "react-icons/tb";
 import { Button, FormField, Select } from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
@@ -91,29 +92,22 @@ export function FeedingPresetForm({
         {items.map((item, index) => {
           const itemErrors = state.fieldErrors?.itemErrors?.[index];
           return (
-            <div key={item.key} className={styles.itemCard}>
-              <div className={styles.itemHeader}>
-                <span className={styles.itemHeaderLabel}>商品 {index + 1}</span>
-                {items.length > 1 ? (
-                  <Button
-                    type="button"
-                    variant="danger"
-                    onPress={() => removeItem(index)}
-                  >
-                    削除
-                  </Button>
-                ) : null}
-              </div>
-
+            <fieldset
+              key={item.key}
+              className={styles.itemCard}
+              aria-label={`商品 ${index + 1}`}
+            >
               <div className={styles.productRow}>
-                <FoodProductImage
-                  name={
-                    foodProducts.find(
-                      (foodProduct) => foodProduct.id === item.foodProductId,
-                    )?.name ?? "商品"
-                  }
-                  thumbnailUrl={foodProductImageUrls[item.foodProductId]}
-                />
+                <div className={styles.productImage}>
+                  <FoodProductImage
+                    name={
+                      foodProducts.find(
+                        (foodProduct) => foodProduct.id === item.foodProductId,
+                      )?.name ?? "商品"
+                    }
+                    thumbnailUrl={foodProductImageUrls[item.foodProductId]}
+                  />
+                </div>
                 <div className={styles.productSelect}>
                   <Select
                     name={`items.${index}.foodProductId`}
@@ -126,6 +120,22 @@ export function FeedingPresetForm({
                     errorMessage={itemErrors?.foodProductId?.[0]}
                   />
                 </div>
+                {items.length > 1 ? (
+                  <span
+                    className={styles.removeAction}
+                    title={`商品 ${index + 1}を削除`}
+                  >
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className={styles.removeButton}
+                      aria-label={`商品 ${index + 1}を削除`}
+                      onPress={() => removeItem(index)}
+                    >
+                      <TbX aria-hidden="true" size={20} />
+                    </Button>
+                  </span>
+                ) : null}
               </div>
 
               <FormField
@@ -138,7 +148,7 @@ export function FeedingPresetForm({
                 errorMessage={itemErrors?.givenAmountG?.[0]}
                 isRequired
               />
-            </div>
+            </fieldset>
           );
         })}
       </div>
@@ -147,7 +157,13 @@ export function FeedingPresetForm({
         <p className={styles.errorMessage}>{state.fieldErrors.items[0]}</p>
       ) : null}
 
-      <Button type="button" variant="secondary" onPress={addItem}>
+      <Button
+        type="button"
+        variant="secondary"
+        className={styles.addButton}
+        onPress={addItem}
+      >
+        <TbPlus aria-hidden="true" size={18} />
         商品を追加する
       </Button>
 
@@ -156,6 +172,7 @@ export function FeedingPresetForm({
       ) : null}
 
       <Button type="submit" variant="primary" isDisabled={isPending}>
+        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

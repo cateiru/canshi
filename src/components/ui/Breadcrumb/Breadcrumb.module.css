@@ -11,6 +11,8 @@
 }
 
 .item {
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -38,5 +40,6 @@
 }
 
 .separator {
+  flex-shrink: 0;
   opacity: 0.5;
 }
