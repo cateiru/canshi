@@ -73,9 +73,8 @@ const Y_DOMAIN_STEP = 0.1;
 
 /**
  * yScale の min/max を 0.1kg 刻みに丸めて算出する。d3 の `nice: true` に
- * 頼ると内部で自動計算された軸の下限と areaBaselineValue が食い違い、
- * 塗りつぶしの底辺が軸の最小目盛りとズレることがあるため、
- * 自前で丸めた値を yScale と areaBaselineValue の双方に使い一致させる。
+ * 頼ると、期間が狭いときに目盛りが 0.005kg 刻みなど細かくなり、
+ * ラベルがマージンからはみ出すことがあるため、自前で丸める。
  */
 function computeYDomain(weights: number[]): { min: number; max: number } {
   const rawMin = Math.min(...weights);
@@ -165,7 +164,6 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
       colors={["var(--color-accent)"]}
       lineWidth={4}
       enableArea={true}
-      areaBaselineValue={yMin}
       areaOpacity={0.15}
       pointSize={pointSize}
       pointBorderWidth={isCompact ? 2 : 3}
