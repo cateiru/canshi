@@ -19,6 +19,7 @@
 }
 
 .list,
+.dateRecords,
 .itemsList {
   display: flex;
   flex-direction: column;
@@ -28,7 +29,44 @@
 }
 
 .list {
+  gap: var(--space-8);
+}
+
+.dateGroup {
+  min-width: 0;
+}
+
+.dateHeader {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+}
+
+.dateIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: color-mix(in srgb, var(--color-accent) 50%, var(--color-ink));
+}
+
+.dateRecords {
   gap: var(--space-6);
+}
+
+.dateHeading {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.recordCount {
+  justify-self: start;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .record,
@@ -159,13 +197,23 @@
 }
 
 @media (max-width: 480px) {
+  .dateHeader {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: var(--space-3);
+    row-gap: var(--space-1);
+  }
+
+  .dateIcon {
+    grid-row: span 2;
+  }
+
+  .recordCount {
+    grid-column: 2;
+  }
+
   .record,
   .emptyState {
     padding: var(--space-4);
-  }
-
-  .recordDate {
-    font-size: var(--text-sm);
   }
 
   .summary {

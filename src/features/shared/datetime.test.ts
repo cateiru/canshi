@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   combineDateTimeUtc,
+  formatDateHeadingUtc,
   formatDateTimeUtc,
   getLocalNowParts,
   getNaiveUtcNow,
@@ -25,6 +26,13 @@ describe("formatDateTimeUtc", () => {
   it("日付と時刻をスペース区切りの文字列にする", () => {
     const result = formatDateTimeUtc(new Date("2026-09-07T08:30:00.000Z"));
     expect(result).toBe("2026-09-07 08:30");
+  });
+});
+
+describe("formatDateHeadingUtc", () => {
+  it("年月日と曜日を含む見出し文字列にする", () => {
+    const result = formatDateHeadingUtc(new Date("2026-09-11T08:30:00.000Z"));
+    expect(result).toBe("2026年9月11日（金）");
   });
 });
 

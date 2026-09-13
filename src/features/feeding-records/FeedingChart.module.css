@@ -1,0 +1,153 @@
+.container {
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+}
+
+.heading {
+  margin: 0;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-6);
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  cursor: pointer;
+  outline: none;
+  transition: background-color var(--transition-base);
+}
+
+.trigger[data-hovered] {
+  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
+}
+
+.trigger[data-focus-visible] {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+.title {
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.caret {
+  flex-shrink: 0;
+  color: var(--color-ink);
+  transform: rotate(90deg);
+  transition: transform var(--transition-base);
+}
+
+.container[data-expanded] .caret {
+  transform: rotate(180deg);
+}
+
+.panelInner {
+  padding: var(--space-2) var(--space-6) var(--space-6);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+
+.periodGroup {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: 999px;
+  background: var(--color-bg);
+}
+
+.periodButton {
+  padding: var(--space-1) var(--space-3);
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base);
+}
+
+.periodButton[data-hovered] {
+  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
+}
+
+.periodButton[data-selected] {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.periodButton[data-focus-visible] {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.charts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.chartLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+}
+
+.canvas {
+  height: 240px;
+}
+
+.placeholder {
+  height: 240px;
+}
+
+.emptyPeriod {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: color-mix(in srgb, var(--color-ink) 60%, var(--color-bg));
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 480px) {
+  .trigger {
+    padding: var(--space-4);
+  }
+
+  .panelInner {
+    padding: 0 var(--space-4) var(--space-4);
+  }
+
+  .canvas,
+  .placeholder {
+    height: 190px;
+  }
+
+  .emptyPeriod {
+    height: 160px;
+  }
+}
