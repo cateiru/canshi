@@ -19,6 +19,7 @@
 }
 
 .list,
+.dateRecords,
 .itemsList {
   display: flex;
   flex-direction: column;
@@ -28,7 +29,22 @@
 }
 
 .list {
-  gap: var(--space-6);
+  gap: var(--space-8);
+}
+
+.dateRecords {
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.dateHeading {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-width) solid
+    color-mix(in srgb, var(--color-ink) 15%, var(--color-bg));
+  color: color-mix(in srgb, var(--color-ink) 70%, var(--color-bg));
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
 }
 
 .record,

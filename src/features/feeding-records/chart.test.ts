@@ -18,7 +18,7 @@ function item(estimatedIntakeG: number, estimatedKcal: number) {
 }
 
 describe("toFeedingChartPoints", () => {
-  it("occurredAt 降順の入力を昇順に並べ替える", () => {
+  it("日付の昇順に並べ替える", () => {
     const records = [
       {
         occurredAt: new Date("2026-09-10T00:00:00.000Z"),
@@ -53,7 +53,67 @@ describe("toFeedingChartPoints", () => {
     expect(points[0]?.totalKcal).toBe(100);
   });
 
-  it("occurredAt を ISO 文字列に変換する", () => {
+  it("同じ日付の複数記録を1点に合算する", () => {
+    const records = [
+      {
+        occurredAt: new Date("2026-09-01T08:00:00.000Z"),
+        items: [item(20, 60)],
+      },
+      {
+        occurredAt: new Date("2026-09-01T20:00:00.000Z"),
+        items: [item(10, 40)],
+      },
+      {
+        occurredAt: new Date("2026-09-02T08:00:00.000Z"),
+        items: [item(15, 45)],
+      },
+    ];
+
+    const points = toFeedingChartPoints(records);
+
+    expect(points).toEqual([
+      {
+        occurredAtIso: "2026-09-01T00:00:00.000Z",
+        totalIntakeG: 30,
+        totalKcal: 100,
+      },
+      {
+        occurredAtIso: "2026-09-02T00:00:00.000Z",
+        totalIntakeG: 15,
+        totalKcal: 45,
+      },
+    ]);
+  });
+
+  it("日付境界をまたぐ時刻でも日付単位で正しく分ける（23:30 と翌 00:30）", () => {
+    const records = [
+      {
+        occurredAt: new Date("2026-09-01T23:30:00.000Z"),
+        items: [item(20, 60)],
+      },
+      {
+        occurredAt: new Date("2026-09-02T00:30:00.000Z"),
+        items: [item(10, 40)],
+      },
+    ];
+
+    const points = toFeedingChartPoints(records);
+
+    expect(points).toEqual([
+      {
+        occurredAtIso: "2026-09-01T00:00:00.000Z",
+        totalIntakeG: 20,
+        totalKcal: 60,
+      },
+      {
+        occurredAtIso: "2026-09-02T00:00:00.000Z",
+        totalIntakeG: 10,
+        totalKcal: 40,
+      },
+    ]);
+  });
+
+  it("occurredAt を日付（0時0分）の ISO 文字列に変換する", () => {
     const records = [
       {
         occurredAt: new Date("2026-09-01T12:34:00.000Z"),
@@ -63,7 +123,7 @@ describe("toFeedingChartPoints", () => {
 
     const points = toFeedingChartPoints(records);
 
-    expect(points[0]?.occurredAtIso).toBe("2026-09-01T12:34:00.000Z");
+    expect(points[0]?.occurredAtIso).toBe("2026-09-01T00:00:00.000Z");
   });
 
   it("空配列を渡すと空配列を返す", () => {

@@ -6,11 +6,17 @@ import { getCatById } from "@/features/cats/queries";
 import { deleteFeedingRecordAction } from "@/features/feeding-records/actions";
 import { toFeedingChartPoints } from "@/features/feeding-records/chart";
 import { FeedingChart } from "@/features/feeding-records/FeedingChart";
+import { groupRecordsByDate } from "@/features/feeding-records/groupByDate";
 import { listFeedingRecords } from "@/features/feeding-records/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { listFoodProductImageUrls } from "@/features/food-products/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
-import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
+import {
+  formatDateHeadingUtc,
+  formatDateTimeUtc,
+  getNaiveUtcNow,
+  splitDateTimeUtc,
+} from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -31,6 +37,7 @@ export default async function FeedingRecordsPage({
   }
 
   const records = await listFeedingRecords(catId);
+  const dateGroups = groupRecordsByDate(records);
   const foodProductImageUrls = await listFoodProductImageUrls([
     ...new Set(
       records.flatMap((record) =>
@@ -87,112 +94,121 @@ export default async function FeedingRecordsPage({
         </div>
       ) : (
         <ul className={styles.list}>
-          {records.map((record) => {
-            const totalIntakeG = record.items.reduce(
-              (sum, item) => sum + item.estimatedIntakeG,
-              0,
-            );
-            const totalKcal = record.items.reduce(
-              (sum, item) => sum + item.estimatedKcal,
-              0,
-            );
+          {dateGroups.map((group) => (
+            <li key={group.dateKey}>
+              <h2 className={styles.dateHeading}>
+                {formatDateHeadingUtc(group.records[0].occurredAt)}
+              </h2>
+              <ul className={styles.dateRecords}>
+                {group.records.map((record) => {
+                  const totalIntakeG = record.items.reduce(
+                    (sum, item) => sum + item.estimatedIntakeG,
+                    0,
+                  );
+                  const totalKcal = record.items.reduce(
+                    (sum, item) => sum + item.estimatedKcal,
+                    0,
+                  );
 
-            return (
-              <li key={record.id}>
-                <article
-                  className={styles.record}
-                  aria-label={formatDateTimeUtc(record.occurredAt)}
-                >
-                  <div className={styles.recordHeader}>
-                    <h2 className={styles.recordDate}>
-                      <TbClock aria-hidden="true" size={18} />
-                      <time dateTime={record.occurredAt.toISOString()}>
-                        {formatDateTimeUtc(record.occurredAt)}
-                      </time>
-                    </h2>
-                    <div className={styles.cardActions}>
-                      <ButtonLink
-                        href={`/cats/${catId}/feeding-records/${record.id}/edit`}
-                        variant="secondary"
-                        className={styles.iconButton}
-                        aria-label="編集する"
-                        title="編集する"
+                  return (
+                    <li key={record.id}>
+                      <article
+                        className={styles.record}
+                        aria-label={formatDateTimeUtc(record.occurredAt)}
                       >
-                        <TbPencil aria-hidden="true" size={20} />
-                      </ButtonLink>
-                      <DeleteRecordButton
-                        action={deleteFeedingRecordAction.bind(
-                          null,
-                          catId,
-                          record.id,
-                        )}
-                        title="ごはん記録の削除"
-                        description="このごはん記録を削除しますか？この操作は取り消せません。"
-                        iconOnly
-                        className={styles.iconButton}
-                      />
-                    </div>
-                  </div>
-                  <ul className={styles.itemsList}>
-                    {record.items.map((item) => (
-                      <li key={item.id} className={styles.product}>
-                        <span className={styles.productImage}>
-                          <FoodProductImage
-                            name={item.foodProductName}
-                            thumbnailUrl={
-                              foodProductImageUrls[item.foodProductId]
-                            }
-                          />
-                        </span>
-                        <div className={styles.productInfo}>
-                          <h3 className={styles.productName}>
-                            {item.foodProductName}
+                        <div className={styles.recordHeader}>
+                          <h3 className={styles.recordDate}>
+                            <TbClock aria-hidden="true" size={18} />
+                            <time dateTime={record.occurredAt.toISOString()}>
+                              {splitDateTimeUtc(record.occurredAt).time}
+                            </time>
                           </h3>
-                          <dl className={styles.amounts}>
-                            <div>
-                              <dt>与えた量</dt>
-                              <dd>{item.givenAmountG} g</dd>
-                            </div>
-                            <div>
-                              <dt>残した量</dt>
-                              <dd>{item.leftoverAmountG} g</dd>
-                            </div>
-                          </dl>
+                          <div className={styles.cardActions}>
+                            <ButtonLink
+                              href={`/cats/${catId}/feeding-records/${record.id}/edit`}
+                              variant="secondary"
+                              className={styles.iconButton}
+                              aria-label="編集する"
+                              title="編集する"
+                            >
+                              <TbPencil aria-hidden="true" size={20} />
+                            </ButtonLink>
+                            <DeleteRecordButton
+                              action={deleteFeedingRecordAction.bind(
+                                null,
+                                catId,
+                                record.id,
+                              )}
+                              title="ごはん記録の削除"
+                              description="このごはん記録を削除しますか？この操作は取り消せません。"
+                              iconOnly
+                              className={styles.iconButton}
+                            />
+                          </div>
                         </div>
-                      </li>
-                    ))}
-                  </ul>
-                  <dl
-                    className={styles.summary}
-                    aria-label="食事の合計（推定）"
-                  >
-                    <div>
-                      <dt>
-                        <FeedingIcon aria-hidden="true" size={18} />
-                        食べた量
-                        <span className={styles.estimate}>（推定）</span>
-                      </dt>
-                      <dd>
-                        {totalIntakeG}
-                        <span>g</span>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>
-                        <TbFlame aria-hidden="true" size={18} />
-                        カロリー
-                        <span className={styles.estimate}>（推定）</span>
-                      </dt>
-                      <dd>
-                        {totalKcal.toFixed(1)}
-                        <span>kcal</span>
-                      </dd>
-                    </div>
-                  </dl>
-                </article>
-              </li>
-            );
-          })}
+                        <ul className={styles.itemsList}>
+                          {record.items.map((item) => (
+                            <li key={item.id} className={styles.product}>
+                              <span className={styles.productImage}>
+                                <FoodProductImage
+                                  name={item.foodProductName}
+                                  thumbnailUrl={
+                                    foodProductImageUrls[item.foodProductId]
+                                  }
+                                />
+                              </span>
+                              <div className={styles.productInfo}>
+                                <h4 className={styles.productName}>
+                                  {item.foodProductName}
+                                </h4>
+                                <dl className={styles.amounts}>
+                                  <div>
+                                    <dt>与えた量</dt>
+                                    <dd>{item.givenAmountG} g</dd>
+                                  </div>
+                                  <div>
+                                    <dt>残した量</dt>
+                                    <dd>{item.leftoverAmountG} g</dd>
+                                  </div>
+                                </dl>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                        <dl
+                          className={styles.summary}
+                          aria-label="食事の合計（推定）"
+                        >
+                          <div>
+                            <dt>
+                              <FeedingIcon aria-hidden="true" size={18} />
+                              食べた量
+                              <span className={styles.estimate}>（推定）</span>
+                            </dt>
+                            <dd>
+                              {totalIntakeG}
+                              <span>g</span>
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>
+                              <TbFlame aria-hidden="true" size={18} />
+                              カロリー
+                              <span className={styles.estimate}>（推定）</span>
+                            </dt>
+                            <dd>
+                              {totalKcal.toFixed(1)}
+                              <span>kcal</span>
+                            </dd>
+                          </div>
+                        </dl>
+                      </article>
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          ))}
         </ul>
       )}
     </main>

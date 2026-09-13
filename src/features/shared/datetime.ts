@@ -17,6 +17,19 @@ export function formatDateTimeUtc(date: Date): string {
   return `${d} ${t}`;
 }
 
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("ja-JP", {
+  timeZone: "UTC",
+  weekday: "short",
+});
+
+/** 記録一覧の日付区切り見出し用。「2026年9月11日（木）」の形式で返す */
+export function formatDateHeadingUtc(date: Date): string {
+  const { date: d } = splitDateTimeUtc(date);
+  const [year, month, day] = d.split("-").map((part) => Number(part));
+  const weekday = WEEKDAY_FORMATTER.format(date);
+  return `${year}年${month}月${day}日（${weekday}）`;
+}
+
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
