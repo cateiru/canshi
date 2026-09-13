@@ -65,13 +65,17 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
     },
   ];
 
+  const weights = points.map((point) => point.catWeightKg);
+  const yMin = Math.min(...weights);
+  const yMax = Math.max(...weights);
+
   return (
     <ResponsiveLine
       data={data}
       margin={{ top: 16, right: 24, bottom: 40, left: 60 }}
       xScale={{ type: "time", precision: "day", useUTC: true }}
       xFormat={(value) => splitDateTimeUtc(value as Date).date}
-      yScale={{ type: "linear", min: "auto", max: "auto", nice: true }}
+      yScale={{ type: "linear", min: yMin, max: yMax, nice: true }}
       axisBottom={{
         format: (value) => formatAxisDateUtc(value as Date),
         tickValues: Math.min(points.length, 6),
@@ -82,8 +86,9 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
         legendOffset: -48,
       }}
       colors={["var(--color-accent)"]}
-      lineWidth={2}
+      lineWidth={6}
       enableArea={true}
+      areaBaselineValue={yMin}
       areaOpacity={0.15}
       pointSize={points.length <= 2 ? 8 : 5}
       pointBorderWidth={2}
