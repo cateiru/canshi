@@ -127,7 +127,7 @@ export function CalorieIcon(props: RecordIconProps) {
       <path d={catFace} transform={catTransform} />
       <path d={leftEye} strokeWidth="1" />
       <path d={rightEye} strokeWidth="1" />
-      <path d="m11 18 1 1 1-1m-4 1.5q3 3 6 0" />
+      <path d="m11 18 1 1 1-1" />
     </RecordIcon>
   );
 }
