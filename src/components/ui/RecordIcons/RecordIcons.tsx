@@ -60,9 +60,11 @@ function CatFill({ transform }: { transform?: string }) {
 function CatOutline({
   transform,
   expression = "happy",
+  facePath = catFace,
 }: {
   transform?: string;
   expression?: "happy" | "calm" | "unwell";
+  facePath?: string;
 }) {
   const eyes = {
     happy: "m7 9 1-1 1 1m6 0 1-1 1 1",
@@ -72,7 +74,7 @@ function CatOutline({
 
   return (
     <g transform={transform}>
-      <path d={catFace} />
+      <path d={facePath} />
       <path d={eyes[expression]} />
       <path d={expression === "unwell" ? "M11 12h2" : "m11 11 1 1 1-1"} />
     </g>
@@ -178,6 +180,7 @@ export function VomitIcon(props: RecordIconProps) {
 export function WaterIcon(props: RecordIconProps) {
   const bowl = "M3 17h18l-1.5 3a3 3 0 0 1-2.7 2H7.2a3 3 0 0 1-2.7-2Z";
   const drop = "M20 10s-2 2.5-2 3.5a2 2 0 0 0 4 0c0-1-2-3.5-2-3.5Z";
+  const tongue = "M7.7 14.2v1.3a1.5 1.5 0 0 0 3 0v-1.3";
   const catTransform = "translate(-1 2) scale(.85)";
 
   return (
@@ -188,14 +191,15 @@ export function WaterIcon(props: RecordIconProps) {
           <CatFill transform={catTransform} />
           <path fill="#8dcde9" d={bowl} />
           <path fill="#8dcde9" d={drop} />
-          <path fill="#f4b0a3" d="M8 14v1.5a1.5 1.5 0 0 0 3 0v-1.5Z" />
+          <path fill="#f4b0a3" d={`${tongue}Z`} />
         </>
       }
     >
+      {/* 舌の付け根を顎の輪郭に重ね、線端が顔の内側へ飛び出さないようにする。 */}
+      <path d={tongue} strokeLinecap="butt" />
       <CatOutline transform={catTransform} />
       <path d={bowl} />
       <path d={drop} />
-      <path d="M8 14v1.5a1.5 1.5 0 0 0 3 0v-1.5" />
     </RecordIcon>
   );
 }
@@ -281,14 +285,14 @@ export function MedicationIcon(props: RecordIconProps) {
       fills={
         <>
           <CatFill />
-          <rect fill="#fff4df" x="4" y="15" width="16" height="7" rx="3.5" />
-          <path fill="#739fdf" d="M12 15h4.5a3.5 3.5 0 0 1 0 7H12Z" />
+          <rect fill="#fff4df" x="5" y="12.5" width="14" height="7" rx="3.5" />
+          <path fill="#739fdf" d="M12 12.5h3.5a3.5 3.5 0 0 1 0 7H12Z" />
         </>
       }
     >
-      <CatOutline />
-      <rect x="4" y="15" width="16" height="7" rx="3.5" />
-      <path d="M12 15v7" />
+      <CatOutline facePath="M7 12.85C5.1 12 4 10.8 4 9.5A4 4 0 0 1 5 7V2l4 2.5a12 12 0 0 1 6 0L19 2v5a4 4 0 0 1 1 2.5c0 1.3-1.1 2.5-3 3.35" />
+      <rect x="5" y="12.5" width="14" height="7" rx="3.5" />
+      <path d="M12 12.5v7" />
     </RecordIcon>
   );
 }
@@ -323,14 +327,14 @@ export function PhotoIcon(props: RecordIconProps) {
       fills={
         <>
           <rect fill="#d0e9f4" x="3" y="3" width="18" height="18" rx="3" />
-          <path fill="#f5dfb7" d="M7 18c0-4 10-4 10 0Z" />
+          <path fill="#f5dfb7" d="M8 18c0-1 .8-1.8 2-2h4c1.2.2 2 1 2 2Z" />
           <CatFill transform={catTransform} />
           <path fill="#fff4df" d="M3 18h18a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3Z" />
         </>
       }
     >
       <rect x="3" y="3" width="18" height="18" rx="3" />
-      <path d="M7 18c0-4 10-4 10 0" />
+      <path d="M8 18c0-1 .8-1.8 2-2m4 0c1.2.2 2 1 2 2" strokeLinecap="butt" />
       <CatOutline transform={catTransform} />
       <path d="M3 18h18" />
     </RecordIcon>
