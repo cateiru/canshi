@@ -1,11 +1,5 @@
 import { notFound } from "next/navigation";
-import {
-  TbBowlSpoon,
-  TbClock,
-  TbFlame,
-  TbPencil,
-  TbPlus,
-} from "react-icons/tb";
+import { TbClock, TbFlame, TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
@@ -70,7 +64,7 @@ export default async function FeedingRecordsPage({
 
       {records.length === 0 ? (
         <div className={styles.emptyState}>
-          <TbBowlSpoon aria-hidden="true" size={32} />
+          <FeedingIcon aria-hidden="true" size={32} />
           <p>まだごはん記録がありません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink
@@ -165,7 +159,7 @@ export default async function FeedingRecordsPage({
                   >
                     <div>
                       <dt>
-                        <TbBowlSpoon aria-hidden="true" size={18} />
+                        <FeedingIcon aria-hidden="true" size={18} />
                         食べた量
                         <span className={styles.estimate}>（推定）</span>
                       </dt>
