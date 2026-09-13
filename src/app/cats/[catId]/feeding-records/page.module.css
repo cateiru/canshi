@@ -34,11 +34,6 @@
 
 .dateGroup {
   min-width: 0;
-  padding: var(--space-4);
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--color-accent) 22%, var(--color-bg));
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-bg));
 }
 
 .dateHeader {
@@ -46,7 +41,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-1) var(--space-2) var(--space-4);
+  padding-bottom: var(--space-4);
 }
 
 .dateIcon {
@@ -59,7 +54,7 @@
 }
 
 .dateRecords {
-  gap: var(--space-3);
+  gap: var(--space-6);
 }
 
 .dateHeading {
@@ -78,15 +73,6 @@
 .emptyState {
   padding: var(--space-6);
   border-radius: 16px;
-}
-
-.record {
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--color-ink) 8%, var(--color-bg));
-  background: var(--color-bg);
-}
-
-.emptyState {
   background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
 }
 
@@ -178,7 +164,7 @@
   gap: var(--space-4);
   padding: var(--space-4);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--color-ink) 3%, var(--color-bg));
+  background: var(--color-bg);
 }
 
 .summary dt {
@@ -211,24 +197,14 @@
 }
 
 @media (max-width: 480px) {
-  .dateGroup {
-    padding: var(--space-2);
-    border-radius: 16px;
-  }
-
   .dateHeader {
     grid-template-columns: auto minmax(0, 1fr);
     column-gap: var(--space-3);
     row-gap: var(--space-1);
-    padding: var(--space-2) var(--space-1) var(--space-4);
   }
 
   .dateIcon {
     grid-row: span 2;
-  }
-
-  .dateHeading {
-    font-size: var(--text-sm);
   }
 
   .recordCount {
@@ -238,10 +214,6 @@
   .record,
   .emptyState {
     padding: var(--space-4);
-  }
-
-  .recordDate {
-    font-size: var(--text-sm);
   }
 
   .summary {

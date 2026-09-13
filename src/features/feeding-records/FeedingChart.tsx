@@ -90,7 +90,7 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
               <div className={styles.chartBlock}>
                 <h3 className={styles.chartLabel}>
                   <FeedingIcon aria-hidden="true" size={16} />
-                  食べた量
+                  食べた量（推定）
                 </h3>
                 <div className={styles.canvas}>
                   <FeedingChartCanvas points={filtered} metric="intake" />
@@ -99,7 +99,7 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
               <div className={styles.chartBlock}>
                 <h3 className={styles.chartLabel}>
                   <TbFlame aria-hidden="true" size={16} />
-                  カロリー
+                  カロリー（推定）
                 </h3>
                 <div className={styles.canvas}>
                   <FeedingChartCanvas points={filtered} metric="kcal" />
