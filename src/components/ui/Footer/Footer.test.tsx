@@ -18,4 +18,14 @@ describe("Footer", () => {
       "/release-notes",
     );
   });
+
+  it("cateiru.com へのリンク付きコピーライトを表示する", () => {
+    render(<Footer />);
+
+    expect(screen.getByText("© 2026", { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "cateiru" })).toHaveAttribute(
+      "href",
+      "https://cateiru.com",
+    );
+  });
 });
