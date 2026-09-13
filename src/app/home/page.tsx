@@ -12,9 +12,6 @@ export default function Home() {
       <ButtonLink href="/settings" variant="secondary">
         設定を開く
       </ButtonLink>
-      <ButtonLink href="/release-notes" variant="secondary">
-        更新情報を見る
-      </ButtonLink>
     </main>
   );
 }

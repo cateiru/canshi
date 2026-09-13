@@ -19,6 +19,7 @@ for (const viewport of [
       { name: "通知設定", path: "/settings/notifications" },
       { name: "ごはん商品一覧", path: "/food-products" },
       { name: "ごはんプリセット一覧", path: "/feeding-presets" },
+      { name: "更新情報", path: "/release-notes" },
     ]) {
       await page
         .getByRole("navigation", { name: "設定メニュー" })

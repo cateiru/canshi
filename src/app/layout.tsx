@@ -40,9 +40,12 @@ export default function RootLayout({
       <body>
         <header className={styles.header}>
           <NotificationBadge />
-          <Link href="/settings" className={styles.settingsLink}>
+          <Link
+            href="/settings"
+            className={styles.settingsLink}
+            aria-label="設定"
+          >
             <TbSettings className={styles.icon} aria-hidden="true" />
-            設定
           </Link>
         </header>
         {children}

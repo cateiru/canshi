@@ -5,6 +5,7 @@ import {
   TbBowl,
   TbChevronRight,
   TbClipboardList,
+  TbNews,
 } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import styles from "./page.module.css";
@@ -32,6 +33,12 @@ const settings = [
     description: "よく使うごはんの組み合わせと量を登録・編集します。",
     icon: TbClipboardList,
   },
+  {
+    href: "/release-notes",
+    title: "更新情報",
+    description: "アプリの新機能や改善内容を確認します。",
+    icon: TbNews,
+  },
 ];
 
 export default function SettingsPage() {
@@ -41,7 +48,7 @@ export default function SettingsPage() {
         items={[{ label: "トップ", href: "/home" }, { label: "設定" }]}
       />
       <h1>設定</h1>
-      <p>通知やごはんに関する共通の設定を管理します。</p>
+      <p>通知やごはんの共通設定、アプリの更新情報を確認できます。</p>
 
       <nav aria-label="設定メニュー">
         <ul className={styles.list}>

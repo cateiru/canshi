@@ -9,7 +9,8 @@
 .settingsLink {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  justify-content: center;
+  min-width: 44px;
   min-height: 44px;
   padding: var(--space-2);
   border-radius: var(--radius-base);
