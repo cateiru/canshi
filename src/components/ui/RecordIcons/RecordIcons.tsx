@@ -60,9 +60,11 @@ function CatFill({ transform }: { transform?: string }) {
 function CatOutline({
   transform,
   expression = "happy",
+  facePath = catFace,
 }: {
   transform?: string;
   expression?: "happy" | "calm" | "unwell";
+  facePath?: string;
 }) {
   const eyes = {
     happy: "m7 9 1-1 1 1m6 0 1-1 1 1",
@@ -72,7 +74,7 @@ function CatOutline({
 
   return (
     <g transform={transform}>
-      <path d={catFace} />
+      <path d={facePath} />
       <path d={eyes[expression]} />
       <path d={expression === "unwell" ? "M11 12h2" : "m11 11 1 1 1-1"} />
     </g>
@@ -283,14 +285,14 @@ export function MedicationIcon(props: RecordIconProps) {
       fills={
         <>
           <CatFill />
-          <rect fill="#fff4df" x="4" y="15" width="16" height="7" rx="3.5" />
-          <path fill="#739fdf" d="M12 15h4.5a3.5 3.5 0 0 1 0 7H12Z" />
+          <rect fill="#fff4df" x="5" y="12.5" width="14" height="7" rx="3.5" />
+          <path fill="#739fdf" d="M12 12.5h3.5a3.5 3.5 0 0 1 0 7H12Z" />
         </>
       }
     >
-      <CatOutline />
-      <rect x="4" y="15" width="16" height="7" rx="3.5" />
-      <path d="M12 15v7" />
+      <CatOutline facePath="M7 12.85C5.1 12 4 10.8 4 9.5A4 4 0 0 1 5 7V2l4 2.5a12 12 0 0 1 6 0L19 2v5a4 4 0 0 1 1 2.5c0 1.3-1.1 2.5-3 3.35" />
+      <rect x="5" y="12.5" width="14" height="7" rx="3.5" />
+      <path d="M12 12.5v7" />
     </RecordIcon>
   );
 }
