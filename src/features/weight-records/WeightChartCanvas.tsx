@@ -1,12 +1,33 @@
 "use client";
 
 import { ResponsiveLine } from "@nivo/line";
+import { useEffect, useState } from "react";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
 import type { WeightChartPoint } from "./chart";
 
 type WeightChartCanvasProps = {
   points: WeightChartPoint[];
 };
+
+const COMPACT_BREAKPOINT_PX = 480;
+
+/** SP幅（page.module.css 等と同じ480pxブレークポイント）かどうかを判定する */
+function useIsCompact(): boolean {
+  const [isCompact, setIsCompact] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia(`(max-width: ${COMPACT_BREAKPOINT_PX}px)`);
+    setIsCompact(query.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsCompact(event.matches);
+    };
+    query.addEventListener("change", handleChange);
+    return () => query.removeEventListener("change", handleChange);
+  }, []);
+
+  return isCompact;
+}
 
 function formatAxisDateUtc(value: Date): string {
   return new Intl.DateTimeFormat("ja-JP", {
@@ -88,6 +109,14 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
 
   const weights = points.map((point) => point.catWeightKg);
   const { min: yMin, max: yMax } = computeYDomain(weights);
+  const isCompact = useIsCompact();
+  const pointSize = isCompact
+    ? points.length <= 2
+      ? 10
+      : 7
+    : points.length <= 2
+      ? 16
+      : 12;
 
   return (
     <ResponsiveLine
@@ -110,8 +139,8 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
       enableArea={true}
       areaBaselineValue={yMin}
       areaOpacity={0.15}
-      pointSize={points.length <= 2 ? 16 : 12}
-      pointBorderWidth={3}
+      pointSize={pointSize}
+      pointBorderWidth={isCompact ? 2 : 3}
       pointBorderColor={{ from: "seriesColor" }}
       pointColor="var(--color-bg)"
       enableGridX={false}
