@@ -13,11 +13,11 @@
     system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", "Yu Gothic",
     "Noto Sans JP", sans-serif;
 
-  --text-xl: 24px;
-  --text-lg: 18px;
-  --text-md: 15px;
-  --text-sm: 13px;
-  --text-xs: 11px;
+  --text-xl: 26px;
+  --text-lg: 20px;
+  --text-md: 17px;
+  --text-sm: 15px;
+  --text-xs: 12px;
   /* iOS Safari は16px未満の入力欄でフォーカス時に自動ズームする */
   --text-input: 16px;
 
