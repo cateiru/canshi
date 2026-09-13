@@ -178,6 +178,7 @@ export function VomitIcon(props: RecordIconProps) {
 export function WaterIcon(props: RecordIconProps) {
   const bowl = "M3 17h18l-1.5 3a3 3 0 0 1-2.7 2H7.2a3 3 0 0 1-2.7-2Z";
   const drop = "M20 10s-2 2.5-2 3.5a2 2 0 0 0 4 0c0-1-2-3.5-2-3.5Z";
+  const tongue = "M7.7 14.2v1.3a1.5 1.5 0 0 0 3 0v-1.3";
   const catTransform = "translate(-1 2) scale(.85)";
 
   return (
@@ -188,14 +189,15 @@ export function WaterIcon(props: RecordIconProps) {
           <CatFill transform={catTransform} />
           <path fill="#8dcde9" d={bowl} />
           <path fill="#8dcde9" d={drop} />
-          <path fill="#f4b0a3" d="M8 14v1.5a1.5 1.5 0 0 0 3 0v-1.5Z" />
+          <path fill="#f4b0a3" d={`${tongue}Z`} />
         </>
       }
     >
+      {/* 舌の付け根を顎の輪郭に重ね、線端が顔の内側へ飛び出さないようにする。 */}
+      <path d={tongue} strokeLinecap="butt" />
       <CatOutline transform={catTransform} />
       <path d={bowl} />
       <path d={drop} />
-      <path d="M8 14v1.5a1.5 1.5 0 0 0 3 0v-1.5" />
     </RecordIcon>
   );
 }
