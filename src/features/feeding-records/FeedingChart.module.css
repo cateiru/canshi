@@ -63,12 +63,6 @@
   gap: var(--space-6);
 }
 
-.chartBlock + .chartBlock {
-  padding-top: var(--space-6);
-  border-top: var(--border-width) solid
-    color-mix(in srgb, var(--color-ink) 10%, var(--color-bg));
-}
-
 .chartLabel {
   display: flex;
   align-items: center;
