@@ -86,14 +86,14 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
         legendOffset: -48,
       }}
       colors={["var(--color-accent)"]}
-      lineWidth={6}
+      lineWidth={4}
       enableArea={true}
       areaBaselineValue={yMin}
       areaOpacity={0.15}
       pointSize={points.length <= 2 ? 16 : 12}
       pointBorderWidth={3}
-      pointBorderColor="var(--color-bg)"
-      pointColor="var(--color-accent)"
+      pointBorderColor={{ from: "serieColor" }}
+      pointColor="var(--color-ink)"
       enableGridX={false}
       useMesh={true}
       animate={false}
