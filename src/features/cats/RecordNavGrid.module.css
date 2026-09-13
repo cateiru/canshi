@@ -34,8 +34,8 @@
 }
 
 .icon {
-  width: var(--space-8);
-  height: var(--space-8);
+  width: var(--space-10);
+  height: var(--space-10);
 }
 
 .label {
