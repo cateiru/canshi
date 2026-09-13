@@ -72,12 +72,13 @@ function formatAxisDateUtc(value: Date): string {
 const Y_DOMAIN_STEP = 0.1;
 
 /**
- * yScale の min/max を 0.1kg 刻みに丸めて算出する。d3 の `nice: true` に
- * 頼ると、期間が狭いときに目盛りが 0.005kg 刻みなど細かくなりラベルが
- * マージンからはみ出すことがあるため自前で丸める。yScale に具体的な数値
- * を渡すとスケールはクランプされず、areaBaselineValue が軸の範囲外
- * （デフォルトの0など）だと塗りつぶしが軸の下限より下まではみ出すため、
- * areaBaselineValue にもこの min を使う。
+ * yScale の min/max を 0.1kg 刻みに丸めて算出する。Nivo の linear scale は
+ * min/max を数値で明示しても nice がデフォルト true のままで、d3 の
+ * `.nice()` がさらに外側の桁（例: 0.2刻み）に丸め直してしまうことがある
+ * （期間が狭いと 0.005kg 刻みなど逆に細かくなりラベルがはみ出すことも）。
+ * そのため自前で 0.1kg 刻みに丸め、ResponsiveLine 側は `nice: false` で
+ * 二重の丸めを止める。areaBaselineValue もこの min と一致させないと、
+ * 塗りつぶしが軸の下限より下まではみ出す。
  */
 function computeYDomain(weights: number[]): { min: number; max: number } {
   const rawMin = Math.min(...weights);
@@ -158,7 +159,7 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
       margin={{ top: 26, right: 10, bottom: 40, left: 34 }}
       xScale={{ type: "time", precision: "day", useUTC: true }}
       xFormat={(value) => splitDateTimeUtc(value as Date).date}
-      yScale={{ type: "linear", min: yMin, max: yMax }}
+      yScale={{ type: "linear", min: yMin, max: yMax, nice: false }}
       axisBottom={{
         format: (value) => formatAxisDateUtc(value as Date),
         tickValues: Math.min(points.length, 6),
