@@ -1,0 +1,29 @@
+.footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  font-size: var(--text-xs);
+}
+
+.link {
+  color: var(--color-ink);
+  text-decoration: underline;
+  border-radius: var(--radius-base);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition: outline-color var(--transition-base);
+}
+
+.link:hover {
+  text-decoration: none;
+}
+
+.link:focus-visible {
+  outline-color: var(--color-accent);
+}
+
+.version {
+  opacity: 0.6;
+}
