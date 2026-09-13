@@ -28,8 +28,8 @@
 .dot {
   display: inline-flex;
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border: var(--border-width) solid var(--color-ink);
   border-radius: 50%;
   background-color: var(--color-bg);
@@ -45,9 +45,9 @@
 .dot::before {
   content: "";
   display: block;
-  width: 8px;
-  height: 8px;
-  margin: 4px;
+  width: 10px;
+  height: 10px;
+  margin: 6px;
   border-radius: 50%;
   background-color: var(--color-ink);
   opacity: 0;
