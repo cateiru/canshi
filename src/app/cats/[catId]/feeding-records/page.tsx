@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
-import { TbClock, TbFlame, TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
+import {
+  TbCalendarEvent,
+  TbClock,
+  TbFlame,
+  TbPencil,
+  TbPlus,
+} from "react-icons/tb";
+import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteFeedingRecordAction } from "@/features/feeding-records/actions";
@@ -95,10 +101,20 @@ export default async function FeedingRecordsPage({
       ) : (
         <ul className={styles.list}>
           {dateGroups.map((group) => (
-            <li key={group.dateKey}>
-              <h2 className={styles.dateHeading}>
-                {formatDateHeadingUtc(group.records[0].occurredAt)}
-              </h2>
+            <li key={group.dateKey} className={styles.dateGroup}>
+              <div className={styles.dateHeader}>
+                <span className={styles.dateIcon}>
+                  <TbCalendarEvent aria-hidden="true" size={22} />
+                </span>
+                <h2 className={styles.dateHeading}>
+                  <time dateTime={group.dateKey}>
+                    {formatDateHeadingUtc(group.records[0].occurredAt)}
+                  </time>
+                </h2>
+                <Badge color="accent" className={styles.recordCount}>
+                  {group.records.length}件の記録
+                </Badge>
+              </div>
               <ul className={styles.dateRecords}>
                 {group.records.map((record) => {
                   const totalIntakeG = record.items.reduce(
