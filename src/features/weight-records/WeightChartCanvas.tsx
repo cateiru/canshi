@@ -16,6 +16,27 @@ function formatAxisDateUtc(value: Date): string {
   }).format(value);
 }
 
+const Y_DOMAIN_STEP = 0.1;
+
+/**
+ * yScale の min/max を 0.1kg 刻みに丸めて算出する。d3 の `nice: true` に
+ * 頼ると内部で自動計算された軸の下限と areaBaselineValue が食い違い、
+ * 塗りつぶしの底辺が軸の最小目盛りとズレることがあるため、
+ * 自前で丸めた値を yScale と areaBaselineValue の双方に使い一致させる。
+ */
+function computeYDomain(weights: number[]): { min: number; max: number } {
+  const rawMin = Math.min(...weights);
+  const rawMax = Math.max(...weights);
+  const min =
+    Math.round(Math.floor(rawMin / Y_DOMAIN_STEP) * Y_DOMAIN_STEP * 100) / 100;
+  let max =
+    Math.round(Math.ceil(rawMax / Y_DOMAIN_STEP) * Y_DOMAIN_STEP * 100) / 100;
+  if (max <= min) {
+    max = min + Y_DOMAIN_STEP;
+  }
+  return { min, max };
+}
+
 const nivoTheme = {
   text: {
     fill: "var(--color-ink)",
@@ -66,8 +87,7 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
   ];
 
   const weights = points.map((point) => point.catWeightKg);
-  const yMin = Math.min(...weights);
-  const yMax = Math.max(...weights);
+  const { min: yMin, max: yMax } = computeYDomain(weights);
 
   return (
     <ResponsiveLine
@@ -75,7 +95,7 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
       margin={{ top: 16, right: 24, bottom: 40, left: 60 }}
       xScale={{ type: "time", precision: "day", useUTC: true }}
       xFormat={(value) => splitDateTimeUtc(value as Date).date}
-      yScale={{ type: "linear", min: yMin, max: yMax, nice: true }}
+      yScale={{ type: "linear", min: yMin, max: yMax }}
       axisBottom={{
         format: (value) => formatAxisDateUtc(value as Date),
         tickValues: Math.min(points.length, 6),
