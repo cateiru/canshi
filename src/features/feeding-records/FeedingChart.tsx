@@ -10,8 +10,11 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "react-aria-components";
-import { TbFlame, TbTriangleFilled } from "react-icons/tb";
-import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { TbTriangleFilled } from "react-icons/tb";
+import {
+  CalorieIcon,
+  FeedingIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
 import {
   FEEDING_CHART_PERIOD_LABEL,
   type FeedingChartPeriod,
@@ -98,7 +101,7 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
               </div>
               <div className={styles.chartBlock}>
                 <h3 className={styles.chartLabel}>
-                  <TbFlame aria-hidden="true" size={16} />
+                  <CalorieIcon aria-hidden="true" size={16} />
                   カロリー（推定）
                 </h3>
                 <div className={styles.canvas}>
