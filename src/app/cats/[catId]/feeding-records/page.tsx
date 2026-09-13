@@ -1,13 +1,10 @@
 import { notFound } from "next/navigation";
-import {
-  TbCalendarEvent,
-  TbClock,
-  TbFlame,
-  TbPencil,
-  TbPlus,
-} from "react-icons/tb";
+import { TbCalendarEvent, TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
-import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import {
+  CalorieIcon,
+  FeedingIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteFeedingRecordAction } from "@/features/feeding-records/actions";
 import { toFeedingChartPoints } from "@/features/feeding-records/chart";
@@ -208,7 +205,7 @@ export default async function FeedingRecordsPage({
                           </div>
                           <div>
                             <dt>
-                              <TbFlame aria-hidden="true" size={18} />
+                              <CalorieIcon aria-hidden="true" size={18} />
                               カロリー
                               <span className={styles.estimate}>（推定）</span>
                             </dt>

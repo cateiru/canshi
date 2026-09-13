@@ -101,6 +101,37 @@ export function FeedingIcon(props: RecordIconProps) {
   );
 }
 
+export function CalorieIcon(props: RecordIconProps) {
+  const catTransform = "translate(0 7)";
+  const flames =
+    "M5 22C1.5 20 1 15.5 2.5 12L4 14C2.5 9 6 7.5 5.5 4.5 8 5.5 9 7 9 8.5 11 6.5 10 3.5 13 1.5 12.5 5 16.5 5 16.5 8L19 5.5C18.5 9.5 22 10.5 20.5 14L22 12.5C23 17 21.5 20.5 19 22Q12 23 5 22Z";
+  const leftEye =
+    "M8.5 13C8.8 13.8 7.5 13.8 8 14.6L9.3 14C9.6 14.5 10 14.8 10 15.4 9.7 16.5 7.8 17 7 15.8 6.2 14.5 7.5 14.2 8.5 13Z";
+  const rightEye =
+    "M15.5 13C15.2 13.8 16.5 13.8 16 14.6L14.7 14C14.4 14.5 14 14.8 14 15.4 14.3 16.5 16.2 17 17 15.8 17.8 14.5 16.5 14.2 15.5 13Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#e99a70" d={flames} />
+          <path fill="#f2d17b" d="M9 10c0-3 3-3 3-6 3 3 3 5 3 7Z" />
+          <CatFill transform={catTransform} />
+          <path fill="#ed795b" d={leftEye} />
+          <path fill="#ed795b" d={rightEye} />
+        </>
+      }
+    >
+      <path d={flames} />
+      <path d={catFace} transform={catTransform} />
+      <path d={leftEye} strokeWidth="1" />
+      <path d={rightEye} strokeWidth="1" />
+      <path d="m11 18 1 1 1-1" />
+    </RecordIcon>
+  );
+}
+
 export function PoopIcon(props: RecordIconProps) {
   const catTransform = "translate(-1 1) scale(.8)";
   const poop =
