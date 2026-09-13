@@ -8,7 +8,11 @@ export default function ReleaseNotesPage() {
   return (
     <main className={styles.main}>
       <Breadcrumb
-        items={[{ label: "トップ", href: "/home" }, { label: "更新情報" }]}
+        items={[
+          { label: "トップ", href: "/home" },
+          { label: "設定", href: "/settings" },
+          { label: "更新情報" },
+        ]}
       />
 
       <h1>更新情報</h1>

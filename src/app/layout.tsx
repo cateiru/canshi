@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
+import { TbSettings } from "react-icons/tb";
 import { Footer, ToastRegionRoot } from "@/components/ui";
 import { NotificationBadge } from "@/features/notifications/NotificationBadge";
 import { ServiceWorkerRegistration } from "@/features/pwa/ServiceWorkerRegistration";
@@ -38,6 +40,13 @@ export default function RootLayout({
       <body>
         <header className={styles.header}>
           <NotificationBadge />
+          <Link
+            href="/settings"
+            className={styles.settingsLink}
+            aria-label="設定"
+          >
+            <TbSettings className={styles.icon} aria-hidden="true" />
+          </Link>
         </header>
         {children}
         <Footer />

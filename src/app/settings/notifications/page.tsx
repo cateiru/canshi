@@ -14,7 +14,11 @@ export default async function NotificationSettingsPage() {
   return (
     <main className={styles.main}>
       <Breadcrumb
-        items={[{ label: "トップ", href: "/home" }, { label: "通知設定" }]}
+        items={[
+          { label: "トップ", href: "/home" },
+          { label: "設定", href: "/settings" },
+          { label: "通知設定" },
+        ]}
       />
 
       <h1>通知設定</h1>

@@ -9,17 +9,8 @@ export default function Home() {
       <ButtonLink href="/cats" variant="primary">
         猫一覧を見る
       </ButtonLink>
-      <ButtonLink href="/food-products" variant="secondary">
-        ごはん商品一覧を見る
-      </ButtonLink>
-      <ButtonLink href="/feeding-presets" variant="secondary">
-        ごはんプリセット一覧を見る
-      </ButtonLink>
-      <ButtonLink href="/settings/notifications" variant="secondary">
-        通知設定を開く
-      </ButtonLink>
-      <ButtonLink href="/release-notes" variant="secondary">
-        更新情報を見る
+      <ButtonLink href="/settings" variant="secondary">
+        設定を開く
       </ButtonLink>
     </main>
   );

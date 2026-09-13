@@ -17,6 +17,7 @@ export default async function NewFeedingPresetPage() {
 
   const breadcrumbItems = [
     { label: "トップ", href: "/home" },
+    { label: "設定", href: "/settings" },
     { label: "ごはんプリセット一覧", href: "/feeding-presets" },
     { label: "登録する" },
   ];

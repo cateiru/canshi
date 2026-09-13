@@ -25,6 +25,7 @@ export default async function FoodProductsPage() {
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
+          { label: "設定", href: "/settings" },
           { label: "ごはん商品一覧" },
         ]}
       />

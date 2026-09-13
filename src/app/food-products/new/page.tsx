@@ -13,6 +13,7 @@ export default function NewFoodProductPage() {
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
+          { label: "設定", href: "/settings" },
           { label: "ごはん商品一覧", href: "/food-products" },
           { label: "登録する" },
         ]}

@@ -37,6 +37,7 @@ export default async function EditFeedingPresetPage({
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
+          { label: "設定", href: "/settings" },
           { label: "ごはんプリセット一覧", href: "/feeding-presets" },
           { label: "編集する" },
         ]}
