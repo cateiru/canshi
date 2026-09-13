@@ -1,11 +1,17 @@
 import releaseNotesJson from "./release-notes.json";
 import { type ReleaseNote, releaseNotesSchema } from "./schema";
 
-/** 新しい日付順（同日なら記載順を保ったまま）に並べ替える */
+/** 新しい日付順（同日なら後から追記した方を新しいとみなし、記載順と逆に並べる）に並べ替える */
 export function sortReleaseNotes(notes: ReleaseNote[]): ReleaseNote[] {
-  return [...notes].sort((a, b) =>
-    a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
-  );
+  return notes
+    .map((note, index) => ({ note, index }))
+    .sort((a, b) => {
+      if (a.note.date !== b.note.date) {
+        return a.note.date < b.note.date ? 1 : -1;
+      }
+      return b.index - a.index;
+    })
+    .map(({ note }) => note);
 }
 
 /**

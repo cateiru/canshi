@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { ToastRegionRoot } from "@/components/ui";
+import { Footer, ToastRegionRoot } from "@/components/ui";
 import { NotificationBadge } from "@/features/notifications/NotificationBadge";
 import { ServiceWorkerRegistration } from "@/features/pwa/ServiceWorkerRegistration";
 import "@/styles/globals.css";
@@ -40,6 +40,7 @@ export default function RootLayout({
           <NotificationBadge />
         </header>
         {children}
+        <Footer />
         <ToastRegionRoot />
         <ServiceWorkerRegistration />
       </body>
