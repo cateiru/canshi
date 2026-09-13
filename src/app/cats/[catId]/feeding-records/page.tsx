@@ -4,11 +4,13 @@ import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteFeedingRecordAction } from "@/features/feeding-records/actions";
+import { toFeedingChartPoints } from "@/features/feeding-records/chart";
+import { FeedingChart } from "@/features/feeding-records/FeedingChart";
 import { listFeedingRecords } from "@/features/feeding-records/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { listFoodProductImageUrls } from "@/features/food-products/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
-import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -61,6 +63,13 @@ export default async function FeedingRecordsPage({
           記録する
         </ButtonLink>
       </div>
+
+      {records.length > 0 && (
+        <FeedingChart
+          points={toFeedingChartPoints(records)}
+          now={getNaiveUtcNow().toISOString()}
+        />
+      )}
 
       {records.length === 0 ? (
         <div className={styles.emptyState}>
