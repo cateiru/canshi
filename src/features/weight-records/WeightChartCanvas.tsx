@@ -176,7 +176,8 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
       pointColor="var(--color-bg)"
       enableGridX={false}
       useMesh={true}
-      animate={false}
+      animate={true}
+      motionConfig="gentle"
       enableSlices={false}
       theme={nivoTheme}
     />
