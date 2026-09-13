@@ -1,7 +1,7 @@
-import { TbCat } from "react-icons/tb";
 import { CatEarFrame } from "@/components/ui";
 import { mediaThumbnailUrl } from "@/features/media/view";
 import styles from "./CatAvatar.module.css";
+import { CatIcon } from "./CatIcon";
 
 type CatAvatarProps = {
   name: string;
@@ -39,7 +39,7 @@ export function CatAvatar({
           className={styles.placeholder}
           aria-label={`${name}の画像なし`}
         >
-          <TbCat aria-hidden="true" />
+          <CatIcon aria-hidden="true" size="70%" />
         </span>
       )}
     </CatEarFrame>

@@ -1,25 +1,13 @@
 .main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-4);
+  composes: page from "../../features/shared/PageLayout.module.css";
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+  composes: header from "../../features/shared/PageLayout.module.css";
 }
 
 .list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  list-style: none;
+  composes: list from "../../features/shared/PageLayout.module.css";
 }
 
 .cardLink {
@@ -34,4 +22,36 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-4);
+}
+
+.emptyState {
+  composes: emptyState from "../../features/shared/PageLayout.module.css";
+}
+
+.cardLink {
+  border-radius: 16px;
+  transition: opacity var(--transition-base);
+}
+
+.cardLink:hover {
+  opacity: 0.85;
+}
+
+.cardLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.cardBody > div {
+  min-width: 0;
+}
+
+.cardBody p {
+  margin-top: var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.catName {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-lg);
 }

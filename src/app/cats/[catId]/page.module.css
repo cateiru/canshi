@@ -1,16 +1,10 @@
 .main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-4);
+  composes: page from "../../../features/shared/PageLayout.module.css";
 }
 
 .details {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-2) var(--space-4);
   margin-top: var(--space-3);
 }
@@ -24,12 +18,28 @@
 }
 
 .actions {
+  flex-wrap: wrap;
   display: flex;
   gap: var(--space-3);
 }
 
 .profile {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--space-4);
+}
+
+.details dd {
+  min-width: 0;
+}
+
+.details dt {
+  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+}
+
+@media (max-width: 480px) {
+  .profile {
+    flex-wrap: wrap;
+  }
 }

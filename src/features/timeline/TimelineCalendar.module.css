@@ -30,14 +30,16 @@
 .grid {
   width: 100%;
   table-layout: fixed;
-  border-collapse: collapse;
-  border: var(--border-width) solid var(--color-ink);
+  border-collapse: separate;
+  border-spacing: 2px;
+  min-width: 324px;
+  border: 0;
 }
 
 .weekday {
-  background-color: var(--color-ink);
-  color: var(--color-bg);
-  border: var(--border-width) solid var(--color-ink);
+  background-color: transparent;
+  color: var(--color-ink);
+  border: 0;
   text-align: center;
   font-size: var(--text-xs);
   font-weight: var(--font-weight-bold);
@@ -48,8 +50,9 @@
 .dayBlank {
   position: relative;
   background-color: var(--color-bg);
-  border: var(--border-width) solid var(--color-ink);
-  height: 52px;
+  border: 0;
+  height: 72px;
+  border-radius: 8px;
   min-width: 0;
   padding: 0;
   vertical-align: top;
@@ -60,13 +63,18 @@
 }
 
 .day[data-selected="true"] {
-  background-color: var(--color-accent);
+  background-color: color-mix(
+    in srgb,
+    var(--color-accent) 14%,
+    var(--color-bg)
+  );
 }
 
 .dayLink {
   position: absolute;
   inset: 0;
-  padding: 2px;
+  padding: var(--space-1);
+  border-radius: 8px;
   box-sizing: border-box;
   color: inherit;
   text-decoration: none;
@@ -77,6 +85,7 @@
 }
 
 .dayNumber {
+  font-variant-numeric: tabular-nums;
   display: block;
   font-size: var(--text-xs);
 }
@@ -96,13 +105,13 @@
 }
 
 .moreCount {
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--color-ink);
 }
 
 .day[data-selected="true"] .dayNumber,
 .day[data-selected="true"] .moreCount {
-  color: var(--color-bg);
+  color: var(--color-ink);
 }
 
 .day[data-selected="true"] .icon {
@@ -121,4 +130,41 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.scrollArea {
+  min-width: 0;
+  overflow-x: auto;
+  padding: var(--space-1);
+  overscroll-behavior-inline: contain;
+}
+
+.header {
+  flex-wrap: wrap;
+}
+
+.header > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-2);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.header > a:hover {
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-bg));
+}
+
+.dayLink,
+.header > a {
+  transition: background-color var(--transition-base);
+}
+
+.dayLink:focus-visible,
+.header > a:focus-visible,
+.scrollArea:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
+  z-index: 1;
 }

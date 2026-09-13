@@ -1,10 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button, FormField, Select } from "@/components/ui";
+import { TbCalendar, TbCheck } from "react-icons/tb";
+import { Button, ButtonLink, FormField, Select } from "@/components/ui";
 import type { Cat } from "@/db/schema";
 import type { CatFormState } from "./actions";
 import styles from "./CatForm.module.css";
+import { CatIcon } from "./CatIcon";
 
 type CatFormProps = {
   action: (state: CatFormState, formData: FormData) => Promise<CatFormState>;
@@ -25,52 +27,77 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
 
   return (
     <form action={formAction} className={styles.form}>
-      <FormField
-        name="name"
-        label="名前"
-        defaultValue={cat?.name}
-        errorMessage={state.fieldErrors?.name?.[0]}
-        isRequired
-      />
+      <section className={styles.section} aria-labelledby="cat-basic-heading">
+        <h2 id="cat-basic-heading" className={styles.sectionHeading}>
+          <CatIcon aria-hidden="true" size={20} />
+          基本情報
+        </h2>
+        <FormField
+          name="name"
+          label="名前"
+          defaultValue={cat?.name}
+          errorMessage={state.fieldErrors?.name?.[0]}
+          isRequired
+        />
 
-      <Select
-        name="sex"
-        label="性別"
-        options={SEX_OPTIONS}
-        defaultSelectedKey={cat?.sex ?? "unknown"}
-        errorMessage={state.fieldErrors?.sex?.[0]}
-      />
+        <Select
+          name="sex"
+          label="性別"
+          options={SEX_OPTIONS}
+          defaultSelectedKey={cat?.sex ?? "unknown"}
+          errorMessage={state.fieldErrors?.sex?.[0]}
+        />
 
-      <FormField
-        name="birthDate"
-        label="生年月日"
-        type="date"
-        defaultValue={cat?.birthDate ?? ""}
-        errorMessage={state.fieldErrors?.birthDate?.[0]}
-      />
+        <FormField
+          name="breed"
+          label="猫種"
+          defaultValue={cat?.breed ?? ""}
+          errorMessage={state.fieldErrors?.breed?.[0]}
+        />
+      </section>
+      <section className={styles.section} aria-labelledby="cat-dates-heading">
+        <h2 id="cat-dates-heading" className={styles.sectionHeading}>
+          <TbCalendar aria-hidden="true" size={20} />
+          大切な日
+        </h2>
+        <p className={styles.description}>
+          わかる日付だけ入力できます。あとから変更することもできます。
+        </p>
+        <div className={styles.dateFields}>
+          <FormField
+            name="birthDate"
+            label="生年月日"
+            type="date"
+            defaultValue={cat?.birthDate ?? ""}
+            errorMessage={state.fieldErrors?.birthDate?.[0]}
+          />
 
-      <FormField
-        name="breed"
-        label="猫種"
-        defaultValue={cat?.breed ?? ""}
-        errorMessage={state.fieldErrors?.breed?.[0]}
-      />
-
-      <FormField
-        name="adoptedAt"
-        label="お迎え日"
-        type="date"
-        defaultValue={cat?.adoptedAt ?? ""}
-        errorMessage={state.fieldErrors?.adoptedAt?.[0]}
-      />
+          <FormField
+            name="adoptedAt"
+            label="お迎え日"
+            type="date"
+            defaultValue={cat?.adoptedAt ?? ""}
+            errorMessage={state.fieldErrors?.adoptedAt?.[0]}
+          />
+        </div>
+      </section>
 
       {state.formError ? (
         <p className={styles.errorMessage}>{state.formError}</p>
       ) : null}
 
-      <Button type="submit" variant="primary" isDisabled={isPending}>
-        {isPending ? "保存中..." : submitLabel}
-      </Button>
+      <div className={styles.actions}>
+        <Button type="submit" variant="primary" isDisabled={isPending}>
+          <TbCheck aria-hidden="true" size={18} />
+          {isPending ? "保存中..." : submitLabel}
+        </Button>
+        <ButtonLink
+          href={cat ? `/cats/${cat.id}` : "/cats"}
+          variant="secondary"
+        >
+          キャンセル
+        </ButtonLink>
+      </div>
     </form>
   );
 }

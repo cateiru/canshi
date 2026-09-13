@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { TbCake, TbCheck, TbScale, TbSpray, TbWash } from "react-icons/tb";
 import { Button, Checkbox, FormField, Heading } from "@/components/ui";
 import type { CleaningTarget } from "@/db/schema";
 import styles from "./NotificationSettingsForm.module.css";
@@ -29,6 +30,7 @@ export function NotificationSettingsForm({
     <form action={formAction} className={styles.form}>
       <section className={styles.section}>
         <Heading level={2} size="md">
+          <TbCake aria-hidden="true" size={20} />
           誕生日
         </Heading>
         <Checkbox
@@ -53,6 +55,7 @@ export function NotificationSettingsForm({
 
       <section className={styles.section}>
         <Heading level={2} size="md">
+          <TbWash aria-hidden="true" size={20} />
           シャンプー
         </Heading>
         <Checkbox
@@ -74,6 +77,7 @@ export function NotificationSettingsForm({
 
       <section className={styles.section}>
         <Heading level={2} size="md">
+          <TbScale aria-hidden="true" size={20} />
           体重測定
         </Heading>
         <Checkbox
@@ -96,6 +100,7 @@ export function NotificationSettingsForm({
       {cleaningTargets.length > 0 ? (
         <section className={styles.section}>
           <Heading level={2} size="md">
+            <TbSpray aria-hidden="true" size={20} />
             掃除
           </Heading>
           {cleaningTargets.map((target) => (
@@ -117,6 +122,7 @@ export function NotificationSettingsForm({
       ) : null}
 
       <Button type="submit" variant="primary" isDisabled={isPending}>
+        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : "保存する"}
       </Button>
     </form>

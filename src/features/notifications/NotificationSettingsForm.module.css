@@ -6,12 +6,33 @@
 }
 
 .section {
+  min-width: 0;
+  padding: var(--space-6);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
 .errorMessage {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--color-error);
+}
+
+.section h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.section h2 svg {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding: var(--space-4);
+  }
 }

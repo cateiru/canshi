@@ -1,0 +1,17 @@
+.surface {
+  min-width: 0;
+  padding: var(--space-6);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  overflow-wrap: anywhere;
+}
+
+.title {
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 480px) {
+  .surface {
+    padding: var(--space-4);
+  }
+}

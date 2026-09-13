@@ -28,5 +28,5 @@
   height: 100%;
   font-size: var(--text-xl);
   color: var(--color-ink);
-  opacity: 0.6;
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-bg));
 }

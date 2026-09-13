@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TbTimeline } from "react-icons/tb";
-import { Breadcrumb, Card } from "@/components/ui";
+import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
+import { Surface } from "@/features/shared/Surface";
 import { buildTimelineHref } from "@/features/timeline/href";
 import {
   listTimelineForMonth,
@@ -161,7 +162,7 @@ export default async function TimelinePage({
         {cat.name}のタイムライン
       </RecordPageHeading>
 
-      <Card title="カレンダー">
+      <Surface title="カレンダー">
         <TimelineCalendar
           catId={catId}
           year={year}
@@ -173,7 +174,7 @@ export default async function TimelinePage({
           prevHref={prevMonthHref}
           nextHref={nextMonthHref}
         />
-      </Card>
+      </Surface>
 
       {selectedDate ? (
         <p className={styles.dateFilterLabel}>
@@ -184,9 +185,9 @@ export default async function TimelinePage({
       ) : null}
 
       {entries.length === 0 ? (
-        <Card>
+        <Surface>
           <p>{emptyMessage}</p>
-        </Card>
+        </Surface>
       ) : (
         <ul className={styles.list}>
           {entries.map((entry, index) => (

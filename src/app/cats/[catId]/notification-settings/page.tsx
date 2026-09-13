@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
-import { Breadcrumb, Card } from "@/components/ui";
+import { TbBell } from "react-icons/tb";
+import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
 import { NotificationSettingsForm } from "@/features/notifications/NotificationSettingsForm";
 import { updateCatNotificationSettingsAction } from "@/features/notifications/settingsActions";
 import { getCatNotificationSettingsPageData } from "@/features/notifications/settingsQueries";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -41,15 +43,14 @@ export default async function CatNotificationSettingsPage({
         ]}
       />
 
-      <h1>{cat.name}の通知設定</h1>
+      <RecordPageHeading icon={TbBell}>{cat.name}の通知設定</RecordPageHeading>
+      <p>この猫の記念日や、お手入れのタイミングをお知らせします。</p>
 
-      <Card>
-        <NotificationSettingsForm
-          action={action}
-          settings={settings}
-          cleaningTargets={cleaningTargets}
-        />
-      </Card>
+      <NotificationSettingsForm
+        action={action}
+        settings={settings}
+        cleaningTargets={cleaningTargets}
+      />
     </main>
   );
 }

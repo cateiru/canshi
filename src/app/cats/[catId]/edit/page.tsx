@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { updateCatAction } from "@/features/cats/actions";
 import { CatForm } from "@/features/cats/CatForm";
+import { CatIcon } from "@/features/cats/CatIcon";
 import { getCatById } from "@/features/cats/queries";
+import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +32,8 @@ export default async function EditCatPage({ params }: EditCatPageProps) {
         ]}
       />
 
-      <h1>{cat.name}を編集する</h1>
+      <RecordPageHeading icon={CatIcon}>{cat.name}を編集する</RecordPageHeading>
+      <p>プロフィールや記念日を変更できます。</p>
       <CatForm
         action={updateCatAction.bind(null, cat.id)}
         cat={cat}

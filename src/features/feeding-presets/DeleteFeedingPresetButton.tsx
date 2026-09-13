@@ -2,17 +2,20 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { TbTrash } from "react-icons/tb";
 import { addToast, Button, Modal } from "@/components/ui";
 import type { DeleteFeedingPresetResult } from "./actions";
 import styles from "./DeleteFeedingPresetButton.module.css";
 
 type DeleteFeedingPresetButtonProps = {
+  className?: string;
   action: () => Promise<DeleteFeedingPresetResult>;
   presetName: string;
 };
 
 export function DeleteFeedingPresetButton({
   action,
+  className,
   presetName,
 }: DeleteFeedingPresetButtonProps) {
   const router = useRouter();
@@ -33,9 +36,17 @@ export function DeleteFeedingPresetButton({
 
   return (
     <>
-      <Button variant="danger" onPress={() => setOpen(true)}>
-        削除する
-      </Button>
+      <span title="削除する">
+        <Button
+          variant="danger"
+          className={className}
+          aria-label="削除する"
+          aria-haspopup="dialog"
+          onPress={() => setOpen(true)}
+        >
+          <TbTrash aria-hidden="true" size={20} />
+        </Button>
+      </span>
       <Modal
         open={open}
         title="プリセットの削除"

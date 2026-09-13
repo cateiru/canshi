@@ -1,10 +1,13 @@
 .button {
+  min-height: 44px;
+  min-width: 44px;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-base);
+  border-radius: 8px;
   padding: var(--space-2) var(--space-4);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
@@ -50,11 +53,21 @@
 
 .secondary {
   color: var(--color-ink);
-  background-color: var(--color-bg);
+  background-color: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  border-color: transparent;
 }
 
 .danger {
   color: var(--color-error);
   border-color: var(--color-error);
   background-color: var(--color-bg);
+}
+
+.button[type="submit"] {
+  min-height: 48px;
+  font-size: var(--text-md);
+}
+
+.button > svg {
+  flex-shrink: 0;
 }
