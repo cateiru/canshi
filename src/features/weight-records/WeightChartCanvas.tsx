@@ -92,7 +92,7 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
       areaOpacity={0.15}
       pointSize={points.length <= 2 ? 16 : 12}
       pointBorderWidth={3}
-      pointBorderColor={{ from: "serieColor" }}
+      pointBorderColor="inherit"
       pointColor="var(--color-ink)"
       enableGridX={false}
       useMesh={true}
