@@ -43,9 +43,22 @@ const POINTS: FeedingChartPoint[] = [
   },
 ];
 
+function openChart() {
+  fireEvent.click(screen.getByRole("button", { name: "ごはんの推移" }));
+}
+
 describe("FeedingChart", () => {
-  it("初期表示（直近3ヶ月）で期間内の件数が両方のキャンバスに渡る", async () => {
+  it("初期表示ではグラフが折りたたまれている", () => {
     render(<FeedingChart points={POINTS} now={NOW} />);
+
+    const trigger = screen.getByRole("button", { name: "ごはんの推移" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("開くと初期表示（直近3ヶ月）で期間内の件数が両方のキャンバスに渡る", async () => {
+    render(<FeedingChart points={POINTS} now={NOW} />);
+
+    openChart();
 
     expect(await screen.findByTestId("chart-canvas-intake")).toHaveTextContent(
       "2",
@@ -55,6 +68,8 @@ describe("FeedingChart", () => {
 
   it("期間を切り替えると両方のキャンバスに渡る件数が変わる", async () => {
     render(<FeedingChart points={POINTS} now={NOW} />);
+
+    openChart();
 
     const group = screen.getByRole("radiogroup", { name: "表示期間" });
     fireEvent.click(within(group).getByRole("radio", { name: "全期間" }));
@@ -74,6 +89,8 @@ describe("FeedingChart", () => {
       },
     ];
     render(<FeedingChart points={oldPoints} now={NOW} />);
+
+    openChart();
 
     const group = screen.getByRole("radiogroup", { name: "表示期間" });
     fireEvent.click(within(group).getByRole("radio", { name: "直近1ヶ月" }));

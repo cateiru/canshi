@@ -2,8 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
-import { TbFlame } from "react-icons/tb";
+import {
+  Button,
+  Disclosure,
+  DisclosurePanel,
+  Heading,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "react-aria-components";
+import { TbFlame, TbTriangleFilled } from "react-icons/tb";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import {
   FEEDING_CHART_PERIOD_LABEL,
@@ -34,58 +41,74 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
   );
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>ごはんの推移</h2>
-        <ToggleButtonGroup
-          className={styles.periodGroup}
-          selectionMode="single"
-          disallowEmptySelection
-          selectedKeys={[period]}
-          onSelectionChange={(keys) => {
-            const [next] = keys;
-            if (next) {
-              setPeriod(next as FeedingChartPeriod);
-            }
-          }}
-          aria-label="表示期間"
-        >
-          {PERIOD_ORDER.map((value) => (
-            <ToggleButton
-              key={value}
-              id={value}
-              className={styles.periodButton}
-            >
-              {FEEDING_CHART_PERIOD_LABEL[value]}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </div>
+    <Disclosure className={styles.container} defaultExpanded={false}>
+      <Heading level={2} className={styles.heading}>
+        <Button slot="trigger" className={styles.trigger}>
+          <TbTriangleFilled
+            aria-hidden="true"
+            size={12}
+            className={styles.caret}
+          />
+          <span className={styles.title}>ごはんの推移</span>
+        </Button>
+      </Heading>
 
-      {filtered.length === 0 ? (
-        <div className={styles.emptyPeriod}>この期間の記録はありません。</div>
-      ) : (
-        <div className={styles.charts}>
-          <div className={styles.chartBlock}>
-            <h3 className={styles.chartLabel}>
-              <FeedingIcon aria-hidden="true" size={16} />
-              食べた量
-            </h3>
-            <div className={styles.canvas}>
-              <FeedingChartCanvas points={filtered} metric="intake" />
-            </div>
+      <DisclosurePanel>
+        <div className={styles.panelInner}>
+          <div className={styles.header}>
+            <ToggleButtonGroup
+              className={styles.periodGroup}
+              selectionMode="single"
+              disallowEmptySelection
+              selectedKeys={[period]}
+              onSelectionChange={(keys) => {
+                const [next] = keys;
+                if (next) {
+                  setPeriod(next as FeedingChartPeriod);
+                }
+              }}
+              aria-label="表示期間"
+            >
+              {PERIOD_ORDER.map((value) => (
+                <ToggleButton
+                  key={value}
+                  id={value}
+                  className={styles.periodButton}
+                >
+                  {FEEDING_CHART_PERIOD_LABEL[value]}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
           </div>
-          <div className={styles.chartBlock}>
-            <h3 className={styles.chartLabel}>
-              <TbFlame aria-hidden="true" size={16} />
-              カロリー
-            </h3>
-            <div className={styles.canvas}>
-              <FeedingChartCanvas points={filtered} metric="kcal" />
+
+          {filtered.length === 0 ? (
+            <div className={styles.emptyPeriod}>
+              この期間の記録はありません。
             </div>
-          </div>
+          ) : (
+            <div className={styles.charts}>
+              <div className={styles.chartBlock}>
+                <h3 className={styles.chartLabel}>
+                  <FeedingIcon aria-hidden="true" size={16} />
+                  食べた量
+                </h3>
+                <div className={styles.canvas}>
+                  <FeedingChartCanvas points={filtered} metric="intake" />
+                </div>
+              </div>
+              <div className={styles.chartBlock}>
+                <h3 className={styles.chartLabel}>
+                  <TbFlame aria-hidden="true" size={16} />
+                  カロリー
+                </h3>
+                <div className={styles.canvas}>
+                  <FeedingChartCanvas points={filtered} metric="kcal" />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </DisclosurePanel>
+    </Disclosure>
   );
 }
