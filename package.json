@@ -1,6 +1,6 @@
 {
   "name": "canshi",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -25,6 +25,8 @@
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",
     "@cf-wasm/photon": "^0.4.0",
+    "@nivo/core": "^0.99.0",
+    "@nivo/line": "^0.99.0",
     "cropperjs": "^1.6.3",
     "drizzle-orm": "^0.45.2",
     "next": "16.3.4",

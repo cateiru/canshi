@@ -4,11 +4,13 @@ import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
-import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { deleteWeightRecordAction } from "@/features/weight-records/actions";
+import { toWeightChartPoints } from "@/features/weight-records/chart";
 import { INPUT_METHOD_LABEL } from "@/features/weight-records/labels";
 import { listWeightRecords } from "@/features/weight-records/queries";
+import { WeightChart } from "@/features/weight-records/WeightChart";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +55,13 @@ export default async function WeightRecordsPage({
           記録する
         </ButtonLink>
       </div>
+
+      {records.length > 0 && (
+        <WeightChart
+          points={toWeightChartPoints(records)}
+          now={getNaiveUtcNow().toISOString()}
+        />
+      )}
 
       {records.length === 0 ? (
         <div className={styles.emptyState}>
