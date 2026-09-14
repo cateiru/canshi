@@ -107,7 +107,15 @@ export default async function TimelinePage({
   };
   const { year, month } = parseYm(ymParam, currentMonth);
   const ym = `${year}-${pad2(month)}`;
-  const selectedDate = parseSelectedDate(dateParam, ym);
+  // ym・date のどちらのクエリも付いていない、リンクを一切経由しない素の初期表示
+  // （メニューからの遷移・ブックマーク等）でだけ、今日をクリックした状態にする。
+  // カレンダー内のリンクは月送り・日付選択のどちらも必ず ym を付与するため、
+  // これらを踏んだ結果 date が外れたケース（同じ日を再クリックして絞り込みを
+  // 解除した場合など）とは ymParam の有無で区別できる
+  const selectedDate =
+    ymParam == null && dateParam == null
+      ? nowDateKey
+      : parseSelectedDate(dateParam, ym);
 
   const { entries, hasMore, datesByDay } = await listTimelineForMonth(
     catId,
