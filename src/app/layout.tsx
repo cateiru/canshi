@@ -48,7 +48,7 @@ export default function RootLayout({
             <TbSettings className={styles.icon} aria-hidden="true" />
           </Link>
         </header>
-        {children}
+        <div className={styles.content}>{children}</div>
         <Footer />
         <ToastRegionRoot />
         <ServiceWorkerRegistration />
