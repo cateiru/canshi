@@ -1,4 +1,9 @@
 import { Badge, ButtonLink } from "@/components/ui";
+import {
+  CalorieIcon,
+  FeedingIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
+import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { MediaThumbnailStrip } from "@/features/media/MediaThumbnailStrip";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
@@ -13,6 +18,8 @@ type TimelineEntryCardProps = {
   entry: TimelineEntry;
   isFirst: boolean;
   isLast: boolean;
+  /** ごはん商品のサムネイル URL（商品ID -> URL）。タイムラインのごはん記録の画像表示に使う */
+  foodProductImageUrls: Record<string, string>;
 };
 
 export function TimelineEntryCard({
@@ -20,6 +27,7 @@ export function TimelineEntryCard({
   entry,
   isFirst,
   isLast,
+  foodProductImageUrls,
 }: TimelineEntryCardProps) {
   const Icon = TIMELINE_TYPE_ICON[entry.type];
 
@@ -59,24 +67,64 @@ export function TimelineEntryCard({
             />
           </div>
         ) : null}
-        {renderBody(catId, entry)}
+        {renderBody(catId, entry, foodProductImageUrls)}
       </article>
     </div>
   );
 }
 
-function renderBody(catId: string, entry: TimelineEntry) {
+function renderBody(
+  catId: string,
+  entry: TimelineEntry,
+  foodProductImageUrls: Record<string, string>,
+) {
   switch (entry.type) {
     case "feeding": {
       const { record } = entry;
+      const totalIntakeG = record.items.reduce(
+        (sum, item) => sum + item.estimatedIntakeG,
+        0,
+      );
+      const totalKcal = record.items.reduce(
+        (sum, item) => sum + item.estimatedKcal,
+        0,
+      );
       return (
         <div className={styles.body}>
-          {record.items.map((item) => (
-            <p key={item.id}>
-              {item.foodProductName} 推定{item.estimatedIntakeG}g（
-              {item.estimatedKcal.toFixed(1)}kcal）
-            </p>
-          ))}
+          <ul className={styles.feedingImages}>
+            {record.items.map((item) => (
+              <li key={item.id}>
+                <FoodProductImage
+                  name={item.foodProductName}
+                  thumbnailUrl={foodProductImageUrls[item.foodProductId]}
+                />
+              </li>
+            ))}
+          </ul>
+          <dl className={styles.summary} aria-label="食事の合計（推定）">
+            <div>
+              <dt>
+                <FeedingIcon aria-hidden="true" size={18} />
+                食べた量
+                <span className={styles.estimate}>（推定）</span>
+              </dt>
+              <dd>
+                {totalIntakeG}
+                <span>g</span>
+              </dd>
+            </div>
+            <div>
+              <dt>
+                <CalorieIcon aria-hidden="true" size={18} />
+                カロリー
+                <span className={styles.estimate}>（推定）</span>
+              </dt>
+              <dd>
+                {totalKcal.toFixed(1)}
+                <span>kcal</span>
+              </dd>
+            </div>
+          </dl>
           <ButtonLink
             href={`/cats/${catId}/feeding-records/${record.id}/edit`}
             variant="secondary"

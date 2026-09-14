@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { TbTimeline } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getCatById } from "@/features/cats/queries";
+import { listFoodProductImageUrls } from "@/features/food-products/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -151,6 +152,16 @@ export default async function TimelinePage({
     ym: `${nextMonth.year}-${pad2(nextMonth.month)}`,
   });
 
+  const foodProductImageUrls = await listFoodProductImageUrls([
+    ...new Set(
+      entries
+        .filter((entry) => entry.type === "feeding")
+        .flatMap((entry) =>
+          entry.record.items.map((item) => item.foodProductId),
+        ),
+    ),
+  ]);
+
   const emptyMessage = selectedDate
     ? `${selectedDate.slice(0, 4)}年${Number.parseInt(selectedDate.slice(5, 7), 10)}月${Number.parseInt(selectedDate.slice(8, 10), 10)}日の記録がありません。`
     : `${year}年${month}月の記録がありません。`;
@@ -205,6 +216,7 @@ export default async function TimelinePage({
                 entry={entry}
                 isFirst={index === 0}
                 isLast={index === entries.length - 1}
+                foodProductImageUrls={foodProductImageUrls}
               />
             </li>
           ))}
