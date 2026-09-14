@@ -1,3 +1,4 @@
+import { TbPencil } from "react-icons/tb";
 import { Badge, ButtonLink } from "@/components/ui";
 import {
   CalorieIcon,
@@ -52,12 +53,23 @@ export function TimelineEntryCard({
       >
         <div className={styles.header}>
           <Badge color="accent">{TIMELINE_TYPE_LABEL[entry.type]}</Badge>
-          <time
-            className={styles.occurredAt}
-            dateTime={entry.occurredAt.toISOString()}
-          >
-            {formatDateTimeUtc(entry.occurredAt)}
-          </time>
+          <div className={styles.headerActions}>
+            <time
+              className={styles.occurredAt}
+              dateTime={entry.occurredAt.toISOString()}
+            >
+              {formatDateTimeUtc(entry.occurredAt)}
+            </time>
+            <ButtonLink
+              href={getEditHref(catId, entry)}
+              variant="secondary"
+              className={styles.iconButton}
+              aria-label="編集する"
+              title="編集する"
+            >
+              <TbPencil aria-hidden="true" size={20} />
+            </ButtonLink>
+          </div>
         </div>
         {entry.media.length > 0 ? (
           <div className={styles.media}>
@@ -71,6 +83,37 @@ export function TimelineEntryCard({
       </article>
     </div>
   );
+}
+
+function getEditHref(catId: string, entry: TimelineEntry): string {
+  switch (entry.type) {
+    case "feeding":
+      return `/cats/${catId}/feeding-records/${entry.record.id}/edit`;
+    case "poop":
+      return `/cats/${catId}/poop-records/${entry.record.id}/edit`;
+    case "weight":
+      return `/cats/${catId}/weight-records/${entry.record.id}/edit`;
+    case "vomit":
+      return `/cats/${catId}/vomit-records/${entry.record.id}/edit`;
+    case "water":
+      return `/cats/${catId}/water-records/${entry.record.id}/edit`;
+    case "shampoo":
+      return `/cats/${catId}/shampoo-records/${entry.record.id}/edit`;
+    case "cleaning":
+      return `/cats/${catId}/cleaning/targets/${entry.record.cleaningTargetId}/records/${entry.record.id}/edit`;
+    case "symptom":
+      return `/cats/${catId}/symptoms/${entry.record.id}/edit`;
+    case "medicationDose":
+      return `/cats/${catId}/medications/${entry.record.medicationId}/doses/${entry.record.id}/edit`;
+    case "hospitalVisit":
+      return `/cats/${catId}/hospital-visits/${entry.record.id}/edit`;
+    case "catPhoto":
+      return `/cats/${catId}/photos/${entry.record.id}/edit`;
+    default: {
+      const exhaustiveCheck: never = entry;
+      return exhaustiveCheck;
+    }
+  }
 }
 
 function renderBody(
@@ -125,12 +168,6 @@ function renderBody(
               </dd>
             </div>
           </dl>
-          <ButtonLink
-            href={`/cats/${catId}/feeding-records/${record.id}/edit`}
-            variant="secondary"
-          >
-            編集する
-          </ButtonLink>
         </div>
       );
     }
@@ -143,12 +180,6 @@ function renderBody(
             {record.hasBlood ? "・血液あり" : ""}
             {record.hasForeignObject ? "・異物あり" : ""}
           </p>
-          <ButtonLink
-            href={`/cats/${catId}/poop-records/${record.id}/edit`}
-            variant="secondary"
-          >
-            編集する
-          </ButtonLink>
         </div>
       );
     }
@@ -157,12 +188,6 @@ function renderBody(
       return (
         <div className={styles.body}>
           <p>{record.catWeightKg.toFixed(2)} kg</p>
-          <ButtonLink
-            href={`/cats/${catId}/weight-records/${record.id}/edit`}
-            variant="secondary"
-          >
-            編集する
-          </ButtonLink>
         </div>
       );
     }
@@ -178,12 +203,6 @@ function renderBody(
               .filter(Boolean)
               .join("・")}
           </p>
-          <ButtonLink
-            href={`/cats/${catId}/vomit-records/${record.id}/edit`}
-            variant="secondary"
-          >
-            編集する
-          </ButtonLink>
         </div>
       );
     }
@@ -201,28 +220,16 @@ function renderBody(
               ? `・${SUBJECTIVE_AMOUNT_LABEL[record.subjectiveAmount]}`
               : ""}
           </p>
-          <ButtonLink
-            href={`/cats/${catId}/water-records/${record.id}/edit`}
-            variant="secondary"
-          >
-            編集する
-          </ButtonLink>
         </div>
       );
     }
     case "shampoo": {
       const { record } = entry;
-      return (
+      return record.memo ? (
         <div className={styles.body}>
-          {record.memo ? <p>{record.memo}</p> : null}
-          <ButtonLink
-            href={`/cats/${catId}/shampoo-records/${record.id}/edit`}
-            variant="secondary"
-          >
-            編集する
-          </ButtonLink>
+          <p>{record.memo}</p>
         </div>
-      );
+      ) : null;
     }
     case "cleaning": {
       const { record } = entry;
@@ -232,12 +239,6 @@ function renderBody(
             {record.cleaningTargetName}
             {record.memo ? `・${record.memo}` : ""}
           </p>
-          <ButtonLink
-            href={`/cats/${catId}/cleaning/targets/${record.cleaningTargetId}/records/${record.id}/edit`}
-            variant="secondary"
-          >
-            編集する
-          </ButtonLink>
         </div>
       );
     }
@@ -248,22 +249,14 @@ function renderBody(
           <p>
             {record.symptomType}（{STATUS_LABEL[record.status]}）
           </p>
-          <div className={styles.actions}>
+          {record.hospitalVisitId ? (
             <ButtonLink
-              href={`/cats/${catId}/symptoms/${record.id}/edit`}
+              href={`/cats/${catId}/hospital-visits/${record.hospitalVisitId}/edit`}
               variant="secondary"
             >
-              編集する
+              関連する通院記録
             </ButtonLink>
-            {record.hospitalVisitId ? (
-              <ButtonLink
-                href={`/cats/${catId}/hospital-visits/${record.hospitalVisitId}/edit`}
-                variant="secondary"
-              >
-                関連する通院記録
-              </ButtonLink>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       );
     }
@@ -275,12 +268,6 @@ function renderBody(
             {record.medicationName}（
             {record.wasAdministered ? "投薬できた" : "投薬できなかった"}）
           </p>
-          <ButtonLink
-            href={`/cats/${catId}/medications/${record.medicationId}/doses/${record.id}/edit`}
-            variant="secondary"
-          >
-            編集する
-          </ButtonLink>
         </div>
       );
     }
@@ -289,38 +276,24 @@ function renderBody(
       return (
         <div className={styles.body}>
           <p>{record.reason}</p>
-          <div className={styles.actions}>
+          {record.symptomId ? (
             <ButtonLink
-              href={`/cats/${catId}/hospital-visits/${record.id}/edit`}
+              href={`/cats/${catId}/symptoms/${record.symptomId}/edit`}
               variant="secondary"
             >
-              編集する
+              関連する症状記録
             </ButtonLink>
-            {record.symptomId ? (
-              <ButtonLink
-                href={`/cats/${catId}/symptoms/${record.symptomId}/edit`}
-                variant="secondary"
-              >
-                関連する症状記録
-              </ButtonLink>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       );
     }
     case "catPhoto": {
       const { record } = entry;
-      return (
+      return record.memo ? (
         <div className={styles.body}>
-          {record.memo ? <p>{record.memo}</p> : null}
-          <ButtonLink
-            href={`/cats/${catId}/photos/${record.id}/edit`}
-            variant="secondary"
-          >
-            編集する
-          </ButtonLink>
+          <p>{record.memo}</p>
         </div>
-      );
+      ) : null;
     }
     default: {
       const exhaustiveCheck: never = entry;
