@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
+import { getExpenseByHospitalVisitId } from "@/features/expenses/queries";
 import { updateHospitalVisitAction } from "@/features/hospital-visits/actions";
 import { HospitalVisitForm } from "@/features/hospital-visits/HospitalVisitForm";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
@@ -32,9 +33,10 @@ export default async function EditHospitalVisitPage({
     notFound();
   }
 
-  const [symptomList, mediaAssets] = await Promise.all([
+  const [symptomList, mediaAssets, expense] = await Promise.all([
     listSymptoms(catId),
     listMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, hospitalVisit.id),
+    getExpenseByHospitalVisitId(hospitalVisit.id),
   ]);
 
   return (
@@ -57,6 +59,7 @@ export default async function EditHospitalVisitPage({
         action={updateHospitalVisitAction.bind(null, catId, hospitalVisit.id)}
         symptoms={symptomList}
         hospitalVisit={hospitalVisit}
+        expenseAmountYen={expense?.amountYen ?? null}
         mediaAssets={mediaAssets.map(toMediaAssetView)}
         mediaLimits={resolveMediaLimits()}
         submitLabel="更新する"

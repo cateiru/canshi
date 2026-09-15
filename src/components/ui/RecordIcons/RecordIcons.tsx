@@ -371,3 +371,28 @@ export function PhotoIcon(props: RecordIconProps) {
     </RecordIcon>
   );
 }
+
+export function ExpenseIcon(props: RecordIconProps) {
+  const wallet =
+    "M3 16h18a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2Z";
+  const catTransform = "translate(1.5 0) scale(.85)";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <CatFill transform={catTransform} />
+          <path fill="#c99a72" d={wallet} />
+          <circle fill="#f2d17b" cx="17" cy="19" r="2.2" />
+        </>
+      }
+    >
+      <CatOutline transform={catTransform} />
+      <path d={wallet} />
+      <circle cx="17" cy="19" r="2.2" />
+      {/* コインの円記号。小さいので線を細くして潰れないようにする */}
+      <path d="m16 18 1 1 1-1m-1 1v1.5m-.8-.7h1.6" strokeWidth="1" />
+    </RecordIcon>
+  );
+}

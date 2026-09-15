@@ -1,6 +1,7 @@
 import type { IconType } from "react-icons";
 import {
   BroomIcon,
+  ExpenseIcon,
   FeedingIcon,
   HospitalIcon,
   MedicationIcon,
@@ -27,6 +28,7 @@ export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
   medicationDose: "服薬",
   hospitalVisit: "通院",
   catPhoto: "写真",
+  expense: "支出",
 };
 
 export const TIMELINE_TYPE_ICON = {
@@ -41,4 +43,5 @@ export const TIMELINE_TYPE_ICON = {
   medicationDose: MedicationIcon,
   hospitalVisit: HospitalIcon,
   catPhoto: PhotoIcon,
+  expense: ExpenseIcon,
 } satisfies Record<TimelineRecordType, IconType>;

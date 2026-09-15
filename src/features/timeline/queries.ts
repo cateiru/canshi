@@ -6,6 +6,9 @@ import {
   catPhotos,
   cleaningRecords,
   cleaningTargets,
+  type ExpenseRecord,
+  expenseRecordCats,
+  expenseRecords,
   feedingRecordItems,
   feedingRecords,
   foodProducts,
@@ -28,6 +31,7 @@ import {
   weightRecords,
 } from "@/db/schema";
 import { CAT_PHOTO_MEDIA_TYPE } from "@/features/cat-photos/media";
+import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
 import {
   listMediaAssetsForRecords,
@@ -52,6 +56,7 @@ export const TIMELINE_RECORD_TYPES = [
   "medicationDose",
   "hospitalVisit",
   "catPhoto",
+  "expense",
 ] as const;
 
 export type TimelineRecordType = (typeof TIMELINE_RECORD_TYPES)[number];
@@ -69,6 +74,7 @@ const TIMELINE_MEDIA_RECORD_TYPES: Partial<
   // 服薬は予定（medications）に添付するため、投薬実績（medicationDose）のエントリには表示しない
   hospitalVisit: HOSPITAL_VISIT_MEDIA_TYPE,
   catPhoto: CAT_PHOTO_MEDIA_TYPE,
+  expense: EXPENSE_MEDIA_TYPE,
 };
 
 type TimelineEntryOf<T extends TimelineRecordType, R> = {
@@ -111,7 +117,8 @@ export type TimelineEntry =
       MedicationDose & { medicationName: string }
     >
   | TimelineEntryOf<"hospitalVisit", HospitalVisit>
-  | TimelineEntryOf<"catPhoto", CatPhoto>;
+  | TimelineEntryOf<"catPhoto", CatPhoto>
+  | TimelineEntryOf<"expense", ExpenseRecord>;
 
 type DateRange = { start: Date; end: Date };
 
@@ -475,6 +482,40 @@ async function fetchCatPhotoEntries(
   }));
 }
 
+/**
+ * 支出記録は猫に直接紐付かず expense_record_cats 経由で多対多に紐付くため、
+ * 表示中の猫に関連付けられた支出だけをタイムラインに出す
+ */
+async function fetchExpenseEntries(
+  catId: string,
+  range: DateRange,
+): Promise<TimelineEntry[]> {
+  const db = getDb();
+  const rows = await db
+    .select({ record: expenseRecords })
+    .from(expenseRecords)
+    .innerJoin(
+      expenseRecordCats,
+      eq(expenseRecordCats.expenseRecordId, expenseRecords.id),
+    )
+    .where(
+      and(
+        eq(expenseRecordCats.catId, catId),
+        gte(expenseRecords.spentAt, range.start),
+        lt(expenseRecords.spentAt, range.end),
+      ),
+    )
+    .orderBy(desc(expenseRecords.spentAt));
+
+  return rows.map(({ record }) => ({
+    id: record.id,
+    type: "expense",
+    occurredAt: record.spentAt,
+    media: [],
+    record,
+  }));
+}
+
 const FETCHERS: Record<
   TimelineRecordType,
   (catId: string, range: DateRange) => Promise<TimelineEntry[]>
@@ -490,6 +531,7 @@ const FETCHERS: Record<
   medicationDose: fetchMedicationDoseEntries,
   hospitalVisit: fetchHospitalVisitEntries,
   catPhoto: fetchCatPhotoEntries,
+  expense: fetchExpenseEntries,
 };
 
 export type ListTimelineForMonthOptions = {

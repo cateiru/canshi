@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   catPhotos,
+  expenseRecords,
   foodProducts,
   hospitalVisits,
   medications,
@@ -74,6 +75,15 @@ export async function resolveMediaRecordOwner(
         .where(eq(catPhotos.id, recordId))
         .limit(1);
       return row ?? null;
+    }
+    case "expense": {
+      // 支出はすべての猫で共通のため、特定の猫には紐付けない
+      const [row] = await db
+        .select({ id: expenseRecords.id })
+        .from(expenseRecords)
+        .where(eq(expenseRecords.id, recordId))
+        .limit(1);
+      return row ? { catId: null } : null;
     }
     case "food_product": {
       const [row] = await db

@@ -33,6 +33,8 @@ type HospitalVisitFormProps = {
   ) => Promise<HospitalVisitFormState>;
   symptoms: Symptom[];
   hospitalVisit?: HospitalVisit;
+  /** 通院記録に紐付く病院代（支出記録）の金額。未登録なら null */
+  expenseAmountYen?: number | null;
   mediaAssets?: MediaAssetView[];
   mediaLimits: MediaLimits;
   submitLabel: string;
@@ -46,6 +48,7 @@ export function HospitalVisitForm({
   updateAction,
   symptoms,
   hospitalVisit,
+  expenseAmountYen,
   mediaAssets,
   mediaLimits,
   submitLabel,
@@ -112,6 +115,20 @@ export function HospitalVisitForm({
         errorMessage={state.fieldErrors?.reason?.[0]}
         isRequired
       />
+
+      <div>
+        <FormField
+          name="expenseAmountYen"
+          label="病院代（円）"
+          type="number"
+          inputMode="numeric"
+          defaultValue={expenseAmountYen?.toString() ?? ""}
+          errorMessage={state.fieldErrors?.expenseAmountYen?.[0]}
+        />
+        <p className={styles.hint}>
+          入力するとカテゴリ「病院」の支出記録として保存されます。空にすると支出記録も削除されます。
+        </p>
+      </div>
 
       <Select
         className={styles.select}

@@ -3,7 +3,13 @@
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { hospitalVisits, medications, symptoms } from "@/db/schema";
+import {
+  expenseRecords,
+  hospitalVisits,
+  medications,
+  symptoms,
+} from "@/db/schema";
+import { syncHospitalVisitExpense } from "@/features/expenses/hospitalVisitExpense";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
@@ -27,6 +33,7 @@ function parseFormData(formData: FormData) {
     visitedDate: formData.get("visitedDate"),
     visitedTime: formData.get("visitedTime"),
     reason: formData.get("reason"),
+    expenseAmountYen: formData.get("expenseAmountYen"),
     diagnosis: formData.get("diagnosis"),
     examinationResults: formData.get("examinationResults"),
     treatment: formData.get("treatment"),
@@ -84,13 +91,18 @@ export async function createHospitalVisitAction(
     return { formError: "関連する症状が見つかりませんでした" };
   }
 
+  const values = buildValues(parsed.data);
   const [created] = await db
     .insert(hospitalVisits)
-    .values({
-      catId,
-      ...buildValues(parsed.data),
-    })
+    .values({ catId, ...values })
     .returning({ id: hospitalVisits.id });
+
+  await syncHospitalVisitExpense({
+    hospitalVisitId: created.id,
+    catId,
+    visitedAt: values.visitedAt,
+    amountYen: parsed.data.expenseAmountYen ?? null,
+  });
 
   return { savedRecordId: created.id };
 }
@@ -112,15 +124,23 @@ export async function updateHospitalVisitAction(
     return { formError: "関連する症状が見つかりませんでした" };
   }
 
+  const values = buildValues(parsed.data);
   const result = await db
     .update(hospitalVisits)
-    .set({ ...buildValues(parsed.data), updatedAt: new Date() })
+    .set({ ...values, updatedAt: new Date() })
     .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
     .returning({ id: hospitalVisits.id });
 
   if (result.length === 0) {
     return { formError: "通院記録が見つかりませんでした" };
   }
+
+  await syncHospitalVisitExpense({
+    hospitalVisitId: id,
+    catId,
+    visitedAt: values.visitedAt,
+    amountYen: parsed.data.expenseAmountYen ?? null,
+  });
 
   return { savedRecordId: id };
 }
@@ -132,9 +152,11 @@ export async function deleteHospitalVisitAction(
   const db = getDb();
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, id);
-  // symptoms.hospital_visit_id / medications.hospital_visit_id からの外部キー
-  // 参照があるため、通院記録を削除する前に紐付けを解除しておく。3つの操作は
-  // db.batch でまとめて原子的に実行する
+  // symptoms.hospital_visit_id / medications.hospital_visit_id /
+  // expense_records.hospital_visit_id からの外部キー参照があるため、通院記録を
+  // 削除する前に紐付けを解除しておく。支出記録は家計簿として残す必要があるため、
+  // 紐付けだけ外して記録自体は削除しない。一連の操作は db.batch でまとめて
+  // 原子的に実行する
   await db.batch([
     db
       .update(symptoms)
@@ -146,6 +168,10 @@ export async function deleteHospitalVisitAction(
       .where(
         and(eq(medications.hospitalVisitId, id), eq(medications.catId, catId)),
       ),
+    db
+      .update(expenseRecords)
+      .set({ hospitalVisitId: null })
+      .where(eq(expenseRecords.hospitalVisitId, id)),
     db
       .delete(hospitalVisits)
       .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),

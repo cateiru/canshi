@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { amountYenSchema } from "@/features/expenses/schema";
 import { TIME_STRING_PATTERN } from "@/features/shared/datetime";
 import { emptyToUndefined } from "@/features/shared/emptyToUndefined";
 
@@ -46,6 +47,11 @@ export const hospitalVisitFormSchema = z
         .trim()
         .max(500, "注射・処置は500文字以内で入力してください")
         .optional(),
+    ),
+    // 入力すると支出記録（カテゴリ「病院」）が作成・更新され、空にすると削除される
+    expenseAmountYen: z.preprocess(
+      emptyToUndefined,
+      amountYenSchema.optional(),
     ),
     nextVisitDate: optionalDate("次回受診予定日の形式が正しくありません"),
     nextVisitTime: optionalTime("次回受診予定時刻の形式が正しくありません"),

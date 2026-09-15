@@ -7,6 +7,7 @@ import { listFoodProductImageUrls } from "@/features/food-products/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
+import { formatYm, parseYm, shiftYm } from "@/features/shared/yearMonth";
 import { buildTimelineHref } from "@/features/timeline/href";
 import {
   listTimelineForMonth,
@@ -20,7 +21,6 @@ import styles from "./page.module.css";
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 20;
-const YM_PATTERN = /^(\d{4})-(\d{2})$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 // listTimelineForMonth 内部でも同じ上限でクランプされるが、リンク生成側の
@@ -29,37 +29,6 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 function parsePage(value: string | undefined): number {
   const parsed = Number.parseInt(value ?? "", 10);
   return normalizePositiveInt(parsed, MAX_PAGE);
-}
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-// 不正な ym（書式違反・範囲外の年月）が Date.UTC に渡って異常な範囲を
-// 走査しないよう、パース失敗時は常に fallback（現在の年月）を使う
-function parseYm(
-  value: string | undefined,
-  fallback: { year: number; month: number },
-): { year: number; month: number } {
-  const match = value == null ? null : YM_PATTERN.exec(value);
-  if (!match) {
-    return fallback;
-  }
-  const year = Number.parseInt(match[1], 10);
-  const month = Number.parseInt(match[2], 10);
-  if (year < 1970 || year > 2999 || month < 1 || month > 12) {
-    return fallback;
-  }
-  return { year, month };
-}
-
-function shiftYm(
-  year: number,
-  month: number,
-  delta: number,
-): { year: number; month: number } {
-  const total = year * 12 + (month - 1) + delta;
-  return { year: Math.floor(total / 12), month: (total % 12) + 1 };
 }
 
 // date は「表示中の月（ym）に属する日付」のときだけ有効にする。書式違反や
@@ -107,7 +76,7 @@ export default async function TimelinePage({
     month: Number.parseInt(nowDateKey.slice(5, 7), 10),
   };
   const { year, month } = parseYm(ymParam, currentMonth);
-  const ym = `${year}-${pad2(month)}`;
+  const ym = formatYm({ year, month });
   // ym・date のどちらのクエリも付いていない、リンクを一切経由しない素の初期表示
   // （メニューからの遷移・ブックマーク等）でだけ、今日をクリックした状態にする。
   // カレンダー内のリンクは月送り・日付選択のどちらも必ず ym を付与するため、
@@ -139,17 +108,17 @@ export default async function TimelinePage({
     ym,
     date: selectedDate ?? undefined,
   });
-  const prevMonth = shiftYm(year, month, -1);
-  const nextMonth = shiftYm(year, month, 1);
+  const prevMonth = shiftYm({ year, month }, -1);
+  const nextMonth = shiftYm({ year, month }, 1);
   // 月を移動すると選択中の日付は別の月に属することになるため、date は
   // 引き継がず月全体の表示に戻す。ページも 1 に戻す
   const prevMonthHref = buildTimelineHref(catId, {
     page: 1,
-    ym: `${prevMonth.year}-${pad2(prevMonth.month)}`,
+    ym: formatYm(prevMonth),
   });
   const nextMonthHref = buildTimelineHref(catId, {
     page: 1,
-    ym: `${nextMonth.year}-${pad2(nextMonth.month)}`,
+    ym: formatYm(nextMonth),
   });
 
   const foodProductImageUrls = await listFoodProductImageUrls([
