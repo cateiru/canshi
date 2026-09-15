@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
+import { TbChevronLeft, TbChevronRight, TbPlus } from "react-icons/tb";
+import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById, listCats } from "@/features/cats/queries";
-import { deleteExpenseAction } from "@/features/expenses/actions";
 import {
   sumExpenseAmounts,
   sumExpenseAmountsByCategory,
 } from "@/features/expenses/calculations";
+import { ExpenseList } from "@/features/expenses/ExpenseList";
 import {
   buildExpensesHref,
   type ExpenseScope,
@@ -17,12 +17,8 @@ import {
 import { EXPENSE_CATEGORY_LABEL, formatYen } from "@/features/expenses/labels";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
 import { listExpensesForMonth } from "@/features/expenses/queries";
-import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { listHospitalVisitsByIds } from "@/features/hospital-visits/queries";
-import { MediaGallery } from "@/features/media/MediaGallery";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
-import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -114,7 +110,8 @@ export default async function ExpensesPage({
             scope,
           })}
         >
-          ← 前の月
+          <TbChevronLeft aria-hidden="true" size={18} />
+          前の月
         </Link>
         <span className={styles.monthLabel}>
           {year}年{month}月
@@ -125,7 +122,8 @@ export default async function ExpensesPage({
             scope,
           })}
         >
-          次の月 →
+          次の月
+          <TbChevronRight aria-hidden="true" size={18} />
         </Link>
       </nav>
 
@@ -144,6 +142,10 @@ export default async function ExpensesPage({
       </nav>
 
       <Surface title={`${year}年${month}月の合計`}>
+        <p className={styles.summaryScope}>
+          {scope === "cat" ? `${cat.name}に関連する支出` : "すべての支出"}・
+          {expenses.length}件
+        </p>
         <p className={styles.total}>{formatYen(total)}</p>
         {categoryTotals.length > 0 ? (
           <dl className={styles.categoryTotals}>
@@ -176,100 +178,13 @@ export default async function ExpensesPage({
           </div>
         </div>
       ) : (
-        <ul className={styles.list}>
-          {expenses.map((expense) => {
-            const relatedCatNames = expense.catIds.map(
-              (id) => catNameById.get(id) ?? "不明な猫",
-            );
-            const relatedHospitalVisit =
-              expense.hospitalVisitId != null
-                ? hospitalVisitById.get(expense.hospitalVisitId)
-                : undefined;
-            return (
-              <li key={expense.id}>
-                <article
-                  className={styles.record}
-                  aria-label={`${EXPENSE_CATEGORY_LABEL[expense.category]} ${formatYen(expense.amountYen)}`}
-                >
-                  <div className={styles.recordHeader}>
-                    <h2 className={styles.recordTitle}>
-                      {formatYen(expense.amountYen)}
-                    </h2>
-                    <div className={styles.cardActions}>
-                      <Badge color="accent">
-                        {EXPENSE_CATEGORY_LABEL[expense.category]}
-                      </Badge>
-                      <ButtonLink
-                        href={`/cats/${catId}/expenses/${expense.id}/edit`}
-                        variant="secondary"
-                        className={styles.iconButton}
-                        aria-label="編集する"
-                        title="編集する"
-                      >
-                        <TbPencil aria-hidden="true" size={20} />
-                      </ButtonLink>
-                      <DeleteRecordButton
-                        action={deleteExpenseAction.bind(
-                          null,
-                          catId,
-                          expense.id,
-                        )}
-                        title="支出記録の削除"
-                        description="この支出記録を削除しますか？この操作は取り消せません。"
-                        iconOnly
-                        className={styles.iconButton}
-                      />
-                    </div>
-                  </div>
-
-                  <p className={styles.meta}>
-                    <TbClock aria-hidden="true" size={16} />
-                    <time dateTime={expense.spentAt.toISOString()}>
-                      {splitDateTimeUtc(expense.spentAt).date}
-                    </time>
-                  </p>
-
-                  <dl className={styles.details}>
-                    <div>
-                      <dt>関連する猫</dt>
-                      <dd>
-                        {relatedCatNames.length > 0
-                          ? relatedCatNames.join("、")
-                          : "なし（共通の支出）"}
-                      </dd>
-                    </div>
-                    {expense.hospitalVisitId ? (
-                      <div>
-                        <dt>関連する通院記録</dt>
-                        <dd>
-                          {relatedHospitalVisit
-                            ? hospitalVisitOptionLabel(relatedHospitalVisit)
-                            : "不明な通院記録"}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {expense.memo ? (
-                      <div>
-                        <dt>メモ</dt>
-                        <dd>{expense.memo}</dd>
-                      </div>
-                    ) : null}
-                  </dl>
-
-                  <div className={styles.media}>
-                    <MediaGallery
-                      assets={(mediaByRecordId.get(expense.id) ?? []).map(
-                        toMediaAssetView,
-                      )}
-                      title="レシートなどの写真"
-                      fit="actual"
-                    />
-                  </div>
-                </article>
-              </li>
-            );
-          })}
-        </ul>
+        <ExpenseList
+          catId={catId}
+          expenses={expenses}
+          catNameById={catNameById}
+          hospitalVisitById={hospitalVisitById}
+          mediaByRecordId={mediaByRecordId}
+        />
       )}
     </main>
   );

@@ -9,7 +9,7 @@ import {
   medications,
   symptoms,
 } from "@/db/schema";
-import { syncHospitalVisitExpense } from "@/features/expenses/hospitalVisitExpense";
+import { saveHospitalVisitWithExpense } from "@/features/expenses/hospitalVisitExpense";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
@@ -92,19 +92,19 @@ export async function createHospitalVisitAction(
   }
 
   const values = buildValues(parsed.data);
-  const [created] = await db
-    .insert(hospitalVisits)
-    .values({ catId, ...values })
-    .returning({ id: hospitalVisits.id });
+  const id = crypto.randomUUID();
+  await saveHospitalVisitWithExpense(
+    db,
+    db.insert(hospitalVisits).values({ id, catId, ...values }),
+    {
+      hospitalVisitId: id,
+      catId,
+      visitedAt: values.visitedAt,
+      amountYen: parsed.data.expenseAmountYen ?? null,
+    },
+  );
 
-  await syncHospitalVisitExpense({
-    hospitalVisitId: created.id,
-    catId,
-    visitedAt: values.visitedAt,
-    amountYen: parsed.data.expenseAmountYen ?? null,
-  });
-
-  return { savedRecordId: created.id };
+  return { savedRecordId: id };
 }
 
 export async function updateHospitalVisitAction(
@@ -124,23 +124,30 @@ export async function updateHospitalVisitAction(
     return { formError: "関連する症状が見つかりませんでした" };
   }
 
-  const values = buildValues(parsed.data);
-  const result = await db
-    .update(hospitalVisits)
-    .set({ ...values, updatedAt: new Date() })
+  const [existing] = await db
+    .select({ id: hospitalVisits.id })
+    .from(hospitalVisits)
     .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
-    .returning({ id: hospitalVisits.id });
+    .limit(1);
 
-  if (result.length === 0) {
+  if (!existing) {
     return { formError: "通院記録が見つかりませんでした" };
   }
 
-  await syncHospitalVisitExpense({
-    hospitalVisitId: id,
-    catId,
-    visitedAt: values.visitedAt,
-    amountYen: parsed.data.expenseAmountYen ?? null,
-  });
+  const values = buildValues(parsed.data);
+  await saveHospitalVisitWithExpense(
+    db,
+    db
+      .update(hospitalVisits)
+      .set({ ...values, updatedAt: new Date() })
+      .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),
+    {
+      hospitalVisitId: id,
+      catId,
+      visitedAt: values.visitedAt,
+      amountYen: parsed.data.expenseAmountYen ?? null,
+    },
+  );
 
   return { savedRecordId: id };
 }
@@ -150,6 +157,12 @@ export async function deleteHospitalVisitAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
+  const [existing] = await db
+    .select({ id: hospitalVisits.id })
+    .from(hospitalVisits)
+    .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
+    .limit(1);
+  if (!existing) redirect(`/cats/${catId}/hospital-visits`);
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, id);
   // symptoms.hospital_visit_id / medications.hospital_visit_id /

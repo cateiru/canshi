@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Button, Checkbox, FormField, Select, Textarea } from "@/components/ui";
 import type { Cat } from "@/db/schema";
@@ -13,6 +13,7 @@ import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { ExpenseFormState } from "./actions";
 import styles from "./ExpenseForm.module.css";
+import { buildExpensesHref } from "./href";
 import { EXPENSE_CATEGORY_LABEL } from "./labels";
 import { EXPENSE_MEDIA_TYPE } from "./media";
 import type { ExpenseWithCats } from "./queries";
@@ -60,6 +61,14 @@ export function ExpenseForm({
   mediaLimits,
   submitLabel,
 }: ExpenseFormProps) {
+  const catHintId = useId();
+  const catErrorId = useId();
+  const [spentDate, setSpentDate] = useState(() =>
+    expense
+      ? splitDateTimeUtc(expense.spentAt).date
+      : getLocalNowParts(new Date()).date,
+  );
+  const [defaultCatIds] = useState(() => new Set(expense?.catIds ?? [catId]));
   const media = useMediaAttachments({
     initial: mediaAssets,
     limits: mediaLimits,
@@ -72,17 +81,13 @@ export function ExpenseForm({
     initialState,
     recordType: EXPENSE_MEDIA_TYPE,
     media,
-    redirectTo: `/cats/${catId}/expenses`,
+    redirectTo: buildExpensesHref(catId, {
+      ym: spentDate.slice(0, 7),
+      scope: "all",
+    }),
   });
-  // 毎レンダリングで new Date() を評価すると FormField の defaultValue が
-  // 再レンダリングのたびに変化し、ユーザーの入力が上書きされてしまうため、
-  // マウント時に一度だけ計算して固定する
-  const [now] = useState(() => new Date());
-  const defaultSpentDate = expense
-    ? splitDateTimeUtc(expense.spentAt).date
-    : getLocalNowParts(now).date;
-  // 新規作成では、導線になっている猫を既定で関連付ける
-  const defaultCatIds = new Set(expense ? expense.catIds : [catId]);
+
+  const catError = state.fieldErrors?.catIds?.[0];
 
   return (
     <form action={formAction} className={styles.form}>
@@ -91,7 +96,8 @@ export function ExpenseForm({
           name="spentDate"
           label="支出日"
           type="date"
-          defaultValue={defaultSpentDate}
+          value={spentDate}
+          onChange={setSpentDate}
           errorMessage={state.fieldErrors?.spentDate?.[0]}
           isRequired
         />
@@ -115,7 +121,14 @@ export function ExpenseForm({
         errorMessage={state.fieldErrors?.category?.[0]}
       />
 
-      <fieldset className={styles.cats}>
+      <fieldset
+        className={styles.cats}
+        disabled={isPending}
+        aria-describedby={[catHintId, catError ? catErrorId : null]
+          .filter(Boolean)
+          .join(" ")}
+        aria-invalid={!!catError}
+      >
         <legend className={styles.legend}>関連する猫</legend>
         {cats.length === 0 ? (
           <p className={styles.hint}>関連付けられる猫がいません。</p>
@@ -133,13 +146,21 @@ export function ExpenseForm({
             ))}
           </div>
         )}
-        <p className={styles.hint}>
-          支出はすべての猫で共通です。関連付けた猫のタイムラインと絞り込みに表示されます。
+        <p id={catHintId} className={styles.hint}>
+          複数選択できます。選んだ猫のタイムラインに表示され、どの猫も選ばない場合は共通の支出として保存されます。
         </p>
-        {state.fieldErrors?.catIds?.[0] ? (
-          <p className={styles.errorMessage}>{state.fieldErrors.catIds[0]}</p>
+        {catError ? (
+          <p id={catErrorId} className={styles.errorMessage} role="alert">
+            {catError}
+          </p>
         ) : null}
       </fieldset>
+
+      {expense?.hospitalVisitId ? (
+        <p className={styles.hint}>
+          通院記録と連携している支出です。金額は通院記録の病院代にも反映されます。通院記録を更新すると、支出日は受診日に合わせて更新されます。
+        </p>
+      ) : null}
 
       <MediaAttachmentField
         controller={media}
@@ -156,7 +177,9 @@ export function ExpenseForm({
       />
 
       {state.formError ? (
-        <p className={styles.errorMessage}>{state.formError}</p>
+        <p className={styles.errorMessage} role="alert">
+          {state.formError}
+        </p>
       ) : null}
 
       <Button

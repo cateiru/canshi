@@ -46,6 +46,9 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - `spent_at` は支出日。フォームの入力は日付のみで、時刻は `00:00`（UTC）として保存する
 - `hospital_visit_id` は通院記録で入力された病院代との紐付け（nullable）。通院記録を削除するときは
   この参照だけを解除し、支出記録は残す（`src/features/hospital-visits/actions.ts`）
+  - 同じ通院記録に複数の支出が紐付かないよう、一意インデックスを設定する
+  - 通院記録と病院代の作成・更新・削除は、同じ `db.batch` にまとめる
+- 月別検索用に `spent_at` のインデックスを設定する
 
 ## 画像・動画（`media_assets`）
 

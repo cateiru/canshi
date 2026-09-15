@@ -2,6 +2,7 @@
 
 import { eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { cats, expenseRecordCats, expenseRecords } from "@/db/schema";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
@@ -9,6 +10,7 @@ import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import { EXPENSE_MEDIA_TYPE } from "./media";
 import { type ExpenseFormFieldErrors, expenseFormSchema } from "./schema";
+import { deleteExpenseStatements, insertExpenseCats } from "./storage";
 
 /**
  * 保存に成功すると `savedRecordId` を返す。写真のアップロードと一覧への遷移は
@@ -24,34 +26,22 @@ function parseFormData(formData: FormData) {
     amountYen: formData.get("amountYen"),
     category: formData.get("category"),
     memo: formData.get("memo"),
+    catIds: formData.getAll("catIds"),
   });
 }
 
-/**
- * 関連する猫のチェックボックス。1 匹も選ばない（どの猫にも紐付かない共通の支出）ことも許容する
- */
-function parseCatIds(formData: FormData): string[] {
-  return [
-    ...new Set(
-      formData
-        .getAll("catIds")
-        .filter((value): value is string => typeof value === "string")
-        .map((value) => value.trim())
-        .filter((value) => value !== ""),
-    ),
-  ];
-}
-
-async function verifyCatsExist(catIds: string[]): Promise<boolean> {
-  if (catIds.length === 0) {
-    return true;
+async function verifyCatsExist(
+  db: ReturnType<typeof getDb>,
+  catIds: string[],
+): Promise<boolean> {
+  for (const ids of chunkForBoundParameters(catIds)) {
+    const rows = await db
+      .select({ id: cats.id })
+      .from(cats)
+      .where(inArray(cats.id, ids));
+    if (rows.length !== ids.length) return false;
   }
-  const db = getDb();
-  const rows = await db
-    .select({ id: cats.id })
-    .from(cats)
-    .where(inArray(cats.id, catIds));
-  return rows.length === catIds.length;
+  return true;
 }
 
 function buildValues(data: ReturnType<typeof expenseFormSchema.parse>) {
@@ -64,10 +54,6 @@ function buildValues(data: ReturnType<typeof expenseFormSchema.parse>) {
   };
 }
 
-function catLinkValues(expenseRecordId: string, catIds: string[]) {
-  return catIds.map((catId) => ({ expenseRecordId, catId }));
-}
-
 export async function createExpenseAction(
   _prevState: ExpenseFormState,
   formData: FormData,
@@ -78,25 +64,22 @@ export async function createExpenseAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const catIds = parseCatIds(formData);
-  if (!(await verifyCatsExist(catIds))) {
-    return { formError: "関連する猫が見つかりませんでした" };
+  const db = getDb();
+  const { catIds } = parsed.data;
+  if (!(await verifyCatsExist(db, catIds))) {
+    return {
+      fieldErrors: {
+        catIds: ["関連する猫が見つかりませんでした。選び直してください"],
+      },
+    };
   }
 
-  const db = getDb();
   const id = crypto.randomUUID();
   const insertRecord = db
     .insert(expenseRecords)
     .values({ id, ...buildValues(parsed.data) });
 
-  if (catIds.length === 0) {
-    await insertRecord;
-  } else {
-    await db.batch([
-      insertRecord,
-      db.insert(expenseRecordCats).values(catLinkValues(id, catIds)),
-    ]);
-  }
+  await db.batch([insertRecord, ...insertExpenseCats(db, id, catIds)]);
 
   return { savedRecordId: id };
 }
@@ -112,12 +95,15 @@ export async function updateExpenseAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const catIds = parseCatIds(formData);
-  if (!(await verifyCatsExist(catIds))) {
-    return { formError: "関連する猫が見つかりませんでした" };
-  }
-
   const db = getDb();
+  const { catIds } = parsed.data;
+  if (!(await verifyCatsExist(db, catIds))) {
+    return {
+      fieldErrors: {
+        catIds: ["関連する猫が見つかりませんでした。選び直してください"],
+      },
+    };
+  }
   const [existing] = await db
     .select({ id: expenseRecords.id })
     .from(expenseRecords)
@@ -137,15 +123,11 @@ export async function updateExpenseAction(
     .delete(expenseRecordCats)
     .where(eq(expenseRecordCats.expenseRecordId, id));
 
-  if (catIds.length === 0) {
-    await db.batch([updateRecord, deleteLinks]);
-  } else {
-    await db.batch([
-      updateRecord,
-      deleteLinks,
-      db.insert(expenseRecordCats).values(catLinkValues(id, catIds)),
-    ]);
-  }
+  await db.batch([
+    updateRecord,
+    deleteLinks,
+    ...insertExpenseCats(db, id, catIds),
+  ]);
 
   return { savedRecordId: id };
 }
@@ -157,13 +139,6 @@ export async function deleteExpenseAction(
   const db = getDb();
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, id);
-  // expense_record_cats から expense_records への外部キー参照があるため、
-  // 支出記録本体より先に紐付けを削除する
-  await db.batch([
-    db
-      .delete(expenseRecordCats)
-      .where(eq(expenseRecordCats.expenseRecordId, id)),
-    db.delete(expenseRecords).where(eq(expenseRecords.id, id)),
-  ]);
+  await db.batch(deleteExpenseStatements(db, id));
   redirect(`/cats/${catId}/expenses`);
 }

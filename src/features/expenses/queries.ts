@@ -88,23 +88,21 @@ export async function listExpensesForMonth(
   );
   const order = [desc(expenseRecords.spentAt), asc(expenseRecords.id)];
 
-  const records =
+  const forCat =
     options.catId == null
-      ? await db
-          .select()
-          .from(expenseRecords)
-          .where(inMonth)
-          .orderBy(...order)
-      : await db
-          .select({ record: expenseRecords })
-          .from(expenseRecords)
-          .innerJoin(
-            expenseRecordCats,
-            eq(expenseRecordCats.expenseRecordId, expenseRecords.id),
-          )
-          .where(and(inMonth, eq(expenseRecordCats.catId, options.catId)))
-          .orderBy(...order)
-          .then((rows) => rows.map((row) => row.record));
+      ? undefined
+      : inArray(
+          expenseRecords.id,
+          db
+            .select({ id: expenseRecordCats.expenseRecordId })
+            .from(expenseRecordCats)
+            .where(eq(expenseRecordCats.catId, options.catId)),
+        );
+  const records = await db
+    .select()
+    .from(expenseRecords)
+    .where(and(inMonth, forCat))
+    .orderBy(...order);
 
   return attachCatIds(records);
 }
