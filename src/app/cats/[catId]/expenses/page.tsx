@@ -17,6 +17,8 @@ import {
 import { EXPENSE_CATEGORY_LABEL, formatYen } from "@/features/expenses/labels";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
 import { listExpensesForMonth } from "@/features/expenses/queries";
+import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
+import { listHospitalVisitsByIds } from "@/features/hospital-visits/queries";
 import { MediaGallery } from "@/features/media/MediaGallery";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
@@ -62,10 +64,17 @@ export default async function ExpensesPage({
     listCats(),
   ]);
   const catNameById = new Map(allCats.map((entry) => [entry.id, entry.name]));
-  const mediaByRecordId = await listMediaAssetsByRecords(
-    EXPENSE_MEDIA_TYPE,
-    expenses.map((expense) => expense.id),
-  );
+  const [mediaByRecordId, hospitalVisitById] = await Promise.all([
+    listMediaAssetsByRecords(
+      EXPENSE_MEDIA_TYPE,
+      expenses.map((expense) => expense.id),
+    ),
+    listHospitalVisitsByIds(
+      expenses
+        .map((expense) => expense.hospitalVisitId)
+        .filter((id): id is string => id != null),
+    ),
+  ]);
 
   const total = sumExpenseAmounts(expenses);
   const categoryTotals = sumExpenseAmountsByCategory(expenses);
@@ -172,6 +181,10 @@ export default async function ExpensesPage({
             const relatedCatNames = expense.catIds.map(
               (id) => catNameById.get(id) ?? "不明な猫",
             );
+            const relatedHospitalVisit =
+              expense.hospitalVisitId != null
+                ? hospitalVisitById.get(expense.hospitalVisitId)
+                : undefined;
             return (
               <li key={expense.id}>
                 <article
@@ -225,6 +238,16 @@ export default async function ExpensesPage({
                           : "なし（共通の支出）"}
                       </dd>
                     </div>
+                    {expense.hospitalVisitId ? (
+                      <div>
+                        <dt>関連する通院記録</dt>
+                        <dd>
+                          {relatedHospitalVisit
+                            ? hospitalVisitOptionLabel(relatedHospitalVisit)
+                            : "不明な通院記録"}
+                        </dd>
+                      </div>
+                    ) : null}
                     {expense.memo ? (
                       <div>
                         <dt>メモ</dt>
@@ -232,17 +255,6 @@ export default async function ExpensesPage({
                       </div>
                     ) : null}
                   </dl>
-
-                  {expense.hospitalVisitId ? (
-                    <div className={styles.relatedLink}>
-                      <ButtonLink
-                        href={`/cats/${catId}/hospital-visits/${expense.hospitalVisitId}/edit`}
-                        variant="secondary"
-                      >
-                        関連する通院記録
-                      </ButtonLink>
-                    </div>
-                  ) : null}
 
                   <div className={styles.media}>
                     <MediaGallery
