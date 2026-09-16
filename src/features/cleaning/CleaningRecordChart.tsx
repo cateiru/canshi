@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
+import { TbCalendarStats } from "react-icons/tb";
 import styles from "./CleaningRecordChart.module.css";
 import {
   CALENDAR_COLORS,
@@ -38,10 +39,17 @@ export function CleaningRecordChart({ data }: CleaningRecordChartProps) {
 
   return (
     <section className={styles.container}>
-      <h2 className={styles.title}>実施日カレンダー</h2>
+      <div className={styles.header}>
+        <h2 className={styles.title}>
+          <TbCalendarStats
+            aria-hidden="true"
+            size={20}
+            className={styles.titleIcon}
+          />
+          実施日カレンダー
+        </h2>
 
-      {years.length > 1 && (
-        <div className={styles.header}>
+        {years.length > 1 ? (
           <ToggleButtonGroup
             className={styles.yearGroup}
             selectionMode="single"
@@ -65,12 +73,19 @@ export function CleaningRecordChart({ data }: CleaningRecordChartProps) {
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
-        </div>
-      )}
-
-      <div className={styles.canvas}>
-        <CleaningRecordChartCanvas data={yearData} year={year} />
+        ) : (
+          <span className={styles.yearLabel}>{year}年</span>
+        )}
       </div>
+
+      <section
+        className={styles.canvas}
+        aria-label="実施日カレンダーグラフ"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: 横スクロールするカレンダーをキーボードでも操作できるようにする
+        tabIndex={0}
+      >
+        <CleaningRecordChartCanvas data={yearData} year={year} />
+      </section>
 
       <div className={styles.legend}>
         少ない

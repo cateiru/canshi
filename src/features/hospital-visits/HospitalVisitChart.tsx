@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
+import { TbCalendarStats } from "react-icons/tb";
 import {
   filterCalendarDataByYear,
   type HospitalVisitCalendarDatum,
@@ -38,10 +39,17 @@ export function HospitalVisitChart({ data }: HospitalVisitChartProps) {
 
   return (
     <section className={styles.container}>
-      <h2 className={styles.title}>通院日カレンダー</h2>
+      <div className={styles.header}>
+        <h2 className={styles.title}>
+          <TbCalendarStats
+            aria-hidden="true"
+            size={20}
+            className={styles.titleIcon}
+          />
+          通院日カレンダー
+        </h2>
 
-      {years.length > 1 && (
-        <div className={styles.header}>
+        {years.length > 1 ? (
           <ToggleButtonGroup
             className={styles.yearGroup}
             selectionMode="single"
@@ -65,12 +73,19 @@ export function HospitalVisitChart({ data }: HospitalVisitChartProps) {
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
-        </div>
-      )}
-
-      <div className={styles.canvas}>
-        <HospitalVisitChartCanvas data={yearData} year={year} />
+        ) : (
+          <span className={styles.yearLabel}>{year}年</span>
+        )}
       </div>
+
+      <section
+        className={styles.canvas}
+        aria-label="通院日カレンダーグラフ"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: 横スクロールするカレンダーをキーボードでも操作できるようにする
+        tabIndex={0}
+      >
+        <HospitalVisitChartCanvas data={yearData} year={year} />
+      </section>
 
       <div className={styles.legend}>
         少ない
