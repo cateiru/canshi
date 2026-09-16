@@ -44,6 +44,15 @@
 **1 PR = 1 回のバージョンアップ。** リリースノートエントリと同様、1 PR につき
 バージョンの上げ幅は 1 回分（パッチ 1 つ、またはマイナー 1 つ）とする。
 
+## skill の作成・改修
+
+このリポジトリの skill（`version-bump` など）は `.codex/skills/<skill-name>/SKILL.md`
+に実体を置き、`.claude/skills/<skill-name>` はそこへのディレクトリシンボリック
+リンクとする。新しい skill を作る、または既存の skill を直すときは
+`.codex/skills/skill-creation/SKILL.md`（Claude からは
+`.claude/skills/skill-creation/SKILL.md` としても参照可能。実体は同じ
+ディレクトリへのシンボリックリンク）に従うこと。
+
 ## その他
 
 - 開発コマンド・ディレクトリ構成は [`README.md`](README.md) を参照。
