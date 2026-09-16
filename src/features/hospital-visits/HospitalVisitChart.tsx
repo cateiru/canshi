@@ -45,7 +45,7 @@ export function HospitalVisitChart({ data }: HospitalVisitChartProps) {
   }
 
   return (
-    <Disclosure className={styles.container} defaultExpanded={false}>
+    <Disclosure className={styles.container} defaultExpanded={true}>
       <Heading level={2} className={styles.heading}>
         <Button slot="trigger" className={styles.trigger}>
           <TbTriangleFilled
