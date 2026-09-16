@@ -6,6 +6,8 @@ import { getCatById } from "@/features/cats/queries";
 import { formatYen } from "@/features/expenses/labels";
 import { listExpensesByHospitalVisitIds } from "@/features/expenses/queries";
 import { deleteHospitalVisitAction } from "@/features/hospital-visits/actions";
+import { toHospitalVisitCalendarData } from "@/features/hospital-visits/chart";
+import { HospitalVisitChart } from "@/features/hospital-visits/HospitalVisitChart";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { MediaGallery } from "@/features/media/MediaGallery";
@@ -78,6 +80,10 @@ export default async function HospitalVisitsPage({
           記録する
         </ButtonLink>
       </div>
+
+      {visits.length > 0 && (
+        <HospitalVisitChart data={toHospitalVisitCalendarData(visits)} />
+      )}
 
       {visits.length === 0 ? (
         <div className={styles.emptyState}>

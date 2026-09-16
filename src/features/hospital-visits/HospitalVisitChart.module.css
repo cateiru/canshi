@@ -1,0 +1,99 @@
+.container {
+  padding: var(--space-6);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+}
+
+.title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+
+.yearGroup {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: 999px;
+  background: var(--color-bg);
+}
+
+.yearButton {
+  padding: var(--space-1) var(--space-3);
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base);
+}
+
+.yearButton[data-hovered] {
+  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
+}
+
+.yearButton[data-selected] {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.yearButton[data-focus-visible] {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.canvas {
+  height: 180px;
+}
+
+.placeholder {
+  height: 180px;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  color: color-mix(in srgb, var(--color-ink) 60%, var(--color-bg));
+}
+
+.legendSwatches {
+  display: flex;
+  gap: 2px;
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: var(--space-4);
+  }
+
+  .canvas,
+  .placeholder {
+    height: 140px;
+  }
+}
