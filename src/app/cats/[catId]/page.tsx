@@ -1,5 +1,11 @@
 import { notFound } from "next/navigation";
-import { Badge, Breadcrumb, ButtonLink, Heading } from "@/components/ui";
+import {
+  Badge,
+  Breadcrumb,
+  ButtonLink,
+  Collapsible,
+  Heading,
+} from "@/components/ui";
 import { deleteCatAction } from "@/features/cats/actions";
 import {
   calculateAge,
@@ -50,25 +56,30 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
       </div>
 
       <Surface>
-        <Badge>{SEX_LABEL[cat.sex]}</Badge>
-        <dl className={styles.details}>
-          <dt>生年月日</dt>
-          <dd>
-            {cat.birthDate ?? "未設定"}
-            {cat.birthDate
-              ? `（${formatAge(calculateAge(cat.birthDate))}）`
-              : ""}
-          </dd>
-          <dt>猫種</dt>
-          <dd>{cat.breed ?? "未設定"}</dd>
-          <dt>お迎え日</dt>
-          <dd>
-            {cat.adoptedAt ?? "未設定"}
-            {cat.adoptedAt
-              ? `（お迎えから${calculateDaysSinceAdoption(cat.adoptedAt)}日）`
-              : ""}
-          </dd>
-        </dl>
+        <Collapsible
+          title="基本情報"
+          storageKey="canshi:cat-basic-info-expanded"
+        >
+          <Badge>{SEX_LABEL[cat.sex]}</Badge>
+          <dl className={styles.details}>
+            <dt>生年月日</dt>
+            <dd>
+              {cat.birthDate ?? "未設定"}
+              {cat.birthDate
+                ? `（${formatAge(calculateAge(cat.birthDate))}）`
+                : ""}
+            </dd>
+            <dt>猫種</dt>
+            <dd>{cat.breed ?? "未設定"}</dd>
+            <dt>お迎え日</dt>
+            <dd>
+              {cat.adoptedAt ?? "未設定"}
+              {cat.adoptedAt
+                ? `（お迎えから${calculateDaysSinceAdoption(cat.adoptedAt)}日）`
+                : ""}
+            </dd>
+          </dl>
+        </Collapsible>
       </Surface>
 
       <section>

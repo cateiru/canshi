@@ -1,0 +1,48 @@
+.disclosure {
+  min-width: 0;
+}
+
+.heading {
+  margin: 0;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  cursor: pointer;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+}
+
+.trigger[data-focus-visible] {
+  outline-color: var(--color-accent);
+}
+
+.arrow {
+  flex-shrink: 0;
+  width: 12px;
+  height: 8px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--transition-base);
+}
+
+.disclosure[data-expanded] .arrow {
+  transform: rotate(180deg);
+}
+
+.panel {
+  margin-top: var(--space-4);
+}
