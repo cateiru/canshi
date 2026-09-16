@@ -7,11 +7,13 @@ import { MediaGallery } from "@/features/media/MediaGallery";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
 import { deletePoopRecordAction } from "@/features/poop-records/actions";
+import { toPoopChartPoints } from "@/features/poop-records/chart";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
 import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
+import { PoopRecordChart } from "@/features/poop-records/PoopRecordChart";
 import { listPoopRecords } from "@/features/poop-records/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
-import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -61,6 +63,13 @@ export default async function PoopRecordsPage({
           記録する
         </ButtonLink>
       </div>
+
+      {records.length > 0 && (
+        <PoopRecordChart
+          points={toPoopChartPoints(records)}
+          now={getNaiveUtcNow().toISOString()}
+        />
+      )}
 
       {records.length === 0 ? (
         <div className={styles.emptyState}>
