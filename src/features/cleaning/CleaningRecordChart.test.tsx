@@ -26,11 +26,13 @@ const DATA: CleaningRecordCalendarDatum[] = [
 ];
 
 describe("CleaningRecordChart", () => {
-  it("初期表示ではグラフが開いている", () => {
+  it("見出しとグラフを常に表示する", async () => {
     render(<CleaningRecordChart data={DATA} />);
 
-    const trigger = screen.getByRole("button", { name: "実施日カレンダー" });
-    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("heading", { name: "実施日カレンダー" }),
+    ).toBeInTheDocument();
+    expect(await screen.findByTestId("chart-canvas")).toBeInTheDocument();
   });
 
   it("最新の年のデータがキャンバスに渡る", async () => {
@@ -52,5 +54,13 @@ describe("CleaningRecordChart", () => {
     const { container } = render(<CleaningRecordChart data={[]} />);
 
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("年が1年しかない場合は年の切り替えを表示しない", () => {
+    render(<CleaningRecordChart data={[{ day: "2026-09-15", value: 1 }]} />);
+
+    expect(
+      screen.queryByRole("radiogroup", { name: "表示年" }),
+    ).not.toBeInTheDocument();
   });
 });

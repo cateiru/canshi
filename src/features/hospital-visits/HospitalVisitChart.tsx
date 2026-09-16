@@ -2,15 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import {
-  Button,
-  Disclosure,
-  DisclosurePanel,
-  Heading,
-  ToggleButton,
-  ToggleButtonGroup,
-} from "react-aria-components";
-import { TbTriangleFilled } from "react-icons/tb";
+import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import {
   filterCalendarDataByYear,
   type HospitalVisitCalendarDatum,
@@ -45,67 +37,54 @@ export function HospitalVisitChart({ data }: HospitalVisitChartProps) {
   }
 
   return (
-    <Disclosure className={styles.container} defaultExpanded={true}>
-      <Heading level={2} className={styles.heading}>
-        <Button slot="trigger" className={styles.trigger}>
-          <TbTriangleFilled
-            aria-hidden="true"
-            size={12}
-            className={styles.caret}
-          />
-          <span className={styles.title}>通院日カレンダー</span>
-        </Button>
-      </Heading>
+    <section className={styles.container}>
+      <h2 className={styles.title}>通院日カレンダー</h2>
 
-      <DisclosurePanel>
-        <div className={styles.panelInner}>
-          <div className={styles.header}>
-            <ToggleButtonGroup
-              className={styles.yearGroup}
-              selectionMode="single"
-              disallowEmptySelection
-              selectedKeys={[String(year)]}
-              onSelectionChange={(keys) => {
-                const [next] = keys;
-                if (next) {
-                  setYear(Number(next));
-                }
-              }}
-              aria-label="表示年"
-            >
-              {years.map((value) => (
-                <ToggleButton
-                  key={value}
-                  id={String(value)}
-                  className={styles.yearButton}
-                >
-                  {value}年
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </div>
-
-          <div className={styles.scrollArea}>
-            <div className={styles.canvas}>
-              <HospitalVisitChartCanvas data={yearData} year={year} />
-            </div>
-          </div>
-
-          <div className={styles.legend}>
-            少ない
-            <span className={styles.legendSwatches} aria-hidden="true">
-              {CALENDAR_COLORS.map((color) => (
-                <span
-                  key={color}
-                  className={styles.legendSwatch}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </span>
-            多い
-          </div>
+      {years.length > 1 && (
+        <div className={styles.header}>
+          <ToggleButtonGroup
+            className={styles.yearGroup}
+            selectionMode="single"
+            disallowEmptySelection
+            selectedKeys={[String(year)]}
+            onSelectionChange={(keys) => {
+              const [next] = keys;
+              if (next) {
+                setYear(Number(next));
+              }
+            }}
+            aria-label="表示年"
+          >
+            {years.map((value) => (
+              <ToggleButton
+                key={value}
+                id={String(value)}
+                className={styles.yearButton}
+              >
+                {value}年
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
         </div>
-      </DisclosurePanel>
-    </Disclosure>
+      )}
+
+      <div className={styles.canvas}>
+        <HospitalVisitChartCanvas data={yearData} year={year} />
+      </div>
+
+      <div className={styles.legend}>
+        少ない
+        <span className={styles.legendSwatches} aria-hidden="true">
+          {CALENDAR_COLORS.map((color) => (
+            <span
+              key={color}
+              className={styles.legendSwatch}
+              style={{ backgroundColor: color }}
+            />
+          ))}
+        </span>
+        多い
+      </div>
+    </section>
   );
 }
