@@ -3,11 +3,13 @@ import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
+import { CleaningRecordChart } from "@/features/cleaning/CleaningRecordChart";
 import { deleteCleaningRecordAction } from "@/features/cleaning/recordActions";
+import { toCleaningRecordCalendarData } from "@/features/cleaning/recordChart";
 import { listCleaningRecords } from "@/features/cleaning/recordQueries";
 import { getCleaningTargetById } from "@/features/cleaning/targetQueries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
-import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -59,6 +61,13 @@ export default async function CleaningRecordsPage({
           </ButtonLink>
         ) : null}
       </div>
+
+      {records.length > 0 && (
+        <CleaningRecordChart
+          data={toCleaningRecordCalendarData(records)}
+          now={getNaiveUtcNow().toISOString()}
+        />
+      )}
 
       {records.length === 0 ? (
         <div className={styles.emptyState}>
