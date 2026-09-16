@@ -1,5 +1,11 @@
 import { notFound } from "next/navigation";
-import { Badge, Breadcrumb, ButtonLink, Heading } from "@/components/ui";
+import {
+  Badge,
+  Breadcrumb,
+  ButtonLink,
+  Collapsible,
+  Heading,
+} from "@/components/ui";
 import { deleteCatAction } from "@/features/cats/actions";
 import {
   calculateAge,
@@ -11,7 +17,6 @@ import { DeleteCatButton } from "@/features/cats/DeleteCatButton";
 import { SEX_LABEL } from "@/features/cats/labels";
 import { getCatById } from "@/features/cats/queries";
 import { RecordNavGrid } from "@/features/cats/RecordNavGrid";
-import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +54,7 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
         <h1>{cat.name}</h1>
       </div>
 
-      <Surface>
+      <Collapsible title="基本情報" storageKey="canshi:cat-basic-info-expanded">
         <Badge>{SEX_LABEL[cat.sex]}</Badge>
         <dl className={styles.details}>
           <dt>生年月日</dt>
@@ -69,7 +74,7 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
               : ""}
           </dd>
         </dl>
-      </Surface>
+      </Collapsible>
 
       <section>
         <Heading level={2} size="md" className={styles.recordHeading}>

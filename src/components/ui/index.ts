@@ -6,6 +6,7 @@ export * from "./Button/ButtonLink";
 export * from "./Card/Card";
 export * from "./CatEarFrame/CatEarFrame";
 export * from "./Checkbox/Checkbox";
+export * from "./Collapsible/Collapsible";
 export * from "./Footer/Footer";
 export * from "./FormField/FormField";
 export * from "./Heading/Heading";
