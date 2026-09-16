@@ -94,7 +94,7 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                   </ButtonLink>
                 </div>
 
-                <dl className={styles.details}>
+                <dl className={styles.schedule}>
                   <div>
                     <dt>前回の実施日</dt>
                     <dd>
@@ -103,6 +103,7 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                         : "未実施"}
                     </dd>
                   </div>
+                  <hr className={styles.scheduleDivider} />
                   <div>
                     <dt>次回の予定日</dt>
                     <dd>

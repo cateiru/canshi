@@ -95,21 +95,43 @@
   background: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
 }
 
-.details {
+.schedule {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-2) var(--space-4);
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-4);
   margin: var(--space-4) 0 0;
+  padding: var(--space-4);
+  border-radius: 12px;
+  background: var(--color-bg);
   font-size: var(--text-sm);
 }
 
-.details dt {
+.schedule > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.schedule dt {
   font-weight: var(--font-weight-bold);
 }
 
-.details dd {
+.schedule dd {
   margin: 0;
   color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.scheduleDivider {
+  align-self: stretch;
+  width: 1px;
+  height: auto;
+  min-height: 2.5em;
+  margin: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--color-ink) 12%, var(--color-bg));
 }
 
 .badges {
@@ -138,5 +160,16 @@
 
   .recordTitle {
     font-size: var(--text-sm);
+  }
+
+  .schedule {
+    grid-template-columns: 1fr;
+    padding: var(--space-3);
+  }
+
+  .scheduleDivider {
+    width: auto;
+    height: 1px;
+    min-height: 0;
   }
 }

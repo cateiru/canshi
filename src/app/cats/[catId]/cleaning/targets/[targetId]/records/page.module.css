@@ -76,10 +76,15 @@
 
 .details {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-2) var(--space-4);
+  gap: var(--space-3);
   margin: var(--space-4) 0 0;
   font-size: var(--text-sm);
+}
+
+.details > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
 }
 
 .details dt {
@@ -100,5 +105,10 @@
 
   .recordDate {
     font-size: var(--text-sm);
+  }
+
+  .details > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
   }
 }
