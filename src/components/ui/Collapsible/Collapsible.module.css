@@ -1,5 +1,8 @@
-.disclosure {
+.container {
   min-width: 0;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  overflow-wrap: anywhere;
 }
 
 .heading {
@@ -9,40 +12,55 @@
 .trigger {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  justify-content: flex-start;
+  gap: var(--space-3);
   width: 100%;
-  padding: 0;
+  padding: var(--space-6);
   border: none;
-  background: none;
-  font: inherit;
-  font-weight: var(--font-weight-bold);
+  border-radius: 16px;
+  background: transparent;
+  font-family: var(--font-sans);
   color: var(--color-ink);
   cursor: pointer;
-  outline: var(--focus-ring-width) solid transparent;
-  outline-offset: var(--focus-ring-offset);
+  outline: none;
+  transition: background-color var(--transition-base);
+}
+
+.trigger[data-hovered] {
+  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
 }
 
 .trigger[data-focus-visible] {
-  outline-color: var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
-.arrow {
+.title {
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.caret {
   flex-shrink: 0;
-  width: 12px;
-  height: 8px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  color: var(--color-ink);
+  transform: rotate(90deg);
   transition: transform var(--transition-base);
 }
 
-.disclosure[data-expanded] .arrow {
+.container[data-expanded] .caret {
   transform: rotate(180deg);
 }
 
-.panel {
-  margin-top: var(--space-4);
+.panelInner {
+  padding: var(--space-2) var(--space-6) var(--space-6);
+}
+
+@media (max-width: 480px) {
+  .trigger {
+    padding: var(--space-4);
+  }
+
+  .panelInner {
+    padding: 0 var(--space-4) var(--space-4);
+  }
 }

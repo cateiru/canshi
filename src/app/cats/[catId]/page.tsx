@@ -17,7 +17,6 @@ import { DeleteCatButton } from "@/features/cats/DeleteCatButton";
 import { SEX_LABEL } from "@/features/cats/labels";
 import { getCatById } from "@/features/cats/queries";
 import { RecordNavGrid } from "@/features/cats/RecordNavGrid";
-import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -55,32 +54,27 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
         <h1>{cat.name}</h1>
       </div>
 
-      <Surface>
-        <Collapsible
-          title="基本情報"
-          storageKey="canshi:cat-basic-info-expanded"
-        >
-          <Badge>{SEX_LABEL[cat.sex]}</Badge>
-          <dl className={styles.details}>
-            <dt>生年月日</dt>
-            <dd>
-              {cat.birthDate ?? "未設定"}
-              {cat.birthDate
-                ? `（${formatAge(calculateAge(cat.birthDate))}）`
-                : ""}
-            </dd>
-            <dt>猫種</dt>
-            <dd>{cat.breed ?? "未設定"}</dd>
-            <dt>お迎え日</dt>
-            <dd>
-              {cat.adoptedAt ?? "未設定"}
-              {cat.adoptedAt
-                ? `（お迎えから${calculateDaysSinceAdoption(cat.adoptedAt)}日）`
-                : ""}
-            </dd>
-          </dl>
-        </Collapsible>
-      </Surface>
+      <Collapsible title="基本情報" storageKey="canshi:cat-basic-info-expanded">
+        <Badge>{SEX_LABEL[cat.sex]}</Badge>
+        <dl className={styles.details}>
+          <dt>生年月日</dt>
+          <dd>
+            {cat.birthDate ?? "未設定"}
+            {cat.birthDate
+              ? `（${formatAge(calculateAge(cat.birthDate))}）`
+              : ""}
+          </dd>
+          <dt>猫種</dt>
+          <dd>{cat.breed ?? "未設定"}</dd>
+          <dt>お迎え日</dt>
+          <dd>
+            {cat.adoptedAt ?? "未設定"}
+            {cat.adoptedAt
+              ? `（お迎えから${calculateDaysSinceAdoption(cat.adoptedAt)}日）`
+              : ""}
+          </dd>
+        </dl>
+      </Collapsible>
 
       <section>
         <Heading level={2} size="md" className={styles.recordHeading}>

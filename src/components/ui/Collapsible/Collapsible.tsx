@@ -5,8 +5,9 @@ import {
   Disclosure as AriaDisclosure,
   Button,
   DisclosurePanel,
+  Heading,
 } from "react-aria-components";
-import { Heading } from "../Heading/Heading";
+import { TbTriangleFilled } from "react-icons/tb";
 import styles from "./Collapsible.module.css";
 
 export type CollapsibleProps = {
@@ -46,7 +47,7 @@ export function Collapsible({
     }
   };
 
-  const classes = [styles.disclosure, className].filter(Boolean).join(" ");
+  const classes = [styles.container, className].filter(Boolean).join(" ");
 
   return (
     <AriaDisclosure
@@ -54,15 +55,19 @@ export function Collapsible({
       onExpandedChange={handleExpandedChange}
       className={classes}
     >
-      <Heading level={2} size="md" className={styles.heading}>
+      <Heading level={2} className={styles.heading}>
         <Button slot="trigger" className={styles.trigger}>
-          <span>{title}</span>
-          <svg className={styles.arrow} viewBox="0 0 10 6" aria-hidden="true">
-            <polyline points="1,1 5,5 9,1" />
-          </svg>
+          <TbTriangleFilled
+            aria-hidden="true"
+            size={12}
+            className={styles.caret}
+          />
+          <span className={styles.title}>{title}</span>
         </Button>
       </Heading>
-      <DisclosurePanel className={styles.panel}>{children}</DisclosurePanel>
+      <DisclosurePanel>
+        <div className={styles.panelInner}>{children}</div>
+      </DisclosurePanel>
     </AriaDisclosure>
   );
 }
