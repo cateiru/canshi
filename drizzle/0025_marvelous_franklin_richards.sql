@@ -1,0 +1,2 @@
+CREATE INDEX `expense_records_spent_at_idx` ON `expense_records` (`spent_at`);--> statement-breakpoint
+CREATE UNIQUE INDEX `expense_records_hospital_visit_id_unique` ON `expense_records` (`hospital_visit_id`);

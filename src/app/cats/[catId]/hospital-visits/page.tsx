@@ -3,6 +3,8 @@ import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
+import { formatYen } from "@/features/expenses/labels";
+import { listExpensesByHospitalVisitIds } from "@/features/expenses/queries";
 import { deleteHospitalVisitAction } from "@/features/hospital-visits/actions";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
@@ -39,16 +41,18 @@ export default async function HospitalVisitsPage({
   const symptomNameById = new Map(
     symptomList.map((symptom) => [symptom.id, symptom.symptomType]),
   );
-  const [prescribedMedicationsByVisit, mediaByRecordId] = await Promise.all([
-    listMedicationsByHospitalVisitIds(
-      catId,
-      visits.map((visit) => visit.id),
-    ),
-    listMediaAssetsByRecords(
-      HOSPITAL_VISIT_MEDIA_TYPE,
-      visits.map((visit) => visit.id),
-    ),
-  ]);
+  const [prescribedMedicationsByVisit, mediaByRecordId, expenseByVisitId] =
+    await Promise.all([
+      listMedicationsByHospitalVisitIds(
+        catId,
+        visits.map((visit) => visit.id),
+      ),
+      listMediaAssetsByRecords(
+        HOSPITAL_VISIT_MEDIA_TYPE,
+        visits.map((visit) => visit.id),
+      ),
+      listExpensesByHospitalVisitIds(visits.map((visit) => visit.id)),
+    ]);
 
   return (
     <main className={styles.main}>
@@ -94,6 +98,7 @@ export default async function HospitalVisitsPage({
           {visits.map((visit) => {
             const prescribedMedications =
               prescribedMedicationsByVisit.get(visit.id) ?? [];
+            const expense = expenseByVisitId.get(visit.id);
             return (
               <li key={visit.id}>
                 <article className={styles.record} aria-label={visit.reason}>
@@ -165,6 +170,12 @@ export default async function HospitalVisitsPage({
                             .map((medication) => medication.name)
                             .join("、")}
                         </dd>
+                      </div>
+                    ) : null}
+                    {expense ? (
+                      <div>
+                        <dt>病院代</dt>
+                        <dd>{formatYen(expense.amountYen)}</dd>
                       </div>
                     ) : null}
                     {visit.nextVisitAt ? (

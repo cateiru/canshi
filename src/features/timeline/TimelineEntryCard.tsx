@@ -4,6 +4,7 @@ import {
   CalorieIcon,
   FeedingIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
+import { EXPENSE_CATEGORY_LABEL, formatYen } from "@/features/expenses/labels";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { MediaThumbnailStrip } from "@/features/media/MediaThumbnailStrip";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
@@ -109,6 +110,8 @@ function getEditHref(catId: string, entry: TimelineEntry): string {
       return `/cats/${catId}/hospital-visits/${entry.record.id}/edit`;
     case "catPhoto":
       return `/cats/${catId}/photos/${entry.record.id}/edit`;
+    case "expense":
+      return `/cats/${catId}/expenses/${entry.record.id}/edit`;
     default: {
       const exhaustiveCheck: never = entry;
       return exhaustiveCheck;
@@ -294,6 +297,18 @@ function renderBody(
           <p>{record.memo}</p>
         </div>
       ) : null;
+    }
+    case "expense": {
+      const { record } = entry;
+      return (
+        <div className={styles.body}>
+          <p>
+            {EXPENSE_CATEGORY_LABEL[record.category]}・
+            {formatYen(record.amountYen)}
+            {record.memo ? `・${record.memo}` : ""}
+          </p>
+        </div>
+      );
     }
     default: {
       const exhaustiveCheck: never = entry;

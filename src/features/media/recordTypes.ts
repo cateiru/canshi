@@ -10,6 +10,7 @@ export const MEDIA_RECORD_TYPES = [
   "hospital_visit",
   "cat_photo",
   "food_product",
+  "expense",
 ] as const;
 
 export type MediaRecordType = (typeof MEDIA_RECORD_TYPES)[number];

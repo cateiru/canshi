@@ -44,11 +44,23 @@ function RecordIcon({
 const catFace =
   "M5 7V2l4 2.5a12 12 0 0 1 6 0L19 2v5a4 4 0 0 1 1 2.5c0 3-3.5 5-8 5s-8-2-8-5A4 4 0 0 1 5 7Z";
 
-function CatFill({ transform }: { transform?: string }) {
+function CatFill({
+  transform,
+  className,
+}: {
+  transform?: string;
+  className?: string;
+}) {
   return (
     <>
-      <path fill="#f5dfb7" d={catFace} transform={transform} />
       <path
+        className={className}
+        fill="#f5dfb7"
+        d={catFace}
+        transform={transform}
+      />
+      <path
+        className={className}
         fill="#f4b0a3"
         d="M6.5 4.5v2l2-1Zm11 0v2l-2-1Z"
         transform={transform}
@@ -368,6 +380,49 @@ export function PhotoIcon(props: RecordIconProps) {
       <path d="M8 18c0-1 .8-1.8 2-2m4 0c1.2.2 2 1 2 2" strokeLinecap="butt" />
       <CatOutline transform={catTransform} />
       <path d="M3 18h18" />
+    </RecordIcon>
+  );
+}
+
+export function ExpenseIcon(props: RecordIconProps) {
+  const catTransform = "translate(1.5 0) scale(.8)";
+  const body = "M8 11C6.5 13 6 17 6.5 21Q12 23 18 21C18.5 17 18 13 16 11";
+  const coinTransform = "rotate(15 15 16.25)";
+  const paw = "M8.5 15.5 11 16a1.5 1.5 0 0 1-.5 3L8 18";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#f5dfb7" d={body} />
+          <path fill="#e99a70" d="M8 11h8v2H8Z" />
+        </>
+      }
+    >
+      <path d={body} />
+      <path d="M8 12.5h8" />
+      {/* 胴体と首輪の線を顔の塗りで隠し、小判と抱える手をさらに手前に重ねる。 */}
+      <g stroke="none">
+        <CatFill transform={catTransform} className={styles.foregroundFill} />
+      </g>
+      <CatOutline transform={catTransform} />
+      <g transform={coinTransform}>
+        <ellipse
+          className={styles.foregroundFill}
+          fill="#f2d17b"
+          cx="15"
+          cy="16.25"
+          rx="5.25"
+          ry="6.25"
+        />
+        <path
+          d="M12.5 13.75h5m-5 2.5h5m-5 2.5h5"
+          stroke={props.monochrome ? "currentColor" : "#d2a52a"}
+          strokeWidth="1"
+        />
+      </g>
+      <path className={styles.foregroundFill} fill="#f5dfb7" d={paw} />
     </RecordIcon>
   );
 }

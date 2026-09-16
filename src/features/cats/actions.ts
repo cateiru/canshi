@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
@@ -8,6 +8,8 @@ import {
   cats,
   cleaningRecords,
   cleaningTargets,
+  expenseRecordCats,
+  expenseRecords,
   feedingRecords,
   hospitalVisits,
   medicationDoses,
@@ -120,6 +122,9 @@ export async function deleteCatAction(id: string): Promise<void> {
     // cleaning_targets より先に削除する
     db.delete(cleaningRecords).where(eq(cleaningRecords.catId, id)),
     db.delete(cleaningTargets).where(eq(cleaningTargets.catId, id)),
+    // 支出記録そのものはすべての猫で共通のため削除せず、この猫との紐付けだけを外す。
+    // 結果として関連する猫が 0 件になった支出は「どの猫にも紐付かない共通の支出」として残る
+    db.delete(expenseRecordCats).where(eq(expenseRecordCats.catId, id)),
     db
       .update(symptoms)
       .set({ hospitalVisitId: null })
@@ -132,6 +137,20 @@ export async function deleteCatAction(id: string): Promise<void> {
       .update(hospitalVisits)
       .set({ symptomId: null })
       .where(eq(hospitalVisits.catId, id)),
+    // expense_records.hospital_visit_id も hospital_visits を参照しているため、
+    // 通院記録を削除する前に紐付けを外す。支出記録そのものは家計簿として残す
+    db
+      .update(expenseRecords)
+      .set({ hospitalVisitId: null })
+      .where(
+        inArray(
+          expenseRecords.hospitalVisitId,
+          db
+            .select({ id: hospitalVisits.id })
+            .from(hospitalVisits)
+            .where(eq(hospitalVisits.catId, id)),
+        ),
+      ),
     db.delete(hospitalVisits).where(eq(hospitalVisits.catId, id)),
     db.delete(medicationDoses).where(eq(medicationDoses.catId, id)),
     db.delete(medications).where(eq(medications.catId, id)),

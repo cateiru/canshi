@@ -5,3 +5,8 @@
 .monochrome .fills > * {
   fill: currentColor;
 }
+
+/* 手前の塗りは単色表示でも不透明にして、背後の輪郭を隠す。 */
+.monochrome .foregroundFill {
+  fill: color-mix(in srgb, currentColor 18%, var(--color-bg, #fff));
+}

@@ -3,7 +3,13 @@
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { hospitalVisits, medications, symptoms } from "@/db/schema";
+import {
+  expenseRecords,
+  hospitalVisits,
+  medications,
+  symptoms,
+} from "@/db/schema";
+import { saveHospitalVisitWithExpense } from "@/features/expenses/hospitalVisitExpense";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
@@ -27,6 +33,7 @@ function parseFormData(formData: FormData) {
     visitedDate: formData.get("visitedDate"),
     visitedTime: formData.get("visitedTime"),
     reason: formData.get("reason"),
+    expenseAmountYen: formData.get("expenseAmountYen"),
     diagnosis: formData.get("diagnosis"),
     examinationResults: formData.get("examinationResults"),
     treatment: formData.get("treatment"),
@@ -84,15 +91,20 @@ export async function createHospitalVisitAction(
     return { formError: "関連する症状が見つかりませんでした" };
   }
 
-  const [created] = await db
-    .insert(hospitalVisits)
-    .values({
+  const values = buildValues(parsed.data);
+  const id = crypto.randomUUID();
+  await saveHospitalVisitWithExpense(
+    db,
+    db.insert(hospitalVisits).values({ id, catId, ...values }),
+    {
+      hospitalVisitId: id,
       catId,
-      ...buildValues(parsed.data),
-    })
-    .returning({ id: hospitalVisits.id });
+      visitedAt: values.visitedAt,
+      amountYen: parsed.data.expenseAmountYen ?? null,
+    },
+  );
 
-  return { savedRecordId: created.id };
+  return { savedRecordId: id };
 }
 
 export async function updateHospitalVisitAction(
@@ -112,15 +124,30 @@ export async function updateHospitalVisitAction(
     return { formError: "関連する症状が見つかりませんでした" };
   }
 
-  const result = await db
-    .update(hospitalVisits)
-    .set({ ...buildValues(parsed.data), updatedAt: new Date() })
+  const [existing] = await db
+    .select({ id: hospitalVisits.id })
+    .from(hospitalVisits)
     .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
-    .returning({ id: hospitalVisits.id });
+    .limit(1);
 
-  if (result.length === 0) {
+  if (!existing) {
     return { formError: "通院記録が見つかりませんでした" };
   }
+
+  const values = buildValues(parsed.data);
+  await saveHospitalVisitWithExpense(
+    db,
+    db
+      .update(hospitalVisits)
+      .set({ ...values, updatedAt: new Date() })
+      .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),
+    {
+      hospitalVisitId: id,
+      catId,
+      visitedAt: values.visitedAt,
+      amountYen: parsed.data.expenseAmountYen ?? null,
+    },
+  );
 
   return { savedRecordId: id };
 }
@@ -130,11 +157,19 @@ export async function deleteHospitalVisitAction(
   id: string,
 ): Promise<void> {
   const db = getDb();
+  const [existing] = await db
+    .select({ id: hospitalVisits.id })
+    .from(hospitalVisits)
+    .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
+    .limit(1);
+  if (!existing) redirect(`/cats/${catId}/hospital-visits`);
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, id);
-  // symptoms.hospital_visit_id / medications.hospital_visit_id からの外部キー
-  // 参照があるため、通院記録を削除する前に紐付けを解除しておく。3つの操作は
-  // db.batch でまとめて原子的に実行する
+  // symptoms.hospital_visit_id / medications.hospital_visit_id /
+  // expense_records.hospital_visit_id からの外部キー参照があるため、通院記録を
+  // 削除する前に紐付けを解除しておく。支出記録は家計簿として残す必要があるため、
+  // 紐付けだけ外して記録自体は削除しない。一連の操作は db.batch でまとめて
+  // 原子的に実行する
   await db.batch([
     db
       .update(symptoms)
@@ -146,6 +181,10 @@ export async function deleteHospitalVisitAction(
       .where(
         and(eq(medications.hospitalVisitId, id), eq(medications.catId, catId)),
       ),
+    db
+      .update(expenseRecords)
+      .set({ hospitalVisitId: null })
+      .where(eq(expenseRecords.hospitalVisitId, id)),
     db
       .delete(hospitalVisits)
       .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),
