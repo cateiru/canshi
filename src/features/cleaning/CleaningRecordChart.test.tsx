@@ -1,10 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CleaningRecordChart } from "./CleaningRecordChart";
 import type { CleaningRecordCalendarDatum } from "./recordChart";
@@ -19,15 +13,17 @@ afterEach(() => {
   cleanup();
 });
 
+const NOW = "2026-09-16T00:00:00.000Z";
+
 const DATA: CleaningRecordCalendarDatum[] = [
-  { day: "2025-03-01", value: 1 },
+  { day: "2025-03-01", value: 1 }, // 直近1年の範囲外
   { day: "2026-01-10", value: 1 },
   { day: "2026-09-15", value: 2 },
 ];
 
 describe("CleaningRecordChart", () => {
   it("見出しとグラフを常に表示する", async () => {
-    render(<CleaningRecordChart data={DATA} />);
+    render(<CleaningRecordChart data={DATA} now={NOW} />);
 
     expect(
       screen.getByRole("heading", { name: "実施日カレンダー" }),
@@ -35,32 +31,15 @@ describe("CleaningRecordChart", () => {
     expect(await screen.findByTestId("chart-canvas")).toBeInTheDocument();
   });
 
-  it("最新の年のデータがキャンバスに渡る", async () => {
-    render(<CleaningRecordChart data={DATA} />);
+  it("今日を終端とした直近1年のデータだけがキャンバスに渡る", async () => {
+    render(<CleaningRecordChart data={DATA} now={NOW} />);
 
     expect(await screen.findByTestId("chart-canvas")).toHaveTextContent("2");
   });
 
-  it("年を切り替えるとキャンバスに渡るデータが変わる", async () => {
-    render(<CleaningRecordChart data={DATA} />);
-
-    const group = screen.getByRole("radiogroup", { name: "表示年" });
-    fireEvent.click(within(group).getByRole("radio", { name: "2025年" }));
-
-    expect(await screen.findByTestId("chart-canvas")).toHaveTextContent("1");
-  });
-
   it("データが空の場合は何も表示しない", () => {
-    const { container } = render(<CleaningRecordChart data={[]} />);
+    const { container } = render(<CleaningRecordChart data={[]} now={NOW} />);
 
     expect(container).toBeEmptyDOMElement();
-  });
-
-  it("年が1年しかない場合は年の切り替えを表示しない", () => {
-    render(<CleaningRecordChart data={[{ day: "2026-09-15", value: 1 }]} />);
-
-    expect(
-      screen.queryByRole("radiogroup", { name: "表示年" }),
-    ).not.toBeInTheDocument();
   });
 });

@@ -1,15 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
-import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
+import { useMemo } from "react";
 import { TbCalendarStats } from "react-icons/tb";
 import styles from "./CleaningRecordChart.module.css";
 import {
   CALENDAR_COLORS,
   type CleaningRecordCalendarDatum,
-  filterCalendarDataByYear,
-  listCalendarYears,
+  filterCalendarDataToRange,
+  getLastYearRange,
 } from "./recordChart";
 
 const CleaningRecordChartCanvas = dynamic(
@@ -22,18 +21,18 @@ const CleaningRecordChartCanvas = dynamic(
 
 type CleaningRecordChartProps = {
   data: CleaningRecordCalendarDatum[];
+  now: string;
 };
 
-export function CleaningRecordChart({ data }: CleaningRecordChartProps) {
-  const years = useMemo(() => listCalendarYears(data), [data]);
-  const [year, setYear] = useState(years[0]);
+export function CleaningRecordChart({ data, now }: CleaningRecordChartProps) {
+  const range = useMemo(() => getLastYearRange(new Date(now)), [now]);
 
-  const yearData = useMemo(
-    () => (year ? filterCalendarDataByYear(data, year) : []),
-    [data, year],
+  const rangeData = useMemo(
+    () => filterCalendarDataToRange(data, range),
+    [data, range],
   );
 
-  if (!year) {
+  if (data.length === 0) {
     return null;
   }
 
@@ -48,34 +47,6 @@ export function CleaningRecordChart({ data }: CleaningRecordChartProps) {
           />
           実施日カレンダー
         </h2>
-
-        {years.length > 1 ? (
-          <ToggleButtonGroup
-            className={styles.yearGroup}
-            selectionMode="single"
-            disallowEmptySelection
-            selectedKeys={[String(year)]}
-            onSelectionChange={(keys) => {
-              const [next] = keys;
-              if (next) {
-                setYear(Number(next));
-              }
-            }}
-            aria-label="表示年"
-          >
-            {years.map((value) => (
-              <ToggleButton
-                key={value}
-                id={String(value)}
-                className={styles.yearButton}
-              >
-                {value}年
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        ) : (
-          <span className={styles.yearLabel}>{year}年</span>
-        )}
       </div>
 
       <section
@@ -84,7 +55,11 @@ export function CleaningRecordChart({ data }: CleaningRecordChartProps) {
         // biome-ignore lint/a11y/noNoninteractiveTabindex: 横スクロールするカレンダーをキーボードでも操作できるようにする
         tabIndex={0}
       >
-        <CleaningRecordChartCanvas data={yearData} year={year} />
+        <CleaningRecordChartCanvas
+          data={rangeData}
+          from={range.from}
+          to={range.to}
+        />
       </section>
 
       <div className={styles.legend}>

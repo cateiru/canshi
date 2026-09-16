@@ -9,7 +9,7 @@ import { toCleaningRecordCalendarData } from "@/features/cleaning/recordChart";
 import { listCleaningRecords } from "@/features/cleaning/recordQueries";
 import { getCleaningTargetById } from "@/features/cleaning/targetQueries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
-import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -63,7 +63,10 @@ export default async function CleaningRecordsPage({
       </div>
 
       {records.length > 0 && (
-        <CleaningRecordChart data={toCleaningRecordCalendarData(records)} />
+        <CleaningRecordChart
+          data={toCleaningRecordCalendarData(records)}
+          now={getNaiveUtcNow().toISOString()}
+        />
       )}
 
       {records.length === 0 ? (

@@ -9,7 +9,8 @@ import {
 
 type CleaningRecordChartCanvasProps = {
   data: CleaningRecordCalendarDatum[];
-  year: number;
+  from: string;
+  to: string;
 };
 
 const nivoTheme = {
@@ -31,14 +32,15 @@ const nivoTheme = {
 
 export default function CleaningRecordChartCanvas({
   data,
-  year,
+  from,
+  to,
 }: CleaningRecordChartCanvasProps) {
   return (
     <div className={styles.calendarCanvas}>
       <ResponsiveTimeRange
         data={data}
-        from={`${year}-01-01`}
-        to={`${year}-12-31`}
+        from={from}
+        to={to}
         minValue={0}
         colors={CALENDAR_COLORS}
         emptyColor="color-mix(in srgb, var(--color-ink) 12%, var(--color-bg))"

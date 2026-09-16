@@ -7,7 +7,8 @@ import { CALENDAR_COLORS } from "./labels";
 
 type HospitalVisitChartCanvasProps = {
   data: HospitalVisitCalendarDatum[];
-  year: number;
+  from: string;
+  to: string;
 };
 
 const nivoTheme = {
@@ -29,14 +30,15 @@ const nivoTheme = {
 
 export default function HospitalVisitChartCanvas({
   data,
-  year,
+  from,
+  to,
 }: HospitalVisitChartCanvasProps) {
   return (
     <div className={styles.calendarCanvas}>
       <ResponsiveTimeRange
         data={data}
-        from={`${year}-01-01`}
-        to={`${year}-12-31`}
+        from={from}
+        to={to}
         minValue={0}
         colors={CALENDAR_COLORS}
         emptyColor="color-mix(in srgb, var(--color-ink) 12%, var(--color-bg))"

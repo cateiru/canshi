@@ -15,7 +15,7 @@ import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
 import { listMedicationsByHospitalVisitIds } from "@/features/medications/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
-import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "./page.module.css";
@@ -82,7 +82,10 @@ export default async function HospitalVisitsPage({
       </div>
 
       {visits.length > 0 && (
-        <HospitalVisitChart data={toHospitalVisitCalendarData(visits)} />
+        <HospitalVisitChart
+          data={toHospitalVisitCalendarData(visits)}
+          now={getNaiveUtcNow().toISOString()}
+        />
       )}
 
       {visits.length === 0 ? (

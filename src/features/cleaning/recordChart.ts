@@ -33,23 +33,27 @@ export function toCleaningRecordCalendarData(
     .sort((a, b) => (a.day < b.day ? -1 : 1));
 }
 
-/** データに含まれる年の一覧を、新しい年から順に返す */
-export function listCalendarYears(
-  data: CleaningRecordCalendarDatum[],
-): number[] {
-  const years = new Set(data.map((datum) => Number(datum.day.slice(0, 4))));
-  return [...years].sort((a, b) => b - a);
+export type CalendarDateRange = { from: string; to: string };
+
+/** 今日を終端とする直近1年分の日付範囲を返す */
+export function getLastYearRange(now: Date): CalendarDateRange {
+  const { date: to } = splitDateTimeUtc(now);
+  const from = new Date(now);
+  from.setUTCFullYear(from.getUTCFullYear() - 1);
+  from.setUTCDate(from.getUTCDate() + 1);
+  return { from: splitDateTimeUtc(from).date, to };
 }
 
 /**
- * 指定した年のデータだけに絞り込む。Nivo の Calendar は色の濃淡の基準（最大値）を
- * from/to の範囲ではなく渡した data 全体から計算するため、年を切り替えたときに
- * 他の年の件数に色の濃淡が引っ張られないよう、表示年のデータだけを渡す
+ * 指定した日付範囲のデータだけに絞り込む。Nivo の Calendar は色の濃淡の基準（最大値）を
+ * from/to の範囲ではなく渡した data 全体から計算するため、表示範囲外の件数に
+ * 色の濃淡が引っ張られないよう、範囲内のデータだけを渡す
  */
-export function filterCalendarDataByYear(
+export function filterCalendarDataToRange(
   data: CleaningRecordCalendarDatum[],
-  year: number,
+  range: CalendarDateRange,
 ): CleaningRecordCalendarDatum[] {
-  const prefix = `${year}-`;
-  return data.filter((datum) => datum.day.startsWith(prefix));
+  return data.filter(
+    (datum) => datum.day >= range.from && datum.day <= range.to,
+  );
 }

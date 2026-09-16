@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  filterCalendarDataByYear,
-  listCalendarYears,
+  filterCalendarDataToRange,
+  getLastYearRange,
   toCleaningRecordCalendarData,
 } from "./recordChart";
 
@@ -37,33 +37,43 @@ describe("toCleaningRecordCalendarData", () => {
   });
 });
 
-describe("listCalendarYears", () => {
-  it("データに含まれる年を新しい順に返す", () => {
-    const data = [
-      { day: "2024-05-01", value: 1 },
-      { day: "2026-01-10", value: 1 },
-      { day: "2025-08-20", value: 1 },
-    ];
+describe("getLastYearRange", () => {
+  it("今日を終端とする直近1年分の範囲を返す", () => {
+    const now = new Date("2026-09-16T00:00:00.000Z");
 
-    expect(listCalendarYears(data)).toEqual([2026, 2025, 2024]);
+    expect(getLastYearRange(now)).toEqual({
+      from: "2025-09-17",
+      to: "2026-09-16",
+    });
   });
 
-  it("データが空なら空配列を返す", () => {
-    expect(listCalendarYears([])).toEqual([]);
+  it("うるう年をまたぐ場合も1年分の範囲を返す", () => {
+    const now = new Date("2024-03-01T00:00:00.000Z");
+
+    expect(getLastYearRange(now)).toEqual({
+      from: "2023-03-02",
+      to: "2024-03-01",
+    });
   });
 });
 
-describe("filterCalendarDataByYear", () => {
-  it("指定した年のデータだけを返す", () => {
+describe("filterCalendarDataToRange", () => {
+  it("指定した範囲内のデータだけを返す", () => {
     const data = [
-      { day: "2025-12-31", value: 1 },
-      { day: "2026-01-01", value: 2 },
-      { day: "2026-09-16", value: 1 },
+      { day: "2025-09-16", value: 1 },
+      { day: "2025-09-17", value: 2 },
+      { day: "2026-09-16", value: 3 },
+      { day: "2026-09-17", value: 1 },
     ];
 
-    expect(filterCalendarDataByYear(data, 2026)).toEqual([
-      { day: "2026-01-01", value: 2 },
-      { day: "2026-09-16", value: 1 },
+    expect(
+      filterCalendarDataToRange(data, {
+        from: "2025-09-17",
+        to: "2026-09-16",
+      }),
+    ).toEqual([
+      { day: "2025-09-17", value: 2 },
+      { day: "2026-09-16", value: 3 },
     ]);
   });
 });
