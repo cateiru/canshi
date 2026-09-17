@@ -105,7 +105,9 @@ test("猫の写真を登録するとプロフィール画像が自動更新さ�
   expect(srcC).not.toBe(srcB);
 
   // タイムラインに写真記録が表示される
-  await page.goto(`${detailUrl}/timeline`);
+  // ym を指定しないと「今日」だけに絞り込まれ、テストが使う固定日付の記録が
+  // 表示されなくなるため、記録が属する月を明示する
+  await page.goto(`${detailUrl}/timeline?ym=2026-09`);
   await expect(
     page.getByRole("button", { name: "写真の添付 1 を表示" }),
   ).toHaveCount(3);

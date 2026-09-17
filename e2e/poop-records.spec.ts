@@ -29,10 +29,12 @@ test("うんち記録の登録から一覧表示までできる", async ({ page 
   await page.getByRole("button", { name: "記録する" }).click();
 
   await expect(page).toHaveURL(/poop-records$/);
-  await expect(page.getByText("柔らかい")).toBeVisible();
-  await expect(page.getByText("多め")).toBeVisible();
-  await expect(page.getByText("茶色")).toBeVisible();
-  await expect(page.getByText("血液あり")).toBeVisible();
+  // 「柔らかい」はグラフの凡例にも表示されるため、記録本体（article）に絞り込む
+  const record = page.getByRole("article");
+  await expect(record.getByText("柔らかい")).toBeVisible();
+  await expect(record.getByText("多め")).toBeVisible();
+  await expect(record.getByText("茶色")).toBeVisible();
+  await expect(record.getByText("血液あり")).toBeVisible();
 
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
