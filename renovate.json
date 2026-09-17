@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Asia/Tokyo",
+  "platformAutomerge": false,
+  "packageRules": [
+    {
+      "description": "パッチ・マイナーアップデートは CI が通れば自動マージする",
+      "matchUpdateTypes": ["patch", "minor", "digest"],
+      "automerge": true
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true
+  }
+}
