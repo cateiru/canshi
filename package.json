@@ -31,7 +31,7 @@
     "@nivo/swarmplot": "^0.99.0",
     "cropperjs": "^1.6.3",
     "drizzle-orm": "^0.45.2",
-    "next": "16.3.4",
+    "next": "16.3.5",
     "react": "19.2.8",
     "react-aria-components": "^1.21.1",
     "react-cropper": "^2.3.3",
