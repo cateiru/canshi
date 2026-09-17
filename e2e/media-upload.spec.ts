@@ -74,7 +74,11 @@ test("うんち記録に画像を添付すると一覧・タイムラインに�
   await expect(dialog).toHaveCount(0);
 
   // タイムラインにもサムネイルが表示される
-  await page.goto(`${page.url().replace(/poop-records$/, "timeline")}`);
+  // ym を指定しないと「今日」だけに絞り込まれ、テストが使う固定日付の記録が
+  // 表示されなくなるため、記録が属する月を明示する
+  await page.goto(
+    `${page.url().replace(/poop-records$/, "timeline")}?ym=2026-09`,
+  );
   await expect(
     page.getByRole("button", { name: /うんちの添付 \d を表示/ }),
   ).toHaveCount(2);
