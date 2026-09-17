@@ -20,11 +20,13 @@ test("水の記録の登録・編集・削除ができる", async ({ page }) => 
 
   await page.getByLabel("発生日").fill("2026-09-07");
   await page.getByLabel("発生時刻").fill("08:00");
-  await page.getByLabel("秤").click();
+  // Radio/Checkbox の実体（input）は視覚的に隠れておりクリック不可のため、
+  // 表示されているラベルテキストをクリックする
+  await page.getByText("秤").click();
   await page.getByLabel("給水量（ml）").fill("200");
   await page.getByLabel("残量（ml）").fill("50");
-  await page.getByLabel("こぼれがあった").click();
-  await page.getByLabel("水を交換した").click();
+  await page.getByText("こぼれがあった").click();
+  await page.getByText("水を交換した").click();
   await page.getByLabel("主観評価").click();
   await page.getByRole("option", { name: "多い" }).click();
   await page.getByLabel("備考").fill("よく飲んでいた");

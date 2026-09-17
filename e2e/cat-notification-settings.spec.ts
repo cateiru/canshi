@@ -20,10 +20,14 @@ test("猫の通知設定を変更すると保存され、再訪問しても保�
     page.getByRole("heading", { name: `${catName}の通知設定` }),
   ).toBeVisible();
 
-  const halfYear = page.getByLabel("半年ごとの節目を通知する");
-  await expect(halfYear).toBeChecked();
-  await halfYear.click();
-  await expect(halfYear).not.toBeChecked();
+  // Checkbox の実体（input）は視覚的に隠れておりクリック不可のため、
+  // クリックは表示テキスト、状態確認は checkbox ロールに対して行う
+  const halfYearCheckbox = page.getByRole("checkbox", {
+    name: "半年ごとの節目を通知する",
+  });
+  await expect(halfYearCheckbox).toBeChecked();
+  await page.getByText("半年ごとの節目を通知する").click();
+  await expect(halfYearCheckbox).not.toBeChecked();
 
   await page.getByLabel("経過月数").fill("4");
   await page.getByLabel("経過日数").fill("10");

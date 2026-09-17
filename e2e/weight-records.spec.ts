@@ -21,7 +21,8 @@ test("体重記録の登録・編集・削除ができる", async ({ page }) => 
 
   await page.getByLabel("発生日").fill("2026-09-07");
   await page.getByLabel("発生時刻").fill("08:00");
-  await page.getByLabel("猫の体重を直接入力").click();
+  // Radio の実体（input）は視覚的に隠れておりクリック不可のため、表示テキストをクリックする
+  await page.getByText("猫の体重を直接入力").click();
   await page.getByLabel("猫の体重（kg）").fill("4.20");
   await page.getByRole("button", { name: "記録する" }).click();
 

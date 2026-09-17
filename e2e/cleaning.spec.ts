@@ -21,7 +21,8 @@ test("掃除対象と実施記録の登録・編集・削除ができる", async
   await page.getByRole("link", { name: "最初の対象を追加する" }).click();
 
   await page.getByLabel("名前").fill("トイレ");
-  await page.getByLabel("頻度").fill("14");
+  // 「頻度の単位」ラジオグループのラベルとの部分一致を避けるため完全一致にする
+  await page.getByLabel("頻度", { exact: true }).fill("14");
   await page.getByText("ヶ月").click();
   // プリセットのワンタップ追加ボタン（例:「猫砂を追加する」）にも「追加する」が
   // 部分一致してしまうため、完全一致でフォーム自体の送信ボタンに絞り込む
@@ -30,7 +31,8 @@ test("掃除対象と実施記録の登録・編集・削除ができる", async
   await expect(page).toHaveURL(/\/cleaning$/);
   const targetCard = page.getByRole("article", { name: "トイレ" });
   await expect(targetCard).toBeVisible();
-  await expect(targetCard.getByText("未実施")).toBeVisible();
+  // 「未定（未実施のため）」にも部分一致してしまうため完全一致にする
+  await expect(targetCard.getByText("未実施", { exact: true })).toBeVisible();
 
   // 掃除対象の編集
   await targetCard.getByRole("link", { name: "編集する" }).click();

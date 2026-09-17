@@ -112,8 +112,18 @@ test("猫の写真を登録するとプロフィール画像が自動更新さ�
     page.getByRole("button", { name: "写真の添付 1 を表示" }),
   ).toHaveCount(3);
 
-  // 最新の写真記録を削除すると、残りの中で最新の写真に付け替わる
+  // 写真記録の編集画面から備考を更新できる
   await page.goto(`${detailUrl}/photos`);
+  await page.getByRole("link", { name: "編集する" }).first().click();
+  await expect(
+    page.getByRole("heading", { name: `${catName}の写真を編集する` }),
+  ).toBeVisible();
+  await page.getByLabel("備考").fill("お気に入りの一枚");
+  await page.getByRole("button", { name: "更新する" }).click();
+  await expect(page).toHaveURL(/photos$/);
+  await expect(page.getByText("お気に入りの一枚")).toBeVisible();
+
+  // 最新の写真記録を削除すると、残りの中で最新の写真に付け替わる
   await page.getByRole("button", { name: "削除する" }).first().click();
   await page
     .getByRole("dialog")
