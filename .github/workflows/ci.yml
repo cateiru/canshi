@@ -94,9 +94,15 @@ jobs:
         if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
         run: pnpm db:migrate:local
 
+      # chromaui/action の playwright モードは Playwright 自体を実行しないため、
+      # 先にテストを実行してスナップショットアーカイブ (test-results/chromatic-archives) を作る
+      - name: Run Playwright tests for VRT
+        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
+        run: pnpm vrt
+
       - name: Run Chromatic
         if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
         uses: chromaui/action@latest
         with:
           projectToken: ${{ env.CHROMATIC_PROJECT_TOKEN }}
-          playwrightConfigFile: playwright.vrt.config.ts
+          playwright: true
