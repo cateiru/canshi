@@ -49,7 +49,9 @@ export default async function NotificationsPage({
       <nav className={styles.catFilter} aria-label="猫で絞り込む">
         <Link
           href="/notifications"
-          className={catId ? styles.filterLink : styles.filterLinkActive}
+          className={styles.filterTab}
+          data-selected={catId ? undefined : "true"}
+          aria-current={catId ? undefined : "page"}
         >
           すべて
         </Link>
@@ -57,9 +59,9 @@ export default async function NotificationsPage({
           <Link
             key={cat.id}
             href={`/notifications?catId=${cat.id}`}
-            className={
-              catId === cat.id ? styles.filterLinkActive : styles.filterLink
-            }
+            className={styles.filterTab}
+            data-selected={catId === cat.id ? "true" : undefined}
+            aria-current={catId === cat.id ? "page" : undefined}
           >
             {cat.name}
           </Link>
