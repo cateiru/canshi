@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "vrt": "playwright test --config=playwright.vrt.config.ts",
+    "vrt:seed": "wrangler d1 execute DB --local --file=e2e/fixtures/vrt-seed.sql",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",

@@ -94,6 +94,12 @@ jobs:
         if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
         run: pnpm db:migrate:local
 
+      # VRT が「猫の詳細・記録一覧にデータがあるケース」を実行日時に依存せず
+      # 再現するための固定フィクスチャ (e2e/fixtures/vrt-seed.sql 参照)
+      - name: Seed VRT fixtures into local D1
+        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
+        run: pnpm vrt:seed
+
       # chromaui/action の playwright モードは Playwright 自体を実行しないため、
       # 先にテストを実行してスナップショットアーカイブ (test-results/chromatic-archives) を作る
       - name: Run Playwright tests for VRT
