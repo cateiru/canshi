@@ -12,26 +12,19 @@
   padding: var(--space-2) var(--space-4);
 }
 
-.settingsLink {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  padding: var(--space-2);
-  border-radius: var(--radius-base);
+.header .iconLink {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-ink);
 }
 
-.settingsLink:hover {
-  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
-}
-
-.settingsLink:focus-visible {
-  outline: var(--focus-ring-width) solid var(--color-accent);
-  outline-offset: var(--focus-ring-offset);
-}
-
-.icon {
-  width: 24px;
-  height: 24px;
+.header .iconLink:hover,
+.header .iconLink[data-hovered] {
+  background: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
 }
