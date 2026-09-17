@@ -64,3 +64,45 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  vrt:
+    runs-on: ubuntu-latest
+    env:
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Chromatic がベースラインとの差分比較に git 履歴を使うため必要
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # CHROMATIC_PROJECT_TOKEN が未設定のうちは以降をスキップし CI を赤くしない
+      - name: Install Playwright browsers
+        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Apply local D1 migrations
+        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
+        run: pnpm db:migrate:local
+
+      # chromaui/action の playwright モードは Playwright 自体を実行しないため、
+      # 先にテストを実行してスナップショットアーカイブ (test-results/chromatic-archives) を作る
+      - name: Run Playwright tests for VRT
+        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
+        run: pnpm vrt
+
+      - name: Run Chromatic
+        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
+        uses: chromaui/action@latest
+        with:
+          projectToken: ${{ env.CHROMATIC_PROJECT_TOKEN }}
+          playwright: true
