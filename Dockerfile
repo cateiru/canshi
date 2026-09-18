@@ -1,4 +1,4 @@
-FROM node:22-slim
+FROM node:24-slim
 
 RUN corepack enable
 ENV PNPM_CONFIG_STORE_DIR=/root/.local/share/pnpm/store
