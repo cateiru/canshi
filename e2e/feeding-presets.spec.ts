@@ -23,7 +23,7 @@ test("ごはんプリセットの編集・削除ができる", async ({ page }) 
   const preset = page.getByRole("article", { name: presetName });
   await expect(preset).toBeVisible();
   await expect(preset.getByText(productName)).toBeVisible();
-  await expect(preset.getByText("30")).toBeVisible();
+  await expect(preset.getByText("30g", { exact: true })).toBeVisible();
 
   await preset.getByRole("link", { name: "編集する" }).click();
   await expect(page.getByLabel("プリセット名")).toHaveValue(presetName);
@@ -31,7 +31,7 @@ test("ごはんプリセットの編集・削除ができる", async ({ page }) 
   await page.getByRole("button", { name: "更新する" }).click();
 
   await expect(page).toHaveURL(/feeding-presets$/);
-  await expect(preset.getByText("45")).toBeVisible();
+  await expect(preset.getByText("45g", { exact: true })).toBeVisible();
 
   await preset.getByRole("button", { name: "削除する" }).click();
   await page
