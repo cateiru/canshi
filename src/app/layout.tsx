@@ -15,7 +15,7 @@ const metadata: Metadata = {
   description: "愛猫の記録アプリ",
   openGraph: {
     title: "CANSHI",
-    description: "毎日の記録で、愛猫を見守る。ごはん・体重・健康を、ひとつに。",
+    description: "愛猫の記録アプリ",
     siteName: "CANSHI",
     locale: "ja_JP",
     type: "website",
