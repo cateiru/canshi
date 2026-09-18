@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { TbSettings } from "react-icons/tb";
 import { ButtonLink, Footer, ToastRegionRoot } from "@/components/ui";
 import { NotificationBadge } from "@/features/notifications/NotificationBadge";
@@ -9,9 +10,19 @@ import styles from "./layout.module.css";
 // NotificationBadge が getCloudflareContext() を使うため静的プリレンダリングできない
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
+const metadata: Metadata = {
   title: "CANSHI",
   description: "愛猫の記録アプリ",
+  openGraph: {
+    title: "CANSHI",
+    description: "毎日の記録で、愛猫を見守る。ごはん・体重・健康を、ひとつに。",
+    siteName: "CANSHI",
+    locale: "ja_JP",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
   appleWebApp: {
     capable: true,
     title: "CANSHI",
@@ -26,6 +37,22 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-capable": "yes",
   },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const requestHeaders = await headers();
+  const host =
+    requestHeaders.get("x-forwarded-host") ??
+    requestHeaders.get("host") ??
+    "localhost:3000";
+  const protocol =
+    requestHeaders.get("x-forwarded-proto") === "http" ? "http" : "https";
+
+  return {
+    ...metadata,
+    // 固定の公開 URL を持たず、アクセス先のドメインで OG 画像の URL を解決する。
+    metadataBase: new URL(`${protocol}://${host}`),
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#ec995a",

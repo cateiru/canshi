@@ -86,6 +86,8 @@ pnpm db:migrate:remote # 本番 D1 にマイグレーションを適用（docs/d
 
 アイコンは `public/icons/icon.svg` を原本とする。変更後に `pnpm icons:generate` を実行すると、ブラウザ用の SVG・ICO（16・32・48px）、PWA 用の PNG（192・512px）、Apple touch icon（180px）をまとめて再生成できる。maskable 版は猫全体がセーフエリア内に収まる余白を取り、Apple 用は OS が角を丸めるため背景を全面に描画する。
 
+SNS 共有用の OG 画像は `pnpm og:generate` で同じアイコン原本から `src/app/opengraph-image.png`（1200 × 630px）を再生成する。生成時には Noto Sans CJK JP フォントが必要（Debian / Ubuntu では `fonts-noto-cjk`）。生成済みの PNG をコミットするため、ビルド・配信環境にはフォント不要。レイアウトや文言は `scripts/generate-og-image.mjs`、代替テキストは `src/app/opengraph-image.alt.txt` で管理する。
+
 - Service Worker（`public/sw.js`）は本番ビルドでのみ登録される（`next dev` では HMR と競合するため登録しない）
 - キャッシュ対象は静的アセット（`/_next/static/`）とオフライン時のフォールバックページ（`/offline`）のみで、記録データを含むページ・API はキャッシュしない
 - キャッシュの構成を変更した場合は `public/sw.js` の `CACHE_VERSION` を上げること（`activate` 時に古いバージョンのキャッシュを破棄する）
