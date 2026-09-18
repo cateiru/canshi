@@ -35,6 +35,10 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # アプリは日付判定に Asia/Tokyo を使うため、UTC の CI ランナーのまま実行すると
+    # 日付境界をまたいだタイミングで「今日」の判定がテストとアプリでずれて flaky になる
+    env:
+      TZ: Asia/Tokyo
     steps:
       - uses: actions/checkout@v4
 
