@@ -11,7 +11,7 @@ const icon = await readFile(new URL("public/icons/icon.svg", root), "utf8");
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#fff8ed" />
   <g fill="#2e3142" font-family="Noto Sans CJK JP, sans-serif">
-    <text x="88" y="271" font-size="38" font-weight="500" letter-spacing="3">愛猫の記録アプリ</text>
+    <text x="88" y="271" font-size="38" font-weight="700" letter-spacing="3">愛猫の記録アプリ</text>
     <text x="80" y="392" font-size="108" font-weight="900" letter-spacing="4">CANSHI</text>
   </g>
   ${icon.replace("<svg ", '<svg x="758" y="144" width="342" height="342" ')}
