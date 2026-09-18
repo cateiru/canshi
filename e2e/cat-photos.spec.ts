@@ -62,7 +62,7 @@ test("猫の写真を登録するとプロフィール画像が自動更新さ�
     .getByRole("button", { name: "プロフィールに固定" })
     .click();
   const cropDialog = page.getByRole("dialog", {
-    name: "プロフィール画像の位置を選ぶ",
+    name: "プロフィール画像の位置・ズーム・回転を選ぶ",
   });
   await cropDialog.getByRole("button", { name: "この位置に固定する" }).click();
   await expect(cropDialog).toBeHidden();
