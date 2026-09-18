@@ -1,0 +1,29 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# next.js
+.next
+out
+
+# opennext / cloudflare
+.open-next
+.wrangler
+
+# testing
+coverage
+playwright-report
+test-results
+
+# env
+.env
+.env*.local
+.dev.vars
+.dev.vars*.local
+
+# misc
+.git
+.DS_Store
+*.pem
+npm-debug.log*
+.pnpm-debug.log*

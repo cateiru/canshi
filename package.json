@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "docker:up": "NODE_VERSION=$(cat .node-version) docker compose up",
+    "docker:build": "NODE_VERSION=$(cat .node-version) docker compose build",
     "lint": "biome check .",
     "format": "biome check --write .",
     "icons:generate": "node scripts/generate-icons.mjs",

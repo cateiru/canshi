@@ -1,6 +1,7 @@
-FROM node:24-slim
+ARG NODE_VERSION
+FROM node:${NODE_VERSION}-slim
 
-RUN corepack enable
+RUN npm i -g corepack && corepack enable
 ENV PNPM_CONFIG_STORE_DIR=/root/.local/share/pnpm/store
 
 WORKDIR /app
