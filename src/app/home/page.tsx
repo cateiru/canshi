@@ -23,7 +23,7 @@ export default function Home() {
           日々の小さな変化を残していきましょう。
         </p>
         <ButtonLink href="/cats" variant="primary">
-          <CatIcon aria-hidden="true" size={20} />
+          <CatIcon aria-hidden="true" size={24} monochrome />
           猫一覧を見る
         </ButtonLink>
       </section>

@@ -29,7 +29,7 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
     <form action={formAction} className={styles.form}>
       <section className={styles.section} aria-labelledby="cat-basic-heading">
         <h2 id="cat-basic-heading" className={styles.sectionHeading}>
-          <CatIcon aria-hidden="true" size={20} />
+          <CatIcon aria-hidden="true" size={24} />
           基本情報
         </h2>
         <FormField

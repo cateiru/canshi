@@ -93,6 +93,16 @@ function CatOutline({
   );
 }
 
+export function CatFaceIcon(props: RecordIconProps) {
+  const catTransform = "translate(-2.4 2.1) scale(1.2)";
+
+  return (
+    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
+      <CatOutline transform={catTransform} expression="calm" />
+    </RecordIcon>
+  );
+}
+
 export function FeedingIcon(props: RecordIconProps) {
   const bowl = "M3 16h18l-1.5 4a3 3 0 0 1-2.8 2H7.3a3 3 0 0 1-2.8-2Z";
 
