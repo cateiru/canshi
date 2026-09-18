@@ -170,7 +170,7 @@ Alert はバッジと異なり、状態色（info・success・warning・error）
 
 インタラクティブな UI コンポーネントは [react-aria-components](https://react-spectrum.adobe.com/react-aria/) をベースに実装する。
 
-- Button・FormField・Textarea・Select・Checkbox・Radio・Tabs・Modal・Heading・Toast は react-aria-components のコンポーネントをラップして実装する
+- Button・FormField・Textarea・Select・Checkbox・Radio・Slider・Tabs・Modal・Heading・Toast は react-aria-components のコンポーネントをラップして実装する
 - 状態のスタイリングは `:hover` や `:disabled` などの擬似クラスではなく、react-aria-components が付与する `data-hovered` / `data-selected` / `data-focus-visible` などの `data-*` 属性セレクタを基本とする
 - react-aria-components の各コンポーネントは `"use client"` 境界を要求するため、これらをラップするコンポーネントのファイルにも `"use client"` を付与する
 - Badge・Card・CatEarFrame・Alert は react-aria-components に対応するプリミティブが存在しない純粋な装飾・表示用コンポーネントのため、素の HTML 要素のまま実装する（Card の見出しのみ、共通の Heading コンポーネントを利用する）

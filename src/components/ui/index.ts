@@ -13,6 +13,7 @@ export * from "./Heading/Heading";
 export * from "./Modal/Modal";
 export * from "./Radio/Radio";
 export * from "./Select/Select";
+export * from "./Slider/Slider";
 export * from "./Tabs/Tabs";
 export * from "./Textarea/Textarea";
 export * from "./Toast/Toast";

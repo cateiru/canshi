@@ -64,7 +64,7 @@ export default async function CatPhotosPage({ params }: CatPhotosPageProps) {
       <p className={styles.note}>
         {cat.isProfilePinned
           ? "プロフィール画像は固定中です。写真を開いて「固定を解除」すると最新の写真で自動更新されます。"
-          : "最新の撮影日時の写真がプロフィール画像になります。写真を開いて「プロフィール画像にする」を押すと固定できます。"}
+          : "最新の撮影日時の写真がプロフィール画像になります。写真を開いて「プロフィールに固定」を押すと、表示位置・ズーム・回転を選んで固定できます。"}
       </p>
 
       {photos.length === 0 ? (
@@ -129,6 +129,8 @@ export default async function CatPhotosPage({ params }: CatPhotosPageProps) {
                     isProfilePinned={cat.isProfilePinned}
                     profileCropX={cat.profileCropX}
                     profileCropY={cat.profileCropY}
+                    profileCropZoom={cat.profileCropZoom}
+                    profileCropRotation={cat.profileCropRotation}
                     pinAction={pinProfileImageAction.bind(null, catId)}
                     unpinAction={unpinProfileImageAction.bind(null, catId)}
                   />

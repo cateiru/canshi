@@ -12,10 +12,17 @@
 }
 
 .cropper {
+  position: relative;
   width: 100%;
-  height: 320px;
+  height: 340px;
   max-height: 60vh;
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-base);
   overflow: hidden;
+}
+
+.sliders {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }

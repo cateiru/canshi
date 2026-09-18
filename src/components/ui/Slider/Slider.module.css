@@ -1,0 +1,100 @@
+.slider {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  touch-action: none;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+}
+
+.output {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+}
+
+.track {
+  position: relative;
+  width: 100%;
+  min-height: 44px;
+  /*
+   * つまみの中心は常にトラックの 0%/100% の位置（＝トラック自身の左右端）に来る。
+   * つまみ本体は width: 20px を translate(-50%) で中心合わせしているため、
+   * 半径（10px）とフォーカスリングの太さ（outline-width + outline-offset）を
+   * 合わせた分だけ margin で余白を持たせないと、両端で円やリングが枠の外に
+   * はみ出す（padding では効かない。padding はトラック自身の絶対配置の基準
+   * ボックスに含まれてしまうため、0%/100% の位置そのものは動かない）
+   */
+  margin-inline: 13px;
+  cursor: pointer;
+}
+
+.slider[data-disabled] .track {
+  cursor: not-allowed;
+}
+
+.track::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  inset-inline: 0;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  transform: translateY(-50%);
+}
+
+.fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: var(--color-ink);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: 50%;
+  background-color: var(--color-bg);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transform: translate(-50%, -50%);
+  transition:
+    border-color var(--transition-base),
+    outline-color var(--transition-base);
+}
+
+.thumb[data-hovered],
+.thumb[data-dragging] {
+  border-color: var(--color-accent);
+}
+
+.thumb[data-focus-visible] {
+  outline-color: var(--color-accent);
+}
+
+.thumb[data-disabled] {
+  opacity: 0.5;
+}
+
+.slider[data-disabled] .fill {
+  background-color: color-mix(in srgb, var(--color-ink) 40%, var(--color-bg));
+}

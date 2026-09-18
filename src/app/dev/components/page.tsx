@@ -16,6 +16,7 @@ import {
   Radio,
   RadioGroup,
   Select,
+  Slider,
   Tabs,
   Textarea,
 } from "@/components/ui";
@@ -270,6 +271,29 @@ export default function ComponentsPreviewPage() {
           <Radio value="male">オス</Radio>
           <Radio value="unknown">不明</Radio>
         </RadioGroup>
+      </section>
+
+      <section>
+        <h2>Slider</h2>
+        <div className={styles.formSample}>
+          <Slider
+            label="ズーム"
+            minValue={1}
+            maxValue={3}
+            step={0.01}
+            defaultValue={1.5}
+            formatValue={(value) => `${value.toFixed(2)}倍`}
+          />
+          <Slider
+            label="回転"
+            minValue={-180}
+            maxValue={180}
+            step={1}
+            defaultValue={0}
+            formatValue={(value) => `${value}°`}
+          />
+          <Slider label="無効化" minValue={0} maxValue={10} isDisabled />
+        </div>
       </section>
 
       <section>

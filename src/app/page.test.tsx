@@ -27,6 +27,8 @@ function buildCat(id: string): Cat {
     isProfilePinned: false,
     profileCropX: null,
     profileCropY: null,
+    profileCropZoom: null,
+    profileCropRotation: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

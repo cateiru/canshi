@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { catPhotos, cats, mediaAssets } from "@/db/schema";
 import {
-  clampCropPercent,
+  clampCropOffset,
+  clampCropRotation,
+  clampCropZoom,
   type ProfileCrop,
 } from "@/features/cats/profileCrop";
 import { syncCatProfileImage } from "@/features/cats/profileImage";
@@ -108,7 +110,7 @@ export type ProfileImageActionResult = { error?: string };
 
 /**
  * 指定した写真をプロフィール画像として固定する。固定中は写真を追加しても自動更新しない。
- * crop は表示位置（object-position と同じ 0〜100 の百分率）
+ * crop は表示位置（枠のサイズに対する百分率オフセット）・ズーム倍率・回転角度
  */
 export async function pinProfileImageAction(
   catId: string,
@@ -135,8 +137,10 @@ export async function pinProfileImageAction(
     .set({
       profileMediaAssetId: asset.id,
       isProfilePinned: true,
-      profileCropX: clampCropPercent(crop.x),
-      profileCropY: clampCropPercent(crop.y),
+      profileCropX: clampCropOffset(crop.x),
+      profileCropY: clampCropOffset(crop.y),
+      profileCropZoom: clampCropZoom(crop.zoom),
+      profileCropRotation: clampCropRotation(crop.rotation),
       updatedAt: new Date(),
     })
     .where(eq(cats.id, catId));
