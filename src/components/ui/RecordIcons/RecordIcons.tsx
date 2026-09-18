@@ -74,11 +74,13 @@ function CatOutline({
   expression = "happy",
   facePath = catFace,
   showMouth = true,
+  eyesOffsetY = 0,
 }: {
   transform?: string;
   expression?: "happy" | "calm" | "unwell";
   facePath?: string;
   showMouth?: boolean;
+  eyesOffsetY?: number;
 }) {
   const eyes = {
     happy: "m7 9 1-1 1 1m6 0 1-1 1 1",
@@ -89,7 +91,7 @@ function CatOutline({
   return (
     <g transform={transform}>
       <path d={facePath} />
-      <path d={eyes[expression]} />
+      <path d={eyes[expression]} transform={`translate(0 ${eyesOffsetY})`} />
       {showMouth && (
         <path d={expression === "unwell" ? "M11 12h2" : "m11 11 1 1 1-1"} />
       )}
@@ -254,7 +256,7 @@ export function WaterIcon(props: RecordIconProps) {
     >
       {/* 舌の付け根を顎の輪郭に重ね、線端が顔の内側へ飛び出さないようにする。 */}
       <path d={tongue} strokeLinecap="butt" />
-      <CatOutline transform={catTransform} showMouth={false} />
+      <CatOutline transform={catTransform} showMouth={false} eyesOffsetY={1} />
       <path d={bowl} />
       <path d={drop} />
     </RecordIcon>
