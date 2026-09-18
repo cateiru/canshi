@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Cropper, { type Point } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
+import { Slider } from "@/components/ui";
 import styles from "./ProfileCropEditor.module.css";
 import {
   clampCropOffset,
@@ -92,28 +93,24 @@ export function ProfileCropEditor({
         />
       </div>
       <div className={styles.sliders}>
-        <label className={styles.sliderRow}>
-          ズーム
-          <input
-            type="range"
-            min={minZoom}
-            max={MAX_PROFILE_CROP_ZOOM}
-            step={0.01}
-            value={zoom}
-            onChange={(e) => handleZoomSliderChange(Number(e.target.value))}
-          />
-        </label>
-        <label className={styles.sliderRow}>
-          回転
-          <input
-            type="range"
-            min={-180}
-            max={180}
-            step={1}
-            value={rotation}
-            onChange={(e) => handleRotationChange(Number(e.target.value))}
-          />
-        </label>
+        <Slider
+          label="ズーム"
+          minValue={minZoom}
+          maxValue={MAX_PROFILE_CROP_ZOOM}
+          step={0.01}
+          value={zoom}
+          onChange={(next) => handleZoomSliderChange(next)}
+          formatValue={(next) => `${next.toFixed(2)}倍`}
+        />
+        <Slider
+          label="回転"
+          minValue={-180}
+          maxValue={180}
+          step={1}
+          value={rotation}
+          onChange={(next) => handleRotationChange(next)}
+          formatValue={(next) => `${next}°`}
+        />
       </div>
     </div>
   );
