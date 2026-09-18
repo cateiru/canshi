@@ -27,12 +27,17 @@
 
 .track {
   position: relative;
-  display: flex;
-  align-items: center;
   width: 100%;
   min-height: 44px;
-  /* つまみ（20px）の半径ぶんの余白を持たせ、両端で円が枠の外にはみ出さないようにする */
-  padding-inline: 10px;
+  /*
+   * つまみの中心は常にトラックの 0%/100% の位置（＝トラック自身の左右端）に来る。
+   * つまみ本体は width: 20px を translate(-50%) で中心合わせしているため、
+   * 半径（10px）とフォーカスリングの太さ（outline-width + outline-offset）を
+   * 合わせた分だけ margin で余白を持たせないと、両端で円やリングが枠の外に
+   * はみ出す（padding では効かない。padding はトラック自身の絶対配置の基準
+   * ボックスに含まれてしまうため、0%/100% の位置そのものは動かない）
+   */
+  margin-inline: 13px;
   cursor: pointer;
 }
 
@@ -43,10 +48,12 @@
 .track::before {
   content: "";
   position: absolute;
+  top: 50%;
   inset-inline: 0;
   height: 4px;
   border-radius: 9999px;
   background-color: color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  transform: translateY(-50%);
 }
 
 .fill {
