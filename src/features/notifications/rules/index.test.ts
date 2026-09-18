@@ -15,6 +15,8 @@ function makeCat(overrides: Partial<Cat> = {}): Cat {
     isProfilePinned: false,
     profileCropX: null,
     profileCropY: null,
+    profileCropZoom: null,
+    profileCropRotation: null,
     createdAt: new Date("2025-09-11T00:00:00.000Z"),
     updatedAt: new Date("2025-09-11T00:00:00.000Z"),
     ...overrides,

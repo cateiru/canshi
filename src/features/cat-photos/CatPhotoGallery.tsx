@@ -18,9 +18,11 @@ type CatPhotoGalleryProps = {
   /** 現在プロフィールに使っている写真 */
   profileAssetId: string | null;
   isProfilePinned: boolean;
-  /** 固定中の写真の表示位置（object-position と同じ 0〜100 の百分率） */
+  /** 固定中の写真の表示位置（枠のサイズに対する百分率オフセット）・ズーム倍率・回転角度 */
   profileCropX: number | null;
   profileCropY: number | null;
+  profileCropZoom: number | null;
+  profileCropRotation: number | null;
   pinAction: (
     assetId: string,
     crop: ProfileCrop,
@@ -38,6 +40,8 @@ export function CatPhotoGallery({
   isProfilePinned,
   profileCropX,
   profileCropY,
+  profileCropZoom,
+  profileCropRotation,
   pinAction,
   unpinAction,
 }: CatPhotoGalleryProps) {
@@ -53,7 +57,12 @@ export function CatPhotoGallery({
       asset.id === profileAssetId &&
         profileCropX != null &&
         profileCropY != null
-        ? { x: profileCropX, y: profileCropY }
+        ? {
+            x: profileCropX,
+            y: profileCropY,
+            zoom: profileCropZoom ?? DEFAULT_PROFILE_CROP.zoom,
+            rotation: profileCropRotation ?? DEFAULT_PROFILE_CROP.rotation,
+          }
         : DEFAULT_PROFILE_CROP,
     );
     setCropTarget(asset);
@@ -134,7 +143,7 @@ export function CatPhotoGallery({
       <Modal
         open={cropTarget != null}
         onClose={() => setCropTarget(null)}
-        title="プロフィール画像の位置を選ぶ"
+        title="プロフィール画像の位置・ズーム・回転を選ぶ"
       >
         {cropTarget ? (
           <div className={styles.cropModalBody}>

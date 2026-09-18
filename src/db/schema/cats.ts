@@ -27,10 +27,14 @@ export const cats = sqliteTable("cats", {
   isProfilePinned: integer("is_profile_pinned", { mode: "boolean" })
     .notNull()
     .default(false),
-  // プロフィール画像の表示位置（CSS の object-position と同じ 0〜100 の百分率）。
-  // 未設定（null）なら中央（50, 50）として扱う
+  // プロフィール画像の表示位置（枠のサイズに対する百分率オフセット。0 が中央）。
+  // 未設定（null）なら中央（0, 0）として扱う
   profileCropX: real("profile_crop_x"),
   profileCropY: real("profile_crop_y"),
+  // プロフィール画像のズーム倍率（1 以上。1 = ズームなし）。未設定（null）なら 1 として扱う
+  profileCropZoom: real("profile_crop_zoom"),
+  // プロフィール画像の回転角度（度）。未設定（null）なら 0 として扱う
+  profileCropRotation: real("profile_crop_rotation"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

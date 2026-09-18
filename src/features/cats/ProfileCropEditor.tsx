@@ -1,10 +1,17 @@
 "use client";
 
-import { useRef } from "react";
-import { Cropper, type ReactCropperElement } from "react-cropper";
-import "cropperjs/dist/cropper.css";
+import { useEffect, useState } from "react";
+import Cropper, { type Point } from "react-easy-crop";
+import "react-easy-crop/react-easy-crop.css";
 import styles from "./ProfileCropEditor.module.css";
-import type { ProfileCrop } from "./profileCrop";
+import {
+  clampCropOffset,
+  clampCropRotation,
+  clampCropZoom,
+  MAX_PROFILE_CROP_ZOOM,
+  minZoomForRotation,
+  type ProfileCrop,
+} from "./profileCrop";
 
 type ProfileCropEditorProps = {
   imageUrl: string;
@@ -13,77 +20,101 @@ type ProfileCropEditorProps = {
 };
 
 /**
- * プロフィール画像として使う正方形の表示位置を選ぶ UI。
- * 切り抜き枠は正方形に固定したまま動かせないようにし、代わりに写真の方をドラッグして
- * 好きな部分を枠に合わせてもらう（cropperjs の dragMode: "move"）。
- * 枠の一辺は object-fit: cover で表示したときに実際に見える範囲（= 短辺いっぱい）に固定する
+ * 切り抜き枠の固定サイズ（px）。表示位置は枠のサイズに対する百分率で保存するため、
+ * コンテナの実際の表示幅に関わらずこの値を基準にする
+ */
+const CROP_SIZE = { width: 280, height: 280 };
+
+/**
+ * プロフィール画像として使う正方形の表示位置・ズーム・回転を選ぶ UI（react-easy-crop）。
+ * 枠は中央に固定し、画像をドラッグ・ピンチ／ホイール（ズーム）・2本指回転（またはスライダー）
+ * で操作する。回転させると正方形の四隅に画像の外側が写り込みうるため、回転角度に応じて
+ * 必要な最小ズームを都度引き上げる（`minZoomForRotation`）
  */
 export function ProfileCropEditor({
   imageUrl,
   value,
   onChange,
 }: ProfileCropEditorProps) {
-  const cropperRef = useRef<ReactCropperElement>(null);
+  const [crop, setCrop] = useState<Point>({
+    x: (value.x / 100) * CROP_SIZE.width,
+    y: (value.y / 100) * CROP_SIZE.height,
+  });
+  const [zoom, setZoom] = useState(value.zoom);
+  const [rotation, setRotation] = useState(value.rotation);
 
-  const applyCropBoxFromValue = () => {
-    const cropper = cropperRef.current?.cropper;
-    if (!cropper) {
-      return;
-    }
-    const { naturalWidth, naturalHeight } = cropper.getImageData();
-    if (!naturalWidth || !naturalHeight) {
-      return;
-    }
-    const side = Math.min(naturalWidth, naturalHeight);
-    const maxX = naturalWidth - side;
-    const maxY = naturalHeight - side;
-    cropper.setData({
-      x: maxX * (value.x / 100),
-      y: maxY * (value.y / 100),
-      width: side,
-      height: side,
+  const minZoom = minZoomForRotation(rotation);
+
+  useEffect(() => {
+    onChange({
+      x: clampCropOffset((crop.x / CROP_SIZE.width) * 100),
+      y: clampCropOffset((crop.y / CROP_SIZE.height) * 100),
+      zoom: clampCropZoom(zoom),
+      rotation: clampCropRotation(rotation),
     });
+    // value（親の状態）は onChange 経由でこのコンポーネントから更新されるため、
+    // 依存配列に含めると自分自身が発火したイベントで無限にループしてしまう
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [crop, zoom, rotation, onChange]);
+
+  const handleZoomSliderChange = (rawZoom: number) => {
+    setZoom(Math.max(minZoom, Math.min(MAX_PROFILE_CROP_ZOOM, rawZoom)));
   };
 
-  const handleCrop = () => {
-    const cropper = cropperRef.current?.cropper;
-    if (!cropper) {
-      return;
-    }
-    const data = cropper.getData();
-    const { naturalWidth, naturalHeight } = cropper.getImageData();
-    const maxX = naturalWidth - data.width;
-    const maxY = naturalHeight - data.height;
-    onChange({
-      x: maxX <= 0 ? 50 : Math.round((data.x / maxX) * 100),
-      y: maxY <= 0 ? 50 : Math.round((data.y / maxY) * 100),
-    });
+  const handleRotationChange = (rawRotation: number) => {
+    const nextRotation = clampCropRotation(rawRotation);
+    setRotation(nextRotation);
+    // 回転で必要になる最小ズームを下回っていたら引き上げる。実際の枠位置の再計算は
+    // react-easy-crop が zoom/rotation の props 変化を検知して行い、onCropChange で通知される
+    setZoom((current) => Math.max(current, minZoomForRotation(nextRotation)));
   };
 
   return (
     <div className={styles.wrapper}>
-      <p className={styles.label}>ドラッグして表示位置を調整</p>
-      <Cropper
-        ref={cropperRef}
-        src={imageUrl}
-        className={styles.cropper}
-        viewMode={1}
-        dragMode="move"
-        aspectRatio={1}
-        cropBoxMovable={false}
-        cropBoxResizable={false}
-        zoomable={false}
-        rotatable={false}
-        scalable={false}
-        toggleDragModeOnDblclick={false}
-        guides={false}
-        center={false}
-        highlight={false}
-        background={false}
-        autoCrop={true}
-        ready={applyCropBoxFromValue}
-        crop={handleCrop}
-      />
+      <p className={styles.label}>
+        ドラッグして表示位置を調整、ピンチ／ホイールでズーム
+      </p>
+      <div className={styles.cropper}>
+        <Cropper
+          image={imageUrl}
+          crop={crop}
+          zoom={zoom}
+          rotation={rotation}
+          minZoom={minZoom}
+          maxZoom={MAX_PROFILE_CROP_ZOOM}
+          aspect={1}
+          cropShape="rect"
+          cropSize={CROP_SIZE}
+          showGrid={false}
+          onCropChange={setCrop}
+          onZoomChange={setZoom}
+          onRotationChange={handleRotationChange}
+        />
+      </div>
+      <div className={styles.sliders}>
+        <label className={styles.sliderRow}>
+          ズーム
+          <input
+            type="range"
+            min={minZoom}
+            max={MAX_PROFILE_CROP_ZOOM}
+            step={0.01}
+            value={zoom}
+            onChange={(e) => handleZoomSliderChange(Number(e.target.value))}
+          />
+        </label>
+        <label className={styles.sliderRow}>
+          回転
+          <input
+            type="range"
+            min={-180}
+            max={180}
+            step={1}
+            value={rotation}
+            onChange={(e) => handleRotationChange(Number(e.target.value))}
+          />
+        </label>
+      </div>
     </div>
   );
 }

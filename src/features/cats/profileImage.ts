@@ -21,6 +21,8 @@ export async function syncCatProfileImage(catId: string): Promise<void> {
       isProfilePinned: cats.isProfilePinned,
       profileCropX: cats.profileCropX,
       profileCropY: cats.profileCropY,
+      profileCropZoom: cats.profileCropZoom,
+      profileCropRotation: cats.profileCropRotation,
     })
     .from(cats)
     .where(eq(cats.id, catId))
@@ -60,7 +62,10 @@ export async function syncCatProfileImage(catId: string): Promise<void> {
 
   const nextId = latest?.id ?? null;
   const cropAlreadyCleared =
-    cat.profileCropX == null && cat.profileCropY == null;
+    cat.profileCropX == null &&
+    cat.profileCropY == null &&
+    cat.profileCropZoom == null &&
+    cat.profileCropRotation == null;
   if (
     nextId === cat.profileMediaAssetId &&
     !cat.isProfilePinned &&
@@ -74,9 +79,11 @@ export async function syncCatProfileImage(catId: string): Promise<void> {
       profileMediaAssetId: nextId,
       // 固定した写真が消えた場合はここに来るので固定を解除する
       isProfilePinned: false,
-      // 固定を外した写真の crop 位置を次の写真に引き継ぐ意味はないため必ず消す
+      // 固定を外した写真の crop 位置・ズーム・回転を次の写真に引き継ぐ意味はないため必ず消す
       profileCropX: null,
       profileCropY: null,
+      profileCropZoom: null,
+      profileCropRotation: null,
       updatedAt: new Date(),
     })
     .where(eq(cats.id, catId));

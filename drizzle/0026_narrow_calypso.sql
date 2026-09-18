@@ -1,0 +1,1 @@
+ALTER TABLE `cats` ADD `profile_crop_zoom` real;

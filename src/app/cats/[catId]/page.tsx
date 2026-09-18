@@ -49,6 +49,8 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
           profileMediaAssetId={cat.profileMediaAssetId}
           profileCropX={cat.profileCropX}
           profileCropY={cat.profileCropY}
+          profileCropZoom={cat.profileCropZoom}
+          profileCropRotation={cat.profileCropRotation}
           size="lg"
         />
         <h1>{cat.name}</h1>
