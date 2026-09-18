@@ -1,6 +1,6 @@
 {
   "name": "canshi",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,6 +9,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "icons:generate": "node scripts/generate-icons.mjs",
+    "og:generate": "node scripts/generate-og-image.mjs",
     "vapid:generate": "node scripts/generate-vapid-keys.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
