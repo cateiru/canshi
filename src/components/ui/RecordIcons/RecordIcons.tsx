@@ -73,10 +73,14 @@ function CatOutline({
   transform,
   expression = "happy",
   facePath = catFace,
+  showMouth = true,
+  eyesOffsetY = 0,
 }: {
   transform?: string;
   expression?: "happy" | "calm" | "unwell";
   facePath?: string;
+  showMouth?: boolean;
+  eyesOffsetY?: number;
 }) {
   const eyes = {
     happy: "m7 9 1-1 1 1m6 0 1-1 1 1",
@@ -87,9 +91,21 @@ function CatOutline({
   return (
     <g transform={transform}>
       <path d={facePath} />
-      <path d={eyes[expression]} />
-      <path d={expression === "unwell" ? "M11 12h2" : "m11 11 1 1 1-1"} />
+      <path d={eyes[expression]} transform={`translate(0 ${eyesOffsetY})`} />
+      {showMouth && (
+        <path d={expression === "unwell" ? "M11 12h2" : "m11 11 1 1 1-1"} />
+      )}
     </g>
+  );
+}
+
+export function CatFaceIcon(props: RecordIconProps) {
+  const catTransform = "translate(-2.4 2.1) scale(1.2)";
+
+  return (
+    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
+      <CatOutline transform={catTransform} expression="calm" />
+    </RecordIcon>
   );
 }
 
@@ -240,7 +256,7 @@ export function WaterIcon(props: RecordIconProps) {
     >
       {/* 舌の付け根を顎の輪郭に重ね、線端が顔の内側へ飛び出さないようにする。 */}
       <path d={tongue} strokeLinecap="butt" />
-      <CatOutline transform={catTransform} />
+      <CatOutline transform={catTransform} showMouth={false} eyesOffsetY={1} />
       <path d={bowl} />
       <path d={drop} />
     </RecordIcon>
@@ -289,7 +305,7 @@ export function BroomIcon(props: RecordIconProps) {
       }
     >
       <path d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5M7 17v4M4 20c-3 0-3-3-2-4" />
-      <CatOutline transform={catTransform} />
+      <CatOutline transform={catTransform} expression="calm" />
       <path d="m20 3-2 10.5" />
       <path d={broom} />
       <path d="m15.25 15 5.321 1" strokeLinecap="butt" />
@@ -333,7 +349,10 @@ export function MedicationIcon(props: RecordIconProps) {
         </>
       }
     >
-      <CatOutline facePath="M7 12.85C5.1 12 4 10.8 4 9.5A4 4 0 0 1 5 7V2l4 2.5a12 12 0 0 1 6 0L19 2v5a4 4 0 0 1 1 2.5c0 1.3-1.1 2.5-3 3.35" />
+      <CatOutline
+        expression="calm"
+        facePath="M7 12.85C5.1 12 4 10.8 4 9.5A4 4 0 0 1 5 7V2l4 2.5a12 12 0 0 1 6 0L19 2v5a4 4 0 0 1 1 2.5c0 1.3-1.1 2.5-3 3.35"
+      />
       <rect x="5" y="12.5" width="14" height="7" rx="3.5" />
       <path d="M12 12.5v7" />
     </RecordIcon>
@@ -406,7 +425,7 @@ export function ExpenseIcon(props: RecordIconProps) {
       <g stroke="none">
         <CatFill transform={catTransform} className={styles.foregroundFill} />
       </g>
-      <CatOutline transform={catTransform} />
+      <CatOutline transform={catTransform} expression="calm" />
       <g transform={coinTransform}>
         <ellipse
           className={styles.foregroundFill}
