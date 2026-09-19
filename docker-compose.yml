@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        NODE_VERSION: ${NODE_VERSION:?NODE_VERSION が未設定です。`pnpm docker:up` / `pnpm docker:build` を使ってください}
     ports:
       - "3000:3000"
     environment:
