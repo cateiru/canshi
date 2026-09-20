@@ -27,8 +27,10 @@ const ACTUAL_DIR = path.join(process.cwd(), "vrt-screenshots", "actual");
 // 個別の ignoreSelectors とは別に常時マージする
 const ALWAYS_MASKED_SELECTORS = [
   "nextjs-portal",
-  // footer のバージョン表示。バージョンを上げるたびにVRTが全件差分になるのを防ぐ
-  'footer a[href="/release-notes"]',
+  // footer全体(バージョン表示・コピーライトの年)。バージョンの桁数が変わると
+  // リンク要素自体の横幅が変わり、その要素だけをマスクしていてもマスクの矩形サイズが
+  // 変わって差分になってしまうため、幅が常に一定な footer 要素ごとマスクする
+  "footer",
 ];
 
 type VrtFixtures = {
