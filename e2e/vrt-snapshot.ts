@@ -22,6 +22,15 @@ import {
 
 const ACTUAL_DIR = path.join(process.cwd(), "vrt-screenshots", "actual");
 
+// 全ページ共通で常にマスクする要素。`test.use({ ignoreSelectors })` は値を
+// 丸ごと置き換えてしまうため、ページ個別の要素と混ざって書き漏れないよう、
+// 個別の ignoreSelectors とは別に常時マージする
+const ALWAYS_MASKED_SELECTORS = [
+  "nextjs-portal",
+  // footer のバージョン表示。バージョンを上げるたびにVRTが全件差分になるのを防ぐ
+  'footer a[href="/release-notes"]',
+];
+
 type VrtFixtures = {
   ignoreSelectors: string[];
 };
@@ -29,9 +38,12 @@ type VrtFixtures = {
 const ignoreSelectorsByPage = new WeakMap<Page, string[]>();
 
 export const test = base.extend<VrtFixtures>({
-  ignoreSelectors: [["nextjs-portal"], { option: true }],
+  ignoreSelectors: [[], { option: true }],
   page: async ({ page, ignoreSelectors }, use) => {
-    ignoreSelectorsByPage.set(page, ignoreSelectors);
+    ignoreSelectorsByPage.set(page, [
+      ...ALWAYS_MASKED_SELECTORS,
+      ...ignoreSelectors,
+    ]);
     await use(page);
     ignoreSelectorsByPage.delete(page);
   },

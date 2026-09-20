@@ -120,7 +120,7 @@ test("更新情報ページの見た目", async ({ page }, testInfo) => {
 
 // 猫の年齢・お迎えからの日数は実行日時から計算されるため、その部分だけ除外する
 test.describe("猫の詳細ページ（データがある）", () => {
-  test.use({ ignoreSelectors: ["nextjs-portal", '[class*="details"] dd'] });
+  test.use({ ignoreSelectors: ['[class*="details"] dd'] });
 
   test("猫の詳細ページ（データがある）の見た目", async ({ page }, testInfo) => {
     await page.goto(`/cats/${CAT}`);
@@ -274,10 +274,7 @@ test("通院記録一覧（何もないケース）の見た目", async ({ page 
 // このケースにのみ必要
 test.describe("通院記録一覧（データがあるケース）", () => {
   test.use({
-    ignoreSelectors: [
-      "nextjs-portal",
-      'section[aria-label="通院日カレンダーグラフ"]',
-    ],
+    ignoreSelectors: ['section[aria-label="通院日カレンダーグラフ"]'],
   });
 
   test("見た目", async ({ page }, testInfo) => {
@@ -320,10 +317,7 @@ test("掃除の実施記録（対象ごと・何もないケース）の見た�
 // こちらもカレンダーグラフがデータがあるときだけ描画されるため、このケースにのみ除外が必要
 test.describe("掃除の実施記録（対象ごと・データがあるケース）", () => {
   test.use({
-    ignoreSelectors: [
-      "nextjs-portal",
-      'section[aria-label="実施日カレンダーグラフ"]',
-    ],
+    ignoreSelectors: ['section[aria-label="実施日カレンダーグラフ"]'],
   });
 
   test("見た目", async ({ page }, testInfo) => {
@@ -385,11 +379,7 @@ test("掃除対象登録ページの見た目", async ({ page }, testInfo) => {
 // その入力欄だけ ignoreSelectors で除外する
 test.describe("記録追加ページ（日付欄あり）", () => {
   test.use({
-    ignoreSelectors: [
-      "nextjs-portal",
-      'input[type="date"]',
-      'input[type="time"]',
-    ],
+    ignoreSelectors: ['input[type="date"]', 'input[type="time"]'],
   });
 
   const NEW_RECORD_PAGES: { label: string; path: string; heading: string }[] = [
