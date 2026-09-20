@@ -165,10 +165,12 @@ jobs:
           {
             echo "## VRT (reg-suit) 結果"
             echo ""
-            echo "- 差分あり: ${FAILED} 件"
-            echo "- 新規: ${NEW} 件"
-            echo "- 削除: ${DELETED} 件"
-            echo "- 変化なし: ${PASSED} 件"
+            echo "| ステータス | 件数 |"
+            echo "| --- | --- |"
+            echo "| 差分あり | ${FAILED} |"
+            echo "| 新規 | ${NEW} |"
+            echo "| 削除 | ${DELETED} |"
+            echo "| 変化なし | ${PASSED} |"
             echo ""
             echo "[reg-suit レポートを見る](${REPORT_URL})"
             if [ "$FAILED" -gt 0 ]; then
