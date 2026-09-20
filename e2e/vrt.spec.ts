@@ -1,6 +1,6 @@
-import { expect, takeSnapshot, test } from "@chromatic-com/playwright";
+import { expect, takeSnapshot, test } from "./vrt-snapshot";
 
-// ビジュアルリグレッションテスト (Chromatic)。
+// ビジュアルリグレッションテスト (reg-suit)。
 //
 // 猫データに依存するページは、実行日時に依存しない固定フィクスチャ
 // (e2e/fixtures/vrt-seed.sql) を使って対象にする。ローカルで実行する場合は
