@@ -71,13 +71,31 @@ jobs:
 
   vrt:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
     env:
-      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+      # アプリは日付判定に Asia/Tokyo を使うため
+      TZ: Asia/Tokyo
+      S3_BUCKET: cateiru-public-storage
+      S3_PATH_PREFIX: canshi/vrt
+      REPORT_DOMAIN: storage.cateiru.dev
     steps:
       - uses: actions/checkout@v4
         with:
-          # Chromatic がベースラインとの差分比較に git 履歴を使うため必要
+          # reg-suit (reg-keygen-git-hash-plugin) がベースラインとの比較に
+          # git のブランチ履歴を使うため必要
           fetch-depth: 0
+
+      # actions/checkout は pull_request イベントだと detached HEAD で checkout するため、
+      # reg-keygen-git-hash-plugin がブランチ名を取得できずエラーになる。
+      # 回避策として現在のコミットにブランチ名を付け直す
+      # (https://github.com/reg-viz/reg-suit#workaround-for-detached-head)
+      - name: Attach HEAD to a branch (reg-suit workaround for detached HEAD)
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          git checkout "$BRANCH" || git checkout -b "$BRANCH"
 
       - uses: pnpm/action-setup@v6
 
@@ -89,30 +107,145 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # CHROMATIC_PROJECT_TOKEN が未設定のうちは以降をスキップし CI を赤くしない
       - name: Install Playwright browsers
-        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
         run: pnpm exec playwright install --with-deps chromium
 
+      # `--with-deps` は中国語フォント (fonts-wqy-*) と日本語フォント (fonts-ipafont-*) を
+      # 両方入れるため、fontconfig の既定の優先順位次第で日本語ページの漢字が中国語の字形で
+      # 描画されてしまうことがある。Noto Sans CJK JP を追加し、CJK文字は日本語フォントを
+      # 優先して使うよう fontconfig を上書きする
+      - name: Prefer Japanese fonts for CJK glyphs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
+          sudo tee /etc/fonts/local.conf >/dev/null <<'EOF'
+          <?xml version="1.0"?>
+          <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+          <fontconfig>
+            <match target="pattern">
+              <test name="lang" compare="contains"><string>ja</string></test>
+              <edit name="family" mode="prepend" binding="strong">
+                <string>Noto Sans CJK JP</string>
+              </edit>
+            </match>
+            <alias>
+              <family>sans-serif</family>
+              <prefer>
+                <family>Noto Sans CJK JP</family>
+              </prefer>
+            </alias>
+            <alias>
+              <family>serif</family>
+              <prefer>
+                <family>Noto Serif CJK JP</family>
+              </prefer>
+            </alias>
+          </fontconfig>
+          EOF
+          sudo fc-cache -f
+
       - name: Apply local D1 migrations
-        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
         run: pnpm db:migrate:local
 
       # VRT が「猫の詳細・記録一覧にデータがあるケース」を実行日時に依存せず
       # 再現するための固定フィクスチャ (e2e/fixtures/vrt-seed.sql 参照)
       - name: Seed VRT fixtures into local D1
-        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
         run: pnpm vrt:seed
 
-      # chromaui/action の playwright モードは Playwright 自体を実行しないため、
-      # 先にテストを実行してスナップショットアーカイブ (test-results/chromatic-archives) を作る
       - name: Run Playwright tests for VRT
-        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
         run: pnpm vrt
 
-      - name: Run Chromatic
-        if: ${{ env.CHROMATIC_PROJECT_TOKEN != '' }}
-        uses: chromaui/action@latest
+      # public-storage-cdk (https://github.com/cateiru/public-storage-cdk) が発行する
+      # OIDC ロールを使う。cateiru/* の全リポジトリから AssumeRole 可能
+      - name: Configure AWS credentials (public-storage-cdk)
+        uses: aws-actions/configure-aws-credentials@v6
         with:
-          projectToken: ${{ env.CHROMATIC_PROJECT_TOKEN }}
-          playwright: true
+          role-to-assume: arn:aws:iam::211125784910:role/github-actions-public-storage
+          aws-region: us-east-1
+          role-skip-session-tagging: true
+
+      - name: Run reg-suit
+        run: pnpm exec reg-suit run
+
+      # reg-publish-s3-plugin 自体はオブジェクトタグ付けに対応していないため、
+      # アップロード後に auto-expire タグを付け直す
+      # (public-storage-cdk 側のライフサイクルルールがこのタグを180日後の自動削除対象にする)
+      - name: Tag published snapshots as auto-expire
+        run: |
+          set -euo pipefail
+          KEY="$(git rev-parse HEAD)"
+          PREFIX="${S3_PATH_PREFIX}/${KEY}"
+          aws s3api list-objects-v2 --bucket "$S3_BUCKET" --prefix "$PREFIX" \
+            --query 'Contents[].Key' --output text \
+            | tr '\t' '\n' \
+            | grep -v '^$' \
+            | xargs -P 8 -I {} aws s3api put-object-tagging \
+                --bucket "$S3_BUCKET" --key "{}" \
+                --tagging 'TagSet=[{Key=auto-expire,Value=true}]'
+
+      # reg-notify-github-plugin は使わず、hasura/comment-progress で PR にコメントするため
+      # 比較結果 (.reg/out.json) から自前でメッセージを組み立てる
+      - name: Build VRT summary comment
+        id: vrt-summary
+        run: |
+          set -euo pipefail
+          KEY="$(git rev-parse HEAD)"
+          REPORT_URL="https://${REPORT_DOMAIN}/${S3_PATH_PREFIX}/${KEY}/index.html"
+          FAILED=$(jq '.failedItems | length' .reg/out.json)
+          NEW=$(jq '.newItems | length' .reg/out.json)
+          DELETED=$(jq '.deletedItems | length' .reg/out.json)
+          PASSED=$(jq '.passedItems | length' .reg/out.json)
+
+          {
+            echo "## VRT (reg-suit) 結果"
+            echo ""
+            echo "| ステータス | 件数 |"
+            echo "| --- | --- |"
+            echo "| 差分あり | ${FAILED} |"
+            echo "| 新規 | ${NEW} |"
+            echo "| 削除 | ${DELETED} |"
+            echo "| 変化なし | ${PASSED} |"
+            echo ""
+            echo "[reg-suit レポートを見る](${REPORT_URL})"
+            if [ "$FAILED" -gt 0 ]; then
+              echo ""
+              echo "### 差分があったページ"
+              echo ""
+              jq -r '.failedItems[] | "- " + .' .reg/out.json
+            fi
+          } > vrt-comment.md
+
+          echo "failed=${FAILED}" >> "$GITHUB_OUTPUT"
+          {
+            echo "message<<VRT_COMMENT_EOF"
+            cat vrt-comment.md
+            echo "VRT_COMMENT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post VRT result to the pull request
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: hasura/comment-progress@v2.3.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          number: ${{ github.event.pull_request.number }}
+          id: vrt-reg-suit
+          recreate: true
+          message: ${{ steps.vrt-summary.outputs.message }}
+
+      - name: Post VRT result to the commit
+        if: ${{ github.event_name == 'push' }}
+        uses: hasura/comment-progress@v2.3.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          commit-sha: ${{ github.sha }}
+          id: vrt-reg-suit
+          recreate: true
+          message: ${{ steps.vrt-summary.outputs.message }}
+
+      - name: Fail if reg-suit detected visual differences
+        if: ${{ steps.vrt-summary.outputs.failed != '0' }}
+        run: |
+          echo "::error::reg-suit detected ${{ steps.vrt-summary.outputs.failed }} visual difference(s). See the report URL in the comment posted above."
+          exit 1

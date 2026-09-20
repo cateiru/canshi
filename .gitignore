@@ -15,6 +15,10 @@
 /playwright-report/
 /test-results/
 
+# VRT (reg-suit)
+/.reg/
+/vrt-screenshots/
+
 # env
 .env
 .env*.local
