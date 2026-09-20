@@ -9,7 +9,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
 
@@ -40,7 +40,7 @@ jobs:
     env:
       TZ: Asia/Tokyo
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
 
@@ -82,7 +82,7 @@ jobs:
       S3_PATH_PREFIX: canshi/vrt
       REPORT_DOMAIN: storage.cateiru.dev
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # reg-suit (reg-keygen-git-hash-plugin) がベースラインとの比較に
           # git のブランチ履歴を使うため必要
