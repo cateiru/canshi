@@ -233,19 +233,15 @@ jobs:
           recreate: true
           message: ${{ steps.vrt-summary.outputs.message }}
 
-      - name: Post VRT result to the commit
+      # push イベント (PR がないコミット、例: main への直接反映) では
+      # コミットコメントを投稿する権限 (contents: write) を GITHUB_TOKEN に
+      # 付与していないため、代わりにジョブサマリーに結果を出す
+      - name: Post VRT result to the job summary
         if: ${{ github.event_name == 'push' }}
-        uses: hasura/comment-progress@v2.3.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          commit-sha: ${{ github.sha }}
-          id: vrt-reg-suit
-          recreate: true
-          message: ${{ steps.vrt-summary.outputs.message }}
+        run: cat vrt-comment.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail if reg-suit detected visual differences
         if: ${{ steps.vrt-summary.outputs.failed != '0' }}
         run: |
-          echo "::error::reg-suit detected ${{ steps.vrt-summary.outputs.failed }} visual difference(s). See the report URL in the comment posted above."
+          echo "::error::reg-suit detected ${{ steps.vrt-summary.outputs.failed }} visual difference(s). See the report URL in the PR comment or job summary posted above."
           exit 1
