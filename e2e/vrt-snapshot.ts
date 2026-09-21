@@ -26,11 +26,21 @@ const ACTUAL_DIR = path.join(process.cwd(), "vrt-screenshots", "actual");
 // 丸ごと置き換えてしまうため、ページ個別の要素と混ざって書き漏れないよう、
 // 個別の ignoreSelectors とは別に常時マージする
 const ALWAYS_MASKED_SELECTORS = [
-  "nextjs-portal",
   // footer全体(バージョン表示・コピーライトの年)。バージョンの桁数が変わると
   // リンク要素自体の横幅が変わり、その要素だけをマスクしていてもマスクの矩形サイズが
   // 変わって差分になってしまうため、幅が常に一定な footer 要素ごとマスクする
   "footer",
+];
+
+// 全ページ共通で常に非表示にする要素。mask ではなく display: none を使う（下記コメント参照）
+const ALWAYS_HIDDEN_SELECTORS = [
+  // next dev のポータル（Next.js の開発用オーバーレイ。ビルドエラーやハイドレーション不整合
+  // が起きると画面隅にトースト表示される）。custom element のホスト自体は 0x0 のままで、
+  // 実体は shadow DOM 内で position: fixed によりレイアウトから独立して描画されるため、
+  // screenshot({ mask })（ホスト要素のバウンディングボックスを塗りつぶす方式）はホストの
+  // 0x0 の矩形を塗りつぶすだけで実際には効かない。ホストの display を none にすれば
+  // shadow tree ごと確実に非表示にできる
+  "nextjs-portal",
 ];
 
 type VrtFixtures = {
@@ -68,9 +78,17 @@ export async function takeSnapshot(page: Page, testInfo: TestInfo) {
     page.locator(selector),
   );
 
+  await page.addStyleTag({
+    content: `${ALWAYS_HIDDEN_SELECTORS.join(", ")} { display: none !important; }`,
+  });
+
   await page.screenshot({
     path: path.join(ACTUAL_DIR, toFileName(testInfo)),
     fullPage: true,
     mask,
+    // CSS transition の途中で撮影してしまうと、実行のたびに途中経過のフレームが写り込み
+    // 差分になる。"disabled" は有限アニメーションを完了状態まで早送りしてから撮影するため、
+    // 常に確定した見た目で撮影できる
+    animations: "disabled",
   });
 }
