@@ -27,8 +27,14 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
+      - name: Type check (mcp-server)
+        run: pnpm --filter @canshi/mcp-server typecheck
+
       - name: Test
         run: pnpm test
+
+      - name: Test (mcp-server)
+        run: pnpm --filter @canshi/mcp-server test
 
       - name: Build
         run: pnpm build
