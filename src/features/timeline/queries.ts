@@ -125,8 +125,9 @@ type DateRange = { start: Date; end: Date };
 async function fetchFeedingEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const headers = await db
     .select({
       id: feedingRecords.id,
@@ -201,8 +202,9 @@ async function fetchFeedingEntries(
 async function fetchPoopEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select()
     .from(poopRecords)
@@ -227,8 +229,9 @@ async function fetchPoopEntries(
 async function fetchWeightEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select()
     .from(weightRecords)
@@ -253,8 +256,9 @@ async function fetchWeightEntries(
 async function fetchVomitEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select()
     .from(vomitRecords)
@@ -279,8 +283,9 @@ async function fetchVomitEntries(
 async function fetchWaterEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select()
     .from(waterRecords)
@@ -305,8 +310,9 @@ async function fetchWaterEntries(
 async function fetchShampooEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select()
     .from(shampooRecords)
@@ -331,8 +337,9 @@ async function fetchShampooEntries(
 async function fetchCleaningEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select({
       id: cleaningRecords.id,
@@ -370,8 +377,9 @@ async function fetchCleaningEntries(
 async function fetchSymptomEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select()
     .from(symptoms)
@@ -396,8 +404,9 @@ async function fetchSymptomEntries(
 async function fetchMedicationDoseEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select({
       id: medicationDoses.id,
@@ -433,8 +442,9 @@ async function fetchMedicationDoseEntries(
 async function fetchHospitalVisitEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select()
     .from(hospitalVisits)
@@ -459,8 +469,9 @@ async function fetchHospitalVisitEntries(
 async function fetchCatPhotoEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select()
     .from(catPhotos)
@@ -489,8 +500,9 @@ async function fetchCatPhotoEntries(
 async function fetchExpenseEntries(
   catId: string,
   range: DateRange,
+  d1?: D1Database,
 ): Promise<TimelineEntry[]> {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select({ record: expenseRecords })
     .from(expenseRecords)
@@ -518,7 +530,7 @@ async function fetchExpenseEntries(
 
 const FETCHERS: Record<
   TimelineRecordType,
-  (catId: string, range: DateRange) => Promise<TimelineEntry[]>
+  (catId: string, range: DateRange, d1?: D1Database) => Promise<TimelineEntry[]>
 > = {
   feeding: fetchFeedingEntries,
   poop: fetchPoopEntries,
@@ -608,12 +620,13 @@ export async function listTimelineForMonth(
   year: number,
   month: number, // 1-12
   options: ListTimelineForMonthOptions = {},
+  d1?: D1Database,
 ): Promise<ListTimelineForMonthResult> {
   const pageSize = normalizePositiveInt(options.pageSize ?? 20, MAX_PAGE_SIZE);
 
   const range = getMonthRangeUtc(year, month);
   const results = await Promise.all(
-    TIMELINE_RECORD_TYPES.map((type) => FETCHERS[type](catId, range)),
+    TIMELINE_RECORD_TYPES.map((type) => FETCHERS[type](catId, range, d1)),
   );
   const merged = results.flat().sort((a, b) => {
     const byOccurredAt = b.occurredAt.getTime() - a.occurredAt.getTime();
@@ -636,7 +649,10 @@ export async function listTimelineForMonth(
     maxPage,
   );
   const start = (page - 1) * pageSize;
-  const entries = await attachMedia(filtered.slice(start, start + pageSize));
+  const entries = await attachMedia(
+    filtered.slice(start, start + pageSize),
+    d1,
+  );
   const hasMore = filtered.length > start + pageSize;
 
   return { entries, hasMore, datesByDay };
@@ -645,7 +661,10 @@ export async function listTimelineForMonth(
 /**
  * 表示するページ分のエントリに、記録種別を横断して media_assets を引き当てる
  */
-async function attachMedia(entries: TimelineEntry[]): Promise<TimelineEntry[]> {
+async function attachMedia(
+  entries: TimelineEntry[],
+  d1?: D1Database,
+): Promise<TimelineEntry[]> {
   const refs = entries.flatMap((entry) => {
     const recordType = TIMELINE_MEDIA_RECORD_TYPES[entry.type];
     return recordType ? [{ recordType, recordId: entry.id }] : [];
@@ -653,7 +672,7 @@ async function attachMedia(entries: TimelineEntry[]): Promise<TimelineEntry[]> {
   if (refs.length === 0) {
     return entries;
   }
-  const mediaByRecord = await listMediaAssetsForRecords(refs);
+  const mediaByRecord = await listMediaAssetsForRecords(refs, d1);
   return entries.map((entry) => {
     const recordType = TIMELINE_MEDIA_RECORD_TYPES[entry.type];
     if (!recordType) {

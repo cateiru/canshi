@@ -1,5 +1,11 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
-import { listCats } from "@/features/cats/queries";
+import type { Cat } from "@/db/schema";
+import { getCatById, listCats } from "@/features/cats/queries";
+import {
+  type ListTimelineForMonthOptions,
+  listTimelineForMonth,
+  type TimelineEntry,
+} from "@/features/timeline/queries";
 
 // `.open-next/worker.js` は `opennextjs-cloudflare build`（`pnpm cf:build` 等）で
 // 生成される。ビルド前（`.open-next/` が無いクリーンな環境）は型解決できないため抑制する
@@ -10,6 +16,33 @@ import { default as handler } from "../.open-next/worker.js";
 // export を指す。Workflow の実体は `src/workflows/notification.ts` にある
 export { NotificationWorkflow } from "@/workflows/notification";
 
+/** MCP ツール（packages/mcp-server）向けの猫プロフィールの要約 */
+function toCatSummary(cat: Cat) {
+  return {
+    id: cat.id,
+    name: cat.name,
+    sex: cat.sex,
+    birthDate: cat.birthDate,
+    breed: cat.breed,
+    adoptedAt: cat.adoptedAt,
+  };
+}
+
+/**
+ * MCP ツール向けのタイムラインエントリの要約。`media`（`/media/[assetId]` への
+ * URL を含む）は Cloudflare Access 保護下にあり外部エージェントからは参照
+ * できないため含めず、件数のみ返す
+ */
+function toTimelineEntrySummary(entry: TimelineEntry) {
+  return {
+    id: entry.id,
+    type: entry.type,
+    occurredAt: entry.occurredAt,
+    record: entry.record,
+    mediaCount: entry.media.length,
+  };
+}
+
 // MCP 用 Worker（`packages/mcp-server`）から Service Bindings 経由で呼ばれる
 // RPC エントリーポイント（`docs/plans/32_mcp_oidc_overview.md` 参照）。
 // 公開 URL・DNS を経由しない Worker 間の直接呼び出しのため、このアプリの
@@ -18,7 +51,32 @@ export { NotificationWorkflow } from "@/workflows/notification";
 // 追加の認可判定をしない
 export class McpRpc extends WorkerEntrypoint<Env> {
   async listCats() {
-    return listCats(this.env.DB);
+    const cats = await listCats(this.env.DB);
+    return cats.map(toCatSummary);
+  }
+
+  async getCatProfile(catId: string) {
+    const cat = await getCatById(catId, this.env.DB);
+    return cat ? toCatSummary(cat) : null;
+  }
+
+  async listTimeline(
+    catId: string,
+    year: number,
+    month: number,
+    options?: ListTimelineForMonthOptions,
+  ) {
+    const result = await listTimelineForMonth(
+      catId,
+      year,
+      month,
+      options,
+      this.env.DB,
+    );
+    return {
+      entries: result.entries.map(toTimelineEntrySummary),
+      hasMore: result.hasMore,
+    };
   }
 }
 

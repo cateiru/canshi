@@ -108,6 +108,7 @@ export type MediaRecordRef = { recordType: string; recordId: string };
  */
 export async function listMediaAssetsForRecords(
   refs: MediaRecordRef[],
+  d1?: D1Database,
 ): Promise<Map<string, MediaAsset[]>> {
   const grouped = new Map<string, MediaAsset[]>();
   if (refs.length === 0) {
@@ -119,7 +120,7 @@ export async function listMediaAssetsForRecords(
     ids.push(ref.recordId);
     idsByType.set(ref.recordType, ids);
   }
-  const db = getDb();
+  const db = getDb(d1);
   for (const batch of packRecordRefs(idsByType)) {
     const rows = await db
       .select()

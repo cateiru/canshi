@@ -37,3 +37,30 @@ pnpm dev
 
 起動後、`http://localhost:<port>/healthz` にアクセスすると、Service Bindings 経由で
 `McpRpc.listCats()` を呼び出した結果（件数）が返る。
+
+## MCP ツール
+
+`/mcp`（Streamable HTTP、OAuth 2.1 の Bearer トークンで保護）で以下の読み取り専用ツールを
+公開している（`src/mcp/agent.ts`）。書き込み系ツールは対象外
+（`docs/plans/32_mcp_oidc_overview.md` 参照）。
+
+| ツール | 内容 |
+| --- | --- |
+| `list_cats` | 登録されている猫のプロフィール一覧 |
+| `get_cat_profile` | 指定した ID の猫のプロフィール1件 |
+| `list_timeline` | 指定した猫・年月の記録（ごはん・うんち・体重・通院・投薬など）一覧 |
+
+いずれもメインアプリの `McpRpc`（`src/worker.ts`）を Service Bindings 経由で呼び出す薄いラッパー。
+RPC の戻り値の型は `src/rpc/mainApp.ts` に手動で複製した契約（`MainAppRpc`）を参照しており、
+`McpRpc` 側でメソッドを追加・変更したら、あわせて更新すること。
+
+## OAuth 認可フロー（`src/auth/`）
+
+`/authorize` → Cloudflare Access（upstream IdP）へのリダイレクト → `/callback` という
+OAuth 2.1 認可コードフロー（PKCE 付き）を実装している。詳細は `src/auth/handler.ts`・
+`src/auth/oauth-state.ts`・`src/auth/access.ts` のコメントを参照。
+
+Access との実連携にはダッシュボードでの SaaS OIDC アプリ登録が必要なため、このリポジトリの
+自動テストでは検証できない（`oauth-state.test.ts`・`access.test.ts` で個々のロジックを検証）。
+`wrangler dev` での手動確認手順は [`docs/deploy.md`](../../docs/deploy.md) の
+「MCP サーバー（外部 AI エージェント連携）」節を参照。

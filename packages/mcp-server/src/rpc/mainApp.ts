@@ -14,8 +14,46 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 export interface CatSummary {
   id: string;
   name: string;
+  sex: "male" | "female" | "unknown";
+  birthDate: string | null;
+  breed: string | null;
+  adoptedAt: string | null;
+}
+
+/** タイムラインの記録本体（種別ごとに項目は異なるため、構造だけを型で保証する） */
+type JsonPrimitive = string | number | boolean | null | Date;
+type JsonRecord = Record<
+  string,
+  JsonPrimitive | JsonPrimitive[] | Record<string, JsonPrimitive>[]
+>;
+
+export interface TimelineEntrySummary {
+  id: string;
+  type: string;
+  occurredAt: Date;
+  record: JsonRecord;
+  /** 添付メディアの件数。URL は Access 保護下にあるため RPC 契約には含めない */
+  mediaCount: number;
+}
+
+export interface ListTimelineOptions {
+  page?: number;
+  pageSize?: number;
+  date?: string;
+}
+
+export interface ListTimelineResult {
+  entries: TimelineEntrySummary[];
+  hasMore: boolean;
 }
 
 export abstract class MainAppRpc extends WorkerEntrypoint<unknown> {
   abstract listCats(): Promise<CatSummary[]>;
+  abstract getCatProfile(catId: string): Promise<CatSummary | null>;
+  abstract listTimeline(
+    catId: string,
+    year: number,
+    month: number,
+    options?: ListTimelineOptions,
+  ): Promise<ListTimelineResult>;
 }
