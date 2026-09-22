@@ -8,12 +8,21 @@ import {
 import { beforeAll, describe, expect, it } from "vitest";
 import { verifyAccessIdToken } from "./access";
 
-const TEAM_DOMAIN = "https://canshi-test.cloudflareaccess.com";
 const CLIENT_ID = "access-client-id";
+// Access for SaaS の issuer・JWKS はアプリ（client_id）ごとに異なる
+// （Team domain 共通の /cdn-cgi/access/certs ではない）
+const ISSUER = `https://canshi-test.cloudflareaccess.com/cdn-cgi/access/sso/oidc/${CLIENT_ID}`;
+const JWKS_URL = `${ISSUER}/jwks`;
 const KID = "test-key-1";
 
 let privateKey: CryptoKey;
 let localJwks: JWTVerifyGetKey;
+
+const testEnv = {
+  ACCESS_JWKS_URL: JWKS_URL,
+  ACCESS_ISSUER: ISSUER,
+  ACCESS_CLIENT_ID: CLIENT_ID,
+};
 
 async function signIdToken(
   claims: Record<string, unknown>,
@@ -22,7 +31,7 @@ async function signIdToken(
   return new SignJWT(claims)
     .setProtectedHeader({ alg: "RS256", kid: KID })
     .setIssuedAt()
-    .setIssuer(options?.issuer ?? TEAM_DOMAIN)
+    .setIssuer(options?.issuer ?? ISSUER)
     .setAudience(options?.audience ?? CLIENT_ID)
     .setExpirationTime(options?.expiresIn ?? "5m")
     .sign(privateKey);
@@ -45,11 +54,7 @@ describe("verifyAccessIdToken", () => {
       sub: "user-123",
     });
 
-    const identity = await verifyAccessIdToken(
-      token,
-      { ACCESS_TEAM_DOMAIN: TEAM_DOMAIN, ACCESS_CLIENT_ID: CLIENT_ID },
-      localJwks,
-    );
+    const identity = await verifyAccessIdToken(token, testEnv, localJwks);
 
     expect(identity).toEqual({ email: "owner@example.com", sub: "user-123" });
   });
@@ -61,26 +66,21 @@ describe("verifyAccessIdToken", () => {
     );
 
     await expect(
-      verifyAccessIdToken(
-        token,
-        { ACCESS_TEAM_DOMAIN: TEAM_DOMAIN, ACCESS_CLIENT_ID: CLIENT_ID },
-        localJwks,
-      ),
+      verifyAccessIdToken(token, testEnv, localJwks),
     ).rejects.toThrow();
   });
 
-  it("rejects a token from an unexpected issuer", async () => {
+  it("rejects a token from an unexpected issuer (e.g. a different Access app)", async () => {
     const token = await signIdToken(
       { email: "owner@example.com", sub: "user-123" },
-      { issuer: "https://not-our-team.cloudflareaccess.com" },
+      {
+        issuer:
+          "https://canshi-test.cloudflareaccess.com/cdn-cgi/access/sso/oidc/some-other-client",
+      },
     );
 
     await expect(
-      verifyAccessIdToken(
-        token,
-        { ACCESS_TEAM_DOMAIN: TEAM_DOMAIN, ACCESS_CLIENT_ID: CLIENT_ID },
-        localJwks,
-      ),
+      verifyAccessIdToken(token, testEnv, localJwks),
     ).rejects.toThrow();
   });
 
@@ -91,11 +91,7 @@ describe("verifyAccessIdToken", () => {
     );
 
     await expect(
-      verifyAccessIdToken(
-        token,
-        { ACCESS_TEAM_DOMAIN: TEAM_DOMAIN, ACCESS_CLIENT_ID: CLIENT_ID },
-        localJwks,
-      ),
+      verifyAccessIdToken(token, testEnv, localJwks),
     ).rejects.toThrow();
   });
 
@@ -103,11 +99,7 @@ describe("verifyAccessIdToken", () => {
     const token = await signIdToken({ sub: "user-123" });
 
     await expect(
-      verifyAccessIdToken(
-        token,
-        { ACCESS_TEAM_DOMAIN: TEAM_DOMAIN, ACCESS_CLIENT_ID: CLIENT_ID },
-        localJwks,
-      ),
+      verifyAccessIdToken(token, testEnv, localJwks),
     ).rejects.toThrow(/email クレーム/);
   });
 });

@@ -35,8 +35,10 @@ pnpm cf:build && wrangler dev
 pnpm dev
 ```
 
-起動後、`http://localhost:<port>/healthz` にアクセスすると、Service Bindings 経由で
-`McpRpc.listCats()` を呼び出した結果（件数）が返る。
+起動後、`http://localhost:<port>/healthz` にアクセスすると `{ ok: true }` が返る
+（認証なしで到達できるため、D1 を読み出す値は含まない）。Service Bindings の疎通は
+`wrangler dev` の起動ログで `env.MAIN_APP (canshi#McpRpc) Worker local [connected]`
+と表示されることで確認できる。
 
 ## MCP ツール
 
@@ -56,11 +58,16 @@ RPC の戻り値の型は `src/rpc/mainApp.ts` に手動で複製した契約（
 
 ## OAuth 認可フロー（`src/auth/`）
 
-`/authorize` → Cloudflare Access（upstream IdP）へのリダイレクト → `/callback` という
-OAuth 2.1 認可コードフロー（PKCE 付き）を実装している。詳細は `src/auth/handler.ts`・
-`src/auth/oauth-state.ts`・`src/auth/access.ts` のコメントを参照。
+`/authorize`（クライアント承認ダイアログ）→ Cloudflare Access（upstream IdP）への
+リダイレクト → `/callback` という OAuth 2.1 認可コードフロー（PKCE 付き）を実装している。
+詳細は `src/auth/handler.ts`・`src/auth/oauth-state.ts`・`src/auth/access.ts`・
+`src/auth/approval.ts` のコメントを参照。
+
+DCR（`/register`）は誰でも呼べるため、`/authorize` では要求元クライアントを表示する
+承認ダイアログ（CSRF トークン付き）を経由してから Access へリダイレクトする。一度承認した
+クライアントは署名付き Cookie で記憶する。
 
 Access との実連携にはダッシュボードでの SaaS OIDC アプリ登録が必要なため、このリポジトリの
-自動テストでは検証できない（`oauth-state.test.ts`・`access.test.ts` で個々のロジックを検証）。
-`wrangler dev` での手動確認手順は [`docs/deploy.md`](../../docs/deploy.md) の
-「MCP サーバー（外部 AI エージェント連携）」節を参照。
+自動テストでは検証できない（`oauth-state.test.ts`・`access.test.ts`・`approval.test.ts` で
+個々のロジックを検証）。`wrangler dev` での手動確認手順は
+[`docs/deploy.md`](../../docs/deploy.md) の「MCP サーバー（外部 AI エージェント連携）」節を参照。

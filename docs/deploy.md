@@ -150,12 +150,17 @@ Access（SaaS OIDC アプリ）を使い、認可サーバーの実装は `@clou
   Cloudflare のゾーン・DNS 設定
 - Cloudflare Access で SaaS OIDC アプリケーションを作成し、以下を控える
   - Client ID・Client secret
-  - Authorization endpoint・Token endpoint・Team domain
+  - Authorization endpoint・Token endpoint・**Key endpoint**
   - Authorization callback URL には `https://<mcp用ドメイン>/callback`
     （ローカル開発用に `http://localhost:8788/callback` 等も追加登録する）
+  - **注意**: Access for SaaS の Key endpoint（JWKS）・issuer は、Team domain 全体で
+    共通の `/cdn-cgi/access/certs` ではなく、このアプリ（Client ID）ごとに異なる
+    `https://<team>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<client-id>/jwks`
+    （issuer は `.../oidc/<client-id>`）になる。ダッシュボードに表示される Key endpoint・
+    Issuer をそのまま控える（`src/auth/access.ts` 参照）
 - 上記の値を `packages/mcp-server` に設定する
-  - `ACCESS_TEAM_DOMAIN`・`ACCESS_CLIENT_ID`・`ACCESS_AUTHORIZATION_URL`・
-    `ACCESS_TOKEN_URL`・`ACCESS_CLIENT_SECRET`：`wrangler secret put`
+  - `ACCESS_CLIENT_ID`・`ACCESS_AUTHORIZATION_URL`・`ACCESS_TOKEN_URL`・
+    `ACCESS_JWKS_URL`・`ACCESS_ISSUER`・`ACCESS_CLIENT_SECRET`：`wrangler secret put`
     （ローカル開発では `.dev.vars`。`packages/mcp-server/.dev.vars.example` 参照）
   - `OAUTH_STATE_SECRET`：`openssl rand -hex 32` 等で生成したランダムな文字列を
     同様に `wrangler secret put` で設定する

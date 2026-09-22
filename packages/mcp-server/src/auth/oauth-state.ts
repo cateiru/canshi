@@ -186,7 +186,7 @@ function base64UrlEncode(bytes: Uint8Array): string {
     .replace(/=/g, "");
 }
 
-async function signData(data: string, secret: string): Promise<string> {
+export async function signData(data: string, secret: string): Promise<string> {
   const key = await importHmacKey(secret);
   const signature = await crypto.subtle.sign(
     "HMAC",
@@ -198,7 +198,7 @@ async function signData(data: string, secret: string): Promise<string> {
     .join("");
 }
 
-async function verifySignature(
+export async function verifySignature(
   signatureHex: string,
   data: string,
   secret: string,
