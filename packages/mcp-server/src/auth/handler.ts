@@ -50,10 +50,29 @@ export const authHandler: ExportedHandler<Env> = {
     // （/.well-known/openid-configuration）を汎用的なフォールバックとして
     // 試すことがある。OAuthProvider はこのパスを実装していないため、
     // 念のため同じメタデータをここで折り返す（403 の根本原因ではない可能性が高い。
-    // 実際の原因切り分けは Cloudflare エッジ側の bot 対策等を別途確認中）
+    // 実際の原因切り分けは Cloudflare エッジ側の bot 対策等を別途確認中）。
+    //
+    // 同じホストへの `fetch()` での折り返しは、Workers からカスタムドメインの
+    // 自ホストへ subrequest すると `522` になり失敗したため使わない。
+    // エンドポイントのパスは `src/index.ts` の OAuthProvider 設定
+    // （authorizeEndpoint・tokenEndpoint・clientRegistrationEndpoint）と
+    // 同じ値をここでも直接組み立てる
     if (url.pathname === "/.well-known/openid-configuration") {
-      return fetch(new URL("/.well-known/oauth-authorization-server", url), {
-        headers: request.headers,
+      return Response.json({
+        issuer: url.origin,
+        authorization_endpoint: `${url.origin}/authorize`,
+        token_endpoint: `${url.origin}/token`,
+        registration_endpoint: `${url.origin}/register`,
+        response_types_supported: ["code"],
+        response_modes_supported: ["query"],
+        grant_types_supported: ["authorization_code", "refresh_token"],
+        token_endpoint_auth_methods_supported: [
+          "client_secret_basic",
+          "client_secret_post",
+          "none",
+        ],
+        revocation_endpoint: `${url.origin}/token`,
+        code_challenge_methods_supported: ["S256"],
       });
     }
 
