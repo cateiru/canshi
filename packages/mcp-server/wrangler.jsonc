@@ -53,13 +53,14 @@
         "class_name": "CanshiMcp"
       }
     ]
-  }
+  },
 
-  // upstream IdP（Cloudflare Access の SaaS OIDC アプリ）の接続先
-  // （ACCESS_TEAM_DOMAIN・ACCESS_CLIENT_ID・ACCESS_AUTHORIZATION_URL・
-  // ACCESS_TOKEN_URL・ACCESS_CLIENT_SECRET・OAUTH_STATE_SECRET）は、Access 側で
-  // アプリを作成するまで値が確定しないため、ここ（wrangler.jsonc の `vars`）には
-  // 置かない。メインアプリの VAPID 鍵と同じパターンで、`.dev.vars`／
-  // `wrangler secret put` を使い env.d.ts で型を補う（docs/deploy.md の
-  // MCP サーバー節に手順を追記予定）
+  // upstream IdP（Cloudflare Access の SaaS OIDC アプリ）の OIDC discovery URL。
+  // authorization/token endpoint・JWKS・issuer はここから導出する
+  // （src/auth/discovery.ts 参照）ため機密情報ではなく、`vars` にそのまま置ける。
+  // ACCESS_CLIENT_ID・ACCESS_CLIENT_SECRET・OAUTH_STATE_SECRET は
+  // `wrangler secret put`／`.dev.vars` で設定する（`.dev.vars.example` 参照）
+  "vars": {
+    "ACCESS_DISCOVERY_URL": "https://cateiru-fe4.cloudflareaccess.com/cdn-cgi/access/sso/oidc/54068e98f51c633f8d47af149207b7b37acc378306e549f6f474cfb33d55848f/.well-known/openid-configuration"
+  }
 }

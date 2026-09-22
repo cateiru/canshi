@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, type JWTVerifyGetKey, jwtVerify } from "jose";
+import { getOidcDiscoveryDocument } from "./discovery";
 
 export interface AccessIdentity {
   email: string;
@@ -20,24 +21,30 @@ function getRemoteJwks(jwksUrl: string): JWTVerifyGetKey {
  * Cloudflare Access（SaaS OIDC アプリ）が発行した ID トークンを検証し、
  * ユーザーの身元（email・sub）を取り出す。
  *
- * Access for SaaS の JWKS（Key endpoint）・issuer は、Team domain 全体で共通の
- * `/cdn-cgi/access/certs` ではなく、SaaS アプリ（`ACCESS_CLIENT_ID`）ごとに
- * 異なる `https://<team>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<client-id>/jwks`
- * （issuer は `.../oidc/<client-id>`）になる。ダッシュボードの Key endpoint・
- * Issuer をそのまま `ACCESS_JWKS_URL`・`ACCESS_ISSUER` として設定すること
+ * issuer・JWKS（Key endpoint）は `env.ACCESS_DISCOVERY_URL`
+ * （`.../.well-known/openid-configuration`）から取得する。Access for SaaS の
+ * これらの値は Team domain 全体で共通ではなく SaaS アプリ（`ACCESS_CLIENT_ID`）
+ * ごとに異なるが、discovery ドキュメント自体はそのアプリ用の値を返すため、
+ * URL を1つ設定するだけでよい
  * （参考: https://developers.cloudflare.com/cloudflare-one/applications/configure-apps/saas-apps/generic-oidc-saas/）
  *
- * @param jwks JWKS の取得元。省略時は `env.ACCESS_JWKS_URL` から取得する
- *   （本番・`wrangler dev` 用）。テストではローカルに用意した JWKS
- *   （`jose.createLocalJWKSet`）を渡す
+ * @param overrides テスト用に issuer・JWKS の取得元を直接指定し、discovery の
+ *   fetch を回避する（`jose.createLocalJWKSet` 等）
  */
 export async function verifyAccessIdToken(
   idToken: string,
-  env: Pick<Env, "ACCESS_JWKS_URL" | "ACCESS_ISSUER" | "ACCESS_CLIENT_ID">,
-  jwks: JWTVerifyGetKey = getRemoteJwks(env.ACCESS_JWKS_URL),
+  env: Pick<Env, "ACCESS_DISCOVERY_URL" | "ACCESS_CLIENT_ID">,
+  overrides?: { jwks?: JWTVerifyGetKey; issuer?: string },
 ): Promise<AccessIdentity> {
+  let { jwks, issuer } = overrides ?? {};
+  if (!jwks || !issuer) {
+    const discovery = await getOidcDiscoveryDocument(env.ACCESS_DISCOVERY_URL);
+    jwks ??= getRemoteJwks(discovery.jwks_uri);
+    issuer ??= discovery.issuer;
+  }
+
   const { payload } = await jwtVerify(idToken, jwks, {
-    issuer: env.ACCESS_ISSUER,
+    issuer,
     audience: env.ACCESS_CLIENT_ID,
   });
 
