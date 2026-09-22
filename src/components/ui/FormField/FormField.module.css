@@ -47,7 +47,7 @@
 }
 
 .input:hover:not(:disabled) {
-  border-color: var(--color-info);
+  border-color: var(--color-accent);
 }
 
 .input:focus {
