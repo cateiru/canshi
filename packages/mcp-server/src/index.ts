@@ -1,17 +1,21 @@
-// PR33 時点では、Service Bindings 経由でメインアプリの `McpRpc`
-// （canshi の src/worker.ts）を呼び出せることを確認するための最小限の実装。
-// OAuth 2.1 認可サーバー・MCP プロトコル本体は別 PR（34, 35）で追加する。
-export default {
-  async fetch(request) {
-    const url = new URL(request.url);
+import OAuthProvider from "@cloudflare/workers-oauth-provider";
+import { authHandler } from "./auth/handler";
 
-    // 認証なしで到達できるため、D1 を読み出す値（猫の件数等）は返さない。
-    // Service Bindings の疎通確認は `wrangler dev` での手動確認で行う
-    // （README.md 参照）
-    if (url.pathname === "/healthz") {
-      return Response.json({ ok: true });
-    }
-
-    return new Response("Not Found", { status: 404 });
+// MCP プロトコル本体（Streamable HTTP・ツール定義）は別 PR（35）で実装する。
+// それまでは `/mcp` への到達だけを確認できる最小限のスタブを返す。
+// `apiHandler` は `fetch` が必須のため、`ExportedHandler<Env>`（`fetch` が
+// 任意）で型注釈せず、オブジェクトリテラルの構造的な型にそのまま委ねる
+const apiHandler = {
+  async fetch(): Promise<Response> {
+    return new Response("Not Implemented", { status: 501 });
   },
-} satisfies ExportedHandler<Env>;
+};
+
+export default new OAuthProvider({
+  apiRoute: "/mcp",
+  apiHandler,
+  defaultHandler: authHandler,
+  authorizeEndpoint: "/authorize",
+  tokenEndpoint: "/token",
+  clientRegistrationEndpoint: "/register",
+});

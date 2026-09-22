@@ -135,6 +135,45 @@ wrangler secret put VAPID_SUBJECT
 
 ローカルでの動作確認手順は [`README.md`](../README.md#web-push通知) を参照。
 
+## MCP サーバー（外部 AI エージェント連携）
+
+`docs/plans/32_mcp_oidc_overview.md` の方針に基づき、ChatGPT などの外部 AI エージェントが
+CANSHI のデータを参照できる MCP サーバーを、メインアプリとは別の Cloudflare Workers
+（`packages/mcp-server/`）として用意している。upstream の ID プロバイダーには Cloudflare
+Access（SaaS OIDC アプリ）を使い、認可サーバーの実装は `@cloudflare/workers-oauth-provider`。
+
+以下は本番デプロイ（`36` 相当）に着手する前に確定させる必要がある TODO。値そのもの
+（Client ID・Client secret・各エンドポイント URL・サブドメイン等）は機密情報／未確定情報の
+ため、他の節と同様にこのファイルには書かない。
+
+- MCP 用 Worker（`canshi-mcp`）に割り当てるサブドメイン・カスタムドメインの決定と、
+  Cloudflare のゾーン・DNS 設定
+- Cloudflare Access で SaaS OIDC アプリケーションを作成し、以下を控える
+  - Client ID・Client secret
+  - Authorization endpoint・Token endpoint・**Key endpoint**
+  - Authorization callback URL には `https://<mcp用ドメイン>/callback`
+    （ローカル開発用に `http://localhost:8788/callback` 等も追加登録する）
+  - **注意**: Access for SaaS の Key endpoint（JWKS）・issuer は、Team domain 全体で
+    共通の `/cdn-cgi/access/certs` ではなく、このアプリ（Client ID）ごとに異なる
+    `https://<team>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<client-id>/jwks`
+    （issuer は `.../oidc/<client-id>`）になる。ダッシュボードに表示される Key endpoint・
+    Issuer をそのまま控える（`src/auth/access.ts` 参照）
+- 上記の値を `packages/mcp-server` に設定する
+  - `ACCESS_CLIENT_ID`・`ACCESS_AUTHORIZATION_URL`・`ACCESS_TOKEN_URL`・
+    `ACCESS_JWKS_URL`・`ACCESS_ISSUER`・`ACCESS_CLIENT_SECRET`：`wrangler secret put`
+    （ローカル開発では `.dev.vars`。`packages/mcp-server/.dev.vars.example` 参照）
+  - `OAUTH_STATE_SECRET`：`openssl rand -hex 32` 等で生成したランダムな文字列を
+    同様に `wrangler secret put` で設定する
+- `wrangler kv namespace create OAUTH_KV` で本番用の KV Namespace を払い出し、
+  `packages/mcp-server/wrangler.jsonc` の `kv_namespaces[0].id`
+  （現状 `<Add-OAUTH-KV-ID>`）を実際の ID に置き換える
+- アカウント全体の Access（`All traffic`）が、この新しい Worker のホスト名に
+  どう適用されるかを確認する（上記「Cloudflare Access 設定」節の優先順位を参照）。
+  `/mcp`・`/token`・`/register`・`/.well-known/*` が ChatGPT のようなサーバー間
+  クライアントから到達可能であること、`/callback` が正しく Access のトークンを
+  受け取れることを検証する
+- ChatGPT のカスタムコネクタ（Developer Mode）から実際に接続できることを確認する
+
 ## 監視・運用（TODO）
 
 - エラー監視・ログの方針

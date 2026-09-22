@@ -274,6 +274,13 @@ importers:
         version: 4.135.0(@types/node@24.13.6)
 
   packages/mcp-server:
+    dependencies:
+      '@cloudflare/workers-oauth-provider':
+        specifier: ^0.10.3
+        version: 0.10.3
+      jose:
+        specifier: ^6.2.12
+        version: 6.2.12
     devDependencies:
       typescript:
         specifier: ^5
@@ -668,6 +675,9 @@ packages:
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
+
+  '@cloudflare/workers-oauth-provider@0.10.3':
+    resolution: {integrity: sha512-25ufMONJir9PllqVpK4GwOOoSFgpYm3+bM6NBedj7ufMCIfNf5jk4OI0LPuTJBaJgLl2lGCLqFqEPJXcSuPopQ==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -3289,6 +3299,9 @@ packages:
     resolution: {integrity: sha512-ykkVRwrYvFm1nb2AJfKKYPr0emF6IiXDYUaFx4Zn9ZuIH7MrzEZ3sD5RlqGXNRpHtvUHJyOnCEFxOlNDtGo7wg==}
     engines: {node: 20 || >=22}
 
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
+
   jpeg-js@0.4.4:
     resolution: {integrity: sha512-WZzeDOEtTOBK4Mdsar0IqEU5sMr3vSV2RqkAIzUEV2BHnUfKGyswWFPFwK5EeDo93K3FohSHbLAjj0s1Wzd+dg==}
 
@@ -5189,6 +5202,8 @@ snapshots:
 
   '@cloudflare/workerd-windows-64@1.20260918.1':
     optional: true
+
+  '@cloudflare/workers-oauth-provider@0.10.3': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -7494,6 +7509,8 @@ snapshots:
   jackspeak@4.2.3:
     dependencies:
       '@isaacs/cliui': 9.0.0
+
+  jose@6.2.12: {}
 
   jpeg-js@0.4.4: {}
 

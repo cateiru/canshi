@@ -10,6 +10,10 @@
     "test:watch": "vitest",
     "cf-typegen": "wrangler types"
   },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^0.10.3",
+    "jose": "^6.2.12"
+  },
   "devDependencies": {
     "typescript": "^5",
     "vitest": "^5.0.0",
