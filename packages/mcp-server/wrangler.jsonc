@@ -29,9 +29,13 @@
   "kv_namespaces": [
     {
       "binding": "OAUTH_KV",
-      "id": "<Add-OAUTH-KV-ID>"
+      "id": "5fa32d55294d47558036eb8380c49363"
     }
   ],
+
+  // 本番公開ホスト名。cateiru.dev ゾーン配下、メインアプリ（canshi.cateiru.dev）とは
+  // 別ホスト名（docs/plans/32_mcp_oidc_overview.md の案C）
+  "routes": [{ "pattern": "mcp.canshi.cateiru.dev", "custom_domain": true }],
 
   // MCP サーバー本体（`CanshiMcp`, `agents` パッケージの `McpAgent`）が
   // セッション状態を保持する Durable Object。バインディング名 `MCP_OBJECT` は
