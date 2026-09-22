@@ -9,16 +9,11 @@ describe("fetch", () => {
     expect(response.status).toBe(404);
   });
 
-  it("calls MAIN_APP.listCats() via the Service Binding for /healthz", async () => {
+  it("/healthz は認証なしで到達できるため、D1 を読み出す値を含まない", async () => {
     const request = new Request("https://mcp.example.test/healthz");
-    const env = {
-      MAIN_APP: {
-        listCats: async () => [{ id: "cat-1", name: "たま" }],
-      },
-    };
     // @ts-expect-error テストではダミーの env を渡す
-    const response = await worker.fetch(request, env, {} as ExecutionContext);
+    const response = await worker.fetch(request, {}, {} as ExecutionContext);
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true, catCount: 1 });
+    await expect(response.json()).resolves.toEqual({ ok: true });
   });
 });

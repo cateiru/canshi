@@ -35,5 +35,7 @@ pnpm cf:build && wrangler dev
 pnpm dev
 ```
 
-起動後、`http://localhost:<port>/healthz` にアクセスすると、Service Bindings 経由で
-`McpRpc.listCats()` を呼び出した結果（件数）が返る。
+起動後、`http://localhost:<port>/healthz` にアクセスすると `{ ok: true }` が返る
+（認証なしで到達できるため、D1 を読み出す値は含まない）。Service Bindings の疎通は
+`wrangler dev` の起動ログで `env.MAIN_APP (canshi#McpRpc) Worker local [connected]`
+と表示されることで確認できる。
