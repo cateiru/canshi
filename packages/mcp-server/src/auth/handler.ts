@@ -45,6 +45,15 @@ export const authHandler: ExportedHandler<Env> = {
     if (url.pathname === "/healthz") {
       return Response.json({ ok: true });
     }
+    // MCP クライアントの一部は RFC 8414（/.well-known/oauth-authorization-server、
+    // OAuthProvider が実装済み）より先に OIDC discovery
+    // （/.well-known/openid-configuration）を試す。OAuthProvider はこのパスを
+    // 実装していないため、同じメタデータをここで折り返す
+    if (url.pathname === "/.well-known/openid-configuration") {
+      return fetch(new URL("/.well-known/oauth-authorization-server", url), {
+        headers: request.headers,
+      });
+    }
 
     return new Response("Not Found", { status: 404 });
   },
