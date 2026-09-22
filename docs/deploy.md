@@ -158,11 +158,14 @@ Client secret・各エンドポイント URL 等）は機密情報のため、�
     `https://<team>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<client-id>/jwks`
     （issuer は `.../oidc/<client-id>`）になる。ダッシュボードに表示される Key endpoint・
     Issuer をそのまま使う（`src/auth/access.ts` 参照）
-- 上記アプリの値は `packages/mcp-server` に `wrangler secret put` で設定済み
-  （`ACCESS_CLIENT_ID`・`ACCESS_CLIENT_SECRET`・`ACCESS_AUTHORIZATION_URL`・
-  `ACCESS_TOKEN_URL`・`ACCESS_JWKS_URL`・`ACCESS_ISSUER`・`OAUTH_STATE_SECRET`）。
-  ローカル開発では `.dev.vars`（`packages/mcp-server/.dev.vars.example` 参照）に同じ
-  キーで設定する
+- 上記アプリの Client ID・Client secret は `packages/mcp-server` に
+  `wrangler secret put` で設定済み（`ACCESS_CLIENT_ID`・`ACCESS_CLIENT_SECRET`・
+  `OAUTH_STATE_SECRET`）。ローカル開発では `.dev.vars`
+  （`packages/mcp-server/.dev.vars.example` 参照）に同じキーで設定する。
+  authorization/token endpoint・JWKS・issuer は機密情報ではないため、
+  OIDC discovery URL（`ACCESS_DISCOVERY_URL`、`.../.well-known/openid-configuration`）
+  を `wrangler.jsonc` の `vars` に平文で設定し、そこから実行時に導出する
+  （`src/auth/discovery.ts` 参照）
 - `OAUTH_KV`（`@cloudflare/workers-oauth-provider` の標準ストレージ）は
   `wrangler kv namespace create OAUTH_KV` で本番用の KV Namespace を払い出し、
   `packages/mcp-server/wrangler.jsonc` の `kv_namespaces[0].id` に設定済み
@@ -174,11 +177,27 @@ Client secret・各エンドポイント URL 等）は機密情報のため、�
   SaaS OIDC アプリの Client secret を再発行し、`wrangler secret put ACCESS_CLIENT_SECRET`
   で上書きする（Client secret はダッシュボードで一度しか表示されない点に注意）
 
-### 未着手（着手前に確認）
+ChatGPT のカスタムコネクタ（Developer Mode）からの実接続も確認済み（2026-09）。
 
-- ChatGPT のカスタムコネクタ（Developer Mode）から実際に接続できることの確認
-  （URL・OAuth フロー自体は上記の検証で動作を確認済みだが、ChatGPT 側からの
-  実接続はこのファイルの更新時点では未実施）
+### トラブルシューティング
+
+#### ChatGPT からの接続だけ `Dynamic client registration failed: registration endpoint returned 403` になる
+
+`POST /register`（DCR）を curl 等で直接叩くと成功するのに、ChatGPT のカスタム
+コネクタから接続しようとすると DCR が `403` で失敗する場合、**Cloudflare の
+Bot Fight Mode が ChatGPT からのリクエストをブロックしている**可能性が高い。
+
+- `@cloudflare/workers-oauth-provider` のコードには DCR 失敗時に `403` を返す
+  経路が存在しない（バリデーションエラーは `400` 系）ため、アプリケーション側の
+  問題ではなく Cloudflare のエッジで止められている、という切り分けができる
+- 同種の事例（[solectrus/solectrus の MCP.md](https://github.com/solectrus/solectrus/blob/develop/docs/MCP.md#troubleshooting)）でも、Claude は通るが ChatGPT だけ弾かれる、
+  という同じ症状が報告されている
+- **無料プランの Bot Fight Mode はパス単位で除外できない**ため、対処は以下のいずれか
+  - **Free プラン**: ゾーン全体で Bot Fight Mode をオフにする
+    （Cloudflare ダッシュボード → 対象ゾーン → Security → Bots）。
+    CANSHI の本番（`cateiru.dev` ゾーン）はこの方法で解決した
+  - **Pro プラン以上**: Super Bot Fight Mode に切り替え、
+    `/mcp`・`/oauth/*`・`/.well-known/oauth*` にスキップルールを追加する
 
 ## 監視・運用（TODO）
 
