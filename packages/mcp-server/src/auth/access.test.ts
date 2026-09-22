@@ -12,15 +12,15 @@ const CLIENT_ID = "access-client-id";
 // Access for SaaS の issuer・JWKS はアプリ（client_id）ごとに異なる
 // （Team domain 共通の /cdn-cgi/access/certs ではない）
 const ISSUER = `https://canshi-test.cloudflareaccess.com/cdn-cgi/access/sso/oidc/${CLIENT_ID}`;
-const JWKS_URL = `${ISSUER}/jwks`;
 const KID = "test-key-1";
 
 let privateKey: CryptoKey;
 let localJwks: JWTVerifyGetKey;
 
 const testEnv = {
-  ACCESS_JWKS_URL: JWKS_URL,
-  ACCESS_ISSUER: ISSUER,
+  // discovery の fetch は overrides で回避するため、実際には参照されない
+  ACCESS_DISCOVERY_URL:
+    "https://example.invalid/.well-known/openid-configuration",
   ACCESS_CLIENT_ID: CLIENT_ID,
 };
 
@@ -54,7 +54,10 @@ describe("verifyAccessIdToken", () => {
       sub: "user-123",
     });
 
-    const identity = await verifyAccessIdToken(token, testEnv, localJwks);
+    const identity = await verifyAccessIdToken(token, testEnv, {
+      jwks: localJwks,
+      issuer: ISSUER,
+    });
 
     expect(identity).toEqual({ email: "owner@example.com", sub: "user-123" });
   });
@@ -66,7 +69,7 @@ describe("verifyAccessIdToken", () => {
     );
 
     await expect(
-      verifyAccessIdToken(token, testEnv, localJwks),
+      verifyAccessIdToken(token, testEnv, { jwks: localJwks, issuer: ISSUER }),
     ).rejects.toThrow();
   });
 
@@ -80,7 +83,7 @@ describe("verifyAccessIdToken", () => {
     );
 
     await expect(
-      verifyAccessIdToken(token, testEnv, localJwks),
+      verifyAccessIdToken(token, testEnv, { jwks: localJwks, issuer: ISSUER }),
     ).rejects.toThrow();
   });
 
@@ -91,7 +94,7 @@ describe("verifyAccessIdToken", () => {
     );
 
     await expect(
-      verifyAccessIdToken(token, testEnv, localJwks),
+      verifyAccessIdToken(token, testEnv, { jwks: localJwks, issuer: ISSUER }),
     ).rejects.toThrow();
   });
 
@@ -99,7 +102,7 @@ describe("verifyAccessIdToken", () => {
     const token = await signIdToken({ sub: "user-123" });
 
     await expect(
-      verifyAccessIdToken(token, testEnv, localJwks),
+      verifyAccessIdToken(token, testEnv, { jwks: localJwks, issuer: ISSUER }),
     ).rejects.toThrow(/email クレーム/);
   });
 });

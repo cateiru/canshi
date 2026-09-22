@@ -11,6 +11,7 @@ import {
   renderApprovalDialog,
   validateCSRFToken,
 } from "./approval";
+import { getOidcDiscoveryDocument } from "./discovery";
 import {
   createOAuthState,
   fetchUpstreamAuthToken,
@@ -164,9 +165,10 @@ async function redirectToAccess(
     env.OAUTH_KV,
     env.OAUTH_STATE_SECRET,
   );
+  const discovery = await getOidcDiscoveryDocument(env.ACCESS_DISCOVERY_URL);
 
   const location = getUpstreamAuthorizeUrl({
-    upstream_url: env.ACCESS_AUTHORIZATION_URL,
+    upstream_url: discovery.authorization_endpoint,
     client_id: env.ACCESS_CLIENT_ID,
     redirect_uri: new URL("/callback", request.url).href,
     scope: "openid email profile",
@@ -200,9 +202,10 @@ async function handleCallback(
     return new Response("Invalid OAuth request data", { status: 400 });
   }
 
+  const discovery = await getOidcDiscoveryDocument(env.ACCESS_DISCOVERY_URL);
   const code = new URL(request.url).searchParams.get("code") ?? undefined;
   const [idToken, errorResponse] = await fetchUpstreamAuthToken({
-    upstream_url: env.ACCESS_TOKEN_URL,
+    upstream_url: discovery.token_endpoint,
     client_id: env.ACCESS_CLIENT_ID,
     client_secret: env.ACCESS_CLIENT_SECRET,
     code,
