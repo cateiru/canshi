@@ -31,7 +31,25 @@
       "binding": "OAUTH_KV",
       "id": "<Add-OAUTH-KV-ID>"
     }
-  ]
+  ],
+
+  // MCP サーバー本体（`CanshiMcp`, `agents` パッケージの `McpAgent`）が
+  // セッション状態を保持する Durable Object。バインディング名 `MCP_OBJECT` は
+  // `McpAgent.serve()` の既定値（`agents/mcp` の実装が参照する）
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["CanshiMcp"]
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MCP_OBJECT",
+        "class_name": "CanshiMcp"
+      }
+    ]
+  }
 
   // upstream IdP（Cloudflare Access の SaaS OIDC アプリ）の接続先
   // （ACCESS_TEAM_DOMAIN・ACCESS_CLIENT_ID・ACCESS_AUTHORIZATION_URL・

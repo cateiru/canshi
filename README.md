@@ -6,6 +6,9 @@
 
 Cloudflare を利用して簡単にデプロイが可能です。
 
+ChatGPT などの外部 AI エージェントからデータを参照できる MCP サーバーを
+[`packages/mcp-server`](packages/mcp-server) に同梱しています。
+
 ## LICENSE
 
 [MIT](./LICENSE)
