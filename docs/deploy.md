@@ -139,40 +139,46 @@ wrangler secret put VAPID_SUBJECT
 
 `docs/plans/32_mcp_oidc_overview.md` の方針に基づき、ChatGPT などの外部 AI エージェントが
 CANSHI のデータを参照できる MCP サーバーを、メインアプリとは別の Cloudflare Workers
-（`packages/mcp-server/`）として用意している。upstream の ID プロバイダーには Cloudflare
-Access（SaaS OIDC アプリ）を使い、認可サーバーの実装は `@cloudflare/workers-oauth-provider`。
+（`packages/mcp-server/`、Worker 名 `canshi-mcp`）として用意している。upstream の ID
+プロバイダーには Cloudflare Access（SaaS OIDC アプリ）を使い、認可サーバーの実装は
+`@cloudflare/workers-oauth-provider`。
 
-以下は本番デプロイ（`36` 相当）に着手する前に確定させる必要がある TODO。値そのもの
-（Client ID・Client secret・各エンドポイント URL・サブドメイン等）は機密情報／未確定情報の
-ため、他の節と同様にこのファイルには書かない。
+本番環境は以下の構成でデプロイ済み（`36` 相当、2026-09 時点）。値そのもの（Client ID・
+Client secret・各エンドポイント URL 等）は機密情報のため、他の節と同様にこのファイルには
+書かない。
 
-- MCP 用 Worker（`canshi-mcp`）に割り当てるサブドメイン・カスタムドメインの決定と、
-  Cloudflare のゾーン・DNS 設定
-- Cloudflare Access で SaaS OIDC アプリケーションを作成し、以下を控える
-  - Client ID・Client secret
-  - Authorization endpoint・Token endpoint・**Key endpoint**
-  - Authorization callback URL には `https://<mcp用ドメイン>/callback`
-    （ローカル開発用に `http://localhost:8788/callback` 等も追加登録する）
+- 公開ホスト名：`mcp.canshi.cateiru.dev`（`packages/mcp-server/wrangler.jsonc` の
+  `routes` で `custom_domain` として設定。メインアプリの `canshi.cateiru.dev` とは
+  別ホスト名）
+- Cloudflare Access に SaaS OIDC アプリケーションを作成済み。Authorization callback URL
+  には `https://mcp.canshi.cateiru.dev/callback` を登録（ローカル開発用に
+  `http://localhost:8788/callback` も追加登録する）
   - **注意**: Access for SaaS の Key endpoint（JWKS）・issuer は、Team domain 全体で
     共通の `/cdn-cgi/access/certs` ではなく、このアプリ（Client ID）ごとに異なる
     `https://<team>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<client-id>/jwks`
     （issuer は `.../oidc/<client-id>`）になる。ダッシュボードに表示される Key endpoint・
-    Issuer をそのまま控える（`src/auth/access.ts` 参照）
-- 上記の値を `packages/mcp-server` に設定する
-  - `ACCESS_CLIENT_ID`・`ACCESS_AUTHORIZATION_URL`・`ACCESS_TOKEN_URL`・
-    `ACCESS_JWKS_URL`・`ACCESS_ISSUER`・`ACCESS_CLIENT_SECRET`：`wrangler secret put`
-    （ローカル開発では `.dev.vars`。`packages/mcp-server/.dev.vars.example` 参照）
-  - `OAUTH_STATE_SECRET`：`openssl rand -hex 32` 等で生成したランダムな文字列を
-    同様に `wrangler secret put` で設定する
-- `wrangler kv namespace create OAUTH_KV` で本番用の KV Namespace を払い出し、
-  `packages/mcp-server/wrangler.jsonc` の `kv_namespaces[0].id`
-  （現状 `<Add-OAUTH-KV-ID>`）を実際の ID に置き換える
-- アカウント全体の Access（`All traffic`）が、この新しい Worker のホスト名に
-  どう適用されるかを確認する（上記「Cloudflare Access 設定」節の優先順位を参照）。
-  `/mcp`・`/token`・`/register`・`/.well-known/*` が ChatGPT のようなサーバー間
-  クライアントから到達可能であること、`/callback` が正しく Access のトークンを
-  受け取れることを検証する
-- ChatGPT のカスタムコネクタ（Developer Mode）から実際に接続できることを確認する
+    Issuer をそのまま使う（`src/auth/access.ts` 参照）
+- 上記アプリの値は `packages/mcp-server` に `wrangler secret put` で設定済み
+  （`ACCESS_CLIENT_ID`・`ACCESS_CLIENT_SECRET`・`ACCESS_AUTHORIZATION_URL`・
+  `ACCESS_TOKEN_URL`・`ACCESS_JWKS_URL`・`ACCESS_ISSUER`・`OAUTH_STATE_SECRET`）。
+  ローカル開発では `.dev.vars`（`packages/mcp-server/.dev.vars.example` 参照）に同じ
+  キーで設定する
+- `OAUTH_KV`（`@cloudflare/workers-oauth-provider` の標準ストレージ）は
+  `wrangler kv namespace create OAUTH_KV` で本番用の KV Namespace を払い出し、
+  `packages/mcp-server/wrangler.jsonc` の `kv_namespaces[0].id` に設定済み
+- アカウント全体の Access（`All traffic`）はこの新しい Worker のホスト名には適用されない
+  ことを確認済み（`/mcp` は未認証で `401`＋`WWW-Authenticate: Bearer`、
+  `/.well-known/oauth-authorization-server` は未認証で認可サーバーのメタデータ
+  （JSON）をそのまま返す。Access のログイン画面に吸われていない）
+- 秘密情報・シークレットのローテーションが必要になった場合は、Access ダッシュボードで
+  SaaS OIDC アプリの Client secret を再発行し、`wrangler secret put ACCESS_CLIENT_SECRET`
+  で上書きする（Client secret はダッシュボードで一度しか表示されない点に注意）
+
+### 未着手（着手前に確認）
+
+- ChatGPT のカスタムコネクタ（Developer Mode）から実際に接続できることの確認
+  （URL・OAuth フロー自体は上記の検証で動作を確認済みだが、ChatGPT 側からの
+  実接続はこのファイルの更新時点では未実施）
 
 ## 監視・運用（TODO）
 
