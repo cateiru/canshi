@@ -45,6 +45,17 @@ export const authHandler: ExportedHandler<Env> = {
     if (url.pathname === "/healthz") {
       return Response.json({ ok: true });
     }
+    // MCP 仕様（RFC 8414 = /.well-known/oauth-authorization-server のみを要求）
+    // には無い経路だが、OAuth クライアント実装によっては OIDC discovery
+    // （/.well-known/openid-configuration）を汎用的なフォールバックとして
+    // 試すことがある。OAuthProvider はこのパスを実装していないため、
+    // 念のため同じメタデータをここで折り返す（403 の根本原因ではない可能性が高い。
+    // 実際の原因切り分けは Cloudflare エッジ側の bot 対策等を別途確認中）
+    if (url.pathname === "/.well-known/openid-configuration") {
+      return fetch(new URL("/.well-known/oauth-authorization-server", url), {
+        headers: request.headers,
+      });
+    }
 
     return new Response("Not Found", { status: 404 });
   },
