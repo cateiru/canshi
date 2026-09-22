@@ -1,6 +1,7 @@
-ACCESS_TEAM_DOMAIN=<Access の Team domain。例: https://<team-name>.cloudflareaccess.com>
 ACCESS_CLIENT_ID=<Access の SaaS OIDC アプリ作成後、ダッシュボードの "Client ID" を貼る>
 ACCESS_CLIENT_SECRET=<同じく "Client secret" を貼る>
 ACCESS_AUTHORIZATION_URL=<同じく "Authorization endpoint" を貼る>
 ACCESS_TOKEN_URL=<同じく "Token endpoint" を貼る>
+ACCESS_JWKS_URL=<同じく "Key endpoint" を貼る（Team domain 共通の /cdn-cgi/access/certs ではない）>
+ACCESS_ISSUER=<https://<team-name>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<client-id>（Team domain ではなくこのアプリ固有の issuer）>
 OAUTH_STATE_SECRET=<任意のランダムな文字列。例: `openssl rand -hex 32`>

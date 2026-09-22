@@ -5,6 +5,13 @@ import {
 } from "@cloudflare/workers-oauth-provider";
 import { verifyAccessIdToken } from "./access";
 import {
+  addApprovedClient,
+  generateCSRFProtection,
+  isClientApproved,
+  renderApprovalDialog,
+  validateCSRFToken,
+} from "./approval";
+import {
   createOAuthState,
   fetchUpstreamAuthToken,
   getUpstreamAuthorizeUrl,
@@ -12,8 +19,9 @@ import {
 } from "./oauth-state";
 
 /**
- * `OAuthProvider` の `defaultHandler`。`/authorize`・`/callback` に加えて、
- * PR33 で追加した `/healthz`（Service Bindings の疎通確認）もここで扱う。
+ * `OAuthProvider` の `defaultHandler`。`/authorize`（GET・POST）・`/callback` に
+ * 加えて、PR33 で追加した `/healthz`（生存確認。認証なしで到達できるため
+ * D1 を読み出す値は含まない）もここで扱う。
  *
  * `env.OAUTH_PROVIDER` は `OAuthProvider` が実行時に注入するバインディングで、
  * `wrangler.jsonc` には現れず `Env` の生成型にも含まれないため、ここでのみ
@@ -26,28 +34,31 @@ export const authHandler: ExportedHandler<Env> = {
     const env = rawEnv as EnvWithOAuth;
     const url = new URL(request.url);
 
-    if (request.method === "GET" && url.pathname === "/authorize") {
-      return handleAuthorize(request, env);
+    if (url.pathname === "/authorize") {
+      if (request.method === "GET") return handleAuthorizeGet(request, env);
+      if (request.method === "POST") return handleAuthorizePost(request, env);
     }
     if (request.method === "GET" && url.pathname === "/callback") {
       return handleCallback(request, env);
     }
     if (url.pathname === "/healthz") {
-      const cats = await env.MAIN_APP.listCats();
-      return Response.json({ ok: true, catCount: cats.length });
+      return Response.json({ ok: true });
     }
 
     return new Response("Not Found", { status: 404 });
   },
 };
 
-async function handleAuthorize(
+/**
+ * `parseAuthRequest()` を呼び、`AuthorizationError` は README のパターンに
+ * 従って処理する。エラー用の `Response` を返した場合は呼び出し元がそのまま返す
+ */
+async function parseAuthorizeRequest(
   request: Request,
   env: EnvWithOAuth,
-): Promise<Response> {
-  let oauthReqInfo: AuthRequest;
+): Promise<AuthRequest | Response> {
   try {
-    oauthReqInfo = await env.OAUTH_PROVIDER.parseAuthRequest(request);
+    return await env.OAUTH_PROVIDER.parseAuthRequest(request);
   } catch (error) {
     if (!(error instanceof AuthorizationError)) {
       throw error;
@@ -62,13 +73,92 @@ async function handleAuthorize(
     if (error.issuer) redirect.searchParams.set("iss", error.issuer);
     return Response.redirect(redirect.toString(), 302);
   }
+}
+
+async function handleAuthorizeGet(
+  request: Request,
+  env: EnvWithOAuth,
+): Promise<Response> {
+  const parsed = await parseAuthorizeRequest(request, env);
+  if (parsed instanceof Response) {
+    return parsed;
+  }
+  const oauthReqInfo = parsed;
 
   if (!oauthReqInfo.clientId) {
     return new Response("Invalid request", { status: 400 });
   }
 
-  // CANSHI は個人・家庭内利用のため、クライアント承認ダイアログは設けず
-  // 直接 Cloudflare Access のログインへリダイレクトする
+  // DCR（/register）は誰でも呼べるため、承認画面なしで直接 Access へ
+  // リダイレクトすると、攻撃者が登録した任意のクライアントへ認可コードを
+  // 渡してしまう危険がある（レビュー指摘）。一度承認したクライアントは
+  // Cookie で記憶し、以降は再確認を省略する
+  if (
+    await isClientApproved(
+      request,
+      oauthReqInfo.clientId,
+      env.OAUTH_STATE_SECRET,
+    )
+  ) {
+    return redirectToAccess(request, env, oauthReqInfo);
+  }
+
+  const client = await env.OAUTH_PROVIDER.lookupClient(oauthReqInfo.clientId);
+  const { token: csrfToken, setCookie } = generateCSRFProtection();
+  return renderApprovalDialog(request, {
+    client,
+    csrfToken,
+    setCookie,
+    state: { oauthReqInfo },
+  });
+}
+
+async function handleAuthorizePost(
+  request: Request,
+  env: EnvWithOAuth,
+): Promise<Response> {
+  const formData = await request.formData();
+
+  let csrfResult: { clearCookie: string };
+  try {
+    csrfResult = validateCSRFToken(formData, request);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid CSRF";
+    return new Response(message, { status: 400 });
+  }
+
+  const encodedState = formData.get("state");
+  if (!encodedState || typeof encodedState !== "string") {
+    return new Response("Missing state in form data", { status: 400 });
+  }
+  let state: { oauthReqInfo?: AuthRequest };
+  try {
+    state = JSON.parse(atob(encodedState));
+  } catch {
+    return new Response("Invalid state data", { status: 400 });
+  }
+  if (!state.oauthReqInfo?.clientId) {
+    return new Response("Invalid request", { status: 400 });
+  }
+
+  const approvedCookie = await addApprovedClient(
+    request,
+    state.oauthReqInfo.clientId,
+    env.OAUTH_STATE_SECRET,
+  );
+  const extraHeaders = new Headers();
+  extraHeaders.append("Set-Cookie", approvedCookie);
+  extraHeaders.append("Set-Cookie", csrfResult.clearCookie);
+
+  return redirectToAccess(request, env, state.oauthReqInfo, extraHeaders);
+}
+
+async function redirectToAccess(
+  request: Request,
+  env: EnvWithOAuth,
+  oauthReqInfo: AuthRequest,
+  extraHeaders: Headers = new Headers(),
+): Promise<Response> {
   const { stateToken, codeChallenge } = await createOAuthState(
     oauthReqInfo,
     env.OAUTH_KV,
@@ -83,7 +173,10 @@ async function handleAuthorize(
     state: stateToken,
     code_challenge: codeChallenge,
   });
-  return Response.redirect(location, 302);
+
+  const headers = new Headers(extraHeaders);
+  headers.set("Location", location);
+  return new Response(null, { status: 302, headers });
 }
 
 async function handleCallback(
