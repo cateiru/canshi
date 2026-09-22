@@ -109,6 +109,13 @@ test("設定ページの見た目", async ({ page }, testInfo) => {
 test("通知設定ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/notifications");
   await expect(page.getByRole("heading", { name: "通知設定" })).toBeVisible();
+  // PushSubscriptionToggle はクライアント側で実行環境を判定するまで何も描画しない。
+  // 判定前に fullPage の高さが計測されると、その直後に案内が表示されてフッターの
+  // 位置だけがずれたスクリーンショットになるため、VRT 環境の確定表示を待つ。
+  const pushSettings = page
+    .getByRole("heading", { name: "この端末での通知" })
+    .locator("..");
+  await expect(pushSettings.getByRole("alert")).toBeVisible();
   await takeSnapshot(page, testInfo);
 });
 
