@@ -1,5 +1,6 @@
 # dependencies
 /node_modules
+packages/*/node_modules
 /.pnpm-store/
 
 # next.js
@@ -9,6 +10,7 @@
 # opennext / cloudflare
 /.open-next/
 /.wrangler/
+packages/*/.wrangler/
 
 # testing
 /coverage

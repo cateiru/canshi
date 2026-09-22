@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "canshi-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-06",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // メインアプリ（canshi）Worker の `McpRpc`（src/worker.ts）を呼び出す Service Binding。
+  // 公開 URL・DNS を経由しない Worker 間の直接呼び出しのため、メインアプリの
+  // Cloudflare Access ポリシーの対象にならない（docs/plans/32_mcp_oidc_overview.md 参照）
+  "services": [
+    {
+      "binding": "MAIN_APP",
+      "service": "canshi",
+      "entrypoint": "McpRpc"
+    }
+  ],
+
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  }
+}
