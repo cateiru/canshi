@@ -18,7 +18,7 @@ const settings = [
   {
     href: "/settings/notifications",
     title: "通知設定",
-    description: "通知時刻・タイムゾーンや、この端末での通知を設定します。",
+    description: "この端末での通知を設定します。",
     icon: NotificationSettingsIcon,
   },
   {

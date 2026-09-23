@@ -38,6 +38,8 @@ test("掃除対象と実施記録の登録・編集・削除ができる", async
   await targetCard.getByRole("link", { name: "編集する" }).click();
   await expect(page.getByLabel("名前")).toHaveValue("トイレ");
   await page.getByLabel("名前").fill("トイレ（更新）");
+  await page.getByLabel("通知時刻").click();
+  await page.getByRole("option", { name: "23:00", exact: true }).click();
   await page.getByRole("button", { name: "更新する" }).click();
 
   await expect(page).toHaveURL(/\/cleaning$/);
@@ -45,6 +47,15 @@ test("掃除対象と実施記録の登録・編集・削除ができる", async
     name: "トイレ（更新）",
   });
   await expect(updatedTargetCard).toBeVisible();
+  await expect(updatedTargetCard.getByText("23:00に通知")).toBeVisible();
+
+  // 通知時刻の指定を解除できる
+  await updatedTargetCard.getByRole("link", { name: "編集する" }).click();
+  await page.getByLabel("通知時刻").click();
+  await page.getByRole("option", { name: "指定しない（18:00）" }).click();
+  await page.getByRole("button", { name: "更新する" }).click();
+  await expect(page).toHaveURL(/\/cleaning$/);
+  await expect(updatedTargetCard.getByText("23:00に通知")).toHaveCount(0);
 
   // 実施記録の登録
   await updatedTargetCard.getByRole("link", { name: "記録を見る" }).click();
