@@ -1,5 +1,5 @@
-import { TbBell } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { NotificationPreferencesForm } from "@/features/notifications/NotificationPreferencesForm";
 import { getNotificationPreferences } from "@/features/notifications/queries";
 import { listTimezoneOptions } from "@/features/notifications/settingsQueries";
@@ -24,7 +24,9 @@ export default async function NotificationSettingsPage() {
         ]}
       />
 
-      <RecordPageHeading icon={TbBell}>通知設定</RecordPageHeading>
+      <RecordPageHeading icon={NotificationSettingsIcon}>
+        通知設定
+      </RecordPageHeading>
       <p>お知らせを受け取る時刻と、この端末への通知を設定します。</p>
 
       <Surface title="通知時刻・タイムゾーン">

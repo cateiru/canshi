@@ -1,5 +1,6 @@
-import { TbBowl, TbPencil, TbPlus } from "react-icons/tb";
+import { TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { deleteFoodProductAction } from "@/features/food-products/actions";
 import { DeleteFoodProductButton } from "@/features/food-products/DeleteFoodProductButton";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
@@ -34,7 +35,9 @@ export default async function FoodProductsPage() {
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbBowl}>ごはん商品一覧</RecordPageHeading>
+        <RecordPageHeading icon={FoodProductIcon}>
+          ごはん商品一覧
+        </RecordPageHeading>
         <ButtonLink href="/food-products/new" variant="primary">
           <TbPlus aria-hidden="true" size={18} />
           商品を登録する
@@ -43,7 +46,7 @@ export default async function FoodProductsPage() {
 
       {foodProductList.length === 0 ? (
         <Surface className={styles.emptyState}>
-          <TbBowl aria-hidden="true" size={32} />
+          <FoodProductIcon aria-hidden="true" size={32} />
           <p>まだごはん商品が登録されていません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink href="/food-products/new" variant="primary">

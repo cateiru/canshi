@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { TbBell } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { NotificationSettingsForm } from "@/features/notifications/NotificationSettingsForm";
 import { updateCatNotificationSettingsAction } from "@/features/notifications/settingsActions";
@@ -43,7 +43,9 @@ export default async function CatNotificationSettingsPage({
         ]}
       />
 
-      <RecordPageHeading icon={TbBell}>{cat.name}の通知設定</RecordPageHeading>
+      <RecordPageHeading icon={NotificationSettingsIcon}>
+        {cat.name}の通知設定
+      </RecordPageHeading>
       <p>この猫の記念日や、お手入れのタイミングをお知らせします。</p>
 
       <NotificationSettingsForm
