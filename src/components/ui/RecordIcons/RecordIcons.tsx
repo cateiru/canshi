@@ -467,16 +467,14 @@ export function SettingsIcon(props: RecordIconProps) {
 }
 
 export function NotificationSettingsIcon(props: RecordIconProps) {
-  const catTransform = "translate(8.3 0) scale(.72)";
   const bell =
-    "M10 6a6 6 0 0 1 6 6v3.5q0 1.5 2 3V20H2v-1.5q2-1.5 2-3V12a6 6 0 0 1 6-6Z";
+    "M12 5.5a6.5 6.5 0 0 1 6.5 6.5v3.5q0 1.5 2.5 3V20H3v-1.5q2.5-1.5 2.5-3V12A6.5 6.5 0 0 1 12 5.5Z";
 
   return (
-    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
-      <CatOutline transform={catTransform} expression="calm" />
-      <path d="M8.5 6V4.5a1.5 1.5 0 0 1 3 0V6m-4 14a2.5 2.5 0 0 0 5 0" />
-      <path className={styles.foregroundFill} fill="#f2d17b" d={bell} />
-      <path d="M7 11a3 3 0 0 1 2-2" />
+    <RecordIcon {...props} fills={<path fill="#f2d17b" d={bell} />}>
+      <path d="M10.5 5.5V4a1.5 1.5 0 0 1 3 0v1.5m-4 14.5a2.5 2.5 0 0 0 5 0" />
+      <path d={bell} />
+      <path d="M9 10.5a3 3 0 0 1 2-2" />
     </RecordIcon>
   );
 }
@@ -530,16 +528,15 @@ export function FeedingPresetIcon(props: RecordIconProps) {
 }
 
 export function ReleaseNotesIcon(props: RecordIconProps) {
-  const catTransform = "translate(1.2 -.3) scale(.9)";
   const book =
-    "M2.5 12.5Q7.5 11 12 14q4.5-3 9.5-1.5V21Q16.5 19.5 12 22q-4.5-2.5-9.5-1Z";
+    "M2.5 4.5Q7.5 3 12 6q4.5-3 9.5-1.5V19Q16.5 17.5 12 20q-4.5-2.5-9.5-1Z";
 
   return (
-    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
-      <CatOutline transform={catTransform} expression="calm" />
-      <path className={styles.foregroundFill} fill="#b7d7ee" d={book} />
+    <RecordIcon {...props} fills={<path fill="#b7d7ee" d={book} />}>
+      <path d={book} />
+      <path d="M12 6v14" />
       <path
-        d="M12 14v8m-6.5-6.5 3 .5m-3 2 3 .5m7-2.5 3-.5m-3 3 3-.5"
+        d="m5.5 8.5 3 .5m-3 3 3 .5m-3 3 3 .5m7-7 3-.5m-3 4 3-.5m-3 4 3-.5"
         strokeWidth="1.25"
       />
     </RecordIcon>
