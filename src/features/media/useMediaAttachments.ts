@@ -1,13 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { deleteMediaAssetAction } from "./actions";
+import { discardPendingMediaAction } from "./actions";
 import type { MediaLimits } from "./limits";
-import { isVideoFile, uploadMedia, validateFileForUpload } from "./upload";
+import {
+  isVideoFile,
+  uploadPendingMedia,
+  validateFileForUpload,
+} from "./upload";
 import type { MediaAssetView } from "./view";
 
+export type PendingMediaStatus = "queued" | "uploading" | "uploaded" | "error";
+
 /**
- * フォーム上で選択した未保存のファイル
+ * フォーム上で選択した、まだ記録に紐付いていないファイル。
+ * 選択した時点で下書きとしてアップロードを始め、記録の保存時に asset ID だけを送る
  */
 export type PendingMediaFile = {
   key: string;
@@ -15,24 +22,26 @@ export type PendingMediaFile = {
   /** プレビュー用の Object URL */
   previewUrl: string;
   kind: "image" | "video";
+  status: PendingMediaStatus;
+  /** 送信の進捗（0〜1） */
+  progress: number;
+  /** アップロード済みの下書き */
+  asset?: MediaAssetView;
   /** アップロードに失敗した場合のメッセージ */
   error?: string;
 };
 
-export type MediaCommitTarget = {
-  recordType: string;
-  recordId: string;
-};
-
-export type MediaCommitResult = {
-  /** アップロードに失敗したファイル（フォームの pending にも残る） */
+export type MediaUploadSummary = {
+  /** フォームに送る asset ID（表示順） */
+  assetIds: string[];
+  /** アップロードに失敗したファイル */
   failed: { fileName: string; error: string }[];
 };
 
 export type MediaAttachmentsController = {
   /** 既存の添付（削除予定を除く） */
   existing: MediaAssetView[];
-  /** 未保存の添付 */
+  /** 未保存の添付（アップロード中・済み・失敗） */
   pending: PendingMediaFile[];
   /** ファイル選択時の事前チェックで弾いたファイルのメッセージ */
   rejected: { fileName: string; error: string }[];
@@ -41,14 +50,18 @@ export type MediaAttachmentsController = {
   replaceAll: (files: Iterable<File>) => void;
   removePending: (key: string) => void;
   removeExisting: (assetId: string) => void;
+  /** アップロードに失敗したファイルを送り直す */
+  retryPending: (key: string) => void;
   clearRejected: () => void;
   /** 添付できる残り枚数（maxCount 未指定なら Infinity） */
   remainingCount: number;
+  /** アップロード待ち・アップロード中のファイルがあるか */
+  isUploading: boolean;
   /**
-   * 記録の保存後に呼ぶ。削除予定の既存添付を削除し、未保存のファイルを順にアップロードする。
-   * 成功したものは pending から取り除き、失敗したものはエラー付きで残す
+   * 記録の保存前に呼ぶ。進行中のアップロードがすべて終わるのを待ち、
+   * フォームに送る asset ID と失敗したファイルを返す
    */
-  commit: (target: MediaCommitTarget) => Promise<MediaCommitResult>;
+  waitForUploads: () => Promise<MediaUploadSummary>;
 };
 
 export type UseMediaAttachmentsOptions = {
@@ -59,29 +72,116 @@ export type UseMediaAttachmentsOptions = {
   maxCount?: number;
 };
 
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
 export function useMediaAttachments({
   initial = [],
   limits,
   allowVideo = false,
   maxCount,
 }: UseMediaAttachmentsOptions): MediaAttachmentsController {
-  const [existing, setExisting] = useState<MediaAssetView[]>(initial);
-  const [removedIds, setRemovedIds] = useState<string[]>([]);
-  const [pending, setPending] = useState<PendingMediaFile[]>([]);
+  const [existing] = useState<MediaAssetView[]>(initial);
+  const [removedIds, setRemovedIdsState] = useState<string[]>([]);
+  const [pending, setPendingState] = useState<PendingMediaFile[]>([]);
   const [rejected, setRejected] = useState<
     { fileName: string; error: string }[]
   >([]);
-  // アンマウント時に Object URL を解放するため、最新の pending を参照で保持する
-  const pendingRef = useRef(pending);
-  pendingRef.current = pending;
+
+  // 送信時（Transition 中で再レンダリング前のこともある）に最新の状態を読めるよう、
+  // 状態の更新は必ず ref を先に書き換えてから setState する
+  const pendingRef = useRef<PendingMediaFile[]>([]);
+  const removedIdsRef = useRef<string[]>([]);
+  const setPending = useCallback(
+    (update: (current: PendingMediaFile[]) => PendingMediaFile[]) => {
+      pendingRef.current = update(pendingRef.current);
+      setPendingState(pendingRef.current);
+    },
+    [],
+  );
+  const setRemovedIds = useCallback(
+    (update: (current: string[]) => string[]) => {
+      removedIdsRef.current = update(removedIdsRef.current);
+      setRemovedIdsState(removedIdsRef.current);
+    },
+    [],
+  );
+  const updateItem = useCallback(
+    (key: string, patch: Partial<PendingMediaFile>) => {
+      setPending((current) =>
+        current.map((item) =>
+          item.key === key ? { ...item, ...patch } : item,
+        ),
+      );
+    },
+    [setPending],
+  );
+
+  // Workers のメモリ上限を考慮し、アップロードは 1 件ずつ直列に行う。
+  // 末尾の Promise を保持しておき、保存時はそれを待てばすべて終わったことになる
+  const queueRef = useRef<Promise<void>>(Promise.resolve());
+  const abortersRef = useRef(new Map<string, AbortController>());
 
   useEffect(() => {
+    const aborters = abortersRef.current;
     return () => {
+      for (const aborter of aborters.values()) {
+        aborter.abort();
+      }
       for (const item of pendingRef.current) {
         URL.revokeObjectURL(item.previewUrl);
       }
     };
   }, []);
+
+  const runUpload = useCallback(
+    async (key: string) => {
+      const item = pendingRef.current.find((entry) => entry.key === key);
+      // 待っている間に取り消された、または再試行で重複して積まれた場合
+      if (item?.status !== "queued") {
+        return;
+      }
+      const aborter = new AbortController();
+      abortersRef.current.set(key, aborter);
+      updateItem(key, { status: "uploading", progress: 0, error: undefined });
+      try {
+        const asset = await uploadPendingMedia(item.file, {
+          signal: aborter.signal,
+          onProgress: (progress) => updateItem(key, { progress }),
+        });
+        if (pendingRef.current.some((entry) => entry.key === key)) {
+          updateItem(key, { status: "uploaded", progress: 1, asset });
+        } else {
+          // 送信が終わる直前に取り消された場合は、できあがった下書きを片付ける
+          void discardPendingMediaAction(asset.id);
+        }
+      } catch (error) {
+        if (isAbortError(error)) {
+          return;
+        }
+        updateItem(key, {
+          status: "error",
+          error:
+            error instanceof Error
+              ? error.message
+              : "アップロードに失敗しました",
+        });
+      } finally {
+        abortersRef.current.delete(key);
+      }
+    },
+    [updateItem],
+  );
+
+  const enqueue = useCallback(
+    (keys: string[]) => {
+      for (const key of keys) {
+        queueRef.current = queueRef.current.then(() => runUpload(key));
+      }
+    },
+    [runUpload],
+  );
 
   const visibleExisting = existing.filter(
     (asset) => !removedIds.includes(asset.id),
@@ -115,6 +215,8 @@ export function useMediaAttachments({
           file,
           previewUrl: URL.createObjectURL(file),
           kind: isVideoFile(file) ? "video" : "image",
+          status: "queued",
+          progress: 0,
         });
       }
       return { accepted, errors };
@@ -122,15 +224,28 @@ export function useMediaAttachments({
     [allowVideo, limits, maxCount],
   );
 
+  /** 未保存のファイルを取り除く。進行中なら中止し、アップロード済みの下書きは削除する */
+  const dropPending = useCallback((items: PendingMediaFile[]) => {
+    for (const item of items) {
+      abortersRef.current.get(item.key)?.abort();
+      if (item.asset) {
+        void discardPendingMediaAction(item.asset.id);
+      }
+      URL.revokeObjectURL(item.previewUrl);
+    }
+  }, []);
+
   const addFiles = useCallback(
     (files: Iterable<File>) => {
       const { accepted, errors } = selectFiles(files, remainingCount);
-      if (accepted.length > 0) {
-        setPending((current) => [...current, ...accepted]);
-      }
       setRejected(errors);
+      if (accepted.length === 0) {
+        return;
+      }
+      setPending((current) => [...current, ...accepted]);
+      enqueue(accepted.map((item) => item.key));
     },
-    [selectFiles, remainingCount],
+    [selectFiles, remainingCount, setPending, enqueue],
   );
 
   const replaceAll = useCallback(
@@ -143,103 +258,81 @@ export function useMediaAttachments({
       if (accepted.length === 0) {
         return;
       }
-      setRemovedIds(existing.map((asset) => asset.id));
-      setPending((current) => {
-        for (const item of current) {
-          URL.revokeObjectURL(item.previewUrl);
-        }
-        return accepted;
-      });
+      setRemovedIds(() => existing.map((asset) => asset.id));
+      dropPending(pendingRef.current);
+      setPending(() => accepted);
+      enqueue(accepted.map((item) => item.key));
     },
-    [selectFiles, maxCount, existing],
+    [
+      selectFiles,
+      maxCount,
+      existing,
+      setRemovedIds,
+      dropPending,
+      setPending,
+      enqueue,
+    ],
   );
 
-  const removePending = useCallback((key: string) => {
-    setPending((current) => {
-      const target = current.find((item) => item.key === key);
-      if (target) {
-        URL.revokeObjectURL(target.previewUrl);
+  const removePending = useCallback(
+    (key: string) => {
+      const target = pendingRef.current.find((item) => item.key === key);
+      if (!target) {
+        return;
       }
-      return current.filter((item) => item.key !== key);
-    });
-  }, []);
+      setPending((current) => current.filter((item) => item.key !== key));
+      dropPending([target]);
+    },
+    [setPending, dropPending],
+  );
 
-  const removeExisting = useCallback((assetId: string) => {
-    setRemovedIds((current) =>
-      current.includes(assetId) ? current : [...current, assetId],
-    );
-  }, []);
+  const removeExisting = useCallback(
+    (assetId: string) => {
+      setRemovedIds((current) =>
+        current.includes(assetId) ? current : [...current, assetId],
+      );
+    },
+    [setRemovedIds],
+  );
+
+  const retryPending = useCallback(
+    (key: string) => {
+      const target = pendingRef.current.find((item) => item.key === key);
+      if (target?.status !== "error") {
+        return;
+      }
+      updateItem(key, { status: "queued", progress: 0, error: undefined });
+      enqueue([key]);
+    },
+    [updateItem, enqueue],
+  );
 
   const clearRejected = useCallback(() => setRejected([]), []);
 
-  const commit = useCallback(
-    async (target: MediaCommitTarget): Promise<MediaCommitResult> => {
-      const failed: { fileName: string; error: string }[] = [];
+  const waitForUploads = useCallback(async (): Promise<MediaUploadSummary> => {
+    // 待っている間に再試行などで新しいアップロードが積まれた場合も、それが終わるまで待つ
+    let tail: Promise<void>;
+    do {
+      tail = queueRef.current;
+      await tail;
+    } while (tail !== queueRef.current);
 
-      // 既存添付の削除。失敗しても記録自体は保存済みのため、メッセージだけ残して続行する
-      const deletedIds: string[] = [];
-      for (const assetId of removedIds) {
-        const result = await deleteMediaAssetAction(assetId);
-        if (result.error) {
-          const asset = existing.find((item) => item.id === assetId);
-          failed.push({
-            fileName: asset ? `添付 ${asset.sortOrder + 1}` : assetId,
-            error: result.error,
-          });
-        } else {
-          deletedIds.push(assetId);
-        }
+    const assetIds = existing
+      .filter((asset) => !removedIdsRef.current.includes(asset.id))
+      .map((asset) => asset.id);
+    const failed: MediaUploadSummary["failed"] = [];
+    for (const item of pendingRef.current) {
+      if (item.asset) {
+        assetIds.push(item.asset.id);
+      } else {
+        failed.push({
+          fileName: item.file.name,
+          error: item.error ?? "アップロードに失敗しました",
+        });
       }
-      if (deletedIds.length > 0) {
-        setExisting((current) =>
-          current.filter((asset) => !deletedIds.includes(asset.id)),
-        );
-        setRemovedIds((current) =>
-          current.filter((id) => !deletedIds.includes(id)),
-        );
-      }
-
-      // 未保存ファイルのアップロード。順序（sort_order）を保つため直列に送る
-      const uploaded: MediaAssetView[] = [];
-      const succeededKeys: string[] = [];
-      const errorsByKey = new Map<string, string>();
-      for (const item of pendingRef.current) {
-        try {
-          const asset = await uploadMedia({ file: item.file, ...target });
-          uploaded.push(asset);
-          succeededKeys.push(item.key);
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "アップロードに失敗しました";
-          errorsByKey.set(item.key, message);
-          failed.push({ fileName: item.file.name, error: message });
-        }
-      }
-      if (uploaded.length > 0) {
-        setExisting((current) => [...current, ...uploaded]);
-      }
-      setPending((current) =>
-        current
-          .filter((item) => {
-            if (succeededKeys.includes(item.key)) {
-              URL.revokeObjectURL(item.previewUrl);
-              return false;
-            }
-            return true;
-          })
-          .map((item) =>
-            errorsByKey.has(item.key)
-              ? { ...item, error: errorsByKey.get(item.key) }
-              : item,
-          ),
-      );
-
-      return { failed };
-    },
-    [existing, removedIds],
-  );
+    }
+    return { assetIds, failed };
+  }, [existing]);
 
   return {
     existing: visibleExisting,
@@ -249,8 +342,12 @@ export function useMediaAttachments({
     replaceAll,
     removePending,
     removeExisting,
+    retryPending,
     clearRejected,
     remainingCount,
-    commit,
+    isUploading: pending.some(
+      (item) => item.status === "queued" || item.status === "uploading",
+    ),
+    waitForUploads,
   };
 }

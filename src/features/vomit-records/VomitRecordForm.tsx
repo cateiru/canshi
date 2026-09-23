@@ -11,7 +11,6 @@ import { useMediaFormAction } from "@/features/media/useMediaFormAction";
 import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { VomitRecordFormState } from "./actions";
-import { VOMIT_RECORD_MEDIA_TYPE } from "./media";
 import styles from "./VomitRecordForm.module.css";
 
 type FormAction = (
@@ -58,7 +57,6 @@ export function VomitRecordForm({
       ? (recordId) => updateAction.bind(null, recordId)
       : undefined,
     initialState,
-    recordType: VOMIT_RECORD_MEDIA_TYPE,
     media,
     redirectTo: `/cats/${catId}/vomit-records`,
   });

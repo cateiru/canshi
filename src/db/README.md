@@ -56,12 +56,14 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - `recordType`（例: `"poop_record"`）+ `recordId` の polymorphic な組で対象レコードに紐付ける。使える `recordType` は `src/features/media/recordTypes.ts` で管理する
 - `catId` は猫に紐付かないメディア（ごはん商品画像など）を許容するため nullable
 - 書き込み実装済み（`docs/plans/18_media_upload_foundation.md`）。R2 との連携・行の作成・削除は `src/features/media/storage.ts` に集約し、Route Handler・各記録の削除アクションはこれを通して操作する
-  - `objectKey`・`thumbnailObjectKey`：R2 のオブジェクトキー（`{recordType}/{recordId}/{assetId}` と `...{assetId}.thumb.webp`）
+  - `objectKey`・`thumbnailObjectKey`：R2 のオブジェクトキー（`{recordType}/{recordId}/{assetId}` と `...{assetId}.thumb.webp`。フォームから先にアップロードした下書きは `pending/{assetId}` で、記録に紐付けた後もキーは変えない）
   - `mimeType`：先頭バイトで判定した形式（`Content-Type` ヘッダは信用しない）
   - `sizeBytes`・`thumbnailSizeBytes`：容量集計用。保存容量の上限判定は両者の `SUM` で行う
   - `width`・`height`：画像本体、または動画サムネイルの寸法（EXIF の回転を適用後）
   - `sortOrder`：同一レコード内の表示順
   - `(record_type, record_id)` にインデックス
+- 記録フォームでは、ファイルを選んだ時点で `POST /api/media/uploads` が記録に紐付かない下書き（`recordType = "pending"`・`recordId` は自身の ID・`catId` は null）として保存する。フォームの保存時は asset ID だけを送り、各記録の保存アクションが `syncRecordMedia`（`src/features/media/attach.ts`）で下書きの紐付け・外された添付の削除・表示順の振り直しを行う
+  - 紐付かないまま 24 時間を過ぎた下書きは、次回以降のアップロード時に削除する（下書きも保存容量に数える）
 - 記録を削除するときは、レコード本体より先に `deleteMediaAssetsByRecord(recordType, recordId)` を呼んで R2 のオブジェクトと行をまとめて削除する
 - `cats.profile_media_asset_id` はプロフィール画像として使う `media_assets` 行への参照（nullable）。`cats` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/cats/profileImage.ts`）。`is_profile_pinned` が false の間は、写真記録（`cat_photos`）の追加・削除のたびに最新の写真へ自動更新する
 

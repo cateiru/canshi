@@ -11,7 +11,6 @@ import { useMediaFormAction } from "@/features/media/useMediaFormAction";
 import type { MediaAssetView } from "@/features/media/view";
 import type { MedicationFormState } from "./actions";
 import styles from "./MedicationForm.module.css";
-import { MEDICATION_MEDIA_TYPE } from "./media";
 
 type FormAction = (
   state: MedicationFormState,
@@ -61,7 +60,6 @@ export function MedicationForm({
       ? (recordId) => updateAction.bind(null, recordId)
       : undefined,
     initialState,
-    recordType: MEDICATION_MEDIA_TYPE,
     media,
     redirectTo: `/cats/${catId}/medications`,
   });

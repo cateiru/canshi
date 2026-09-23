@@ -4,6 +4,36 @@
   gap: var(--space-2);
 }
 
+/* DropZone。枠線ぶんの余白を外側に逃がし、通常時のレイアウトを変えない */
+.dropArea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: calc(var(--space-2) * -1);
+  padding: var(--space-2);
+  border: var(--border-width) dashed transparent;
+  border-radius: var(--radius-base);
+  transition:
+    border-color var(--transition-base),
+    background-color var(--transition-base);
+}
+
+/* ファイルをドラッグしている間は、添付欄全体をドロップ先として強調する */
+.dropArea[data-drop-target] {
+  border-color: var(--color-accent);
+  background-color: color-mix(
+    in srgb,
+    var(--color-accent) 10%,
+    var(--color-bg)
+  );
+}
+
+/* キーボードで DropZone にフォーカスしたとき（貼り付けで追加できる） */
+.dropArea[data-focus-visible] {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .label {
   font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
@@ -12,6 +42,19 @@
 .description {
   margin: 0;
   font-size: var(--text-xs);
+}
+
+.dragHint {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: color-mix(in srgb, var(--color-ink) 70%, var(--color-bg));
+}
+
+/* タッチ操作が中心の端末ではドラッグ＆ドロップの案内を出さない */
+@media (hover: none) {
+  .dragHint {
+    display: none;
+  }
 }
 
 .items {
@@ -28,9 +71,17 @@
   border-radius: var(--radius-base);
   overflow: hidden;
   background-color: var(--color-bg);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
 }
 
-.item[data-error="true"] {
+.item[data-large="true"] {
+  width: 160px;
+  height: 160px;
+}
+
+.item[data-status="error"] {
   border-color: var(--color-error);
 }
 
@@ -39,6 +90,13 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform var(--transition-base);
+}
+
+/* アップロード待ち・中は画像を少し薄くして、保存前であることを示す */
+.item[data-status="queued"] .thumbnail,
+.item[data-status="uploading"] .thumbnail {
+  opacity: 0.6;
 }
 
 .badge {
@@ -57,6 +115,7 @@
   position: absolute;
   top: var(--space-1);
   right: var(--space-1);
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -68,6 +127,7 @@
   background-color: var(--color-bg);
   color: var(--color-ink);
   cursor: pointer;
+  transition: transform var(--transition-base);
 }
 
 .remove:disabled {
@@ -75,62 +135,189 @@
   opacity: 0.5;
 }
 
-.remove:focus-visible {
+.remove:focus-visible,
+.retry:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-accent);
   outline-offset: var(--focus-ring-offset);
 }
 
-.itemError {
+.overlay {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 2px var(--space-1);
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: var(--space-1);
+  background-color: color-mix(in srgb, var(--color-bg) 85%, transparent);
   font-size: var(--text-xs);
   line-height: 1.3;
-  color: var(--color-bg);
-  background-color: var(--color-error);
 }
 
-.picker {
+.overlay[data-error="true"] {
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--color-bg);
+  background-color: color-mix(in srgb, var(--color-error) 90%, transparent);
+}
+
+.progressText {
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.progress {
+  height: 6px;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: 999px;
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+
+.progressBar {
+  height: 100%;
+  background-color: var(--color-accent);
+  transition: width var(--transition-base);
+}
+
+/* 待機中は進捗がまだないため、流れるストライプで処理中であることを示す */
+.item[data-status="queued"] .progressBar {
+  width: 100%;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-accent) 0 6px,
+    var(--color-bg) 6px 12px
+  );
+  background-size: 17px 100%;
+  animation: progressStripe 800ms linear infinite;
+}
+
+@keyframes progressStripe {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 17px 0;
+  }
+}
+
+.itemError {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px var(--space-2);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.retry:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.chooser {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  width: 96px;
-  height: 96px;
+  padding: 0;
   border: var(--border-width) dashed var(--color-ink);
   border-radius: var(--radius-base);
-  font-size: var(--text-xs);
+  background-color: transparent;
+  color: var(--color-ink);
+  font: inherit;
   cursor: pointer;
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base);
 }
 
-.picker[data-disabled="true"] {
+.picker {
+  width: 96px;
+  height: 96px;
+  font-size: var(--text-xs);
+}
+
+.single {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.dropzone {
+  width: 100%;
+  max-width: 320px;
+  min-height: 160px;
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.dropzoneTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.chooserIcon {
+  font-size: var(--text-xl);
+  transition: transform var(--transition-base);
+}
+
+/* ファイルをドラッグ中は、選択できることをアイコンの動きで示す（ホバー時は下の @media で同様にする） */
+.dropArea[data-drop-target] .chooser {
+  border-color: var(--color-accent);
+  background-color: color-mix(
+    in srgb,
+    var(--color-accent) 12%,
+    var(--color-bg)
+  );
+}
+
+.dropArea[data-drop-target] .chooserIcon {
+  transform: translateY(-3px) scale(1.15);
+}
+
+.replaceButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition:
+    transform var(--transition-base),
+    background-color var(--transition-base);
+}
+
+.chooser[data-disabled="true"],
+.replaceButton[data-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-.picker:focus-within {
+.chooser[data-focus-visible],
+.replaceButton[data-focus-visible] {
   outline: var(--focus-ring-width) solid var(--color-accent);
   outline-offset: var(--focus-ring-offset);
-}
-
-.pickerIcon {
-  font-size: var(--text-xl);
-}
-
-/* ネイティブの input は視覚的に隠し、ラベル経由で操作する（支援技術からは到達可能） */
-.input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 .rejected {
@@ -140,4 +327,64 @@
 .rejectedList {
   margin: 0;
   padding-left: var(--space-4);
+}
+
+/* ホバー時のアニメーション。タッチ端末ではタップ後もホバー状態が残るため、マウスなどの端末に限る */
+@media (hover: hover) {
+  .item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 var(--color-ink);
+  }
+
+  .item:hover .thumbnail {
+    transform: scale(1.05);
+  }
+
+  .remove:hover:not(:disabled) {
+    transform: scale(1.1);
+  }
+
+  .chooser:hover:not([data-disabled="true"]) {
+    border-color: var(--color-accent);
+    background-color: color-mix(
+      in srgb,
+      var(--color-accent) 12%,
+      var(--color-bg)
+    );
+  }
+
+  .chooser:hover:not([data-disabled="true"]) .chooserIcon {
+    transform: translateY(-3px) scale(1.15);
+  }
+
+  .replaceButton:hover:not([data-disabled="true"]) {
+    background-color: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropArea,
+  .item,
+  .thumbnail,
+  .remove,
+  .progressBar,
+  .chooser,
+  .chooserIcon,
+  .replaceButton {
+    transition: none;
+  }
+
+  .item:hover,
+  .item:hover .thumbnail,
+  .remove:hover:not(:disabled),
+  .replaceButton:hover:not([data-disabled="true"]),
+  .dropArea[data-drop-target] .chooserIcon,
+  .chooser:hover:not([data-disabled="true"]) .chooserIcon {
+    transform: none;
+  }
+
+  .item[data-status="queued"] .progressBar {
+    animation: none;
+  }
 }

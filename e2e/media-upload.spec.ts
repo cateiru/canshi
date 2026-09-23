@@ -150,3 +150,62 @@ test("猫を削除すると添付した写真も削除される", async ({ page 
   await expect(page).toHaveURL(/\/cats$/);
   expect((await page.request.get(src)).status()).toBe(404);
 });
+
+test("ドラッグ＆ドロップで添付でき、選んだ時点でアップロードが終わる", async ({
+  page,
+}) => {
+  const catName = `テスト猫-${Date.now()}`;
+
+  await page.goto("/cats/new");
+  await page.getByLabel("名前").fill(catName);
+  await page.getByRole("button", { name: "登録する" }).click();
+  await expect(page.getByRole("heading", { name: catName })).toBeVisible();
+
+  await page.getByRole("link", { name: "嘔吐記録" }).click();
+  await page.getByRole("link", { name: "記録する" }).click();
+
+  // ブラウザ内で File を作り、添付欄（DropZone）へドラッグ＆ドロップする。
+  // スクリプトで作った DataTransfer は webkitGetAsEntry() が null になり react-aria がファイルと
+  // みなさないため、OS からのドラッグと同じく読み取れる dataTransfer を持つイベントを発火させる
+  const png = Array.from(createPng(240, 180, () => [30, 160, 90, 255]));
+  await page
+    .getByText("ここにドラッグ＆ドロップしても追加できます")
+    .evaluate((target, bytes) => {
+      const file = new File([new Uint8Array(bytes)], "dropped.png", {
+        type: "image/png",
+      });
+      const dataTransfer = {
+        types: ["Files"],
+        effectAllowed: "all",
+        dropEffect: "none",
+        items: [{ kind: "file", type: file.type, getAsFile: () => file }],
+        getData: () => "",
+      };
+      for (const type of ["dragenter", "dragover", "drop"]) {
+        const event = new DragEvent(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(event, "dataTransfer", { value: dataTransfer });
+        target.dispatchEvent(event);
+      }
+    }, png);
+
+  await expect(page.getByRole("img", { name: "dropped.png" })).toBeVisible();
+  // アップロードが終わると進捗表示が消える
+  await expect(
+    page.getByRole("progressbar", { name: "dropped.png のアップロード" }),
+  ).toHaveCount(0);
+
+  await page.getByRole("button", { name: "記録する" }).click();
+  await expect(page).toHaveURL(/vomit-records$/);
+  await expect(
+    page.getByRole("button", { name: "嘔吐の写真 1 を表示" }),
+  ).toBeVisible();
+
+  await page.goto("/cats");
+  await page.getByRole("heading", { name: catName }).click();
+  await page.getByRole("button", { name: "削除する" }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "削除する" })
+    .click();
+  await expect(page).toHaveURL(/\/cats$/);
+});

@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { poopRecords } from "@/db/schema";
+import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
@@ -11,8 +12,9 @@ import { POOP_RECORD_MEDIA_TYPE } from "./media";
 import { type PoopRecordFormFieldErrors, poopRecordFormSchema } from "./schema";
 
 /**
- * 保存に成功すると `savedRecordId` を返す。写真のアップロードと一覧への遷移は
- * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
+ * 保存に成功すると `savedRecordId` を返す。写真はフォームで選んだ時点で下書きとして
+ * アップロード済みのため、ここでは送られた asset ID を記録に紐付ける（`syncRecordMediaFromForm`）。
+ * 一覧への遷移はクライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
  */
 export type PoopRecordFormState = MediaFormState & {
   fieldErrors?: PoopRecordFormFieldErrors;
@@ -64,7 +66,12 @@ export async function createPoopRecordAction(
     })
     .returning({ id: poopRecords.id });
 
-  return { savedRecordId: created.id };
+  const mediaError = await syncRecordMediaFromForm(
+    POOP_RECORD_MEDIA_TYPE,
+    created.id,
+    formData,
+  );
+  return { savedRecordId: created.id, formError: mediaError };
 }
 
 export async function updatePoopRecordAction(
@@ -104,7 +111,12 @@ export async function updatePoopRecordAction(
     return { formError: "記録が見つかりませんでした" };
   }
 
-  return { savedRecordId: id };
+  const mediaError = await syncRecordMediaFromForm(
+    POOP_RECORD_MEDIA_TYPE,
+    id,
+    formData,
+  );
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export async function deletePoopRecordAction(

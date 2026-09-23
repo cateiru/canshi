@@ -12,7 +12,6 @@ import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { CatPhotoFormState } from "./actions";
 import styles from "./CatPhotoForm.module.css";
-import { CAT_PHOTO_MEDIA_TYPE } from "./media";
 
 type FormAction = (
   state: CatPhotoFormState,
@@ -54,7 +53,6 @@ export function CatPhotoForm({
       ? (recordId) => updateAction.bind(null, recordId)
       : undefined,
     initialState,
-    recordType: CAT_PHOTO_MEDIA_TYPE,
     media,
     redirectTo: `/cats/${catId}/photos`,
   });

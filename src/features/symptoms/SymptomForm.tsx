@@ -12,7 +12,6 @@ import { useMediaFormAction } from "@/features/media/useMediaFormAction";
 import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { SymptomFormState } from "./actions";
-import { SYMPTOM_MEDIA_TYPE } from "./media";
 import styles from "./SymptomForm.module.css";
 
 type FormAction = (
@@ -68,7 +67,6 @@ export function SymptomForm({
       ? (recordId) => updateAction.bind(null, recordId)
       : undefined,
     initialState,
-    recordType: SYMPTOM_MEDIA_TYPE,
     media,
     redirectTo: `/cats/${catId}/symptoms`,
   });

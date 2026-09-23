@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { cats, expenseRecordCats, expenseRecords } from "@/db/schema";
+import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
@@ -13,8 +14,9 @@ import { type ExpenseFormFieldErrors, expenseFormSchema } from "./schema";
 import { deleteExpenseStatements, insertExpenseCats } from "./storage";
 
 /**
- * 保存に成功すると `savedRecordId` を返す。写真のアップロードと一覧への遷移は
- * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
+ * 保存に成功すると `savedRecordId` を返す。写真はフォームで選んだ時点で下書きとして
+ * アップロード済みのため、ここでは送られた asset ID を記録に紐付ける（`syncRecordMediaFromForm`）。
+ * 一覧への遷移はクライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
  */
 export type ExpenseFormState = MediaFormState & {
   fieldErrors?: ExpenseFormFieldErrors;
@@ -81,7 +83,12 @@ export async function createExpenseAction(
 
   await db.batch([insertRecord, ...insertExpenseCats(db, id, catIds)]);
 
-  return { savedRecordId: id };
+  const mediaError = await syncRecordMediaFromForm(
+    EXPENSE_MEDIA_TYPE,
+    id,
+    formData,
+  );
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export async function updateExpenseAction(
@@ -129,7 +136,12 @@ export async function updateExpenseAction(
     ...insertExpenseCats(db, id, catIds),
   ]);
 
-  return { savedRecordId: id };
+  const mediaError = await syncRecordMediaFromForm(
+    EXPENSE_MEDIA_TYPE,
+    id,
+    formData,
+  );
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export async function deleteExpenseAction(
