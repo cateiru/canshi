@@ -1,6 +1,12 @@
 "use client";
 
-import { type DragEvent, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId } from "react";
+import {
+  Button as AriaButton,
+  DropZone,
+  FileTrigger,
+  isFileDropItem,
+} from "react-aria-components";
 import {
   TbAlertTriangle,
   TbPhotoPlus,
@@ -29,10 +35,13 @@ export type MediaAttachmentFieldProps = {
   isDisabled?: boolean;
 };
 
+const IMAGE_TYPES = ["image/*"];
+const IMAGE_AND_VIDEO_TYPES = ["image/*", "video/*"];
+
 /**
  * 記録フォーム内のファイル選択・プレビュー・削除。
- * ファイル選択・ドラッグ＆ドロップの時点で下書きとしてアップロードを始め、進捗を表示する。
- * フォームの保存時は `useMediaFormAction` がアップロード済みの asset ID だけを送る
+ * ファイル選択（`FileTrigger`）・ドラッグ＆ドロップ（`DropZone`）の時点で下書きとしてアップロードを始め、
+ * 進捗を表示する。フォームの保存時は `useMediaFormAction` がアップロード済みの asset ID だけを送る
  */
 export function MediaAttachmentField({
   controller,
@@ -42,21 +51,18 @@ export function MediaAttachmentField({
   description,
   isDisabled = false,
 }: MediaAttachmentFieldProps) {
+  // FileTrigger が描画する input の id。見出しの <label> と関連付け、ラベル名で input を特定できるようにする
   const inputId = useId();
   const { existing, pending, rejected } = controller;
   // 1 枚制限では常に「差し替え」として選べるようにする
   const canAddMore = single || controller.remainingCount > 0;
-  const accept = allowVideo ? "image/*,video/*" : "image/*";
+  const acceptedFileTypes = allowVideo ? IMAGE_AND_VIDEO_TYPES : IMAGE_TYPES;
   const canSelect = canAddMore && !isDisabled;
-
-  const [isDragging, setIsDragging] = useState(false);
-  // 子要素への出入りでも dragenter / dragleave が発生するため、入れ子の深さを数えてちらつきを防ぐ
-  const dragDepthRef = useRef(0);
 
   // 添付欄の外や、上限に達して受け付けない状態でファイルを落とすと、ブラウザがそのファイルを開いて
   // 入力中のフォームが失われる。フォームを表示している間はページ全体でファイルのドロップを無効にする
   useEffect(() => {
-    const preventFileDrop = (event: globalThis.DragEvent) => {
+    const preventFileDrop = (event: DragEvent) => {
       if (event.dataTransfer?.types.includes("Files")) {
         event.preventDefault();
       }
@@ -81,45 +87,24 @@ export function MediaAttachmentField({
     }
   };
 
-  const hasFiles = (event: DragEvent) =>
-    Array.from(event.dataTransfer.types).includes("Files");
-
-  const dropHandlers = {
-    onDragEnter: (event: DragEvent<HTMLDivElement>) => {
-      if (!canSelect || !hasFiles(event)) {
-        return;
-      }
-      event.preventDefault();
-      dragDepthRef.current += 1;
-      setIsDragging(true);
-    },
-    onDragOver: (event: DragEvent<HTMLDivElement>) => {
-      if (!canSelect || !hasFiles(event)) {
-        return;
-      }
-      // preventDefault しないと drop が発生しない
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "copy";
-    },
-    onDragLeave: (event: DragEvent<HTMLDivElement>) => {
-      if (!canSelect || !hasFiles(event)) {
-        return;
-      }
-      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
-      if (dragDepthRef.current === 0) {
-        setIsDragging(false);
-      }
-    },
-    onDrop: (event: DragEvent<HTMLDivElement>) => {
-      dragDepthRef.current = 0;
-      setIsDragging(false);
-      if (!canSelect || !hasFiles(event)) {
-        return;
-      }
-      event.preventDefault();
-      handleFiles(Array.from(event.dataTransfer.files));
-    },
-  };
+  /** ファイル選択ダイアログを開くボタン。同時に描画するのは常に 1 つだけ（input の id が重複しないように） */
+  const renderTrigger = (className: string, children: React.ReactNode) => (
+    <FileTrigger
+      // FileTrigger の props は id を受け付けないため、描画された input に直接付ける
+      ref={(input) => {
+        if (input) {
+          input.id = inputId;
+        }
+      }}
+      acceptedFileTypes={acceptedFileTypes}
+      allowsMultiple={!single}
+      onSelect={(files) => handleFiles(files ? Array.from(files) : [])}
+    >
+      <AriaButton className={className} isDisabled={!canSelect}>
+        {children}
+      </AriaButton>
+    </FileTrigger>
+  );
 
   const tiles = [
     ...existing.map((asset) => (
@@ -144,86 +129,81 @@ export function MediaAttachmentField({
   ];
 
   return (
-    <div
-      className={styles.field}
-      data-dragging={isDragging ? "true" : undefined}
-      {...dropHandlers}
-    >
+    <div className={styles.field}>
       <label htmlFor={inputId} className={styles.label}>
         {label}
       </label>
       {description ? <p className={styles.description}>{description}</p> : null}
 
-      {/* ネイティブの input は視覚的に隠し、下のラベル（追加・差し替え・ドロップ領域）から操作する */}
-      <input
-        id={inputId}
-        type="file"
-        accept={accept}
-        multiple={!single}
-        disabled={!canSelect}
-        className={styles.input}
-        onChange={(event) => {
-          const files = event.target.files;
-          handleFiles(files ? Array.from(files) : []);
-          event.target.value = "";
+      <DropZone
+        aria-label="ファイルをドロップして添付"
+        className={styles.dropArea}
+        isDisabled={!canSelect}
+        getDropOperation={() => (canSelect ? "copy" : "cancel")}
+        onDrop={async (event) => {
+          const files = await Promise.all(
+            event.items.filter(isFileDropItem).map((item) => item.getFile()),
+          );
+          handleFiles(files);
         }}
-      />
-
-      {single ? (
-        <div className={styles.single}>
-          {tiles.length > 0 ? (
-            <>
-              {tiles}
-              <label
-                htmlFor={inputId}
-                className={styles.replaceButton}
-                data-disabled={canSelect ? undefined : "true"}
-              >
-                <TbReplace aria-hidden="true" />
-                差し替える
-              </label>
-            </>
-          ) : (
-            <label
-              htmlFor={inputId}
-              className={`${styles.chooser} ${styles.dropzone}`}
-              data-disabled={canSelect ? undefined : "true"}
-              data-active={isDragging ? "true" : undefined}
-            >
-              <TbPhotoPlus aria-hidden="true" className={styles.chooserIcon} />
-              <span className={styles.dropzoneTitle}>画像を選ぶ</span>
-              <span className={styles.dragHint}>
-                またはここにドラッグ＆ドロップ
-              </span>
-            </label>
-          )}
-        </div>
-      ) : (
-        <>
-          <div className={styles.items}>
-            {tiles}
-            {canAddMore ? (
-              <label
-                htmlFor={inputId}
-                className={`${styles.chooser} ${styles.picker}`}
-                data-disabled={canSelect ? undefined : "true"}
-                data-active={isDragging ? "true" : undefined}
-              >
-                <TbPhotoPlus
-                  aria-hidden="true"
-                  className={styles.chooserIcon}
-                />
-                <span>追加する</span>
-              </label>
-            ) : null}
+      >
+        {single ? (
+          <div className={styles.single}>
+            {tiles.length > 0 ? (
+              <>
+                {tiles}
+                {renderTrigger(
+                  styles.replaceButton,
+                  <>
+                    <TbReplace aria-hidden="true" />
+                    差し替える
+                  </>,
+                )}
+              </>
+            ) : (
+              renderTrigger(
+                `${styles.chooser} ${styles.dropzone}`,
+                <>
+                  <TbPhotoPlus
+                    aria-hidden="true"
+                    className={styles.chooserIcon}
+                  />
+                  <span className={styles.dropzoneTitle}>画像を選ぶ</span>
+                  <span className={styles.dragHint}>
+                    またはここにドラッグ＆ドロップ
+                  </span>
+                </>,
+              )
+            )}
           </div>
-          {canAddMore ? (
-            <p className={styles.dragHint}>
-              ここにドラッグ＆ドロップしても追加できます
-            </p>
-          ) : null}
-        </>
-      )}
+        ) : (
+          <>
+            <div className={styles.items}>
+              {tiles}
+              {canAddMore ? (
+                renderTrigger(
+                  `${styles.chooser} ${styles.picker}`,
+                  <>
+                    <TbPhotoPlus
+                      aria-hidden="true"
+                      className={styles.chooserIcon}
+                    />
+                    <span>追加する</span>
+                  </>,
+                )
+              ) : (
+                // 上限に達しているときも input は残し、見出しのラベルと関連付けたままにする
+                <input id={inputId} type="file" disabled hidden />
+              )}
+            </div>
+            {canAddMore ? (
+              <p className={styles.dragHint}>
+                ここにドラッグ＆ドロップしても追加できます
+              </p>
+            ) : null}
+          </>
+        )}
+      </DropZone>
 
       {rejected.length > 0 ? (
         <Alert color="error" className={styles.rejected}>

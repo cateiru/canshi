@@ -164,20 +164,29 @@ test("ドラッグ＆ドロップで添付でき、選んだ時点でアップ�
   await page.getByRole("link", { name: "嘔吐記録" }).click();
   await page.getByRole("link", { name: "記録する" }).click();
 
-  // ブラウザ内で File を作り、添付欄へドロップする
+  // ブラウザ内で File を作り、添付欄（DropZone）へドラッグ＆ドロップする。
+  // スクリプトで作った DataTransfer は webkitGetAsEntry() が null になり react-aria がファイルと
+  // みなさないため、OS からのドラッグと同じく読み取れる dataTransfer を持つイベントを発火させる
   const png = Array.from(createPng(240, 180, () => [30, 160, 90, 255]));
-  const dataTransfer = await page.evaluateHandle((bytes) => {
-    const transfer = new DataTransfer();
-    transfer.items.add(
-      new File([new Uint8Array(bytes)], "dropped.png", { type: "image/png" }),
-    );
-    return transfer;
-  }, png);
-  const dropTarget = page.getByText(
-    "ここにドラッグ＆ドロップしても追加できます",
-  );
-  await dropTarget.dispatchEvent("dragenter", { dataTransfer });
-  await dropTarget.dispatchEvent("drop", { dataTransfer });
+  await page
+    .getByText("ここにドラッグ＆ドロップしても追加できます")
+    .evaluate((target, bytes) => {
+      const file = new File([new Uint8Array(bytes)], "dropped.png", {
+        type: "image/png",
+      });
+      const dataTransfer = {
+        types: ["Files"],
+        effectAllowed: "all",
+        dropEffect: "none",
+        items: [{ kind: "file", type: file.type, getAsFile: () => file }],
+        getData: () => "",
+      };
+      for (const type of ["dragenter", "dragover", "drop"]) {
+        const event = new DragEvent(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(event, "dataTransfer", { value: dataTransfer });
+        target.dispatchEvent(event);
+      }
+    }, png);
 
   await expect(page.getByRole("img", { name: "dropped.png" })).toBeVisible();
   // アップロードが終わると進捗表示が消える

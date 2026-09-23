@@ -86,6 +86,21 @@ function draftOf(id: string): MediaAssetView {
   };
 }
 
+/** DropZone（react-aria の useDrop）が読み取る形の、ファイルをドラッグ中の dataTransfer */
+function fileDataTransfer(files: File[]) {
+  return {
+    types: ["Files"],
+    effectAllowed: "all",
+    dropEffect: "none",
+    items: files.map((file) => ({
+      kind: "file",
+      type: file.type,
+      getAsFile: () => file,
+    })),
+    getData: () => "",
+  };
+}
+
 /** 呼び出しごとに解決・失敗を外から操作できるアップロードの偽物 */
 function deferredUploads() {
   const calls: {
@@ -256,43 +271,60 @@ describe("MediaAttachmentField", () => {
     });
   });
 
-  it("ドラッグ＆ドロップでファイルを追加できる", async () => {
+  it("ドラッグ＆ドロップでファイルを追加でき、ドラッグ中はドロップ先として強調する", async () => {
     deferredUploads();
-    const { container } = render(<Harness />);
-    const field = container.firstElementChild as HTMLElement;
-    const dataTransfer = {
-      types: ["Files"],
-      files: [imageFile("dropped.png")],
-      dropEffect: "none",
-    };
+    render(<Harness />);
+    const target = screen.getByText("追加する");
+    const dataTransfer = fileDataTransfer([imageFile("dropped.png")]);
 
-    fireEvent.dragEnter(field, { dataTransfer });
-    expect(field).toHaveAttribute("data-dragging", "true");
-    fireEvent.drop(field, { dataTransfer });
+    fireEvent.dragEnter(target, { dataTransfer });
+    expect(target.closest("[data-drop-target]")).not.toBeNull();
+    fireEvent.dragOver(target, { dataTransfer });
+    fireEvent.drop(target, { dataTransfer });
 
-    expect(field).not.toHaveAttribute("data-dragging");
     expect(
-      screen.getByRole("img", { name: "dropped.png" }),
+      await screen.findByRole("img", { name: "dropped.png" }),
+    ).toBeInTheDocument();
+    expect(target.closest("[data-drop-target]")).toBeNull();
+  });
+
+  it("1 枚制限では未選択時にドロップ領域、選択後に差し替えボタンを表示し、ドロップは先頭の 1 枚だけ使う", async () => {
+    deferredUploads();
+    render(<Harness maxCount={1} />);
+
+    const target = screen.getByText("画像を選ぶ");
+    expect(screen.queryByText("追加する")).toBeNull();
+
+    const dataTransfer = fileDataTransfer([
+      imageFile("first.png"),
+      imageFile("second.png"),
+    ]);
+    fireEvent.dragEnter(target, { dataTransfer });
+    fireEvent.drop(target, { dataTransfer });
+
+    expect(
+      await screen.findByRole("img", { name: "first.png" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "second.png" })).toBeNull();
+    expect(screen.queryByText("画像を選ぶ")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "差し替える" }),
     ).toBeInTheDocument();
   });
 
-  it("1 枚制限では未選択時にドロップ領域、選択後に差し替えボタンを表示し、ドロップは先頭の 1 枚だけ使う", () => {
+  it("保存中はファイル選択ボタンとドロップを受け付けない", () => {
     deferredUploads();
-    const { container } = render(<Harness maxCount={1} />);
+    function Disabled() {
+      const controller = useMediaAttachments({ limits: DEFAULT_MEDIA_LIMITS });
+      return <MediaAttachmentField controller={controller} isDisabled />;
+    }
+    render(<Disabled />);
+    const button = screen.getByRole("button", { name: "追加する" });
+    expect(button).toBeDisabled();
 
-    expect(screen.getByText("画像を選ぶ")).toBeInTheDocument();
-    expect(screen.queryByText("追加する")).toBeNull();
-
-    fireEvent.drop(container.firstElementChild as HTMLElement, {
-      dataTransfer: {
-        types: ["Files"],
-        files: [imageFile("first.png"), imageFile("second.png")],
-      },
-    });
-
-    expect(screen.getByRole("img", { name: "first.png" })).toBeInTheDocument();
-    expect(screen.queryByRole("img", { name: "second.png" })).toBeNull();
-    expect(screen.queryByText("画像を選ぶ")).toBeNull();
-    expect(screen.getByText("差し替える")).toBeInTheDocument();
+    const dataTransfer = fileDataTransfer([imageFile("dropped.png")]);
+    fireEvent.dragEnter(button, { dataTransfer });
+    fireEvent.drop(button, { dataTransfer });
+    expect(screen.queryByRole("img", { name: "dropped.png" })).toBeNull();
   });
 });
