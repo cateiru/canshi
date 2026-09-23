@@ -446,6 +446,26 @@ export function ExpenseIcon(props: RecordIconProps) {
   );
 }
 
+export function SettingsIcon(props: RecordIconProps) {
+  const gear =
+    "M10 2h4l.4 2.5q.6.2 1.2.5l2.1-1.5 2.8 2.8L19 8.4q.3.6.5 1.2L22 10v4l-2.5.4q-.2.6-.5 1.2l1.5 2.1-2.8 2.8-2.1-1.5q-.6.3-1.2.5L14 22h-4l-.4-2.5q-.6-.2-1.2-.5l-2.1 1.5-2.8-2.8L5 15.6q-.3-.6-.5-1.2L2 14v-4l2.5-.4q.2-.6.5-1.2L3.5 6.3l2.8-2.8L8.4 5q.6-.3 1.2-.5Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#d7c4e9" d={gear} />
+          <circle fill="#fff4df" cx="12" cy="12" r="3.5" />
+        </>
+      }
+    >
+      <path d={gear} />
+      <circle cx="12" cy="12" r="3.5" />
+    </RecordIcon>
+  );
+}
+
 export function NotificationSettingsIcon(props: RecordIconProps) {
   const catTransform = "translate(8.3 0) scale(.72)";
   const bell =
