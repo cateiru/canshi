@@ -3,18 +3,17 @@ import { getDb } from "@/db/client";
 import { notifications, shampooRecords, weightRecords } from "@/db/schema";
 import { listCats } from "@/features/cats/queries";
 import { listCleaningTargetsWithStatus } from "@/features/cleaning/targetQueries";
+import { NOTIFY_TIMEZONE } from "./defaults";
 import { buildNotificationMessage } from "./messages";
-import {
-  getNotificationPreferences,
-  getResolvedSettingsForCat,
-} from "./queries";
+import { getResolvedSettingsForCat } from "./queries";
 import { evaluateNotificationRules } from "./rules";
-import { getLocalTimeString } from "./rules/localDate";
 
 /**
  * 全猫について通知判定を行い、まだ生成していない候補（`dedupe_key` が未登録のもの）だけを
  * `notifications` に INSERT する。`29`（スケジュール実行）と `30`（通知センター表示）の
  * 両方から呼ばれる想定で、同じ `now` に対して何度呼んでも重複して生成されない。
+ * 通知時刻を過ぎたかどうかの判定は通知の種類ごとに異なるため、`evaluateNotificationRules`
+ * に任せる（掃除の通知は対象ごとに通知時刻を指定できる）。
  *
  * `d1` は Cloudflare Workflows のステップ内（`src/workflows/notification.ts`）のように
  * リクエストの外から呼ぶ場合に渡す（`src/db/client.ts` の `getDb` 参照）
@@ -24,13 +23,6 @@ export async function generateNotifications(
   d1?: D1Database,
 ): Promise<void> {
   const db = getDb(d1);
-  const preferences = await getNotificationPreferences(d1);
-
-  // 通知時刻を過ぎるまでは生成しない
-  if (getLocalTimeString(now, preferences.timezone) < preferences.notifyTime) {
-    return;
-  }
-
   const cats = await listCats(d1);
 
   for (const cat of cats) {
@@ -61,7 +53,7 @@ export async function generateNotifications(
 
     const candidates = evaluateNotificationRules({
       now,
-      timezone: preferences.timezone,
+      timezone: NOTIFY_TIMEZONE,
       cat,
       settings,
       latestShampooAt: latestShampoo?.performedAt ?? null,

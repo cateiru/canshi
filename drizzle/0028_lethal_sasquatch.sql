@@ -1,0 +1,1 @@
+ALTER TABLE `cleaning_targets` ADD `notify_time` text;

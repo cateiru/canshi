@@ -1,7 +1,9 @@
+import { NOTIFY_TIME } from "../defaults";
 import { evaluateBirthdayHalfYear } from "./birthdayHalfYear";
 import { evaluateBirthdayYearly } from "./birthdayYearly";
 import { evaluateCleaningDue } from "./cleaningDue";
 import { evaluateDaysMilestone } from "./daysMilestone";
+import { getLocalTimeString } from "./localDate";
 import { evaluateShampooElapsed } from "./shampooElapsed";
 import type {
   EvaluateNotificationRulesInput,
@@ -13,7 +15,10 @@ export * from "./types";
 
 /**
  * 1匹の猫について、今日発火すべき通知の候補を判定する純粋関数。DB アクセスは持たない
- * （`src/features/notifications/generate.ts` が DB から入力を集めて呼び出す）
+ * （`src/features/notifications/generate.ts` が DB から入力を集めて呼び出す）。
+ *
+ * 掃除以外の通知は全体の通知時刻（18:00）を過ぎるまで生成しない。掃除の通知は対象ごとに
+ * 通知時刻を指定できるため、時刻の判定は `evaluateCleaningDue` 側で行う
  */
 export function evaluateNotificationRules(
   input: EvaluateNotificationRulesInput,
@@ -28,7 +33,19 @@ export function evaluateNotificationRules(
     cleaningTargets,
   } = input;
 
-  const candidates: NotificationCandidate[] = [];
+  const candidates: NotificationCandidate[] = [
+    ...evaluateCleaningDue(
+      cat.id,
+      now,
+      timezone,
+      cleaningTargets,
+      (targetId) => settings.cleaningDue.get(targetId)?.isEnabled ?? true,
+    ),
+  ];
+
+  if (getLocalTimeString(now, timezone) < NOTIFY_TIME) {
+    return candidates;
+  }
 
   const birthdayYearly = evaluateBirthdayYearly(
     cat.id,
@@ -86,16 +103,6 @@ export function evaluateNotificationRules(
   if (weightMeasurement) {
     candidates.push(weightMeasurement);
   }
-
-  candidates.push(
-    ...evaluateCleaningDue(
-      cat.id,
-      now,
-      timezone,
-      cleaningTargets,
-      (targetId) => settings.cleaningDue.get(targetId)?.isEnabled ?? true,
-    ),
-  );
 
   return candidates;
 }

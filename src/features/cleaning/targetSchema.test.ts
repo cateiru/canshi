@@ -67,4 +67,45 @@ describe("cleaningTargetFormSchema", () => {
       expect(result.data.isActive).toBe(false);
     }
   });
+
+  it("通知時刻を省略・「指定しない」にすると null になる", () => {
+    for (const notifyTime of [null, "", "none"]) {
+      const result = cleaningTargetFormSchema.safeParse({
+        name: "水",
+        frequencyValue: "1",
+        frequencyUnit: "days",
+        isActive: "on",
+        notifyTime,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.notifyTime).toBeNull();
+      }
+    }
+  });
+
+  it("15分刻みの通知時刻を指定できる", () => {
+    const result = cleaningTargetFormSchema.safeParse({
+      name: "水",
+      frequencyValue: "1",
+      frequencyUnit: "days",
+      isActive: "on",
+      notifyTime: "23:45",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.notifyTime).toBe("23:45");
+    }
+  });
+
+  it("15分刻みでない通知時刻は失敗する（Select を経由しない POST 対策）", () => {
+    const result = cleaningTargetFormSchema.safeParse({
+      name: "水",
+      frequencyValue: "1",
+      frequencyUnit: "days",
+      isActive: "on",
+      notifyTime: "23:10",
+    });
+    expect(result.success).toBe(false);
+  });
 });

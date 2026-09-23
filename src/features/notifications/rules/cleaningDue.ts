@@ -1,7 +1,9 @@
 import type { CleaningTargetWithStatus } from "@/features/cleaning/targetQueries";
+import { NOTIFY_TIME } from "../defaults";
 import {
   compareLocalDate,
   getLocalDateParts,
+  getLocalTimeString,
   getNaiveLocalDateParts,
   localDateKey,
   localDateToUtcMidnight,
@@ -12,7 +14,10 @@ import type { CleaningDueCandidate } from "./types";
  * 掃除対象の次回予定日を迎えた節目。`nextDueAt` は `cleaning/calculations.ts` の
  * `calculateNextDueAt` によるもので、naive UTC（保存されたローカル時計の数字）のまま
  * 計算されているため、こちらも `Intl` を経由せず UTC フィールドをそのまま読む
- * （`localDate.ts` のコメント参照）。無効化された対象・未実施の対象は生成しない
+ * （`localDate.ts` のコメント参照）。無効化された対象・未実施の対象は生成しない。
+ *
+ * 対象ごとに通知時刻（`notifyTime`）が指定されていればその時刻、なければ全体の通知時刻
+ * （18:00）を過ぎるまでは生成しない
  */
 export function evaluateCleaningDue(
   catId: string,
@@ -22,10 +27,14 @@ export function evaluateCleaningDue(
   isEnabledFor: (targetId: string) => boolean,
 ): CleaningDueCandidate[] {
   const today = getLocalDateParts(now, timezone);
+  const localTime = getLocalTimeString(now, timezone);
   const candidates: CleaningDueCandidate[] = [];
 
   for (const { target, nextDueAt } of targets) {
     if (!target.isActive || nextDueAt == null || !isEnabledFor(target.id)) {
+      continue;
+    }
+    if (localTime < (target.notifyTime ?? NOTIFY_TIME)) {
       continue;
     }
 

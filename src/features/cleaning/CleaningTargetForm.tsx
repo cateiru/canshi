@@ -8,10 +8,12 @@ import {
   FormField,
   Radio,
   RadioGroup,
+  Select,
 } from "@/components/ui";
 import type { CleaningTarget } from "@/db/schema";
 import styles from "./CleaningTargetForm.module.css";
 import type { CleaningTargetFormState } from "./targetActions";
+import { NOTIFY_TIME_NONE, NOTIFY_TIME_OPTIONS } from "./targetSchema";
 
 type CleaningTargetFormProps = {
   action: (
@@ -23,6 +25,11 @@ type CleaningTargetFormProps = {
 };
 
 const initialState: CleaningTargetFormState = {};
+
+const notifyTimeOptions = [
+  { value: NOTIFY_TIME_NONE, label: "指定しない（18:00）" },
+  ...NOTIFY_TIME_OPTIONS.map((time) => ({ value: time, label: time })),
+];
 
 export function CleaningTargetForm({
   action,
@@ -64,6 +71,19 @@ export function CleaningTargetForm({
           {state.fieldErrors.frequencyUnit[0]}
         </span>
       ) : null}
+
+      <div className={styles.notifyTime}>
+        <Select
+          name="notifyTime"
+          label="通知時刻"
+          options={notifyTimeOptions}
+          defaultSelectedKey={cleaningTarget?.notifyTime ?? NOTIFY_TIME_NONE}
+          errorMessage={state.fieldErrors?.notifyTime?.[0]}
+        />
+        <p className={styles.description}>
+          予定日のこの時刻にお知らせします。「毎日23時」なら頻度を1日にして23:00を選んでください。
+        </p>
+      </div>
 
       <Checkbox
         name="isActive"
