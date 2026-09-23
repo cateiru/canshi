@@ -18,6 +18,7 @@ import {
   formatDateHeadingUtc,
   formatDateTimeUtc,
   getNaiveUtcNow,
+  getRelativeDayLabelUtc,
   splitDateTimeUtc,
 } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -41,6 +42,7 @@ export default async function FeedingRecordsPage({
 
   const records = await listFeedingRecords(catId);
   const dateGroups = groupRecordsByDate(records);
+  const now = getNaiveUtcNow();
   const foodProductImageUrls = await listFoodProductImageUrls([
     ...new Set(
       records.flatMap((record) =>
@@ -77,7 +79,7 @@ export default async function FeedingRecordsPage({
       {records.length > 0 && (
         <FeedingChart
           points={toFeedingChartPoints(records)}
-          now={getNaiveUtcNow().toISOString()}
+          now={now.toISOString()}
         />
       )}
 
@@ -107,6 +109,11 @@ export default async function FeedingRecordsPage({
                   <time dateTime={group.dateKey}>
                     {formatDateHeadingUtc(group.records[0].occurredAt)}
                   </time>
+                  {getRelativeDayLabelUtc(group.dateKey, now) && (
+                    <span className={styles.relativeDate}>
+                      {getRelativeDayLabelUtc(group.dateKey, now)}
+                    </span>
+                  )}
                 </h2>
                 <Badge color="accent" className={styles.recordCount}>
                   {group.records.length}件の記録

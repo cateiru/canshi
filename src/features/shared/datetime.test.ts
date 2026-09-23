@@ -5,6 +5,7 @@ import {
   formatDateTimeUtc,
   getLocalNowParts,
   getNaiveUtcNow,
+  getRelativeDayLabelUtc,
   splitDateTimeUtc,
 } from "./datetime";
 
@@ -33,6 +34,31 @@ describe("formatDateHeadingUtc", () => {
   it("年月日と曜日を含む見出し文字列にする", () => {
     const result = formatDateHeadingUtc(new Date("2026-09-11T08:30:00.000Z"));
     expect(result).toBe("2026年9月11日（金）");
+  });
+});
+
+describe("getRelativeDayLabelUtc", () => {
+  it("今日と昨日だけにラベルを付ける", () => {
+    const now = new Date("2026-09-23T00:30:00.000Z");
+    expect(getRelativeDayLabelUtc("2026-09-23", now)).toBe("今日");
+    expect(getRelativeDayLabelUtc("2026-09-22", now)).toBe("昨日");
+    expect(getRelativeDayLabelUtc("2026-09-21", now)).toBeNull();
+    expect(getRelativeDayLabelUtc("2026-09-24", now)).toBeNull();
+  });
+
+  it("月や年の境界でも昨日を判定できる", () => {
+    expect(
+      getRelativeDayLabelUtc(
+        "2025-12-31",
+        new Date("2026-01-01T00:30:00.000Z"),
+      ),
+    ).toBe("昨日");
+  });
+
+  it("JST の日付が変わった直後も今日を判定できる", () => {
+    const now = getNaiveUtcNow(new Date("2026-09-22T15:30:00.000Z"));
+    expect(getRelativeDayLabelUtc("2026-09-23", now)).toBe("今日");
+    expect(getRelativeDayLabelUtc("2026-09-22", now)).toBe("昨日");
   });
 });
 
