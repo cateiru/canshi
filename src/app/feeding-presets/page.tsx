@@ -1,5 +1,6 @@
-import { TbClipboardList, TbPencil, TbPlus } from "react-icons/tb";
+import { TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { FeedingPresetIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { deleteFeedingPresetAction } from "@/features/feeding-presets/actions";
 import { DeleteFeedingPresetButton } from "@/features/feeding-presets/DeleteFeedingPresetButton";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
@@ -24,7 +25,7 @@ export default async function FeedingPresetsPage() {
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={TbClipboardList}>
+        <RecordPageHeading icon={FeedingPresetIcon}>
           ごはんプリセット一覧
         </RecordPageHeading>
         <ButtonLink href="/feeding-presets/new" variant="primary">
@@ -35,7 +36,7 @@ export default async function FeedingPresetsPage() {
 
       {presets.length === 0 ? (
         <Surface className={styles.emptyState}>
-          <TbClipboardList aria-hidden="true" size={32} />
+          <FeedingPresetIcon aria-hidden="true" size={32} />
           <p>まだプリセットが登録されていません。</p>
           <div className={styles.emptyActions}>
             <ButtonLink href="/feeding-presets/new" variant="primary">

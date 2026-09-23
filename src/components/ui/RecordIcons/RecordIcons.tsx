@@ -445,3 +445,100 @@ export function ExpenseIcon(props: RecordIconProps) {
     </RecordIcon>
   );
 }
+
+export function SettingsIcon(props: RecordIconProps) {
+  const gear =
+    "M10 2h4l.4 2.5q.6.2 1.2.5l2.1-1.5 2.8 2.8L19 8.4q.3.6.5 1.2L22 10v4l-2.5.4q-.2.6-.5 1.2l1.5 2.1-2.8 2.8-2.1-1.5q-.6.3-1.2.5L14 22h-4l-.4-2.5q-.6-.2-1.2-.5l-2.1 1.5-2.8-2.8L5 15.6q-.3-.6-.5-1.2L2 14v-4l2.5-.4q.2-.6.5-1.2L3.5 6.3l2.8-2.8L8.4 5q.6-.3 1.2-.5Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#d7c4e9" d={gear} />
+          <circle fill="#fff4df" cx="12" cy="12" r="3.5" />
+        </>
+      }
+    >
+      <path d={gear} />
+      <circle cx="12" cy="12" r="3.5" />
+    </RecordIcon>
+  );
+}
+
+export function NotificationSettingsIcon(props: RecordIconProps) {
+  const bell =
+    "M12 5.5a6.5 6.5 0 0 1 6.5 6.5v3.5q0 1.5 2.5 3V20H3v-1.5q2.5-1.5 2.5-3V12A6.5 6.5 0 0 1 12 5.5Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#f2d17b" d={bell} />}>
+      <path d="M10.5 5.5V4a1.5 1.5 0 0 1 3 0v1.5m-4 14.5a2.5 2.5 0 0 0 5 0" />
+      <path d={bell} />
+      <path d="M9 10.5a3 3 0 0 1 2-2" />
+    </RecordIcon>
+  );
+}
+
+export function FoodProductIcon(props: RecordIconProps) {
+  const plate = "M2 14l2.5 4a3 3 0 0 0 2.5 1.5h10a3 3 0 0 0 2.5-1.5l2.5-4Z";
+  const food =
+    "M5 14c-1-2 0-4 2-4-.5-3 3-5 5-3 2-2 5 0 5 2 2 0 3 3 2 5q-7 2.5-14 0Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#e99a70" d={plate} />
+          <ellipse fill="#fff4df" cx="12" cy="14" rx="10" ry="3" />
+        </>
+      }
+    >
+      <path d={plate} />
+      <ellipse cx="12" cy="14" rx="10" ry="3" />
+      <path className={styles.foregroundFill} fill="#c99a72" d={food} />
+      <path d="M9 11h.01M13 9.5h.01M15.5 12.5h.01M11 13.5h.01" />
+    </RecordIcon>
+  );
+}
+
+export function FeedingPresetIcon(props: RecordIconProps) {
+  const tray = "M4 15.5h16l2 3V21H2v-2.5Z";
+  const rice = "M4 11c-1-1.5 0-3 1.5-3 0-3 4-3 4.5-.5 2-.5 3 2 1 3.5Z";
+  const bowl = "M3 11h10l-1 3a3 3 0 0 1-3 2H7a3 3 0 0 1-3-2Z";
+  const sideDish = "M15 10h6v3a3 3 0 0 1-6 0Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#d7c4e9" d={tray} />}>
+      <path d={tray} />
+      <path d="M2 18.5h20" />
+      <path className={styles.foregroundFill} fill="#fff4df" d={rice} />
+      <path className={styles.foregroundFill} fill="#e99a70" d={bowl} />
+      <path className={styles.foregroundFill} fill="#b7d7ee" d={sideDish} />
+      <ellipse
+        className={styles.foregroundFill}
+        fill="#b2d3aa"
+        cx="18"
+        cy="10"
+        rx="3"
+        ry="1.5"
+      />
+    </RecordIcon>
+  );
+}
+
+export function ReleaseNotesIcon(props: RecordIconProps) {
+  const book =
+    "M2.5 4.5Q7.5 3 12 6q4.5-3 9.5-1.5V19Q16.5 17.5 12 20q-4.5-2.5-9.5-1Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#b7d7ee" d={book} />}>
+      <path d={book} />
+      <path d="M12 6v14" />
+      <path
+        d="m5.5 8.5 3 .5m-3 3 3 .5m-3 3 3 .5m7-7 3-.5m-3 4 3-.5m-3 4 3-.5"
+        strokeWidth="1.25"
+      />
+    </RecordIcon>
+  );
+}

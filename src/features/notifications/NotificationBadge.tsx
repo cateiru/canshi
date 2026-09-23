@@ -1,5 +1,5 @@
-import { TbBell } from "react-icons/tb";
 import { ButtonLink } from "@/components/ui";
+import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import styles from "./NotificationBadge.module.css";
 import { countUnreadNotifications } from "./queries";
 
@@ -23,7 +23,7 @@ export async function NotificationBadge({
       aria-label={label}
       title={label}
     >
-      <TbBell aria-hidden="true" size={20} />
+      <NotificationSettingsIcon aria-hidden="true" size={20} />
       {unreadCount > 0 ? (
         <span className={styles.badge} aria-hidden="true">
           {unreadCount > 99 ? "99+" : unreadCount}

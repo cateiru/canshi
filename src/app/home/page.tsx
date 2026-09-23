@@ -1,6 +1,10 @@
 import Link from "next/link";
-import { TbChevronRight, TbNews, TbSettings } from "react-icons/tb";
+import { TbChevronRight } from "react-icons/tb";
 import { ButtonLink } from "@/components/ui";
+import {
+  ReleaseNotesIcon,
+  SettingsIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
 import { CatIcon } from "@/features/cats/CatIcon";
 import styles from "./page.module.css";
 
@@ -29,7 +33,7 @@ export default function Home() {
       </section>
       <nav aria-label="ホームメニュー" className={styles.menu}>
         <Link href="/settings" className={styles.link}>
-          <TbSettings className={styles.icon} aria-hidden="true" />
+          <SettingsIcon className={styles.icon} aria-hidden="true" />
           <div>
             <h2>設定を開く</h2>
             <p>通知やごはんの共通設定をまとめて管理。</p>
@@ -37,7 +41,7 @@ export default function Home() {
           <TbChevronRight aria-hidden="true" size={20} />
         </Link>
         <Link href="/release-notes" className={styles.link}>
-          <TbNews className={styles.icon} aria-hidden="true" />
+          <ReleaseNotesIcon className={styles.icon} aria-hidden="true" />
           <div>
             <h2>更新情報</h2>
             <p>新しい機能や、使いやすさの改善をご案内。</p>

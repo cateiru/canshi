@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { TbSettings } from "react-icons/tb";
 import { ButtonLink, Footer, ToastRegionRoot } from "@/components/ui";
+import { SettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { NotificationBadge } from "@/features/notifications/NotificationBadge";
 import { ServiceWorkerRegistration } from "@/features/pwa/ServiceWorkerRegistration";
 import "@/styles/globals.css";
@@ -73,7 +73,7 @@ export default function RootLayout({
             aria-label="設定"
             title="設定"
           >
-            <TbSettings aria-hidden="true" size={20} />
+            <SettingsIcon aria-hidden="true" size={20} />
           </ButtonLink>
         </header>
         <div className={styles.content}>{children}</div>

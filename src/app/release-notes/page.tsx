@@ -1,5 +1,5 @@
-import { TbNews } from "react-icons/tb";
 import { Badge, Breadcrumb } from "@/components/ui";
+import { ReleaseNotesIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { listReleaseNotes } from "@/features/release-notes/data";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -18,12 +18,12 @@ export default function ReleaseNotesPage() {
         ]}
       />
 
-      <RecordPageHeading icon={TbNews}>更新情報</RecordPageHeading>
+      <RecordPageHeading icon={ReleaseNotesIcon}>更新情報</RecordPageHeading>
       <p>CANSHIに加わった機能や、使いやすさの改善をお届けします。</p>
 
       {notes.length === 0 ? (
         <Surface className={styles.emptyState}>
-          <TbNews aria-hidden="true" size={32} />
+          <ReleaseNotesIcon aria-hidden="true" size={32} />
           <p>更新情報はまだありません。</p>
         </Surface>
       ) : (
