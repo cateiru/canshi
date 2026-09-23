@@ -447,64 +447,64 @@ export function ExpenseIcon(props: RecordIconProps) {
 }
 
 export function NotificationSettingsIcon(props: RecordIconProps) {
-  const collar = "M7.5 13.5v2Q12 18 16.5 15.5v-2";
-  const bell = "M9 18a3 3 0 0 1 6 0v1.5l1 1.5H8l1-1.5Z";
+  const catTransform = "translate(8.3 0) scale(.72)";
+  const bell =
+    "M10 6a6 6 0 0 1 6 6v3.5q0 1.5 2 3V20H2v-1.5q2-1.5 2-3V12a6 6 0 0 1 6-6Z";
 
   return (
-    <RecordIcon
-      {...props}
-      fills={
-        <>
-          <path fill="#e99a70" d={collar} />
-          <CatFill />
-        </>
-      }
-    >
-      <path d={collar} />
-      <CatOutline expression="calm" />
+    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
+      <CatOutline transform={catTransform} expression="calm" />
+      <path d="M8.5 6V4.5a1.5 1.5 0 0 1 3 0V6m-4 14a2.5 2.5 0 0 0 5 0" />
       <path className={styles.foregroundFill} fill="#f2d17b" d={bell} />
-      <path d="M11 22.5h2M4 16l-1 2m17-2 1 2" />
+      <path d="M7 11a3 3 0 0 1 2-2" />
     </RecordIcon>
   );
 }
 
 export function FoodProductIcon(props: RecordIconProps) {
-  const catTransform = "translate(1.2 -.3) scale(.9)";
-  const bag =
-    "M6 12h12l1.5 8.5a1.5 1.5 0 0 1-1.5 1.75H6a1.5 1.5 0 0 1-1.5-1.75Z";
-  const paws =
-    "M5.5 13.5v2a1.25 1.25 0 0 0 2.5 0v-2m8 0v2a1.25 1.25 0 0 0 2.5 0v-2";
-
-  return (
-    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
-      <CatOutline transform={catTransform} expression="calm" />
-      <path className={styles.foregroundFill} fill="#e99a70" d={bag} />
-      <path d="M6 14.5h12" />
-      <path className={styles.foregroundFill} fill="#f5dfb7" d={paws} />
-      <path
-        d="M9 18.5q2-3 4.5 0l2-1.5v3l-2-1.5q-2.5 3-4.5 0Z"
-        strokeWidth="1.25"
-      />
-    </RecordIcon>
-  );
-}
-
-export function FeedingPresetIcon(props: RecordIconProps) {
-  const bowl = "M3 15.5h18l-1.5 4.5a3 3 0 0 1-2.8 2H7.3a3 3 0 0 1-2.8-2Z";
+  const plate = "M2 14l2.5 4a3 3 0 0 0 2.5 1.5h10a3 3 0 0 0 2.5-1.5l2.5-4Z";
+  const food =
+    "M5 14c-1-2 0-4 2-4-.5-3 3-5 5-3 2-2 5 0 5 2 2 0 3 3 2 5q-7 2.5-14 0Z";
 
   return (
     <RecordIcon
       {...props}
       fills={
         <>
-          <CatFill />
-          <path fill="#d7c4e9" d={bowl} />
+          <path fill="#e99a70" d={plate} />
+          <ellipse fill="#fff4df" cx="12" cy="14" rx="10" ry="3" />
         </>
       }
     >
-      <CatOutline expression="calm" />
-      <path d={bowl} />
-      <path d="m9.5 18.5 1.75 1.75 3.25-3.25" />
+      <path d={plate} />
+      <ellipse cx="12" cy="14" rx="10" ry="3" />
+      <path className={styles.foregroundFill} fill="#c99a72" d={food} />
+      <path d="M9 11h.01M13 9.5h.01M15.5 12.5h.01M11 13.5h.01" />
+    </RecordIcon>
+  );
+}
+
+export function FeedingPresetIcon(props: RecordIconProps) {
+  const tray = "M4 15.5h16l2 3V21H2v-2.5Z";
+  const rice = "M4 11c-1-1.5 0-3 1.5-3 0-3 4-3 4.5-.5 2-.5 3 2 1 3.5Z";
+  const bowl = "M3 11h10l-1 3a3 3 0 0 1-3 2H7a3 3 0 0 1-3-2Z";
+  const sideDish = "M15 10h6v3a3 3 0 0 1-6 0Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#d7c4e9" d={tray} />}>
+      <path d={tray} />
+      <path d="M2 18.5h20" />
+      <path className={styles.foregroundFill} fill="#fff4df" d={rice} />
+      <path className={styles.foregroundFill} fill="#e99a70" d={bowl} />
+      <path className={styles.foregroundFill} fill="#b7d7ee" d={sideDish} />
+      <ellipse
+        className={styles.foregroundFill}
+        fill="#b2d3aa"
+        cx="18"
+        cy="10"
+        rx="3"
+        ry="1.5"
+      />
     </RecordIcon>
   );
 }
