@@ -58,9 +58,20 @@
 }
 
 .dateHeading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   margin: 0;
   font-size: var(--text-md);
   font-weight: var(--font-weight-bold);
+}
+
+.relativeDate {
+  border-radius: var(--radius-base);
+  padding: 0 var(--space-2);
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-bg));
+  font-size: var(--text-sm);
 }
 
 .recordCount {

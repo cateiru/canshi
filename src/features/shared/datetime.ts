@@ -30,6 +30,23 @@ export function formatDateHeadingUtc(date: Date): string {
   return `${year}年${month}月${day}日（${weekday}）`;
 }
 
+/** 記録の日付と、同じ naive UTC 基準の現在日時を比較する。 */
+export function getRelativeDayLabelUtc(
+  dateKey: string,
+  now: Date,
+): "今日" | "昨日" | null {
+  if (dateKey === splitDateTimeUtc(now).date) {
+    return "今日";
+  }
+
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  if (dateKey === splitDateTimeUtc(yesterday).date) {
+    return "昨日";
+  }
+
+  return null;
+}
+
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
