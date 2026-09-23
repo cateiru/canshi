@@ -445,3 +445,91 @@ export function ExpenseIcon(props: RecordIconProps) {
     </RecordIcon>
   );
 }
+
+export function NotificationSettingsIcon(props: RecordIconProps) {
+  const catTransform = "translate(-1 0) scale(.85)";
+  const bell = "M17 10a3 3 0 0 1 3 3v3l1 2h-8l1-2v-3a3 3 0 0 1 3-3Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={<CatFill transform={catTransform} />}
+    >
+      <CatOutline transform={catTransform} expression="calm" />
+      <path
+        className={styles.foregroundFill}
+        fill="#f2d17b"
+        stroke="none"
+        d={bell}
+      />
+      <path d={bell} />
+      <path d="M17 8.5v1.5m-1 10h2" />
+    </RecordIcon>
+  );
+}
+
+export function FoodProductIcon(props: RecordIconProps) {
+  const catTransform = "translate(-1 0) scale(.85)";
+  const bag = "M14 8h7l1 13h-9Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={<CatFill transform={catTransform} />}
+    >
+      <CatOutline transform={catTransform} expression="calm" />
+      <path
+        className={styles.foregroundFill}
+        fill="#e99a70"
+        stroke="none"
+        d={bag}
+      />
+      <path d={bag} />
+      <path d="M15 8V5h5v3m-4 6h3m-3 3h3" />
+    </RecordIcon>
+  );
+}
+
+export function FeedingPresetIcon(props: RecordIconProps) {
+  const catTransform = "translate(0 -1) scale(.85)";
+  const clipboard = "M5 12h14v10H5Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={<CatFill transform={catTransform} />}
+    >
+      <CatOutline transform={catTransform} expression="calm" />
+      <path
+        className={styles.foregroundFill}
+        fill="#d7c4e9"
+        stroke="none"
+        d={clipboard}
+      />
+      <path d={clipboard} />
+      <path d="M9 15h6m-6 3h6" />
+    </RecordIcon>
+  );
+}
+
+export function ReleaseNotesIcon(props: RecordIconProps) {
+  const catTransform = "translate(-1 0) scale(.85)";
+  const paper = "M13 9h9v12h-9Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={<CatFill transform={catTransform} />}
+    >
+      <CatOutline transform={catTransform} expression="calm" />
+      <path
+        className={styles.foregroundFill}
+        fill="#b7d7ee"
+        stroke="none"
+        d={paper}
+      />
+      <path d={paper} />
+      <path d="M16 12h3m-3 3h3m-3 3h3" />
+    </RecordIcon>
+  );
+}

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  TbBell,
-  TbBowl,
-  TbChevronRight,
-  TbClipboardList,
-  TbNews,
-} from "react-icons/tb";
+import { TbChevronRight } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import {
+  FeedingPresetIcon,
+  FoodProductIcon,
+  NotificationSettingsIcon,
+  ReleaseNotesIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -19,25 +19,25 @@ const settings = [
     href: "/settings/notifications",
     title: "通知設定",
     description: "通知時刻・タイムゾーンや、この端末での通知を設定します。",
-    icon: TbBell,
+    icon: NotificationSettingsIcon,
   },
   {
     href: "/food-products",
     title: "ごはん商品一覧",
     description: "ごはんの記録に使う商品を登録・編集します。",
-    icon: TbBowl,
+    icon: FoodProductIcon,
   },
   {
     href: "/feeding-presets",
     title: "ごはんプリセット一覧",
     description: "よく使うごはんの組み合わせと量を登録・編集します。",
-    icon: TbClipboardList,
+    icon: FeedingPresetIcon,
   },
   {
     href: "/release-notes",
     title: "更新情報",
     description: "アプリの新機能や改善内容を確認します。",
-    icon: TbNews,
+    icon: ReleaseNotesIcon,
   },
 ];
 
