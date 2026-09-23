@@ -451,10 +451,7 @@ export function NotificationSettingsIcon(props: RecordIconProps) {
   const bell = "M17 10a3 3 0 0 1 3 3v3l1 2h-8l1-2v-3a3 3 0 0 1 3-3Z";
 
   return (
-    <RecordIcon
-      {...props}
-      fills={<CatFill transform={catTransform} />}
-    >
+    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
       <CatOutline transform={catTransform} expression="calm" />
       <path
         className={styles.foregroundFill}
@@ -473,10 +470,7 @@ export function FoodProductIcon(props: RecordIconProps) {
   const bag = "M14 8h7l1 13h-9Z";
 
   return (
-    <RecordIcon
-      {...props}
-      fills={<CatFill transform={catTransform} />}
-    >
+    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
       <CatOutline transform={catTransform} expression="calm" />
       <path
         className={styles.foregroundFill}
@@ -495,10 +489,7 @@ export function FeedingPresetIcon(props: RecordIconProps) {
   const clipboard = "M5 12h14v10H5Z";
 
   return (
-    <RecordIcon
-      {...props}
-      fills={<CatFill transform={catTransform} />}
-    >
+    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
       <CatOutline transform={catTransform} expression="calm" />
       <path
         className={styles.foregroundFill}
@@ -517,10 +508,7 @@ export function ReleaseNotesIcon(props: RecordIconProps) {
   const paper = "M13 9h9v12h-9Z";
 
   return (
-    <RecordIcon
-      {...props}
-      fills={<CatFill transform={catTransform} />}
-    >
+    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
       <CatOutline transform={catTransform} expression="calm" />
       <path
         className={styles.foregroundFill}
