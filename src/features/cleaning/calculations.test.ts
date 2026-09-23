@@ -63,3 +63,25 @@ describe("isCleaningOverdue", () => {
     expect(isCleaningOverdue(null, new Date())).toBe(false);
   });
 });
+
+describe("calculateNextDueAt（通知時刻あり）", () => {
+  it("予定日の日付はそのままに、時刻を通知時刻に揃える", () => {
+    const result = calculateNextDueAt(
+      new Date("2026-09-10T23:10:00.000Z"),
+      1,
+      "days",
+      "23:00",
+    );
+    expect(result).toEqual(new Date("2026-09-11T23:00:00.000Z"));
+  });
+
+  it("単位が「月」でも時刻を通知時刻に揃える", () => {
+    const result = calculateNextDueAt(
+      new Date("2026-09-07T08:00:00.000Z"),
+      1,
+      "months",
+      "07:15",
+    );
+    expect(result).toEqual(new Date("2026-10-07T07:15:00.000Z"));
+  });
+});

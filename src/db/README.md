@@ -69,7 +69,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - `28` で追加した、通知条件の判定結果を保持するテーブル群
 - `notifications`・`notification_settings` は `cat_id` を持つが、記録テーブルではない（猫自身の行動・状態の記録ではなく、アプリが生成した通知・その設定のため）。タイムライン機能（`14`）の集約対象からは除外する（「共通カラム規約」の代表の発生日時列の一覧にも含めない）
-- `notification_preferences` は猫に紐付かない、アプリ全体で 1 行だけの設定（通知時刻・タイムゾーン）
+- `notification_preferences` は猫に紐付かない、アプリ全体で 1 行だけの設定（通知時刻・タイムゾーン）だったが、通知時刻は 18:00（日本時間）固定になったため現在は未使用（後続で削除予定）
+- 掃除対象ごとの通知時刻は `cleaning_targets.notify_time`（`HH:MM`、15 分刻み、nullable）で持つ。NULL の場合は 18:00 に通知する
 - 詳細な判定ロジックは `src/features/notifications/` を参照
 
 ## AI 評価結果（`ai_evaluations`）

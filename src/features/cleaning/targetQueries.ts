@@ -72,6 +72,7 @@ export async function listCleaningTargetsWithStatus(
       lastPerformedAt,
       target.frequencyValue,
       target.frequencyUnit,
+      target.notifyTime,
     );
     return {
       target,

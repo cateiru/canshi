@@ -1,36 +1,11 @@
 import { and, desc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { notificationSettings, notifications } from "@/db/schema";
 import {
-  notificationPreferences,
-  notificationSettings,
-  notifications,
-} from "@/db/schema";
-import {
-  DEFAULT_NOTIFY_TIME,
   DEFAULT_SHAMPOO_ELAPSED_MONTHS,
-  DEFAULT_TIMEZONE,
   DEFAULT_WEIGHT_MEASUREMENT_DAYS,
 } from "./defaults";
 import type { ResolvedNotificationSettings } from "./rules";
-
-export type NotificationPreferencesValue = {
-  notifyTime: string;
-  timezone: string;
-};
-
-/** 行が無い場合は既定値（09:00・Asia/Tokyo）を返す */
-export async function getNotificationPreferences(
-  d1?: D1Database,
-): Promise<NotificationPreferencesValue> {
-  const db = getDb(d1);
-  const [row] = await db
-    .select()
-    .from(notificationPreferences)
-    .where(eq(notificationPreferences.id, "default"))
-    .limit(1);
-
-  return row ?? { notifyTime: DEFAULT_NOTIFY_TIME, timezone: DEFAULT_TIMEZONE };
-}
 
 /**
  * 猫ごとの通知設定を、`notification_settings` の行が無い種類・掃除対象について

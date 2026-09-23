@@ -33,3 +33,14 @@
   border-radius: 8px;
   font-size: var(--text-md);
 }
+
+.notifyTime {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.description {
+  font-size: var(--text-sm);
+  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+}

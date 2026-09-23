@@ -26,6 +26,7 @@ function parseFormData(formData: FormData) {
     frequencyValue: formData.get("frequencyValue"),
     frequencyUnit: formData.get("frequencyUnit"),
     isActive: formData.get("isActive"),
+    notifyTime: formData.get("notifyTime"),
   });
 }
 
@@ -58,6 +59,7 @@ export async function createCleaningTargetAction(
     frequencyValue: parsed.data.frequencyValue,
     frequencyUnit: parsed.data.frequencyUnit,
     isActive: parsed.data.isActive,
+    notifyTime: parsed.data.notifyTime,
     sortOrder: await nextSortOrder(catId),
   });
 
@@ -107,6 +109,7 @@ export async function updateCleaningTargetAction(
       frequencyValue: parsed.data.frequencyValue,
       frequencyUnit: parsed.data.frequencyUnit,
       isActive: parsed.data.isActive,
+      notifyTime: parsed.data.notifyTime,
       updatedAt: new Date(),
     })
     .where(and(eq(cleaningTargets.id, id), eq(cleaningTargets.catId, catId)))

@@ -1,24 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test("通知設定（全体・猫ごと）を変更できる", async ({ page }) => {
-  // 全体設定：通知時刻とタイムゾーンを変更する
+test("通知設定（全体・猫ごと）を確認・変更できる", async ({ page }) => {
+  // 全体設定：通知時刻は 18:00 固定のため、案内の表示だけ確認する
   await page.goto("/settings/notifications");
-
-  // 「端末のタイムゾーンを使う」ボタンでブラウザのタイムゾーンが選択される
-  const deviceTimezone = await page.evaluate(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
-  );
-  await page.getByRole("button", { name: "端末のタイムゾーンを使う" }).click();
-  await expect(page.getByText(deviceTimezone)).toBeVisible();
-
-  await page.getByLabel("タイムゾーン").click();
-  await page.getByRole("option", { name: "America/New_York" }).click();
-  await page.getByLabel("通知時刻").fill("00:00");
-  await page.getByRole("button", { name: "保存する" }).click();
-
-  await expect(page).toHaveURL(/\/settings\/notifications$/);
-  await expect(page.getByLabel("通知時刻")).toHaveValue("00:00");
-  await expect(page.getByText("America/New_York")).toBeVisible();
+  await expect(
+    page.getByText("お知らせは毎日 18:00（日本時間）に届きます。", {
+      exact: false,
+    }),
+  ).toBeVisible();
 
   // 猫ごとの通知設定
   const catName = `テスト猫-${Date.now()}`;

@@ -3,55 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { notificationPreferences } from "@/db/schema";
 import {
   type CatNotificationSettingsFormFieldErrors,
   catNotificationSettingsFormSchema,
-  type NotificationPreferencesFormFieldErrors,
-  notificationPreferencesFormSchema,
 } from "./settingsSchema";
 import { buildCatNotificationSettingsBatch } from "./settingsUpsert";
-
-export type NotificationPreferencesFormState = {
-  fieldErrors?: NotificationPreferencesFormFieldErrors;
-  formError?: string;
-};
-
-/** 通知時刻・タイムゾーンの全体設定を保存する。`id` が固定値なので単純に upsert できる */
-export async function updateNotificationPreferencesAction(
-  _prevState: NotificationPreferencesFormState,
-  formData: FormData,
-): Promise<NotificationPreferencesFormState> {
-  const parsed = notificationPreferencesFormSchema.safeParse({
-    notifyTime: formData.get("notifyTime"),
-    timezone: formData.get("timezone"),
-  });
-  if (!parsed.success) {
-    return { fieldErrors: parsed.error.flatten().fieldErrors };
-  }
-
-  const db = getDb();
-  await db
-    .insert(notificationPreferences)
-    .values({
-      id: "default",
-      notifyTime: parsed.data.notifyTime,
-      timezone: parsed.data.timezone,
-    })
-    .onConflictDoUpdate({
-      target: notificationPreferences.id,
-      set: {
-        notifyTime: parsed.data.notifyTime,
-        timezone: parsed.data.timezone,
-        updatedAt: new Date(),
-      },
-    });
-
-  // `redirect()` で戻る先が同じパスのため、クライアントの Router Cache に残っている
-  // 保存前のデータが再利用されないよう明示的に無効化する
-  revalidatePath("/settings/notifications");
-  redirect("/settings/notifications");
-}
 
 export type CatNotificationSettingsFormState = {
   fieldErrors?: CatNotificationSettingsFormFieldErrors;

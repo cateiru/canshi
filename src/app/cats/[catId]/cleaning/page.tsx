@@ -114,9 +114,14 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                   </div>
                 </dl>
 
-                {status.isOverdue ? (
+                {status.isOverdue || status.target.notifyTime ? (
                   <div className={styles.badges}>
-                    <Badge color="warning">期限超過</Badge>
+                    {status.isOverdue ? (
+                      <Badge color="warning">期限超過</Badge>
+                    ) : null}
+                    {status.target.notifyTime ? (
+                      <Badge>{status.target.notifyTime}に通知</Badge>
+                    ) : null}
                   </div>
                 ) : null}
 

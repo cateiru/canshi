@@ -2,9 +2,9 @@ import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 /**
- * 通知時刻・タイムゾーンの全体設定。アプリ全体で常に 1 行（id 固定値 "default"）だけ扱う。
- * 行が存在しない場合は `getNotificationPreferences`（`src/features/notifications/queries.ts`）
- * が既定値（09:00・Asia/Tokyo）を返す
+ * 通知時刻・タイムゾーンの全体設定（旧）。通知時刻は 18:00（日本時間）固定になり
+ * （`src/features/notifications/defaults.ts`）、このテーブルはどこからも読み書きしない。
+ * デプロイ前後で古いコードから参照されうるため、テーブルの削除は後続の PR で行う
  */
 export const notificationPreferences = sqliteTable("notification_preferences", {
   id: text("id").primaryKey().default("default"),

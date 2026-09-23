@@ -12,6 +12,7 @@ function makeTarget(
     name: "猫砂",
     frequencyValue: 7,
     frequencyUnit: "days",
+    notifyTime: null,
     isActive: true,
     sortOrder: 0,
     createdAt: new Date("2026-01-01T00:00:00.000Z"),
@@ -30,7 +31,7 @@ describe("evaluateCleaningDue", () => {
   it("次回予定日を迎えていれば発火する", () => {
     const candidates = evaluateCleaningDue(
       "cat-1",
-      new Date("2026-09-11T00:00:00.000Z"),
+      new Date("2026-09-11T18:00:00.000Z"),
       "UTC",
       [makeTarget()],
       () => true,
@@ -51,7 +52,7 @@ describe("evaluateCleaningDue", () => {
   it("まだ次回予定日を迎えていなければ発火しない", () => {
     const candidates = evaluateCleaningDue(
       "cat-1",
-      new Date("2026-09-10T00:00:00.000Z"),
+      new Date("2026-09-10T18:00:00.000Z"),
       "UTC",
       [makeTarget()],
       () => true,
@@ -62,7 +63,7 @@ describe("evaluateCleaningDue", () => {
   it("未実施（次回予定日を計算できない）対象は発火しない", () => {
     const candidates = evaluateCleaningDue(
       "cat-1",
-      new Date("2026-09-11T00:00:00.000Z"),
+      new Date("2026-09-11T18:00:00.000Z"),
       "UTC",
       [makeTarget({}, null)],
       () => true,
@@ -73,7 +74,7 @@ describe("evaluateCleaningDue", () => {
   it("無効化された対象は発火しない", () => {
     const candidates = evaluateCleaningDue(
       "cat-1",
-      new Date("2026-09-11T00:00:00.000Z"),
+      new Date("2026-09-11T18:00:00.000Z"),
       "UTC",
       [makeTarget()],
       () => false,
@@ -84,7 +85,7 @@ describe("evaluateCleaningDue", () => {
   it("非アクティブな対象は発火しない", () => {
     const candidates = evaluateCleaningDue(
       "cat-1",
-      new Date("2026-09-11T00:00:00.000Z"),
+      new Date("2026-09-11T18:00:00.000Z"),
       "UTC",
       [makeTarget({ isActive: false })],
       () => true,
@@ -95,7 +96,7 @@ describe("evaluateCleaningDue", () => {
   it("複数の対象があればそれぞれ候補を返す", () => {
     const candidates = evaluateCleaningDue(
       "cat-1",
-      new Date("2026-09-11T00:00:00.000Z"),
+      new Date("2026-09-11T18:00:00.000Z"),
       "UTC",
       [
         makeTarget({ id: "target-1", name: "猫砂" }),
@@ -115,7 +116,55 @@ describe("evaluateCleaningDue", () => {
       "cat-1",
       new Date("2026-09-10T15:30:00.000Z"),
       "Asia/Tokyo",
+      [makeTarget({ notifyTime: "00:00" })],
+      () => true,
+    );
+    expect(candidates).toHaveLength(1);
+  });
+
+  it("通知時刻が未指定なら 18:00 より前は発火しない", () => {
+    const candidates = evaluateCleaningDue(
+      "cat-1",
+      new Date("2026-09-11T17:45:00.000Z"),
+      "UTC",
       [makeTarget()],
+      () => true,
+    );
+    expect(candidates).toEqual([]);
+  });
+
+  it("通知時刻を指定した対象は、その時刻を過ぎてから発火する", () => {
+    const target = makeTarget(
+      { notifyTime: "23:00" },
+      new Date("2026-09-11T23:00:00.000Z"),
+    );
+    expect(
+      evaluateCleaningDue(
+        "cat-1",
+        new Date("2026-09-11T22:45:00.000Z"),
+        "UTC",
+        [target],
+        () => true,
+      ),
+    ).toEqual([]);
+    expect(
+      evaluateCleaningDue(
+        "cat-1",
+        new Date("2026-09-11T23:00:00.000Z"),
+        "UTC",
+        [target],
+        () => true,
+      ).map((c) => c.dedupeKey),
+    ).toEqual(["cat-1:cleaning_due:target-1:2026-09-11"]);
+  });
+
+  it("通知時刻は通知用タイムゾーンのローカル時刻で判定する", () => {
+    // UTC 2026-09-11 14:00 = JST 2026-09-11 23:00
+    const candidates = evaluateCleaningDue(
+      "cat-1",
+      new Date("2026-09-11T14:00:00.000Z"),
+      "Asia/Tokyo",
+      [makeTarget({ notifyTime: "23:00" })],
       () => true,
     );
     expect(candidates).toHaveLength(1);
