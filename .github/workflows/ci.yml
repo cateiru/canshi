@@ -41,6 +41,13 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # e2e は next dev に対して直列で実行しており、next dev はページをコンパイルするたびに
+    # メモリを使い続ける。1 つのランナーで全件を流すとメモリが上限に達してランナーごと
+    # 停止するため、テストを分割して dev サーバー 1 つあたりの担当ページを減らす
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     # アプリは日付判定に Asia/Tokyo を使うため、UTC の CI ランナーのまま実行すると
     # 日付境界をまたいだタイミングで「今日」の判定がテストとアプリでずれて flaky になる
     env:
@@ -65,13 +72,13 @@ jobs:
         run: pnpm db:migrate:local
 
       - name: E2E test
-        run: pnpm e2e
+        run: pnpm e2e --shard=${{ matrix.shard }}/2
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7
 
