@@ -69,11 +69,6 @@
   height: 160px;
 }
 
-.item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 0 var(--color-ink);
-}
-
 .item[data-status="error"] {
   border-color: var(--color-error);
 }
@@ -84,10 +79,6 @@
   height: 100%;
   object-fit: cover;
   transition: transform var(--transition-base);
-}
-
-.item:hover .thumbnail {
-  transform: scale(1.05);
 }
 
 /* アップロード待ち・中は画像を少し薄くして、保存前であることを示す */
@@ -125,10 +116,6 @@
   color: var(--color-ink);
   cursor: pointer;
   transition: transform var(--transition-base);
-}
-
-.remove:hover:not(:disabled) {
-  transform: scale(1.1);
 }
 
 .remove:disabled {
@@ -275,7 +262,6 @@
 }
 
 /* ホバー中・ファイルをドラッグ中は、選択できることをアイコンの動きで示す */
-.chooser:hover:not([data-disabled="true"]),
 .chooser[data-active="true"] {
   border-color: var(--color-accent);
   background-color: color-mix(
@@ -285,8 +271,7 @@
   );
 }
 
-.chooser[data-active="true"] .chooserIcon,
-.chooser:hover:not([data-disabled="true"]) .chooserIcon {
+.chooser[data-active="true"] .chooserIcon {
   transform: translateY(-3px) scale(1.15);
 }
 
@@ -302,11 +287,6 @@
   transition:
     transform var(--transition-base),
     background-color var(--transition-base);
-}
-
-.replaceButton:hover:not([data-disabled="true"]) {
-  background-color: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
-  transform: translateY(-1px);
 }
 
 .chooser[data-disabled="true"],
@@ -343,6 +323,40 @@
 .rejectedList {
   margin: 0;
   padding-left: var(--space-4);
+}
+
+/* ホバー時のアニメーション。タッチ端末ではタップ後もホバー状態が残るため、マウスなどの端末に限る */
+@media (hover: hover) {
+  .item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 var(--color-ink);
+  }
+
+  .item:hover .thumbnail {
+    transform: scale(1.05);
+  }
+
+  .remove:hover:not(:disabled) {
+    transform: scale(1.1);
+  }
+
+  .chooser:hover:not([data-disabled="true"]) {
+    border-color: var(--color-accent);
+    background-color: color-mix(
+      in srgb,
+      var(--color-accent) 12%,
+      var(--color-bg)
+    );
+  }
+
+  .chooser:hover:not([data-disabled="true"]) .chooserIcon {
+    transform: translateY(-3px) scale(1.15);
+  }
+
+  .replaceButton:hover:not([data-disabled="true"]) {
+    background-color: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+    transform: translateY(-1px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

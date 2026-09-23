@@ -1,6 +1,6 @@
 "use client";
 
-import { type DragEvent, useId, useRef, useState } from "react";
+import { type DragEvent, useEffect, useId, useRef, useState } from "react";
 import {
   TbAlertTriangle,
   TbPhotoPlus,
@@ -52,6 +52,22 @@ export function MediaAttachmentField({
   const [isDragging, setIsDragging] = useState(false);
   // 子要素への出入りでも dragenter / dragleave が発生するため、入れ子の深さを数えてちらつきを防ぐ
   const dragDepthRef = useRef(0);
+
+  // 添付欄の外や、上限に達して受け付けない状態でファイルを落とすと、ブラウザがそのファイルを開いて
+  // 入力中のフォームが失われる。フォームを表示している間はページ全体でファイルのドロップを無効にする
+  useEffect(() => {
+    const preventFileDrop = (event: globalThis.DragEvent) => {
+      if (event.dataTransfer?.types.includes("Files")) {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener("dragover", preventFileDrop);
+    window.addEventListener("drop", preventFileDrop);
+    return () => {
+      window.removeEventListener("dragover", preventFileDrop);
+      window.removeEventListener("drop", preventFileDrop);
+    };
+  }, []);
 
   const handleFiles = (files: File[]) => {
     if (files.length === 0) {
