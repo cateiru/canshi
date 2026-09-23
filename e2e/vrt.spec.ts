@@ -53,6 +53,23 @@ test("ホームページの見た目", async ({ page }, testInfo) => {
 test("猫一覧ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/cats");
   await expect(page.getByRole("heading", { name: "猫一覧" })).toBeVisible();
+
+  // 固定フィクスチャの年齢とお迎えからの日数は撮影日で変わる。
+  // 既存のベースラインを撮影した 2026-09-22 の表示に揃える。
+  const catDetails = page
+    .getByRole("heading", { name: "VRTテスト猫", exact: true })
+    .locator("..");
+  const age = catDetails.getByText(/^\d+歳(?:\d+ヶ月)?$/);
+  const adoptionDays = catDetails.getByText(/^お迎えから\d+日$/);
+  await expect(age).toBeVisible();
+  await expect(adoptionDays).toBeVisible();
+  await age.evaluate((element) => {
+    element.textContent = "11歳5ヶ月";
+  });
+  await adoptionDays.evaluate((element) => {
+    element.textContent = "お迎えから4131日";
+  });
+
   await takeSnapshot(page, testInfo);
 });
 
@@ -261,6 +278,16 @@ for (const { label, path, heading } of FLAT_RECORD_LISTS) {
     await expect(
       page.getByRole("heading", { name: `VRTテスト猫${heading}` }),
     ).toBeVisible();
+
+    if (path === "shampoo-records") {
+      // 経過日数だけを既存のベースライン撮影日 (2026-09-22) の値に揃える。
+      const elapsedDays = page.locator('[class*="elapsed"] strong');
+      await expect(elapsedDays).toHaveText(/^\d+$/);
+      await elapsedDays.evaluate((element) => {
+        element.textContent = "836";
+      });
+    }
+
     await takeSnapshot(page, testInfo);
   });
 }
