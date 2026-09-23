@@ -7,6 +7,7 @@ import {
   feedingRecordItems,
   foodProducts,
 } from "@/db/schema";
+import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "./media";
@@ -16,8 +17,9 @@ import {
 } from "./schema";
 
 /**
- * 保存に成功すると `savedRecordId` を返す。商品画像のアップロードと一覧への遷移は
- * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
+ * 保存に成功すると `savedRecordId` を返す。商品画像はフォームで選んだ時点で下書きとして
+ * アップロード済みのため、ここでは送られた asset ID を記録に紐付ける（`syncRecordMediaFromForm`）。
+ * 一覧への遷移はクライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
  */
 export type FoodProductFormState = MediaFormState & {
   fieldErrors?: FoodProductFormFieldErrors;
@@ -49,7 +51,12 @@ export async function createFoodProductAction(
     .values(parsed.data)
     .returning({ id: foodProducts.id });
 
-  return { savedRecordId: created.id };
+  const mediaError = await syncRecordMediaFromForm(
+    FOOD_PRODUCT_MEDIA_TYPE,
+    created.id,
+    formData,
+  );
+  return { savedRecordId: created.id, formError: mediaError };
 }
 
 export async function updateFoodProductAction(
@@ -74,7 +81,12 @@ export async function updateFoodProductAction(
     return { formError: "商品が見つかりませんでした" };
   }
 
-  return { savedRecordId: id };
+  const mediaError = await syncRecordMediaFromForm(
+    FOOD_PRODUCT_MEDIA_TYPE,
+    id,
+    formData,
+  );
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export type DeleteFoodProductResult = { error?: string };

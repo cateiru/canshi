@@ -1,5 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, lt } from "drizzle-orm";
 import { chunk, chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
@@ -23,8 +23,14 @@ import {
   sniffMediaType,
   THUMBNAIL_MIME_TYPE,
 } from "./mimeSniff";
-import { buildObjectKey, buildThumbnailObjectKey } from "./objectKey";
+import {
+  buildObjectKey,
+  buildPendingObjectKey,
+  buildPendingThumbnailObjectKey,
+  buildThumbnailObjectKey,
+} from "./objectKey";
 import { nextMediaSortOrder, sumMediaStorageBytes } from "./queries";
+import { PENDING_MEDIA_RECORD_TYPE } from "./recordTypes";
 import { generateImageThumbnail } from "./thumbnail";
 import { MAX_DECODE_PIXELS } from "./thumbnailSize";
 
@@ -46,10 +52,7 @@ export class MediaUploadError extends Error {
   }
 }
 
-export type StoreMediaAssetInput = {
-  recordType: string;
-  recordId: string;
-  catId: string | null;
+type StoreMediaFileInput = {
   /** アップロードされたファイル本体 */
   file: Blob;
   /**
@@ -58,6 +61,12 @@ export type StoreMediaAssetInput = {
    * `MAX_DECODE_PIXELS` 以下の画像しか Workers 側でデコードしない（メモリ上限対策）
    */
   thumbnail?: Blob | null;
+};
+
+export type StoreMediaAssetInput = StoreMediaFileInput & {
+  recordType: string;
+  recordId: string;
+  catId: string | null;
 };
 
 function getBucket(): R2Bucket {
@@ -193,6 +202,17 @@ async function prepareVideo(
   };
 }
 
+type MediaAssetPlacement = {
+  assetId: string;
+  recordType: string;
+  recordId: string;
+  catId: string | null;
+  objectKey: string;
+  thumbnailObjectKey: string;
+  /** 省略時は同一レコード内の末尾 */
+  sortOrder?: number;
+};
+
 /**
  * ファイルを検証・加工して R2 に保存し、`media_assets` 行を作成する。
  * 検証エラーは MediaUploadError として投げる
@@ -200,7 +220,50 @@ async function prepareVideo(
 export async function storeMediaAsset(
   input: StoreMediaAssetInput,
 ): Promise<MediaAsset> {
-  const { recordType, recordId, catId, file } = input;
+  const { recordType, recordId, catId } = input;
+  const assetId = crypto.randomUUID();
+  return storeMediaFile(input, {
+    assetId,
+    recordType,
+    recordId,
+    catId,
+    objectKey: buildObjectKey(recordType, recordId, assetId),
+    thumbnailObjectKey: buildThumbnailObjectKey(recordType, recordId, assetId),
+  });
+}
+
+/**
+ * 記録に紐付けない下書きとして保存する。フォームでファイルを選んだ時点で呼び、
+ * 記録の保存時に `syncRecordMedia` で記録へ紐付ける
+ */
+export async function storePendingMediaAsset(
+  input: StoreMediaFileInput,
+): Promise<MediaAsset> {
+  const assetId = crypto.randomUUID();
+  return storeMediaFile(input, {
+    assetId,
+    recordType: PENDING_MEDIA_RECORD_TYPE,
+    recordId: assetId,
+    catId: null,
+    objectKey: buildPendingObjectKey(assetId),
+    thumbnailObjectKey: buildPendingThumbnailObjectKey(assetId),
+    sortOrder: 0,
+  });
+}
+
+async function storeMediaFile(
+  input: StoreMediaFileInput,
+  placement: MediaAssetPlacement,
+): Promise<MediaAsset> {
+  const { file } = input;
+  const {
+    assetId,
+    recordType,
+    recordId,
+    catId,
+    objectKey,
+    thumbnailObjectKey,
+  } = placement;
   if (file.size === 0) {
     throw new MediaUploadError("ファイルが空です");
   }
@@ -236,13 +299,6 @@ export async function storeMediaAsset(
     );
   }
 
-  const assetId = crypto.randomUUID();
-  const objectKey = buildObjectKey(recordType, recordId, assetId);
-  const thumbnailObjectKey = buildThumbnailObjectKey(
-    recordType,
-    recordId,
-    assetId,
-  );
   const bucket = getBucket();
 
   try {
@@ -263,7 +319,8 @@ export async function storeMediaAsset(
     }
 
     const db = getDb();
-    const sortOrder = await nextMediaSortOrder(recordType, recordId);
+    const sortOrder =
+      placement.sortOrder ?? (await nextMediaSortOrder(recordType, recordId));
     const [created] = await db
       .insert(mediaAssets)
       .values({
@@ -307,7 +364,9 @@ function objectKeysOf(
  * 指定した行の R2 オブジェクトと `media_assets` 行を削除する。
  * R2 の削除に失敗した場合は行を残して例外を投げる（行だけ消えて参照先のない状態を避ける）
  */
-async function deleteAssets(assets: MediaAsset[]): Promise<void> {
+export async function deleteMediaAssetRows(
+  assets: MediaAsset[],
+): Promise<void> {
   if (assets.length === 0) {
     return;
   }
@@ -337,7 +396,7 @@ export async function deleteMediaAsset(assetId: string): Promise<void> {
     .from(mediaAssets)
     .where(eq(mediaAssets.id, assetId))
     .limit(1);
-  await deleteAssets(rows);
+  await deleteMediaAssetRows(rows);
 }
 
 /**
@@ -349,7 +408,7 @@ export async function deleteMediaAssetsByCat(catId: string): Promise<void> {
     .select()
     .from(mediaAssets)
     .where(eq(mediaAssets.catId, catId));
-  await deleteAssets(rows);
+  await deleteMediaAssetRows(rows);
 }
 
 /**
@@ -370,5 +429,51 @@ export async function deleteMediaAssetsByRecord(
         eq(mediaAssets.recordId, recordId),
       ),
     );
-  await deleteAssets(rows);
+  await deleteMediaAssetRows(rows);
+}
+
+/**
+ * 記録に紐付く前の下書きを 1 件削除する。下書き以外（記録に紐付いたもの）は削除しない。
+ * フォームで選んだファイルを保存前に取り消したときに呼ぶ
+ */
+export async function deletePendingMediaAsset(assetId: string): Promise<void> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(mediaAssets)
+    .where(
+      and(
+        eq(mediaAssets.id, assetId),
+        eq(mediaAssets.recordType, PENDING_MEDIA_RECORD_TYPE),
+      ),
+    )
+    .limit(1);
+  await deleteMediaAssetRows(rows);
+}
+
+/** 放置された下書きを削除するまでの猶予 */
+export const PENDING_MEDIA_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * 記録に紐付かないまま猶予を過ぎた下書き（フォームを保存せずに離れた場合など）を削除する。
+ * 下書きも保存容量に数えるため、アップロードのたびに呼んで溜まらないようにする
+ */
+export async function deleteStalePendingMediaAssets(
+  now: Date = new Date(),
+): Promise<void> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(mediaAssets)
+    .where(
+      and(
+        eq(mediaAssets.recordType, PENDING_MEDIA_RECORD_TYPE),
+        lt(
+          mediaAssets.createdAt,
+          new Date(now.getTime() - PENDING_MEDIA_TTL_MS),
+        ),
+      ),
+    )
+    .limit(100);
+  await deleteMediaAssetRows(rows);
 }

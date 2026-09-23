@@ -27,3 +27,9 @@ export function isMediaRecordType(value: unknown): value is MediaRecordType {
  * 実在するレコードに紐付けずにアップロードできる。本番では受け付けない
  */
 export const DEV_MEDIA_RECORD_TYPE = "dev";
+
+/**
+ * フォームで先にアップロードし、まだ記録に紐付けていない下書きの種別。
+ * `recordId` には自身の asset ID を入れる。記録の保存時に実際の種別・記録 ID へ付け替える
+ */
+export const PENDING_MEDIA_RECORD_TYPE = "pending";

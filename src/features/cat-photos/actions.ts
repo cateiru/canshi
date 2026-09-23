@@ -11,6 +11,7 @@ import {
   type ProfileCrop,
 } from "@/features/cats/profileCrop";
 import { syncCatProfileImage } from "@/features/cats/profileImage";
+import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
@@ -18,9 +19,10 @@ import { CAT_PHOTO_MEDIA_TYPE } from "./media";
 import { type CatPhotoFormFieldErrors, catPhotoFormSchema } from "./schema";
 
 /**
- * 保存に成功すると `savedRecordId` を返す。写真のアップロードと一覧への遷移は
- * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない。
- * プロフィール画像の自動更新は、アップロード API が写真の保存後に行う
+ * 保存に成功すると `savedRecordId` を返す。写真はフォームで選んだ時点で下書きとして
+ * アップロード済みのため、ここでは送られた asset ID を記録に紐付ける（`syncRecordMediaFromForm`）。
+ * 一覧への遷移はクライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない。
+ * プロフィール画像の自動更新は、写真を紐付けた後に `syncRecordMedia` が行う
  */
 export type CatPhotoFormState = MediaFormState & {
   fieldErrors?: CatPhotoFormFieldErrors;
@@ -55,7 +57,12 @@ export async function createCatPhotoAction(
     })
     .returning({ id: catPhotos.id });
 
-  return { savedRecordId: created.id };
+  const mediaError = await syncRecordMediaFromForm(
+    CAT_PHOTO_MEDIA_TYPE,
+    created.id,
+    formData,
+  );
+  return { savedRecordId: created.id, formError: mediaError };
 }
 
 export async function updateCatPhotoAction(
@@ -88,7 +95,12 @@ export async function updateCatPhotoAction(
   // 撮影日時が変わると「最新の写真」も変わりうる
   await syncCatProfileImage(catId);
 
-  return { savedRecordId: id };
+  const mediaError = await syncRecordMediaFromForm(
+    CAT_PHOTO_MEDIA_TYPE,
+    id,
+    formData,
+  );
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export async function deleteCatPhotoAction(

@@ -15,7 +15,6 @@ import type { ExpenseFormState } from "./actions";
 import styles from "./ExpenseForm.module.css";
 import { buildExpensesHref } from "./href";
 import { EXPENSE_CATEGORY_LABEL } from "./labels";
-import { EXPENSE_MEDIA_TYPE } from "./media";
 import type { ExpenseWithCats } from "./queries";
 
 type FormAction = (
@@ -79,7 +78,6 @@ export function ExpenseForm({
       ? (recordId) => updateAction.bind(null, recordId)
       : undefined,
     initialState,
-    recordType: EXPENSE_MEDIA_TYPE,
     media,
     redirectTo: buildExpensesHref(catId, {
       ym: spentDate.slice(0, 7),

@@ -9,7 +9,6 @@ import { useMediaFormAction } from "@/features/media/useMediaFormAction";
 import type { MediaAssetView } from "@/features/media/view";
 import type { FoodProductFormState } from "./actions";
 import styles from "./FoodProductForm.module.css";
-import { FOOD_PRODUCT_MEDIA_TYPE } from "./media";
 
 type FormAction = (
   state: FoodProductFormState,
@@ -65,7 +64,6 @@ export function FoodProductForm({
       ? (recordId) => updateAction.bind(null, recordId)
       : undefined,
     initialState,
-    recordType: FOOD_PRODUCT_MEDIA_TYPE,
     media,
     redirectTo: "/food-products",
   });

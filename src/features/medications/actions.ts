@@ -9,14 +9,16 @@ import {
   medications,
   symptoms,
 } from "@/db/schema";
+import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { MEDICATION_MEDIA_TYPE } from "./media";
 import { type MedicationFormFieldErrors, medicationFormSchema } from "./schema";
 
 /**
- * 保存に成功すると `savedRecordId` を返す。写真のアップロードと一覧への遷移は
- * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
+ * 保存に成功すると `savedRecordId` を返す。写真はフォームで選んだ時点で下書きとして
+ * アップロード済みのため、ここでは送られた asset ID を記録に紐付ける（`syncRecordMediaFromForm`）。
+ * 一覧への遷移はクライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
  */
 export type MedicationFormState = MediaFormState & {
   fieldErrors?: MedicationFormFieldErrors;
@@ -106,7 +108,12 @@ export async function createMedicationAction(
     })
     .returning({ id: medications.id });
 
-  return { savedRecordId: created.id };
+  const mediaError = await syncRecordMediaFromForm(
+    MEDICATION_MEDIA_TYPE,
+    created.id,
+    formData,
+  );
+  return { savedRecordId: created.id, formError: mediaError };
 }
 
 export async function updateMedicationAction(
@@ -154,7 +161,12 @@ export async function updateMedicationAction(
     return { formError: "服薬予定が見つかりませんでした" };
   }
 
-  return { savedRecordId: id };
+  const mediaError = await syncRecordMediaFromForm(
+    MEDICATION_MEDIA_TYPE,
+    id,
+    formData,
+  );
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export async function deleteMedicationAction(

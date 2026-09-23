@@ -12,7 +12,6 @@ import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { HospitalVisitFormState } from "./actions";
 import styles from "./HospitalVisitForm.module.css";
-import { HOSPITAL_VISIT_MEDIA_TYPE } from "./media";
 
 type FormAction = (
   state: HospitalVisitFormState,
@@ -63,7 +62,6 @@ export function HospitalVisitForm({
       ? (recordId) => updateAction.bind(null, recordId)
       : undefined,
     initialState,
-    recordType: HOSPITAL_VISIT_MEDIA_TYPE,
     media,
     redirectTo: `/cats/${catId}/hospital-visits`,
   });

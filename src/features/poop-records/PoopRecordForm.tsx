@@ -18,7 +18,6 @@ import { useMediaFormAction } from "@/features/media/useMediaFormAction";
 import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { PoopRecordFormState } from "./actions";
-import { POOP_RECORD_MEDIA_TYPE } from "./media";
 import styles from "./PoopRecordForm.module.css";
 
 type FormAction = (
@@ -65,7 +64,6 @@ export function PoopRecordForm({
       ? (recordId) => updateAction.bind(null, recordId)
       : undefined,
     initialState,
-    recordType: POOP_RECORD_MEDIA_TYPE,
     media,
     redirectTo: `/cats/${catId}/poop-records`,
   });

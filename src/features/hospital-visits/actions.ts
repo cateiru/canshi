@@ -10,6 +10,7 @@ import {
   symptoms,
 } from "@/db/schema";
 import { saveHospitalVisitWithExpense } from "@/features/expenses/hospitalVisitExpense";
+import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
@@ -20,8 +21,9 @@ import {
 } from "./schema";
 
 /**
- * 保存に成功すると `savedRecordId` を返す。写真のアップロードと一覧への遷移は
- * クライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
+ * 保存に成功すると `savedRecordId` を返す。写真はフォームで選んだ時点で下書きとして
+ * アップロード済みのため、ここでは送られた asset ID を記録に紐付ける（`syncRecordMediaFromForm`）。
+ * 一覧への遷移はクライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
  */
 export type HospitalVisitFormState = MediaFormState & {
   fieldErrors?: HospitalVisitFormFieldErrors;
@@ -104,7 +106,12 @@ export async function createHospitalVisitAction(
     },
   );
 
-  return { savedRecordId: id };
+  const mediaError = await syncRecordMediaFromForm(
+    HOSPITAL_VISIT_MEDIA_TYPE,
+    id,
+    formData,
+  );
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export async function updateHospitalVisitAction(
@@ -149,7 +156,12 @@ export async function updateHospitalVisitAction(
     },
   );
 
-  return { savedRecordId: id };
+  const mediaError = await syncRecordMediaFromForm(
+    HOSPITAL_VISIT_MEDIA_TYPE,
+    id,
+    formData,
+  );
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export async function deleteHospitalVisitAction(

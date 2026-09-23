@@ -4,12 +4,15 @@ import { createVideoThumbnail } from "./videoThumbnail";
 import type { MediaAssetView } from "./view";
 
 /**
- * ブラウザからアップロード API（POST /api/media）を呼ぶクライアント側ヘルパー。
+ * ブラウザからアップロード API（POST /api/media・POST /api/media/uploads）を呼ぶクライアント側ヘルパー。
  * サムネイル候補（縮小した画像）をブラウザ側で生成して同時に送る。
  * Workers 側は元画像をデコードせずこの候補から最終サムネイルを作る（メモリ上限対策）
  */
 
 export const MEDIA_UPLOAD_ENDPOINT = "/api/media";
+
+/** 記録に紐付けない下書きのアップロード先（フォームでファイルを選んだ時点で呼ぶ） */
+export const PENDING_MEDIA_UPLOAD_ENDPOINT = "/api/media/uploads";
 
 export type UploadMediaInput = {
   file: File;
@@ -33,14 +36,8 @@ export function isVideoFile(file: File) {
   return file.type.startsWith("video/");
 }
 
-export async function uploadMedia({
-  file,
-  recordType,
-  recordId,
-}: UploadMediaInput): Promise<MediaAssetView> {
-  const formData = new FormData();
-  formData.set("recordType", recordType);
-  formData.set("recordId", recordId);
+/** 本体と、ブラウザ側で作ったサムネイル候補をフォームに詰める */
+async function appendMediaFile(formData: FormData, file: File) {
   formData.set("file", file);
   if (isVideoFile(file)) {
     // 動画は Workers 側でデコードできないため必須。失敗したらアップロード自体を諦める
@@ -53,23 +50,81 @@ export async function uploadMedia({
       formData.set("thumbnail", thumbnail, "thumbnail");
     }
   }
+}
+
+function parseUploadResponse(status: number, payload: unknown): MediaAssetView {
+  const body = payload as UploadMediaResponse | { error?: string } | null;
+  if (status < 200 || status >= 300 || !body || !("asset" in body)) {
+    const message =
+      body && "error" in body && body.error
+        ? body.error
+        : "アップロードに失敗しました";
+    throw new MediaUploadRequestError(message, status);
+  }
+  return body.asset;
+}
+
+export async function uploadMedia({
+  file,
+  recordType,
+  recordId,
+}: UploadMediaInput): Promise<MediaAssetView> {
+  const formData = new FormData();
+  formData.set("recordType", recordType);
+  formData.set("recordId", recordId);
+  await appendMediaFile(formData, file);
 
   const response = await fetch(MEDIA_UPLOAD_ENDPOINT, {
     method: "POST",
     body: formData,
   });
-  const payload = (await response.json().catch(() => null)) as
-    | UploadMediaResponse
-    | { error?: string }
-    | null;
-  if (!response.ok || !payload || !("asset" in payload)) {
-    const message =
-      payload && "error" in payload && payload.error
-        ? payload.error
-        : "アップロードに失敗しました";
-    throw new MediaUploadRequestError(message, response.status);
-  }
-  return payload.asset;
+  const payload = await response.json().catch(() => null);
+  return parseUploadResponse(response.status, payload);
+}
+
+export type UploadPendingMediaOptions = {
+  /** 送信の進捗（0〜1）。サムネイルの作成中は呼ばない */
+  onProgress?: (progress: number) => void;
+  signal?: AbortSignal;
+};
+
+/**
+ * 記録に紐付けない下書きとしてアップロードする。
+ * 進捗を知るため fetch ではなく XMLHttpRequest（`upload.onprogress`）で送る
+ */
+export async function uploadPendingMedia(
+  file: File,
+  { onProgress, signal }: UploadPendingMediaOptions = {},
+): Promise<MediaAssetView> {
+  const formData = new FormData();
+  await appendMediaFile(formData, file);
+  signal?.throwIfAborted();
+
+  return new Promise<MediaAssetView>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", PENDING_MEDIA_UPLOAD_ENDPOINT);
+    xhr.responseType = "json";
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && event.total > 0) {
+        onProgress?.(event.loaded / event.total);
+      }
+    };
+    xhr.onload = () => {
+      try {
+        resolve(parseUploadResponse(xhr.status, xhr.response));
+      } catch (error) {
+        reject(error);
+      }
+    };
+    xhr.onerror = () => {
+      reject(new MediaUploadRequestError("通信に失敗しました", 0));
+    };
+    xhr.onabort = () => {
+      reject(new DOMException("アップロードを中止しました", "AbortError"));
+    };
+    signal?.addEventListener("abort", () => xhr.abort(), { once: true });
+    xhr.send(formData);
+  });
 }
 
 export type FileValidationInput = {
