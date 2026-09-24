@@ -6,6 +6,10 @@ import {
   listTimelineForMonth,
   type TimelineEntry,
 } from "@/features/timeline/queries";
+import {
+  BCS_LABEL,
+  isBodyConditionScore,
+} from "@/features/weight-records/labels";
 
 // `.open-next/worker.js` は `opennextjs-cloudflare build`（`pnpm cf:build` 等）で
 // 生成される。ビルド前（`.open-next/` が無いクリーンな環境）は型解決できないため抑制する
@@ -29,6 +33,21 @@ function toCatSummary(cat: Cat) {
 }
 
 /**
+ * 記録本体を MCP ツール向けに整える。体重記録の BCS は数値だけでは意味が
+ * 伝わりにくいため、「理想体重」などのラベルを `bcsLabel` として添える
+ */
+function toRecordSummary(entry: TimelineEntry) {
+  if (entry.type === "weight") {
+    const { bcs } = entry.record;
+    return {
+      ...entry.record,
+      bcsLabel: isBodyConditionScore(bcs) ? BCS_LABEL[bcs] : null,
+    };
+  }
+  return entry.record;
+}
+
+/**
  * MCP ツール向けのタイムラインエントリの要約。`media`（`/media/[assetId]` への
  * URL を含む）は Cloudflare Access 保護下にあり外部エージェントからは参照
  * できないため含めず、件数のみ返す
@@ -38,7 +57,7 @@ function toTimelineEntrySummary(entry: TimelineEntry) {
     id: entry.id,
     type: entry.type,
     occurredAt: entry.occurredAt,
-    record: entry.record,
+    record: toRecordSummary(entry),
     mediaCount: entry.media.length,
   };
 }
