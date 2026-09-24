@@ -6,6 +6,7 @@ import { Button, FormField, Radio, RadioGroup } from "@/components/ui";
 import type { WeightRecord } from "@/db/schema";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { WeightRecordFormState } from "./actions";
+import { BcsField } from "./BcsField";
 import styles from "./WeightRecordForm.module.css";
 
 type WeightRecordFormProps = {
@@ -96,6 +97,11 @@ export function WeightRecordForm({
           isRequired
         />
       )}
+
+      <BcsField
+        defaultValue={weightRecord?.bcs}
+        errorMessage={state.fieldErrors?.bcs?.[0]}
+      />
 
       {state.formError ? (
         <p className={styles.errorMessage}>{state.formError}</p>

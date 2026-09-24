@@ -11,6 +11,10 @@ import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import { STATUS_LABEL } from "@/features/symptoms/labels";
 import { SUBJECTIVE_AMOUNT_LABEL } from "@/features/water-records/labels";
+import {
+  formatBcs,
+  isBodyConditionScore,
+} from "@/features/weight-records/labels";
 import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "./labels";
 import type { TimelineEntry } from "./queries";
 import styles from "./TimelineEntryCard.module.css";
@@ -190,7 +194,12 @@ function renderBody(
       const { record } = entry;
       return (
         <div className={styles.body}>
-          <p>{record.catWeightKg.toFixed(2)} kg</p>
+          <p>
+            {record.catWeightKg.toFixed(2)} kg
+            {isBodyConditionScore(record.bcs)
+              ? `・${formatBcs(record.bcs)}`
+              : ""}
+          </p>
         </div>
       );
     }

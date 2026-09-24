@@ -25,6 +25,16 @@ export const weightRecordFormSchema = z
     combinedWeightKg: optionalPositiveNumber("人間を含んだ体重"),
     humanWeightKg: optionalPositiveNumber("人間だけの体重"),
     catWeightKg: optionalPositiveNumber("猫の体重"),
+    // BCS は任意項目。「未設定」を選ぶと空文字が送られるため undefined として扱う
+    bcs: z.preprocess(
+      emptyToUndefined,
+      z.coerce
+        .number({ error: "BCSは1〜5から選択してください" })
+        .int("BCSは1〜5から選択してください")
+        .min(1, "BCSは1〜5から選択してください")
+        .max(5, "BCSは1〜5から選択してください")
+        .optional(),
+    ),
   })
   .refine(
     (data) =>

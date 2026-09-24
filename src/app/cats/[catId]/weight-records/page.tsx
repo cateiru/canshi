@@ -8,7 +8,11 @@ import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { deleteWeightRecordAction } from "@/features/weight-records/actions";
 import { toWeightChartPoints } from "@/features/weight-records/chart";
-import { INPUT_METHOD_LABEL } from "@/features/weight-records/labels";
+import {
+  formatBcs,
+  INPUT_METHOD_LABEL,
+  isBodyConditionScore,
+} from "@/features/weight-records/labels";
 import { listWeightRecords } from "@/features/weight-records/queries";
 import { WeightChart } from "@/features/weight-records/WeightChart";
 import styles from "./page.module.css";
@@ -132,6 +136,12 @@ export default async function WeightRecordsPage({
                     <dt>入力方法</dt>
                     <dd>{INPUT_METHOD_LABEL[record.inputMethod]}</dd>
                   </div>
+                  {isBodyConditionScore(record.bcs) ? (
+                    <div>
+                      <dt>体型</dt>
+                      <dd>{formatBcs(record.bcs)}</dd>
+                    </div>
+                  ) : null}
                 </dl>
               </article>
             </li>

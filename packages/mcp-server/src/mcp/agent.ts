@@ -69,7 +69,11 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         title: "猫のタイムラインを取得",
         description:
           "指定した猫の、指定した年月の記録（ごはん・うんち・体重・通院・投薬など）を" +
-          "発生日時の降順で取得する。",
+          "発生日時の降順で取得する。" +
+          '体重記録（type="weight"）には猫の体重 catWeightKg に加え、' +
+          "BCS（ボディコンディションスコア）の bcs（1〜5 の 5 段階。1=痩せ、" +
+          "2=やや痩せ、3=理想体重、4=やや肥満、5=肥満。未評価は null）と" +
+          "そのラベル bcsLabel が含まれる。",
         inputSchema: {
           catId: z.string().describe("猫の ID（list_cats で取得できる）"),
           year: z.number().int().describe("年（例: 2026）"),

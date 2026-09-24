@@ -204,6 +204,13 @@
       "when": 1790141404691,
       "tag": "0028_lethal_sasquatch",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1790230943806,
+      "tag": "0029_numerous_major_mapleleaf",
+      "breakpoints": true
     }
   ]
 }

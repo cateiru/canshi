@@ -24,6 +24,7 @@ function parseFormData(formData: FormData) {
     combinedWeightKg: formData.get("combinedWeightKg"),
     humanWeightKg: formData.get("humanWeightKg"),
     catWeightKg: formData.get("catWeightKg"),
+    bcs: formData.get("bcs"),
   });
 }
 
@@ -65,6 +66,7 @@ export async function createWeightRecordAction(
     combinedWeightKg: parsed.data.combinedWeightKg ?? null,
     humanWeightKg: parsed.data.humanWeightKg ?? null,
     catWeightKg: resolveCatWeightKg(parsed.data),
+    bcs: parsed.data.bcs ?? null,
   });
 
   redirect(`/cats/${catId}/weight-records`);
@@ -94,6 +96,7 @@ export async function updateWeightRecordAction(
       combinedWeightKg: parsed.data.combinedWeightKg ?? null,
       humanWeightKg: parsed.data.humanWeightKg ?? null,
       catWeightKg: resolveCatWeightKg(parsed.data),
+      bcs: parsed.data.bcs ?? null,
       updatedAt: new Date(),
     })
     .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)))
