@@ -101,7 +101,55 @@
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  color: var(--color-ink);
+}
+
+/* 日付セルと凡例で同じ単色を使い、選択中も記録の種類を見分けられるようにする。 */
+.icon[data-record-type="feeding"] {
+  color: #b45309;
+}
+
+.icon[data-record-type="poop"] {
+  color: #795548;
+}
+
+.icon[data-record-type="weight"] {
+  color: #7c3aed;
+}
+
+.icon[data-record-type="vomit"] {
+  color: #c2410c;
+}
+
+.icon[data-record-type="water"] {
+  color: #0369a1;
+}
+
+.icon[data-record-type="shampoo"] {
+  color: #0e7490;
+}
+
+.icon[data-record-type="cleaning"] {
+  color: #0f766e;
+}
+
+.icon[data-record-type="symptom"] {
+  color: #be123c;
+}
+
+.icon[data-record-type="medicationDose"] {
+  color: #15803d;
+}
+
+.icon[data-record-type="hospitalVisit"] {
+  color: #be185d;
+}
+
+.icon[data-record-type="catPhoto"] {
+  color: #4338ca;
+}
+
+.icon[data-record-type="expense"] {
+  color: #8a6508;
 }
 
 .moreCount {
@@ -111,10 +159,6 @@
 
 .day[data-selected="true"] .dayNumber,
 .day[data-selected="true"] .moreCount {
-  color: var(--color-ink);
-}
-
-.day[data-selected="true"] .icon {
   color: var(--color-ink);
 }
 
