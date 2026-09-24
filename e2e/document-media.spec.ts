@@ -100,6 +100,7 @@ test("通院記録と服薬予定に書類の写真を添付し、等倍で閲�
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
   await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })

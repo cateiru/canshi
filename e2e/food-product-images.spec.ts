@@ -101,6 +101,7 @@ test("ごはん商品の画像を登録・差し替え・削除できる", async
 
   await page.goto(detailUrl);
   await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })

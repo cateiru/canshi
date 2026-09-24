@@ -111,6 +111,7 @@ test("うんち記録に画像を添付すると一覧・タイムラインに�
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
   await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })
@@ -143,6 +144,7 @@ test("猫を削除すると添付した写真も削除される", async ({ page 
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
   await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })
@@ -203,6 +205,7 @@ test("ドラッグ＆ドロップで添付でき、選んだ時点でアップ�
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
   await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })
