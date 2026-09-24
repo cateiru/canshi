@@ -24,19 +24,27 @@ test("体重記録の登録・編集・削除ができる", async ({ page }) => 
   // Radio の実体（input）は視覚的に隠れておりクリック不可のため、表示テキストをクリックする
   await page.getByText("猫の体重を直接入力").click();
   await page.getByLabel("猫の体重（kg）").fill("4.20");
+  await page.getByText("やや肥満", { exact: true }).click();
   await page.getByRole("button", { name: "記録する" }).click();
 
   await expect(page).toHaveURL(/weight-records$/);
   const record = page.getByRole("article");
   await expect(record.getByText("4.20")).toBeVisible();
   await expect(record.getByText("直接入力")).toBeVisible();
+  await expect(record.getByText("BCS 4（やや肥満）")).toBeVisible();
 
   await page.getByRole("link", { name: "編集する" }).click();
   await expect(page.getByLabel("猫の体重（kg）")).toHaveValue("4.2");
+  await expect(
+    page.getByRole("radio", { name: "BCS 4 やや肥満" }),
+  ).toBeChecked();
   await page.getByLabel("猫の体重（kg）").fill("4.35");
+  // BCS は「未設定」に戻せる
+  await page.getByText("未設定", { exact: true }).click();
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page).toHaveURL(/weight-records$/);
   await expect(record.getByText("4.35")).toBeVisible();
+  await expect(record.getByText(/BCS/)).toHaveCount(0);
 
   await page.getByRole("button", { name: "削除する" }).click();
   await page

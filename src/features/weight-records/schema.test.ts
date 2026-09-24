@@ -66,4 +66,41 @@ describe("weightRecordFormSchema", () => {
       );
     }
   });
+
+  describe("BCS", () => {
+    const directInput = {
+      ...baseInput,
+      inputMethod: "direct",
+      catWeightKg: "4.2",
+    };
+
+    it("未設定（空文字）のときは undefined として成功する", () => {
+      const result = weightRecordFormSchema.safeParse({
+        ...directInput,
+        bcs: "",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.bcs).toBeUndefined();
+      }
+    });
+
+    it.each(["1", "3", "5"])("%s は数値として成功する", (bcs) => {
+      const result = weightRecordFormSchema.safeParse({ ...directInput, bcs });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.bcs).toBe(Number(bcs));
+      }
+    });
+
+    it.each(["0", "6", "2.5", "abc"])("%s は失敗する", (bcs) => {
+      const result = weightRecordFormSchema.safeParse({ ...directInput, bcs });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.flatten().fieldErrors.bcs?.[0]).toBe(
+          "BCSは1〜5から選択してください",
+        );
+      }
+    });
+  });
 });

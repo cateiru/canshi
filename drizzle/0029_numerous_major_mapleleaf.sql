@@ -1,0 +1,1 @@
+ALTER TABLE `weight_records` ADD `bcs` integer;

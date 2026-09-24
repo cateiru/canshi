@@ -29,6 +29,7 @@ describe("weight_records テーブル", () => {
       combinedWeightKg: 65.2,
       humanWeightKg: 61,
       catWeightKg: 4.2,
+      bcs: 3,
     });
 
     const rows = await db.select().from(weightRecords);
@@ -36,5 +37,6 @@ describe("weight_records テーブル", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].catId).toBe(cat.id);
     expect(rows[0].catWeightKg).toBeCloseTo(4.2);
+    expect(rows[0].bcs).toBe(3);
   });
 });

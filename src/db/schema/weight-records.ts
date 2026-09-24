@@ -15,6 +15,8 @@ export const weightRecords = sqliteTable("weight_records", {
   humanWeightKg: real("human_weight_kg"),
   // 入力方法によらず最終的な猫の体重を保持する。自動算出時は combined - human を保存時に計算する
   catWeightKg: real("cat_weight_kg").notNull(),
+  // ボディコンディションスコア（1〜5 の 5 段階、3 が理想体重）。未評価の記録は NULL
+  bcs: integer("bcs"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
