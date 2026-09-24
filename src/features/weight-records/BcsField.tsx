@@ -79,9 +79,6 @@ export function BcsField({ defaultValue, errorMessage }: BcsFieldProps) {
         <Label className={styles.label}>
           BCS（ボディコンディションスコア）
         </Label>
-        <p className={styles.hint}>
-          体型を5段階で評価します。3が理想体重です。見方は下の「BCSの見方」を参考にしてください。
-        </p>
 
         <div className={styles.options}>
           <AriaRadio value={UNSET_VALUE} className={styles.option}>

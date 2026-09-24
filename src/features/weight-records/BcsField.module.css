@@ -16,12 +16,6 @@
   font-weight: var(--font-weight-bold);
 }
 
-.hint {
-  margin: 0;
-  font-size: var(--text-xs);
-  color: color-mix(in srgb, var(--color-ink) 70%, var(--color-bg));
-}
-
 .options {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
