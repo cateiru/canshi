@@ -138,6 +138,7 @@ test("猫の写真を登録するとプロフィール画像が自動更新さ�
 
   // 猫を削除すると写真もすべて削除される
   await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })

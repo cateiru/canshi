@@ -57,6 +57,7 @@ test("水の記録の登録・編集・削除ができる", async ({ page }) => 
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
   await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })

@@ -33,10 +33,14 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
   await expect(page.getByText("三毛猫")).toBeVisible();
 
   await page.getByRole("button", { name: "削除する" }).click();
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "削除する" })
-    .click();
+  // 猫の名前を正確に入力するまで削除ボタンは押せない
+  const dialog = page.getByRole("dialog");
+  const confirmButton = dialog.getByRole("button", { name: "削除する" });
+  await expect(confirmButton).toBeDisabled();
+  await dialog.getByRole("textbox").fill(`${catName}x`);
+  await expect(confirmButton).toBeDisabled();
+  await dialog.getByRole("textbox").fill(catName);
+  await confirmButton.click();
 
   await expect(page).toHaveURL(/\/cats$/);
   await expect(page.getByRole("heading", { name: catName })).toHaveCount(0);
