@@ -93,6 +93,6 @@ INSERT INTO water_records (id, cat_id, occurred_at, measurement_method, supplied
 VALUES ('vrt-water-1', 'vrt-cat-populated', strftime('%s', '2024-06-14 09:00:00'), 'measuring_cup', 200,
   strftime('%s', '2024-06-14 09:00:00'), strftime('%s', '2024-06-14 09:00:00'));
 
-INSERT INTO weight_records (id, cat_id, occurred_at, input_method, cat_weight_kg, created_at, updated_at)
-VALUES ('vrt-weight-1', 'vrt-cat-populated', strftime('%s', '2024-06-09 08:00:00'), 'direct', 4.2,
+INSERT INTO weight_records (id, cat_id, occurred_at, input_method, cat_weight_kg, bcs, created_at, updated_at)
+VALUES ('vrt-weight-1', 'vrt-cat-populated', strftime('%s', '2024-06-09 08:00:00'), 'direct', 4.2, 3,
   strftime('%s', '2024-06-09 08:00:00'), strftime('%s', '2024-06-09 08:00:00'));
