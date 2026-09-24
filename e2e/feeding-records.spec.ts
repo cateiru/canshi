@@ -90,6 +90,7 @@ test("複数商品のごはん記録とプリセットからの自動入力が�
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
   await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })

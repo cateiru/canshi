@@ -55,11 +55,14 @@ test("通知を完了にすると対応済み一覧に移る", async ({ page }) 
 
   await page.getByRole("tab", { name: "対応済み" }).click();
   await expect(page.getByText(title)).toBeVisible();
-  await expect(page.getByText("完了")).toBeVisible();
+  await expect(
+    page.getByRole("article").filter({ hasText: title }).getByText("完了"),
+  ).toBeVisible();
 
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
   await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })
@@ -96,6 +99,7 @@ test("通知を延期すると未対応一覧から消える", async ({ page }) 
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
   await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })
