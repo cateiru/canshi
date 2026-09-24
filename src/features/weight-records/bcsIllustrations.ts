@@ -2,12 +2,10 @@ import type { BodyConditionScore } from "./labels";
 
 /**
  * BCS フォームで使うイラストの配置先。
- * 現在は暫定の SVG を置いている。正式なイラストの依頼内容は
- * `docs/illustrations/bcs.md` を参照し、差し替え時はファイルを置いたうえで
- * ここの拡張子（パス）を合わせて変更する
+ * イラストの仕様と差し替え手順は `docs/illustrations/bcs.md` を参照。
  */
 const BCS_ILLUSTRATION_DIR = "/images/bcs";
-const BCS_ILLUSTRATION_EXT = "svg";
+const BCS_ILLUSTRATION_EXT = "png";
 
 export type BcsGuideIllustrationKey = "ribs" | "top" | "side";
 

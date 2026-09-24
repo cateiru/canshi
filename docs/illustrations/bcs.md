@@ -2,7 +2,12 @@
 
 体重記録フォームの BCS（ボディコンディションスコア）入力で使うイラストを、画像生成 AI（GPT-6-Astra）に依頼するための文面をまとめる。
 
-現在は `public/images/bcs/` に暫定の簡易 SVG を置いている。正式なイラストができたら、後述の「差し替え手順」に従って置き換える。
+`public/images/bcs/` に透過 PNG 8 枚を配置済み。暫定の簡易 SVG は差し替え済み。
+
+内蔵の `image_gen` で BCS 3 を最初に生成し、残りの画像はその画像を参照して画風と構図を揃えた。
+上から見るガイドは、点線の楕円が腰のくびれを囲むように追加で修正した。
+生成後は透過を維持し、縦横比を保ったまま表のサイズに整えた。
+実際に使用したプロンプトと追加の修正指示は [bcs-prompts.json](bcs-prompts.json) に記録している。
 
 ## 必要な画像
 
@@ -87,5 +92,5 @@
 1. 生成した画像を上の表のファイル名で `public/images/bcs/` に置く。
 2. 必要に応じて WebP に変換する（その場合は拡張子を `.webp` にそろえる）。
 3. `src/features/weight-records/bcsIllustrations.ts` の `BCS_ILLUSTRATION_EXT` を `"png"`（または `"webp"`）に変更する。
-4. 暫定の SVG（`public/images/bcs/*.svg`）を削除する。
+4. 形式を変更した場合は、使わなくなった旧画像を削除する。
 5. 体重記録フォーム（`/cats/{catId}/weight-records/new`）を開き、スマートフォン幅と PC 幅で表示を確認する。
