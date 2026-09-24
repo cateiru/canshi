@@ -166,3 +166,8 @@
   font-size: var(--text-xs);
   color: color-mix(in srgb, var(--color-ink) 70%, var(--color-bg));
 }
+
+.guideNoteLink {
+  color: inherit;
+  text-decoration: underline;
+}

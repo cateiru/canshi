@@ -25,6 +25,7 @@ export const BCS_LABEL: Record<BodyConditionScore, string> = {
 };
 
 // 環境省「飼い主のためのペットフード・ガイドライン」の猫の BCS 表の記述に基づく
+// https://www.env.go.jp/nature/dobutsu/aigo/2_data/pamph/petfood_guide_1808/pdf/full.pdf
 export const BCS_DESCRIPTION: Record<BodyConditionScore, string> = {
   1: "肋骨・腰椎・骨盤が外から容易に見える。首が細く、上から見て腰が深くくびれている。横から見て腹部の吊り上がりが顕著。脇腹のひだには脂肪がないか、ひだ自体がない。",
   2: "背骨と肋骨が容易に触れる。上から見て腰のくびれは最小。横から見て腹部の吊り上がりはわずか。",

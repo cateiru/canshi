@@ -155,8 +155,16 @@ export function BcsField({ defaultValue, errorMessage }: BcsFieldProps) {
         </dl>
 
         <p className={styles.guideNote}>
-          出典:
-          環境省「飼い主のためのペットフード・ガイドライン」。判断に迷うときや、体重の増減が気になるときは獣医師に相談しましょう。
+          出典:{" "}
+          <a
+            href="https://www.env.go.jp/nature/dobutsu/aigo/2_data/pamph/petfood_guide_1808/pdf/full.pdf"
+            target="_blank"
+            rel="noreferrer"
+            className={styles.guideNoteLink}
+          >
+            環境省「飼い主のためのペットフード・ガイドライン」（PDF）
+          </a>
+          。判断に迷うときや、体重の増減が気になるときは獣医師に相談しましょう。
         </p>
       </Collapsible>
     </div>
