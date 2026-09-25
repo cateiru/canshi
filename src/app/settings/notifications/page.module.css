@@ -1,3 +1,42 @@
 .main {
   composes: page from "../../../features/shared/PageLayout.module.css";
 }
+
+.catList {
+  display: flex;
+  margin-top: var(--space-3);
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.catLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: 12px;
+  transition: background-color var(--transition-base);
+}
+
+.catLink:hover {
+  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.catLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.catName {
+  flex: 1;
+  min-width: 0;
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.chevron {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}

@@ -18,7 +18,7 @@ const settings = [
   {
     href: "/settings/notifications",
     title: "通知設定",
-    description: "この端末での通知を設定します。",
+    description: "この端末での通知と、猫ごとのお知らせを設定します。",
     icon: NotificationSettingsIcon,
   },
   {

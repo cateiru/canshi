@@ -37,9 +37,9 @@ export default async function CatNotificationSettingsPage({
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
-          { label: cat.name, href: `/cats/${catId}` },
-          { label: "通知設定" },
+          { label: "設定", href: "/settings" },
+          { label: "通知設定", href: "/settings/notifications" },
+          { label: cat.name },
         ]}
       />
 
