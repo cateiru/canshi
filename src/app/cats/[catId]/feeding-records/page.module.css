@@ -50,7 +50,6 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  color: color-mix(in srgb, var(--color-accent) 50%, var(--color-ink));
 }
 
 .dateRecords {

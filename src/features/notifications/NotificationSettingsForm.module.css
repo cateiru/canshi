@@ -27,7 +27,6 @@
 }
 
 .section h2 svg {
-  color: var(--color-accent);
   flex-shrink: 0;
 }
 
