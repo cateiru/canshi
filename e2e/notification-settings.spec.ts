@@ -20,7 +20,8 @@ test("通知設定（全体・猫ごと）を確認・変更できる", async ({
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();
 
-  await page.getByRole("link", { name: "通知設定" }).click();
+  await page.goto("/settings/notifications");
+  await page.getByRole("link", { name: catName }).click();
   await expect(
     page.getByRole("heading", { name: `${catName}の通知設定` }),
   ).toBeVisible();
