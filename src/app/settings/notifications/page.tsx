@@ -60,6 +60,7 @@ export default async function NotificationSettingsPage() {
       </Surface>
 
       <Surface
+        className={styles.catSection}
         title={
           <span className={styles.sectionTitle}>
             <TbPaw className={styles.sectionIcon} aria-hidden="true" />

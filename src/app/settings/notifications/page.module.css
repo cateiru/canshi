@@ -52,6 +52,10 @@
   margin-top: 2px;
 }
 
+.main .catSection {
+  background: transparent;
+}
+
 .catList {
   display: flex;
   flex-direction: column;
