@@ -18,16 +18,6 @@
   margin-bottom: var(--space-4);
 }
 
-.schedule {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, var(--color-bg));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-bg));
-}
-
 .scheduleTitle {
   margin-bottom: var(--space-1);
 }
@@ -48,7 +38,7 @@
   height: 22px;
 }
 
-.schedule > .sectionIcon {
+.scheduleIcon {
   margin-top: 2px;
 }
 

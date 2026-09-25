@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TbChevronRight, TbClock, TbDeviceMobile, TbPaw } from "react-icons/tb";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { Alert, Breadcrumb, ButtonLink } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { CatAvatar } from "@/features/cats/CatAvatar";
 import { listCats } from "@/features/cats/queries";
@@ -33,17 +33,18 @@ export default async function NotificationSettingsPage() {
         </p>
       </header>
 
-      <aside className={styles.schedule} aria-label="通知が届く時間">
-        <TbClock className={styles.sectionIcon} aria-hidden="true" />
+      <Alert color="info" aria-label="通知が届く時間">
+        <TbClock
+          className={`${styles.sectionIcon} ${styles.scheduleIcon}`}
+          aria-hidden="true"
+        />
         <div>
           <p className={styles.scheduleTitle}>
             お知らせは毎日 <strong>18:00</strong>（日本時間）に届きます。
           </p>
-          <p className={styles.description}>
-            掃除記録は、対象ごとに通知時刻を指定することもできます。
-          </p>
+          <p>掃除記録は、対象ごとに通知時刻を指定することもできます。</p>
         </div>
-      </aside>
+      </Alert>
 
       <Surface
         title={
