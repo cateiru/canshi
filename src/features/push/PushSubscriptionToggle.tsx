@@ -149,24 +149,32 @@ export function PushSubscriptionToggle() {
   }
 
   if (supportState === "checking") {
-    return null;
+    return (
+      <p className={styles.notice} role="status">
+        この端末の通知設定を確認しています…
+      </p>
+    );
   }
 
   if (supportState === "unconfigured") {
     return (
-      <Alert color="info">Push 通知はこの環境では設定されていません</Alert>
+      <Alert color="info" className={styles.notice}>
+        Push 通知はこの環境では設定されていません
+      </Alert>
     );
   }
 
   if (supportState === "unsupported") {
     return (
-      <Alert color="info">このブラウザは通知の購読に対応していません</Alert>
+      <Alert color="info" className={styles.notice}>
+        このブラウザは通知の購読に対応していません
+      </Alert>
     );
   }
 
   if (supportState === "ios-not-installed") {
     return (
-      <Alert color="info">
+      <Alert color="info" className={styles.notice}>
         通知を受け取るには、ホーム画面に追加してから有効化してください
       </Alert>
     );
@@ -175,11 +183,15 @@ export function PushSubscriptionToggle() {
   return (
     <div className={styles.container}>
       <Checkbox
+        className={styles.toggle}
         isSelected={isSubscribed}
         isDisabled={isPending}
         onChange={handleChange}
       >
-        この端末で通知を受け取る
+        <span className={styles.label}>この端末で通知を受け取る</span>
+        <span className={styles.state} aria-hidden="true">
+          {isPending ? "変更中…" : isSubscribed ? "オン" : "オフ"}
+        </span>
       </Checkbox>
       {error ? <Alert color="error">{error}</Alert> : null}
     </div>
