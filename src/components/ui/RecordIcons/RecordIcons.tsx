@@ -471,7 +471,7 @@ export function NotificationSettingsIcon(props: RecordIconProps) {
     "M12 5.5a6.5 6.5 0 0 1 6.5 6.5v3.5q0 1.5 2.5 3V20H3v-1.5q2.5-1.5 2.5-3V12A6.5 6.5 0 0 1 12 5.5Z";
 
   return (
-    <RecordIcon {...props} fills={<path fill="#f2d17b" d={bell} />}>
+    <RecordIcon {...props} fills={<path fill="var(--color-info)" d={bell} />}>
       <path d="M10.5 5.5V4a1.5 1.5 0 0 1 3 0v1.5m-4 14.5a2.5 2.5 0 0 0 5 0" />
       <path d={bell} />
       <path d="M9 10.5a3 3 0 0 1 2-2" />
