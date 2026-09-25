@@ -3,6 +3,7 @@ import { TbChevronRight, TbClock, TbDeviceMobile, TbPaw } from "react-icons/tb";
 import { Alert, Breadcrumb, ButtonLink } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { CatAvatar } from "@/features/cats/CatAvatar";
+import { CatIcon } from "@/features/cats/CatIcon";
 import { listCats } from "@/features/cats/queries";
 import { PushSubscriptionToggle } from "@/features/push/PushSubscriptionToggle";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -64,7 +65,7 @@ export default async function NotificationSettingsPage() {
         className={styles.catSection}
         title={
           <span className={styles.sectionTitle}>
-            <TbPaw className={styles.sectionIcon} aria-hidden="true" />
+            <CatIcon className={styles.sectionIcon} aria-hidden="true" />
             猫ごとの通知設定
           </span>
         }
