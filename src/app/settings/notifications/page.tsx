@@ -89,6 +89,7 @@ export default async function NotificationSettingsPage() {
                   className={styles.catLink}
                 >
                   <CatAvatar
+                    className={styles.catAvatar}
                     name={cat.name}
                     profileMediaAssetId={cat.profileMediaAssetId}
                     profileCropX={cat.profileCropX}

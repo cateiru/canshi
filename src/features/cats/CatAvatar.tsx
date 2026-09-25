@@ -4,6 +4,7 @@ import styles from "./CatAvatar.module.css";
 import { CatIcon } from "./CatIcon";
 
 type CatAvatarProps = {
+  className?: string;
   name: string;
   profileMediaAssetId: string | null;
   /** 表示位置。枠のサイズに対する百分率のオフセット（0 が中央） */
@@ -23,6 +24,7 @@ type CatAvatarProps = {
  * デフォルトの描画式 `translate(x,y) rotate(deg) scale(z)` と同じ考え方）
  */
 export function CatAvatar({
+  className,
   name,
   profileMediaAssetId,
   profileCropX,
@@ -32,7 +34,11 @@ export function CatAvatar({
   size = "sm",
 }: CatAvatarProps) {
   return (
-    <CatEarFrame className={`${styles.avatar} ${styles[size]}`}>
+    <CatEarFrame
+      className={[styles.avatar, styles[size], className]
+        .filter(Boolean)
+        .join(" ")}
+    >
       {profileMediaAssetId ? (
         <img
           src={mediaThumbnailUrl(profileMediaAssetId)}

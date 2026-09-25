@@ -39,7 +39,7 @@
 }
 
 .scheduleIcon {
-  margin-top: 2px;
+  align-self: center;
 }
 
 .main .catSection {
@@ -75,6 +75,10 @@
 
 .catLink:active {
   transform: translateY(1px);
+}
+
+.catLink .catAvatar {
+  margin-top: 0;
 }
 
 .catName {
