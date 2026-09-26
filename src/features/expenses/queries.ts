@@ -7,6 +7,7 @@ import {
   expenseRecordCats,
   expenseRecords,
 } from "@/db/schema";
+import type { YearMonth } from "@/features/shared/yearMonth";
 
 /** 支出記録と、それに紐付く猫の一覧 */
 export type ExpenseWithCats = ExpenseRecord & {
@@ -105,6 +106,50 @@ export async function listExpensesForMonth(
     .orderBy(...order);
 
   return attachCatIds(records);
+}
+
+export type ExpenseAmountRecord = Pick<
+  ExpenseRecord,
+  "spentAt" | "category" | "amountYen"
+>;
+
+/**
+ * 月別の支出グラフ用に、`from` 月の月初から `to` 月の月末までの支出の
+ * 日付・カテゴリ・金額だけを返す。猫の紐付けは不要なので attachCatIds は通さない
+ */
+export async function listExpenseAmountsForMonthRange(
+  from: YearMonth,
+  to: YearMonth,
+  options: ListExpensesForMonthOptions = {},
+): Promise<ExpenseAmountRecord[]> {
+  const db = getDb();
+  const start = getMonthRangeUtc(from.year, from.month).start;
+  const end = getMonthRangeUtc(to.year, to.month).end;
+
+  const forCat =
+    options.catId == null
+      ? undefined
+      : inArray(
+          expenseRecords.id,
+          db
+            .select({ id: expenseRecordCats.expenseRecordId })
+            .from(expenseRecordCats)
+            .where(eq(expenseRecordCats.catId, options.catId)),
+        );
+  return db
+    .select({
+      spentAt: expenseRecords.spentAt,
+      category: expenseRecords.category,
+      amountYen: expenseRecords.amountYen,
+    })
+    .from(expenseRecords)
+    .where(
+      and(
+        gte(expenseRecords.spentAt, start),
+        lt(expenseRecords.spentAt, end),
+        forCat,
+      ),
+    );
 }
 
 export async function getExpenseById(

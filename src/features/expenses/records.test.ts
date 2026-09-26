@@ -36,8 +36,12 @@ vi.mock("next/navigation", () => ({
 
 const { createExpenseAction, updateExpenseAction, deleteExpenseAction } =
   await import("./actions");
-const { getExpenseById, listExpensesForMonth, getExpenseByHospitalVisitId } =
-  await import("./queries");
+const {
+  getExpenseById,
+  listExpensesForMonth,
+  listExpenseAmountsForMonthRange,
+  getExpenseByHospitalVisitId,
+} = await import("./queries");
 const {
   createHospitalVisitAction,
   updateHospitalVisitAction,
@@ -182,6 +186,51 @@ describe("支出の保存と月別表示", () => {
     expect(
       records.map((record) => record.spentAt.toISOString().slice(0, 10)),
     ).toEqual(["2026-09-30", "2026-09-01"]);
+  });
+
+  it("グラフ用に範囲の最初の月初から最後の月末までの支出を返す", async () => {
+    for (const spentDate of [
+      "2026-06-30",
+      "2026-07-01",
+      "2026-09-30",
+      "2026-10-01",
+    ]) {
+      await createExpenseAction({}, expenseForm({ spentDate }));
+    }
+    const records = await listExpenseAmountsForMonthRange(
+      { year: 2026, month: 7 },
+      { year: 2026, month: 9 },
+    );
+    expect(
+      records.map((record) => record.spentAt.toISOString().slice(0, 10)).sort(),
+    ).toEqual(["2026-07-01", "2026-09-30"]);
+  });
+
+  it("グラフ用の支出も猫で絞り込める", async () => {
+    await createExpenseAction(
+      {},
+      expenseForm({ catIds: ["tama"], amountYen: "100" }),
+    );
+    await createExpenseAction(
+      {},
+      expenseForm({ catIds: ["mike"], amountYen: "200" }),
+    );
+    await createExpenseAction({}, expenseForm({ amountYen: "300" }));
+    const range = [
+      { year: 2026, month: 9 },
+      { year: 2026, month: 9 },
+    ] as const;
+
+    const all = await listExpenseAmountsForMonthRange(...range);
+    const forTama = await listExpenseAmountsForMonthRange(...range, {
+      catId: "tama",
+    });
+    expect(all.map((record) => record.amountYen).sort()).toEqual([
+      100, 200, 300,
+    ]);
+    expect(forTama).toEqual([
+      expect.objectContaining({ category: "food", amountYen: 100 }),
+    ]);
   });
 
   it("削除すると添付メディアと猫への関連付けも削除する", async () => {
