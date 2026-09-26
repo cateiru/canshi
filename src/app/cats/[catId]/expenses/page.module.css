@@ -17,31 +17,6 @@
   border-radius: 8px;
 }
 
-.monthNav {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.monthNav a {
-  display: inline-flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  min-height: 44px;
-  border-radius: 8px;
-  font-size: var(--text-sm);
-  text-decoration: none;
-}
-
-.monthLabel {
-  flex: 1;
-  text-align: center;
-  font-weight: var(--font-weight-bold);
-  font-variant-numeric: tabular-nums;
-}
-
 .scopeNav {
   display: flex;
   gap: var(--space-2);
@@ -62,7 +37,6 @@
   overflow-wrap: anywhere;
 }
 
-.monthNav a:hover,
 .scopeTab:hover {
   background: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
 }

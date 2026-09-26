@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TbChevronLeft, TbChevronRight, TbPlus } from "react-icons/tb";
+import { TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById, listCats } from "@/features/cats/queries";
@@ -20,6 +20,7 @@ import { listExpensesForMonth } from "@/features/expenses/queries";
 import { listHospitalVisitsByIds } from "@/features/hospital-visits/queries";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
+import { MonthNav } from "@/features/shared/MonthNav";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import { formatYm, parseYm, shiftYm } from "@/features/shared/yearMonth";
@@ -103,29 +104,18 @@ export default async function ExpensesPage({
         </ButtonLink>
       </div>
 
-      <nav className={styles.monthNav} aria-label="表示する月">
-        <Link
-          href={buildExpensesHref(catId, {
-            ym: formatYm(shiftYm({ year, month }, -1)),
-            scope,
-          })}
-        >
-          <TbChevronLeft aria-hidden="true" size={18} />
-          前の月
-        </Link>
-        <span className={styles.monthLabel}>
-          {year}年{month}月
-        </span>
-        <Link
-          href={buildExpensesHref(catId, {
-            ym: formatYm(shiftYm({ year, month }, 1)),
-            scope,
-          })}
-        >
-          次の月
-          <TbChevronRight aria-hidden="true" size={18} />
-        </Link>
-      </nav>
+      <MonthNav
+        year={year}
+        month={month}
+        prevHref={buildExpensesHref(catId, {
+          ym: formatYm(shiftYm({ year, month }, -1)),
+          scope,
+        })}
+        nextHref={buildExpensesHref(catId, {
+          ym: formatYm(shiftYm({ year, month }, 1)),
+          scope,
+        })}
+      />
 
       <nav className={styles.scopeNav} aria-label="支出の絞り込み">
         {scopeTabs.map((tab) => (

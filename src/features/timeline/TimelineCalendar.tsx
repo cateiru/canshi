@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MonthNav } from "@/features/shared/MonthNav";
 import { buildTimelineHref } from "./href";
 import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "./labels";
 import { TIMELINE_RECORD_TYPES, type TimelineRecordType } from "./queries";
@@ -73,17 +74,12 @@ export function TimelineCalendar({
 
   return (
     <div className={styles.calendar}>
-      <div className={styles.header}>
-        <Link href={prevHref} aria-label="前の月">
-          ← 前の月
-        </Link>
-        <p className={styles.title}>
-          {year}年{month}月
-        </p>
-        <Link href={nextHref} aria-label="次の月">
-          次の月 →
-        </Link>
-      </div>
+      <MonthNav
+        year={year}
+        month={month}
+        prevHref={prevHref}
+        nextHref={nextHref}
+      />
 
       <section
         className={styles.scrollArea}
