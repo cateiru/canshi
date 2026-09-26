@@ -2,11 +2,15 @@
 -- `pnpm db:migrate:local` 直後のローカル D1、および CI の vrt ジョブに適用する
 -- (README.md / .github/workflows/ci.yml 参照)。
 --
--- 猫は2匹だけ用意する。
+-- 猫は3匹だけ用意する。
 -- - vrt-cat-empty     : どの記録も一切登録しない（各記録一覧の「何もないケース」用）
 -- - vrt-cat-populated : 各記録種別を1件ずつ登録する（「データがあるケース」用）。
 --   掃除記録・服薬予定はネストした一覧ページの「データがある/何もない」の両方を
 --   このデータだけで再現するため、対象/服薬予定をそれぞれ2件（1件は記録なし）にする。
+-- - vrt-cat-busy      : 同じ日に5種類の記録を登録する（タイムラインのカレンダーで
+--   1日のアイコンが表示上限を超えて「+1」になるケース用）。vrt-cat-populated の
+--   「各記録種別を1件ずつ」を崩さないよう別の猫にしている。猫一覧で末尾に並ぶよう
+--   created_at は他の2匹より前にする。
 --
 -- 日時はすべて実行日時に依存しない固定値 (2024-06) にする。VRT の対象ページは
 -- 「今日」からの相対計算をしないもの（占める割合の大半）に限定しているため、
@@ -21,13 +25,19 @@ INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, created_at, upda
 VALUES ('vrt-cat-populated', 'VRTテスト猫', 'female', '2015-04-01', '雑種', '2015-06-01',
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
+INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, created_at, updated_at)
+VALUES ('vrt-cat-busy', 'VRT記録多数猫', 'unknown', NULL, NULL, NULL,
+  strftime('%s', '2024-05-31 00:00:00'), strftime('%s', '2024-05-31 00:00:00'));
+
 INSERT INTO food_products (id, name, kcal_per_100g, package_amount_g, nutrition_type, texture_type, created_at, updated_at)
 VALUES ('vrt-food-1', 'VRTテストフード', 350, 1000, 'complete', 'dry',
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
--- 掃除記録: target-1 は記録あり、target-2 は記録なし（ネストした一覧の両ケースに使う）
-INSERT INTO cleaning_targets (id, cat_id, name, frequency_value, frequency_unit, is_active, sort_order, created_at, updated_at)
-VALUES ('vrt-clean-target-1', 'vrt-cat-populated', 'トイレ掃除', 30, 'days', 1, 0,
+-- 掃除記録: target-1 は記録あり、target-2 は記録なし（ネストした一覧の両ケースに使う）。
+-- target-1 は前回の実施が 2024-06-01 で実行日には常に期限超過になるため、通知時刻も
+-- 設定して「期限超過」と「○○に通知」のバッジが並ぶケースを再現する
+INSERT INTO cleaning_targets (id, cat_id, name, frequency_value, frequency_unit, notify_time, is_active, sort_order, created_at, updated_at)
+VALUES ('vrt-clean-target-1', 'vrt-cat-populated', 'トイレ掃除', 30, 'days', '09:00', 1, 0,
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
 INSERT INTO cleaning_targets (id, cat_id, name, frequency_value, frequency_unit, is_active, sort_order, created_at, updated_at)
@@ -96,3 +106,24 @@ VALUES ('vrt-water-1', 'vrt-cat-populated', strftime('%s', '2024-06-14 09:00:00'
 INSERT INTO weight_records (id, cat_id, occurred_at, input_method, cat_weight_kg, bcs, created_at, updated_at)
 VALUES ('vrt-weight-1', 'vrt-cat-populated', strftime('%s', '2024-06-09 08:00:00'), 'direct', 4.2, 3,
   strftime('%s', '2024-06-09 08:00:00'), strftime('%s', '2024-06-09 08:00:00'));
+
+-- vrt-cat-busy: 2024-06-18 に5種類の記録を登録する（カレンダーは4種類まで表示し、残りを「+1」にする）
+INSERT INTO poop_records (id, cat_id, occurred_at, consistency, created_at, updated_at)
+VALUES ('vrt-busy-poop-1', 'vrt-cat-busy', strftime('%s', '2024-06-18 08:00:00'), 'normal',
+  strftime('%s', '2024-06-18 08:00:00'), strftime('%s', '2024-06-18 08:00:00'));
+
+INSERT INTO weight_records (id, cat_id, occurred_at, input_method, cat_weight_kg, bcs, created_at, updated_at)
+VALUES ('vrt-busy-weight-1', 'vrt-cat-busy', strftime('%s', '2024-06-18 09:00:00'), 'direct', 3.8, 3,
+  strftime('%s', '2024-06-18 09:00:00'), strftime('%s', '2024-06-18 09:00:00'));
+
+INSERT INTO vomit_records (id, cat_id, occurred_at, created_at, updated_at)
+VALUES ('vrt-busy-vomit-1', 'vrt-cat-busy', strftime('%s', '2024-06-18 10:00:00'),
+  strftime('%s', '2024-06-18 10:00:00'), strftime('%s', '2024-06-18 10:00:00'));
+
+INSERT INTO shampoo_records (id, cat_id, performed_at, created_at, updated_at)
+VALUES ('vrt-busy-shampoo-1', 'vrt-cat-busy', strftime('%s', '2024-06-18 11:00:00'),
+  strftime('%s', '2024-06-18 11:00:00'), strftime('%s', '2024-06-18 11:00:00'));
+
+INSERT INTO symptoms (id, cat_id, symptom_type, onset_at, status, created_at, updated_at)
+VALUES ('vrt-busy-symptom-1', 'vrt-cat-busy', 'くしゃみ', strftime('%s', '2024-06-18 12:00:00'), 'resolved',
+  strftime('%s', '2024-06-18 12:00:00'), strftime('%s', '2024-06-18 12:00:00'));
