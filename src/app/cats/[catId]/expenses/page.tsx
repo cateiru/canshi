@@ -8,6 +8,11 @@ import {
   sumExpenseAmounts,
   sumExpenseAmountsByCategory,
 } from "@/features/expenses/calculations";
+import {
+  buildMonthlyExpenseChart,
+  getExpenseChartRange,
+} from "@/features/expenses/chart";
+import { ExpenseChart } from "@/features/expenses/ExpenseChart";
 import { ExpenseList } from "@/features/expenses/ExpenseList";
 import {
   buildExpensesHref,
@@ -16,7 +21,10 @@ import {
 } from "@/features/expenses/href";
 import { EXPENSE_CATEGORY_LABEL, formatYen } from "@/features/expenses/labels";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
-import { listExpensesForMonth } from "@/features/expenses/queries";
+import {
+  listExpenseAmountsForMonthRange,
+  listExpensesForMonth,
+} from "@/features/expenses/queries";
 import { listHospitalVisitsByIds } from "@/features/hospital-visits/queries";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
@@ -54,9 +62,12 @@ export default async function ExpensesPage({
   const ym = formatYm({ year, month });
   const scope: ExpenseScope = isExpenseScope(scopeParam) ? scopeParam : "all";
 
-  const [expenses, allCats] = await Promise.all([
-    listExpensesForMonth(year, month, {
-      catId: scope === "cat" ? catId : undefined,
+  const scopedCatId = scope === "cat" ? catId : undefined;
+  const chartRange = getExpenseChartRange({ year, month });
+  const [expenses, chartExpenses, allCats] = await Promise.all([
+    listExpensesForMonth(year, month, { catId: scopedCatId }),
+    listExpenseAmountsForMonthRange(chartRange.from, chartRange.to, {
+      catId: scopedCatId,
     }),
     listCats(),
   ]);
@@ -148,6 +159,10 @@ export default async function ExpensesPage({
           </dl>
         ) : null}
       </Surface>
+
+      <ExpenseChart
+        months={buildMonthlyExpenseChart(chartExpenses, { year, month })}
+      />
 
       {expenses.length === 0 ? (
         <div className={styles.emptyState}>
