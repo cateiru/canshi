@@ -72,6 +72,17 @@ describe("ExpenseChart", () => {
     expect(screen.getByText("2025年10月〜2026年9月")).toBeInTheDocument();
   });
 
+  it("「今年」を選ぶと表示中の年の1月からの月がキャンバスに渡る", async () => {
+    render(<ExpenseChart months={MONTHS} />);
+
+    openChart();
+    const group = screen.getByRole("radiogroup", { name: "表示期間" });
+    fireEvent.click(within(group).getByRole("radio", { name: "今年" }));
+
+    expect(await screen.findByTestId("chart-canvas")).toHaveTextContent("9");
+    expect(screen.getByText("2026年1月〜2026年9月")).toBeInTheDocument();
+  });
+
   it("表示期間に支出がない場合はメッセージを表示しキャンバスを描画しない", () => {
     render(
       <ExpenseChart

@@ -27,7 +27,7 @@ const ExpenseChartCanvas = dynamic(() => import("./ExpenseChartCanvas"), {
   loading: () => <div className={styles.placeholder} aria-hidden="true" />,
 });
 
-const PERIOD_ORDER: ExpenseChartPeriod[] = ["6m", "12m"];
+const PERIOD_ORDER: ExpenseChartPeriod[] = ["6m", "12m", "year"];
 
 type ExpenseChartProps = {
   /** 古い順に並んだ月ごとの支出（表示期間の最大分） */

@@ -5,14 +5,18 @@ import { formatYm, shiftYm, type YearMonth } from "@/features/shared/yearMonth";
 /** グラフ用に取得する月数（表示期間の最大値） */
 export const EXPENSE_CHART_MAX_MONTHS = 12;
 
-export type ExpenseChartPeriod = "6m" | "12m";
+export type ExpenseChartPeriod = "6m" | "12m" | "year";
 
 export const EXPENSE_CHART_PERIOD_LABEL: Record<ExpenseChartPeriod, string> = {
   "6m": "半年",
   "12m": "1年",
+  year: "今年",
 };
 
-export const EXPENSE_CHART_PERIOD_MONTHS: Record<ExpenseChartPeriod, number> = {
+const EXPENSE_CHART_PERIOD_MONTHS: Record<
+  Exclude<ExpenseChartPeriod, "year">,
+  number
+> = {
   "6m": 6,
   "12m": EXPENSE_CHART_MAX_MONTHS,
 };
@@ -90,11 +94,19 @@ export function buildMonthlyExpenseChart(
   return result;
 }
 
-/** 表示期間に合わせて、終端の月から数えた直近の月だけを切り出す */
+/**
+ * 表示期間に合わせて、終端の月から数えた直近の月だけを切り出す。
+ * 「今年」は終端の月と同じ年の 1 月から終端の月までを返す
+ * （終端の月は最大でも 12 月なので、取得済みの 12 か月分に必ず収まる）
+ */
 export function sliceByPeriod(
   months: readonly ExpenseChartMonth[],
   period: ExpenseChartPeriod,
 ): ExpenseChartMonth[] {
+  if (period === "year") {
+    const endYear = months.at(-1)?.year;
+    return months.filter((month) => month.year === endYear);
+  }
   return months.slice(-EXPENSE_CHART_PERIOD_MONTHS[period]);
 }
 

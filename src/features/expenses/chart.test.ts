@@ -142,6 +142,22 @@ describe("sliceByPeriod", () => {
     ]);
     expect(sliceByPeriod(months, "12m")).toHaveLength(12);
   });
+
+  it("「今年」は終端の月と同じ年の1月から終端の月までを返す", () => {
+    const months = buildMonthlyExpenseChart([], { year: 2026, month: 3 });
+
+    expect(sliceByPeriod(months, "year").map((month) => month.ym)).toEqual([
+      "2026-01",
+      "2026-02",
+      "2026-03",
+    ]);
+  });
+
+  it("終端が12月なら「今年」は1年分と同じになる", () => {
+    const months = buildMonthlyExpenseChart([], { year: 2025, month: 12 });
+
+    expect(sliceByPeriod(months, "year")).toEqual(sliceByPeriod(months, "12m"));
+  });
 });
 
 describe("formatChartYearMonth", () => {
