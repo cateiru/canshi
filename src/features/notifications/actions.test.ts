@@ -7,6 +7,8 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import {
   cats,
+  cleaningRecords,
+  cleaningTargets,
   notifications,
   pushDeliveries,
   pushSubscriptions,
@@ -20,24 +22,25 @@ vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
 
-const { snoozeNotificationAction } = await import("./actions");
+const { markCleaningNotificationDoneAction, snoozeNotificationAction } =
+  await import("./actions");
+
+beforeAll(async () => {
+  const SQL = await initSqlJs();
+  const raw = drizzle(new SQL.Database());
+  await migrate(raw, { migrationsFolder: "./drizzle" });
+  db = raw as unknown as ReturnType<typeof getDb>;
+  // biome-ignore lint/suspicious/noExplicitAny: テスト用に D1 の batch を簡易実装する
+  (db as any).batch = async (statements: PromiseLike<unknown>[]) => {
+    const results: unknown[] = [];
+    for (const statement of statements) {
+      results.push(await statement);
+    }
+    return results;
+  };
+});
 
 describe("snoozeNotificationAction", () => {
-  beforeAll(async () => {
-    const SQL = await initSqlJs();
-    const raw = drizzle(new SQL.Database());
-    await migrate(raw, { migrationsFolder: "./drizzle" });
-    db = raw as unknown as ReturnType<typeof getDb>;
-    // biome-ignore lint/suspicious/noExplicitAny: テスト用に D1 の batch を簡易実装する
-    (db as any).batch = async (statements: PromiseLike<unknown>[]) => {
-      const results: unknown[] = [];
-      for (const statement of statements) {
-        results.push(await statement);
-      }
-      return results;
-    };
-  });
-
   it("延期すると status・snoozedUntil を更新し、readAt・pushedAt と push_deliveries の記録をリセットする", async () => {
     const [cat] = await db
       .insert(cats)
@@ -96,5 +99,112 @@ describe("snoozeNotificationAction", () => {
       .from(pushDeliveries)
       .where(eq(pushDeliveries.notificationId, notification.id));
     expect(deliveries).toHaveLength(0);
+  });
+});
+
+describe("markCleaningNotificationDoneAction", () => {
+  async function setup(targetValues: { isActive?: boolean } = {}) {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "たま", sex: "female" })
+      .returning();
+    const [target] = await db
+      .insert(cleaningTargets)
+      .values({
+        catId: cat.id,
+        name: "トイレ",
+        frequencyValue: 1,
+        ...targetValues,
+      })
+      .returning();
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        catId: cat.id,
+        kind: "cleaning_due",
+        referenceId: target.id,
+        dedupeKey: `dedupe-${crypto.randomUUID()}`,
+        title: "トイレのお手入れの時期です",
+        body: "たまのトイレが予定日を迎えました",
+        url: `/cats/${cat.id}/cleaning/targets/${target.id}/records`,
+        dueAt: new Date(),
+      })
+      .returning();
+    return { cat, target, notification };
+  }
+
+  async function findNotification(id: string) {
+    const [notification] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return notification;
+  }
+
+  async function findRecords(targetId: string) {
+    return db
+      .select()
+      .from(cleaningRecords)
+      .where(eq(cleaningRecords.cleaningTargetId, targetId));
+  }
+
+  it("通知を完了にし、掃除対象に今の時刻の記録を追加する", async () => {
+    const { cat, target, notification } = await setup();
+
+    const result = await markCleaningNotificationDoneAction(notification.id);
+
+    expect(result).toEqual({});
+    expect((await findNotification(notification.id)).status).toBe("done");
+    const records = await findRecords(target.id);
+    expect(records).toHaveLength(1);
+    expect(records[0].catId).toBe(cat.id);
+    expect(records[0].memo).toBeNull();
+  });
+
+  it("完了済みの通知に対しては記録を追加しない", async () => {
+    const { target, notification } = await setup();
+
+    await markCleaningNotificationDoneAction(notification.id);
+    const result = await markCleaningNotificationDoneAction(notification.id);
+
+    expect(result).toEqual({});
+    expect(await findRecords(target.id)).toHaveLength(1);
+  });
+
+  it("掃除対象が無効化されていればエラーを返し、通知も完了にしない", async () => {
+    const { target, notification } = await setup({ isActive: false });
+
+    const result = await markCleaningNotificationDoneAction(notification.id);
+
+    expect(result).toEqual({
+      error:
+        "掃除対象が無効になっているため記録できません。「無視する」で通知を閉じてください",
+    });
+    expect((await findNotification(notification.id)).status).toBe("pending");
+    expect(await findRecords(target.id)).toHaveLength(0);
+  });
+
+  it("掃除以外の通知にはエラーを返す", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "たま", sex: "female" })
+      .returning();
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        catId: cat.id,
+        kind: "weight_measurement",
+        dedupeKey: `dedupe-${crypto.randomUUID()}`,
+        title: "たまの体重測定のお願い",
+        body: "そろそろ体重を測りましょう",
+        url: `/cats/${cat.id}`,
+        dueAt: new Date(),
+      })
+      .returning();
+
+    const result = await markCleaningNotificationDoneAction(notification.id);
+
+    expect(result).toEqual({ error: "通知が見つかりませんでした" });
+    expect((await findNotification(notification.id)).status).toBe("pending");
   });
 });
