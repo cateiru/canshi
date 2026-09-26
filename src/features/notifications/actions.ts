@@ -61,7 +61,9 @@ export async function markCleaningNotificationDoneAction(
       return {};
     }
 
-    // 無効化済みの掃除対象は編集・記録閲覧のみが仕様のため新規登録は拒否する
+    // 無効化済みの掃除対象は編集・記録閲覧のみが仕様のため新規登録は拒否する。
+    // 対象の削除時は通知も削除される（`src/features/cleaning/targetActions.ts`）が、
+    // 無効化では未対応の通知が残るため、「無視する」で閉じられるよう案内する
     const [target] = await db
       .select({ id: cleaningTargets.id })
       .from(cleaningTargets)
@@ -75,7 +77,10 @@ export async function markCleaningNotificationDoneAction(
       .limit(1);
 
     if (!target) {
-      return { error: "掃除対象が見つかりませんでした" };
+      return {
+        error:
+          "掃除対象が無効になっているため記録できません。「無視する」で通知を閉じてください",
+      };
     }
 
     await db.batch([

@@ -176,7 +176,10 @@ describe("markCleaningNotificationDoneAction", () => {
 
     const result = await markCleaningNotificationDoneAction(notification.id);
 
-    expect(result).toEqual({ error: "掃除対象が見つかりませんでした" });
+    expect(result).toEqual({
+      error:
+        "掃除対象が無効になっているため記録できません。「無視する」で通知を閉じてください",
+    });
     expect((await findNotification(notification.id)).status).toBe("pending");
     expect(await findRecords(target.id)).toHaveLength(0);
   });
