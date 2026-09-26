@@ -6,8 +6,10 @@ import { Button, Modal } from "@/components/ui";
 import styles from "./BirthdayCelebration.module.css";
 import {
   type BirthdayCelebrationCat,
+  type BirthdayMilestone,
   birthdayCelebratedStorageKey,
-  getBirthdayYears,
+  formatMilestoneAge,
+  getBirthdayMilestone,
   getLifeStageMessage,
   toHumanAge,
   toLocalCalendarDate,
@@ -17,7 +19,7 @@ import { Confetti } from "./Confetti";
 
 type Celebration = {
   cat: BirthdayCelebrationCat;
-  years: number;
+  milestone: BirthdayMilestone;
   storageKey: string;
 };
 
@@ -42,9 +44,9 @@ function markCelebrated(storageKey: string): void {
 }
 
 /**
- * 猫の誕生日にページを開くと、紙吹雪とお祝いのモーダルを表示する。
- * 誕生日かどうかは端末のローカル日付で判定し、猫・年齢ごとに端末で1度だけ表示する。
- * 同じ日が誕生日の猫が複数いる場合は、閉じるたびに次の猫のお祝いを表示する
+ * 猫の誕生日（1歳未満は毎月の記念日）にページを開くと、紙吹雪とお祝いのモーダルを表示する。
+ * 節目かどうかは端末のローカル日付で判定し、猫・節目ごとに端末で1度だけ表示する。
+ * 同じ日にお祝いする猫が複数いる場合は、閉じるたびに次の猫のお祝いを表示する
  */
 export function BirthdayCelebration({
   cats,
@@ -60,12 +62,12 @@ export function BirthdayCelebration({
       if (!cat.birthDate) {
         return [];
       }
-      const years = getBirthdayYears(cat.birthDate, today);
-      if (years === null) {
+      const milestone = getBirthdayMilestone(cat.birthDate, today);
+      if (milestone === null) {
         return [];
       }
-      const storageKey = birthdayCelebratedStorageKey(cat.id, years);
-      return hasCelebrated(storageKey) ? [] : [{ cat, years, storageKey }];
+      const storageKey = birthdayCelebratedStorageKey(cat.id, milestone);
+      return hasCelebrated(storageKey) ? [] : [{ cat, milestone, storageKey }];
     });
     setQueue(pending);
   }, [cats]);
@@ -83,7 +85,8 @@ export function BirthdayCelebration({
     return null;
   }
 
-  const { cat, years } = current;
+  const { cat, milestone } = current;
+  const age = formatMilestoneAge(milestone);
   const close = () => setQueue((prev) => prev.slice(1));
 
   return (
@@ -95,7 +98,9 @@ export function BirthdayCelebration({
         title={
           <span className={styles.title}>
             <TbCake aria-hidden="true" size={24} />
-            お誕生日おめでとう！
+            {milestone.kind === "yearly"
+              ? "お誕生日おめでとう！"
+              : `${age}おめでとう！`}
           </span>
         }
       >
@@ -110,12 +115,14 @@ export function BirthdayCelebration({
             size="lg"
           />
           <p className={styles.lead}>
-            今日は{cat.name}の{years}歳の誕生日です。
+            {milestone.kind === "yearly"
+              ? `今日は${cat.name}の${age}の誕生日です。`
+              : `今日で${cat.name}は${age}になりました。`}
           </p>
           <div className={styles.trivia}>
-            <p>猫の{years}歳は、人間に換算すると</p>
-            <p className={styles.humanAge}>約{toHumanAge(years)}歳</p>
-            <p>{getLifeStageMessage(years)}</p>
+            <p>猫の{age}は、人間に換算すると</p>
+            <p className={styles.humanAge}>約{toHumanAge(milestone)}歳</p>
+            <p>{getLifeStageMessage(milestone)}</p>
             <p className={styles.note}>
               ※ 換算は一般的な目安です。成長の早さには個体差があります。
             </p>

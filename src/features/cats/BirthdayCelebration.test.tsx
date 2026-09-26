@@ -42,13 +42,30 @@ describe("BirthdayCelebration", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("約28歳")).toBeInTheDocument();
     expect(
-      window.localStorage.getItem("canshi:birthday-celebrated:cat-1:3"),
+      window.localStorage.getItem("canshi:birthday-celebrated:cat-1:yearly:3"),
+    ).not.toBeNull();
+  });
+
+  it("1歳未満は毎月の記念日に生後の月数でお祝いする", async () => {
+    render(
+      <BirthdayCelebration cats={[buildCat({ birthDate: "2026-06-26" })]} />,
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "生後3ヶ月おめでとう！" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("今日でたまは生後3ヶ月になりました。"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("約5歳")).toBeInTheDocument();
+    expect(
+      window.localStorage.getItem("canshi:birthday-celebrated:cat-1:monthly:3"),
     ).not.toBeNull();
   });
 
   it("この端末でお祝い済みなら表示しない", () => {
     window.localStorage.setItem(
-      "canshi:birthday-celebrated:cat-1:3",
+      "canshi:birthday-celebrated:cat-1:yearly:3",
       "2026-09-26T00:00:00.000Z",
     );
     render(<BirthdayCelebration cats={[buildCat()]} />);
