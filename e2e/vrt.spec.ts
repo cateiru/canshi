@@ -11,6 +11,8 @@ import { expect, takeSnapshot, test } from "./vrt-snapshot";
 // - CAT: 各記録種別を1件ずつ登録した猫。「データがあるケース」用。
 //   掃除記録の対象・服薬予定はそれぞれ2件登録し、1件だけ実績なしにすることで、
 //   ネストした一覧ページの「データがある/何もない」の両方をこの1匹で再現する
+// - BUSY_CAT: 同じ日に5種類の記録を登録した猫。タイムラインのカレンダーで1日のアイコンが
+//   表示上限を超えて「+1」になるケース用
 //
 // 以下は対象外 (意図的な除外):
 // - "/" : 登録済みの猫の数によってリダイレクト先が変わる (top-page.spec.ts 参照)
@@ -26,6 +28,7 @@ import { expect, takeSnapshot, test } from "./vrt-snapshot";
 
 const EMPTY_CAT = "vrt-cat-empty";
 const CAT = "vrt-cat-populated";
+const BUSY_CAT = "vrt-cat-busy";
 const YM = "2024-06";
 
 // CAT の誕生日（フィクスチャの生年月日 2015-04-01 と同じ 4/1）に実行すると、猫一覧・猫の詳細で
@@ -200,6 +203,21 @@ test("タイムライン（データがあるケース）の見た目", async ({
     page.getByRole("heading", { name: "VRTテスト猫のタイムライン" }),
   ).toBeVisible();
   await takeSnapshot(page, testInfo);
+});
+
+// スマートフォン幅ではカレンダーのマスが狭く、アイコンと「+1」が複数行に折り返す。
+// マスの下端に余白が残る（中身がはみ出さない）ことを確認する
+test.describe("タイムライン（スマートフォン幅）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test("1日の記録が多いケースの見た目", async ({ page }, testInfo) => {
+    await page.goto(`/cats/${BUSY_CAT}/timeline?ym=${YM}`);
+    await expect(
+      page.getByRole("heading", { name: "VRT記録多数猫のタイムライン" }),
+    ).toBeVisible();
+    await expect(page.getByText("+1", { exact: true })).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
 });
 
 type RecordListCase = {
