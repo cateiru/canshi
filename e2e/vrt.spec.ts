@@ -28,6 +28,24 @@ const EMPTY_CAT = "vrt-cat-empty";
 const CAT = "vrt-cat-populated";
 const YM = "2024-06";
 
+// CAT の誕生日（フィクスチャの生年月日 2015-04-01 と同じ 4/1）に実行すると、猫一覧・猫の詳細で
+// お祝いのモーダル（BirthdayCelebration）が開き、スクリーンショットに写り込んだり
+// 以降の操作を遮ったりする。この端末ではお祝い済みとして localStorage に記録しておき、
+// 実行日に関わらずモーダルが開かないようにする（キーは `birthdayCelebratedStorageKey` と同じ形式）
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript((catId) => {
+    const years = new Date().getFullYear() - 2015;
+    try {
+      window.localStorage.setItem(
+        `canshi:birthday-celebrated:${catId}:yearly:${years}`,
+        "vrt",
+      );
+    } catch {
+      // localStorage が使えないページ（about:blank など）では何もしない
+    }
+  }, CAT);
+});
+
 test("コンポーネントプレビューページの見た目", async ({ page }, testInfo) => {
   await page.goto("/dev/components");
   await expect(
@@ -125,7 +143,10 @@ test("設定ページの見た目", async ({ page }, testInfo) => {
 
 test("通知設定ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/notifications");
-  await expect(page.getByRole("heading", { name: "通知設定" })).toBeVisible();
+  // 「猫ごとの通知設定」の見出しにも部分一致してしまうため、完全一致で探す
+  await expect(
+    page.getByRole("heading", { name: "通知設定", exact: true }),
+  ).toBeVisible();
   // PushSubscriptionToggle はクライアント側で実行環境を判定するまで何も描画しない。
   // 判定前に fullPage の高さが計測されると、その直後に案内が表示されてフッターの
   // 位置だけがずれたスクリーンショットになるため、VRT 環境の確定表示を待つ。
