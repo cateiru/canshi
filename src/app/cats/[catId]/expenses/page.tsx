@@ -142,6 +142,10 @@ export default async function ExpensesPage({
         ))}
       </nav>
 
+      <ExpenseChart
+        months={buildMonthlyExpenseChart(chartExpenses, { year, month })}
+      />
+
       <Surface title={`${year}年${month}月の合計`}>
         <p className={styles.summaryScope}>
           {scope === "cat" ? `${cat.name}に関連する支出` : "すべての支出"}・
@@ -159,10 +163,6 @@ export default async function ExpensesPage({
           </dl>
         ) : null}
       </Surface>
-
-      <ExpenseChart
-        months={buildMonthlyExpenseChart(chartExpenses, { year, month })}
-      />
 
       {expenses.length === 0 ? (
         <div className={styles.emptyState}>

@@ -54,7 +54,7 @@ export function ExpenseChart({ months }: ExpenseChartProps) {
             size={12}
             className={styles.caret}
           />
-          <span className={styles.title}>月ごとの支出</span>
+          <span className={styles.title}>月ごとの支出グラフ</span>
         </Button>
       </Heading>
 

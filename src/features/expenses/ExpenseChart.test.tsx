@@ -36,14 +36,14 @@ const MONTHS = buildMonthlyExpenseChart(
 );
 
 function openChart() {
-  fireEvent.click(screen.getByRole("button", { name: "月ごとの支出" }));
+  fireEvent.click(screen.getByRole("button", { name: "月ごとの支出グラフ" }));
 }
 
 describe("ExpenseChart", () => {
   it("初期表示ではグラフが折りたたまれている", () => {
     render(<ExpenseChart months={MONTHS} />);
 
-    const trigger = screen.getByRole("button", { name: "月ごとの支出" });
+    const trigger = screen.getByRole("button", { name: "月ごとの支出グラフ" });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
