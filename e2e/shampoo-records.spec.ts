@@ -3,8 +3,12 @@ import { expect, test } from "@playwright/test";
 // シャンプー記録の登録・編集・削除ができることを検証する
 test("シャンプー記録の登録・編集・削除ができる", async ({ page }) => {
   const catName = `テスト猫-${Date.now()}`;
-  // 経過日数の表示（0日経過）を確定させるため、実施日は「今日」を使う
-  const today = new Date().toISOString().slice(0, 10);
+  // 経過日数の表示（0日経過）を確定させるため、実施日は「今日」を使う。
+  // アプリは JST で日付を判定するため、UTC の日付を使うと JST 0〜9時の実行で
+  // 「1日経過」になってしまう。JST のオフセットを足してから日付を取り出す
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
   await page.goto("/cats");
   await page
