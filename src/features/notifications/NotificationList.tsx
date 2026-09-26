@@ -59,7 +59,10 @@ export function NotificationList({
               </time>
             </p>
             {mode === "pending" ? (
-              <NotificationActions notificationId={notification.id} />
+              <NotificationActions
+                notificationId={notification.id}
+                kind={notification.kind}
+              />
             ) : null}
           </article>
         </li>

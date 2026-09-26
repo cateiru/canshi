@@ -1,8 +1,14 @@
 "use server";
 
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { notifications, pushDeliveries } from "@/db/schema";
+import {
+  cleaningRecords,
+  cleaningTargets,
+  notifications,
+  pushDeliveries,
+} from "@/db/schema";
+import { getNaiveUtcNow } from "@/features/shared/datetime";
 
 export type NotificationActionResult = { error?: string };
 
@@ -20,6 +26,73 @@ export async function markNotificationDoneAction(
   } catch (error) {
     console.error("通知の完了処理に失敗しました", error);
     return { error: "通知の完了処理に失敗しました" };
+  }
+}
+
+/**
+ * 掃除の通知（`cleaning_due`）を完了にすると同時に、その掃除対象へ「今すぐ掃除した」
+ * 記録を追加する。記録は `src/features/cleaning/recordActions.ts` の
+ * `quickCreateCleaningRecordAction` と同じく naive UTC の現在時刻で登録する。
+ * 完了済みの通知に対しては記録を追加しない（連打などによる二重記録を防ぐ）
+ */
+export async function markCleaningNotificationDoneAction(
+  id: string,
+): Promise<NotificationActionResult> {
+  try {
+    const db = getDb();
+    const [notification] = await db
+      .select({
+        catId: notifications.catId,
+        kind: notifications.kind,
+        referenceId: notifications.referenceId,
+        status: notifications.status,
+      })
+      .from(notifications)
+      .where(eq(notifications.id, id))
+      .limit(1);
+
+    if (
+      notification?.kind !== "cleaning_due" ||
+      notification.referenceId == null
+    ) {
+      return { error: "通知が見つかりませんでした" };
+    }
+    if (notification.status === "done") {
+      return {};
+    }
+
+    // 無効化済みの掃除対象は編集・記録閲覧のみが仕様のため新規登録は拒否する
+    const [target] = await db
+      .select({ id: cleaningTargets.id })
+      .from(cleaningTargets)
+      .where(
+        and(
+          eq(cleaningTargets.id, notification.referenceId),
+          eq(cleaningTargets.catId, notification.catId),
+          eq(cleaningTargets.isActive, true),
+        ),
+      )
+      .limit(1);
+
+    if (!target) {
+      return { error: "掃除対象が見つかりませんでした" };
+    }
+
+    await db.batch([
+      db.insert(cleaningRecords).values({
+        catId: notification.catId,
+        cleaningTargetId: target.id,
+        performedAt: getNaiveUtcNow(),
+      }),
+      db
+        .update(notifications)
+        .set({ status: "done", updatedAt: new Date() })
+        .where(eq(notifications.id, id)),
+    ]);
+    return {};
+  } catch (error) {
+    console.error("掃除記録の追加と通知の完了処理に失敗しました", error);
+    return { error: "掃除記録の追加と通知の完了処理に失敗しました" };
   }
 }
 
