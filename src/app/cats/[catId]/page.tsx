@@ -12,6 +12,8 @@ import {
   calculateDaysSinceAdoption,
   formatAge,
 } from "@/features/cats/age";
+import { BirthdayCelebration } from "@/features/cats/BirthdayCelebration";
+import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
 import { CatAvatar } from "@/features/cats/CatAvatar";
 import { DeleteCatButton } from "@/features/cats/DeleteCatButton";
 import { SEX_LABEL } from "@/features/cats/labels";
@@ -35,6 +37,7 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
 
   return (
     <main className={styles.main}>
+      <BirthdayCelebration cats={[toBirthdayCelebrationCat(cat)]} />
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
