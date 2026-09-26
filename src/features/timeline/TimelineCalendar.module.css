@@ -37,7 +37,6 @@
 
 .day,
 .dayBlank {
-  position: relative;
   background-color: var(--color-bg);
   border: 0;
   height: 72px;
@@ -59,9 +58,12 @@
   );
 }
 
+/* 狭い画面でアイコンと「+N」が複数行に折り返しても下端の余白を保てるよう、
+   リンクは絶対配置にせずセルの中身として高さを持たせる（セルは中身に合わせて伸びる）。 */
 .dayLink {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  display: block;
+  min-height: 72px;
   padding: var(--space-1);
   border-radius: 8px;
   box-sizing: border-box;
@@ -69,8 +71,20 @@
   text-decoration: none;
 }
 
-.dayLink:hover {
-  background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
+.day:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--color-accent) 15%,
+    var(--color-bg)
+  );
+}
+
+.day[data-selected="true"]:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--color-accent) 27%,
+    var(--color-bg)
+  );
 }
 
 .dayNumber {
@@ -172,7 +186,7 @@
   overscroll-behavior-inline: contain;
 }
 
-.dayLink {
+.day {
   transition: background-color var(--transition-base);
 }
 
