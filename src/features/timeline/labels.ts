@@ -5,7 +5,6 @@ import {
   FeedingIcon,
   HospitalIcon,
   MedicationIcon,
-  PhotoIcon,
   PoopIcon,
   ShampooIcon,
   SymptomIcon,
@@ -27,7 +26,6 @@ export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
   symptom: "症状",
   medicationDose: "服薬",
   hospitalVisit: "通院",
-  catPhoto: "写真",
   expense: "支出",
 };
 
@@ -42,6 +40,5 @@ export const TIMELINE_TYPE_ICON = {
   symptom: SymptomIcon,
   medicationDose: MedicationIcon,
   hospitalVisit: HospitalIcon,
-  catPhoto: PhotoIcon,
   expense: ExpenseIcon,
 } satisfies Record<TimelineRecordType, IconType>;

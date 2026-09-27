@@ -118,7 +118,7 @@ export default function ComponentsPreviewPage() {
             new Map([
               ["2026-09-12", ["feeding", "poop", "weight", "vomit", "water"]],
               ["2026-09-13", ["shampoo", "cleaning", "symptom"]],
-              ["2026-09-14", ["medicationDose", "hospitalVisit", "catPhoto"]],
+              ["2026-09-14", ["medicationDose", "hospitalVisit", "expense"]],
             ])
           }
         />

@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { TbCalendar, TbCheck } from "react-icons/tb";
 import { Button, ButtonLink, FormField, Select } from "@/components/ui";
+import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { Cat } from "@/db/schema";
 import type { CatFormState } from "./actions";
 import styles from "./CatForm.module.css";
 import { CatIcon } from "./CatIcon";
+import { ProfileImageField } from "./ProfileImageField";
 
 type CatFormProps = {
   action: (state: CatFormState, formData: FormData) => Promise<CatFormState>;
@@ -24,6 +26,7 @@ const SEX_OPTIONS: { value: Cat["sex"]; label: string }[] = [
 
 export function CatForm({ action, cat, submitLabel }: CatFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
+  const [isProfileImageBusy, setIsProfileImageBusy] = useState(false);
 
   return (
     <form action={formAction} className={styles.form}>
@@ -55,6 +58,30 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
           errorMessage={state.fieldErrors?.breed?.[0]}
         />
       </section>
+      {cat ? (
+        <section
+          className={styles.section}
+          aria-labelledby="cat-profile-image-heading"
+        >
+          <h2 id="cat-profile-image-heading" className={styles.sectionHeading}>
+            <PhotoIcon aria-hidden="true" size={24} />
+            プロフィール画像
+          </h2>
+          <p className={styles.description}>
+            画像を選ぶと、正方形に切り抜く範囲を調整できます。
+          </p>
+          <ProfileImageField
+            catName={cat.name}
+            profileMediaAssetId={cat.profileMediaAssetId}
+            profileCropX={cat.profileCropX}
+            profileCropY={cat.profileCropY}
+            profileCropZoom={cat.profileCropZoom}
+            profileCropRotation={cat.profileCropRotation}
+            onBusyChange={setIsProfileImageBusy}
+            isDisabled={isPending}
+          />
+        </section>
+      ) : null}
       <section className={styles.section} aria-labelledby="cat-dates-heading">
         <h2 id="cat-dates-heading" className={styles.sectionHeading}>
           <TbCalendar aria-hidden="true" size={20} />
@@ -87,7 +114,11 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
       ) : null}
 
       <div className={styles.actions}>
-        <Button type="submit" variant="primary" isDisabled={isPending}>
+        <Button
+          type="submit"
+          variant="primary"
+          isDisabled={isPending || isProfileImageBusy}
+        >
           <TbCheck aria-hidden="true" size={18} />
           {isPending ? "保存中..." : submitLabel}
         </Button>

@@ -297,7 +297,6 @@ const FLAT_RECORD_LISTS: RecordListCase[] = [
     heading: "のシャンプー記録",
   },
   { label: "症状記録", path: "symptoms", heading: "の症状記録" },
-  { label: "写真", path: "photos", heading: "の写真" },
   { label: "服薬予定", path: "medications", heading: "の服薬予定" },
 ];
 
@@ -484,7 +483,6 @@ test.describe("記録追加ページ（日付欄あり）", () => {
       path: "feeding-records/new",
       heading: "ごはんを記録する",
     },
-    { label: "写真", path: "photos/new", heading: "写真を追加する" },
     { label: "支出記録", path: "expenses/new", heading: "支出を記録する" },
   ];
 

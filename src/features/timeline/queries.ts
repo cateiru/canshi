@@ -1,9 +1,7 @@
 import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
-  type CatPhoto,
   type CleaningRecord,
-  catPhotos,
   cleaningRecords,
   cleaningTargets,
   type ExpenseRecord,
@@ -30,7 +28,6 @@ import {
   waterRecords,
   weightRecords,
 } from "@/db/schema";
-import { CAT_PHOTO_MEDIA_TYPE } from "@/features/cat-photos/media";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
 import {
@@ -55,7 +52,6 @@ export const TIMELINE_RECORD_TYPES = [
   "symptom",
   "medicationDose",
   "hospitalVisit",
-  "catPhoto",
   "expense",
 ] as const;
 
@@ -73,7 +69,6 @@ const TIMELINE_MEDIA_RECORD_TYPES: Partial<
   symptom: SYMPTOM_MEDIA_TYPE,
   // 服薬は予定（medications）に添付するため、投薬実績（medicationDose）のエントリには表示しない
   hospitalVisit: HOSPITAL_VISIT_MEDIA_TYPE,
-  catPhoto: CAT_PHOTO_MEDIA_TYPE,
   expense: EXPENSE_MEDIA_TYPE,
 };
 
@@ -117,7 +112,6 @@ export type TimelineEntry =
       MedicationDose & { medicationName: string }
     >
   | TimelineEntryOf<"hospitalVisit", HospitalVisit>
-  | TimelineEntryOf<"catPhoto", CatPhoto>
   | TimelineEntryOf<"expense", ExpenseRecord>;
 
 type DateRange = { start: Date; end: Date };
@@ -466,33 +460,6 @@ async function fetchHospitalVisitEntries(
   }));
 }
 
-async function fetchCatPhotoEntries(
-  catId: string,
-  range: DateRange,
-  d1?: D1Database,
-): Promise<TimelineEntry[]> {
-  const db = getDb(d1);
-  const rows = await db
-    .select()
-    .from(catPhotos)
-    .where(
-      and(
-        eq(catPhotos.catId, catId),
-        gte(catPhotos.takenAt, range.start),
-        lt(catPhotos.takenAt, range.end),
-      ),
-    )
-    .orderBy(desc(catPhotos.takenAt));
-
-  return rows.map((record) => ({
-    id: record.id,
-    type: "catPhoto",
-    occurredAt: record.takenAt,
-    media: [],
-    record,
-  }));
-}
-
 /**
  * 支出記録は猫に直接紐付かず expense_record_cats 経由で多対多に紐付くため、
  * 表示中の猫に関連付けられた支出だけをタイムラインに出す
@@ -542,7 +509,6 @@ const FETCHERS: Record<
   symptom: fetchSymptomEntries,
   medicationDose: fetchMedicationDoseEntries,
   hospitalVisit: fetchHospitalVisitEntries,
-  catPhoto: fetchCatPhotoEntries,
   expense: fetchExpenseEntries,
 };
 

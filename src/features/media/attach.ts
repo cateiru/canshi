@@ -2,8 +2,6 @@ import { and, eq, inArray } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
-import { CAT_PHOTO_MEDIA_TYPE } from "@/features/cat-photos/media";
-import { syncCatProfileImage } from "@/features/cats/profileImage";
 import { parseMediaAssetIds } from "./formFields";
 import { listMediaAssetsByRecord } from "./queries";
 import { resolveMediaRecordOwner } from "./recordOwner";
@@ -128,11 +126,6 @@ export async function syncRecordMedia(
           ),
         ),
       );
-  }
-
-  if (recordType === CAT_PHOTO_MEDIA_TYPE && owner.catId) {
-    // 写真の追加・削除に合わせてプロフィール画像を更新する（固定中は変更しない）
-    await syncCatProfileImage(owner.catId);
   }
 
   if (plan.missing.length > 0) {

@@ -12,7 +12,6 @@ function makeCat(overrides: Partial<Cat> = {}): Cat {
     breed: null,
     adoptedAt: null,
     profileMediaAssetId: null,
-    isProfilePinned: false,
     profileCropX: null,
     profileCropY: null,
     profileCropZoom: null,
