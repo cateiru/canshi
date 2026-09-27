@@ -123,3 +123,18 @@ VALUES ('vrt-busy-shampoo-1', 'vrt-cat-busy', strftime('%s', '2024-06-18 11:00:0
 INSERT INTO symptoms (id, cat_id, symptom_type, onset_at, status, created_at, updated_at)
 VALUES ('vrt-busy-symptom-1', 'vrt-cat-busy', 'くしゃみ', strftime('%s', '2024-06-18 12:00:00'), 'resolved',
   strftime('%s', '2024-06-18 12:00:00'), strftime('%s', '2024-06-18 12:00:00'));
+
+-- 通院記録の作成時に「支出記録と紐付けますか？」のモーダルを出すための、同じ日（2024-05-20）の
+-- 「病院」の支出記録。候補が複数のとき（ラジオボタンで選ぶ形）を撮るため 2 件にする。
+-- 既存の VRT が表示する 2024-06 や vrt-cat-populated・vrt-cat-empty の一覧に出ないよう、
+-- 別の月の vrt-cat-busy の支出にする
+INSERT INTO expense_records (id, spent_at, amount_yen, category, memo, created_at, updated_at)
+VALUES ('vrt-expense-hospital-1', strftime('%s', '2024-05-20 00:00:00'), 11000, 'hospital', '2匹分の診察代',
+  strftime('%s', '2024-05-20 00:00:00'), strftime('%s', '2024-05-20 00:00:00'));
+
+INSERT INTO expense_records (id, spent_at, amount_yen, category, created_at, updated_at)
+VALUES ('vrt-expense-hospital-2', strftime('%s', '2024-05-20 00:00:00'), 1500, 'hospital',
+  strftime('%s', '2024-05-20 00:00:01'), strftime('%s', '2024-05-20 00:00:01'));
+
+INSERT INTO expense_record_cats (expense_record_id, cat_id)
+VALUES ('vrt-expense-hospital-1', 'vrt-cat-busy'), ('vrt-expense-hospital-2', 'vrt-cat-busy');

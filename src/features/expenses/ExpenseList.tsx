@@ -32,10 +32,15 @@ export function ExpenseList({
         const relatedCatNames = expense.catIds.map(
           (id) => catNameById.get(id) ?? "不明な猫",
         );
-        const relatedHospitalVisit =
-          expense.hospitalVisitId != null
-            ? hospitalVisitById.get(expense.hospitalVisitId)
-            : undefined;
+        // 複数の猫の通院記録を紐付けられるため、どの猫の通院かも併記する
+        const relatedHospitalVisitLabels = expense.hospitalVisitIds.map(
+          (id) => {
+            const visit = hospitalVisitById.get(id);
+            return visit
+              ? `${hospitalVisitOptionLabel(visit)}（${catNameById.get(visit.catId) ?? "不明な猫"}）`
+              : "不明な通院記録";
+          },
+        );
         return (
           <li key={expense.id}>
             <article
@@ -87,14 +92,10 @@ export function ExpenseList({
                       : "なし（共通の支出）"}
                   </dd>
                 </div>
-                {expense.hospitalVisitId ? (
+                {relatedHospitalVisitLabels.length > 0 ? (
                   <div>
                     <dt>関連する通院記録</dt>
-                    <dd>
-                      {relatedHospitalVisit
-                        ? hospitalVisitOptionLabel(relatedHospitalVisit)
-                        : "不明な通院記録"}
-                    </dd>
+                    <dd>{relatedHospitalVisitLabels.join("、")}</dd>
                   </div>
                 ) : null}
                 {expense.memo ? (

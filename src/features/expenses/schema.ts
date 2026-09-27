@@ -27,6 +27,11 @@ export const expenseFormSchema = z.object({
     .array(z.string().trim().min(1, "関連する猫を選び直してください"))
     .default([])
     .transform((ids) => [...new Set(ids)]),
+  // カテゴリ「病院」のときに病院代として紐付ける、支出日と同じ日の通院記録
+  hospitalVisitIds: z
+    .array(z.string().trim().min(1, "通院記録を選び直してください"))
+    .default([])
+    .transform((ids) => [...new Set(ids)]),
   memo: z.preprocess(
     emptyToUndefined,
     z

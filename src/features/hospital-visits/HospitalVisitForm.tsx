@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Button, FormField, Select, Textarea } from "@/components/ui";
 import type { HospitalVisit, Symptom } from "@/db/schema";
+import { listSameDayHospitalExpensesAction } from "@/features/expenses/actions";
+import type { HospitalExpenseCandidate } from "@/features/expenses/queries";
 import type { MediaLimits } from "@/features/media/limits";
 import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
 import { useMediaAttachments } from "@/features/media/useMediaAttachments";
@@ -11,6 +13,7 @@ import { useMediaFormAction } from "@/features/media/useMediaFormAction";
 import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { HospitalVisitFormState } from "./actions";
+import { ExpenseLinkConfirmModal } from "./ExpenseLinkConfirmModal";
 import styles from "./HospitalVisitForm.module.css";
 
 type FormAction = (
@@ -34,6 +37,8 @@ type HospitalVisitFormProps = {
   hospitalVisit?: HospitalVisit;
   /** 通院記録に紐付く病院代（支出記録）の金額。未登録なら null */
   expenseAmountYen?: number | null;
+  /** 病院代の支出記録を、ほかの猫などの通院記録と共有しているか */
+  isExpenseShared?: boolean;
   mediaAssets?: MediaAssetView[];
   mediaLimits: MediaLimits;
   submitLabel: string;
@@ -48,6 +53,7 @@ export function HospitalVisitForm({
   symptoms,
   hospitalVisit,
   expenseAmountYen,
+  isExpenseShared = false,
   mediaAssets,
   mediaLimits,
   submitLabel,
@@ -56,7 +62,19 @@ export function HospitalVisitForm({
     initial: mediaAssets,
     limits: mediaLimits,
   });
-  const [state, formAction, isPending] = useMediaFormAction({
+  const isNew = hospitalVisit == null;
+  const formRef = useRef<HTMLFormElement>(null);
+  // 同じ日の「病院」の支出記録と紐付けるかの回答。作成前に受診日を変えたら聞き直す
+  const expenseLinkAnswerRef = useRef<{
+    visitedDate: string;
+    expenseRecordId: string | null;
+  } | null>(null);
+  const [expenseCandidates, setExpenseCandidates] = useState<{
+    visitedDate: string;
+    candidates: HospitalExpenseCandidate[];
+  } | null>(null);
+  const [isCheckingExpenses, setIsCheckingExpenses] = useState(false);
+  const [state, runFormAction, isPending] = useMediaFormAction({
     action,
     updateAction: updateAction
       ? (recordId) => updateAction.bind(null, recordId)
@@ -65,6 +83,63 @@ export function HospitalVisitForm({
     media,
     redirectTo: `/cats/${catId}/hospital-visits`,
   });
+  // 通院記録を作成済みか（添付の保存だけ失敗して再送信を待っている状態）。
+  // 再送信で入力エラーになると `state.savedRecordId` は消えるため、別に覚えておく
+  const isSavedRef = useRef(false);
+  useEffect(() => {
+    if (state.savedRecordId) isSavedRef.current = true;
+  }, [state.savedRecordId]);
+
+  const formAction = (formData: FormData) => {
+    const answer = expenseLinkAnswerRef.current;
+    formData.delete("linkExpenseRecordId");
+    // 作成済みなら、受診日を変えていても紐付けた支出記録を送り続ける。
+    // 送らないと、病院代が空欄のため紐付けた支出記録が削除されてしまう
+    if (
+      answer?.expenseRecordId != null &&
+      (isSavedRef.current || answer.visitedDate === formData.get("visitedDate"))
+    ) {
+      formData.set("linkExpenseRecordId", answer.expenseRecordId);
+    }
+    runFormAction(formData);
+  };
+
+  const submitWithAnswer = (
+    visitedDate: string,
+    expenseRecordId: string | null,
+  ) => {
+    expenseLinkAnswerRef.current = { visitedDate, expenseRecordId };
+    setExpenseCandidates(null);
+    formRef.current?.requestSubmit();
+  };
+
+  // 新規作成で病院代を入力していないとき、同じ日に「病院」の支出記録があれば
+  // 送信を止めて、その支出記録と紐付けるかをモーダルで確認する。作成済みの再送信では聞き直さない
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    if (!isNew || isSavedRef.current) return;
+    const formData = new FormData(event.currentTarget);
+    const visitedDate = String(formData.get("visitedDate") ?? "");
+    const amount = String(formData.get("expenseAmountYen") ?? "").trim();
+    if (
+      amount !== "" ||
+      visitedDate === "" ||
+      expenseLinkAnswerRef.current?.visitedDate === visitedDate
+    ) {
+      return;
+    }
+    event.preventDefault();
+    setIsCheckingExpenses(true);
+    listSameDayHospitalExpensesAction(visitedDate)
+      .catch(() => [])
+      .then((candidates) => {
+        setIsCheckingExpenses(false);
+        if (candidates.length === 0) {
+          submitWithAnswer(visitedDate, null);
+        } else {
+          setExpenseCandidates({ visitedDate, candidates });
+        }
+      });
+  };
   // 毎レンダリングで new Date() を評価すると FormField の defaultValue が
   // 再レンダリングのたびに変化し、ユーザーの入力が上書きされてしまうため、
   // マウント時に一度だけ計算して固定する
@@ -86,7 +161,12 @@ export function HospitalVisitForm({
   ];
 
   return (
-    <form action={formAction} className={styles.form}>
+    <form
+      ref={formRef}
+      action={formAction}
+      onSubmit={handleSubmit}
+      className={styles.form}
+    >
       <div className={styles.row}>
         <FormField
           name="visitedDate"
@@ -124,7 +204,11 @@ export function HospitalVisitForm({
           errorMessage={state.fieldErrors?.expenseAmountYen?.[0]}
         />
         <p className={styles.hint}>
-          入力するとカテゴリ「病院」の支出記録として保存されます。空にすると支出記録も削除されます。
+          {isExpenseShared
+            ? "ほかの通院記録と共有している支出記録です。金額を変えると共有している通院記録の病院代も変わります。空にすると、この通院記録との紐付けだけを外します。"
+            : isNew
+              ? "入力するとカテゴリ「病院」の支出記録として保存されます。空欄のまま記録すると、同じ日の「病院」の支出記録と紐付けるかを確認します。"
+              : "入力するとカテゴリ「病院」の支出記録として保存されます。空にすると支出記録も削除されます。"}
         </p>
       </div>
 
@@ -200,11 +284,26 @@ export function HospitalVisitForm({
         type="submit"
         variant="primary"
         className={styles.submitButton}
-        isDisabled={isPending}
+        isDisabled={isPending || isCheckingExpenses}
       >
         <TbCheck aria-hidden="true" size={18} />
-        {isPending ? "保存中..." : submitLabel}
+        {isPending || isCheckingExpenses ? "保存中..." : submitLabel}
       </Button>
+
+      <ExpenseLinkConfirmModal
+        candidates={expenseCandidates?.candidates ?? null}
+        onLink={(expenseRecordId) => {
+          if (expenseCandidates) {
+            submitWithAnswer(expenseCandidates.visitedDate, expenseRecordId);
+          }
+        }}
+        onSkip={() => {
+          if (expenseCandidates) {
+            submitWithAnswer(expenseCandidates.visitedDate, null);
+          }
+        }}
+        onCancel={() => setExpenseCandidates(null)}
+      />
     </form>
   );
 }

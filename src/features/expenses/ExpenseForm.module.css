@@ -107,3 +107,22 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+.visitList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.visitList > * {
+  min-height: 44px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.loadError {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}

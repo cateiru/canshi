@@ -8,7 +8,7 @@ import {
   cleaningRecords,
   cleaningTargets,
   expenseRecordCats,
-  expenseRecords,
+  expenseRecordHospitalVisits,
   feedingRecords,
   hospitalVisits,
   medicationDoses,
@@ -146,14 +146,13 @@ export async function deleteCatAction(id: string): Promise<void> {
       .update(hospitalVisits)
       .set({ symptomId: null })
       .where(eq(hospitalVisits.catId, id)),
-    // expense_records.hospital_visit_id も hospital_visits を参照しているため、
+    // expense_record_hospital_visits も hospital_visits を参照しているため、
     // 通院記録を削除する前に紐付けを外す。支出記録そのものは家計簿として残す
     db
-      .update(expenseRecords)
-      .set({ hospitalVisitId: null })
+      .delete(expenseRecordHospitalVisits)
       .where(
         inArray(
-          expenseRecords.hospitalVisitId,
+          expenseRecordHospitalVisits.hospitalVisitId,
           db
             .select({ id: hospitalVisits.id })
             .from(hospitalVisits)

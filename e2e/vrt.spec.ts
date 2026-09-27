@@ -1,4 +1,5 @@
 import { createPng } from "../src/features/media/testing/createPng";
+import { fillAndKeep } from "./helpers";
 import { expect, takeSnapshot, test } from "./vrt-snapshot";
 
 // ビジュアルリグレッションテスト (reg-suit)。
@@ -542,4 +543,46 @@ test.describe("記録追加ページ（日付欄あり）", () => {
     ).toBeVisible();
     await takeSnapshot(page, testInfo);
   });
+});
+
+// 支出日を固定の日付にしてからカテゴリ「病院」を選び、同じ日の通院記録が紐付けの候補に並ぶ状態を撮る。
+// 保存はしないため、フィクスチャのデータは変わらない
+test("支出記録追加ページ（カテゴリ「病院」）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${CAT}/expenses/new`);
+  await expect(
+    page.getByRole("heading", { name: "支出を記録する" }),
+  ).toBeVisible();
+  await fillAndKeep(page.getByLabel("支出日"), "2024-06-05");
+  await page.getByRole("button", { name: /カテゴリ/ }).click();
+  await page.getByRole("option", { name: "病院" }).click();
+  await expect(
+    page.getByRole("checkbox", { name: /VRTテスト猫：定期健診/ }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+// 受診日をフィクスチャの「病院」の支出記録（2件）と同じ日にして記録すると、紐付けるかを確認する
+// モーダルが開く。モーダルを開くだけで保存はしないため、フィクスチャのデータは変わらない
+test("通院記録の作成時の支出記録との紐付け確認モーダルの見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${EMPTY_CAT}/hospital-visits/new`);
+  await expect(
+    page.getByRole("heading", { name: "VRT空猫の通院を記録する" }),
+  ).toBeVisible();
+  // 受診日時の初期値は実行日時になるため、固定の値を入れる（ignoreSelectors のマスクは
+  // モーダルの上にも描画されてしまうため使わない）
+  await fillAndKeep(page.getByLabel("受診日"), "2024-05-20");
+  await fillAndKeep(page.getByLabel("受診時刻"), "10:00");
+  await page.getByLabel("受診理由").fill("ワクチン接種");
+  await page.getByRole("button", { name: "記録する", exact: true }).click();
+
+  const dialog = page.getByRole("dialog", {
+    name: "支出記録と紐付けますか？",
+  });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("radio")).toHaveCount(2);
+  await takeSnapshot(page, testInfo, { fullPage: false });
 });

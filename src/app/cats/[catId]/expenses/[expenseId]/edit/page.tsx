@@ -6,9 +6,11 @@ import { updateExpenseAction } from "@/features/expenses/actions";
 import { ExpenseForm } from "@/features/expenses/ExpenseForm";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
 import { getExpenseById } from "@/features/expenses/queries";
+import { listHospitalVisitsOnDate } from "@/features/hospital-visits/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { listMediaAssetsByRecord } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
+import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
@@ -32,10 +34,14 @@ export default async function EditExpensePage({
     notFound();
   }
 
-  const mediaAssets = await listMediaAssetsByRecord(
-    EXPENSE_MEDIA_TYPE,
-    expense.id,
-  );
+  const spentDate = splitDateTimeUtc(expense.spentAt).date;
+  const [mediaAssets, linkableHospitalVisits] = await Promise.all([
+    listMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, expense.id),
+    // 「病院」の支出は、紐付けの候補になる同じ日の通院記録を最初から表示する
+    expense.category === "hospital"
+      ? listHospitalVisitsOnDate(spentDate, expense.id)
+      : undefined,
+  ]);
 
   return (
     <main className={styles.main}>
@@ -57,6 +63,11 @@ export default async function EditExpensePage({
         action={updateExpenseAction.bind(null, expense.id)}
         cats={allCats}
         expense={expense}
+        initialLinkableHospitalVisits={
+          linkableHospitalVisits
+            ? { date: spentDate, visits: linkableHospitalVisits }
+            : undefined
+        }
         mediaAssets={mediaAssets.map(toMediaAssetView)}
         mediaLimits={resolveMediaLimits()}
         submitLabel="更新する"

@@ -34,7 +34,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 日付のみを表す列（生年月日・お迎え日など時刻を持たない情報）は `text` 型で ISO8601 の日付文字列（`YYYY-MM-DD`）として保持する
 - 発生日時・作成日時・更新日時など時刻を持つ列は `integer("...", { mode: "timestamp" })`（unix タイムスタンプ）で保持する
 
-## 支出記録（`expense_records`・`expense_record_cats`）
+## 支出記録（`expense_records`・`expense_record_cats`・`expense_record_hospital_visits`）
 
 - 病院代・ごはん・猫砂などの支出を家計簿として月ごとに集計するためのテーブル（`38`）
 - 支出はすべての猫で共通のため、`expense_records` は「共通カラム規約」の例外として `cat_id` を持たない。
@@ -43,10 +43,17 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 紐付けが 0 件の支出記録も「どの猫にも紐付かない共通の支出」として許容する。猫を削除したときは
     中間テーブルの行だけを削除し、支出記録自体は残す（`src/features/cats/actions.ts`）
 - `spent_at` は支出日。フォームの入力は日付のみで、時刻は `00:00`（UTC）として保存する
-- `hospital_visit_id` は通院記録で入力された病院代との紐付け（nullable）。通院記録を削除するときは
-  この参照だけを解除し、支出記録は残す（`src/features/hospital-visits/actions.ts`）
-  - 同じ通院記録に複数の支出が紐付かないよう、一意インデックスを設定する
+- 病院代としての通院記録との紐付けは `expense_record_hospital_visits`（`expense_record_id` +
+  `hospital_visit_id` の複合主キー）で持つ。一度の通院で複数の猫を診てもらい、まとめて支払うことが
+  あるため、1 件の支出に複数の通院記録を紐付けられる
+  - 通院記録の「病院代」は 1 つの金額しか持たないため、同じ通院記録に複数の支出が紐付かないよう
+    `hospital_visit_id` に一意インデックスを設定する
+  - 通院記録を紐付けられるのはカテゴリ「病院」の支出で、支出日と同じ日の通院記録に限る。
+    カテゴリを「病院」以外にしたときは紐付けを外す。紐付けた通院記録の猫は `expense_record_cats` にも追加する
+  - 通院記録・支出記録のどちらを削除するときも、この中間テーブルの行だけを削除し、相手の記録は残す
   - 通院記録と病院代の作成・更新・削除は、同じ `db.batch` にまとめる
+  - 複数の通院記録で共有している支出は、通院記録の病院代を空にしても支出記録を削除せずその通院記録との
+    紐付けだけを外し、受診日を変えても支出日を変えない（`src/features/expenses/hospitalVisitExpense.ts`）
 - 月別検索用に `spent_at` のインデックスを設定する
 
 ## 画像・動画（`media_assets`）

@@ -3,6 +3,7 @@ export * from "./cats";
 export * from "./cleaning-records";
 export * from "./cleaning-targets";
 export * from "./expense-record-cats";
+export * from "./expense-record-hospital-visits";
 export * from "./expense-records";
 export * from "./feeding-presets";
 export * from "./feeding-records";

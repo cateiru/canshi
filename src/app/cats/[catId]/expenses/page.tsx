@@ -78,9 +78,7 @@ export default async function ExpensesPage({
       expenses.map((expense) => expense.id),
     ),
     listHospitalVisitsByIds(
-      expenses
-        .map((expense) => expense.hospitalVisitId)
-        .filter((id): id is string => id != null),
+      expenses.flatMap((expense) => expense.hospitalVisitIds),
     ),
   ]);
 

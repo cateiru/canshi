@@ -6,6 +6,7 @@ import initSqlJs from "sql.js";
 import { beforeAll, describe, expect, it } from "vitest";
 import { cats } from "./cats";
 import { expenseRecordCats } from "./expense-record-cats";
+import { expenseRecordHospitalVisits } from "./expense-record-hospital-visits";
 import { expenseRecords } from "./expense-records";
 import { hospitalVisits } from "./hospital-visits";
 
@@ -32,7 +33,6 @@ describe("expense_records テーブル", () => {
 
     expect(record.category).toBe("food");
     expect(record.amountYen).toBe(1280);
-    expect(record.hospitalVisitId).toBeNull();
   });
 
   it("複数の猫と多対多で紐付けられる", async () => {
@@ -68,30 +68,62 @@ describe("expense_records テーブル", () => {
     );
   });
 
-  it("通院記録と紐付けられる", async () => {
-    const [cat] = await db
+  it("1 件の支出に複数の通院記録を紐付けられ、1 件の通院記録には 1 件の支出だけ紐付けられる", async () => {
+    const [shiro] = await db
       .insert(cats)
       .values({ name: "しろ", sex: "female" })
       .returning();
-    const [visit] = await db
+    const [kuro] = await db
+      .insert(cats)
+      .values({ name: "くろ", sex: "male" })
+      .returning();
+    const [shiroVisit, kuroVisit] = await db
       .insert(hospitalVisits)
-      .values({
-        catId: cat.id,
-        visitedAt: new Date("2026-09-15T10:00:00.000Z"),
-        reason: "ワクチン接種",
-      })
+      .values([
+        {
+          catId: shiro.id,
+          visitedAt: new Date("2026-09-15T10:00:00.000Z"),
+          reason: "ワクチン接種",
+        },
+        {
+          catId: kuro.id,
+          visitedAt: new Date("2026-09-15T10:00:00.000Z"),
+          reason: "ワクチン接種",
+        },
+      ])
       .returning();
-
-    const [record] = await db
+    const [record, other] = await db
       .insert(expenseRecords)
-      .values({
-        spentAt: new Date("2026-09-15T00:00:00.000Z"),
-        amountYen: 5500,
-        category: "hospital",
-        hospitalVisitId: visit.id,
-      })
+      .values([
+        {
+          spentAt: new Date("2026-09-15T00:00:00.000Z"),
+          amountYen: 11000,
+          category: "hospital",
+        },
+        {
+          spentAt: new Date("2026-09-15T00:00:00.000Z"),
+          amountYen: 500,
+          category: "hospital",
+        },
+      ])
       .returning();
 
-    expect(record.hospitalVisitId).toBe(visit.id);
+    await db.insert(expenseRecordHospitalVisits).values([
+      { expenseRecordId: record.id, hospitalVisitId: shiroVisit.id },
+      { expenseRecordId: record.id, hospitalVisitId: kuroVisit.id },
+    ]);
+    const rows = await db
+      .select()
+      .from(expenseRecordHospitalVisits)
+      .where(eq(expenseRecordHospitalVisits.expenseRecordId, record.id));
+    expect(rows.map((row) => row.hospitalVisitId).sort()).toEqual(
+      [shiroVisit.id, kuroVisit.id].sort(),
+    );
+
+    await expect(
+      db
+        .insert(expenseRecordHospitalVisits)
+        .values({ expenseRecordId: other.id, hospitalVisitId: shiroVisit.id }),
+    ).rejects.toThrow();
   });
 });

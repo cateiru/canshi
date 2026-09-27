@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Button, Checkbox, FormField, Select, Textarea } from "@/components/ui";
-import type { Cat } from "@/db/schema";
+import type { Cat, ExpenseCategory } from "@/db/schema";
 import { EXPENSE_CATEGORIES } from "@/db/schema";
 import type { MediaLimits } from "@/features/media/limits";
 import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
@@ -13,6 +13,11 @@ import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { ExpenseFormState } from "./actions";
 import styles from "./ExpenseForm.module.css";
+import {
+  HospitalVisitLinkField,
+  type LinkableHospitalVisitsOnDate,
+  useLinkableHospitalVisits,
+} from "./HospitalVisitLinkField";
 import { buildExpensesHref } from "./href";
 import { EXPENSE_CATEGORY_LABEL } from "./labels";
 import type { ExpenseWithCats } from "./queries";
@@ -38,6 +43,8 @@ type ExpenseFormProps = {
   /** 関連付けの選択肢になるすべての猫 */
   cats: Cat[];
   expense?: ExpenseWithCats;
+  /** 編集時に、支出日と同じ日の通院記録をあらかじめ取得したもの（カテゴリが「病院」の場合） */
+  initialLinkableHospitalVisits?: LinkableHospitalVisitsOnDate;
   mediaAssets?: MediaAssetView[];
   mediaLimits: MediaLimits;
   submitLabel: string;
@@ -56,6 +63,7 @@ export function ExpenseForm({
   updateAction,
   cats,
   expense,
+  initialLinkableHospitalVisits,
   mediaAssets,
   mediaLimits,
   submitLabel,
@@ -67,7 +75,26 @@ export function ExpenseForm({
       ? splitDateTimeUtc(expense.spentAt).date
       : getLocalNowParts(new Date()).date,
   );
-  const [defaultCatIds] = useState(() => new Set(expense?.catIds ?? [catId]));
+  const [category, setCategory] = useState<ExpenseCategory>(
+    expense?.category ?? "other",
+  );
+  const [selectedCatIds, setSelectedCatIds] = useState<ReadonlySet<string>>(
+    () => new Set(expense?.catIds ?? [catId]),
+  );
+  const [selectedHospitalVisitIds, setSelectedHospitalVisitIds] = useState<
+    ReadonlySet<string>
+  >(() => new Set(expense?.hospitalVisitIds ?? []));
+  const isHospital = category === "hospital";
+  const linkableHospitalVisitsState = useLinkableHospitalVisits(
+    spentDate,
+    isHospital,
+    expense?.id,
+    initialLinkableHospitalVisits,
+  );
+  // 候補を読み込めていない（読み込み中・失敗）ときに保存すると、紐付けが送信されずに
+  // 外れてしまうため保存させない
+  const isHospitalVisitsUnavailable =
+    isHospital && linkableHospitalVisitsState.status !== "loaded";
   const media = useMediaAttachments({
     initial: mediaAssets,
     limits: mediaLimits,
@@ -115,9 +142,36 @@ export function ExpenseForm({
         name="category"
         label="カテゴリ"
         options={categoryOptions}
-        defaultSelectedKey={expense?.category ?? "other"}
+        selectedKey={category}
+        onSelectionChange={(key) => setCategory(key as ExpenseCategory)}
         errorMessage={state.fieldErrors?.category?.[0]}
       />
+
+      {isHospital ? (
+        <HospitalVisitLinkField
+          expenseId={expense?.id}
+          spentDate={spentDate}
+          visitsState={linkableHospitalVisitsState}
+          selectedIds={selectedHospitalVisitIds}
+          onChange={(visit, isSelected) => {
+            setSelectedHospitalVisitIds((current) =>
+              toggleInSet(current, visit.id, isSelected),
+            );
+            // 通院した猫の支出でもあるため、関連する猫にも追加する
+            if (isSelected) {
+              setSelectedCatIds((current) =>
+                toggleInSet(current, visit.catId, true),
+              );
+            }
+          }}
+          isDisabled={isPending}
+          errorMessage={state.fieldErrors?.hospitalVisitIds?.[0]}
+        />
+      ) : (expense?.hospitalVisitIds.length ?? 0) > 0 ? (
+        <p className={styles.hint}>
+          カテゴリを「病院」以外にして保存すると、通院記録との紐付けは解除されます。
+        </p>
+      ) : null}
 
       <fieldset
         className={styles.cats}
@@ -137,7 +191,12 @@ export function ExpenseForm({
                 key={cat.id}
                 name="catIds"
                 value={cat.id}
-                defaultSelected={defaultCatIds.has(cat.id)}
+                isSelected={selectedCatIds.has(cat.id)}
+                onChange={(isSelected) =>
+                  setSelectedCatIds((current) =>
+                    toggleInSet(current, cat.id, isSelected),
+                  )
+                }
               >
                 {cat.name}
               </Checkbox>
@@ -153,12 +212,6 @@ export function ExpenseForm({
           </p>
         ) : null}
       </fieldset>
-
-      {expense?.hospitalVisitId ? (
-        <p className={styles.hint}>
-          通院記録と連携している支出です。金額は通院記録の病院代にも反映されます。通院記録を更新すると、支出日は受診日に合わせて更新されます。
-        </p>
-      ) : null}
 
       <MediaAttachmentField
         controller={media}
@@ -184,11 +237,28 @@ export function ExpenseForm({
         type="submit"
         variant="primary"
         className={styles.submitButton}
-        isDisabled={isPending}
+        isDisabled={isPending || isHospitalVisitsUnavailable}
       >
         <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>
   );
+}
+
+function toggleInSet(
+  current: ReadonlySet<string>,
+  value: string,
+  include: boolean,
+): ReadonlySet<string> {
+  if (current.has(value) === include) {
+    return current;
+  }
+  const next = new Set(current);
+  if (include) {
+    next.add(value);
+  } else {
+    next.delete(value);
+  }
+  return next;
 }
