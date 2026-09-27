@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { z } from "zod";
 import { getDb } from "@/db/client";
 import { feedingRecordItems, feedingRecords, foodProducts } from "@/db/schema";
+import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import {
   calculateEstimatedIntakeG,
@@ -15,7 +16,7 @@ import {
   feedingRecordFormSchema,
 } from "./schema";
 
-export type FeedingRecordFormState = {
+export type FeedingRecordFormState = SubmitRedirect & {
   fieldErrors?: FeedingRecordFormFieldErrors;
   formError?: string;
 };
@@ -161,7 +162,7 @@ export async function createFeedingRecordAction(
     ),
   ]);
 
-  redirect(`/cats/${catId}/feeding-records`);
+  return { redirectTo: `/cats/${catId}/feeding-records` };
 }
 
 export async function updateFeedingRecordAction(
@@ -213,7 +214,7 @@ export async function updateFeedingRecordAction(
     ),
   ]);
 
-  redirect(`/cats/${catId}/feeding-records`);
+  return { redirectTo: `/cats/${catId}/feeding-records` };
 }
 
 export async function deleteFeedingRecordAction(
@@ -229,5 +230,5 @@ export async function deleteFeedingRecordAction(
       .delete(feedingRecords)
       .where(and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId))),
   ]);
-  redirect(`/cats/${catId}/feeding-records`);
+  redirect(`/cats/${catId}/feeding-records`, "replace");
 }

@@ -4,13 +4,14 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { shampooRecords } from "@/db/schema";
+import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import {
   type ShampooRecordFormFieldErrors,
   shampooRecordFormSchema,
 } from "./schema";
 
-export type ShampooRecordFormState = {
+export type ShampooRecordFormState = SubmitRedirect & {
   fieldErrors?: ShampooRecordFormFieldErrors;
   formError?: string;
 };
@@ -44,7 +45,7 @@ export async function createShampooRecordAction(
     memo: parsed.data.memo ?? null,
   });
 
-  redirect(`/cats/${catId}/shampoo-records`);
+  return { redirectTo: `/cats/${catId}/shampoo-records` };
 }
 
 export async function updateShampooRecordAction(
@@ -77,7 +78,7 @@ export async function updateShampooRecordAction(
     return { formError: "記録が見つかりませんでした" };
   }
 
-  redirect(`/cats/${catId}/shampoo-records`);
+  return { redirectTo: `/cats/${catId}/shampoo-records` };
 }
 
 export async function deleteShampooRecordAction(
@@ -88,5 +89,5 @@ export async function deleteShampooRecordAction(
   await db
     .delete(shampooRecords)
     .where(and(eq(shampooRecords.id, id), eq(shampooRecords.catId, catId)));
-  redirect(`/cats/${catId}/shampoo-records`);
+  redirect(`/cats/${catId}/shampoo-records`, "replace");
 }

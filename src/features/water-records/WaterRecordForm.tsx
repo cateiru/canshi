@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { TbCheck } from "react-icons/tb";
 import {
   Button,
@@ -12,6 +12,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import type { WaterRecord } from "@/db/schema";
+import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { WaterRecordFormState } from "./actions";
 import styles from "./WaterRecordForm.module.css";
@@ -39,7 +40,10 @@ export function WaterRecordForm({
   waterRecord,
   submitLabel,
 }: WaterRecordFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useSubmitActionState(
+    action,
+    initialState,
+  );
   const [now] = useState(() => new Date());
   const { date: defaultDate, time: defaultTime } = waterRecord?.occurredAt
     ? splitDateTimeUtc(waterRecord.occurredAt)

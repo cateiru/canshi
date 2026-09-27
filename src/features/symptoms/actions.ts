@@ -177,5 +177,5 @@ export async function deleteSymptomAction(
       .delete(symptoms)
       .where(and(eq(symptoms.id, id), eq(symptoms.catId, catId))),
   ]);
-  redirect(`/cats/${catId}/symptoms`);
+  redirect(`/cats/${catId}/symptoms`, "replace");
 }

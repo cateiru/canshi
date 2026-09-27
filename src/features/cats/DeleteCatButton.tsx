@@ -2,17 +2,23 @@
 
 import { useState, useTransition } from "react";
 import { Button, FormField, Modal } from "@/components/ui";
+import type { SubmitRedirect } from "@/features/navigation/types";
+import { useNavigateAfterSubmit } from "@/features/navigation/useNavigateAfterSubmit";
 import styles from "./DeleteCatButton.module.css";
 
 type DeleteCatButtonProps = {
-  action: () => Promise<void>;
+  action: () => Promise<SubmitRedirect>;
   catName: string;
 };
 
 export function DeleteCatButton({ action, catName }: DeleteCatButtonProps) {
   const [open, setOpen] = useState(false);
   const [confirmName, setConfirmName] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [isTransitionPending, startTransition] = useTransition();
+  // 削除後の画面遷移が終わるまでは削除中として扱い、二重送信を防ぐ
+  const [isNavigating, setIsNavigating] = useState(false);
+  const navigateAfterSubmit = useNavigateAfterSubmit();
+  const isPending = isTransitionPending || isNavigating;
   // 猫と記録をまとめて消す操作なので、誤操作を防ぐため猫の名前を正確に入力したときだけ削除できるようにする
   const isConfirmed = confirmName === catName;
 
@@ -35,7 +41,13 @@ export function DeleteCatButton({ action, catName }: DeleteCatButtonProps) {
           onSubmit={(event) => {
             event.preventDefault();
             if (isConfirmed && !isPending) {
-              startTransition(action);
+              startTransition(async () => {
+                const result = await action();
+                if (result.redirectTo) {
+                  setIsNavigating(true);
+                  navigateAfterSubmit(result.redirectTo);
+                }
+              });
             }
           }}
         >

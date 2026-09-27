@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 import { ButtonLink, Footer, ToastRegionRoot } from "@/components/ui";
 import { SettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { NavigationTracker } from "@/features/navigation/NavigationTracker";
 import { NotificationBadge } from "@/features/notifications/NotificationBadge";
 import { ServiceWorkerRegistration } from "@/features/pwa/ServiceWorkerRegistration";
 import "@/styles/globals.css";
@@ -80,6 +82,9 @@ export default function RootLayout({
         <Footer />
         <ToastRegionRoot />
         <ServiceWorkerRegistration />
+        <Suspense fallback={null}>
+          <NavigationTracker />
+        </Suspense>
       </body>
     </html>
   );

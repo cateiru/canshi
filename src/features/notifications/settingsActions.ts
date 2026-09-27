@@ -54,5 +54,5 @@ export async function updateCatNotificationSettingsAction(
   );
 
   revalidatePath(`/cats/${catId}/notification-settings`);
-  redirect(`/cats/${catId}/notification-settings`);
+  redirect(`/cats/${catId}/notification-settings`, "replace");
 }

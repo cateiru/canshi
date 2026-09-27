@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionState } from "react";
 import { TbCheck } from "react-icons/tb";
 import {
   Button,
@@ -11,6 +10,7 @@ import {
   Select,
 } from "@/components/ui";
 import type { CleaningTarget } from "@/db/schema";
+import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import styles from "./CleaningTargetForm.module.css";
 import type { CleaningTargetFormState } from "./targetActions";
 import { NOTIFY_TIME_NONE, NOTIFY_TIME_OPTIONS } from "./targetSchema";
@@ -36,7 +36,10 @@ export function CleaningTargetForm({
   cleaningTarget,
   submitLabel,
 }: CleaningTargetFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useSubmitActionState(
+    action,
+    initialState,
+  );
 
   return (
     <form action={formAction} className={styles.form}>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Button, Checkbox, FormField, Textarea } from "@/components/ui";
 import type { MedicationDose } from "@/db/schema";
+import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { MedicationDoseFormState } from "./doseActions";
 import styles from "./MedicationDoseForm.module.css";
@@ -24,7 +25,10 @@ export function MedicationDoseForm({
   medicationDose,
   submitLabel,
 }: MedicationDoseFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useSubmitActionState(
+    action,
+    initialState,
+  );
   const [now] = useState(() => new Date());
   const { date: defaultDate, time: defaultTime } = medicationDose?.occurredAt
     ? splitDateTimeUtc(medicationDose.occurredAt)

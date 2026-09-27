@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Button, FormField, Radio, RadioGroup } from "@/components/ui";
 import type { WeightRecord } from "@/db/schema";
+import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { WeightRecordFormState } from "./actions";
 import { BcsField } from "./BcsField";
@@ -25,7 +26,10 @@ export function WeightRecordForm({
   weightRecord,
   submitLabel,
 }: WeightRecordFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useSubmitActionState(
+    action,
+    initialState,
+  );
   const [inputMethod, setInputMethod] = useState<"auto" | "direct">(
     weightRecord?.inputMethod ?? "auto",
   );

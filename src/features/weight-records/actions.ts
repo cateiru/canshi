@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { weightRecords } from "@/db/schema";
+import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import { calculateCatWeightKg } from "./calculations";
 import {
@@ -11,7 +12,7 @@ import {
   weightRecordFormSchema,
 } from "./schema";
 
-export type WeightRecordFormState = {
+export type WeightRecordFormState = SubmitRedirect & {
   fieldErrors?: WeightRecordFormFieldErrors;
   formError?: string;
 };
@@ -69,7 +70,7 @@ export async function createWeightRecordAction(
     bcs: parsed.data.bcs ?? null,
   });
 
-  redirect(`/cats/${catId}/weight-records`);
+  return { redirectTo: `/cats/${catId}/weight-records` };
 }
 
 export async function updateWeightRecordAction(
@@ -106,7 +107,7 @@ export async function updateWeightRecordAction(
     return { formError: "記録が見つかりませんでした" };
   }
 
-  redirect(`/cats/${catId}/weight-records`);
+  return { redirectTo: `/cats/${catId}/weight-records` };
 }
 
 export async function deleteWeightRecordAction(
@@ -117,5 +118,5 @@ export async function deleteWeightRecordAction(
   await db
     .delete(weightRecords)
     .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)));
-  redirect(`/cats/${catId}/weight-records`);
+  redirect(`/cats/${catId}/weight-records`, "replace");
 }
