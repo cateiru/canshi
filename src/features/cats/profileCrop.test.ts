@@ -4,6 +4,7 @@ import {
   computeProfileCropDrawing,
   minZoomForRotation,
   rotatedBoundingBox,
+  snapRotation,
 } from "./profileCrop";
 
 function apply(t: AffineTransform, x: number, y: number) {
@@ -33,6 +34,23 @@ describe("rotatedBoundingBox", () => {
     const rotated = rotatedBoundingBox(100, 100, 45);
     expect(rotated.width).toBeCloseTo(100 * Math.SQRT2, 6);
     expect(rotated.height).toBeCloseTo(100 * Math.SQRT2, 6);
+  });
+});
+
+describe("snapRotation", () => {
+  it("45 度の倍数から 5 度以内なら吸い付く", () => {
+    expect(snapRotation(3)).toBe(0);
+    expect(snapRotation(-4)).toBe(0);
+    expect(snapRotation(41)).toBe(45);
+    expect(snapRotation(95)).toBe(90);
+    expect(snapRotation(-132)).toBe(-135);
+    expect(snapRotation(176)).toBe(180);
+  });
+
+  it("離れていればそのままの角度にする", () => {
+    expect(snapRotation(6)).toBe(6);
+    expect(snapRotation(30)).toBe(30);
+    expect(snapRotation(-100)).toBe(-100);
   });
 });
 

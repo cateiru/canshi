@@ -11,6 +11,22 @@ export function clampCropRotation(value: number): number {
   return Math.min(180, Math.max(-180, value));
 }
 
+/** 回転のスライダーで吸い付かせる角度の間隔 */
+export const ROTATION_SNAP_INTERVAL = 45;
+/** この角度以内に近づいたら ROTATION_SNAP_INTERVAL の倍数に吸い付かせる */
+export const ROTATION_SNAP_THRESHOLD = 5;
+
+/**
+ * 回転角度が 45 度の倍数（0・±45・±90…）に近ければ、その角度に吸い付かせる
+ */
+export function snapRotation(value: number): number {
+  const nearest =
+    Math.round(value / ROTATION_SNAP_INTERVAL) * ROTATION_SNAP_INTERVAL;
+  // -0 を 0 に揃える
+  const snapped = nearest === 0 ? 0 : nearest;
+  return Math.abs(value - snapped) <= ROTATION_SNAP_THRESHOLD ? snapped : value;
+}
+
 /**
  * パン位置が中央のときに回転で四隅がすき間にならないための理論上の最小倍率を
  * 超える分（1 との差）に余裕を持たせる係数。回転 0 度では理論値が常に 1 なので、

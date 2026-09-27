@@ -27,7 +27,7 @@
 
 .track {
   position: relative;
-  width: 100%;
+  /* width: 100% にすると下の margin-inline の分だけ親からはみ出すため、幅は親の伸縮に任せる */
   min-height: 44px;
   /*
    * つまみの中心は常にトラックの 0%/100% の位置（＝トラック自身の左右端）に来る。
