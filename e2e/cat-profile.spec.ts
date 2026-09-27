@@ -18,12 +18,15 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
   await page.getByLabel("性別").click();
   await page.getByRole("option", { name: "メス" }).click();
   await page.getByLabel("生年月日").fill("2020-04-01");
-  await page.getByLabel("猫種").fill("雑種");
+  // ひらがなで途中まで入力すると、カタカナの猫種が候補に出る
+  await page.getByRole("combobox", { name: "猫種" }).fill("まんち");
+  await page.getByRole("option", { name: "マンチカン", exact: true }).click();
   await page.getByLabel("お迎え日").fill("2020-06-01");
   await page.getByRole("button", { name: "登録する" }).click();
 
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();
   await expect(page.getByText("メス")).toBeVisible();
+  await expect(page.getByText("マンチカン")).toBeVisible();
   await expect(page.getByText(/歳/)).toBeVisible();
   await expect(page.getByText(/日）/)).toBeVisible();
 
@@ -32,7 +35,11 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
 
   await page.getByRole("heading", { name: catName }).click();
   await page.getByRole("link", { name: "編集する" }).click();
-  await page.getByLabel("猫種").fill("三毛猫");
+  await expect(page.getByRole("combobox", { name: "猫種" })).toHaveValue(
+    "マンチカン",
+  );
+  // 候補にない猫種も入力できる
+  await page.getByRole("combobox", { name: "猫種" }).fill("三毛猫");
   await page.getByRole("button", { name: "更新する" }).click();
 
   await expect(page.getByText("三毛猫")).toBeVisible();
