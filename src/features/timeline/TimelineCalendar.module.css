@@ -107,6 +107,14 @@
 }
 
 /* 日付セルと凡例で同じ単色を使い、選択中も記録の種類を見分けられるようにする。 */
+.icon[data-record-type="birthday"] {
+  color: #a21caf;
+}
+
+.icon[data-record-type="adoption"] {
+  color: #4d7c0f;
+}
+
 .icon[data-record-type="feeding"] {
   color: #b45309;
 }

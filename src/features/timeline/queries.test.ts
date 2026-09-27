@@ -142,4 +142,55 @@ describe("listTimelineForMonth", () => {
     // datesByDay は絞り込みの影響を受けず月全体を反映する
     expect(result.datesByDay.has("2026-07-11")).toBe(true);
   });
+
+  it("誕生日・お迎え記念日を、同じ日の記録より先頭に含める", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({
+        name: "しろ",
+        sex: "female",
+        birthDate: "2026-03-31",
+        adoptedAt: "2025-08-02",
+      })
+      .returning();
+
+    // 同じ日の 0 時より後の記録
+    await db.insert(weightRecords).values({
+      catId: cat.id,
+      occurredAt: new Date("2026-08-02T09:00:00.000Z"),
+      inputMethod: "direct",
+      catWeightKg: 2.1,
+    });
+
+    const result = await listTimelineForMonth(cat.id, 2026, 8);
+
+    expect(
+      result.entries.map((entry) => [
+        entry.type,
+        entry.occurredAt.toISOString(),
+        entry.record,
+      ]),
+    ).toEqual([
+      // 31日生まれは、31日がない月でも月末の日に生後の月数を出す
+      [
+        "birthday",
+        "2026-08-31T00:00:00.000Z",
+        { date: "2026-08-31", ageMonths: 5 },
+      ],
+      [
+        "adoption",
+        "2026-08-02T00:00:00.000Z",
+        { date: "2026-08-02", years: 1 },
+      ],
+      ["weight", "2026-08-02T09:00:00.000Z", expect.anything()],
+    ]);
+    expect(result.datesByDay.get("2026-08-02")).toEqual(["adoption", "weight"]);
+    expect(result.datesByDay.get("2026-08-31")).toEqual(["birthday"]);
+
+    // 日付で絞り込んでも記念日は残る
+    const filtered = await listTimelineForMonth(cat.id, 2026, 8, {
+      date: "2026-08-31",
+    });
+    expect(filtered.entries.map((entry) => entry.type)).toEqual(["birthday"]);
+  });
 });

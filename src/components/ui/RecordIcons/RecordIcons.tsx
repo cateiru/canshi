@@ -380,6 +380,59 @@ export function HospitalIcon(props: RecordIconProps) {
   );
 }
 
+export function BirthdayIcon(props: RecordIconProps) {
+  const catTransform = "translate(3 8.5) scale(.75)";
+  // 三角帽の底辺は頭の丸みに沿わせる
+  const hat = "M8.5 12.5 12 4l3.5 8.5Q12 13.5 8.5 12.5Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <CatFill transform={catTransform} />
+          <path fill="#f4b0a3" d={hat} />
+          <circle fill="#f2d17b" cx="12" cy="3" r="1" />
+        </>
+      }
+    >
+      <CatOutline transform={catTransform} />
+      <path d={hat} />
+      <circle cx="12" cy="3" r="1" />
+      <path d="M4.5 4v3M3 5.5h3m13.5-1.5v3M18 5.5h3" />
+    </RecordIcon>
+  );
+}
+
+export function AdoptionIcon(props: RecordIconProps) {
+  const catTransform = "translate(5.4 9.5) scale(.55)";
+  const body = "M9 21c0-2 1.3-3.2 3-3.2s3 1.2 3 3.2";
+  const heart = "M12 9.5 10.4 8a1 1 0 0 1 1.6-1.2A1 1 0 0 1 13.6 8Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path
+            fill="#d0e9f4"
+            d="M5 9.2 12 3.2l7 6V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Z"
+          />
+          <path fill="#f5dfb7" d={body} />
+          <CatFill transform={catTransform} />
+          <path fill="#f4b0a3" d={heart} />
+        </>
+      }
+    >
+      <path d="M2.5 11 12 3l9.5 8" />
+      <path d="M5 9.2V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.2" />
+      <path d={body} />
+      <CatOutline transform={catTransform} />
+      <path d={heart} />
+    </RecordIcon>
+  );
+}
+
 export function PhotoIcon(props: RecordIconProps) {
   const catTransform = "translate(3 5) scale(.75)";
 
