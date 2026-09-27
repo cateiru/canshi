@@ -39,7 +39,7 @@ export default async function EditExpensePage({
     listMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, expense.id),
     // 「病院」の支出は、紐付けの候補になる同じ日の通院記録を最初から表示する
     expense.category === "hospital"
-      ? listHospitalVisitsOnDate(spentDate)
+      ? listHospitalVisitsOnDate(spentDate, expense.id)
       : undefined,
   ]);
 

@@ -112,7 +112,14 @@ async function resolveLinks(
       };
     }
     for (const row of rows) {
-      if (splitDateTimeUtc(row.visitedAt).date !== data.spentDate) {
+      // すでにこの支出に紐付いている通院記録は、共有中に受診日が変わって日付がずれていることがあるため
+      // そのまま残せるようにする
+      const alreadyLinked =
+        expenseId != null && row.expenseRecordId === expenseId;
+      if (
+        !alreadyLinked &&
+        splitDateTimeUtc(row.visitedAt).date !== data.spentDate
+      ) {
         return {
           ok: false,
           fieldErrors: {
@@ -263,16 +270,18 @@ const dateSchema = z.string().date();
 
 /**
  * 支出記録のフォームで、支出日と同じ日の通院記録（紐付けの候補）を取得する。
+ * 編集中の支出記録の ID を渡すと、すでに紐付いている通院記録も含める。
  * 日付を変えるたびにクライアントから呼ぶ読み取り専用の Action
  */
 export async function listLinkableHospitalVisitsAction(
   date: string,
+  expenseRecordId?: string,
 ): Promise<LinkableHospitalVisit[]> {
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];
   }
-  return listHospitalVisitsOnDate(parsed.data);
+  return listHospitalVisitsOnDate(parsed.data, expenseRecordId);
 }
 
 /**

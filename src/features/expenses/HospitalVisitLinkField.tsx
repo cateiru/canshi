@@ -13,13 +13,14 @@ export type LinkableHospitalVisitsOnDate = {
 };
 
 /**
- * 支出日と同じ日の通院記録（紐付けの候補）を取得する。
- * `enabled` が false の間（カテゴリが「病院」以外）は取得しない。
+ * 支出日と同じ日の通院記録（紐付けの候補）を取得する。編集中の支出記録にすでに
+ * 紐付いている通院記録も含める。`enabled` が false の間（カテゴリが「病院」以外）は取得しない。
  * 取得中は `visits` が null になる
  */
 export function useLinkableHospitalVisits(
   date: string,
   enabled: boolean,
+  expenseId: string | undefined,
   initial?: LinkableHospitalVisitsOnDate,
 ): LinkableHospitalVisit[] | null {
   const [loaded, setLoaded] = useState<LinkableHospitalVisitsOnDate | null>(
@@ -32,7 +33,7 @@ export function useLinkableHospitalVisits(
     }
     // 日付を続けて変えたときに、古い日付の結果で上書きしないようにする
     let ignore = false;
-    listLinkableHospitalVisitsAction(date).then(
+    listLinkableHospitalVisitsAction(date, expenseId).then(
       (visits) => {
         if (!ignore) setLoaded({ date, visits });
       },
@@ -43,7 +44,7 @@ export function useLinkableHospitalVisits(
     return () => {
       ignore = true;
     };
-  }, [date, enabled, loaded?.date]);
+  }, [date, enabled, expenseId, loaded?.date]);
 
   return loaded?.date === date ? loaded.visits : null;
 }
@@ -51,6 +52,8 @@ export function useLinkableHospitalVisits(
 type HospitalVisitLinkFieldProps = {
   /** 編集中の支出記録の ID。この支出に紐付いている通院記録は選択できる */
   expenseId?: string;
+  /** 支出日（`YYYY-MM-DD`）。受診日が違う通院記録は日付も表示する */
+  spentDate: string;
   /** 支出日と同じ日の通院記録。取得中は null */
   visits: LinkableHospitalVisit[] | null;
   selectedIds: ReadonlySet<string>;
@@ -62,6 +65,7 @@ type HospitalVisitLinkFieldProps = {
 /** カテゴリ「病院」の支出記録に、同じ日の通院記録（複数の猫の分も含む）を紐付ける欄 */
 export function HospitalVisitLinkField({
   expenseId,
+  spentDate,
   visits,
   selectedIds,
   onChange,
@@ -92,6 +96,11 @@ export function HospitalVisitLinkField({
             const linkedToOther =
               visit.expenseRecordId != null &&
               visit.expenseRecordId !== expenseId;
+            const visited = splitDateTimeUtc(visit.visitedAt);
+            const visitedLabel =
+              visited.date === spentDate
+                ? visited.time
+                : `${visited.date} ${visited.time}`;
             return (
               <Checkbox
                 key={visit.id}
@@ -101,8 +110,7 @@ export function HospitalVisitLinkField({
                 isDisabled={linkedToOther}
                 onChange={(isSelected) => onChange(visit, isSelected)}
               >
-                {splitDateTimeUtc(visit.visitedAt).time} {visit.catName}：
-                {visit.reason}
+                {visitedLabel} {visit.catName}：{visit.reason}
                 {linkedToOther ? "（ほかの支出記録に紐付け済み）" : ""}
               </Checkbox>
             );

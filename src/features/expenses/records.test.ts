@@ -541,6 +541,39 @@ describe("複数の通院記録で共有している病院代", () => {
     expect(await getExpenseByHospitalVisitId(tamaVisit)).toBeNull();
   });
 
+  it("受診日がずれた通院記録も、支出記録の再保存で紐付けが外れない", async () => {
+    const { tamaVisit, mikeVisit, expenseId } = await createSharedExpense();
+    await updateHospitalVisitAction(
+      "tama",
+      tamaVisit,
+      {},
+      visitForm({ expenseAmountYen: "11000", visitedDate: "2026-09-16" }),
+    );
+    // 支出フォームは支出日の通院記録に加えて、すでに紐付いている通院記録も候補に出す
+    const linkable = await listLinkableHospitalVisitsAction(
+      "2026-09-15",
+      expenseId,
+    );
+    expect(linkable.map((visit) => visit.id).sort()).toEqual(
+      [tamaVisit, mikeVisit].sort(),
+    );
+    await updateExpenseAction(
+      expenseId,
+      {},
+      expenseForm({
+        category: "hospital",
+        amountYen: "11000",
+        memo: "メモだけ変更",
+        hospitalVisitIds: linkable.map((visit) => visit.id),
+      }),
+    );
+    expect(await getExpenseById(expenseId)).toMatchObject({
+      memo: "メモだけ変更",
+      hospitalVisitIds: expect.arrayContaining([tamaVisit, mikeVisit]),
+    });
+    expect((await getExpenseById(expenseId))?.hospitalVisitIds).toHaveLength(2);
+  });
+
   it("金額の変更は反映し、受診日を変えても支出日は変えない", async () => {
     const { tamaVisit, expenseId } = await createSharedExpense();
     await updateHospitalVisitAction(

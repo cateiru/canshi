@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, or } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
@@ -64,10 +64,13 @@ export type LinkableHospitalVisit = Pick<
 
 /**
  * 指定した日（`YYYY-MM-DD`）のすべての猫の通院記録を、受診日時の順に返す。
- * 支出記録で「病院」を選んだときに、同じ日の通院記録を紐付ける候補にする
+ * 支出記録で「病院」を選んだときに、同じ日の通院記録を紐付ける候補にする。
+ * `expenseRecordId` を渡すと、その支出記録にすでに紐付いている通院記録も含める
+ * （共有している病院代は受診日を変えても支出日を変えないため、日付がずれていることがある）
  */
 export async function listHospitalVisitsOnDate(
   date: string,
+  expenseRecordId?: string,
 ): Promise<LinkableHospitalVisit[]> {
   const db = getDb();
   const start = combineDateTimeUtc(date, "00:00");
@@ -88,9 +91,14 @@ export async function listHospitalVisitsOnDate(
       eq(expenseRecordHospitalVisits.hospitalVisitId, hospitalVisits.id),
     )
     .where(
-      and(
-        gte(hospitalVisits.visitedAt, start),
-        lt(hospitalVisits.visitedAt, end),
+      or(
+        and(
+          gte(hospitalVisits.visitedAt, start),
+          lt(hospitalVisits.visitedAt, end),
+        ),
+        expenseRecordId == null
+          ? undefined
+          : eq(expenseRecordHospitalVisits.expenseRecordId, expenseRecordId),
       ),
     )
     .orderBy(

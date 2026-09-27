@@ -88,6 +88,7 @@ export function ExpenseForm({
   const linkableHospitalVisits = useLinkableHospitalVisits(
     spentDate,
     isHospital,
+    expense?.id,
     initialLinkableHospitalVisits,
   );
   // 候補を読み込み中に保存すると、紐付けが送信されずに外れてしまうため保存を待たせる
@@ -147,6 +148,7 @@ export function ExpenseForm({
       {isHospital ? (
         <HospitalVisitLinkField
           expenseId={expense?.id}
+          spentDate={spentDate}
           visits={linkableHospitalVisits}
           selectedIds={selectedHospitalVisitIds}
           onChange={(visit, isSelected) => {
