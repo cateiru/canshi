@@ -409,7 +409,7 @@ export function BirthdayIcon(props: RecordIconProps) {
 }
 
 export function AdoptionIcon(props: RecordIconProps) {
-  const catTransform = "translate(1.8 7.8) scale(.85)";
+  const catTransform = "translate(3 8.6) scale(.75)";
   const house = "M4 9.4 12 3l8 6.4V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z";
 
   return (
