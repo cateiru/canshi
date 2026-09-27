@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   cleaningRecords,
@@ -83,12 +83,42 @@ export async function markCleaningNotificationDoneAction(
       };
     }
 
+    // 上の完了判定はバッチ外の読み取りのため、別タブ・別端末から同じ通知を同時に完了すると
+    // 両方が未完了と判断しうる。記録の追加を「通知が未完了なら」という条件付きの
+    // INSERT ... SELECT にし、完了への更新と同じバッチ（D1 では 1 トランザクション）で
+    // 実行することで、後から実行されたバッチでは記録が追加されないようにする。
+    // INSERT ... SELECT では `$defaultFn` が効かないため、全カラムの値を明示する
     await db.batch([
-      db.insert(cleaningRecords).values({
-        catId: notification.catId,
-        cleaningTargetId: target.id,
-        performedAt: getNaiveUtcNow(),
-      }),
+      db.insert(cleaningRecords).select(
+        db
+          .select({
+            id: sql`${crypto.randomUUID()}`.as("id"),
+            catId: notifications.catId,
+            cleaningTargetId: cleaningTargets.id,
+            performedAt:
+              sql`${sql.param(getNaiveUtcNow(), cleaningRecords.performedAt)}`.as(
+                "performedAt",
+              ),
+            memo: sql`null`.as("memo"),
+            createdAt: sql`(unixepoch())`.as("createdAt"),
+            updatedAt: sql`(unixepoch())`.as("updatedAt"),
+          })
+          .from(notifications)
+          .innerJoin(
+            cleaningTargets,
+            and(
+              eq(cleaningTargets.id, notifications.referenceId),
+              eq(cleaningTargets.catId, notifications.catId),
+            ),
+          )
+          .where(
+            and(
+              eq(notifications.id, id),
+              ne(notifications.status, "done"),
+              eq(cleaningTargets.isActive, true),
+            ),
+          ),
+      ),
       db
         .update(notifications)
         .set({ status: "done", updatedAt: new Date() })
