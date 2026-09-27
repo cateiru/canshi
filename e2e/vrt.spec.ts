@@ -1,3 +1,4 @@
+import { createPng } from "../src/features/media/testing/createPng";
 import { expect, takeSnapshot, test } from "./vrt-snapshot";
 
 // ビジュアルリグレッションテスト (reg-suit)。
@@ -185,6 +186,36 @@ test("猫の編集ページ（データがある）の見た目", async ({ page 
     page.getByRole("heading", { name: "VRTテスト猫を編集する" }),
   ).toBeVisible();
   await takeSnapshot(page, testInfo);
+});
+
+test("プロフィール画像の切り抜きモーダルの見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${CAT}/edit`);
+  await expect(
+    page.getByRole("heading", { name: "VRTテスト猫を編集する" }),
+  ).toBeVisible();
+
+  // 切り抜き枠との位置関係がわかるよう、左右で色を変えた横長の画像を選ぶ。
+  // 切り抜きモーダルを開くだけでアップロードはしないため、フィクスチャのデータは変わらない
+  const image = createPng(320, 240, (x) =>
+    x < 160 ? [220, 80, 60, 255] : [60, 120, 220, 255],
+  );
+  await page.getByLabel("プロフィール画像のファイル").setInputFiles({
+    name: "vrt-profile.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(image),
+  });
+  const dialog = page.getByRole("dialog", {
+    name: "プロフィール画像の範囲を選ぶ",
+  });
+  await expect(dialog).toBeVisible();
+  // 画像の読み込みが終わると react-easy-crop が切り抜き枠を描画する
+  await expect(dialog.locator('[data-testid="cropper"]')).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "この範囲で決定する" }),
+  ).toBeEnabled();
+  await takeSnapshot(page, testInfo, { fullPage: false });
 });
 
 test("タイムライン（何もないケース）の見た目", async ({ page }, testInfo) => {

@@ -14,8 +14,12 @@
 .cropper {
   position: relative;
   width: 100%;
-  height: 340px;
-  max-height: 60vh;
+  /*
+   * モーダルは画面の高さの 90% までしか広がらない（Modal の max-height: 90vh）。
+   * 切り抜き領域以外（見出し・スライダー・ボタン・余白）の約 360px を差し引いた分に収め、
+   * 高さの低い画面でも「この範囲で決定する」ボタンがスクロールせずに見えるようにする
+   */
+  height: clamp(200px, calc(90vh - 360px), 340px);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-base);
   overflow: hidden;
