@@ -70,6 +70,11 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         description:
           "指定した猫の、指定した年月の記録（ごはん・うんち・体重・通院・投薬など）を" +
           "発生日時の降順で取得する。" +
+          '猫の生年月日・お迎え日から求めた記念日も含む。誕生日（type="birthday"）は' +
+          "record.ageMonths に生まれてからの月数（0=生まれた日、12 の倍数=毎年の誕生日、" +
+          '1〜11=1歳未満の毎月の記念日）を、お迎え記念日（type="adoption"）は' +
+          "record.years にお迎えしてからの年数（0=お迎えした日）を持ち、" +
+          "同じ日の記録より先頭に並ぶ。" +
           '体重記録（type="weight"）には猫の体重 catWeightKg に加え、' +
           "BCS（ボディコンディションスコア）の bcs（1〜5 の 5 段階。1=痩せ、" +
           "2=やや痩せ、3=理想体重、4=やや肥満、5=肥満。未評価は null）と" +

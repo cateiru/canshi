@@ -380,6 +380,55 @@ export function HospitalIcon(props: RecordIconProps) {
   );
 }
 
+export function BirthdayIcon(props: RecordIconProps) {
+  const cake =
+    "M5 12h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z";
+  const icing =
+    "M5 12h14a2 2 0 0 1 2 2v2q-2.25 3-4.5 0-2.25 3-4.5 0-2.25 3-4.5 0-2.25 3-4.5 0v-2a2 2 0 0 1 2-2Z";
+  const candle = "M10.5 12V8h3v4Z";
+  const flame = "M12 1.5s-1.5 2-1.5 3a1.5 1.5 0 0 0 3 0c0-1-1.5-3-1.5-3Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#b7d7ee" d={candle} />
+          <path fill="#f4b0a3" d={cake} />
+          <path fill="#fff4df" d={icing} />
+          <path fill="#f2d17b" d={flame} />
+        </>
+      }
+    >
+      <path d={flame} />
+      <path d={candle} />
+      <path d={cake} />
+      <path d={icing} />
+    </RecordIcon>
+  );
+}
+
+export function AdoptionIcon(props: RecordIconProps) {
+  const catTransform = "translate(3 8.6) scale(.75)";
+  const house = "M4 9.4 12 3l8 6.4V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#d0e9f4" d={house} />
+          <CatFill transform={catTransform} />
+        </>
+      }
+    >
+      <path d={house} />
+      <path d="m2 11 2-1.6m16 0 2 1.6" />
+      <CatOutline transform={catTransform} expression="happy" />
+    </RecordIcon>
+  );
+}
+
 export function PhotoIcon(props: RecordIconProps) {
   const catTransform = "translate(3 5) scale(.75)";
 

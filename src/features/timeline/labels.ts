@@ -1,5 +1,7 @@
 import type { IconType } from "react-icons";
 import {
+  AdoptionIcon,
+  BirthdayIcon,
   BroomIcon,
   ExpenseIcon,
   FeedingIcon,
@@ -16,6 +18,8 @@ import {
 import type { TimelineRecordType } from "./queries";
 
 export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
+  birthday: "誕生日",
+  adoption: "お迎え日",
   feeding: "ごはん",
   poop: "うんち",
   weight: "体重",
@@ -30,6 +34,8 @@ export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
 };
 
 export const TIMELINE_TYPE_ICON = {
+  birthday: BirthdayIcon,
+  adoption: AdoptionIcon,
   feeding: FeedingIcon,
   poop: PoopIcon,
   weight: WeightIcon,

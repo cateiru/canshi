@@ -8,15 +8,19 @@ import { EXPENSE_CATEGORY_LABEL, formatYen } from "@/features/expenses/labels";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { MediaThumbnailStrip } from "@/features/media/MediaThumbnailStrip";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
-import { formatDateTimeUtc } from "@/features/shared/datetime";
+import {
+  formatDateTimeUtc,
+  splitDateTimeUtc,
+} from "@/features/shared/datetime";
 import { STATUS_LABEL } from "@/features/symptoms/labels";
 import { SUBJECTIVE_AMOUNT_LABEL } from "@/features/water-records/labels";
 import {
   formatBcs,
   isBodyConditionScore,
 } from "@/features/weight-records/labels";
+import { formatAdoptionRecord, formatBirthdayRecord } from "./anniversaries";
 import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "./labels";
-import type { TimelineEntry } from "./queries";
+import { isTimelineAnniversaryType, type TimelineEntry } from "./queries";
 import styles from "./TimelineEntryCard.module.css";
 
 type TimelineEntryCardProps = {
@@ -36,6 +40,14 @@ export function TimelineEntryCard({
   foodProductImageUrls,
 }: TimelineEntryCardProps) {
   const Icon = TIMELINE_TYPE_ICON[entry.type];
+  // 記念日は時刻を持たないため、日付だけを表示する
+  const occurredAtLabel = isTimelineAnniversaryType(entry.type)
+    ? splitDateTimeUtc(entry.occurredAt).date
+    : formatDateTimeUtc(entry.occurredAt);
+  // 記念日は猫の生年月日・お迎え日から求めるため、編集先は猫のプロフィールになる
+  const editLabel = isTimelineAnniversaryType(entry.type)
+    ? "猫のプロフィールを編集する"
+    : "編集する";
 
   return (
     <div className={styles.row}>
@@ -54,7 +66,7 @@ export function TimelineEntryCard({
       </div>
       <article
         className={styles.card}
-        aria-label={`${TIMELINE_TYPE_LABEL[entry.type]} ${formatDateTimeUtc(entry.occurredAt)}`}
+        aria-label={`${TIMELINE_TYPE_LABEL[entry.type]} ${occurredAtLabel}`}
       >
         <div className={styles.header}>
           <Badge color="accent">{TIMELINE_TYPE_LABEL[entry.type]}</Badge>
@@ -63,14 +75,14 @@ export function TimelineEntryCard({
               className={styles.occurredAt}
               dateTime={entry.occurredAt.toISOString()}
             >
-              {formatDateTimeUtc(entry.occurredAt)}
+              {occurredAtLabel}
             </time>
             <ButtonLink
               href={getEditHref(catId, entry)}
               variant="secondary"
               className={styles.iconButton}
-              aria-label="編集する"
-              title="編集する"
+              aria-label={editLabel}
+              title={editLabel}
             >
               <TbPencil aria-hidden="true" size={20} />
             </ButtonLink>
@@ -92,6 +104,9 @@ export function TimelineEntryCard({
 
 function getEditHref(catId: string, entry: TimelineEntry): string {
   switch (entry.type) {
+    case "birthday":
+    case "adoption":
+      return `/cats/${catId}/edit`;
     case "feeding":
       return `/cats/${catId}/feeding-records/${entry.record.id}/edit`;
     case "poop":
@@ -127,6 +142,18 @@ function renderBody(
   foodProductImageUrls: Record<string, string>,
 ) {
   switch (entry.type) {
+    case "birthday":
+      return (
+        <div className={styles.body}>
+          <p>{formatBirthdayRecord(entry.record)}</p>
+        </div>
+      );
+    case "adoption":
+      return (
+        <div className={styles.body}>
+          <p>{formatAdoptionRecord(entry.record)}</p>
+        </div>
+      );
     case "feeding": {
       const { record } = entry;
       const totalIntakeG = record.items.reduce(

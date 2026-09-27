@@ -2,6 +2,7 @@ import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   type CleaningRecord,
+  cats,
   cleaningRecords,
   cleaningTargets,
   type ExpenseRecord,
@@ -40,8 +41,22 @@ import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/media";
 import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
+import {
+  listAnniversariesForMonth,
+  type TimelineAdoptionRecord,
+  type TimelineBirthdayRecord,
+} from "./anniversaries";
+
+/**
+ * 記録ではなく、猫の生年月日・お迎え日から求める記念日の種別。
+ * カレンダーの1日のアイコンは表示数に上限があるため、記録より先に並べて必ず見えるようにする
+ */
+const TIMELINE_ANNIVERSARY_TYPES = ["birthday", "adoption"] as const;
+
+type TimelineAnniversaryType = (typeof TIMELINE_ANNIVERSARY_TYPES)[number];
 
 export const TIMELINE_RECORD_TYPES = [
+  ...TIMELINE_ANNIVERSARY_TYPES,
   "feeding",
   "poop",
   "weight",
@@ -56,6 +71,12 @@ export const TIMELINE_RECORD_TYPES = [
 ] as const;
 
 export type TimelineRecordType = (typeof TIMELINE_RECORD_TYPES)[number];
+
+export function isTimelineAnniversaryType(
+  type: TimelineRecordType,
+): type is TimelineAnniversaryType {
+  return (TIMELINE_ANNIVERSARY_TYPES as readonly string[]).includes(type);
+}
 
 /**
  * タイムラインの記録種別と media_assets.record_type の対応。
@@ -99,6 +120,8 @@ export type TimelineFeedingRecord = {
 };
 
 export type TimelineEntry =
+  | TimelineEntryOf<"birthday", TimelineBirthdayRecord>
+  | TimelineEntryOf<"adoption", TimelineAdoptionRecord>
   | TimelineEntryOf<"feeding", TimelineFeedingRecord>
   | TimelineEntryOf<"poop", PoopRecord>
   | TimelineEntryOf<"weight", WeightRecord>
@@ -495,8 +518,51 @@ async function fetchExpenseEntries(
   }));
 }
 
+/**
+ * 猫の生年月日・お迎え日から、指定した月の誕生日・お迎え記念日のエントリを作る。
+ * 記念日は時刻を持たないため、発生日時はその日の 0 時（naive UTC）にする
+ */
+async function fetchAnniversaryEntries(
+  catId: string,
+  year: number,
+  month: number,
+  d1?: D1Database,
+): Promise<TimelineEntry[]> {
+  const db = getDb(d1);
+  const [cat] = await db
+    .select({ birthDate: cats.birthDate, adoptedAt: cats.adoptedAt })
+    .from(cats)
+    .where(eq(cats.id, catId))
+    .limit(1);
+  if (!cat) {
+    return [];
+  }
+
+  const { birthdays, adoptions } = listAnniversariesForMonth(cat, year, month);
+  return [
+    ...birthdays.map(
+      (record): TimelineEntry => ({
+        id: `${catId}:birthday:${record.date}`,
+        type: "birthday",
+        occurredAt: new Date(`${record.date}T00:00:00.000Z`),
+        media: [],
+        record,
+      }),
+    ),
+    ...adoptions.map(
+      (record): TimelineEntry => ({
+        id: `${catId}:adoption:${record.date}`,
+        type: "adoption",
+        occurredAt: new Date(`${record.date}T00:00:00.000Z`),
+        media: [],
+        record,
+      }),
+    ),
+  ];
+}
+
 const FETCHERS: Record<
-  TimelineRecordType,
+  Exclude<TimelineRecordType, TimelineAnniversaryType>,
   (catId: string, range: DateRange, d1?: D1Database) => Promise<TimelineEntry[]>
 > = {
   feeding: fetchFeedingEntries,
@@ -591,15 +657,11 @@ export async function listTimelineForMonth(
   const pageSize = normalizePositiveInt(options.pageSize ?? 20, MAX_PAGE_SIZE);
 
   const range = getMonthRangeUtc(year, month);
-  const results = await Promise.all(
-    TIMELINE_RECORD_TYPES.map((type) => FETCHERS[type](catId, range, d1)),
-  );
-  const merged = results.flat().sort((a, b) => {
-    const byOccurredAt = b.occurredAt.getTime() - a.occurredAt.getTime();
-    // 同時刻のレコードが複数あると DB から返る順序が読み出しごとに変わり
-    // うるため、id を tie-breaker にしてページ間で結果を安定させる
-    return byOccurredAt !== 0 ? byOccurredAt : a.id.localeCompare(b.id);
-  });
+  const results = await Promise.all([
+    fetchAnniversaryEntries(catId, year, month, d1),
+    ...Object.values(FETCHERS).map((fetcher) => fetcher(catId, range, d1)),
+  ]);
+  const merged = results.flat().sort(compareTimelineEntries);
 
   const datesByDay = buildDatesByDay(merged);
 
@@ -622,6 +684,28 @@ export async function listTimelineForMonth(
   const hasMore = filtered.length > start + pageSize;
 
   return { entries, hasMore, datesByDay };
+}
+
+/**
+ * 日付の降順に並べる。同じ日の中では記念日（0 時扱い）を記録より先頭に出し、
+ * 記録同士は発生日時の降順にする
+ */
+function compareTimelineEntries(a: TimelineEntry, b: TimelineEntry): number {
+  const aDate = splitDateTimeUtc(a.occurredAt).date;
+  const bDate = splitDateTimeUtc(b.occurredAt).date;
+  if (aDate !== bDate) {
+    return aDate < bDate ? 1 : -1;
+  }
+  const byAnniversary =
+    Number(isTimelineAnniversaryType(b.type)) -
+    Number(isTimelineAnniversaryType(a.type));
+  if (byAnniversary !== 0) {
+    return byAnniversary;
+  }
+  const byOccurredAt = b.occurredAt.getTime() - a.occurredAt.getTime();
+  // 同時刻のレコードが複数あると DB から返る順序が読み出しごとに変わり
+  // うるため、id を tie-breaker にしてページ間で結果を安定させる
+  return byOccurredAt !== 0 ? byOccurredAt : a.id.localeCompare(b.id);
 }
 
 /**
