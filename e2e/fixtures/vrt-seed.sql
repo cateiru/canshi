@@ -79,10 +79,6 @@ INSERT INTO medication_doses (id, cat_id, medication_id, occurred_at, was_admini
 VALUES ('vrt-dose-1', 'vrt-cat-populated', 'vrt-med-1', strftime('%s', '2024-06-02 08:00:00'), 1,
   strftime('%s', '2024-06-02 08:00:00'), strftime('%s', '2024-06-02 08:00:00'));
 
-INSERT INTO cat_photos (id, cat_id, taken_at, created_at, updated_at)
-VALUES ('vrt-photo-1', 'vrt-cat-populated', strftime('%s', '2024-06-20 10:00:00'),
-  strftime('%s', '2024-06-20 10:00:00'), strftime('%s', '2024-06-20 10:00:00'));
-
 INSERT INTO poop_records (id, cat_id, occurred_at, consistency, created_at, updated_at)
 VALUES ('vrt-poop-1', 'vrt-cat-populated', strftime('%s', '2024-06-12 08:00:00'), 'normal',
   strftime('%s', '2024-06-12 08:00:00'), strftime('%s', '2024-06-12 08:00:00'));

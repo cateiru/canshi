@@ -112,8 +112,6 @@ function getEditHref(catId: string, entry: TimelineEntry): string {
       return `/cats/${catId}/medications/${entry.record.medicationId}/doses/${entry.record.id}/edit`;
     case "hospitalVisit":
       return `/cats/${catId}/hospital-visits/${entry.record.id}/edit`;
-    case "catPhoto":
-      return `/cats/${catId}/photos/${entry.record.id}/edit`;
     case "expense":
       return `/cats/${catId}/expenses/${entry.record.id}/edit`;
     default: {
@@ -298,14 +296,6 @@ function renderBody(
           ) : null}
         </div>
       );
-    }
-    case "catPhoto": {
-      const { record } = entry;
-      return record.memo ? (
-        <div className={styles.body}>
-          <p>{record.memo}</p>
-        </div>
-      ) : null;
     }
     case "expense": {
       const { record } = entry;

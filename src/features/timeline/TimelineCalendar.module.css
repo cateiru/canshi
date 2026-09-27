@@ -147,10 +147,6 @@
   color: #be185d;
 }
 
-.icon[data-record-type="catPhoto"] {
-  color: #4338ca;
-}
-
 .icon[data-record-type="expense"] {
   color: #8a6508;
 }

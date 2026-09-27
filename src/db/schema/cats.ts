@@ -18,15 +18,13 @@ export const cats = sqliteTable("cats", {
   birthDate: text("birth_date"),
   breed: text("breed"),
   adoptedAt: text("adopted_at"),
-  // プロフィール画像として使う写真（media_assets）。cats ⇄ media_assets が互いを参照するため
+  // プロフィール画像（media_assets、record_type = "cat_profile"）。cats ⇄ media_assets が互いを参照するため
   // AnySQLiteColumn で型の循環参照を回避する
   profileMediaAssetId: text("profile_media_asset_id").references(
     (): AnySQLiteColumn => mediaAssets.id,
   ),
-  // true の間は写真を追加しても自動更新しない
-  isProfilePinned: integer("is_profile_pinned", { mode: "boolean" })
-    .notNull()
-    .default(false),
+  // 以下の profile_crop_* は、廃止した写真記録から選んだ画像（切り抜く前の元画像）の表示にだけ使う。
+  // 猫の編集画面でアップロードする画像はブラウザで切り抜き済みのため、差し替え・削除時に null にする
   // プロフィール画像の表示位置（枠のサイズに対する百分率オフセット。0 が中央）。
   // 未設定（null）なら中央（0, 0）として扱う
   profileCropX: real("profile_crop_x"),

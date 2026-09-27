@@ -3,10 +3,7 @@ import { and, eq, inArray, lt } from "drizzle-orm";
 import { chunk, chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
-import {
-  detachProfileImages,
-  syncCatProfileImage,
-} from "@/features/cats/profileImage";
+import { detachProfileImages } from "@/features/cats/profileImage";
 import { type ExifOrientation, sanitizeImage } from "./exif";
 import { orientedDimensions, parseImageDimensions } from "./imageDimensions";
 import {
@@ -377,14 +374,10 @@ export async function deleteMediaAssetRows(
   const db = getDb();
   const assetIds = assets.map((asset) => asset.id);
   // cats.profile_media_asset_id から参照されている行は先に参照を外す（外部キー制約）
-  const affectedCatIds = await detachProfileImages(assetIds);
+  await detachProfileImages(assetIds);
   // D1 のバインドパラメーター上限を超えないよう分割して削除する
   for (const ids of chunkForBoundParameters(assetIds)) {
     await db.delete(mediaAssets).where(inArray(mediaAssets.id, ids));
-  }
-  // プロフィールに使っていた写真が消えた猫は、残りの写真から選び直す
-  for (const catId of affectedCatIds) {
-    await syncCatProfileImage(catId);
   }
 }
 

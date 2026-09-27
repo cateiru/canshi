@@ -1,53 +1,30 @@
-/**
- * プロフィール画像の表示位置・ズーム・回転。
- * x, y は表示の中心を画像のどこに合わせるかを表す、枠のサイズに対する百分率のオフセット
- * （0 が中央、CSS の `translate(x%, y%)` としてそのまま使う）。
- * zoom は 1 以上の拡大倍率、rotation は度数（-180〜180）
- */
-export type ProfileCrop = {
-  x: number;
-  y: number;
-  zoom: number;
-  rotation: number;
-};
-
-export const DEFAULT_PROFILE_CROP: ProfileCrop = {
-  x: 0,
-  y: 0,
-  zoom: 1,
-  rotation: 0,
-};
-
 export const MIN_PROFILE_CROP_ZOOM = 1;
 export const MAX_PROFILE_CROP_ZOOM = 3;
-// ズーム3倍まで許容したときにあり得るオフセットの絶対値に余裕を持たせた上限
-const MAX_PROFILE_CROP_OFFSET = 200;
 
-export function clampCropOffset(value: number): number {
-  if (!Number.isFinite(value)) {
-    return DEFAULT_PROFILE_CROP.x;
-  }
-  return Math.min(
-    MAX_PROFILE_CROP_OFFSET,
-    Math.max(-MAX_PROFILE_CROP_OFFSET, value),
-  );
-}
-
-export function clampCropZoom(value: number): number {
-  if (!Number.isFinite(value)) {
-    return DEFAULT_PROFILE_CROP.zoom;
-  }
-  return Math.min(
-    MAX_PROFILE_CROP_ZOOM,
-    Math.max(MIN_PROFILE_CROP_ZOOM, value),
-  );
-}
+/** 切り抜いたプロフィール画像の一辺の最大ピクセル数（サムネイル 512px の 2 倍） */
+export const PROFILE_IMAGE_MAX_SIZE = 1024;
 
 export function clampCropRotation(value: number): number {
   if (!Number.isFinite(value)) {
-    return DEFAULT_PROFILE_CROP.rotation;
+    return 0;
   }
   return Math.min(180, Math.max(-180, value));
+}
+
+/** 回転のスライダーで吸い付かせる角度の間隔 */
+export const ROTATION_SNAP_INTERVAL = 45;
+/** この角度以内に近づいたら ROTATION_SNAP_INTERVAL の倍数に吸い付かせる */
+export const ROTATION_SNAP_THRESHOLD = 5;
+
+/**
+ * 回転角度が 45 度の倍数（0・±45・±90…）に近ければ、その角度に吸い付かせる
+ */
+export function snapRotation(value: number): number {
+  const nearest =
+    Math.round(value / ROTATION_SNAP_INTERVAL) * ROTATION_SNAP_INTERVAL;
+  // -0 を 0 に揃える
+  const snapped = nearest === 0 ? 0 : nearest;
+  return Math.abs(value - snapped) <= ROTATION_SNAP_THRESHOLD ? snapped : value;
 }
 
 /**
@@ -67,4 +44,91 @@ export function minZoomForRotation(rotationDeg: number): number {
   const rad = (rotationDeg * Math.PI) / 180;
   const theoreticalMin = Math.abs(Math.cos(rad)) + Math.abs(Math.sin(rad));
   return 1 + (theoreticalMin - 1) * ROTATION_ZOOM_SAFETY_MARGIN;
+}
+
+/** react-easy-crop の `croppedAreaPixels`（回転後のバウンディングボックス上の座標） */
+export type CropArea = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+/** 画像を回転させたときのバウンディングボックスの寸法 */
+export function rotatedBoundingBox(
+  width: number,
+  height: number,
+  rotationDeg: number,
+): { width: number; height: number } {
+  const rad = (rotationDeg * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(rad));
+  const sin = Math.abs(Math.sin(rad));
+  return {
+    width: width * cos + height * sin,
+    height: width * sin + height * cos,
+  };
+}
+
+/**
+ * canvas の `setTransform(a, b, c, d, e, f)` に渡す 2 次元アフィン変換
+ * （元画像の座標 (x, y) を出力先の (a*x + c*y + e, b*x + d*y + f) に移す）
+ */
+export type AffineTransform = {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+  e: number;
+  f: number;
+};
+
+export type ProfileCropDrawing = {
+  /** 出力する正方形の一辺（px） */
+  size: number;
+  transform: AffineTransform;
+};
+
+/**
+ * 切り抜き範囲・回転角度から、元画像を出力用の正方形 canvas に描くための変換を求める。
+ *
+ * 元画像を中心で回転させてバウンディングボックスに収め（react-easy-crop と同じ座標系）、
+ * そこから切り抜き範囲を出力サイズに縮小する。元画像の解像度や回転後の大きさの canvas を
+ * 作らず出力サイズの canvas に直接描くため、スマートフォンの高解像度写真でも
+ * ブラウザの canvas の上限を超えない
+ */
+export function computeProfileCropDrawing({
+  imageWidth,
+  imageHeight,
+  area,
+  rotation,
+  maxSize = PROFILE_IMAGE_MAX_SIZE,
+}: {
+  imageWidth: number;
+  imageHeight: number;
+  area: CropArea;
+  rotation: number;
+  maxSize?: number;
+}): ProfileCropDrawing {
+  const size = Math.max(1, Math.min(maxSize, Math.round(area.width)));
+  const scale = size / area.width;
+  const box = rotatedBoundingBox(imageWidth, imageHeight, rotation);
+  const rad = (rotation * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  // 画像の中心を原点に移す → 回転 → バウンディングボックスの中心に置く → 切り抜き範囲の左上を原点に → 縮小
+  const cx = imageWidth / 2;
+  const cy = imageHeight / 2;
+  const tx = box.width / 2 - area.x - (cos * cx - sin * cy);
+  const ty = box.height / 2 - area.y - (sin * cx + cos * cy);
+  return {
+    size,
+    transform: {
+      a: scale * cos,
+      b: scale * sin,
+      c: -scale * sin,
+      d: scale * cos,
+      e: scale * tx,
+      f: scale * ty,
+    },
+  };
 }

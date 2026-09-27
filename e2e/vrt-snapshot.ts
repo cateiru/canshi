@@ -72,7 +72,20 @@ function toFileName(testInfo: TestInfo): string {
     .replace(/[\\/:*?"<>|]/g, "_")}.png`;
 }
 
-export async function takeSnapshot(page: Page, testInfo: TestInfo) {
+export type TakeSnapshotOptions = {
+  /**
+   * ページ全体を撮影するか（既定は true）。モーダルは position: fixed で表示領域にだけ
+   * 重なるため、ページ全体を撮ると表示領域の外にモーダルの背後のページがそのまま写る。
+   * モーダルを撮るときは false にして表示領域だけを撮影する
+   */
+  fullPage?: boolean;
+};
+
+export async function takeSnapshot(
+  page: Page,
+  testInfo: TestInfo,
+  { fullPage = true }: TakeSnapshotOptions = {},
+) {
   const ignoreSelectors = ignoreSelectorsByPage.get(page) ?? [];
   const mask: Locator[] = ignoreSelectors.map((selector) =>
     page.locator(selector),
@@ -84,7 +97,7 @@ export async function takeSnapshot(page: Page, testInfo: TestInfo) {
 
   await page.screenshot({
     path: path.join(ACTUAL_DIR, toFileName(testInfo)),
-    fullPage: true,
+    fullPage,
     mask,
     // CSS transition の途中で撮影してしまうと、実行のたびに途中経過のフレームが写り込み
     // 差分になる。"disabled" は有限アニメーションを完了状態まで早送りしてから撮影するため、

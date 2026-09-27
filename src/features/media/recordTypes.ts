@@ -8,7 +8,7 @@ export const MEDIA_RECORD_TYPES = [
   "symptom",
   "medication",
   "hospital_visit",
-  "cat_photo",
+  "cat_profile",
   "food_product",
   "expense",
 ] as const;

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
-  catPhotos,
+  cats,
   expenseRecords,
   foodProducts,
   hospitalVisits,
@@ -68,11 +68,12 @@ export async function resolveMediaRecordOwner(
         .limit(1);
       return row ?? null;
     }
-    case "cat_photo": {
+    case "cat_profile": {
+      // プロフィール画像は猫そのものに紐付くため、recordId は猫の ID
       const [row] = await db
-        .select({ catId: catPhotos.catId })
-        .from(catPhotos)
-        .where(eq(catPhotos.id, recordId))
+        .select({ catId: cats.id })
+        .from(cats)
+        .where(eq(cats.id, recordId))
         .limit(1);
       return row ?? null;
     }

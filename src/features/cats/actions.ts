@@ -4,7 +4,6 @@ import { eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
-  catPhotos,
   cats,
   cleaningRecords,
   cleaningTargets,
@@ -24,6 +23,8 @@ import {
   weightRecords,
 } from "@/db/schema";
 import { deleteMediaAssetsByCat } from "@/features/media/storage";
+import { applyProfileImageChange } from "./applyProfileImage";
+import { parseProfileImageChange } from "./profileImageForm";
 import { type CatFormFieldErrors, catFormSchema } from "./schema";
 
 export type CatFormState = {
@@ -95,6 +96,14 @@ export async function updateCatAction(
     return { formError: "猫が見つかりませんでした" };
   }
 
+  const profileImageError = await applyProfileImageChange(
+    id,
+    parseProfileImageChange(formData),
+  );
+  if (profileImageError) {
+    return { formError: profileImageError };
+  }
+
   redirect(`/cats/${id}`);
 }
 
@@ -155,7 +164,6 @@ export async function deleteCatAction(id: string): Promise<void> {
     db.delete(medicationDoses).where(eq(medicationDoses.catId, id)),
     db.delete(medications).where(eq(medications.catId, id)),
     db.delete(symptoms).where(eq(symptoms.catId, id)),
-    db.delete(catPhotos).where(eq(catPhotos.catId, id)),
     db.delete(notifications).where(eq(notifications.catId, id)),
     db.delete(notificationSettings).where(eq(notificationSettings.catId, id)),
     db.delete(cats).where(eq(cats.id, id)),

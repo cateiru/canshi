@@ -1,5 +1,4 @@
 export * from "./ai-evaluations";
-export * from "./cat-photos";
 export * from "./cats";
 export * from "./cleaning-records";
 export * from "./cleaning-targets";

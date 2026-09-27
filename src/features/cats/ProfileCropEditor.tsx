@@ -1,62 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Cropper, { type Point } from "react-easy-crop";
+import { useRef, useState } from "react";
+import Cropper, { type Area, type Point } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
 import { Slider } from "@/components/ui";
 import styles from "./ProfileCropEditor.module.css";
 import {
-  clampCropOffset,
+  type CropArea,
   clampCropRotation,
-  clampCropZoom,
   MAX_PROFILE_CROP_ZOOM,
   minZoomForRotation,
-  type ProfileCrop,
+  snapRotation,
 } from "./profileCrop";
+
+export type ProfileCropSelection = {
+  /** 回転後のバウンディングボックス上の切り抜き範囲（px） */
+  area: CropArea;
+  rotation: number;
+};
 
 type ProfileCropEditorProps = {
   imageUrl: string;
-  value: ProfileCrop;
-  onChange: (next: ProfileCrop) => void;
+  onChange: (selection: ProfileCropSelection) => void;
 };
 
 /**
- * 切り抜き枠の固定サイズ（px）。表示位置は枠のサイズに対する百分率で保存するため、
- * コンテナの実際の表示幅に関わらずこの値を基準にする
- */
-const CROP_SIZE = { width: 280, height: 280 };
-
-/**
- * プロフィール画像として使う正方形の表示位置・ズーム・回転を選ぶ UI（react-easy-crop）。
+ * プロフィール画像として切り抜く正方形の範囲を選ぶ UI（react-easy-crop）。
  * 枠は中央に固定し、画像をドラッグ・ピンチ／ホイール（ズーム）・2本指回転（またはスライダー）
  * で操作する。回転させると正方形の四隅に画像の外側が写り込みうるため、回転角度に応じて
  * 必要な最小ズームを都度引き上げる（`minZoomForRotation`）
  */
 export function ProfileCropEditor({
   imageUrl,
-  value,
   onChange,
 }: ProfileCropEditorProps) {
-  const [crop, setCrop] = useState<Point>({
-    x: (value.x / 100) * CROP_SIZE.width,
-    y: (value.y / 100) * CROP_SIZE.height,
-  });
-  const [zoom, setZoom] = useState(value.zoom);
-  const [rotation, setRotation] = useState(value.rotation);
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  // キーボード操作では 1 度ずつ動かせるよう吸い付かせない（吸い付くと 45 度から抜け出せなくなる）
+  const isRotationKeyboardRef = useRef(false);
 
   const minZoom = minZoomForRotation(rotation);
-
-  useEffect(() => {
-    onChange({
-      x: clampCropOffset((crop.x / CROP_SIZE.width) * 100),
-      y: clampCropOffset((crop.y / CROP_SIZE.height) * 100),
-      zoom: clampCropZoom(zoom),
-      rotation: clampCropRotation(rotation),
-    });
-    // value（親の状態）は onChange 経由でこのコンポーネントから更新されるため、
-    // 依存配列に含めると自分自身が発火したイベントで無限にループしてしまう
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [crop, zoom, rotation, onChange]);
 
   const handleZoomSliderChange = (rawZoom: number) => {
     setZoom(Math.max(minZoom, Math.min(MAX_PROFILE_CROP_ZOOM, rawZoom)));
@@ -70,10 +54,16 @@ export function ProfileCropEditor({
     setZoom((current) => Math.max(current, minZoomForRotation(nextRotation)));
   };
 
+  const handleRotationSliderChange = (rawRotation: number) => {
+    handleRotationChange(
+      isRotationKeyboardRef.current ? rawRotation : snapRotation(rawRotation),
+    );
+  };
+
   return (
     <div className={styles.wrapper}>
       <p className={styles.label}>
-        ドラッグして表示位置を調整、ピンチ／ホイールでズーム
+        ドラッグして位置を調整、ピンチ／ホイールでズーム
       </p>
       <div className={styles.cropper}>
         <Cropper
@@ -85,11 +75,13 @@ export function ProfileCropEditor({
           maxZoom={MAX_PROFILE_CROP_ZOOM}
           aspect={1}
           cropShape="rect"
-          cropSize={CROP_SIZE}
           showGrid={false}
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onRotationChange={handleRotationChange}
+          onCropComplete={(_area: Area, areaPixels: Area) =>
+            onChange({ area: areaPixels, rotation })
+          }
         />
       </div>
       <div className={styles.sliders}>
@@ -102,15 +94,25 @@ export function ProfileCropEditor({
           onChange={(next) => handleZoomSliderChange(next)}
           formatValue={(next) => `${next.toFixed(2)}倍`}
         />
-        <Slider
-          label="回転"
-          minValue={-180}
-          maxValue={180}
-          step={1}
-          value={rotation}
-          onChange={(next) => handleRotationChange(next)}
-          formatValue={(next) => `${next}°`}
-        />
+        {/* 操作の種類（ポインター／キーボード）で吸い付かせるかを切り替えるため、キャプチャで先に記録する */}
+        <div
+          onPointerDownCapture={() => {
+            isRotationKeyboardRef.current = false;
+          }}
+          onKeyDownCapture={() => {
+            isRotationKeyboardRef.current = true;
+          }}
+        >
+          <Slider
+            label="回転"
+            minValue={-180}
+            maxValue={180}
+            step={1}
+            value={rotation}
+            onChange={handleRotationSliderChange}
+            formatValue={(next) => `${next}°`}
+          />
+        </div>
       </div>
     </div>
   );

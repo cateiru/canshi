@@ -28,7 +28,6 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   | `symptoms`           | `onset_at`          |
   | `medication_doses`   | `occurred_at`       |
   | `hospital_visits`    | `visited_at`        |
-  | `cat_photos`         | `taken_at`          |
 
   （`medications` 自体は予定・マスタ的な情報のため、タイムラインの対象は実績である `medication_doses` とする）
 
@@ -65,7 +64,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 記録フォームでは、ファイルを選んだ時点で `POST /api/media/uploads` が記録に紐付かない下書き（`recordType = "pending"`・`recordId` は自身の ID・`catId` は null）として保存する。フォームの保存時は asset ID だけを送り、各記録の保存アクションが `syncRecordMedia`（`src/features/media/attach.ts`）で下書きの紐付け・外された添付の削除・表示順の振り直しを行う
   - 紐付かないまま 24 時間を過ぎた下書きは、次回以降のアップロード時に削除する（下書きも保存容量に数える）
 - 記録を削除するときは、レコード本体より先に `deleteMediaAssetsByRecord(recordType, recordId)` を呼んで R2 のオブジェクトと行をまとめて削除する
-- `cats.profile_media_asset_id` はプロフィール画像として使う `media_assets` 行への参照（nullable）。`cats` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/cats/profileImage.ts`）。`is_profile_pinned` が false の間は、写真記録（`cat_photos`）の追加・削除のたびに最新の写真へ自動更新する
+- `cats.profile_media_asset_id` はプロフィール画像として使う `media_assets` 行（`recordType = "cat_profile"`・`recordId` と `catId` は猫の ID）への参照（nullable）。猫の編集画面でブラウザ側で正方形に切り抜いた画像を下書きとしてアップロードし、保存時に付け替える（`src/features/cats/applyProfileImage.ts`）。下書きの紐付けと猫の参照の更新は同じ `db.batch` で行い、差し替え・削除時はその時点で猫が参照していない古い画像だけを削除する（同時に別のリクエストが設定した画像を消さないため）。`cats` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/cats/profileImage.ts`）
+  - `profile_crop_*` は、廃止した写真記録（`cat_photos`）から選んだ切り抜き前の画像の表示位置・ズーム・回転。移行済みの画像の表示にだけ使い、画像を差し替える・外すときに null にする
 
 ## 通知（`notifications`・`notification_settings`・`notification_preferences`）
 

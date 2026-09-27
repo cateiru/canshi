@@ -6,7 +6,6 @@ import {
   FeedingIcon,
   HospitalIcon,
   MedicationIcon,
-  PhotoIcon,
   PoopIcon,
   ShampooIcon,
   SymptomIcon,
@@ -79,11 +78,6 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
     href: (catId) => `/cats/${catId}/hospital-visits`,
     icon: HospitalIcon,
     label: "通院記録",
-  },
-  {
-    href: (catId) => `/cats/${catId}/photos`,
-    icon: PhotoIcon,
-    label: "写真",
   },
   {
     href: (catId) => `/cats/${catId}/expenses`,
