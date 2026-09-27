@@ -424,12 +424,7 @@ export function AdoptionIcon(props: RecordIconProps) {
     >
       <path d={house} />
       <path d="m2 11 2-1.6m16 0 2 1.6" />
-      <CatOutline
-        transform={catTransform}
-        expression="happy"
-        showMouth={false}
-      />
-      <path d="M9 10.5q3 4 6 0" transform={catTransform} />
+      <CatOutline transform={catTransform} expression="happy" />
     </RecordIcon>
   );
 }
