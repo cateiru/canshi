@@ -2,10 +2,17 @@
 
 import { useActionState, useState } from "react";
 import { TbCalendar, TbCheck } from "react-icons/tb";
-import { Button, ButtonLink, FormField, Select } from "@/components/ui";
+import {
+  Button,
+  ButtonLink,
+  ComboBox,
+  FormField,
+  Select,
+} from "@/components/ui";
 import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { Cat } from "@/db/schema";
 import type { CatFormState } from "./actions";
+import { CAT_BREEDS, matchesBreed } from "./breeds";
 import styles from "./CatForm.module.css";
 import { CatIcon } from "./CatIcon";
 import { ProfileImageField } from "./ProfileImageField";
@@ -23,6 +30,11 @@ const SEX_OPTIONS: { value: Cat["sex"]; label: string }[] = [
   { value: "male", label: "オス" },
   { value: "unknown", label: "不明" },
 ];
+
+const BREED_OPTIONS = CAT_BREEDS.map((breed) => ({
+  value: breed.name,
+  label: breed.name,
+}));
 
 export function CatForm({ action, cat, submitLabel }: CatFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
@@ -51,11 +63,14 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
           errorMessage={state.fieldErrors?.sex?.[0]}
         />
 
-        <FormField
+        <ComboBox
           name="breed"
           label="猫種"
-          defaultValue={cat?.breed ?? ""}
+          options={BREED_OPTIONS}
+          defaultInputValue={cat?.breed ?? ""}
+          defaultFilter={matchesBreed}
           errorMessage={state.fieldErrors?.breed?.[0]}
+          allowsCustomValue
         />
       </section>
       {cat ? (

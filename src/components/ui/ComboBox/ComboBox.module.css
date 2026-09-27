@@ -1,0 +1,137 @@
+.field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.control {
+  position: relative;
+  min-width: 0;
+}
+
+.input {
+  min-width: 0;
+  min-height: 48px;
+  width: 100%;
+  max-width: 100%;
+  border: var(--border-width) solid
+    color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border-radius: 8px;
+  /* 右端の候補ボタンに文字が重ならないよう余白を取る */
+  padding: var(--space-2) calc(44px + var(--space-1)) var(--space-2)
+    var(--space-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-input);
+  color: var(--color-ink);
+  background-color: var(--color-bg);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition:
+    border-color var(--transition-base),
+    outline-color var(--transition-base),
+    outline-offset var(--transition-base);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.input:focus {
+  outline-color: transparent;
+}
+
+.input:focus-visible {
+  outline-color: var(--color-accent);
+}
+
+.field[data-invalid] .input {
+  border-color: var(--color-error);
+}
+
+.trigger {
+  position: absolute;
+  top: 50%;
+  right: var(--space-1);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  transform: translateY(-50%);
+  outline: var(--focus-ring-width) solid transparent;
+  transition: outline-color var(--transition-base);
+}
+
+.trigger[data-focus-visible] {
+  outline-color: var(--color-accent);
+}
+
+.arrow {
+  flex-shrink: 0;
+  width: 10px;
+  height: 6px;
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--transition-base);
+}
+
+.field[data-open] .arrow {
+  transform: rotate(180deg);
+}
+
+.popover {
+  width: var(--trigger-width);
+  border: var(--border-width) solid
+    color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border-radius: 8px;
+  background-color: var(--color-bg);
+  box-shadow: 0 4px 12px rgb(46 49 66 / 15%);
+  overflow: hidden;
+}
+
+.listbox {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: var(--space-1);
+}
+
+.option {
+  min-height: 44px;
+  overflow-wrap: anywhere;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  cursor: pointer;
+  outline: none;
+}
+
+.option[data-hovered],
+.option[data-focused] {
+  background-color: var(--color-bg);
+  color: var(--color-accent);
+}
+
+.option[data-selected] {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+.errorMessage {
+  font-size: var(--text-xs);
+  color: var(--color-error);
+}
