@@ -52,7 +52,7 @@ describe("feedingRecordFormSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("発生時刻の形式が不正な場合は失敗する", () => {
+  it("記録時刻の形式が不正な場合は失敗する", () => {
     const result = feedingRecordFormSchema.safeParse({
       ...validInput,
       occurredTime: "25:00",
