@@ -30,10 +30,10 @@ export const feedingRecordItemFormSchema = z
   });
 
 export const feedingRecordFormSchema = z.object({
-  occurredDate: z.string().date("発生日の形式が正しくありません"),
+  occurredDate: z.string().date("記録日の形式が正しくありません"),
   occurredTime: z
     .string()
-    .regex(TIME_STRING_PATTERN, "発生時刻の形式が正しくありません"),
+    .regex(TIME_STRING_PATTERN, "記録時刻の形式が正しくありません"),
   items: z
     .array(feedingRecordItemFormSchema)
     .min(1, "商品を1つ以上追加してください"),

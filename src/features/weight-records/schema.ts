@@ -15,10 +15,10 @@ const optionalPositiveNumber = (label: string) =>
 
 export const weightRecordFormSchema = z
   .object({
-    occurredDate: z.string().date("発生日の形式が正しくありません"),
+    occurredDate: z.string().date("記録日の形式が正しくありません"),
     occurredTime: z
       .string()
-      .regex(TIME_STRING_PATTERN, "発生時刻の形式が正しくありません"),
+      .regex(TIME_STRING_PATTERN, "記録時刻の形式が正しくありません"),
     inputMethod: z.enum(["auto", "direct"], {
       error: "入力方法を選択してください",
     }),

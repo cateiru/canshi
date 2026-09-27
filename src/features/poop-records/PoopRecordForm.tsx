@@ -77,7 +77,7 @@ export function PoopRecordForm({
       <div className={styles.row}>
         <FormField
           name="occurredDate"
-          label="発生日"
+          label="記録日"
           type="date"
           defaultValue={defaultDate}
           errorMessage={state.fieldErrors?.occurredDate?.[0]}
@@ -85,7 +85,7 @@ export function PoopRecordForm({
         />
         <FormField
           name="occurredTime"
-          label="発生時刻"
+          label="記録時刻"
           type="time"
           defaultValue={defaultTime}
           errorMessage={state.fieldErrors?.occurredTime?.[0]}

@@ -19,8 +19,8 @@ test("うんち記録に画像を添付すると一覧・タイムラインに�
   await page.getByRole("link", { name: "うんち記録" }).click();
   await page.getByRole("link", { name: "記録する" }).click();
 
-  await page.getByLabel("発生日").fill("2026-09-08");
-  await page.getByLabel("発生時刻").fill("09:30");
+  await page.getByLabel("記録日").fill("2026-09-08");
+  await page.getByLabel("記録時刻").fill("09:30");
   await page.getByLabel("写真").setInputFiles([
     {
       name: "poop-1.png",

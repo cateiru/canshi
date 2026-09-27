@@ -20,8 +20,8 @@ test("うんち記録の登録から一覧表示までできる", async ({ page 
   ).toBeVisible();
   await page.getByRole("link", { name: "記録する" }).click();
 
-  await page.getByLabel("発生日").fill("2026-09-07");
-  await page.getByLabel("発生時刻").fill("08:00");
+  await page.getByLabel("記録日").fill("2026-09-07");
+  await page.getByLabel("記録時刻").fill("08:00");
   await page.getByText("柔らかい").click();
   await page.getByLabel("量").fill("多め");
   await page.getByLabel("色").fill("茶色");

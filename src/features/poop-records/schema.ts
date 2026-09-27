@@ -8,10 +8,10 @@ const emptyToUndefined = (value: unknown) =>
     : value;
 
 export const poopRecordFormSchema = z.object({
-  occurredDate: z.string().date("発生日の形式が正しくありません"),
+  occurredDate: z.string().date("記録日の形式が正しくありません"),
   occurredTime: z
     .string()
-    .regex(TIME_STRING_PATTERN, "発生時刻の形式が正しくありません"),
+    .regex(TIME_STRING_PATTERN, "記録時刻の形式が正しくありません"),
   amount: z.preprocess(
     emptyToUndefined,
     z.string().trim().max(50, "量は50文字以内で入力してください").optional(),
