@@ -109,6 +109,25 @@ describe("NavigationTracker と useNavigateAfterSubmit", () => {
     expect(router.back).toHaveBeenCalledTimes(1);
   });
 
+  it("遷移先が表示条件（search）を指定していれば、戻った先をその条件の一覧に置き換える", () => {
+    const { rerender } = setup("/cats/tama");
+    moveTo(rerender, "/cats/tama/expenses");
+    moveTo(rerender, "/cats/tama/expenses/new");
+
+    // 保存した支出の月の一覧を表示する
+    const href = "/cats/tama/expenses?ym=2026-09&scope=all";
+    navigateAfterSubmit(href);
+    expect(router.back).toHaveBeenCalledTimes(1);
+
+    moveTo(rerender, "/cats/tama/expenses", { popped: true });
+    expect(router.refresh).not.toHaveBeenCalled();
+    expect(router.replace).toHaveBeenCalledWith(href);
+
+    moveTo(rerender, href);
+    expect(readPendingNavigation()).toBeNull();
+    expect(readTrackedEntry()?.current).toBe(href);
+  });
+
   it("追加ページを直接開いた場合は置き換える", () => {
     setup("/cats/tama/weight-records/new");
 

@@ -22,6 +22,13 @@ function isBackForwardLoad(): boolean {
   return entry?.type === "back_forward";
 }
 
+/** 遷移先が search を指定していて、今の位置の search と違うか */
+function needsSearchReplace(href: string, location: string): boolean {
+  const target = new URL(href, "http://localhost");
+  const current = new URL(location, "http://localhost");
+  return target.search !== "" && target.search !== current.search;
+}
+
 /**
  * 今の位置に着いたときの処理。追跡状態を更新し、送信後の遷移で予約した処理を実行する。
  * @param popped 戻る・進むで着いたか
@@ -46,10 +53,11 @@ function handleArrival(router: Router, popped: boolean) {
   if (pending?.type !== "back" || !popped) {
     return;
   }
-  if (arrived) {
+  if (arrived && !needsSearchReplace(pending.href, location)) {
     router.refresh();
   } else {
-    // 追跡がずれて想定と違うページに戻ってしまった場合は、本来の遷移先に置き換える
+    // 追跡がずれて想定と違うページに戻ってしまった場合や、遷移先が表示条件（search）を
+    // 指定していて戻った先と違う場合（保存した支出の月を表示するなど）は、本来の遷移先に置き換える
     writePendingNavigation({ type: "replace", href: pending.href });
     router.replace(pending.href);
   }
