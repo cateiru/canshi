@@ -53,6 +53,8 @@ export const hospitalVisitFormSchema = z
       emptyToUndefined,
       amountYenSchema.optional(),
     ),
+    // 病院代を入力せずに作成するとき、同じ日のカテゴリ「病院」の既存の支出記録に紐付ける場合の ID
+    linkExpenseRecordId: z.preprocess(emptyToUndefined, z.string().optional()),
     nextVisitDate: optionalDate("次回受診予定日の形式が正しくありません"),
     nextVisitTime: optionalTime("次回受診予定時刻の形式が正しくありません"),
     memo: z.preprocess(

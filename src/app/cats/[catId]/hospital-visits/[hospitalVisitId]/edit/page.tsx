@@ -60,6 +60,7 @@ export default async function EditHospitalVisitPage({
         symptoms={symptomList}
         hospitalVisit={hospitalVisit}
         expenseAmountYen={expense?.amountYen ?? null}
+        isExpenseShared={(expense?.hospitalVisitIds.length ?? 0) > 1}
         mediaAssets={mediaAssets.map(toMediaAssetView)}
         mediaLimits={resolveMediaLimits()}
         submitLabel="更新する"

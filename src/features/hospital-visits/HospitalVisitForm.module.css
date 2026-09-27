@@ -78,3 +78,14 @@
   font-size: var(--text-sm);
   color: color-mix(in srgb, var(--color-ink) 70%, var(--color-bg));
 }
+
+.candidates {
+  margin-top: var(--space-3);
+}
+
+.modalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}

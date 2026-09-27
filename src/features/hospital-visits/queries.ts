@@ -1,7 +1,13 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
-import { type HospitalVisit, hospitalVisits } from "@/db/schema";
+import {
+  cats,
+  expenseRecordHospitalVisits,
+  type HospitalVisit,
+  hospitalVisits,
+} from "@/db/schema";
+import { combineDateTimeUtc } from "@/features/shared/datetime";
 
 export async function listHospitalVisits(catId: string) {
   const db = getDb();
@@ -44,4 +50,52 @@ export async function listHospitalVisitsByIds(
     }
   }
   return byId;
+}
+
+/** 支出記録（病院代）に紐付ける候補として表示する通院記録 */
+export type LinkableHospitalVisit = Pick<
+  HospitalVisit,
+  "id" | "catId" | "visitedAt" | "reason"
+> & {
+  catName: string;
+  /** すでに病院代として紐付いている支出記録の ID。未紐付けなら null */
+  expenseRecordId: string | null;
+};
+
+/**
+ * 指定した日（`YYYY-MM-DD`）のすべての猫の通院記録を、受診日時の順に返す。
+ * 支出記録で「病院」を選んだときに、同じ日の通院記録を紐付ける候補にする
+ */
+export async function listHospitalVisitsOnDate(
+  date: string,
+): Promise<LinkableHospitalVisit[]> {
+  const db = getDb();
+  const start = combineDateTimeUtc(date, "00:00");
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return db
+    .select({
+      id: hospitalVisits.id,
+      catId: hospitalVisits.catId,
+      visitedAt: hospitalVisits.visitedAt,
+      reason: hospitalVisits.reason,
+      catName: cats.name,
+      expenseRecordId: expenseRecordHospitalVisits.expenseRecordId,
+    })
+    .from(hospitalVisits)
+    .innerJoin(cats, eq(hospitalVisits.catId, cats.id))
+    .leftJoin(
+      expenseRecordHospitalVisits,
+      eq(expenseRecordHospitalVisits.hospitalVisitId, hospitalVisits.id),
+    )
+    .where(
+      and(
+        gte(hospitalVisits.visitedAt, start),
+        lt(hospitalVisits.visitedAt, end),
+      ),
+    )
+    .orderBy(
+      asc(hospitalVisits.visitedAt),
+      asc(cats.createdAt),
+      asc(hospitalVisits.id),
+    );
 }

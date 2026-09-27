@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
+  expenseRecordHospitalVisits,
   expenseRecords,
   hospitalVisits,
   medications,
@@ -13,7 +14,10 @@ import { saveHospitalVisitWithExpense } from "@/features/expenses/hospitalVisitE
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
-import { combineDateTimeUtc } from "@/features/shared/datetime";
+import {
+  combineDateTimeUtc,
+  splitDateTimeUtc,
+} from "@/features/shared/datetime";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "./media";
 import {
   type HospitalVisitFormFieldErrors,
@@ -36,6 +40,7 @@ function parseFormData(formData: FormData) {
     visitedTime: formData.get("visitedTime"),
     reason: formData.get("reason"),
     expenseAmountYen: formData.get("expenseAmountYen"),
+    linkExpenseRecordId: formData.get("linkExpenseRecordId"),
     diagnosis: formData.get("diagnosis"),
     examinationResults: formData.get("examinationResults"),
     treatment: formData.get("treatment"),
@@ -59,6 +64,33 @@ async function verifySymptomBelongsToCat(
     .where(and(eq(symptoms.id, symptomId), eq(symptoms.catId, catId)))
     .limit(1);
   return row != null;
+}
+
+/**
+ * 通院記録の作成時に紐付ける既存の支出記録が、受診日と同じ日のカテゴリ「病院」の
+ * 支出記録であることを確かめる
+ */
+async function verifyLinkableExpense(
+  db: ReturnType<typeof getDb>,
+  expenseRecordId: string | undefined,
+  visitedDate: string,
+): Promise<boolean> {
+  if (expenseRecordId == null) {
+    return true;
+  }
+  const [row] = await db
+    .select({
+      category: expenseRecords.category,
+      spentAt: expenseRecords.spentAt,
+    })
+    .from(expenseRecords)
+    .where(eq(expenseRecords.id, expenseRecordId))
+    .limit(1);
+  return (
+    row != null &&
+    row.category === "hospital" &&
+    splitDateTimeUtc(row.spentAt).date === visitedDate
+  );
 }
 
 function buildValues(data: ReturnType<typeof hospitalVisitFormSchema.parse>) {
@@ -92,6 +124,23 @@ export async function createHospitalVisitAction(
   if (!(await verifySymptomBelongsToCat(db, parsed.data.symptomId, catId))) {
     return { formError: "関連する症状が見つかりませんでした" };
   }
+  // 病院代を入力した場合は新しい支出記録を作るため、既存の支出記録には紐付けない
+  const linkExpenseRecordId =
+    parsed.data.expenseAmountYen == null
+      ? parsed.data.linkExpenseRecordId
+      : undefined;
+  if (
+    !(await verifyLinkableExpense(
+      db,
+      linkExpenseRecordId,
+      parsed.data.visitedDate,
+    ))
+  ) {
+    return {
+      formError:
+        "紐付ける支出記録が見つかりませんでした。もう一度保存してください",
+    };
+  }
 
   const values = buildValues(parsed.data);
   const id = crypto.randomUUID();
@@ -103,6 +152,7 @@ export async function createHospitalVisitAction(
       catId,
       visitedAt: values.visitedAt,
       amountYen: parsed.data.expenseAmountYen ?? null,
+      linkExpenseRecordId,
     },
   );
 
@@ -178,7 +228,7 @@ export async function deleteHospitalVisitAction(
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, id);
   // symptoms.hospital_visit_id / medications.hospital_visit_id /
-  // expense_records.hospital_visit_id からの外部キー参照があるため、通院記録を
+  // expense_record_hospital_visits からの外部キー参照があるため、通院記録を
   // 削除する前に紐付けを解除しておく。支出記録は家計簿として残す必要があるため、
   // 紐付けだけ外して記録自体は削除しない。一連の操作は db.batch でまとめて
   // 原子的に実行する
@@ -194,9 +244,8 @@ export async function deleteHospitalVisitAction(
         and(eq(medications.hospitalVisitId, id), eq(medications.catId, catId)),
       ),
     db
-      .update(expenseRecords)
-      .set({ hospitalVisitId: null })
-      .where(eq(expenseRecords.hospitalVisitId, id)),
+      .delete(expenseRecordHospitalVisits)
+      .where(eq(expenseRecordHospitalVisits.hospitalVisitId, id)),
     db
       .delete(hospitalVisits)
       .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),
