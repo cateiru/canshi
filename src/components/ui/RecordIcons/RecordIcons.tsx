@@ -381,37 +381,36 @@ export function HospitalIcon(props: RecordIconProps) {
 }
 
 export function BirthdayIcon(props: RecordIconProps) {
-  const catTransform = "translate(-1 1) scale(.8)";
-  const cake = "M3 15h18v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z";
-  const candle = "M16.5 15v-5h3v5Z";
-  const flame = "M18 3s-2 2.5-2 3.5a2 2 0 0 0 4 0C20 5.5 18 3 18 3Z";
+  const cake =
+    "M5 12h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z";
+  const icing =
+    "M5 12h14a2 2 0 0 1 2 2v2q-2.25 3-4.5 0-2.25 3-4.5 0-2.25 3-4.5 0-2.25 3-4.5 0v-2a2 2 0 0 1 2-2Z";
+  const candle = "M10.5 12V8h3v4Z";
+  const flame = "M12 1.5s-1.5 2-1.5 3a1.5 1.5 0 0 0 3 0c0-1-1.5-3-1.5-3Z";
 
   return (
     <RecordIcon
       {...props}
       fills={
         <>
-          <CatFill transform={catTransform} />
           <path fill="#b7d7ee" d={candle} />
           <path fill="#f4b0a3" d={cake} />
-          <path fill="#fff4df" d="M3 15h18v3H3Z" />
+          <path fill="#fff4df" d={icing} />
           <path fill="#f2d17b" d={flame} />
         </>
       }
     >
-      <CatOutline transform={catTransform} />
       <path d={flame} />
       <path d={candle} />
       <path d={cake} />
-      <path d="M3 18h18" />
+      <path d={icing} />
     </RecordIcon>
   );
 }
 
 export function AdoptionIcon(props: RecordIconProps) {
-  const catTransform = "translate(2.4 8.5) scale(.8)";
+  const catTransform = "translate(1.8 7.8) scale(.85)";
   const house = "M4 9.4 12 3l8 6.4V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z";
-  const heart = "M12 9.5 9.8 7.4a1.4 1.4 0 0 1 2.2-1.7 1.4 1.4 0 0 1 2.2 1.7Z";
 
   return (
     <RecordIcon
@@ -420,14 +419,17 @@ export function AdoptionIcon(props: RecordIconProps) {
         <>
           <path fill="#d0e9f4" d={house} />
           <CatFill transform={catTransform} />
-          <path fill="#f4b0a3" d={heart} />
         </>
       }
     >
       <path d={house} />
       <path d="m2 11 2-1.6m16 0 2 1.6" />
-      <CatOutline transform={catTransform} />
-      <path d={heart} />
+      <CatOutline
+        transform={catTransform}
+        expression="happy"
+        showMouth={false}
+      />
+      <path d="M9 10.5q3 4 6 0" transform={catTransform} />
     </RecordIcon>
   );
 }
