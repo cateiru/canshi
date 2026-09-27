@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Button, FormField, Select, Textarea } from "@/components/ui";
 import type { HospitalVisit, Symptom } from "@/db/schema";
@@ -64,7 +64,7 @@ export function HospitalVisitForm({
   });
   const isNew = hospitalVisit == null;
   const formRef = useRef<HTMLFormElement>(null);
-  // 同じ日の「病院」の支出記録と紐付けるかの回答。受診日を変えたら聞き直す
+  // 同じ日の「病院」の支出記録と紐付けるかの回答。作成前に受診日を変えたら聞き直す
   const expenseLinkAnswerRef = useRef<{
     visitedDate: string;
     expenseRecordId: string | null;
@@ -83,13 +83,21 @@ export function HospitalVisitForm({
     media,
     redirectTo: `/cats/${catId}/hospital-visits`,
   });
+  // 通院記録を作成済みか（添付の保存だけ失敗して再送信を待っている状態）。
+  // 再送信で入力エラーになると `state.savedRecordId` は消えるため、別に覚えておく
+  const isSavedRef = useRef(false);
+  useEffect(() => {
+    if (state.savedRecordId) isSavedRef.current = true;
+  }, [state.savedRecordId]);
 
   const formAction = (formData: FormData) => {
     const answer = expenseLinkAnswerRef.current;
     formData.delete("linkExpenseRecordId");
+    // 作成済みなら、受診日を変えていても紐付けた支出記録を送り続ける。
+    // 送らないと、病院代が空欄のため紐付けた支出記録が削除されてしまう
     if (
       answer?.expenseRecordId != null &&
-      answer.visitedDate === formData.get("visitedDate")
+      (isSavedRef.current || answer.visitedDate === formData.get("visitedDate"))
     ) {
       formData.set("linkExpenseRecordId", answer.expenseRecordId);
     }
@@ -106,9 +114,9 @@ export function HospitalVisitForm({
   };
 
   // 新規作成で病院代を入力していないとき、同じ日に「病院」の支出記録があれば
-  // 送信を止めて、その支出記録と紐付けるかをモーダルで確認する
+  // 送信を止めて、その支出記録と紐付けるかをモーダルで確認する。作成済みの再送信では聞き直さない
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    if (!isNew) return;
+    if (!isNew || isSavedRef.current) return;
     const formData = new FormData(event.currentTarget);
     const visitedDate = String(formData.get("visitedDate") ?? "");
     const amount = String(formData.get("expenseAmountYen") ?? "").trim();

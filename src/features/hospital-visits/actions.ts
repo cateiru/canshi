@@ -203,6 +203,8 @@ export async function updateHospitalVisitAction(
       catId,
       visitedAt: values.visitedAt,
       amountYen: parsed.data.expenseAmountYen ?? null,
+      // 既存の支出記録へ紐付けて作成した後の再送信では、紐付けた支出記録を削除せずに残す
+      keepLinkedExpenseRecordId: parsed.data.linkExpenseRecordId,
     },
   );
 

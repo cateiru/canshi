@@ -85,14 +85,16 @@ export function ExpenseForm({
     ReadonlySet<string>
   >(() => new Set(expense?.hospitalVisitIds ?? []));
   const isHospital = category === "hospital";
-  const linkableHospitalVisits = useLinkableHospitalVisits(
+  const linkableHospitalVisitsState = useLinkableHospitalVisits(
     spentDate,
     isHospital,
     expense?.id,
     initialLinkableHospitalVisits,
   );
-  // 候補を読み込み中に保存すると、紐付けが送信されずに外れてしまうため保存を待たせる
-  const isLoadingHospitalVisits = isHospital && linkableHospitalVisits == null;
+  // 候補を読み込めていない（読み込み中・失敗）ときに保存すると、紐付けが送信されずに
+  // 外れてしまうため保存させない
+  const isHospitalVisitsUnavailable =
+    isHospital && linkableHospitalVisitsState.status !== "loaded";
   const media = useMediaAttachments({
     initial: mediaAssets,
     limits: mediaLimits,
@@ -149,7 +151,7 @@ export function ExpenseForm({
         <HospitalVisitLinkField
           expenseId={expense?.id}
           spentDate={spentDate}
-          visits={linkableHospitalVisits}
+          visitsState={linkableHospitalVisitsState}
           selectedIds={selectedHospitalVisitIds}
           onChange={(visit, isSelected) => {
             setSelectedHospitalVisitIds((current) =>
@@ -235,7 +237,7 @@ export function ExpenseForm({
         type="submit"
         variant="primary"
         className={styles.submitButton}
-        isDisabled={isPending || isLoadingHospitalVisits}
+        isDisabled={isPending || isHospitalVisitsUnavailable}
       >
         <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}

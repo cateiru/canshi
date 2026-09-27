@@ -26,6 +26,12 @@ export type SyncHospitalVisitExpenseParams = {
    * 存在・カテゴリ・日付の確認は呼び出し元で行う。病院代を入力した場合は使わない
    */
   linkExpenseRecordId?: string | null;
+  /**
+   * 病院代が空欄でも、この支出記録に紐付いていれば紐付けをそのまま維持する。既存の支出記録へ
+   * 紐付けて作成した後の再送信（添付の保存の再試行など）で、紐付けた支出記録を削除しないために使う。
+   * 現在の紐付けと一致しないときは使わない
+   */
+  keepLinkedExpenseRecordId?: string | null;
 };
 
 /**
@@ -48,6 +54,7 @@ export async function saveHospitalVisitWithExpense(
     visitedAt,
     amountYen,
     linkExpenseRecordId,
+    keepLinkedExpenseRecordId,
   }: SyncHospitalVisitExpenseParams,
 ): Promise<void> {
   const [existing] = await db
@@ -69,7 +76,9 @@ export async function saveHospitalVisitWithExpense(
   ];
 
   if (amountYen == null) {
-    if (existing != null && isShared) {
+    if (existing != null && existing.id === keepLinkedExpenseRecordId) {
+      // 病院代を空欄のまま既存の支出記録に紐付けているだけなので、支出記録には触れない
+    } else if (existing != null && isShared) {
       statements.push(
         db
           .delete(expenseRecordHospitalVisits)

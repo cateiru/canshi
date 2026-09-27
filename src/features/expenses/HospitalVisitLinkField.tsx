@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { Checkbox } from "@/components/ui";
+import { Button, Checkbox } from "@/components/ui";
 import type { LinkableHospitalVisit } from "@/features/hospital-visits/queries";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { listLinkableHospitalVisitsAction } from "./actions";
@@ -13,19 +13,27 @@ export type LinkableHospitalVisitsOnDate = {
 };
 
 /**
+ * 紐付けの候補の取得状態。取得に失敗したときは「候補なし」と区別し、
+ * 既存の紐付けを外してしまわないよう保存を止めて再取得を促す
+ */
+export type LinkableHospitalVisitsState =
+  | { status: "loading" }
+  | { status: "error"; retry: () => void }
+  | { status: "loaded"; visits: LinkableHospitalVisit[] };
+
+/**
  * 支出日と同じ日の通院記録（紐付けの候補）を取得する。編集中の支出記録にすでに
- * 紐付いている通院記録も含める。`enabled` が false の間（カテゴリが「病院」以外）は取得しない。
- * 取得中は `visits` が null になる
+ * 紐付いている通院記録も含める。`enabled` が false の間（カテゴリが「病院」以外）は取得しない
  */
 export function useLinkableHospitalVisits(
   date: string,
   enabled: boolean,
   expenseId: string | undefined,
   initial?: LinkableHospitalVisitsOnDate,
-): LinkableHospitalVisit[] | null {
-  const [loaded, setLoaded] = useState<LinkableHospitalVisitsOnDate | null>(
-    initial ?? null,
-  );
+): LinkableHospitalVisitsState {
+  const [loaded, setLoaded] = useState<
+    LinkableHospitalVisitsOnDate | { date: string; visits: null } | null
+  >(initial ?? null);
 
   useEffect(() => {
     if (!enabled || loaded?.date === date) {
@@ -38,7 +46,7 @@ export function useLinkableHospitalVisits(
         if (!ignore) setLoaded({ date, visits });
       },
       () => {
-        if (!ignore) setLoaded({ date, visits: [] });
+        if (!ignore) setLoaded({ date, visits: null });
       },
     );
     return () => {
@@ -46,7 +54,14 @@ export function useLinkableHospitalVisits(
     };
   }, [date, enabled, expenseId, loaded?.date]);
 
-  return loaded?.date === date ? loaded.visits : null;
+  if (loaded?.date !== date) {
+    return { status: "loading" };
+  }
+  if (loaded.visits == null) {
+    // 取得結果を捨てると、上の effect がもう一度取得する
+    return { status: "error", retry: () => setLoaded(null) };
+  }
+  return { status: "loaded", visits: loaded.visits };
 }
 
 type HospitalVisitLinkFieldProps = {
@@ -54,8 +69,8 @@ type HospitalVisitLinkFieldProps = {
   expenseId?: string;
   /** 支出日（`YYYY-MM-DD`）。受診日が違う通院記録は日付も表示する */
   spentDate: string;
-  /** 支出日と同じ日の通院記録。取得中は null */
-  visits: LinkableHospitalVisit[] | null;
+  /** 支出日と同じ日の通院記録の取得状態 */
+  visitsState: LinkableHospitalVisitsState;
   selectedIds: ReadonlySet<string>;
   onChange: (visit: LinkableHospitalVisit, isSelected: boolean) => void;
   isDisabled: boolean;
@@ -66,7 +81,7 @@ type HospitalVisitLinkFieldProps = {
 export function HospitalVisitLinkField({
   expenseId,
   spentDate,
-  visits,
+  visitsState,
   selectedIds,
   onChange,
   isDisabled,
@@ -83,16 +98,23 @@ export function HospitalVisitLinkField({
         .filter(Boolean)
         .join(" ")}
       aria-invalid={!!errorMessage}
-      aria-busy={visits == null}
+      aria-busy={visitsState.status === "loading"}
     >
       <legend className={styles.legend}>関連する通院記録</legend>
-      {visits == null ? (
+      {visitsState.status === "loading" ? (
         <p className={styles.hint}>通院記録を読み込んでいます...</p>
-      ) : visits.length === 0 ? (
+      ) : visitsState.status === "error" ? (
+        <div className={styles.loadError}>
+          <p className={styles.errorMessage} role="alert">
+            通院記録を読み込めませんでした。紐付けが外れないよう、読み込み直してから保存してください。
+          </p>
+          <Button onPress={visitsState.retry}>読み込み直す</Button>
+        </div>
+      ) : visitsState.visits.length === 0 ? (
         <p className={styles.hint}>支出日に通院記録はありません。</p>
       ) : (
         <div className={styles.visitList}>
-          {visits.map((visit) => {
+          {visitsState.visits.map((visit) => {
             const linkedToOther =
               visit.expenseRecordId != null &&
               visit.expenseRecordId !== expenseId;

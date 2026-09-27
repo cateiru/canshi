@@ -632,6 +632,36 @@ describe("通院記録の作成時に同じ日の支出記録へ紐付ける", (
     expect(await db.select().from(expenseRecords)).toHaveLength(1);
   });
 
+  it("作成後の再送信（添付の保存の再試行）では、紐付けた支出記録を削除しない", async () => {
+    const expenseId = await createHospitalExpense();
+    const visit = await addVisit("tama", { linkExpenseRecordId: expenseId });
+    // 添付の保存だけ失敗すると、再送信は病院代が空欄のまま更新 Action で行われる
+    expect(
+      await updateHospitalVisitAction(
+        "tama",
+        visit,
+        {},
+        visitForm({ expenseAmountYen: "", linkExpenseRecordId: expenseId }),
+      ),
+    ).toEqual({ savedRecordId: visit, formError: undefined });
+    expect(await getExpenseById(expenseId)).toMatchObject({
+      amountYen: 11000,
+      hospitalVisitIds: [visit],
+    });
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
+
+    // 紐付けていない支出記録の ID が送られても、空欄なら通常どおり紐付けた支出記録を扱う
+    const otherId = await createHospitalExpense();
+    await updateHospitalVisitAction(
+      "tama",
+      visit,
+      {},
+      visitForm({ expenseAmountYen: "", linkExpenseRecordId: otherId }),
+    );
+    expect(await getExpenseById(expenseId)).toBeNull();
+    expect((await getExpenseById(otherId))?.hospitalVisitIds).toEqual([]);
+  });
+
   it("病院代を入力した場合は既存の支出記録に紐付けず、新しく作る", async () => {
     const expenseId = await createHospitalExpense();
     const visit = await addVisit("tama", {
