@@ -381,9 +381,10 @@ export function HospitalIcon(props: RecordIconProps) {
 }
 
 export function BirthdayIcon(props: RecordIconProps) {
-  const catTransform = "translate(3 8.5) scale(.75)";
-  // 三角帽の底辺は頭の丸みに沿わせる
-  const hat = "M8.5 12.5 12 4l3.5 8.5Q12 13.5 8.5 12.5Z";
+  const catTransform = "translate(-1 1) scale(.8)";
+  const cake = "M3 15h18v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z";
+  const candle = "M16.5 15v-5h3v5Z";
+  const flame = "M18 3s-2 2.5-2 3.5a2 2 0 0 0 4 0C20 5.5 18 3 18 3Z";
 
   return (
     <RecordIcon
@@ -391,42 +392,40 @@ export function BirthdayIcon(props: RecordIconProps) {
       fills={
         <>
           <CatFill transform={catTransform} />
-          <path fill="#f4b0a3" d={hat} />
-          <circle fill="#f2d17b" cx="12" cy="3" r="1" />
+          <path fill="#b7d7ee" d={candle} />
+          <path fill="#f4b0a3" d={cake} />
+          <path fill="#fff4df" d="M3 15h18v3H3Z" />
+          <path fill="#f2d17b" d={flame} />
         </>
       }
     >
       <CatOutline transform={catTransform} />
-      <path d={hat} />
-      <circle cx="12" cy="3" r="1" />
-      <path d="M4.5 4v3M3 5.5h3m13.5-1.5v3M18 5.5h3" />
+      <path d={flame} />
+      <path d={candle} />
+      <path d={cake} />
+      <path d="M3 18h18" />
     </RecordIcon>
   );
 }
 
 export function AdoptionIcon(props: RecordIconProps) {
-  const catTransform = "translate(5.4 9.5) scale(.55)";
-  const body = "M9 21c0-2 1.3-3.2 3-3.2s3 1.2 3 3.2";
-  const heart = "M12 9.5 10.4 8a1 1 0 0 1 1.6-1.2A1 1 0 0 1 13.6 8Z";
+  const catTransform = "translate(2.4 8.5) scale(.8)";
+  const house = "M4 9.4 12 3l8 6.4V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z";
+  const heart = "M12 9.5 9.8 7.4a1.4 1.4 0 0 1 2.2-1.7 1.4 1.4 0 0 1 2.2 1.7Z";
 
   return (
     <RecordIcon
       {...props}
       fills={
         <>
-          <path
-            fill="#d0e9f4"
-            d="M5 9.2 12 3.2l7 6V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Z"
-          />
-          <path fill="#f5dfb7" d={body} />
+          <path fill="#d0e9f4" d={house} />
           <CatFill transform={catTransform} />
           <path fill="#f4b0a3" d={heart} />
         </>
       }
     >
-      <path d="M2.5 11 12 3l9.5 8" />
-      <path d="M5 9.2V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.2" />
-      <path d={body} />
+      <path d={house} />
+      <path d="m2 11 2-1.6m16 0 2 1.6" />
       <CatOutline transform={catTransform} />
       <path d={heart} />
     </RecordIcon>
