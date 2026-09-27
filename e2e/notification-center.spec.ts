@@ -33,7 +33,9 @@ async function createOverdueCleaningTarget(page: Page): Promise<string> {
   return `${targetName}のお手入れの時期です`;
 }
 
-test("通知を完了にすると対応済み一覧に移る", async ({ page }) => {
+test("掃除の通知を「掃除して完了にする」と対応済み一覧に移り、掃除記録が追加される", async ({
+  page,
+}) => {
   const catName = `テスト猫-${Date.now()}`;
   await page.goto("/cats");
   await page
@@ -49,15 +51,23 @@ test("通知を完了にすると対応済み一覧に移る", async ({ page }) 
   const card = page.locator("li").filter({ hasText: title });
   await expect(card).toBeVisible();
 
-  // 完了にする
-  await card.getByRole("button", { name: "完了にする" }).click();
+  // 掃除の通知では「完了にする」の代わりに「掃除して完了にする」を表示する
+  await expect(
+    card.getByRole("button", { name: "完了にする", exact: true }),
+  ).toHaveCount(0);
+  await card.getByRole("button", { name: "掃除して完了にする" }).click();
+  await expect(page.getByText("掃除記録を追加しました")).toBeVisible();
   await expect(page.getByText(title)).toHaveCount(0);
 
   await page.getByRole("tab", { name: "対応済み" }).click();
   await expect(page.getByText(title)).toBeVisible();
-  await expect(
-    page.getByRole("article").filter({ hasText: title }).getByText("完了"),
-  ).toBeVisible();
+  const resolved = page.getByRole("article").filter({ hasText: title });
+  await expect(resolved.getByText("完了")).toBeVisible();
+
+  // 3日前の記録に加えて、今の時刻の記録が追加されている
+  await resolved.getByRole("link", { name: title }).click();
+  await expect(page).toHaveURL(/\/records$/);
+  await expect(page.getByRole("article")).toHaveCount(2);
 
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
