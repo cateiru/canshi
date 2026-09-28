@@ -26,7 +26,11 @@ function RecordIcon({
   return (
     <IconBase
       attr={outlineAttributes}
-      stroke={monochrome ? "currentColor" : "var(--color-ink, #2e3142)"}
+      stroke={
+        monochrome
+          ? "currentColor"
+          : "var(--color-illustration-outline, #2e3142)"
+      }
       className={[monochrome && styles.monochrome, className]
         .filter(Boolean)
         .join(" ")}
@@ -588,6 +592,32 @@ export function ReleaseNotesIcon(props: RecordIconProps) {
         d="m5.5 8.5 3 .5m-3 3 3 .5m-3 3 3 .5m7-7 3-.5m-3 4 3-.5m-3 4 3-.5"
         strokeWidth="1.25"
       />
+    </RecordIcon>
+  );
+}
+
+export function AppearanceSettingsIcon(props: RecordIconProps) {
+  const palette =
+    "M12 3c5 0 9 3.5 9 7.5 0 2.5-2 4-4.5 4H15a1.75 1.75 0 0 0-1.2 3 1.75 1.75 0 0 1-1.3 3.5H12a9 9 0 0 1 0-18Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#f5dfb7" d={palette} />
+          <circle fill="#ed795b" cx="7.5" cy="11.5" r="1.5" />
+          <circle fill="#f2d17b" cx="9.5" cy="7" r="1.5" />
+          <circle fill="#8dcde9" cx="14.5" cy="7" r="1.5" />
+          <circle fill="#b2d3aa" cx="8.5" cy="16" r="1.5" />
+        </>
+      }
+    >
+      <path d={palette} />
+      <circle cx="7.5" cy="11.5" r="1.5" />
+      <circle cx="9.5" cy="7" r="1.5" />
+      <circle cx="14.5" cy="7" r="1.5" />
+      <circle cx="8.5" cy="16" r="1.5" />
     </RecordIcon>
   );
 }

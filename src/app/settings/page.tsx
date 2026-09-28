@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TbChevronRight } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import {
+  AppearanceSettingsIcon,
   FeedingPresetIcon,
   FoodProductIcon,
   NotificationSettingsIcon,
@@ -20,6 +21,13 @@ const settings = [
     title: "通知設定",
     description: "この端末での通知と、猫ごとのお知らせを設定します。",
     icon: NotificationSettingsIcon,
+  },
+  {
+    href: "/settings/appearance",
+    title: "見た目設定",
+    description:
+      "この端末でのテーマ（ライト・ダーク）やコントラストを設定します。",
+    icon: AppearanceSettingsIcon,
   },
   {
     href: "/food-products",
@@ -48,7 +56,7 @@ export default function SettingsPage() {
         items={[{ label: "トップ", href: "/home" }, { label: "設定" }]}
       />
       <h1>設定</h1>
-      <p>通知やごはんの共通設定、アプリの更新情報を確認できます。</p>
+      <p>通知や見た目、ごはんの共通設定、アプリの更新情報を確認できます。</p>
 
       <nav aria-label="設定メニュー">
         <ul className={styles.list}>
