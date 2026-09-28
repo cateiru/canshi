@@ -78,11 +78,12 @@ test("ごはん商品の画像を登録・差し替え・削除できる", async
   await expect(page.getByRole("img", { name: "package-2.png" })).toBeVisible();
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page).toHaveURL(/food-products$/);
-  const secondSrc =
-    (await page
-      .getByRole("img", { name: `${productName}の画像` })
-      .getAttribute("src")) ?? "";
-  expect(secondSrc).not.toBe(firstSrc);
+  // 保存後は一覧へ戻り（router.back）、キャッシュされた一覧を表示してから
+  // router.refresh で最新の内容に差し替える。差し替え前の画像を読まないよう、
+  // src が変わるまで待ってから取得する
+  const productImage = page.getByRole("img", { name: `${productName}の画像` });
+  await expect(productImage).not.toHaveAttribute("src", firstSrc);
+  const secondSrc = (await productImage.getAttribute("src")) ?? "";
   expect((await page.request.get(firstSrc)).status()).toBe(404);
   expect((await page.request.get(secondSrc)).status()).toBe(200);
 
