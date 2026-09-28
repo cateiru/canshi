@@ -27,6 +27,7 @@ function toCatSummary(cat: Cat) {
     name: cat.name,
     sex: cat.sex,
     birthDate: cat.birthDate,
+    birthDatePrecision: cat.birthDatePrecision,
     breed: cat.breed,
     adoptedAt: cat.adoptedAt,
   };

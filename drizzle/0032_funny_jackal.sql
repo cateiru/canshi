@@ -1,0 +1,1 @@
+ALTER TABLE `cats` ADD `birth_date_precision` text DEFAULT 'day' NOT NULL;

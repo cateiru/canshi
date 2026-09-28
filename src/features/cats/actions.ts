@@ -25,21 +25,63 @@ import { deleteMediaAssetsByCat } from "@/features/media/storage";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { applyProfileImageChange } from "./applyProfileImage";
 import { parseProfileImageChange } from "./profileImageForm";
-import { type CatFormFieldErrors, catFormSchema } from "./schema";
+import {
+  BIRTH_DATE_PRECISIONS,
+  type BirthDatePrecision,
+  type CatFormFieldErrors,
+  catFormSchema,
+  resolveBirthDate,
+} from "./schema";
 
 export type CatFormState = SubmitRedirect & {
   fieldErrors?: CatFormFieldErrors;
   formError?: string;
+  // 入力エラーで戻したときに、送信した生年月日のわかる範囲の入力欄を表示し直すための値
+  birthDatePrecision?: BirthDatePrecision;
 };
 
 function parseFormData(formData: FormData) {
-  return catFormSchema.safeParse({
+  const parsed = catFormSchema.safeParse({
     name: formData.get("name"),
     sex: formData.get("sex"),
+    birthDatePrecision: formData.get("birthDatePrecision"),
     birthDate: formData.get("birthDate"),
+    birthYear: formData.get("birthYear"),
+    birthMonth: formData.get("birthMonth"),
     breed: formData.get("breed"),
     adoptedAt: formData.get("adoptedAt"),
   });
+  if (!parsed.success) {
+    const precision = formData.get("birthDatePrecision");
+    return {
+      success: false as const,
+      fieldErrors: parsed.error.flatten().fieldErrors,
+      birthDatePrecision: BIRTH_DATE_PRECISIONS.find(
+        (value) => value === precision,
+      ),
+    };
+  }
+
+  const birth = resolveBirthDate(parsed.data);
+  if (!birth.success) {
+    return {
+      success: false as const,
+      fieldErrors: birth.fieldErrors,
+      birthDatePrecision: parsed.data.birthDatePrecision,
+    };
+  }
+
+  return {
+    success: true as const,
+    data: {
+      name: parsed.data.name,
+      sex: parsed.data.sex,
+      birthDate: birth.data.birthDate,
+      birthDatePrecision: birth.data.birthDatePrecision,
+      breed: parsed.data.breed ?? null,
+      adoptedAt: parsed.data.adoptedAt ?? null,
+    },
+  };
 }
 
 export async function createCatAction(
@@ -49,19 +91,16 @@ export async function createCatAction(
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
-    return { fieldErrors: parsed.error.flatten().fieldErrors };
+    return {
+      fieldErrors: parsed.fieldErrors,
+      birthDatePrecision: parsed.birthDatePrecision,
+    };
   }
 
   const db = getDb();
   const [created] = await db
     .insert(cats)
-    .values({
-      name: parsed.data.name,
-      sex: parsed.data.sex,
-      birthDate: parsed.data.birthDate ?? null,
-      breed: parsed.data.breed ?? null,
-      adoptedAt: parsed.data.adoptedAt ?? null,
-    })
+    .values(parsed.data)
     .returning({ id: cats.id });
 
   return { redirectTo: `/cats/${created.id}` };
@@ -75,20 +114,16 @@ export async function updateCatAction(
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
-    return { fieldErrors: parsed.error.flatten().fieldErrors };
+    return {
+      fieldErrors: parsed.fieldErrors,
+      birthDatePrecision: parsed.birthDatePrecision,
+    };
   }
 
   const db = getDb();
   const result = await db
     .update(cats)
-    .set({
-      name: parsed.data.name,
-      sex: parsed.data.sex,
-      birthDate: parsed.data.birthDate ?? null,
-      breed: parsed.data.breed ?? null,
-      adoptedAt: parsed.data.adoptedAt ?? null,
-      updatedAt: new Date(),
-    })
+    .set({ ...parsed.data, updatedAt: new Date() })
     .where(eq(cats.id, id))
     .returning({ id: cats.id });
 

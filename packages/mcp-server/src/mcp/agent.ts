@@ -12,6 +12,11 @@ export interface McpProps extends Record<string, unknown> {
   sub: string;
 }
 
+/** 猫のプロフィールを返すツールの説明に添える、生年月日の精度の補足 */
+const BIRTH_DATE_PRECISION_DESCRIPTION =
+  "birthDatePrecision は生年月日のわかっている範囲（year=年のみ、month=年月のみ、" +
+  "day=年月日すべて）で、year・month の場合 birthDate の不明な月・日は 1月・1日で補完されている。";
+
 /**
  * CANSHI の MCP サーバー本体。読み取り専用ツール（猫のプロフィール参照・
  * タイムライン参照）を、Service Bindings 経由でメインアプリ（canshi）の
@@ -30,7 +35,9 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
       "list_cats",
       {
         title: "猫の一覧を取得",
-        description: "登録されている猫のプロフィール一覧を取得する。",
+        description:
+          "登録されている猫のプロフィール一覧を取得する。" +
+          BIRTH_DATE_PRECISION_DESCRIPTION,
       },
       async () => {
         const cats = await this.env.MAIN_APP.listCats();
@@ -44,7 +51,9 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
       "get_cat_profile",
       {
         title: "猫のプロフィールを取得",
-        description: "指定した ID の猫のプロフィールを1件取得する。",
+        description:
+          "指定した ID の猫のプロフィールを1件取得する。" +
+          BIRTH_DATE_PRECISION_DESCRIPTION,
         inputSchema: {
           catId: z.string().describe("猫の ID（list_cats で取得できる）"),
         },

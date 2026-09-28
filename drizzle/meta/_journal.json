@@ -225,6 +225,13 @@
       "when": 1790494060661,
       "tag": "0031_zippy_leopardon",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1790562004791,
+      "tag": "0032_funny_jackal",
+      "breakpoints": true
     }
   ]
 }

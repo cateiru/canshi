@@ -13,6 +13,7 @@ import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { Cat } from "@/db/schema";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import type { CatFormState } from "./actions";
+import { BirthDateField } from "./BirthDateField";
 import { CAT_BREEDS, matchesBreed } from "./breeds";
 import styles from "./CatForm.module.css";
 import { CatIcon } from "./CatIcon";
@@ -110,12 +111,13 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
           わかる日付だけ入力できます。あとから変更することもできます。
         </p>
         <div className={styles.dateFields}>
-          <FormField
-            name="birthDate"
-            label="生年月日"
-            type="date"
-            defaultValue={cat?.birthDate ?? ""}
-            errorMessage={state.fieldErrors?.birthDate?.[0]}
+          {/* 送信後にフォームがリセットされると、わかる範囲の選択はマウント時の値に戻る。
+              入力エラーで戻したときは送信した範囲で作り直し、エラーの出た入力欄を表示する */}
+          <BirthDateField
+            key={state.birthDatePrecision ?? "initial"}
+            cat={cat}
+            submittedPrecision={state.birthDatePrecision}
+            fieldErrors={state.fieldErrors}
           />
 
           <FormField
