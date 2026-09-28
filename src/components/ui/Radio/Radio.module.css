@@ -61,11 +61,11 @@
 }
 
 .radio[data-hovered] .dot {
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-strong);
 }
 
 .radio[data-focus-visible] .dot {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .radio[data-invalid] .dot {

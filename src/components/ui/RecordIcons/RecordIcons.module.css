@@ -10,3 +10,12 @@
 .monochrome .foregroundFill {
   fill: color-mix(in srgb, currentColor 18%, var(--color-bg, #fff));
 }
+
+/* 塗りに接さず背景に直接描く線。ダークテーマでは背景に沈まないよう明るくする。 */
+.line {
+  stroke: var(--color-illustration-line, #2e3142);
+}
+
+.monochrome .line {
+  stroke: currentColor;
+}

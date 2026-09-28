@@ -23,6 +23,11 @@
   min-height: 44px;
 }
 
+/* border: 0 で消える secondary ボタンの枠を、コントラストを上げたときだけ輪郭で補う */
+.secondaryAction {
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -49,6 +54,7 @@
   padding: var(--space-6);
   border-radius: 16px;
   background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
 }
 
 .emptyState {
@@ -93,6 +99,7 @@
 
 .iconButton:hover {
   background: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
 }
 
 .schedule {
@@ -119,7 +126,7 @@
 
 .schedule dd {
   margin: 0;
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }

@@ -18,8 +18,7 @@
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border: var(--border-width) solid var(--color-border-input);
   border-radius: 8px;
   padding: var(--space-2) var(--space-3);
   font-family: var(--font-sans);
@@ -35,11 +34,11 @@
 }
 
 .trigger[data-hovered] {
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-strong);
 }
 
 .trigger[data-focus-visible] {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .field[data-invalid] .trigger {
@@ -69,11 +68,10 @@
 
 .popover {
   width: var(--trigger-width);
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border: var(--border-width) solid var(--color-border);
   border-radius: 8px;
   background-color: var(--color-bg);
-  box-shadow: 0 4px 12px rgb(46 49 66 / 15%);
+  box-shadow: 0 4px 12px var(--color-shadow);
   overflow: hidden;
 }
 
@@ -97,17 +95,17 @@
 .option[data-hovered],
 .option[data-focused] {
   background-color: var(--color-bg);
-  color: var(--color-accent);
+  color: var(--color-accent-strong);
 }
 
 .option[data-selected] {
-  color: var(--color-accent);
+  color: var(--color-accent-strong);
   font-weight: var(--font-weight-bold);
 }
 
 .errorMessage {
   font-size: var(--text-xs);
-  color: var(--color-error);
+  color: var(--color-error-strong);
 }
 
 .value {

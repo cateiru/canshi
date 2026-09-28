@@ -22,7 +22,7 @@
 .output {
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
 }
 
 .track {
@@ -52,7 +52,7 @@
   inset-inline: 0;
   height: 4px;
   border-radius: 9999px;
-  background-color: color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  background-color: var(--color-border);
   transform: translateY(-50%);
 }
 
@@ -88,7 +88,7 @@
 }
 
 .thumb[data-focus-visible] {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .thumb[data-disabled] {

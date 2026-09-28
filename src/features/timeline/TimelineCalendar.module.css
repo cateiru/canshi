@@ -46,8 +46,13 @@
   vertical-align: top;
 }
 
+.day {
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
+}
+
 .day[data-today="true"] {
-  box-shadow: inset 0 0 0 2px var(--color-accent);
+  /* .day の輪郭をこの枠で置き換える。コントラストを上げたときは濃い色になる */
+  box-shadow: inset 0 0 0 2px var(--color-accent-border);
 }
 
 .day[data-selected="true"] {
@@ -108,55 +113,55 @@
 
 /* 日付セルと凡例で同じ単色を使い、選択中も記録の種類を見分けられるようにする。 */
 .icon[data-record-type="birthday"] {
-  color: #a21caf;
+  color: var(--color-record-birthday);
 }
 
 .icon[data-record-type="adoption"] {
-  color: #4d7c0f;
+  color: var(--color-record-adoption);
 }
 
 .icon[data-record-type="feeding"] {
-  color: #b45309;
+  color: var(--color-record-feeding);
 }
 
 .icon[data-record-type="poop"] {
-  color: #795548;
+  color: var(--color-record-poop);
 }
 
 .icon[data-record-type="weight"] {
-  color: #7c3aed;
+  color: var(--color-record-weight);
 }
 
 .icon[data-record-type="vomit"] {
-  color: #c2410c;
+  color: var(--color-record-vomit);
 }
 
 .icon[data-record-type="water"] {
-  color: #0369a1;
+  color: var(--color-record-water);
 }
 
 .icon[data-record-type="shampoo"] {
-  color: #0e7490;
+  color: var(--color-record-shampoo);
 }
 
 .icon[data-record-type="cleaning"] {
-  color: #0f766e;
+  color: var(--color-record-cleaning);
 }
 
 .icon[data-record-type="symptom"] {
-  color: #be123c;
+  color: var(--color-record-symptom);
 }
 
 .icon[data-record-type="medicationDose"] {
-  color: #15803d;
+  color: var(--color-record-medication-dose);
 }
 
 .icon[data-record-type="hospitalVisit"] {
-  color: #be185d;
+  color: var(--color-record-hospital-visit);
 }
 
 .icon[data-record-type="expense"] {
-  color: #8a6508;
+  color: var(--color-record-expense);
 }
 
 .moreCount {
@@ -196,7 +201,7 @@
 
 .dayLink:focus-visible,
 .scrollArea:focus-visible {
-  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: var(--focus-ring-offset);
   z-index: 1;
 }

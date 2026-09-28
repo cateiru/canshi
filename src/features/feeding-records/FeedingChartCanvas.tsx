@@ -134,12 +134,12 @@ const nivoTheme = {
   axis: {
     domain: {
       line: {
-        stroke: "color-mix(in srgb, var(--color-ink) 20%, var(--color-bg))",
+        stroke: "var(--color-border)",
       },
     },
     ticks: {
       line: {
-        stroke: "color-mix(in srgb, var(--color-ink) 20%, var(--color-bg))",
+        stroke: "var(--color-border)",
       },
     },
     legend: {

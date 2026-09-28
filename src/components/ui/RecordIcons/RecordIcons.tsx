@@ -26,7 +26,11 @@ function RecordIcon({
   return (
     <IconBase
       attr={outlineAttributes}
-      stroke={monochrome ? "currentColor" : "var(--color-ink, #2e3142)"}
+      stroke={
+        monochrome
+          ? "currentColor"
+          : "var(--color-illustration-outline, #2e3142)"
+      }
       className={[monochrome && styles.monochrome, className]
         .filter(Boolean)
         .join(" ")}
@@ -230,7 +234,7 @@ export function VomitIcon(props: RecordIconProps) {
     >
       <path d="M9.5 17.8C5.7 17.1 3 14.9 3 12a6 6 0 0 1 1-3V3l5 3a12 12 0 0 1 6 0l5-3v6a6 6 0 0 1 1 3c0 2.9-2.7 5.1-6.5 5.8" />
       <path d="m7 10 2 1.5L7 13m10-3-2 1.5 2 1.5" />
-      <path d="m2 14 2 .5m18-.5-2 .5" />
+      <path className={styles.line} d="m2 14 2 .5m18-.5-2 .5" />
       <path d={vomit} />
     </RecordIcon>
   );
@@ -281,7 +285,7 @@ export function ShampooIcon(props: RecordIconProps) {
     >
       <CatOutline transform={catTransform} />
       <path d={bath} />
-      <path d="M5 21v1m14-1v1" />
+      <path className={styles.line} d="M5 21v1m14-1v1" />
       <circle cx="20" cy="5" r="2" />
       <circle cx="21" cy="11" r="1" />
     </RecordIcon>
@@ -304,9 +308,10 @@ export function BroomIcon(props: RecordIconProps) {
         </>
       }
     >
-      <path d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5M7 17v4M4 20c-3 0-3-3-2-4" />
+      <path d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5M7 17v4" />
+      <path className={styles.line} d="M4 20c-3 0-3-3-2-4" />
       <CatOutline transform={catTransform} expression="calm" />
-      <path d="m20 3-2 10.5" />
+      <path className={styles.line} d="m20 3-2 10.5" />
       <path d={broom} />
       <path d="m15.25 15 5.321 1" strokeLinecap="butt" />
       <path d="M18 18v3" />
@@ -372,7 +377,10 @@ export function HospitalIcon(props: RecordIconProps) {
         </>
       }
     >
-      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path
+        className={styles.line}
+        d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+      />
       <rect x="2" y="6" width="20" height="16" rx="3" />
       <CatOutline transform={catTransform} expression="calm" />
       <path d="M16 10h4m-2-2v4" />
@@ -423,7 +431,7 @@ export function AdoptionIcon(props: RecordIconProps) {
       }
     >
       <path d={house} />
-      <path d="m2 11 2-1.6m16 0 2 1.6" />
+      <path className={styles.line} d="m2 11 2-1.6m16 0 2 1.6" />
       <CatOutline transform={catTransform} expression="happy" />
     </RecordIcon>
   );
@@ -521,7 +529,10 @@ export function NotificationSettingsIcon(props: RecordIconProps) {
 
   return (
     <RecordIcon {...props} fills={<path fill="#f2d17b" d={bell} />}>
-      <path d="M10.5 5.5V4a1.5 1.5 0 0 1 3 0v1.5m-4 14.5a2.5 2.5 0 0 0 5 0" />
+      <path
+        className={styles.line}
+        d="M10.5 5.5V4a1.5 1.5 0 0 1 3 0v1.5m-4 14.5a2.5 2.5 0 0 0 5 0"
+      />
       <path d={bell} />
       <path d="M9 10.5a3 3 0 0 1 2-2" />
     </RecordIcon>
@@ -586,6 +597,46 @@ export function ReleaseNotesIcon(props: RecordIconProps) {
       <path d="M12 6v14" />
       <path
         d="m5.5 8.5 3 .5m-3 3 3 .5m-3 3 3 .5m7-7 3-.5m-3 4 3-.5m-3 4 3-.5"
+        strokeWidth="1.25"
+      />
+    </RecordIcon>
+  );
+}
+
+export function AppearanceSettingsIcon(props: RecordIconProps) {
+  const palette =
+    "M12 2.5c-5.25 0-9.5 4-9.5 9.25C2.5 17.5 6.5 21.5 12 21.5h1.25c2 0 2.95-2.25 1.5-3.75-.75-.75-.25-2.25 1-2.25h1.75c2.5 0 4-1.75 4-4.25C21.5 6.5 17.25 2.5 12 2.5Z";
+  const paints = [
+    { cx: 6.5, cy: 10.5, color: "#e99a70" },
+    { cx: 9.5, cy: 6.5, color: "#f2d17b" },
+    { cx: 14.5, cy: 6.5, color: "#b7d7ee" },
+    { cx: 7.5, cy: 15.5, color: "#b2d3aa" },
+  ];
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#f5dfb7" d={palette} />
+          {paints.map(({ cx, cy, color }) => (
+            <circle key={color} fill={color} cx={cx} cy={cy} r="1.5" />
+          ))}
+        </>
+      }
+    >
+      <path d={palette} />
+      {paints.map(({ cx, cy, color }) => (
+        <circle key={color} cx={cx} cy={cy} r="1.5" strokeWidth="1" />
+      ))}
+      <ellipse
+        className={styles.foregroundFill}
+        fill="#fff4df"
+        cx="17"
+        cy="11"
+        rx="1.5"
+        ry="1.75"
+        transform="rotate(25 17 11)"
         strokeWidth="1.25"
       />
     </RecordIcon>

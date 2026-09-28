@@ -23,6 +23,7 @@
     opacity var(--transition-base),
     outline-color var(--transition-base),
     outline-offset var(--transition-base);
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
 }
 
 .tile:hover {
@@ -30,7 +31,7 @@
 }
 
 .tile:focus-visible {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .icon {

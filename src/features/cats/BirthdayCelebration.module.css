@@ -39,12 +39,12 @@
   font-size: var(--text-xl);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-heading);
-  color: var(--color-accent);
+  color: var(--color-accent-strong);
 }
 
 .note {
   font-size: var(--text-xs);
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
 }
 
 .close {

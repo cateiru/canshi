@@ -164,6 +164,63 @@ test("通知設定ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+test("見た目設定ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/appearance");
+  await expect(
+    page.getByRole("heading", { name: "見た目設定", exact: true }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+// ダークテーマ・コントラストを上げた状態は、色の差し替えが広く効くページで代表して確認する
+for (const { label, theme, contrast } of [
+  { label: "ダーク", theme: "dark", contrast: "default" },
+  { label: "ダーク・コントラスト上げ", theme: "dark", contrast: "more" },
+  { label: "ライト・コントラスト上げ", theme: "light", contrast: "more" },
+]) {
+  test.describe(`${label}の見た目`, () => {
+    test.beforeEach(async ({ page, baseURL }) => {
+      await page.context().addCookies([
+        { name: "canshi-theme", value: theme, url: baseURL },
+        { name: "canshi-contrast", value: contrast, url: baseURL },
+      ]);
+    });
+
+    test(`見た目設定ページ（${label}）`, async ({ page }, testInfo) => {
+      await page.goto("/settings/appearance");
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await takeSnapshot(page, testInfo);
+    });
+
+    // 猫の年齢・お迎えからの期間は実行日時から計算されるため、その部分だけ除外する
+    test.describe(() => {
+      test.use({ ignoreSelectors: ['[class*="details"] dd'] });
+
+      test(`猫の詳細ページ（${label}）`, async ({ page }, testInfo) => {
+        await page.goto(`/cats/${CAT}`);
+        await expect(
+          page.getByRole("heading", { name: "VRTテスト猫", exact: true }),
+        ).toBeVisible();
+        await takeSnapshot(page, testInfo);
+      });
+    });
+
+    test(`タイムラインのカレンダー（${label}）`, async ({ page }, testInfo) => {
+      await page.goto(`/cats/${BUSY_CAT}/timeline?ym=${YM}`);
+      await expect(page.getByText("+1", { exact: true })).toBeVisible();
+      await takeSnapshot(page, testInfo);
+    });
+
+    test(`コンポーネントプレビュー（${label}）`, async ({ page }, testInfo) => {
+      await page.goto("/dev/components");
+      await expect(
+        page.getByRole("heading", { name: "コンポーネントプレビュー" }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo);
+    });
+  });
+}
+
 test("更新情報ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/release-notes");
   await expect(page.getByRole("heading", { name: "更新情報" })).toBeVisible();

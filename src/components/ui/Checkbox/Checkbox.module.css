@@ -53,11 +53,11 @@
 }
 
 .checkbox[data-hovered] .box {
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-strong);
 }
 
 .checkbox[data-focus-visible] .box {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .checkbox[data-invalid] .box {

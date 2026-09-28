@@ -35,7 +35,7 @@
 }
 
 .details dt {
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
 }
 
 @media (max-width: 480px) {

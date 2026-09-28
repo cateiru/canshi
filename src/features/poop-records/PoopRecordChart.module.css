@@ -1,6 +1,9 @@
 .container {
   border-radius: 16px;
   background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  /* 開いた見出しの背景に隠れないよう、子要素より手前に描かれる outline で輪郭を描く */
+  outline: var(--border-width) solid var(--color-border-emphasis);
+  outline-offset: calc(-1 * var(--border-width));
 }
 
 .heading {
@@ -29,7 +32,7 @@
 }
 
 .trigger[data-focus-visible] {
-  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
@@ -92,11 +95,11 @@
 
 .periodButton[data-selected] {
   background: var(--color-accent);
-  color: var(--color-bg);
+  color: var(--color-on-accent);
 }
 
 .periodButton[data-focus-visible] {
-  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: var(--focus-ring-offset);
 }
 
@@ -137,7 +140,7 @@
   align-items: center;
   justify-content: center;
   height: 280px;
-  color: color-mix(in srgb, var(--color-ink) 60%, var(--color-bg));
+  color: var(--color-ink-subtle);
   font-size: var(--text-sm);
 }
 

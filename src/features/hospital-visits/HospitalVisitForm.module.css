@@ -21,7 +21,7 @@
   padding-inline: var(--space-3);
   max-width: 100%;
   overflow: hidden;
-  border-color: color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border-color: var(--color-border-input);
   border-radius: 8px;
 }
 
@@ -36,12 +36,12 @@
 
 .form input:focus-visible,
 .form textarea:focus-visible {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .select > button {
   min-height: 48px;
-  border-color: color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border-color: var(--color-border-input);
   border-radius: 8px;
   font-size: var(--text-input);
 }
@@ -52,7 +52,7 @@
 
 .errorMessage {
   font-size: var(--text-sm);
-  color: var(--color-error);
+  color: var(--color-error-strong);
 }
 
 .form .submitButton {
@@ -76,7 +76,7 @@
 .hint {
   margin-top: var(--space-1);
   font-size: var(--text-sm);
-  color: color-mix(in srgb, var(--color-ink) 70%, var(--color-bg));
+  color: var(--color-ink-subtle);
 }
 
 .candidates {

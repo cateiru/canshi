@@ -15,8 +15,7 @@
   min-height: 48px;
   width: 100%;
   max-width: 100%;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border: var(--border-width) solid var(--color-border-input);
   border-radius: 8px;
   padding: var(--space-2) var(--space-3);
   font-family: var(--font-sans);
@@ -47,7 +46,7 @@
 }
 
 .input:hover:not(:disabled) {
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-strong);
 }
 
 .input:focus {
@@ -55,7 +54,7 @@
 }
 
 .input:focus-visible {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .input[data-invalid] {
@@ -68,5 +67,5 @@
 
 .errorMessage {
   font-size: var(--text-xs);
-  color: var(--color-error);
+  color: var(--color-error-strong);
 }

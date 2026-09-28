@@ -20,7 +20,7 @@
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-bg);
   color: var(--color-ink);
-  box-shadow: 0 4px 12px rgb(46 49 66 / 15%);
+  box-shadow: 0 4px 12px var(--color-shadow);
 }
 
 .info {
@@ -62,5 +62,5 @@
 }
 
 .close[data-focus-visible] {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }

@@ -23,7 +23,7 @@
 }
 
 .description {
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
 }
 
 .dateFields {
@@ -44,7 +44,7 @@
 
 .errorMessage {
   font-size: var(--text-sm);
-  color: var(--color-error);
+  color: var(--color-error-strong);
 }
 
 @media (max-width: 600px) {
