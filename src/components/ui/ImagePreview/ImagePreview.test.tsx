@@ -46,4 +46,12 @@ describe("ImagePreview", () => {
       "たまの写真",
     );
   });
+
+  it("alt が空でも、拡大表示のダイアログに既定のタイトルで名前を付ける", () => {
+    render(<ImagePreview src="/thumb.png" alt="" previewSrc="/original.png" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "画像を拡大して表示" }));
+
+    expect(screen.getByRole("dialog", { name: "画像" })).toBeInTheDocument();
+  });
 });

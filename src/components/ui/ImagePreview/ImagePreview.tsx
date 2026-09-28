@@ -88,7 +88,8 @@ export function ImagePreview({
         open={isOpen}
         onClose={() => setIsOpen(false)}
         size="lg"
-        title={alt || undefined}
+        // alt が空でもダイアログに名前が付くよう、既定のタイトルを渡す
+        title={alt || "画像"}
       >
         <div className={styles.viewer}>
           <ImageStage fit={fit}>
