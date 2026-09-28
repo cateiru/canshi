@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Suspense } from "react";
-import { ButtonLink, Footer, ToastRegionRoot } from "@/components/ui";
+import { Footer, IconButtonLink, ToastRegionRoot } from "@/components/ui";
 import { SettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAppearance } from "@/features/appearance/queries";
 import { NavigationTracker } from "@/features/navigation/NavigationTracker";
@@ -72,15 +72,13 @@ export default async function RootLayout({
       <body>
         <header className={styles.header}>
           <NotificationBadge className={styles.iconLink} />
-          <ButtonLink
+          <IconButtonLink
             href="/settings"
-            variant="secondary"
+            icon={SettingsIcon}
             className={styles.iconLink}
             aria-label="設定"
             title="設定"
-          >
-            <SettingsIcon aria-hidden="true" size={20} />
-          </ButtonLink>
+          />
         </header>
         <div className={styles.content}>{children}</div>
         <Footer />

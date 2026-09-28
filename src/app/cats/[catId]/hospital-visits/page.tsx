@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { formatYen } from "@/features/expenses/labels";
@@ -114,15 +114,12 @@ export default async function HospitalVisitsPage({
                   <div className={styles.recordHeader}>
                     <h2 className={styles.recordTitle}>{visit.reason}</h2>
                     <div className={styles.cardActions}>
-                      <ButtonLink
+                      <IconButtonLink
                         href={`/cats/${catId}/hospital-visits/${visit.id}/edit`}
-                        variant="secondary"
-                        className={styles.iconButton}
+                        icon={TbPencil}
                         aria-label="編集する"
                         title="編集する"
-                      >
-                        <TbPencil aria-hidden="true" size={20} />
-                      </ButtonLink>
+                      />
                       <DeleteRecordButton
                         action={deleteHospitalVisitAction.bind(
                           null,
@@ -132,7 +129,6 @@ export default async function HospitalVisitsPage({
                         title="通院記録の削除"
                         description="この通院記録を削除しますか？この操作は取り消せません。"
                         iconOnly
-                        className={styles.iconButton}
                       />
                     </div>
                   </div>

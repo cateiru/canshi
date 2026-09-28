@@ -3,6 +3,8 @@ export * from "./Badge/Badge";
 export * from "./Breadcrumb/Breadcrumb";
 export * from "./Button/Button";
 export * from "./Button/ButtonLink";
+export * from "./Button/IconButton";
+export * from "./Button/IconButtonLink";
 export * from "./Card/Card";
 export * from "./CatEarFrame/CatEarFrame";
 export * from "./Checkbox/Checkbox";

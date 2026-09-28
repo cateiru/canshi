@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
+import { Badge, Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteMedicationDoseAction } from "@/features/medications/doseActions";
@@ -88,15 +88,12 @@ export default async function MedicationDosesPage({
                     </time>
                   </h2>
                   <div className={styles.cardActions}>
-                    <ButtonLink
+                    <IconButtonLink
                       href={`/cats/${catId}/medications/${medicationId}/doses/${dose.id}/edit`}
-                      variant="secondary"
-                      className={styles.iconButton}
+                      icon={TbPencil}
                       aria-label="編集する"
                       title="編集する"
-                    >
-                      <TbPencil aria-hidden="true" size={20} />
-                    </ButtonLink>
+                    />
                     <DeleteRecordButton
                       action={deleteMedicationDoseAction.bind(
                         null,
@@ -107,7 +104,6 @@ export default async function MedicationDosesPage({
                       title="投薬実績の削除"
                       description="この投薬実績を削除しますか？この操作は取り消せません。"
                       iconOnly
-                      className={styles.iconButton}
                     />
                   </div>
                 </div>

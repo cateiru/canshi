@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { TbActivity, TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
@@ -98,15 +98,12 @@ export default async function MedicationsPage({
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordTitle}>{medication.name}</h2>
                   <div className={styles.cardActions}>
-                    <ButtonLink
+                    <IconButtonLink
                       href={`/cats/${catId}/medications/${medication.id}/edit`}
-                      variant="secondary"
-                      className={styles.iconButton}
+                      icon={TbPencil}
                       aria-label="編集する"
                       title="編集する"
-                    >
-                      <TbPencil aria-hidden="true" size={20} />
-                    </ButtonLink>
+                    />
                     <DeleteRecordButton
                       action={deleteMedicationAction.bind(
                         null,
@@ -116,7 +113,6 @@ export default async function MedicationsPage({
                       title="服薬予定の削除"
                       description="この服薬予定を削除しますか？関連する投薬実績も参照できなくなります。"
                       iconOnly
-                      className={styles.iconButton}
                     />
                   </div>
                 </div>

@@ -1,5 +1,5 @@
 import { TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { FeedingPresetIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { deleteFeedingPresetAction } from "@/features/feeding-presets/actions";
 import { DeleteFeedingPresetButton } from "@/features/feeding-presets/DeleteFeedingPresetButton";
@@ -68,19 +68,15 @@ export default async function FeedingPresetsPage() {
                   ))}
                 </dl>
                 <div className={styles.cardActions}>
-                  <ButtonLink
+                  <IconButtonLink
                     href={`/feeding-presets/${preset.id}/edit`}
-                    variant="secondary"
-                    className={styles.iconButton}
+                    icon={TbPencil}
                     aria-label="編集する"
                     title="編集する"
-                  >
-                    <TbPencil aria-hidden="true" size={20} />
-                  </ButtonLink>
+                  />
                   <DeleteFeedingPresetButton
                     action={deleteFeedingPresetAction.bind(null, preset.id)}
                     presetName={preset.name}
-                    className={styles.iconButton}
                   />
                 </div>
               </article>

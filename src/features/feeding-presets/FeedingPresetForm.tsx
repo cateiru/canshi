@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { TbCheck, TbPlus, TbX } from "react-icons/tb";
-import { Button, FormField, Select } from "@/components/ui";
+import { Button, FormField, IconButton, Select } from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
@@ -129,15 +129,12 @@ export function FeedingPresetForm({
                     className={styles.removeAction}
                     title={`商品 ${index + 1}を削除`}
                   >
-                    <Button
-                      type="button"
-                      variant="secondary"
+                    <IconButton
+                      icon={TbX}
                       className={styles.removeButton}
                       aria-label={`商品 ${index + 1}を削除`}
                       onPress={() => removeItem(index)}
-                    >
-                      <TbX aria-hidden="true" size={20} />
-                    </Button>
+                    />
                   </span>
                 ) : null}
               </div>

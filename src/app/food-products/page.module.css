@@ -22,10 +22,6 @@
   composes: emptyState from "../../features/shared/PageLayout.module.css";
 }
 
-.iconButton {
-  composes: iconButton from "../../features/shared/PageLayout.module.css";
-}
-
 .productCard {
   composes: surface from "../../features/shared/Surface.module.css";
 }

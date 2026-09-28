@@ -1,5 +1,5 @@
 import { TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { deleteFoodProductAction } from "@/features/food-products/actions";
 import { DeleteFoodProductButton } from "@/features/food-products/DeleteFoodProductButton";
@@ -69,22 +69,18 @@ export default async function FoodProductsPage() {
                   />
                   <h2 className={styles.productTitle}>{foodProduct.name}</h2>
                   <div className={styles.cardActions}>
-                    <ButtonLink
+                    <IconButtonLink
                       href={`/food-products/${foodProduct.id}/edit`}
-                      variant="secondary"
-                      className={styles.iconButton}
+                      icon={TbPencil}
                       aria-label="編集する"
                       title="編集する"
-                    >
-                      <TbPencil aria-hidden="true" size={20} />
-                    </ButtonLink>
+                    />
                     <DeleteFoodProductButton
                       action={deleteFoodProductAction.bind(
                         null,
                         foodProduct.id,
                       )}
                       foodProductName={foodProduct.name}
-                      className={styles.iconButton}
                     />
                   </div>
                 </div>
