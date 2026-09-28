@@ -605,7 +605,13 @@ export function ReleaseNotesIcon(props: RecordIconProps) {
 
 export function AppearanceSettingsIcon(props: RecordIconProps) {
   const palette =
-    "M12 3c5 0 9 3.5 9 7.5 0 2.5-2 4-4.5 4H15a1.75 1.75 0 0 0-1.2 3 1.75 1.75 0 0 1-1.3 3.5H12a9 9 0 0 1 0-18Z";
+    "M12 2.5c-5.25 0-9.5 4-9.5 9.25C2.5 17.5 6.5 21.5 12 21.5h1.25c2 0 2.95-2.25 1.5-3.75-.75-.75-.25-2.25 1-2.25h1.75c2.5 0 4-1.75 4-4.25C21.5 6.5 17.25 2.5 12 2.5Z";
+  const paints = [
+    { cx: 6.5, cy: 10.5, color: "#e99a70" },
+    { cx: 9.5, cy: 6.5, color: "#f2d17b" },
+    { cx: 14.5, cy: 6.5, color: "#b7d7ee" },
+    { cx: 7.5, cy: 15.5, color: "#b2d3aa" },
+  ];
 
   return (
     <RecordIcon
@@ -613,18 +619,26 @@ export function AppearanceSettingsIcon(props: RecordIconProps) {
       fills={
         <>
           <path fill="#f5dfb7" d={palette} />
-          <circle fill="#ed795b" cx="7.5" cy="11.5" r="1.5" />
-          <circle fill="#f2d17b" cx="9.5" cy="7" r="1.5" />
-          <circle fill="#8dcde9" cx="14.5" cy="7" r="1.5" />
-          <circle fill="#b2d3aa" cx="8.5" cy="16" r="1.5" />
+          {paints.map(({ cx, cy, color }) => (
+            <circle key={color} fill={color} cx={cx} cy={cy} r="1.5" />
+          ))}
         </>
       }
     >
       <path d={palette} />
-      <circle cx="7.5" cy="11.5" r="1.5" />
-      <circle cx="9.5" cy="7" r="1.5" />
-      <circle cx="14.5" cy="7" r="1.5" />
-      <circle cx="8.5" cy="16" r="1.5" />
+      {paints.map(({ cx, cy, color }) => (
+        <circle key={color} cx={cx} cy={cy} r="1.5" strokeWidth="1" />
+      ))}
+      <ellipse
+        className={styles.foregroundFill}
+        fill="#fff4df"
+        cx="17"
+        cy="11"
+        rx="1.5"
+        ry="1.75"
+        transform="rotate(25 17 11)"
+        strokeWidth="1.25"
+      />
     </RecordIcon>
   );
 }
