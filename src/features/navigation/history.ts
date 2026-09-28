@@ -36,6 +36,8 @@ export function toPathname(href: string): string {
 
 /**
  * アプリ内で位置が変わったときの新しい追跡状態を求める。
+ * - 新しいドキュメントの初回読み込み（リンクやブックマークなどによるもの）は、外部サイトなど
+ *   記録にない位置を経由して来た可能性があり直前のエントリが分からないため `null` にする
  * - 同じ位置（再読み込みや React の effect の再実行）なら記録をそのまま使う
  * - 置き換えなら、置き換え前のエントリの直前を引き継ぐ
  * - 戻る・進むで来た場合は直前のエントリが分からないため `null` にする
@@ -44,8 +46,11 @@ export function toPathname(href: string): string {
 export function nextTrackedEntry(
   stored: TrackedEntry | null,
   current: string,
-  options: { replaced: boolean; popped: boolean },
+  options: { replaced: boolean; popped: boolean; newDocument?: boolean },
 ): TrackedEntry {
+  if (options.newDocument) {
+    return { current, previous: null };
+  }
   if (stored?.current === current) {
     return stored;
   }

@@ -14,12 +14,23 @@ import {
 
 type Router = ReturnType<typeof useRouter>;
 
-/** ページの読み込み自体がブラウザの戻る・進むによるものか */
-function isBackForwardLoad(): boolean {
+/**
+ * このドキュメントで着いたときの処理を一度でも行ったか。
+ * トラッカーが再マウントされても初回読み込みと誤認しないよう、モジュールスコープで持つ
+ */
+let documentHandled = false;
+
+/** テスト用: 新しいドキュメントを読み込んだ状態に戻す */
+export function resetDocumentHandledForTest() {
+  documentHandled = false;
+}
+
+/** ページの読み込み自体の種類（通常の遷移・再読み込み・戻る/進む）。取得できなければ `undefined` */
+function documentNavigationType(): NavigationTimingType | undefined {
   const [entry] = performance.getEntriesByType("navigation") as
     | PerformanceNavigationTiming[]
     | [];
-  return entry?.type === "back_forward";
+  return entry?.type;
 }
 
 /** 遷移先が search を指定していて、今の位置の search と違うか */
@@ -32,8 +43,9 @@ function needsSearchReplace(href: string, location: string): boolean {
 /**
  * 今の位置に着いたときの処理。追跡状態を更新し、送信後の遷移で予約した処理を実行する。
  * @param popped 戻る・進むで着いたか
+ * @param newDocument 再読み込みや戻る・進む以外で新しいドキュメントを読み込んで着いたか
  */
-function handleArrival(router: Router, popped: boolean) {
+function handleArrival(router: Router, popped: boolean, newDocument = false) {
   const location = currentLocation();
   const pending = readPendingNavigation();
   const arrived =
@@ -46,6 +58,7 @@ function handleArrival(router: Router, popped: boolean) {
     nextTrackedEntry(readTrackedEntry(), location, {
       replaced: pending?.type === "replace" && arrived,
       popped,
+      newDocument,
     }),
   );
 
@@ -72,7 +85,7 @@ export function NavigationTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const poppedRef = useRef<boolean | null>(null);
+  const poppedRef = useRef(false);
 
   useEffect(() => {
     const onPopState = () => {
@@ -101,10 +114,17 @@ export function NavigationTracker() {
     // popstate のリスナーより先に実行されることがある。同じ履歴移動の popstate を拾ってから
     // 判断するよう、処理を後続のタスクに回す
     const timer = window.setTimeout(() => {
-      // 初回は、ページの読み込みが戻る・進むによるものかで判断する
-      const popped = poppedRef.current ?? isBackForwardLoad();
+      // 初回は、ページの読み込みの種類で判断する。外部サイトを経由してリンクやブックマークで
+      // 開いた場合、sessionStorage の記録は外部サイトより前のものなので直前のエントリとして使えない。
+      // 記録との連続性を確認できるのは、同じエントリを読み直す再読み込みと戻る・進むだけ
+      const initial = !documentHandled;
+      documentHandled = true;
+      const type = initial ? documentNavigationType() : undefined;
+      const popped = poppedRef.current || type === "back_forward";
+      const newDocument =
+        initial && type !== "reload" && type !== "back_forward";
       poppedRef.current = false;
-      handleArrival(router, popped);
+      handleArrival(router, popped, newDocument);
     }, 0);
     return () => window.clearTimeout(timer);
   }, [pathname, searchParams, router]);

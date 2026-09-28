@@ -4,8 +4,12 @@ import {
   readPendingNavigation,
   readTrackedEntry,
   writePendingNavigation,
+  writeTrackedEntry,
 } from "./history";
-import { NavigationTracker } from "./NavigationTracker";
+import {
+  NavigationTracker,
+  resetDocumentHandledForTest,
+} from "./NavigationTracker";
 import { useNavigateAfterSubmit } from "./useNavigateAfterSubmit";
 
 const router = {
@@ -45,6 +49,13 @@ function moveTo(
   });
 }
 
+/** ページの読み込みの種類（Navigation Timing の type）を差し替える */
+function mockDocumentNavigationType(type: NavigationTimingType) {
+  vi.spyOn(performance, "getEntriesByType").mockReturnValue([
+    { type } as PerformanceNavigationTiming,
+  ]);
+}
+
 function setup(href: string) {
   window.history.replaceState(null, "", href);
   const url = new URL(href, window.location.origin);
@@ -66,6 +77,7 @@ describe("NavigationTracker と useNavigateAfterSubmit", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     window.sessionStorage.clear();
+    resetDocumentHandledForTest();
     for (const fn of Object.values(router)) {
       fn.mockClear();
     }
@@ -73,6 +85,7 @@ describe("NavigationTracker と useNavigateAfterSubmit", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it("猫詳細 → 一覧 → 追加 → 保存 では一覧に戻る", () => {
@@ -187,5 +200,48 @@ describe("NavigationTracker と useNavigateAfterSubmit", () => {
     expect(router.refresh).not.toHaveBeenCalled();
     expect(router.replace).not.toHaveBeenCalled();
     expect(readPendingNavigation()).toBeNull();
+  });
+
+  it("外部サイトを経由して作成ページを開いた場合は、記録が残っていても置き換える", () => {
+    // 同じタブで「一覧 → 外部サイト → ブックマークから作成ページ」と移動した
+    writeTrackedEntry({
+      current: "/cats/tama/weight-records",
+      previous: "/cats/tama",
+    });
+    mockDocumentNavigationType("navigate");
+    setup("/cats/tama/weight-records/new");
+    expect(readTrackedEntry()).toEqual({
+      current: "/cats/tama/weight-records/new",
+      previous: null,
+    });
+
+    navigateAfterSubmit("/cats/tama/weight-records");
+    expect(router.back).not.toHaveBeenCalled();
+    expect(router.replace).toHaveBeenCalledWith("/cats/tama/weight-records");
+  });
+
+  it("外部サイトを経由して一覧を開いた場合は、同じ位置の記録があっても直前を不明にする", () => {
+    writeTrackedEntry({
+      current: "/cats/tama/weight-records",
+      previous: "/cats/tama",
+    });
+    mockDocumentNavigationType("navigate");
+    setup("/cats/tama/weight-records");
+    expect(readTrackedEntry()).toEqual({
+      current: "/cats/tama/weight-records",
+      previous: null,
+    });
+  });
+
+  it("作成ページを再読み込みした場合は、記録していた直前のエントリに戻る", () => {
+    writeTrackedEntry({
+      current: "/cats/tama/weight-records/new",
+      previous: "/cats/tama/weight-records",
+    });
+    mockDocumentNavigationType("reload");
+    setup("/cats/tama/weight-records/new");
+
+    navigateAfterSubmit("/cats/tama/weight-records");
+    expect(router.back).toHaveBeenCalledTimes(1);
   });
 });

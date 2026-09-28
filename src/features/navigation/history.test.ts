@@ -60,6 +60,21 @@ describe("nextTrackedEntry", () => {
     });
   });
 
+  it("新しいドキュメントの初回読み込みでは、同じ位置の記録があっても直前のエントリを不明にする", () => {
+    expect(
+      nextTrackedEntry(stored, "/cats/tama/weight-records", {
+        ...push,
+        newDocument: true,
+      }),
+    ).toEqual({ current: "/cats/tama/weight-records", previous: null });
+    expect(
+      nextTrackedEntry(stored, "/cats/tama/weight-records/new", {
+        ...push,
+        newDocument: true,
+      }),
+    ).toEqual({ current: "/cats/tama/weight-records/new", previous: null });
+  });
+
   it("記録がなければ直前のエントリは不明", () => {
     expect(nextTrackedEntry(null, "/cats", push)).toEqual({
       current: "/cats",
