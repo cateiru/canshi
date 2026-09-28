@@ -12,22 +12,36 @@ import styles from "./Collapsible.module.css";
 
 export type CollapsibleProps = {
   title: string;
-  storageKey: string;
+  /**
+   * 開閉状態を localStorage に保存するときのキー。
+   * 省略すると保存せず、ページを開くたびに defaultExpanded の状態で表示する
+   */
+  storageKey?: string;
   defaultExpanded?: boolean;
+  /** 見出しの階層。ページ内の位置に合わせて指定する */
+  headingLevel?: 2 | 3 | 4;
+  /** 見出しの横に添える補足（件数・状態など）。押せる要素は入れない */
+  titleAside?: ReactNode;
   className?: string;
   children: ReactNode;
 };
 
+/** 見出しを押して開閉できるまとまり */
 export function Collapsible({
   title,
   storageKey,
   defaultExpanded = true,
+  headingLevel = 2,
+  titleAside,
   className,
   children,
 }: CollapsibleProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   useEffect(() => {
+    if (!storageKey) {
+      return;
+    }
     try {
       const stored = window.localStorage.getItem(storageKey);
       if (stored !== null) {
@@ -40,6 +54,9 @@ export function Collapsible({
 
   const handleExpandedChange = (expanded: boolean) => {
     setIsExpanded(expanded);
+    if (!storageKey) {
+      return;
+    }
     try {
       window.localStorage.setItem(storageKey, String(expanded));
     } catch {
@@ -55,7 +72,7 @@ export function Collapsible({
       onExpandedChange={handleExpandedChange}
       className={classes}
     >
-      <Heading level={2} className={styles.heading}>
+      <Heading level={headingLevel} className={styles.heading}>
         <Button slot="trigger" className={styles.trigger}>
           <TbTriangleFilled
             aria-hidden="true"
@@ -63,6 +80,9 @@ export function Collapsible({
             className={styles.caret}
           />
           <span className={styles.title}>{title}</span>
+          {titleAside ? (
+            <span className={styles.titleAside}>{titleAside}</span>
+          ) : null}
         </Button>
       </Heading>
       <DisclosurePanel>
