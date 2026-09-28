@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MonthNav } from "@/features/shared/MonthNav";
+import { MonthNav } from "@/components/ui";
 import { buildTimelineHref } from "./href";
 import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "./labels";
 import { TIMELINE_RECORD_TYPES, type TimelineRecordType } from "./queries";

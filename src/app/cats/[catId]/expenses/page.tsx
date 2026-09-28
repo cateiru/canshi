@@ -4,6 +4,7 @@ import {
   Breadcrumb,
   ButtonLink,
   FilterTabs,
+  MonthNav,
   RecordEmptyState,
 } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
@@ -32,7 +33,6 @@ import {
 import { listHospitalVisitsByIds } from "@/features/hospital-visits/queries";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
-import { MonthNav } from "@/features/shared/MonthNav";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import { formatYm, parseYm, shiftYm } from "@/features/shared/yearMonth";

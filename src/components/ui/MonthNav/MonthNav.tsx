@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { TbChevronLeft, TbChevronRight } from "react-icons/tb";
+import { ButtonLink } from "../Button/ButtonLink";
 import styles from "./MonthNav.module.css";
 
-type MonthNavProps = {
+export type MonthNavProps = {
   year: number;
   month: number; // 1-12
   prevHref: string;
@@ -13,17 +13,25 @@ type MonthNavProps = {
 export function MonthNav({ year, month, prevHref, nextHref }: MonthNavProps) {
   return (
     <nav className={styles.monthNav} aria-label="表示する月">
-      <Link href={prevHref}>
-        <TbChevronLeft aria-hidden="true" size={18} />
+      <ButtonLink
+        href={prevHref}
+        variant="ghost"
+        leftIcon={TbChevronLeft}
+        className={styles.link}
+      >
         前の月
-      </Link>
+      </ButtonLink>
       <span className={styles.monthLabel}>
         {year}年{month}月
       </span>
-      <Link href={nextHref}>
+      <ButtonLink
+        href={nextHref}
+        variant="ghost"
+        rightIcon={TbChevronRight}
+        className={styles.link}
+      >
         次の月
-        <TbChevronRight aria-hidden="true" size={18} />
-      </Link>
+      </ButtonLink>
     </nav>
   );
 }

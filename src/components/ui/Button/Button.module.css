@@ -69,7 +69,7 @@
  */
 .ghost {
   gap: var(--space-1);
-  border-color: transparent;
+  border: 0;
   font-weight: var(--font-weight-regular);
   color: var(--color-ink);
   background-color: transparent;
