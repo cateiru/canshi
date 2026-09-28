@@ -17,7 +17,7 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
   await page.getByLabel("名前").fill(catName);
   await page.getByLabel("性別").click();
   await page.getByRole("option", { name: "メス" }).click();
-  await page.getByLabel("生年月日").fill("2020-04-01");
+  await page.getByLabel("生年月日", { exact: true }).fill("2020-04-01");
   // ひらがなで途中まで入力すると、カタカナの猫種が候補に出る
   await page.getByRole("combobox", { name: "猫種" }).fill("まんち");
   await page.getByRole("option", { name: "マンチカン", exact: true }).click();
@@ -132,4 +132,51 @@ test("猫の編集ページでプロフィール画像を切り抜いて設定�
     page.getByRole("img", { name: `${catName}の画像なし` }),
   ).toBeVisible();
   expect((await page.request.get(srcB)).status()).toBe(404);
+});
+
+test("生年月日を年のみ・年月のみでも登録・編集できる", async ({ page }) => {
+  const catName = `テスト猫-${Date.now()}`;
+  const birthDateDetail = () =>
+    page.getByRole("term").filter({ hasText: "生年月日" }).locator("+ dd");
+  const choosePrecision = async (label: string) => {
+    await page.getByLabel("生年月日のわかる範囲").click();
+    await page.getByRole("option", { name: label, exact: true }).click();
+  };
+
+  // 年のみで登録すると、補完した月・日は表示されない
+  await page.goto("/cats/new");
+  await page.getByLabel("名前").fill(catName);
+  await choosePrecision("年のみ");
+  await page.getByLabel("生まれた年（西暦）").fill("2020");
+  await page.getByRole("button", { name: "登録する" }).click();
+  await expect(page.getByRole("heading", { name: catName })).toBeVisible();
+  await expect(birthDateDetail()).toHaveText(/^2020年（\d+歳/);
+  const detailUrl = page.url();
+
+  // 編集ページでは年のみの入力が復元され、そのまま保存しても年のみのまま
+  await page.goto(`${detailUrl}/edit`);
+  await expect(page.getByLabel("生年月日のわかる範囲")).toContainText("年のみ");
+  await expect(page.getByLabel("生まれた年（西暦）")).toHaveValue("2020");
+  await page.getByRole("button", { name: "更新する" }).click();
+  await expect(page).toHaveURL(detailUrl);
+  await expect(birthDateDetail()).toHaveText(/^2020年（\d+歳/);
+
+  // 年月のみに変えると、月が未選択の場合は保存できない。
+  // 入力エラーで戻っても、変更した生まれた年は保存済みの値に戻らない
+  await page.goto(`${detailUrl}/edit`);
+  await choosePrecision("年月のみ");
+  await page.getByLabel("生まれた年（西暦）").fill("2018");
+  await page.getByRole("button", { name: "更新する" }).click();
+  await expect(page.getByText("生まれた月を選択してください")).toBeVisible();
+  await expect(page.getByLabel("生まれた年（西暦）")).toHaveValue("2018");
+
+  await page.getByLabel("生まれた月").click();
+  await page.getByRole("option", { name: "4月", exact: true }).click();
+  await page.getByRole("button", { name: "更新する" }).click();
+  await expect(page).toHaveURL(detailUrl);
+  await expect(birthDateDetail()).toHaveText(/^2018年4月（\d+歳/);
+
+  await page.goto(`${detailUrl}/edit`);
+  await expect(page.getByLabel("生まれた年（西暦）")).toHaveValue("2018");
+  await expect(page.getByLabel("生まれた月")).toContainText("4月");
 });

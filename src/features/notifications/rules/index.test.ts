@@ -9,6 +9,7 @@ function makeCat(overrides: Partial<Cat> = {}): Cat {
     name: "たま",
     sex: "female",
     birthDate: "2025-09-11",
+    birthDatePrecision: "day",
     breed: null,
     adoptedAt: null,
     profileMediaAssetId: null,

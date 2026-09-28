@@ -14,6 +14,7 @@ import {
   formatTimeSinceAdoption,
 } from "@/features/cats/age";
 import { BirthdayCelebration } from "@/features/cats/BirthdayCelebration";
+import { formatBirthDate } from "@/features/cats/birthDate";
 import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
 import { CatAvatar } from "@/features/cats/CatAvatar";
 import { DeleteCatButton } from "@/features/cats/DeleteCatButton";
@@ -69,7 +70,9 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
         <dl className={styles.details}>
           <dt>生年月日</dt>
           <dd>
-            {cat.birthDate ?? "未設定"}
+            {cat.birthDate
+              ? formatBirthDate(cat.birthDate, cat.birthDatePrecision)
+              : "未設定"}
             {cat.birthDate
               ? `（${formatAge(calculateAge(cat.birthDate))}）`
               : ""}

@@ -16,6 +16,11 @@ export interface CatSummary {
   name: string;
   sex: "male" | "female" | "unknown";
   birthDate: string | null;
+  /**
+   * 生年月日のわかっている範囲。"year"（年のみ）・"month"（年月のみ）の場合、
+   * birthDate の未判明の月・日は 1月・1日で補完されている
+   */
+  birthDatePrecision: "year" | "month" | "day";
   breed: string | null;
   adoptedAt: string | null;
 }

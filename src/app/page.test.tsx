@@ -21,6 +21,7 @@ function buildCat(id: string): Cat {
     name: "たま",
     sex: "male",
     birthDate: null,
+    birthDatePrecision: "day",
     breed: null,
     adoptedAt: null,
     profileMediaAssetId: null,
