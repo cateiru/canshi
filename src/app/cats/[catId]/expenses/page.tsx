@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TbPlus } from "react-icons/tb";
+import { TbCheck, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById, listCats } from "@/features/cats/queries";
@@ -135,6 +135,9 @@ export default async function ExpensesPage({
             data-selected={tab.scope === scope ? "true" : undefined}
             aria-current={tab.scope === scope ? "page" : undefined}
           >
+            {tab.scope === scope && (
+              <TbCheck className={styles.selectedMark} aria-hidden="true" />
+            )}
             {tab.label}
           </Link>
         ))}

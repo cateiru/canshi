@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TbCheck } from "react-icons/tb";
 import { Breadcrumb, Tabs } from "@/components/ui";
 import { listCats } from "@/features/cats/queries";
 import { generateNotifications } from "@/features/notifications/generate";
@@ -53,6 +54,9 @@ export default async function NotificationsPage({
           data-selected={catId ? undefined : "true"}
           aria-current={catId ? undefined : "page"}
         >
+          {!catId && (
+            <TbCheck className={styles.selectedMark} aria-hidden="true" />
+          )}
           すべて
         </Link>
         {cats.map((cat) => (
@@ -63,6 +67,9 @@ export default async function NotificationsPage({
             data-selected={catId === cat.id ? "true" : undefined}
             aria-current={catId === cat.id ? "page" : undefined}
           >
+            {catId === cat.id && (
+              <TbCheck className={styles.selectedMark} aria-hidden="true" />
+            )}
             {cat.name}
           </Link>
         ))}

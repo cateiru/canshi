@@ -234,7 +234,7 @@ export function VomitIcon(props: RecordIconProps) {
     >
       <path d="M9.5 17.8C5.7 17.1 3 14.9 3 12a6 6 0 0 1 1-3V3l5 3a12 12 0 0 1 6 0l5-3v6a6 6 0 0 1 1 3c0 2.9-2.7 5.1-6.5 5.8" />
       <path d="m7 10 2 1.5L7 13m10-3-2 1.5 2 1.5" />
-      <path d="m2 14 2 .5m18-.5-2 .5" />
+      <path className={styles.line} d="m2 14 2 .5m18-.5-2 .5" />
       <path d={vomit} />
     </RecordIcon>
   );
@@ -285,7 +285,7 @@ export function ShampooIcon(props: RecordIconProps) {
     >
       <CatOutline transform={catTransform} />
       <path d={bath} />
-      <path d="M5 21v1m14-1v1" />
+      <path className={styles.line} d="M5 21v1m14-1v1" />
       <circle cx="20" cy="5" r="2" />
       <circle cx="21" cy="11" r="1" />
     </RecordIcon>
@@ -308,9 +308,10 @@ export function BroomIcon(props: RecordIconProps) {
         </>
       }
     >
-      <path d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5M7 17v4M4 20c-3 0-3-3-2-4" />
+      <path d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5M7 17v4" />
+      <path className={styles.line} d="M4 20c-3 0-3-3-2-4" />
       <CatOutline transform={catTransform} expression="calm" />
-      <path d="m20 3-2 10.5" />
+      <path className={styles.line} d="m20 3-2 10.5" />
       <path d={broom} />
       <path d="m15.25 15 5.321 1" strokeLinecap="butt" />
       <path d="M18 18v3" />
@@ -376,7 +377,10 @@ export function HospitalIcon(props: RecordIconProps) {
         </>
       }
     >
-      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path
+        className={styles.line}
+        d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+      />
       <rect x="2" y="6" width="20" height="16" rx="3" />
       <CatOutline transform={catTransform} expression="calm" />
       <path d="M16 10h4m-2-2v4" />
@@ -427,7 +431,7 @@ export function AdoptionIcon(props: RecordIconProps) {
       }
     >
       <path d={house} />
-      <path d="m2 11 2-1.6m16 0 2 1.6" />
+      <path className={styles.line} d="m2 11 2-1.6m16 0 2 1.6" />
       <CatOutline transform={catTransform} expression="happy" />
     </RecordIcon>
   );
@@ -525,7 +529,10 @@ export function NotificationSettingsIcon(props: RecordIconProps) {
 
   return (
     <RecordIcon {...props} fills={<path fill="#f2d17b" d={bell} />}>
-      <path d="M10.5 5.5V4a1.5 1.5 0 0 1 3 0v1.5m-4 14.5a2.5 2.5 0 0 0 5 0" />
+      <path
+        className={styles.line}
+        d="M10.5 5.5V4a1.5 1.5 0 0 1 3 0v1.5m-4 14.5a2.5 2.5 0 0 0 5 0"
+      />
       <path d={bell} />
       <path d="M9 10.5a3 3 0 0 1 2-2" />
     </RecordIcon>

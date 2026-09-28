@@ -2,6 +2,9 @@
   padding: var(--space-6);
   border-radius: 16px;
   background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  /* 開いた見出しの背景に隠れないよう、子要素より手前に描かれる outline で輪郭を描く */
+  outline: var(--border-width) solid var(--color-border-emphasis);
+  outline-offset: calc(-1 * var(--border-width));
 }
 
 .title {
