@@ -43,6 +43,20 @@ describe("calculateAge", () => {
     });
   });
 
+  it("生年月日が未来の場合は0歳0ヶ月0日", () => {
+    const now = new Date("2026-09-06T00:00:00Z");
+    expect(calculateAge("2027-01-01", now)).toEqual({
+      years: 0,
+      months: 0,
+      days: 0,
+    });
+    expect(calculateAge("2026-09-20", now)).toEqual({
+      years: 0,
+      months: 0,
+      days: 0,
+    });
+  });
+
   it("生まれた当日は0歳0ヶ月0日", () => {
     const now = new Date("2026-09-06T00:00:00Z");
     expect(calculateAge("2026-09-06", now)).toEqual({
@@ -105,6 +119,12 @@ describe("calculateTimeSinceAdoption", () => {
       months: 0,
       days: 5,
     });
+  });
+
+  it("お迎え日が未来の場合はまだお迎えしていないため null を返す", () => {
+    const now = new Date("2026-09-06T00:00:00Z");
+    expect(calculateTimeSinceAdoption("2027-01-01", now)).toBeNull();
+    expect(calculateTimeSinceAdoption("2026-09-20", now)).toBeNull();
   });
 });
 

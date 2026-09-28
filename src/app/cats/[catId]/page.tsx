@@ -36,6 +36,10 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
     notFound();
   }
 
+  const timeSinceAdoption = cat.adoptedAt
+    ? calculateTimeSinceAdoption(cat.adoptedAt)
+    : null;
+
   return (
     <main className={styles.main}>
       <BirthdayCelebration cats={[toBirthdayCelebrationCat(cat)]} />
@@ -75,8 +79,8 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
           <dt>お迎え日</dt>
           <dd>
             {cat.adoptedAt ?? "未設定"}
-            {cat.adoptedAt
-              ? `（お迎えから${formatTimeSinceAdoption(calculateTimeSinceAdoption(cat.adoptedAt))}）`
+            {timeSinceAdoption
+              ? `（お迎えから${formatTimeSinceAdoption(timeSinceAdoption)}）`
               : ""}
           </dd>
         </dl>

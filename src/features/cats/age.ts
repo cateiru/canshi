@@ -17,6 +17,10 @@ function toUtcYearMonthDay(date: Date): YearMonthDay {
   };
 }
 
+function toUtcTime(date: YearMonthDay): number {
+  return Date.UTC(date.year, date.month - 1, date.day);
+}
+
 export type Age = {
   years: number;
   months: number;
@@ -26,10 +30,16 @@ export type Age = {
 /**
  * 生年月日から満年齢（年・月・日）を計算する。
  * `now` は UTC の暦日として扱う（Cloudflare Workers のサーバー時刻を基準とする）。
+ * 生年月日が未来の場合は 0歳0ヶ月0日とする。
  */
 export function calculateAge(birthDate: string, now: Date = new Date()): Age {
   const birth = parseDateOnly(birthDate);
   const today = toUtcYearMonthDay(now);
+
+  const todayUtc = toUtcTime(today);
+  if (toUtcTime(birth) > todayUtc) {
+    return { years: 0, months: 0, days: 0 };
+  }
 
   let years = today.year - birth.year;
   let months = today.month - birth.month;
@@ -42,20 +52,13 @@ export function calculateAge(birthDate: string, now: Date = new Date()): Age {
     months += 12;
   }
 
-  years = Math.max(years, 0);
-  months = Math.max(months, 0);
-
   const totalMonths = years * 12 + months;
   const anchorUtc = Date.UTC(
     birth.year,
     birth.month - 1 + totalMonths,
     birth.day,
   );
-  const todayUtc = Date.UTC(today.year, today.month - 1, today.day);
-  const days = Math.max(
-    Math.round((todayUtc - anchorUtc) / (1000 * 60 * 60 * 24)),
-    0,
-  );
+  const days = Math.round((todayUtc - anchorUtc) / (1000 * 60 * 60 * 24));
 
   return { years, months, days };
 }
@@ -92,11 +95,16 @@ export function formatAge(age: Age): string {
  * お迎え日から現在までの経過期間（年・月・日）を計算する。
  * 年齢と同じ数え方にするため、満年齢と同じ計算を使う。
  * `now` は UTC の暦日として扱う。
+ * お迎え日が未来の場合はまだお迎えしていないため `null` を返す。
  */
 export function calculateTimeSinceAdoption(
   adoptedAt: string,
   now: Date = new Date(),
-): Age {
+): Age | null {
+  if (toUtcTime(parseDateOnly(adoptedAt)) > toUtcTime(toUtcYearMonthDay(now))) {
+    return null;
+  }
+
   return calculateAge(adoptedAt, now);
 }
 
