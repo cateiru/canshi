@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { NavCard } from "@/components/ui";
 import styles from "./RecordNavGrid.module.css";
 import { RECORD_NAV_ITEMS } from "./recordNav";
 
@@ -10,10 +10,13 @@ export function RecordNavGrid({ catId }: RecordNavGridProps) {
   return (
     <div className={styles.grid}>
       {RECORD_NAV_ITEMS.map((item) => (
-        <Link key={item.label} href={item.href(catId)} className={styles.tile}>
-          <item.icon className={styles.icon} aria-hidden="true" />
-          <span className={styles.label}>{item.label}</span>
-        </Link>
+        <NavCard
+          key={item.label}
+          href={item.href(catId)}
+          layout="tile"
+          icon={item.icon}
+          title={item.label}
+        />
       ))}
     </div>
   );

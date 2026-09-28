@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { TbChevronRight, TbClock, TbDeviceMobile, TbPaw } from "react-icons/tb";
-import { Alert, Breadcrumb, ButtonLink } from "@/components/ui";
+import { TbClock, TbDeviceMobile, TbPaw } from "react-icons/tb";
+import { Alert, Breadcrumb, ButtonLink, NavCard } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { CatAvatar } from "@/features/cats/CatAvatar";
 import { CatIcon } from "@/features/cats/CatIcon";
@@ -85,25 +84,20 @@ export default async function NotificationSettingsPage() {
           <ul className={styles.catList}>
             {cats.map((cat) => (
               <li key={cat.id}>
-                <Link
+                <NavCard
                   href={`/cats/${cat.id}/notification-settings`}
-                  className={styles.catLink}
-                >
-                  <CatAvatar
-                    className={styles.catAvatar}
-                    name={cat.name}
-                    profileMediaAssetId={cat.profileMediaAssetId}
-                    profileCropX={cat.profileCropX}
-                    profileCropY={cat.profileCropY}
-                    profileCropZoom={cat.profileCropZoom}
-                    profileCropRotation={cat.profileCropRotation}
-                  />
-                  <span className={styles.catName}>{cat.name}</span>
-                  <TbChevronRight
-                    className={styles.chevron}
-                    aria-hidden="true"
-                  />
-                </Link>
+                  avatar={
+                    <CatAvatar
+                      name={cat.name}
+                      profileMediaAssetId={cat.profileMediaAssetId}
+                      profileCropX={cat.profileCropX}
+                      profileCropY={cat.profileCropY}
+                      profileCropZoom={cat.profileCropZoom}
+                      profileCropRotation={cat.profileCropRotation}
+                    />
+                  }
+                  title={cat.name}
+                />
               </li>
             ))}
           </ul>

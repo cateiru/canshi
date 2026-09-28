@@ -40,35 +40,6 @@
   gap: var(--space-4);
 }
 
-.link {
-  composes: link from "../settings/page.module.css";
-}
-
-.link > div {
-  flex: 1;
-  min-width: 0;
-}
-
-.link h2 {
-  margin-bottom: var(--space-1);
-  font-size: var(--text-md);
-}
-
-.link p {
-  font-size: var(--text-sm);
-  color: var(--color-ink-muted);
-}
-
-.link > svg {
-  flex-shrink: 0;
-}
-
-.icon {
-  width: 36px;
-  height: 36px;
-  color: var(--color-accent);
-}
-
 @media (max-width: 600px) {
   .menu {
     grid-template-columns: minmax(0, 1fr);
