@@ -10,7 +10,7 @@
   padding-inline: var(--space-3);
   max-width: 100%;
   overflow: hidden;
-  border-color: var(--color-border);
+  border-color: var(--color-border-input);
   border-radius: 8px;
 }
 
@@ -19,12 +19,12 @@
 }
 
 .form input:focus-visible {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .errorMessage {
   font-size: var(--text-sm);
-  color: var(--color-error);
+  color: var(--color-error-strong);
 }
 
 .form .submitButton {

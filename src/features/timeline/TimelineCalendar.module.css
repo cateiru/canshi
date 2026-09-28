@@ -196,7 +196,7 @@
 
 .dayLink:focus-visible,
 .scrollArea:focus-visible {
-  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: var(--focus-ring-offset);
   z-index: 1;
 }

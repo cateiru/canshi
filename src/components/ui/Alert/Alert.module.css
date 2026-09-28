@@ -12,21 +12,21 @@
 }
 
 .info {
-  border-color: var(--color-info);
-  background-color: var(--color-info);
+  border-color: var(--color-info-strong);
+  background-color: var(--color-info-strong);
 }
 
 .success {
-  border-color: var(--color-success);
-  background-color: var(--color-success);
+  border-color: var(--color-success-strong);
+  background-color: var(--color-success-strong);
 }
 
 .warning {
-  border-color: var(--color-warning);
-  background-color: var(--color-warning);
+  border-color: var(--color-warning-strong);
+  background-color: var(--color-warning-strong);
 }
 
 .error {
-  border-color: var(--color-error);
-  background-color: var(--color-error);
+  border-color: var(--color-error-strong);
+  background-color: var(--color-error-strong);
 }

@@ -17,10 +17,27 @@
   --color-info: #4f87db;
 
   /*
+   * 状態色・アクセント色を文字や操作の目印に使うときの色。上の色は明るく、白背景・白文字との
+   * 差が足りないため、文字・Alert の背景・フォーカス表示・選択枠にはこちらを使う。
+   * グラフの系列色や装飾には上の明るい色を使う
+   */
+  --color-success-strong: #26732e;
+  --color-warning-strong: #806000;
+  --color-error-strong: #bd3528;
+  --color-info-strong: #245da8;
+  --color-accent-strong: #9a4b13;
+  /* アクセント色の面に載せる文字。ライト・ダークとも濃い色にする */
+  --color-on-accent: #2e3142;
+  /* フォーカスリング */
+  --color-focus-ring: var(--color-accent-strong);
+
+  /*
    * カラーのイラストアイコン（RecordIcons）の輪郭。パステルの塗りとの差を保つため、
    * ダークテーマでも明るくせず濃い色のまま使う
    */
   --color-illustration-outline: #2e3142;
+  /* イラストアイコンのうち、塗りに接さず背景に直接描かれる線（ほうきの柄など） */
+  --color-illustration-line: #2e3142;
 
   /* 影・モーダル背後の覆い */
   --color-shadow: rgb(46 49 66 / 15%);
@@ -50,11 +67,18 @@
   --mix-border-subtle: 15%;
   --mix-ink-muted: 78%;
   --mix-ink-subtle: 70%;
+  --mix-border-input: 62%;
 
-  /* 入力欄・区切り線などの枠線 */
+  /* 区切り線・グラフの軸などの枠線 */
   --color-border: color-mix(
     in srgb,
     var(--color-ink) var(--mix-border),
+    var(--color-bg)
+  );
+  /* 入力欄の枠線。入力範囲がわかるよう、区切り線より濃くする */
+  --color-border-input: color-mix(
+    in srgb,
+    var(--color-ink) var(--mix-border-input),
     var(--color-bg)
   );
   /* 面を囲む控えめな枠線 */
@@ -129,6 +153,14 @@
   --color-bg: #1c1e27;
   --color-ink: #e6e7ee;
 
+  --color-success-strong: #52b355;
+  --color-warning-strong: #f2d14b;
+  --color-error-strong: #f25c4b;
+  --color-info-strong: #4f87db;
+  --color-accent-strong: #ec995a;
+
+  --color-illustration-line: #a6a9b8;
+
   --color-shadow: rgb(0 0 0 / 45%);
   --color-backdrop: rgb(0 0 0 / 60%);
 
@@ -153,6 +185,14 @@
 
     --color-bg: #1c1e27;
     --color-ink: #e6e7ee;
+
+    --color-success-strong: #52b355;
+    --color-warning-strong: #f2d14b;
+    --color-error-strong: #f25c4b;
+    --color-info-strong: #4f87db;
+    --color-accent-strong: #ec995a;
+
+    --color-illustration-line: #a6a9b8;
 
     --color-shadow: rgb(0 0 0 / 45%);
     --color-backdrop: rgb(0 0 0 / 60%);
@@ -182,6 +222,7 @@
   --mix-border-subtle: 55%;
   --mix-ink-muted: 92%;
   --mix-ink-subtle: 88%;
+  --mix-border-input: 75%;
 
   --color-border-emphasis: var(--color-border);
 }

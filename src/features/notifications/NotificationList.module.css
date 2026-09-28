@@ -37,7 +37,7 @@
 }
 
 .title:focus-visible {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .body {

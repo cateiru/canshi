@@ -29,7 +29,7 @@
 }
 
 .trigger[data-focus-visible] {
-  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
@@ -99,11 +99,11 @@
 
 .periodButton[data-selected] {
   background: var(--color-accent);
-  color: var(--color-bg);
+  color: var(--color-on-accent);
 }
 
 .periodButton[data-focus-visible] {
-  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: var(--focus-ring-offset);
 }
 

@@ -39,9 +39,12 @@ describe("ダークテーマのトークン", () => {
             "--color-error",
             "--color-info",
             "--color-illustration-outline",
+            "--color-on-accent",
+            "--color-focus-ring",
             // --color-ink / --color-bg と割合から計算されるため、上書き不要
             "--color-border",
             "--color-border-subtle",
+            "--color-border-input",
             "--color-ink-muted",
             "--color-ink-subtle",
             "--color-border-emphasis",

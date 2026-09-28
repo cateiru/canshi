@@ -37,7 +37,7 @@
 
 .button:focus-visible,
 .button[data-focus-visible] {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .button:disabled,
@@ -58,8 +58,8 @@
 }
 
 .danger {
-  color: var(--color-error);
-  border-color: var(--color-error);
+  color: var(--color-error-strong);
+  border-color: var(--color-error-strong);
   background-color: var(--color-bg);
 }
 

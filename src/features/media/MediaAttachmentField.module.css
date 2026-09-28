@@ -30,7 +30,7 @@
 
 /* キーボードで DropZone にフォーカスしたとき（貼り付けで追加できる） */
 .dropArea[data-focus-visible] {
-  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: var(--focus-ring-offset);
 }
 
@@ -137,7 +137,7 @@
 
 .remove:focus-visible,
 .retry:focus-visible {
-  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: var(--focus-ring-offset);
 }
 
@@ -316,7 +316,7 @@
 
 .chooser[data-focus-visible],
 .replaceButton[data-focus-visible] {
-  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: var(--focus-ring-offset);
 }
 

@@ -59,7 +59,7 @@
 }
 
 .option[data-focus-visible] {
-  outline-color: var(--color-accent);
+  outline-color: var(--color-focus-ring);
 }
 
 .option[data-invalid] {
@@ -102,7 +102,7 @@
 
 .errorMessage {
   font-size: var(--text-sm);
-  color: var(--color-error);
+  color: var(--color-error-strong);
 }
 
 .guideSteps {
