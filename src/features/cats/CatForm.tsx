@@ -111,12 +111,12 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
           わかる日付だけ入力できます。あとから変更することもできます。
         </p>
         <div className={styles.dateFields}>
-          {/* 送信後にフォームがリセットされると、わかる範囲の選択はマウント時の値に戻る。
-              入力エラーで戻したときは送信した範囲で作り直し、エラーの出た入力欄を表示する */}
+          {/* 送信後にフォームがリセットされると、入力欄はマウント時の値に戻る。
+              入力エラーで戻したときは送信した値で作り直し、エラーの出た入力欄と入力した値を表示する */}
           <BirthDateField
-            key={state.birthDatePrecision ?? "initial"}
+            key={JSON.stringify(state.submittedBirthDate ?? null)}
             cat={cat}
-            submittedPrecision={state.birthDatePrecision}
+            submitted={state.submittedBirthDate}
             fieldErrors={state.fieldErrors}
           />
 

@@ -43,3 +43,33 @@ export function toBirthDateFormDefaults(
     birthMonth: precision === "year" ? null : String(Number(month)),
   };
 }
+
+/**
+ * 入力エラーで戻したときに送信していた生年月日の入力値。
+ * 表示していなかった入力欄は送信されないため、その項目は `undefined` になる
+ */
+export type SubmittedBirthDate = {
+  precision?: BirthDatePrecision;
+  birthDate?: string;
+  birthYear?: string;
+  birthMonth?: string;
+};
+
+/**
+ * 入力エラーで戻したときに、送信した値を入力欄の初期値にする。
+ * 送信されなかった入力欄は、保存済みの値から作った初期値のままにする
+ */
+export function withSubmittedBirthDate(
+  defaults: BirthDateFormDefaults,
+  submitted: SubmittedBirthDate,
+): BirthDateFormDefaults {
+  return {
+    birthDate: submitted.birthDate ?? defaults.birthDate,
+    birthYear: submitted.birthYear ?? defaults.birthYear,
+    // 月を選ばずに送信した場合は空文字が届くため、未選択として扱う
+    birthMonth:
+      submitted.birthMonth === undefined
+        ? defaults.birthMonth
+        : submitted.birthMonth || null,
+  };
+}

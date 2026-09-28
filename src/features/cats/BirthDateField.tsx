@@ -4,13 +4,17 @@ import { useState } from "react";
 import { FormField, Select } from "@/components/ui";
 import type { Cat } from "@/db/schema";
 import styles from "./BirthDateField.module.css";
-import { toBirthDateFormDefaults } from "./birthDate";
+import {
+  type SubmittedBirthDate,
+  toBirthDateFormDefaults,
+  withSubmittedBirthDate,
+} from "./birthDate";
 import type { BirthDatePrecision, CatFormFieldErrors } from "./schema";
 
 type BirthDateFieldProps = {
   cat?: Pick<Cat, "birthDate" | "birthDatePrecision">;
-  // 入力エラーで戻したときに送信していた、生年月日のわかる範囲
-  submittedPrecision?: BirthDatePrecision;
+  // 入力エラーで戻したときに送信していた、生年月日の入力値
+  submitted?: SubmittedBirthDate;
   fieldErrors?: CatFormFieldErrors;
 };
 
@@ -33,16 +37,19 @@ const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => ({
  */
 export function BirthDateField({
   cat,
-  submittedPrecision,
+  submitted,
   fieldErrors,
 }: BirthDateFieldProps) {
   const [precision, setPrecision] = useState<BirthDatePrecision>(
-    submittedPrecision ?? cat?.birthDatePrecision ?? "day",
+    submitted?.precision ?? cat?.birthDatePrecision ?? "day",
   );
-  const defaults = toBirthDateFormDefaults(
+  const savedDefaults = toBirthDateFormDefaults(
     cat?.birthDate ?? null,
     cat?.birthDatePrecision ?? "day",
   );
+  const defaults = submitted
+    ? withSubmittedBirthDate(savedDefaults, submitted)
+    : savedDefaults;
 
   return (
     <div className={styles.field}>

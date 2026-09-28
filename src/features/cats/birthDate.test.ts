@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatBirthDate, toBirthDateFormDefaults } from "./birthDate";
+import {
+  formatBirthDate,
+  toBirthDateFormDefaults,
+  withSubmittedBirthDate,
+} from "./birthDate";
 
 describe("formatBirthDate", () => {
   it("年月日すべてわかる場合は日付をそのまま表示する", () => {
@@ -46,5 +50,35 @@ describe("toBirthDateFormDefaults", () => {
       birthYear: "2020",
       birthMonth: null,
     });
+  });
+});
+
+describe("withSubmittedBirthDate", () => {
+  const saved = toBirthDateFormDefaults("2020-04-15", "day");
+
+  it("送信した値を保存済みの値より優先する", () => {
+    expect(
+      withSubmittedBirthDate(saved, {
+        precision: "month",
+        birthYear: "2018",
+        birthMonth: "7",
+      }),
+    ).toEqual({ birthDate: "2020-04-15", birthYear: "2018", birthMonth: "7" });
+  });
+
+  it("送信されなかった入力欄は保存済みの値のままにする", () => {
+    expect(
+      withSubmittedBirthDate(saved, { precision: "year", birthYear: "2018" }),
+    ).toEqual({ birthDate: "2020-04-15", birthYear: "2018", birthMonth: "4" });
+  });
+
+  it("空にして送信した入力欄は空のままにする", () => {
+    expect(
+      withSubmittedBirthDate(saved, {
+        precision: "month",
+        birthYear: "",
+        birthMonth: "",
+      }),
+    ).toEqual({ birthDate: "2020-04-15", birthYear: "", birthMonth: null });
   });
 });

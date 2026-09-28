@@ -24,10 +24,10 @@ import {
 import { deleteMediaAssetsByCat } from "@/features/media/storage";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { applyProfileImageChange } from "./applyProfileImage";
+import type { SubmittedBirthDate } from "./birthDate";
 import { parseProfileImageChange } from "./profileImageForm";
 import {
   BIRTH_DATE_PRECISIONS,
-  type BirthDatePrecision,
   type CatFormFieldErrors,
   catFormSchema,
   resolveBirthDate,
@@ -36,9 +36,23 @@ import {
 export type CatFormState = SubmitRedirect & {
   fieldErrors?: CatFormFieldErrors;
   formError?: string;
-  // 入力エラーで戻したときに、送信した生年月日のわかる範囲の入力欄を表示し直すための値
-  birthDatePrecision?: BirthDatePrecision;
+  // 入力エラーで戻したときに、送信した生年月日の入力欄と値を表示し直すための値
+  submittedBirthDate?: SubmittedBirthDate;
 };
+
+function readSubmittedBirthDate(formData: FormData): SubmittedBirthDate {
+  const text = (name: string) => {
+    const value = formData.get(name);
+    return typeof value === "string" ? value : undefined;
+  };
+  const precision = formData.get("birthDatePrecision");
+  return {
+    precision: BIRTH_DATE_PRECISIONS.find((value) => value === precision),
+    birthDate: text("birthDate"),
+    birthYear: text("birthYear"),
+    birthMonth: text("birthMonth"),
+  };
+}
 
 function parseFormData(formData: FormData) {
   const parsed = catFormSchema.safeParse({
@@ -52,13 +66,10 @@ function parseFormData(formData: FormData) {
     adoptedAt: formData.get("adoptedAt"),
   });
   if (!parsed.success) {
-    const precision = formData.get("birthDatePrecision");
     return {
       success: false as const,
       fieldErrors: parsed.error.flatten().fieldErrors,
-      birthDatePrecision: BIRTH_DATE_PRECISIONS.find(
-        (value) => value === precision,
-      ),
+      submittedBirthDate: readSubmittedBirthDate(formData),
     };
   }
 
@@ -67,7 +78,7 @@ function parseFormData(formData: FormData) {
     return {
       success: false as const,
       fieldErrors: birth.fieldErrors,
-      birthDatePrecision: parsed.data.birthDatePrecision,
+      submittedBirthDate: readSubmittedBirthDate(formData),
     };
   }
 
@@ -93,7 +104,7 @@ export async function createCatAction(
   if (!parsed.success) {
     return {
       fieldErrors: parsed.fieldErrors,
-      birthDatePrecision: parsed.birthDatePrecision,
+      submittedBirthDate: parsed.submittedBirthDate,
     };
   }
 
@@ -116,7 +127,7 @@ export async function updateCatAction(
   if (!parsed.success) {
     return {
       fieldErrors: parsed.fieldErrors,
-      birthDatePrecision: parsed.birthDatePrecision,
+      submittedBirthDate: parsed.submittedBirthDate,
     };
   }
 

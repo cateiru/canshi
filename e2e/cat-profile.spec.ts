@@ -161,19 +161,22 @@ test("生年月日を年のみ・年月のみでも登録・編集できる", as
   await expect(page).toHaveURL(detailUrl);
   await expect(birthDateDetail()).toHaveText(/^2020年（\d+歳/);
 
-  // 年月のみに変えると、月が未選択の場合は保存できない
+  // 年月のみに変えると、月が未選択の場合は保存できない。
+  // 入力エラーで戻っても、変更した生まれた年は保存済みの値に戻らない
   await page.goto(`${detailUrl}/edit`);
   await choosePrecision("年月のみ");
+  await page.getByLabel("生まれた年（西暦）").fill("2018");
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page.getByText("生まれた月を選択してください")).toBeVisible();
+  await expect(page.getByLabel("生まれた年（西暦）")).toHaveValue("2018");
 
   await page.getByLabel("生まれた月").click();
   await page.getByRole("option", { name: "4月", exact: true }).click();
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page).toHaveURL(detailUrl);
-  await expect(birthDateDetail()).toHaveText(/^2020年4月（\d+歳/);
+  await expect(birthDateDetail()).toHaveText(/^2018年4月（\d+歳/);
 
   await page.goto(`${detailUrl}/edit`);
-  await expect(page.getByLabel("生まれた年（西暦）")).toHaveValue("2020");
+  await expect(page.getByLabel("生まれた年（西暦）")).toHaveValue("2018");
   await expect(page.getByLabel("生まれた月")).toContainText("4月");
 });
