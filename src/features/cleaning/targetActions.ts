@@ -1,7 +1,6 @@
 "use server";
 
 import { and, eq, sql } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
   type CleaningTarget,
@@ -10,12 +9,13 @@ import {
   notificationSettings,
   notifications,
 } from "@/db/schema";
+import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   type CleaningTargetFormFieldErrors,
   cleaningTargetFormSchema,
 } from "./targetSchema";
 
-export type CleaningTargetFormState = {
+export type CleaningTargetFormState = SubmitRedirect & {
   fieldErrors?: CleaningTargetFormFieldErrors;
   formError?: string;
 };
@@ -63,7 +63,7 @@ export async function createCleaningTargetAction(
     sortOrder: await nextSortOrder(catId),
   });
 
-  redirect(`/cats/${catId}/cleaning`);
+  return { redirectTo: `/cats/${catId}/cleaning` };
 }
 
 /**
@@ -74,8 +74,7 @@ export async function createCleaningTargetFromPresetAction(
   name: string,
   frequencyValue: number,
   frequencyUnit: CleaningTarget["frequencyUnit"],
-  _formData: FormData,
-): Promise<void> {
+): Promise<SubmitRedirect> {
   const db = getDb();
   await db.insert(cleaningTargets).values({
     catId,
@@ -86,7 +85,7 @@ export async function createCleaningTargetFromPresetAction(
     sortOrder: await nextSortOrder(catId),
   });
 
-  redirect(`/cats/${catId}/cleaning`);
+  return { redirectTo: `/cats/${catId}/cleaning` };
 }
 
 export async function updateCleaningTargetAction(
@@ -119,13 +118,13 @@ export async function updateCleaningTargetAction(
     return { formError: "掃除対象が見つかりませんでした" };
   }
 
-  redirect(`/cats/${catId}/cleaning`);
+  return { redirectTo: `/cats/${catId}/cleaning` };
 }
 
 export async function deleteCleaningTargetAction(
   catId: string,
   id: string,
-): Promise<void> {
+): Promise<SubmitRedirect> {
   const db = getDb();
   // cleaning_records から cleaning_targets への外部キー制約があるため実施記録も同時に削除する。
   // notifications・notification_settings の reference_id もこの対象を指しうるため
@@ -162,5 +161,5 @@ export async function deleteCleaningTargetAction(
       .delete(cleaningTargets)
       .where(and(eq(cleaningTargets.id, id), eq(cleaningTargets.catId, catId))),
   ]);
-  redirect(`/cats/${catId}/cleaning`);
+  return { redirectTo: `/cats/${catId}/cleaning` };
 }

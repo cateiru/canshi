@@ -226,7 +226,7 @@ export async function deleteHospitalVisitAction(
     .from(hospitalVisits)
     .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
     .limit(1);
-  if (!existing) redirect(`/cats/${catId}/hospital-visits`);
+  if (!existing) redirect(`/cats/${catId}/hospital-visits`, "replace");
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, id);
   // symptoms.hospital_visit_id / medications.hospital_visit_id /
@@ -252,5 +252,5 @@ export async function deleteHospitalVisitAction(
       .delete(hospitalVisits)
       .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),
   ]);
-  redirect(`/cats/${catId}/hospital-visits`);
+  redirect(`/cats/${catId}/hospital-visits`, "replace");
 }

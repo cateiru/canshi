@@ -129,5 +129,5 @@ export async function deleteVomitRecordAction(
   await db
     .delete(vomitRecords)
     .where(and(eq(vomitRecords.id, id), eq(vomitRecords.catId, catId)));
-  redirect(`/cats/${catId}/vomit-records`);
+  redirect(`/cats/${catId}/vomit-records`, "replace");
 }

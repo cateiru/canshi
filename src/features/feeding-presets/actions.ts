@@ -1,16 +1,16 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import type { z } from "zod";
 import { getDb } from "@/db/client";
 import { feedingPresetItems, feedingPresets } from "@/db/schema";
+import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   type FeedingPresetFormFieldErrors,
   feedingPresetFormSchema,
 } from "./schema";
 
-export type FeedingPresetFormState = {
+export type FeedingPresetFormState = SubmitRedirect & {
   fieldErrors?: FeedingPresetFormFieldErrors;
   formError?: string;
 };
@@ -97,7 +97,7 @@ export async function createFeedingPresetAction(
     ),
   ]);
 
-  redirect("/feeding-presets");
+  return { redirectTo: "/feeding-presets" };
 }
 
 export async function updateFeedingPresetAction(
@@ -138,7 +138,7 @@ export async function updateFeedingPresetAction(
     ),
   ]);
 
-  redirect("/feeding-presets");
+  return { redirectTo: "/feeding-presets" };
 }
 
 export type DeleteFeedingPresetResult = { error?: string };

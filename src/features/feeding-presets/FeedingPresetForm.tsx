@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { TbCheck, TbPlus, TbX } from "react-icons/tb";
 import { Button, FormField, Select } from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
+import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import type { FeedingPresetFormState } from "./actions";
 import styles from "./FeedingPresetForm.module.css";
 import type { FeedingPresetWithItems } from "./queries";
@@ -44,7 +45,10 @@ export function FeedingPresetForm({
   preset,
   submitLabel,
 }: FeedingPresetFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useSubmitActionState(
+    action,
+    initialState,
+  );
 
   const [items, setItems] = useState<ItemRow[]>(() =>
     preset && preset.items.length > 0

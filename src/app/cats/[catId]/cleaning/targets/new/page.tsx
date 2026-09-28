@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { TbPlus, TbStack2 } from "react-icons/tb";
-import { Breadcrumb, Button } from "@/components/ui";
+import { Breadcrumb } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { CleaningTargetForm } from "@/features/cleaning/CleaningTargetForm";
+import { CleaningTargetPresetButton } from "@/features/cleaning/CleaningTargetPresetButton";
 import { CLEANING_TARGET_PRESETS } from "@/features/cleaning/presets";
 import {
   createCleaningTargetAction,
@@ -51,7 +52,7 @@ export default async function NewCleaningTargetPage({
         </h2>
         <div className={styles.presets}>
           {CLEANING_TARGET_PRESETS.map((preset) => (
-            <form
+            <CleaningTargetPresetButton
               key={preset.name}
               action={createCleaningTargetFromPresetAction.bind(
                 null,
@@ -60,11 +61,8 @@ export default async function NewCleaningTargetPage({
                 preset.frequencyValue,
                 preset.frequencyUnit,
               )}
-            >
-              <Button type="submit" variant="secondary">
-                {preset.name}を追加する
-              </Button>
-            </form>
+              label={`${preset.name}を追加する`}
+            />
           ))}
         </div>
       </section>

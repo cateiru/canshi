@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useActionState, useRef } from "react";
+import { useActionState, useRef, useState } from "react";
+import { useNavigateAfterSubmit } from "@/features/navigation/useNavigateAfterSubmit";
 import { MEDIA_ASSET_IDS_FIELD, MEDIA_FIELD_MARKER } from "./formFields";
 import type { MediaAttachmentsController } from "./useMediaAttachments";
 
@@ -36,6 +36,7 @@ export type UseMediaFormActionOptions<S extends MediaFormState> = {
 
 /**
  * `useActionState` をラップし、添付のアップロード完了を待ってから記録を保存し、画面遷移する。
+ * 遷移は作成・編集ページを履歴に残さないよう `useNavigateAfterSubmit` で行う。
  * 添付はファイルを選んだ時点で下書きとしてアップロード済みのため、送信時は asset ID だけを送る。
  * アップロードに失敗したファイルが残っている場合は送信せず、再試行か取り消しを促す
  */
@@ -46,13 +47,15 @@ export function useMediaFormAction<S extends MediaFormState>({
   media,
   redirectTo,
 }: UseMediaFormActionOptions<S>) {
-  const router = useRouter();
+  const navigateAfterSubmit = useNavigateAfterSubmit();
   // 新規作成に成功した記録の ID。
   // 再送信で入力エラーになると Action の返す状態は `savedRecordId` を含まなくなるため、
   // 状態とは別に保持して以後の送信では必ず同じ記録を更新する（記録の重複作成を防ぐ）
   const savedRecordIdRef = useRef<string | null>(null);
+  // 保存後の画面遷移が終わるまでは送信中として扱い、二重送信を防ぐ
+  const [isNavigating, setIsNavigating] = useState(false);
 
-  return useActionState<S, FormData>(
+  const [state, formAction, isPending] = useActionState<S, FormData>(
     async (previousState, formData) => {
       const previous = previousState as S;
       // 選んだ直後に保存された場合もあるため、進行中のアップロードが終わるのを待つ
@@ -82,10 +85,12 @@ export function useMediaFormAction<S extends MediaFormState>({
         return result;
       }
 
-      router.push(redirectTo);
+      setIsNavigating(true);
+      navigateAfterSubmit(redirectTo);
       return result;
       // S は Promise ではない状態オブジェクトなので Awaited<S> と同じ型として扱う
     },
     initialState as Awaited<S>,
   );
+  return [state, formAction, isPending || isNavigating] as const;
 }

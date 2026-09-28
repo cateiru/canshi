@@ -109,6 +109,8 @@ test("猫の編集ページでプロフィール画像を切り抜いて設定�
   await chooseImage("b.png", [0, 255, 0, 255]);
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page).toHaveURL(detailUrl);
+  // 保存後は直前の履歴エントリ（詳細ページ）へ戻り、表示は戻った後に最新の内容へ更新される
+  await expect(avatar()).not.toHaveAttribute("src", srcA);
   const srcB = await avatarSrc();
   expect(srcB).toMatch(/^\/media\/[^/]+\/thumbnail$/);
   expect(srcB).not.toBe(srcA);

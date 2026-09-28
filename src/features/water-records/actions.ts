@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { waterRecords } from "@/db/schema";
+import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import { calculateEstimatedIntakeMl } from "./calculations";
 import {
@@ -11,7 +12,7 @@ import {
   waterRecordFormSchema,
 } from "./schema";
 
-export type WaterRecordFormState = {
+export type WaterRecordFormState = SubmitRedirect & {
   fieldErrors?: WaterRecordFormFieldErrors;
   formError?: string;
 };
@@ -61,7 +62,7 @@ export async function createWaterRecordAction(
     memo: parsed.data.memo ?? null,
   });
 
-  redirect(`/cats/${catId}/water-records`);
+  return { redirectTo: `/cats/${catId}/water-records` };
 }
 
 export async function updateWaterRecordAction(
@@ -104,7 +105,7 @@ export async function updateWaterRecordAction(
     return { formError: "記録が見つかりませんでした" };
   }
 
-  redirect(`/cats/${catId}/water-records`);
+  return { redirectTo: `/cats/${catId}/water-records` };
 }
 
 export async function deleteWaterRecordAction(
@@ -115,5 +116,5 @@ export async function deleteWaterRecordAction(
   await db
     .delete(waterRecords)
     .where(and(eq(waterRecords.id, id), eq(waterRecords.catId, catId)));
-  redirect(`/cats/${catId}/water-records`);
+  redirect(`/cats/${catId}/water-records`, "replace");
 }

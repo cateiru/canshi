@@ -1,6 +1,6 @@
 import { act, render, waitFor } from "@testing-library/react";
 import { startTransition } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MEDIA_ASSET_IDS_FIELD, MEDIA_FIELD_MARKER } from "./formFields";
 import type {
   MediaAttachmentsController,
@@ -8,9 +8,10 @@ import type {
 } from "./useMediaAttachments";
 import { type MediaFormState, useMediaFormAction } from "./useMediaFormAction";
 
-const push = vi.fn();
+const replace = vi.fn();
+const back = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, refresh: vi.fn() }),
+  useRouter: () => ({ replace, back, push: vi.fn(), refresh: vi.fn() }),
 }));
 
 type Submit = (formData: FormData) => void;
@@ -63,8 +64,14 @@ function setup(props: Omit<Parameters<typeof Harness>[0], "onReady">) {
 }
 
 describe("useMediaFormAction", () => {
+  beforeEach(() => {
+    replace.mockClear();
+    back.mockClear();
+    // 直前の履歴エントリが分からない状態では、保存後は今のエントリを置き換える
+    window.sessionStorage.clear();
+  });
+
   it("アップロードの完了を待ち、asset ID を表示順に詰めて送信する", async () => {
-    push.mockClear();
     const action = vi.fn<Action>(async () => ({ savedRecordId: "rec-1" }));
     let finishUploads: (summary: MediaUploadSummary) => void = () => {};
     const waitForUploads = vi.fn(
@@ -88,7 +95,7 @@ describe("useMediaFormAction", () => {
     const sent = action.mock.calls[0][1];
     expect(sent.getAll(MEDIA_ASSET_IDS_FIELD)).toEqual(["asset-2", "draft-1"]);
     expect(sent.get(MEDIA_FIELD_MARKER)).toBe("1");
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/done"));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/done"));
   });
 
   it("アップロードに失敗したファイルがあれば送信しない", async () => {
@@ -109,7 +116,6 @@ describe("useMediaFormAction", () => {
   });
 
   it("添付の紐付け失敗後の再送信で入力エラーになっても、次の送信は同じ記録の更新になる", async () => {
-    push.mockClear();
     const createAction = vi.fn<Action>(async () => ({
       savedRecordId: "rec-1",
       formError: "記録は保存しましたが、添付を保存できませんでした",
@@ -132,7 +138,7 @@ describe("useMediaFormAction", () => {
     await act(async () => submit());
     await waitFor(() => expect(getState().savedRecordId).toBe("rec-1"));
     expect(getState().formError).toContain("添付を保存できませんでした");
-    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
 
     // 2 回目: 更新 Action が入力エラーを返し、状態から savedRecordId が消える
     await act(async () => submit());
@@ -147,6 +153,6 @@ describe("useMediaFormAction", () => {
     await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
     expect(updateAction).toHaveBeenLastCalledWith("rec-1");
     expect(createAction).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/done"));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/done"));
   });
 });

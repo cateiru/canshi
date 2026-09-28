@@ -263,7 +263,7 @@ export async function deleteExpenseAction(
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, id);
   await db.batch(deleteExpenseStatements(db, id));
-  redirect(`/cats/${catId}/expenses`);
+  redirect(`/cats/${catId}/expenses`, "replace");
 }
 
 const dateSchema = z.string().date();

@@ -191,5 +191,5 @@ export async function deleteMedicationAction(
       .delete(medications)
       .where(and(eq(medications.id, id), eq(medications.catId, catId))),
   ]);
-  redirect(`/cats/${catId}/medications`);
+  redirect(`/cats/${catId}/medications`, "replace");
 }

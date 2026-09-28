@@ -4,13 +4,14 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { cleaningRecords, cleaningTargets } from "@/db/schema";
+import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {
   type CleaningRecordFormFieldErrors,
   cleaningRecordFormSchema,
 } from "./recordSchema";
 
-export type CleaningRecordFormState = {
+export type CleaningRecordFormState = SubmitRedirect & {
   fieldErrors?: CleaningRecordFormFieldErrors;
   formError?: string;
 };
@@ -65,7 +66,9 @@ export async function createCleaningRecordAction(
     memo: parsed.data.memo ?? null,
   });
 
-  redirect(`/cats/${catId}/cleaning/targets/${cleaningTargetId}/records`);
+  return {
+    redirectTo: `/cats/${catId}/cleaning/targets/${cleaningTargetId}/records`,
+  };
 }
 
 export async function updateCleaningRecordAction(
@@ -105,7 +108,9 @@ export async function updateCleaningRecordAction(
     return { formError: "記録が見つかりませんでした" };
   }
 
-  redirect(`/cats/${catId}/cleaning/targets/${cleaningTargetId}/records`);
+  return {
+    redirectTo: `/cats/${catId}/cleaning/targets/${cleaningTargetId}/records`,
+  };
 }
 
 export async function deleteCleaningRecordAction(
@@ -123,7 +128,10 @@ export async function deleteCleaningRecordAction(
         eq(cleaningRecords.cleaningTargetId, cleaningTargetId),
       ),
     );
-  redirect(`/cats/${catId}/cleaning/targets/${cleaningTargetId}/records`);
+  redirect(
+    `/cats/${catId}/cleaning/targets/${cleaningTargetId}/records`,
+    "replace",
+  );
 }
 
 /**
@@ -160,5 +168,5 @@ export async function quickCreateCleaningRecordAction(
     });
   }
 
-  redirect(`/cats/${catId}/cleaning`);
+  redirect(`/cats/${catId}/cleaning`, "replace");
 }

@@ -1,7 +1,6 @@
 "use server";
 
 import { eq, inArray } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
   cats,
@@ -23,11 +22,12 @@ import {
   weightRecords,
 } from "@/db/schema";
 import { deleteMediaAssetsByCat } from "@/features/media/storage";
+import type { SubmitRedirect } from "@/features/navigation/types";
 import { applyProfileImageChange } from "./applyProfileImage";
 import { parseProfileImageChange } from "./profileImageForm";
 import { type CatFormFieldErrors, catFormSchema } from "./schema";
 
-export type CatFormState = {
+export type CatFormState = SubmitRedirect & {
   fieldErrors?: CatFormFieldErrors;
   formError?: string;
 };
@@ -64,7 +64,7 @@ export async function createCatAction(
     })
     .returning({ id: cats.id });
 
-  redirect(`/cats/${created.id}`);
+  return { redirectTo: `/cats/${created.id}` };
 }
 
 export async function updateCatAction(
@@ -104,10 +104,10 @@ export async function updateCatAction(
     return { formError: profileImageError };
   }
 
-  redirect(`/cats/${id}`);
+  return { redirectTo: `/cats/${id}` };
 }
 
-export async function deleteCatAction(id: string): Promise<void> {
+export async function deleteCatAction(id: string): Promise<SubmitRedirect> {
   const db = getDb();
   // media_assets.cat_id が cats.id を参照しているため、猫に紐付くメディア（R2 のオブジェクトと行）を
   // 先に削除する。R2 の削除に失敗した場合はここで例外になり、猫と記録は残る
@@ -167,5 +167,5 @@ export async function deleteCatAction(id: string): Promise<void> {
     db.delete(notificationSettings).where(eq(notificationSettings.catId, id)),
     db.delete(cats).where(eq(cats.id, id)),
   ]);
-  redirect("/cats");
+  return { redirectTo: "/cats" };
 }

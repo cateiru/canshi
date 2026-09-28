@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import {
   TbCalendar,
   TbCheck,
@@ -13,6 +13,7 @@ import { Button, FormField, Select } from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
 import type { FeedingPresetWithItems } from "@/features/feeding-presets/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
+import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { FeedingRecordFormState } from "./actions";
 import styles from "./FeedingRecordForm.module.css";
@@ -59,7 +60,10 @@ export function FeedingRecordForm({
   feedingRecord,
   submitLabel,
 }: FeedingRecordFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useSubmitActionState(
+    action,
+    initialState,
+  );
 
   const defaultFoodProductId =
     recentlyUsedFoodProductIds[0] ?? foodProducts[0]?.id ?? "";

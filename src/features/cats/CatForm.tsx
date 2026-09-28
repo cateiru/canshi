@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { TbCalendar, TbCheck } from "react-icons/tb";
 import {
   Button,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui";
 import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { Cat } from "@/db/schema";
+import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import type { CatFormState } from "./actions";
 import { CAT_BREEDS, matchesBreed } from "./breeds";
 import styles from "./CatForm.module.css";
@@ -37,7 +38,10 @@ const BREED_OPTIONS = CAT_BREEDS.map((breed) => ({
 }));
 
 export function CatForm({ action, cat, submitLabel }: CatFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useSubmitActionState(
+    action,
+    initialState,
+  );
   const [isProfileImageBusy, setIsProfileImageBusy] = useState(false);
 
   return (

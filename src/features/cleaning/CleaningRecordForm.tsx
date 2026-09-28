@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Button, FormField, Textarea } from "@/components/ui";
 import type { CleaningRecord } from "@/db/schema";
+import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import styles from "./CleaningRecordForm.module.css";
 import type { CleaningRecordFormState } from "./recordActions";
@@ -24,7 +25,10 @@ export function CleaningRecordForm({
   cleaningRecord,
   submitLabel,
 }: CleaningRecordFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useSubmitActionState(
+    action,
+    initialState,
+  );
   const [now] = useState(() => new Date());
   const { date: defaultDate, time: defaultTime } = cleaningRecord?.performedAt
     ? splitDateTimeUtc(cleaningRecord.performedAt)

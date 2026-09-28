@@ -4,13 +4,14 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { medicationDoses, medications } from "@/db/schema";
+import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import {
   type MedicationDoseFormFieldErrors,
   medicationDoseFormSchema,
 } from "./doseSchema";
 
-export type MedicationDoseFormState = {
+export type MedicationDoseFormState = SubmitRedirect & {
   fieldErrors?: MedicationDoseFormFieldErrors;
   formError?: string;
 };
@@ -61,7 +62,7 @@ export async function createMedicationDoseAction(
     memo: parsed.data.memo ?? null,
   });
 
-  redirect(`/cats/${catId}/medications/${medicationId}/doses`);
+  return { redirectTo: `/cats/${catId}/medications/${medicationId}/doses` };
 }
 
 export async function updateMedicationDoseAction(
@@ -102,7 +103,7 @@ export async function updateMedicationDoseAction(
     return { formError: "投薬実績が見つかりませんでした" };
   }
 
-  redirect(`/cats/${catId}/medications/${medicationId}/doses`);
+  return { redirectTo: `/cats/${catId}/medications/${medicationId}/doses` };
 }
 
 export async function deleteMedicationDoseAction(
@@ -120,5 +121,5 @@ export async function deleteMedicationDoseAction(
         eq(medicationDoses.medicationId, medicationId),
       ),
     );
-  redirect(`/cats/${catId}/medications/${medicationId}/doses`);
+  redirect(`/cats/${catId}/medications/${medicationId}/doses`, "replace");
 }
