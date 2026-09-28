@@ -9,8 +9,9 @@ import {
 import { deleteCatAction } from "@/features/cats/actions";
 import {
   calculateAge,
-  calculateDaysSinceAdoption,
+  calculateTimeSinceAdoption,
   formatAge,
+  formatTimeSinceAdoption,
 } from "@/features/cats/age";
 import { BirthdayCelebration } from "@/features/cats/BirthdayCelebration";
 import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
@@ -75,7 +76,7 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
           <dd>
             {cat.adoptedAt ?? "未設定"}
             {cat.adoptedAt
-              ? `（お迎えから${calculateDaysSinceAdoption(cat.adoptedAt)}日）`
+              ? `（お迎えから${formatTimeSinceAdoption(calculateTimeSinceAdoption(cat.adoptedAt))}）`
               : ""}
           </dd>
         </dl>

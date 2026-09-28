@@ -3,8 +3,9 @@ import { TbPlus } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
 import {
   calculateAge,
-  calculateDaysSinceAdoption,
+  calculateTimeSinceAdoption,
   formatAge,
+  formatTimeSinceAdoption,
 } from "@/features/cats/age";
 import { BirthdayCelebration } from "@/features/cats/BirthdayCelebration";
 import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
@@ -69,8 +70,10 @@ export default async function CatsPage() {
                       ) : null}
                       {cat.adoptedAt ? (
                         <p>
-                          お迎えから{calculateDaysSinceAdoption(cat.adoptedAt)}
-                          日
+                          お迎えから
+                          {formatTimeSinceAdoption(
+                            calculateTimeSinceAdoption(cat.adoptedAt),
+                          )}
                         </p>
                       ) : null}
                     </div>
