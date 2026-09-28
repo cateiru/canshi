@@ -1,7 +1,11 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TbCheck, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink, RecordEmptyState } from "@/components/ui";
+import { TbPlus } from "react-icons/tb";
+import {
+  Breadcrumb,
+  ButtonLink,
+  FilterTabs,
+  RecordEmptyState,
+} from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById, listCats } from "@/features/cats/queries";
 import {
@@ -126,22 +130,15 @@ export default async function ExpensesPage({
         })}
       />
 
-      <nav className={styles.scopeNav} aria-label="支出の絞り込み">
-        {scopeTabs.map((tab) => (
-          <Link
-            key={tab.scope}
-            href={buildExpensesHref(catId, { ym, scope: tab.scope })}
-            className={styles.scopeTab}
-            data-selected={tab.scope === scope ? "true" : undefined}
-            aria-current={tab.scope === scope ? "page" : undefined}
-          >
-            {tab.scope === scope && (
-              <TbCheck className={styles.selectedMark} aria-hidden="true" />
-            )}
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+      <FilterTabs
+        aria-label="支出の絞り込み"
+        selectedKey={scope}
+        items={scopeTabs.map((tab) => ({
+          key: tab.scope,
+          href: buildExpensesHref(catId, { ym, scope: tab.scope }),
+          label: tab.label,
+        }))}
+      />
 
       <ExpenseChart
         months={buildMonthlyExpenseChart(chartExpenses, { year, month })}

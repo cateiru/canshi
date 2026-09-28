@@ -10,6 +10,7 @@ export * from "./CatEarFrame/CatEarFrame";
 export * from "./Checkbox/Checkbox";
 export * from "./Collapsible/Collapsible";
 export * from "./ComboBox/ComboBox";
+export * from "./FilterTabs/FilterTabs";
 export * from "./Footer/Footer";
 export * from "./FormField/FormField";
 export * from "./Heading/Heading";
