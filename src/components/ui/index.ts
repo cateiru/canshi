@@ -14,6 +14,8 @@ export * from "./FilterTabs/FilterTabs";
 export * from "./Footer/Footer";
 export * from "./FormField/FormField";
 export * from "./Heading/Heading";
+export * from "./ImagePreview/ImagePreview";
+export * from "./ImagePreview/ImageStage";
 export * from "./Modal/Modal";
 export * from "./MonthNav/MonthNav";
 export * from "./NavCard/NavCard";
