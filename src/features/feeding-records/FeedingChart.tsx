@@ -7,10 +7,9 @@ import {
   Disclosure,
   DisclosurePanel,
   Heading,
-  ToggleButton,
-  ToggleButtonGroup,
 } from "react-aria-components";
 import { TbTriangleFilled } from "react-icons/tb";
+import { SegmentedControl } from "@/components/ui";
 import {
   CalorieIcon,
   FeedingIcon,
@@ -59,29 +58,14 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
       <DisclosurePanel>
         <div className={styles.panelInner}>
           <div className={styles.header}>
-            <ToggleButtonGroup
-              className={styles.periodGroup}
-              selectionMode="single"
-              disallowEmptySelection
-              selectedKeys={[period]}
-              onSelectionChange={(keys) => {
-                const [next] = keys;
-                if (next) {
-                  setPeriod(next as FeedingChartPeriod);
-                }
-              }}
+            <SegmentedControl
+              size="sm"
+              options={PERIOD_ORDER}
+              labels={FEEDING_CHART_PERIOD_LABEL}
+              value={period}
+              onChange={setPeriod}
               aria-label="表示期間"
-            >
-              {PERIOD_ORDER.map((value) => (
-                <ToggleButton
-                  key={value}
-                  id={value}
-                  className={styles.periodButton}
-                >
-                  {FEEDING_CHART_PERIOD_LABEL[value]}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
+            />
           </div>
 
           {filtered.length === 0 ? (

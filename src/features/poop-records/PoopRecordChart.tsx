@@ -7,10 +7,9 @@ import {
   Disclosure,
   DisclosurePanel,
   Heading,
-  ToggleButton,
-  ToggleButtonGroup,
 } from "react-aria-components";
 import { TbTriangleFilled } from "react-icons/tb";
+import { SegmentedControl } from "@/components/ui";
 import {
   filterByPeriod,
   POOP_CHART_PERIOD_LABEL,
@@ -60,29 +59,14 @@ export function PoopRecordChart({ points, now }: PoopRecordChartProps) {
       <DisclosurePanel>
         <div className={styles.panelInner}>
           <div className={styles.header}>
-            <ToggleButtonGroup
-              className={styles.periodGroup}
-              selectionMode="single"
-              disallowEmptySelection
-              selectedKeys={[period]}
-              onSelectionChange={(keys) => {
-                const [next] = keys;
-                if (next) {
-                  setPeriod(next as PoopChartPeriod);
-                }
-              }}
+            <SegmentedControl
+              size="sm"
+              options={PERIOD_ORDER}
+              labels={POOP_CHART_PERIOD_LABEL}
+              value={period}
+              onChange={setPeriod}
               aria-label="表示期間"
-            >
-              {PERIOD_ORDER.map((value) => (
-                <ToggleButton
-                  key={value}
-                  id={value}
-                  className={styles.periodButton}
-                >
-                  {POOP_CHART_PERIOD_LABEL[value]}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
+            />
           </div>
 
           {filtered.length === 0 ? (

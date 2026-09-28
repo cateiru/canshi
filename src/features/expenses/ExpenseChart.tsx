@@ -7,10 +7,9 @@ import {
   Disclosure,
   DisclosurePanel,
   Heading,
-  ToggleButton,
-  ToggleButtonGroup,
 } from "react-aria-components";
 import { TbTriangleFilled } from "react-icons/tb";
+import { SegmentedControl } from "@/components/ui";
 import { EXPENSE_CATEGORIES } from "@/db/schema";
 import {
   EXPENSE_CHART_PERIOD_LABEL,
@@ -66,29 +65,14 @@ export function ExpenseChart({ months }: ExpenseChartProps) {
                 {formatChartYearMonth(first)}〜{formatChartYearMonth(last)}
               </p>
             ) : null}
-            <ToggleButtonGroup
-              className={styles.periodGroup}
-              selectionMode="single"
-              disallowEmptySelection
-              selectedKeys={[period]}
-              onSelectionChange={(keys) => {
-                const [next] = keys;
-                if (next) {
-                  setPeriod(next as ExpenseChartPeriod);
-                }
-              }}
+            <SegmentedControl
+              size="sm"
+              options={PERIOD_ORDER}
+              labels={EXPENSE_CHART_PERIOD_LABEL}
+              value={period}
+              onChange={setPeriod}
               aria-label="表示期間"
-            >
-              {PERIOD_ORDER.map((value) => (
-                <ToggleButton
-                  key={value}
-                  id={value}
-                  className={styles.periodButton}
-                >
-                  {EXPENSE_CHART_PERIOD_LABEL[value]}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
+            />
           </div>
 
           {hasExpenses ? (

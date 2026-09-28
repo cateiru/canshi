@@ -17,6 +17,7 @@ export * from "./Modal/Modal";
 export * from "./NavCard/NavCard";
 export * from "./Radio/Radio";
 export * from "./RecordCard/RecordCard";
+export * from "./SegmentedControl/SegmentedControl";
 export * from "./Select/Select";
 export * from "./Slider/Slider";
 export * from "./Tabs/Tabs";
