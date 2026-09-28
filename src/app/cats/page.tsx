@@ -3,8 +3,9 @@ import { TbPlus } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
 import {
   calculateAge,
-  calculateDaysSinceAdoption,
+  calculateTimeSinceAdoption,
   formatAge,
+  formatTimeSinceAdoption,
 } from "@/features/cats/age";
 import { BirthdayCelebration } from "@/features/cats/BirthdayCelebration";
 import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
@@ -48,37 +49,43 @@ export default async function CatsPage() {
         </Surface>
       ) : (
         <ul className={styles.list}>
-          {catList.map((cat) => (
-            <li key={cat.id}>
-              <Link href={`/cats/${cat.id}`} className={styles.cardLink}>
-                <Surface>
-                  <div className={styles.cardBody}>
-                    <CatAvatar
-                      name={cat.name}
-                      profileMediaAssetId={cat.profileMediaAssetId}
-                      profileCropX={cat.profileCropX}
-                      profileCropY={cat.profileCropY}
-                      profileCropZoom={cat.profileCropZoom}
-                      profileCropRotation={cat.profileCropRotation}
-                    />
-                    <div>
-                      <h2 className={styles.catName}>{cat.name}</h2>
-                      <Badge>{SEX_LABEL[cat.sex]}</Badge>
-                      {cat.birthDate ? (
-                        <p>{formatAge(calculateAge(cat.birthDate))}</p>
-                      ) : null}
-                      {cat.adoptedAt ? (
-                        <p>
-                          お迎えから{calculateDaysSinceAdoption(cat.adoptedAt)}
-                          日
-                        </p>
-                      ) : null}
+          {catList.map((cat) => {
+            const timeSinceAdoption = cat.adoptedAt
+              ? calculateTimeSinceAdoption(cat.adoptedAt)
+              : null;
+
+            return (
+              <li key={cat.id}>
+                <Link href={`/cats/${cat.id}`} className={styles.cardLink}>
+                  <Surface>
+                    <div className={styles.cardBody}>
+                      <CatAvatar
+                        name={cat.name}
+                        profileMediaAssetId={cat.profileMediaAssetId}
+                        profileCropX={cat.profileCropX}
+                        profileCropY={cat.profileCropY}
+                        profileCropZoom={cat.profileCropZoom}
+                        profileCropRotation={cat.profileCropRotation}
+                      />
+                      <div>
+                        <h2 className={styles.catName}>{cat.name}</h2>
+                        <Badge>{SEX_LABEL[cat.sex]}</Badge>
+                        {cat.birthDate ? (
+                          <p>{formatAge(calculateAge(cat.birthDate))}</p>
+                        ) : null}
+                        {timeSinceAdoption ? (
+                          <p>
+                            お迎えから
+                            {formatTimeSinceAdoption(timeSinceAdoption)}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                </Surface>
-              </Link>
-            </li>
-          ))}
+                  </Surface>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </main>

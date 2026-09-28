@@ -17,6 +17,10 @@ function toUtcYearMonthDay(date: Date): YearMonthDay {
   };
 }
 
+function toUtcTime(date: YearMonthDay): number {
+  return Date.UTC(date.year, date.month - 1, date.day);
+}
+
 export type Age = {
   years: number;
   months: number;
@@ -26,10 +30,16 @@ export type Age = {
 /**
  * 生年月日から満年齢（年・月・日）を計算する。
  * `now` は UTC の暦日として扱う（Cloudflare Workers のサーバー時刻を基準とする）。
+ * 生年月日が未来の場合は 0歳0ヶ月0日とする。
  */
 export function calculateAge(birthDate: string, now: Date = new Date()): Age {
   const birth = parseDateOnly(birthDate);
   const today = toUtcYearMonthDay(now);
+
+  const todayUtc = toUtcTime(today);
+  if (toUtcTime(birth) > todayUtc) {
+    return { years: 0, months: 0, days: 0 };
+  }
 
   let years = today.year - birth.year;
   let months = today.month - birth.month;
@@ -42,22 +52,35 @@ export function calculateAge(birthDate: string, now: Date = new Date()): Age {
     months += 12;
   }
 
-  years = Math.max(years, 0);
-  months = Math.max(months, 0);
-
   const totalMonths = years * 12 + months;
   const anchorUtc = Date.UTC(
     birth.year,
     birth.month - 1 + totalMonths,
     birth.day,
   );
-  const todayUtc = Date.UTC(today.year, today.month - 1, today.day);
-  const days = Math.max(
-    Math.round((todayUtc - anchorUtc) / (1000 * 60 * 60 * 24)),
-    0,
-  );
+  const days = Math.round((todayUtc - anchorUtc) / (1000 * 60 * 60 * 24));
 
   return { years, months, days };
+}
+
+/**
+ * 経過した年・月・日を表示用の文字列に変換する。
+ * 1年未満の場合は日数まで表示する（例: 「3ヶ月と15日」「15日」）。
+ */
+function formatElapsed(elapsed: Age, yearUnit: string): string {
+  if (elapsed.years === 0) {
+    if (elapsed.months === 0) {
+      return `${elapsed.days}日`;
+    }
+    if (elapsed.days === 0) {
+      return `${elapsed.months}ヶ月`;
+    }
+    return `${elapsed.months}ヶ月と${elapsed.days}日`;
+  }
+  if (elapsed.months === 0) {
+    return `${elapsed.years}${yearUnit}`;
+  }
+  return `${elapsed.years}${yearUnit}${elapsed.months}ヶ月`;
 }
 
 /**
@@ -65,34 +88,30 @@ export function calculateAge(birthDate: string, now: Date = new Date()): Age {
  * 1歳未満の場合は日数まで表示する（例: 「3ヶ月と15日」「15日」）。
  */
 export function formatAge(age: Age): string {
-  if (age.years === 0) {
-    if (age.months === 0) {
-      return `${age.days}日`;
-    }
-    if (age.days === 0) {
-      return `${age.months}ヶ月`;
-    }
-    return `${age.months}ヶ月と${age.days}日`;
-  }
-  if (age.months === 0) {
-    return `${age.years}歳`;
-  }
-  return `${age.years}歳${age.months}ヶ月`;
+  return formatElapsed(age, "歳");
 }
 
 /**
- * お迎え日から現在までの経過日数を計算する。
+ * お迎え日から現在までの経過期間（年・月・日）を計算する。
+ * 年齢と同じ数え方にするため、満年齢と同じ計算を使う。
  * `now` は UTC の暦日として扱う。
+ * お迎え日が未来の場合はまだお迎えしていないため `null` を返す。
  */
-export function calculateDaysSinceAdoption(
+export function calculateTimeSinceAdoption(
   adoptedAt: string,
   now: Date = new Date(),
-): number {
-  const adopted = parseDateOnly(adoptedAt);
-  const today = toUtcYearMonthDay(now);
+): Age | null {
+  if (toUtcTime(parseDateOnly(adoptedAt)) > toUtcTime(toUtcYearMonthDay(now))) {
+    return null;
+  }
 
-  const adoptedUtc = Date.UTC(adopted.year, adopted.month - 1, adopted.day);
-  const todayUtc = Date.UTC(today.year, today.month - 1, today.day);
+  return calculateAge(adoptedAt, now);
+}
 
-  return Math.round((todayUtc - adoptedUtc) / (1000 * 60 * 60 * 24));
+/**
+ * お迎えからの経過期間を表示用の文字列に変換する。
+ * 年齢と同じ形式で、年の単位だけ「年」にする（例: 「1年3ヶ月」「3ヶ月と15日」）。
+ */
+export function formatTimeSinceAdoption(elapsed: Age): string {
+  return formatElapsed(elapsed, "年");
 }

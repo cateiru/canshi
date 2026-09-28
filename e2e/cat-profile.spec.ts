@@ -28,7 +28,7 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
   await expect(page.getByText("メス")).toBeVisible();
   await expect(page.getByText("マンチカン")).toBeVisible();
   await expect(page.getByText(/歳/)).toBeVisible();
-  await expect(page.getByText(/日）/)).toBeVisible();
+  await expect(page.getByText(/（お迎えから\d+年(?:\d+ヶ月)?）/)).toBeVisible();
 
   await page.goto("/cats");
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();

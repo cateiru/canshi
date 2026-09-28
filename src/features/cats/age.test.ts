@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { calculateAge, calculateDaysSinceAdoption, formatAge } from "./age";
+import {
+  calculateAge,
+  calculateTimeSinceAdoption,
+  formatAge,
+  formatTimeSinceAdoption,
+} from "./age";
 
 describe("calculateAge", () => {
   it("誕生日を迎えている場合は満年齢を計算する", () => {
@@ -35,6 +40,20 @@ describe("calculateAge", () => {
       years: 0,
       months: 3,
       days: 5,
+    });
+  });
+
+  it("生年月日が未来の場合は0歳0ヶ月0日", () => {
+    const now = new Date("2026-09-06T00:00:00Z");
+    expect(calculateAge("2027-01-01", now)).toEqual({
+      years: 0,
+      months: 0,
+      days: 0,
+    });
+    expect(calculateAge("2026-09-20", now)).toEqual({
+      years: 0,
+      months: 0,
+      days: 0,
     });
   });
 
@@ -74,19 +93,69 @@ describe("formatAge", () => {
   });
 });
 
-describe("calculateDaysSinceAdoption", () => {
-  it("お迎え日からの経過日数を計算する", () => {
+describe("calculateTimeSinceAdoption", () => {
+  it("お迎え日からの経過期間を年齢と同じ数え方で計算する", () => {
     const now = new Date("2026-09-06T00:00:00Z");
-    expect(calculateDaysSinceAdoption("2026-08-01", now)).toBe(36);
+    expect(calculateTimeSinceAdoption("2025-06-01", now)).toEqual({
+      years: 1,
+      months: 3,
+      days: 5,
+    });
   });
 
-  it("お迎え日当日は0日", () => {
+  it("お迎え日当日は0年0ヶ月0日", () => {
     const now = new Date("2026-09-06T00:00:00Z");
-    expect(calculateDaysSinceAdoption("2026-09-06", now)).toBe(0);
+    expect(calculateTimeSinceAdoption("2026-09-06", now)).toEqual({
+      years: 0,
+      months: 0,
+      days: 0,
+    });
   });
 
   it("年をまたいでも正しく計算する", () => {
     const now = new Date("2026-01-05T00:00:00Z");
-    expect(calculateDaysSinceAdoption("2025-12-31", now)).toBe(5);
+    expect(calculateTimeSinceAdoption("2025-12-31", now)).toEqual({
+      years: 0,
+      months: 0,
+      days: 5,
+    });
+  });
+
+  it("お迎え日が未来の場合はまだお迎えしていないため null を返す", () => {
+    const now = new Date("2026-09-06T00:00:00Z");
+    expect(calculateTimeSinceAdoption("2027-01-01", now)).toBeNull();
+    expect(calculateTimeSinceAdoption("2026-09-20", now)).toBeNull();
+  });
+});
+
+describe("formatTimeSinceAdoption", () => {
+  it("年と月がある場合は両方表示する", () => {
+    expect(formatTimeSinceAdoption({ years: 1, months: 3, days: 5 })).toBe(
+      "1年3ヶ月",
+    );
+  });
+
+  it("月が0の場合は年のみ表示する", () => {
+    expect(formatTimeSinceAdoption({ years: 1, months: 0, days: 0 })).toBe(
+      "1年",
+    );
+  });
+
+  it("1年未満で月と日がある場合は両方表示する", () => {
+    expect(formatTimeSinceAdoption({ years: 0, months: 3, days: 15 })).toBe(
+      "3ヶ月と15日",
+    );
+  });
+
+  it("1年未満で月が0の場合は日のみ表示する", () => {
+    expect(formatTimeSinceAdoption({ years: 0, months: 0, days: 15 })).toBe(
+      "15日",
+    );
+  });
+
+  it("お迎え当日は0日と表示する", () => {
+    expect(formatTimeSinceAdoption({ years: 0, months: 0, days: 0 })).toBe(
+      "0日",
+    );
   });
 });

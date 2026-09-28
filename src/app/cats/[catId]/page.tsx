@@ -9,8 +9,9 @@ import {
 import { deleteCatAction } from "@/features/cats/actions";
 import {
   calculateAge,
-  calculateDaysSinceAdoption,
+  calculateTimeSinceAdoption,
   formatAge,
+  formatTimeSinceAdoption,
 } from "@/features/cats/age";
 import { BirthdayCelebration } from "@/features/cats/BirthdayCelebration";
 import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
@@ -34,6 +35,10 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
   if (!cat) {
     notFound();
   }
+
+  const timeSinceAdoption = cat.adoptedAt
+    ? calculateTimeSinceAdoption(cat.adoptedAt)
+    : null;
 
   return (
     <main className={styles.main}>
@@ -74,8 +79,8 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
           <dt>お迎え日</dt>
           <dd>
             {cat.adoptedAt ?? "未設定"}
-            {cat.adoptedAt
-              ? `（お迎えから${calculateDaysSinceAdoption(cat.adoptedAt)}日）`
+            {timeSinceAdoption
+              ? `（お迎えから${formatTimeSinceAdoption(timeSinceAdoption)}）`
               : ""}
           </dd>
         </dl>
