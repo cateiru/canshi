@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { TbPencil, TbPlus } from "react-icons/tb";
-import { Badge, Breadcrumb, Button, ButtonLink } from "@/components/ui";
+import {
+  Badge,
+  Breadcrumb,
+  Button,
+  ButtonLink,
+  IconButtonLink,
+} from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { quickCreateCleaningRecordAction } from "@/features/cleaning/recordActions";
@@ -84,15 +90,12 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
               >
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordTitle}>{status.target.name}</h2>
-                  <ButtonLink
+                  <IconButtonLink
                     href={`/cats/${catId}/cleaning/targets/${status.target.id}/edit`}
-                    variant="secondary"
-                    className={styles.iconButton}
+                    icon={TbPencil}
                     aria-label="編集する"
                     title="編集する"
-                  >
-                    <TbPencil aria-hidden="true" size={20} />
-                  </ButtonLink>
+                  />
                 </div>
 
                 <dl className={styles.schedule}>
@@ -164,15 +167,12 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                 >
                   <div className={styles.recordHeader}>
                     <h2 className={styles.recordTitle}>{status.target.name}</h2>
-                    <ButtonLink
+                    <IconButtonLink
                       href={`/cats/${catId}/cleaning/targets/${status.target.id}/edit`}
-                      variant="secondary"
-                      className={styles.iconButton}
+                      icon={TbPencil}
                       aria-label="編集する"
                       title="編集する"
-                    >
-                      <TbPencil aria-hidden="true" size={20} />
-                    </ButtonLink>
+                    />
                   </div>
                   <div className={styles.actions}>
                     <ButtonLink

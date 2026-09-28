@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
@@ -97,15 +97,12 @@ export default async function WeightRecordsPage({
                     </time>
                   </h2>
                   <div className={styles.cardActions}>
-                    <ButtonLink
+                    <IconButtonLink
                       href={`/cats/${catId}/weight-records/${record.id}/edit`}
-                      variant="secondary"
-                      className={styles.iconButton}
+                      icon={TbPencil}
                       aria-label="編集する"
                       title="編集する"
-                    >
-                      <TbPencil aria-hidden="true" size={20} />
-                    </ButtonLink>
+                    />
                     <DeleteRecordButton
                       action={deleteWeightRecordAction.bind(
                         null,
@@ -115,7 +112,6 @@ export default async function WeightRecordsPage({
                       title="体重記録の削除"
                       description="この体重記録を削除しますか？この操作は取り消せません。"
                       iconOnly
-                      className={styles.iconButton}
                     />
                   </div>
                 </div>

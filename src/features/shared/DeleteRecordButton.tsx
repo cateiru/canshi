@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { TbTrash } from "react-icons/tb";
-import { Button, Modal } from "@/components/ui";
+import { Button, IconButton, Modal } from "@/components/ui";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { useNavigateAfterSubmit } from "@/features/navigation/useNavigateAfterSubmit";
 import styles from "./DeleteRecordButton.module.css";
@@ -17,7 +17,6 @@ type DeleteRecordButtonProps = {
   title: string;
   description: string;
   iconOnly?: boolean;
-  className?: string;
 };
 
 export function DeleteRecordButton({
@@ -25,7 +24,6 @@ export function DeleteRecordButton({
   title,
   description,
   iconOnly = false,
-  className,
 }: DeleteRecordButtonProps) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -42,21 +40,26 @@ export function DeleteRecordButton({
       }
     });
   };
-  const trigger = (
-    <Button
-      variant="danger"
-      className={className}
-      aria-label={iconOnly ? "削除する" : undefined}
-      aria-haspopup="dialog"
-      onPress={() => setOpen(true)}
-    >
-      {iconOnly ? <TbTrash aria-hidden="true" size={20} /> : "削除する"}
-    </Button>
-  );
 
   return (
     <>
-      {iconOnly ? <span title="削除する">{trigger}</span> : trigger}
+      {iconOnly ? (
+        <IconButton
+          icon={TbTrash}
+          aria-label="削除する"
+          title="削除する"
+          aria-haspopup="dialog"
+          onPress={() => setOpen(true)}
+        />
+      ) : (
+        <Button
+          variant="danger"
+          aria-haspopup="dialog"
+          onPress={() => setOpen(true)}
+        >
+          削除する
+        </Button>
+      )}
       <Modal open={open} title={title} onClose={() => setOpen(false)}>
         <p>{description}</p>
         <div className={styles.actions}>

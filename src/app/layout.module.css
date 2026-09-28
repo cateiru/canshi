@@ -12,20 +12,7 @@
   padding: var(--space-2) var(--space-4);
 }
 
-.header .iconLink {
+/* 通知の未読件数のバッジを重ねる基準にする */
+.iconLink {
   position: relative;
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-ink);
-}
-
-.header .iconLink:hover,
-.header .iconLink[data-hovered] {
-  background: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
-  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
 }

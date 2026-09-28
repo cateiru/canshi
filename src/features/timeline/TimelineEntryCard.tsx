@@ -1,5 +1,5 @@
 import { TbPencil } from "react-icons/tb";
-import { Badge, ButtonLink } from "@/components/ui";
+import { Badge, ButtonLink, IconButtonLink } from "@/components/ui";
 import {
   CalorieIcon,
   FeedingIcon,
@@ -77,15 +77,12 @@ export function TimelineEntryCard({
             >
               {occurredAtLabel}
             </time>
-            <ButtonLink
+            <IconButtonLink
               href={getEditHref(catId, entry)}
-              variant="secondary"
-              className={styles.iconButton}
+              icon={TbPencil}
               aria-label={editLabel}
               title={editLabel}
-            >
-              <TbPencil aria-hidden="true" size={20} />
-            </ButtonLink>
+            />
           </div>
         </div>
         {entry.media.length > 0 ? (

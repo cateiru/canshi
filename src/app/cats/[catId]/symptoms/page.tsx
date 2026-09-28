@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
+import { Badge, Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { SymptomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
@@ -107,21 +107,17 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
                     </Badge>
                   </div>
                   <div className={styles.cardActions}>
-                    <ButtonLink
+                    <IconButtonLink
                       href={`/cats/${catId}/symptoms/${record.id}/edit`}
-                      variant="secondary"
-                      className={styles.iconButton}
+                      icon={TbPencil}
                       aria-label="編集する"
                       title="編集する"
-                    >
-                      <TbPencil aria-hidden="true" size={20} />
-                    </ButtonLink>
+                    />
                     <DeleteRecordButton
                       action={deleteSymptomAction.bind(null, catId, record.id)}
                       title="症状記録の削除"
                       description="この症状記録を削除しますか？この操作は取り消せません。"
                       iconOnly
-                      className={styles.iconButton}
                     />
                   </div>
                 </div>

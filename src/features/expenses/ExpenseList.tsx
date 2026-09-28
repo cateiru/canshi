@@ -1,5 +1,5 @@
 import { TbCalendar, TbPencil } from "react-icons/tb";
-import { Badge, ButtonLink } from "@/components/ui";
+import { Badge, IconButtonLink } from "@/components/ui";
 import type { HospitalVisit, MediaAsset } from "@/db/schema";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { MediaGallery } from "@/features/media/MediaGallery";
@@ -55,21 +55,17 @@ export function ExpenseList({
                   </time>
                 </p>
                 <div className={styles.cardActions}>
-                  <ButtonLink
+                  <IconButtonLink
                     href={`/cats/${catId}/expenses/${expense.id}/edit`}
-                    variant="secondary"
-                    className={styles.iconButton}
+                    icon={TbPencil}
                     aria-label={`${EXPENSE_CATEGORY_LABEL[expense.category]} ${formatYen(expense.amountYen)}の支出を編集する`}
                     title="編集する"
-                  >
-                    <TbPencil aria-hidden="true" size={20} />
-                  </ButtonLink>
+                  />
                   <DeleteRecordButton
                     action={deleteExpenseAction.bind(null, catId, expense.id)}
                     title="支出記録の削除"
                     description="この支出記録を削除しますか？関連するすべての猫の一覧・タイムラインから削除されます。この操作は取り消せません。"
                     iconOnly
-                    className={styles.iconButton}
                   />
                 </div>
               </div>
