@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
+import {
+  Breadcrumb,
+  ButtonLink,
+  IconButtonLink,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteShampooRecordAction } from "@/features/shampoo-records/actions";
@@ -52,8 +58,8 @@ export default async function ShampooRecordsPage({
           href={`/cats/${catId}/shampoo-records/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>
@@ -68,10 +74,9 @@ export default async function ShampooRecordsPage({
       ) : null}
 
       {records.length === 0 ? (
-        <div className={styles.emptyState}>
-          <ShampooIcon aria-hidden="true" size={32} />
-          <p>まだシャンプー記録がありません。</p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={ShampooIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/shampoo-records/new`}
               variant="primary"
@@ -79,16 +84,15 @@ export default async function ShampooRecordsPage({
             >
               最初の記録をする
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          まだシャンプー記録がありません。
+        </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
           {records.map((record) => (
             <li key={record.id}>
-              <article
-                className={styles.record}
-                aria-label={formatDateTimeUtc(record.performedAt)}
-              >
+              <RecordCard aria-label={formatDateTimeUtc(record.performedAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
                     <TbClock aria-hidden="true" size={18} />
@@ -124,7 +128,7 @@ export default async function ShampooRecordsPage({
                     </div>
                   </dl>
                 ) : null}
-              </article>
+              </RecordCard>
             </li>
           ))}
         </ul>

@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { TbActivity, TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
+import {
+  Breadcrumb,
+  ButtonLink,
+  IconButtonLink,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
@@ -70,17 +76,16 @@ export default async function MedicationsPage({
           href={`/cats/${catId}/medications/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           服薬予定を登録する
         </ButtonLink>
       </div>
 
       {medicationList.length === 0 ? (
-        <div className={styles.emptyState}>
-          <MedicationIcon aria-hidden="true" size={32} />
-          <p>まだ服薬予定が登録されていません。</p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={MedicationIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/medications/new`}
               variant="primary"
@@ -88,13 +93,15 @@ export default async function MedicationsPage({
             >
               最初の服薬予定を登録する
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          まだ服薬予定が登録されていません。
+        </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
           {medicationList.map((medication) => (
             <li key={medication.id}>
-              <article className={styles.record} aria-label={medication.name}>
+              <RecordCard aria-label={medication.name}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordTitle}>{medication.name}</h2>
                   <div className={styles.cardActions}>
@@ -168,13 +175,12 @@ export default async function MedicationsPage({
                   <ButtonLink
                     href={`/cats/${catId}/medications/${medication.id}/doses`}
                     variant="primary"
-                    className={styles.dosesButton}
+                    leftIcon={TbActivity}
                   >
-                    <TbActivity aria-hidden="true" size={18} />
                     投薬実績を見る
                   </ButtonLink>
                 </div>
-              </article>
+              </RecordCard>
             </li>
           ))}
         </ul>

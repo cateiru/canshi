@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { TbBellOff } from "react-icons/tb";
-import { Badge, type BadgeColor } from "@/components/ui";
+import {
+  Badge,
+  type BadgeColor,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
 import type { Notification } from "@/db/schema";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { NotificationActions } from "./NotificationActions";
@@ -29,19 +34,14 @@ export function NotificationList({
   emptyMessage,
 }: NotificationListProps) {
   if (notifications.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <TbBellOff aria-hidden="true" size={32} />
-        <p>{emptyMessage}</p>
-      </div>
-    );
+    return <RecordEmptyState icon={TbBellOff}>{emptyMessage}</RecordEmptyState>;
   }
 
   return (
     <ul className={styles.list}>
       {notifications.map((notification) => (
         <li key={notification.id}>
-          <article className={styles.record}>
+          <RecordCard>
             <div className={styles.header}>
               <Link href={notification.url} className={styles.title}>
                 {notification.title}
@@ -64,7 +64,7 @@ export function NotificationList({
                 kind={notification.kind}
               />
             ) : null}
-          </article>
+          </RecordCard>
         </li>
       ))}
     </ul>

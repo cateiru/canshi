@@ -1,8 +1,16 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { TbCheck } from "react-icons/tb";
-import { Button, Checkbox, FormField, Select, Textarea } from "@/components/ui";
+import {
+  Button,
+  Checkbox,
+  FormField,
+  FormGroup,
+  FormRow,
+  Select,
+  Textarea,
+} from "@/components/ui";
 import type { Cat, ExpenseCategory } from "@/db/schema";
 import { EXPENSE_CATEGORIES } from "@/db/schema";
 import type { MediaLimits } from "@/features/media/limits";
@@ -68,8 +76,6 @@ export function ExpenseForm({
   mediaLimits,
   submitLabel,
 }: ExpenseFormProps) {
-  const catHintId = useId();
-  const catErrorId = useId();
   const [spentDate, setSpentDate] = useState(() =>
     expense
       ? splitDateTimeUtc(expense.spentAt).date
@@ -116,7 +122,7 @@ export function ExpenseForm({
 
   return (
     <form action={formAction} className={styles.form}>
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="spentDate"
           label="支出日"
@@ -135,7 +141,7 @@ export function ExpenseForm({
           errorMessage={state.fieldErrors?.amountYen?.[0]}
           isRequired
         />
-      </div>
+      </FormRow>
 
       <Select
         className={styles.select}
@@ -173,15 +179,12 @@ export function ExpenseForm({
         </p>
       ) : null}
 
-      <fieldset
-        className={styles.cats}
-        disabled={isPending}
-        aria-describedby={[catHintId, catError ? catErrorId : null]
-          .filter(Boolean)
-          .join(" ")}
-        aria-invalid={!!catError}
+      <FormGroup
+        legend="関連する猫"
+        description="複数選択できます。選んだ猫のタイムラインに表示され、どの猫も選ばない場合は共通の支出として保存されます。"
+        errorMessage={catError}
+        isDisabled={isPending}
       >
-        <legend className={styles.legend}>関連する猫</legend>
         {cats.length === 0 ? (
           <p className={styles.hint}>関連付けられる猫がいません。</p>
         ) : (
@@ -203,15 +206,7 @@ export function ExpenseForm({
             ))}
           </div>
         )}
-        <p id={catHintId} className={styles.hint}>
-          複数選択できます。選んだ猫のタイムラインに表示され、どの猫も選ばない場合は共通の支出として保存されます。
-        </p>
-        {catError ? (
-          <p id={catErrorId} className={styles.errorMessage} role="alert">
-            {catError}
-          </p>
-        ) : null}
-      </fieldset>
+      </FormGroup>
 
       <MediaAttachmentField
         controller={media}
@@ -236,10 +231,9 @@ export function ExpenseForm({
       <Button
         type="submit"
         variant="primary"
-        className={styles.submitButton}
         isDisabled={isPending || isHospitalVisitsUnavailable}
+        leftIcon={TbCheck}
       >
-        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

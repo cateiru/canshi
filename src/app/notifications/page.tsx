@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { TbCheck } from "react-icons/tb";
-import { Breadcrumb, Tabs } from "@/components/ui";
+import { Breadcrumb, FilterTabs, Tabs } from "@/components/ui";
 import { listCats } from "@/features/cats/queries";
 import { generateNotifications } from "@/features/notifications/generate";
 import { MarkNotificationsRead } from "@/features/notifications/MarkNotificationsRead";
@@ -47,33 +45,18 @@ export default async function NotificationsPage({
 
       <h1>通知センター</h1>
 
-      <nav className={styles.catFilter} aria-label="猫で絞り込む">
-        <Link
-          href="/notifications"
-          className={styles.filterTab}
-          data-selected={catId ? undefined : "true"}
-          aria-current={catId ? undefined : "page"}
-        >
-          {!catId && (
-            <TbCheck className={styles.selectedMark} aria-hidden="true" />
-          )}
-          すべて
-        </Link>
-        {cats.map((cat) => (
-          <Link
-            key={cat.id}
-            href={`/notifications?catId=${cat.id}`}
-            className={styles.filterTab}
-            data-selected={catId === cat.id ? "true" : undefined}
-            aria-current={catId === cat.id ? "page" : undefined}
-          >
-            {catId === cat.id && (
-              <TbCheck className={styles.selectedMark} aria-hidden="true" />
-            )}
-            {cat.name}
-          </Link>
-        ))}
-      </nav>
+      <FilterTabs
+        aria-label="猫で絞り込む"
+        selectedKey={catId ?? ""}
+        items={[
+          { key: "", href: "/notifications", label: "すべて" },
+          ...cats.map((cat) => ({
+            key: cat.id,
+            href: `/notifications?catId=${cat.id}`,
+            label: cat.name,
+          })),
+        ]}
+      />
 
       <Tabs
         items={[

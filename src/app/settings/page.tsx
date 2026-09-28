@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { TbChevronRight } from "react-icons/tb";
-import { Breadcrumb } from "@/components/ui";
+import { Breadcrumb, NavCard } from "@/components/ui";
 import {
   AppearanceSettingsIcon,
   FeedingPresetIcon,
@@ -62,14 +60,13 @@ export default function SettingsPage() {
         <ul className={styles.list}>
           {settings.map(({ href, title, description, icon: Icon }) => (
             <li key={href}>
-              <Link href={href} className={styles.link}>
-                <Icon className={styles.icon} aria-hidden="true" />
-                <div className={styles.content}>
-                  <h2 className={styles.title}>{title}</h2>
-                  <p className={styles.description}>{description}</p>
-                </div>
-                <TbChevronRight className={styles.chevron} aria-hidden="true" />
-              </Link>
+              <NavCard
+                href={href}
+                icon={Icon}
+                title={title}
+                titleAs="h2"
+                description={description}
+              />
             </li>
           ))}
         </ul>

@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
+import {
+  Breadcrumb,
+  ButtonLink,
+  IconButtonLink,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { formatYen } from "@/features/expenses/labels";
@@ -75,8 +81,8 @@ export default async function HospitalVisitsPage({
           href={`/cats/${catId}/hospital-visits/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>
@@ -89,10 +95,9 @@ export default async function HospitalVisitsPage({
       )}
 
       {visits.length === 0 ? (
-        <div className={styles.emptyState}>
-          <HospitalIcon aria-hidden="true" size={32} />
-          <p>まだ通院記録がありません。</p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={HospitalIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/hospital-visits/new`}
               variant="primary"
@@ -100,8 +105,10 @@ export default async function HospitalVisitsPage({
             >
               最初の記録をする
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          まだ通院記録がありません。
+        </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
           {visits.map((visit) => {
@@ -110,7 +117,7 @@ export default async function HospitalVisitsPage({
             const expense = expenseByVisitId.get(visit.id);
             return (
               <li key={visit.id}>
-                <article className={styles.record} aria-label={visit.reason}>
+                <RecordCard aria-label={visit.reason}>
                   <div className={styles.recordHeader}>
                     <h2 className={styles.recordTitle}>{visit.reason}</h2>
                     <div className={styles.cardActions}>
@@ -206,7 +213,7 @@ export default async function HospitalVisitsPage({
                       fit="actual"
                     />
                   </div>
-                </article>
+                </RecordCard>
               </li>
             );
           })}

@@ -11,49 +11,7 @@
 }
 
 .main .createButton {
-  min-height: 44px;
   flex-shrink: 0;
-  border: 0;
-  border-radius: 8px;
-}
-
-.scopeNav {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.scopeTab {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-  min-height: 44px;
-  padding: var(--space-2) var(--space-4);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
-  color: var(--color-ink);
-  font-size: var(--text-sm);
-  text-decoration: none;
-  overflow-wrap: anywhere;
-  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
-}
-
-.scopeTab:hover {
-  background: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
-}
-
-.scopeTab[data-selected="true"] {
-  background: color-mix(in srgb, var(--color-accent) 18%, var(--color-bg));
-  font-weight: var(--font-weight-bold);
-  /* 背景の差だけに頼らず、枠とチェックでも選択中を示す */
-  box-shadow: inset 0 0 0 2px var(--color-accent-strong);
-}
-
-.selectedMark {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
 }
 
 .summaryScope {
@@ -89,26 +47,4 @@
   text-align: right;
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
-}
-
-.emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-6);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.emptyActions {
-  margin-top: var(--space-2);
-}
-
-@media (max-width: 480px) {
-  .emptyState {
-    padding: var(--space-4);
-  }
 }

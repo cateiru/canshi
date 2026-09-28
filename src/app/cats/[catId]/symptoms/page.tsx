@@ -1,6 +1,13 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Badge, Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
+import {
+  Badge,
+  Breadcrumb,
+  ButtonLink,
+  IconButtonLink,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
 import { SymptomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
@@ -71,17 +78,16 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
           href={`/cats/${catId}/symptoms/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>
 
       {records.length === 0 ? (
-        <div className={styles.emptyState}>
-          <SymptomIcon aria-hidden="true" size={32} />
-          <p>まだ症状記録がありません。</p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={SymptomIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/symptoms/new`}
               variant="primary"
@@ -89,16 +95,15 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
             >
               最初の記録をする
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          まだ症状記録がありません。
+        </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
           {records.map((record) => (
             <li key={record.id}>
-              <article
-                className={styles.record}
-                aria-label={record.symptomType}
-              >
+              <RecordCard aria-label={record.symptomType}>
                 <div className={styles.recordHeader}>
                   <div className={styles.titleGroup}>
                     <h2 className={styles.recordTitle}>{record.symptomType}</h2>
@@ -173,7 +178,7 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
                     title="症状の写真・動画"
                   />
                 </div>
-              </article>
+              </RecordCard>
             </li>
           ))}
         </ul>

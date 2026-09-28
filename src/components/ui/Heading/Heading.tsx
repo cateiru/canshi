@@ -6,7 +6,7 @@ import {
 } from "react-aria-components";
 import styles from "./Heading.module.css";
 
-export type HeadingSize = "xl" | "lg" | "md";
+export type HeadingSize = "xl" | "lg" | "md" | "sm";
 
 export type HeadingProps = AriaHeadingProps & {
   size?: HeadingSize;

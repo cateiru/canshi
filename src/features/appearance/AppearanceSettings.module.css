@@ -4,55 +4,6 @@
   gap: var(--space-3);
 }
 
-.group {
-  display: flex;
-  gap: var(--space-1);
-  padding: var(--space-1);
-  border-radius: 999px;
-  background: var(--color-bg);
-  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
-}
-
-.button {
-  flex: 1;
-  min-width: 0;
-  min-height: 44px;
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-heading);
-  color: var(--color-ink);
-  cursor: pointer;
-  outline: var(--focus-ring-width) solid transparent;
-  outline-offset: var(--focus-ring-offset);
-  transition:
-    background-color var(--transition-base),
-    color var(--transition-base),
-    outline-color var(--transition-base);
-}
-
-.button[data-hovered]:not([data-selected]) {
-  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
-}
-
-.button[data-pressed] {
-  transform: translateY(1px);
-}
-
-/* 選択中はプライマリボタンと同じ配色にし、ライト・ダークどちらでも文字との差を確保する */
-.button[data-selected] {
-  background: var(--color-ink);
-  color: var(--color-bg);
-}
-
-.button[data-focus-visible] {
-  outline-color: var(--color-focus-ring);
-}
-
 .description {
   color: var(--color-ink-muted);
 }

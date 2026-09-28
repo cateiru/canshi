@@ -1,0 +1,21 @@
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/*
+ * 前後のリンクと年月を 3 等分する。ボタンの左右の余白が幅の配分に入ると、
+ * 狭い画面で年月が折り返すため、余白はなくす（文字は中央に寄せる）
+ */
+.link {
+  flex: 1;
+  padding-inline: 0;
+}
+
+.monthLabel {
+  flex: 1;
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}

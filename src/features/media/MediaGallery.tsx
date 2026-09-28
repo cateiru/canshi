@@ -2,7 +2,13 @@
 
 import { type ReactNode, useState } from "react";
 import { TbChevronLeft, TbChevronRight, TbVideo } from "react-icons/tb";
-import { Button, Modal } from "@/components/ui";
+import {
+  Button,
+  type ImageFit,
+  ImagePreview,
+  ImageStage,
+  Modal,
+} from "@/components/ui";
 import styles from "./MediaGallery.module.css";
 import type { MediaAssetView } from "./view";
 
@@ -12,7 +18,7 @@ export type MediaGalleryVariant = "grid" | "strip";
  * モーダルでの元データの表示方法。
  * contain: 画面に収まるよう縮小する（写真向け）。actual: 等倍で表示しスクロール・ピンチで拡大する（書類向け）
  */
-export type MediaGalleryFit = "contain" | "actual";
+export type MediaGalleryFit = ImageFit;
 
 export type MediaGalleryProps = {
   assets: MediaAssetView[];
@@ -64,13 +70,12 @@ export function MediaGallery({
               onClick={() => setOpenIndex(index)}
               aria-label={`${title} ${index + 1} を表示`}
             >
-              <img
+              <ImagePreview
                 src={asset.thumbnailUrl}
                 alt=""
                 className={styles.thumbnail}
                 width={asset.width ?? undefined}
                 height={asset.height ?? undefined}
-                loading="lazy"
               />
               {asset.kind === "video" ? (
                 <span className={styles.badge} aria-hidden="true">
@@ -97,7 +102,7 @@ export function MediaGallery({
       >
         {current ? (
           <div className={styles.viewer}>
-            <div className={`${styles.stage} ${styles[`fit-${fit}`]}`}>
+            <ImageStage fit={fit}>
               {current.kind === "video" ? (
                 // biome-ignore lint/a11y/useMediaCaption: 利用者自身が撮影した記録用の動画のため字幕は持たない
                 <video
@@ -105,19 +110,17 @@ export function MediaGallery({
                   src={current.url}
                   controls
                   playsInline
-                  className={styles.media}
                 />
               ) : (
                 <img
                   key={current.id}
                   src={current.url}
                   alt={`${title} ${(openIndex ?? 0) + 1}`}
-                  className={styles.media}
                   width={current.width ?? undefined}
                   height={current.height ?? undefined}
                 />
               )}
-            </div>
+            </ImageStage>
             <div className={styles.nav}>
               {assets.length > 1 ? (
                 <div className={styles.pager}>
@@ -125,17 +128,17 @@ export function MediaGallery({
                     variant="secondary"
                     isDisabled={!hasPrev}
                     onPress={() => setOpenIndex((index) => (index ?? 0) - 1)}
+                    leftIcon={TbChevronLeft}
                   >
-                    <TbChevronLeft aria-hidden="true" />
                     前へ
                   </Button>
                   <Button
                     variant="secondary"
                     isDisabled={!hasNext}
                     onPress={() => setOpenIndex((index) => (index ?? 0) + 1)}
+                    rightIcon={TbChevronRight}
                   >
                     次へ
-                    <TbChevronRight aria-hidden="true" />
                   </Button>
                 </div>
               ) : (

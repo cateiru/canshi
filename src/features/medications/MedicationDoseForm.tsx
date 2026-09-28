@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { TbCheck } from "react-icons/tb";
-import { Button, Checkbox, FormField, Textarea } from "@/components/ui";
+import {
+  Button,
+  Checkbox,
+  FormField,
+  FormRow,
+  Textarea,
+} from "@/components/ui";
 import type { MedicationDose } from "@/db/schema";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
@@ -36,7 +42,7 @@ export function MedicationDoseForm({
 
   return (
     <form action={formAction} className={styles.form}>
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="occurredDate"
           label="投薬日"
@@ -53,7 +59,7 @@ export function MedicationDoseForm({
           errorMessage={state.fieldErrors?.occurredTime?.[0]}
           isRequired
         />
-      </div>
+      </FormRow>
 
       <Checkbox
         name="wasAdministered"
@@ -77,10 +83,9 @@ export function MedicationDoseForm({
       <Button
         type="submit"
         variant="primary"
-        className={styles.submitButton}
         isDisabled={isPending}
+        leftIcon={TbCheck}
       >
-        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

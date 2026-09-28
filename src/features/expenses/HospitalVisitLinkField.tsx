@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
-import { Button, Checkbox } from "@/components/ui";
+import { useEffect, useState } from "react";
+import { Button, Checkbox, FormGroup } from "@/components/ui";
 import type { LinkableHospitalVisit } from "@/features/hospital-visits/queries";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { listLinkableHospitalVisitsAction } from "./actions";
@@ -87,20 +87,14 @@ export function HospitalVisitLinkField({
   isDisabled,
   errorMessage,
 }: HospitalVisitLinkFieldProps) {
-  const hintId = useId();
-  const errorId = useId();
-
   return (
-    <fieldset
-      className={styles.cats}
-      disabled={isDisabled}
-      aria-describedby={[hintId, errorMessage ? errorId : null]
-        .filter(Boolean)
-        .join(" ")}
-      aria-invalid={!!errorMessage}
+    <FormGroup
+      legend="関連する通院記録"
+      description="支出日と同じ日の通院記録を紐付けられます。一度に複数の猫を診てもらった場合は、まとめて選んでください。選んだ通院記録の猫は関連する猫にも追加され、金額は通院記録の病院代として表示されます。"
+      errorMessage={errorMessage}
+      isDisabled={isDisabled}
       aria-busy={visitsState.status === "loading"}
     >
-      <legend className={styles.legend}>関連する通院記録</legend>
       {visitsState.status === "loading" ? (
         <p className={styles.hint}>通院記録を読み込んでいます...</p>
       ) : visitsState.status === "error" ? (
@@ -139,14 +133,6 @@ export function HospitalVisitLinkField({
           })}
         </div>
       )}
-      <p id={hintId} className={styles.hint}>
-        支出日と同じ日の通院記録を紐付けられます。一度に複数の猫を診てもらった場合は、まとめて選んでください。選んだ通院記録の猫は関連する猫にも追加され、金額は通院記録の病院代として表示されます。
-      </p>
-      {errorMessage ? (
-        <p id={errorId} className={styles.errorMessage} role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
-    </fieldset>
+    </FormGroup>
   );
 }

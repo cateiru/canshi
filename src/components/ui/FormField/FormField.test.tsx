@@ -12,4 +12,17 @@ describe("FormField", () => {
     expect(input).toHaveAttribute("aria-describedby", error.id);
     expect(input).toHaveAttribute("aria-invalid", "true");
   });
+
+  it("description を入力欄の説明として紐付ける", () => {
+    render(
+      <FormField
+        label="病院代（円）"
+        description="入力すると支出記録として保存されます。"
+      />,
+    );
+
+    expect(
+      screen.getByRole("textbox", { name: "病院代（円）" }),
+    ).toHaveAccessibleDescription("入力すると支出記録として保存されます。");
+  });
 });

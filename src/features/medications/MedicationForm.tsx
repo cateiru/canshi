@@ -1,7 +1,7 @@
 "use client";
 
 import { TbCheck } from "react-icons/tb";
-import { Button, FormField, Select } from "@/components/ui";
+import { Button, FormField, FormRow, Select } from "@/components/ui";
 import type { HospitalVisit, Medication, Symptom } from "@/db/schema";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import type { MediaLimits } from "@/features/media/limits";
@@ -109,7 +109,7 @@ export function MedicationForm({
         isRequired
       />
 
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="startDate"
           label="服用開始日"
@@ -125,7 +125,7 @@ export function MedicationForm({
           defaultValue={medication?.endDate ?? ""}
           errorMessage={state.fieldErrors?.endDate?.[0]}
         />
-      </div>
+      </FormRow>
 
       <Select
         className={styles.select}
@@ -158,10 +158,9 @@ export function MedicationForm({
       <Button
         type="submit"
         variant="primary"
-        className={styles.submitButton}
         isDisabled={isPending}
+        leftIcon={TbCheck}
       >
-        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

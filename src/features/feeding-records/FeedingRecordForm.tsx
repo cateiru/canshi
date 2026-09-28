@@ -9,7 +9,13 @@ import {
   TbStack2,
   TbX,
 } from "react-icons/tb";
-import { Button, FormField, IconButton, Select } from "@/components/ui";
+import {
+  Button,
+  FormField,
+  FormRow,
+  IconButton,
+  Select,
+} from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
 import type { FeedingPresetWithItems } from "@/features/feeding-presets/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
@@ -132,7 +138,7 @@ export function FeedingRecordForm({
           <TbCalendar aria-hidden="true" size={18} />
           食事の日時
         </h2>
-        <div className={styles.row}>
+        <FormRow>
           <FormField
             name="occurredDate"
             label="日付"
@@ -149,7 +155,7 @@ export function FeedingRecordForm({
             errorMessage={state.fieldErrors?.occurredTime?.[0]}
             isRequired
           />
-        </div>
+        </FormRow>
       </section>
 
       {presets.length > 0 ? (
@@ -252,7 +258,7 @@ export function FeedingRecordForm({
                 ) : null}
               </div>
 
-              <div className={styles.row}>
+              <FormRow>
                 <FormField
                   name={`items.${index}.givenAmountG`}
                   label="与えた量（g）"
@@ -277,7 +283,7 @@ export function FeedingRecordForm({
                   errorMessage={itemErrors?.leftoverAmountG?.[0]}
                   isRequired
                 />
-              </div>
+              </FormRow>
             </fieldset>
           );
         })}
@@ -292,8 +298,8 @@ export function FeedingRecordForm({
         variant="secondary"
         className={styles.addButton}
         onPress={() => addItem(foodProducts[0]?.id ?? "")}
+        leftIcon={TbPlus}
       >
-        <TbPlus aria-hidden="true" size={18} />
         商品を追加する
       </Button>
 
@@ -304,10 +310,9 @@ export function FeedingRecordForm({
       <Button
         type="submit"
         variant="primary"
-        className={styles.submitButton}
         isDisabled={isPending}
+        leftIcon={TbCheck}
       >
-        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

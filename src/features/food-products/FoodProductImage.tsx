@@ -1,3 +1,4 @@
+import { ImagePreview } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 
 import styles from "./FoodProductImage.module.css";
@@ -17,19 +18,21 @@ export function FoodProductImage({
   thumbnailUrl,
   size = "md",
 }: FoodProductImageProps) {
-  const className = `${styles.image} ${styles[size]}`;
-  if (thumbnailUrl) {
-    return (
-      <img src={thumbnailUrl} alt={`${name}の画像`} className={className} />
-    );
-  }
   return (
-    <span
-      role="img"
-      aria-label={`${name}の画像なし`}
-      className={`${className} ${styles.placeholder}`}
-    >
-      <FeedingIcon aria-hidden="true" />
-    </span>
+    <ImagePreview
+      src={thumbnailUrl}
+      alt={`${name}の画像`}
+      className={[
+        styles.image,
+        styles[size],
+        !thumbnailUrl && styles.placeholder,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      fallback={<FeedingIcon aria-hidden="true" />}
+      fallbackLabel={`${name}の画像なし`}
+      // 小さな画像のため、これまでどおりすぐに読み込む
+      loading="eager"
+    />
   );
 }

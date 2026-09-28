@@ -1,7 +1,12 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TbCheck, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { TbPlus } from "react-icons/tb";
+import {
+  Breadcrumb,
+  ButtonLink,
+  FilterTabs,
+  MonthNav,
+  RecordEmptyState,
+} from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById, listCats } from "@/features/cats/queries";
 import {
@@ -28,7 +33,6 @@ import {
 import { listHospitalVisitsByIds } from "@/features/hospital-visits/queries";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
-import { MonthNav } from "@/features/shared/MonthNav";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import { formatYm, parseYm, shiftYm } from "@/features/shared/yearMonth";
@@ -107,8 +111,8 @@ export default async function ExpensesPage({
           href={`/cats/${catId}/expenses/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>
@@ -126,22 +130,15 @@ export default async function ExpensesPage({
         })}
       />
 
-      <nav className={styles.scopeNav} aria-label="支出の絞り込み">
-        {scopeTabs.map((tab) => (
-          <Link
-            key={tab.scope}
-            href={buildExpensesHref(catId, { ym, scope: tab.scope })}
-            className={styles.scopeTab}
-            data-selected={tab.scope === scope ? "true" : undefined}
-            aria-current={tab.scope === scope ? "page" : undefined}
-          >
-            {tab.scope === scope && (
-              <TbCheck className={styles.selectedMark} aria-hidden="true" />
-            )}
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+      <FilterTabs
+        aria-label="支出の絞り込み"
+        selectedKey={scope}
+        items={scopeTabs.map((tab) => ({
+          key: tab.scope,
+          href: buildExpensesHref(catId, { ym, scope: tab.scope }),
+          label: tab.label,
+        }))}
+      />
 
       <ExpenseChart
         months={buildMonthlyExpenseChart(chartExpenses, { year, month })}
@@ -166,14 +163,9 @@ export default async function ExpensesPage({
       </Surface>
 
       {expenses.length === 0 ? (
-        <div className={styles.emptyState}>
-          <ExpenseIcon aria-hidden="true" size={32} />
-          <p>
-            {year}年{month}月の
-            {scope === "cat" ? `${cat.name}に関連する` : ""}
-            支出記録がありません。
-          </p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={ExpenseIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/expenses/new`}
               variant="primary"
@@ -181,8 +173,12 @@ export default async function ExpensesPage({
             >
               最初の記録をする
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          {year}年{month}月の
+          {scope === "cat" ? `${cat.name}に関連する` : ""}
+          支出記録がありません。
+        </RecordEmptyState>
       ) : (
         <ExpenseList
           catId={catId}

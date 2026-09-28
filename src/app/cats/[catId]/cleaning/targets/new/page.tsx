@@ -11,6 +11,7 @@ import {
   createCleaningTargetFromPresetAction,
 } from "@/features/cleaning/targetActions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
+import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -45,11 +46,12 @@ export default async function NewCleaningTargetPage({
         {cat.name}の掃除対象を追加する
       </RecordPageHeading>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionHeading}>
-          <TbStack2 aria-hidden="true" size={18} />
-          よく使う対象をワンタップで追加
-        </h2>
+      <Surface
+        title="よく使う対象をワンタップで追加"
+        titleSize="sm"
+        icon={<TbStack2 aria-hidden="true" size={18} />}
+        gap="sm"
+      >
         <div className={styles.presets}>
           {CLEANING_TARGET_PRESETS.map((preset) => (
             <CleaningTargetPresetButton
@@ -65,18 +67,19 @@ export default async function NewCleaningTargetPage({
             />
           ))}
         </div>
-      </section>
+      </Surface>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionHeading}>
-          <TbPlus aria-hidden="true" size={18} />
-          対象を作成する
-        </h2>
+      <Surface
+        title="対象を作成する"
+        titleSize="sm"
+        icon={<TbPlus aria-hidden="true" size={18} />}
+        gap="sm"
+      >
         <CleaningTargetForm
           action={createCleaningTargetAction.bind(null, catId)}
           submitLabel="追加する"
         />
-      </section>
+      </Surface>
     </main>
   );
 }

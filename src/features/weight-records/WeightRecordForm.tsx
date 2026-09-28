@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { TbCheck } from "react-icons/tb";
-import { Button, FormField, Radio, RadioGroup } from "@/components/ui";
+import { Button, FormField, FormRow, Radio, RadioGroup } from "@/components/ui";
 import type { WeightRecord } from "@/db/schema";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
@@ -40,7 +40,7 @@ export function WeightRecordForm({
 
   return (
     <form action={formAction} className={styles.form}>
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="occurredDate"
           label="記録日"
@@ -57,7 +57,7 @@ export function WeightRecordForm({
           errorMessage={state.fieldErrors?.occurredTime?.[0]}
           isRequired
         />
-      </div>
+      </FormRow>
 
       <RadioGroup
         name="inputMethod"
@@ -114,10 +114,9 @@ export function WeightRecordForm({
       <Button
         type="submit"
         variant="primary"
-        className={styles.submitButton}
         isDisabled={isPending}
+        leftIcon={TbCheck}
       >
-        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

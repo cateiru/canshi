@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
+import { SegmentedControl } from "@/components/ui";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./AppearanceSettings.module.css";
 import { saveContrastAction, saveThemeAction } from "./actions";
@@ -26,7 +26,7 @@ const CONTRAST_DESCRIPTION: Record<Contrast, string> = {
   more: "枠線や補助の文字を濃くして、入力欄やボタンの境目を見やすくします。",
 };
 
-type SegmentedControlProps<T extends string> = {
+type AppearanceOptionProps<T extends string> = {
   label: string;
   options: readonly T[];
   labels: Record<T, string>;
@@ -35,38 +35,23 @@ type SegmentedControlProps<T extends string> = {
   onChange: (value: T) => void;
 };
 
-function SegmentedControl<T extends string>({
+/** 切り替えボタンと、選んでいる選択肢の説明 */
+function AppearanceOption<T extends string>({
   label,
-  options,
-  labels,
   descriptions,
   value,
-  onChange,
-}: SegmentedControlProps<T>) {
+  ...props
+}: AppearanceOptionProps<T>) {
   const descriptionId = useId();
 
   return (
     <div className={styles.control}>
-      <ToggleButtonGroup
-        className={styles.group}
-        selectionMode="single"
-        disallowEmptySelection
-        selectedKeys={[value]}
-        onSelectionChange={(keys) => {
-          const [next] = keys;
-          if (next) {
-            onChange(next as T);
-          }
-        }}
+      <SegmentedControl
+        value={value}
         aria-label={label}
         aria-describedby={descriptionId}
-      >
-        {options.map((option) => (
-          <ToggleButton key={option} id={option} className={styles.button}>
-            {labels[option]}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
+        {...props}
+      />
       <p id={descriptionId} className={styles.description}>
         {descriptions[value]}
       </p>
@@ -90,7 +75,7 @@ export function AppearanceSettings({
   return (
     <>
       <Surface title="テーマ">
-        <SegmentedControl
+        <AppearanceOption
           label="テーマ"
           options={THEMES}
           labels={THEME_LABEL}
@@ -105,7 +90,7 @@ export function AppearanceSettings({
       </Surface>
 
       <Surface title="コントラスト">
-        <SegmentedControl
+        <AppearanceOption
           label="コントラスト"
           options={CONTRASTS}
           labels={CONTRAST_LABEL}

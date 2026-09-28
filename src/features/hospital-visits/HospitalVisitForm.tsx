@@ -2,7 +2,7 @@
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { TbCheck } from "react-icons/tb";
-import { Button, FormField, Select, Textarea } from "@/components/ui";
+import { Button, FormField, FormRow, Select, Textarea } from "@/components/ui";
 import type { HospitalVisit, Symptom } from "@/db/schema";
 import { listSameDayHospitalExpensesAction } from "@/features/expenses/actions";
 import type { HospitalExpenseCandidate } from "@/features/expenses/queries";
@@ -167,7 +167,7 @@ export function HospitalVisitForm({
       onSubmit={handleSubmit}
       className={styles.form}
     >
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="visitedDate"
           label="受診日"
@@ -184,7 +184,7 @@ export function HospitalVisitForm({
           errorMessage={state.fieldErrors?.visitedTime?.[0]}
           isRequired
         />
-      </div>
+      </FormRow>
 
       <FormField
         name="reason"
@@ -194,23 +194,21 @@ export function HospitalVisitForm({
         isRequired
       />
 
-      <div>
-        <FormField
-          name="expenseAmountYen"
-          label="病院代（円）"
-          type="number"
-          inputMode="numeric"
-          defaultValue={expenseAmountYen?.toString() ?? ""}
-          errorMessage={state.fieldErrors?.expenseAmountYen?.[0]}
-        />
-        <p className={styles.hint}>
-          {isExpenseShared
+      <FormField
+        name="expenseAmountYen"
+        label="病院代（円）"
+        type="number"
+        inputMode="numeric"
+        defaultValue={expenseAmountYen?.toString() ?? ""}
+        errorMessage={state.fieldErrors?.expenseAmountYen?.[0]}
+        description={
+          isExpenseShared
             ? "ほかの通院記録と共有している支出記録です。金額を変えると共有している通院記録の病院代も変わります。空にすると、この通院記録との紐付けだけを外します。"
             : isNew
               ? "入力するとカテゴリ「病院」の支出記録として保存されます。空欄のまま記録すると、同じ日の「病院」の支出記録と紐付けるかを確認します。"
-              : "入力するとカテゴリ「病院」の支出記録として保存されます。空にすると支出記録も削除されます。"}
-        </p>
-      </div>
+              : "入力するとカテゴリ「病院」の支出記録として保存されます。空にすると支出記録も削除されます。"
+        }
+      />
 
       <Select
         className={styles.select}
@@ -245,7 +243,7 @@ export function HospitalVisitForm({
         errorMessage={state.fieldErrors?.treatment?.[0]}
       />
 
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="nextVisitDate"
           label="次回受診予定日"
@@ -260,7 +258,7 @@ export function HospitalVisitForm({
           defaultValue={defaultNextVisit?.time ?? ""}
           errorMessage={state.fieldErrors?.nextVisitTime?.[0]}
         />
-      </div>
+      </FormRow>
 
       <MediaAttachmentField
         controller={media}
@@ -283,10 +281,9 @@ export function HospitalVisitForm({
       <Button
         type="submit"
         variant="primary"
-        className={styles.submitButton}
         isDisabled={isPending || isCheckingExpenses}
+        leftIcon={TbCheck}
       >
-        <TbCheck aria-hidden="true" size={18} />
         {isPending || isCheckingExpenses ? "保存中..." : submitLabel}
       </Button>
 

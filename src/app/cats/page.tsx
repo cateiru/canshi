@@ -31,8 +31,7 @@ export default async function CatsPage() {
 
       <div className={styles.header}>
         <RecordPageHeading icon={CatIcon}>猫一覧</RecordPageHeading>
-        <ButtonLink href="/cats/new" variant="primary">
-          <TbPlus aria-hidden="true" size={18} />
+        <ButtonLink href="/cats/new" variant="primary" leftIcon={TbPlus}>
           猫を登録する
         </ButtonLink>
       </div>

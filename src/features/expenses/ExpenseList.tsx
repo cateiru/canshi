@@ -1,5 +1,5 @@
 import { TbCalendar, TbPencil } from "react-icons/tb";
-import { Badge, IconButtonLink } from "@/components/ui";
+import { Badge, IconButtonLink, RecordCard } from "@/components/ui";
 import type { HospitalVisit, MediaAsset } from "@/db/schema";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { MediaGallery } from "@/features/media/MediaGallery";
@@ -43,8 +43,7 @@ export function ExpenseList({
         );
         return (
           <li key={expense.id}>
-            <article
-              className={styles.record}
+            <RecordCard
               aria-label={`${EXPENSE_CATEGORY_LABEL[expense.category]} ${formatYen(expense.amountYen)}`}
             >
               <div className={styles.recordHeader}>
@@ -113,7 +112,7 @@ export function ExpenseList({
                   />
                 </div>
               ) : null}
-            </article>
+            </RecordCard>
           </li>
         );
       })}

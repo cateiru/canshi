@@ -63,6 +63,18 @@
   background-color: var(--color-bg);
 }
 
+/*
+ * 背景や枠のない控えめなボタン。文字は太字にせず、アイコンとの間隔も詰める。
+ * hover の見た目はアイコンだけのボタン（.icon）と揃える
+ */
+.ghost {
+  gap: var(--space-1);
+  border: 0;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-ink);
+  background-color: transparent;
+}
+
 .button[type="submit"] {
   min-height: 48px;
   font-size: var(--text-md);
@@ -75,7 +87,8 @@
 /*
  * アイコンだけのボタン（IconButton / IconButtonLink）。
  * variant の枠と背景を打ち消すため、variant の定義より後ろに置く。
- * hover の輪郭は普段は透明で、コントラストを上げたときだけ見える。
+ * hover の輪郭は普段は透明で、コントラストを上げたときだけ見える
+ * （hover の見た目は ghost も同じ）。
  */
 .icon {
   width: 44px;
@@ -88,7 +101,9 @@
 }
 
 .icon:hover,
-.icon[data-hovered] {
+.icon[data-hovered],
+.ghost:hover,
+.ghost[data-hovered] {
   background: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
   box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
 }

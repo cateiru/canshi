@@ -6,6 +6,8 @@ import {
   Button,
   ButtonLink,
   IconButtonLink,
+  RecordCard,
+  RecordEmptyState,
 } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
@@ -52,42 +54,38 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
           <ButtonLink
             href={`/cats/${catId}/notification-settings`}
             variant="secondary"
-            className={styles.secondaryAction}
           >
             通知設定
           </ButtonLink>
           <ButtonLink
             href={`/cats/${catId}/cleaning/targets/new`}
             variant="primary"
+            leftIcon={TbPlus}
           >
-            <TbPlus aria-hidden="true" size={18} />
             対象を追加する
           </ButtonLink>
         </div>
       </div>
 
       {statuses.length === 0 ? (
-        <div className={styles.emptyState}>
-          <BroomIcon aria-hidden="true" size={32} />
-          <p>まだ掃除対象が登録されていません。</p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={BroomIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/cleaning/targets/new`}
               variant="primary"
-              className={styles.createButton}
             >
               最初の対象を追加する
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          まだ掃除対象が登録されていません。
+        </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
           {activeStatuses.map((status) => (
             <li key={status.target.id}>
-              <article
-                className={styles.record}
-                aria-label={status.target.name}
-              >
+              <RecordCard aria-label={status.target.name}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordTitle}>{status.target.name}</h2>
                   <IconButtonLink
@@ -144,12 +142,11 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                   <ButtonLink
                     href={`/cats/${catId}/cleaning/targets/${status.target.id}/records`}
                     variant="secondary"
-                    className={styles.secondaryAction}
                   >
                     記録を見る
                   </ButtonLink>
                 </div>
-              </article>
+              </RecordCard>
             </li>
           ))}
         </ul>
@@ -161,10 +158,7 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
           <ul className={styles.list}>
             {inactiveStatuses.map((status) => (
               <li key={status.target.id} className={styles.inactive}>
-                <article
-                  className={styles.record}
-                  aria-label={status.target.name}
-                >
+                <RecordCard aria-label={status.target.name}>
                   <div className={styles.recordHeader}>
                     <h2 className={styles.recordTitle}>{status.target.name}</h2>
                     <IconButtonLink
@@ -178,12 +172,11 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                     <ButtonLink
                       href={`/cats/${catId}/cleaning/targets/${status.target.id}/records`}
                       variant="secondary"
-                      className={styles.secondaryAction}
                     >
                       記録を見る
                     </ButtonLink>
                   </div>
-                </article>
+                </RecordCard>
               </li>
             ))}
           </ul>

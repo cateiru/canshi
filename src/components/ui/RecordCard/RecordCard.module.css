@@ -1,0 +1,34 @@
+/*
+ * 記録一覧のカードと空状態の面。
+ * コントラストを上げたときだけ面の輪郭を描く（枠線と違いレイアウトに影響しない）。
+ */
+.card {
+  min-width: 0;
+  padding: var(--space-6);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  overflow-wrap: anywhere;
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.empty > svg {
+  color: var(--color-accent);
+}
+
+.emptyActions {
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: var(--space-4);
+  }
+}

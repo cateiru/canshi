@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   Select as AriaSelect,
   type SelectProps as AriaSelectProps,
@@ -11,6 +12,7 @@ import {
   Popover,
   SelectValue,
 } from "react-aria-components";
+import { FieldDescription } from "../FormField/FieldDescription";
 import styles from "./Select.module.css";
 
 export type SelectOption = {
@@ -21,12 +23,15 @@ export type SelectOption = {
 export type SelectProps = Omit<AriaSelectProps<SelectOption>, "children"> & {
   label: string;
   errorMessage?: string;
+  /** 入力欄の下に添える補足説明。読み上げでも入力欄の説明として伝わる */
+  description?: ReactNode;
   options: SelectOption[];
 };
 
 export function Select({
   label,
   errorMessage,
+  description,
   options,
   className,
   ...props
@@ -55,6 +60,7 @@ export function Select({
           )}
         </ListBox>
       </Popover>
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
       {errorMessage ? (
         <FieldError className={styles.errorMessage}>{errorMessage}</FieldError>
       ) : null}

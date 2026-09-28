@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { TbChevronRight } from "react-icons/tb";
-import { ButtonLink } from "@/components/ui";
+import { ButtonLink, NavCard } from "@/components/ui";
 import {
   ReleaseNotesIcon,
   SettingsIcon,
@@ -32,22 +30,20 @@ export default function Home() {
         </ButtonLink>
       </section>
       <nav aria-label="ホームメニュー" className={styles.menu}>
-        <Link href="/settings" className={styles.link}>
-          <SettingsIcon className={styles.icon} aria-hidden="true" />
-          <div>
-            <h2>設定を開く</h2>
-            <p>通知やごはんの共通設定をまとめて管理。</p>
-          </div>
-          <TbChevronRight aria-hidden="true" size={20} />
-        </Link>
-        <Link href="/release-notes" className={styles.link}>
-          <ReleaseNotesIcon className={styles.icon} aria-hidden="true" />
-          <div>
-            <h2>更新情報</h2>
-            <p>新しい機能や、使いやすさの改善をご案内。</p>
-          </div>
-          <TbChevronRight aria-hidden="true" size={20} />
-        </Link>
+        <NavCard
+          href="/settings"
+          icon={SettingsIcon}
+          title="設定を開く"
+          titleAs="h2"
+          description="通知やごはんの共通設定をまとめて管理。"
+        />
+        <NavCard
+          href="/release-notes"
+          icon={ReleaseNotesIcon}
+          title="更新情報"
+          titleAs="h2"
+          description="新しい機能や、使いやすさの改善をご案内。"
+        />
       </nav>
     </main>
   );

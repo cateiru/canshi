@@ -179,8 +179,8 @@ export function ProfileImageField({
               variant="secondary"
               isDisabled={isDisabled || isUploading}
               onPress={removeImage}
+              leftIcon={TbTrash}
             >
-              <TbTrash aria-hidden="true" size={18} />
               画像を外す
             </Button>
           ) : null}

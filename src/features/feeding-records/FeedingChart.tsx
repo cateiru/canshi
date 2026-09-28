@@ -2,15 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import {
-  Button,
-  Disclosure,
-  DisclosurePanel,
-  Heading,
-  ToggleButton,
-  ToggleButtonGroup,
-} from "react-aria-components";
-import { TbTriangleFilled } from "react-icons/tb";
+import { Collapsible, SegmentedControl } from "@/components/ui";
 import {
   CalorieIcon,
   FeedingIcon,
@@ -44,74 +36,42 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
   );
 
   return (
-    <Disclosure className={styles.container} defaultExpanded={false}>
-      <Heading level={2} className={styles.heading}>
-        <Button slot="trigger" className={styles.trigger}>
-          <TbTriangleFilled
-            aria-hidden="true"
-            size={12}
-            className={styles.caret}
-          />
-          <span className={styles.title}>ごはんの推移</span>
-        </Button>
-      </Heading>
+    <Collapsible title="ごはんの推移" defaultExpanded={false}>
+      <div className={styles.header}>
+        <SegmentedControl
+          size="sm"
+          options={PERIOD_ORDER}
+          labels={FEEDING_CHART_PERIOD_LABEL}
+          value={period}
+          onChange={setPeriod}
+          aria-label="表示期間"
+        />
+      </div>
 
-      <DisclosurePanel>
-        <div className={styles.panelInner}>
-          <div className={styles.header}>
-            <ToggleButtonGroup
-              className={styles.periodGroup}
-              selectionMode="single"
-              disallowEmptySelection
-              selectedKeys={[period]}
-              onSelectionChange={(keys) => {
-                const [next] = keys;
-                if (next) {
-                  setPeriod(next as FeedingChartPeriod);
-                }
-              }}
-              aria-label="表示期間"
-            >
-              {PERIOD_ORDER.map((value) => (
-                <ToggleButton
-                  key={value}
-                  id={value}
-                  className={styles.periodButton}
-                >
-                  {FEEDING_CHART_PERIOD_LABEL[value]}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
+      {filtered.length === 0 ? (
+        <div className={styles.emptyPeriod}>この期間の記録はありません。</div>
+      ) : (
+        <div className={styles.charts}>
+          <div className={styles.chartBlock}>
+            <h3 className={styles.chartLabel}>
+              <FeedingIcon aria-hidden="true" size={16} />
+              食べた量（推定）
+            </h3>
+            <div className={styles.canvas}>
+              <FeedingChartCanvas points={filtered} metric="intake" />
+            </div>
           </div>
-
-          {filtered.length === 0 ? (
-            <div className={styles.emptyPeriod}>
-              この期間の記録はありません。
+          <div className={styles.chartBlock}>
+            <h3 className={styles.chartLabel}>
+              <CalorieIcon aria-hidden="true" size={16} />
+              カロリー（推定）
+            </h3>
+            <div className={styles.canvas}>
+              <FeedingChartCanvas points={filtered} metric="kcal" />
             </div>
-          ) : (
-            <div className={styles.charts}>
-              <div className={styles.chartBlock}>
-                <h3 className={styles.chartLabel}>
-                  <FeedingIcon aria-hidden="true" size={16} />
-                  食べた量（推定）
-                </h3>
-                <div className={styles.canvas}>
-                  <FeedingChartCanvas points={filtered} metric="intake" />
-                </div>
-              </div>
-              <div className={styles.chartBlock}>
-                <h3 className={styles.chartLabel}>
-                  <CalorieIcon aria-hidden="true" size={16} />
-                  カロリー（推定）
-                </h3>
-                <div className={styles.canvas}>
-                  <FeedingChartCanvas points={filtered} metric="kcal" />
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-      </DisclosurePanel>
-    </Disclosure>
+      )}
+    </Collapsible>
   );
 }

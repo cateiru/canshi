@@ -5,33 +5,6 @@
   max-width: 800px;
 }
 
-.row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-3);
-}
-
-.row > * {
-  min-width: 0;
-}
-
-.row input {
-  min-height: 48px;
-  padding-inline: var(--space-3);
-  max-width: 100%;
-  overflow: hidden;
-  border-color: var(--color-border-input);
-  border-radius: 8px;
-}
-
-.row input[data-invalid] {
-  border-color: var(--color-error);
-}
-
-.row input:focus-visible {
-  outline-color: var(--color-focus-ring);
-}
-
 .dateSection,
 .quickSelect {
   display: flex;
@@ -48,13 +21,9 @@
 }
 
 .form .quickSelectButton {
-  min-height: 44px;
   max-width: calc(100% - var(--space-4));
   flex-shrink: 0;
-  border: 0;
-  border-radius: 8px;
   background: color-mix(in srgb, var(--color-accent) 14%, var(--color-bg));
-  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
   text-align: left;
   overflow-wrap: anywhere;
 }
@@ -64,10 +33,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.quickSelectButton > svg {
-  flex-shrink: 0;
 }
 
 .quickSelectOptions {
@@ -153,19 +118,7 @@
 
 .form .addButton {
   align-self: flex-start;
-  min-height: 44px;
   margin-top: calc(-1 * var(--space-3));
-  border: 0;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
-  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
-}
-
-.form .submitButton {
-  min-height: 48px;
-  border: 0;
-  border-radius: 8px;
-  font-size: var(--text-md);
 }
 
 @media (max-width: 480px) {
@@ -175,9 +128,5 @@
 
   .productRow {
     gap: var(--space-2);
-  }
-
-  .row input {
-    padding-inline: var(--space-2);
   }
 }

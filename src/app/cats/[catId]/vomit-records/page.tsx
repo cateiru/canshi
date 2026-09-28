@@ -1,6 +1,13 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Badge, Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
+import {
+  Badge,
+  Breadcrumb,
+  ButtonLink,
+  IconButtonLink,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
 import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { MediaGallery } from "@/features/media/MediaGallery";
@@ -55,17 +62,16 @@ export default async function VomitRecordsPage({
           href={`/cats/${catId}/vomit-records/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>
 
       {records.length === 0 ? (
-        <div className={styles.emptyState}>
-          <VomitIcon aria-hidden="true" size={32} />
-          <p>まだ嘔吐記録がありません。</p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={VomitIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/vomit-records/new`}
               variant="primary"
@@ -73,16 +79,15 @@ export default async function VomitRecordsPage({
             >
               最初の記録をする
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          まだ嘔吐記録がありません。
+        </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
           {records.map((record) => (
             <li key={record.id}>
-              <article
-                className={styles.record}
-                aria-label={formatDateTimeUtc(record.occurredAt)}
-              >
+              <RecordCard aria-label={formatDateTimeUtc(record.occurredAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
                     <TbClock aria-hidden="true" size={18} />
@@ -162,7 +167,7 @@ export default async function VomitRecordsPage({
                     title="嘔吐の写真"
                   />
                 </div>
-              </article>
+              </RecordCard>
             </li>
           ))}
         </ul>

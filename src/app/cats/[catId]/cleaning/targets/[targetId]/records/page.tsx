@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
+import {
+  Breadcrumb,
+  ButtonLink,
+  IconButtonLink,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { CleaningRecordChart } from "@/features/cleaning/CleaningRecordChart";
@@ -55,8 +61,8 @@ export default async function CleaningRecordsPage({
             href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
             variant="primary"
             className={styles.createButton}
+            leftIcon={TbPlus}
           >
-            <TbPlus aria-hidden="true" size={18} />
             記録する
           </ButtonLink>
         ) : null}
@@ -70,11 +76,10 @@ export default async function CleaningRecordsPage({
       )}
 
       {records.length === 0 ? (
-        <div className={styles.emptyState}>
-          <BroomIcon aria-hidden="true" size={32} />
-          <p>まだ実施記録がありません。</p>
-          {cleaningTarget.isActive ? (
-            <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={BroomIcon}
+          actions={
+            cleaningTarget.isActive ? (
               <ButtonLink
                 href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
                 variant="primary"
@@ -82,17 +87,16 @@ export default async function CleaningRecordsPage({
               >
                 最初の記録をする
               </ButtonLink>
-            </div>
-          ) : null}
-        </div>
+            ) : null
+          }
+        >
+          まだ実施記録がありません。
+        </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
           {records.map((record) => (
             <li key={record.id}>
-              <article
-                className={styles.record}
-                aria-label={formatDateTimeUtc(record.performedAt)}
-              >
+              <RecordCard aria-label={formatDateTimeUtc(record.performedAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
                     <TbClock aria-hidden="true" size={18} />
@@ -129,7 +133,7 @@ export default async function CleaningRecordsPage({
                     </div>
                   </dl>
                 ) : null}
-              </article>
+              </RecordCard>
             </li>
           ))}
         </ul>

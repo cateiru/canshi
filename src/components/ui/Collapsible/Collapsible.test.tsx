@@ -53,4 +53,31 @@ describe("Collapsible", () => {
       "false",
     );
   });
+
+  it("storageKey を省略すると、開閉しても LocalStorage に保存しない", () => {
+    render(
+      <Collapsible title="グラフ" defaultExpanded={false}>
+        <p>グラフの内容</p>
+      </Collapsible>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "グラフ" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(window.localStorage.length).toBe(0);
+  });
+
+  it("見出しの階層と、見出し横の補足を指定できる", () => {
+    render(
+      <Collapsible title="BCSの見方" headingLevel={3} titleAside="5段階">
+        <p>内容</p>
+      </Collapsible>,
+    );
+
+    const heading = screen.getByRole("heading", { level: 3 });
+    expect(heading).toHaveTextContent("BCSの見方");
+    expect(heading).toHaveTextContent("5段階");
+  });
 });
