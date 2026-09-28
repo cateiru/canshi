@@ -45,6 +45,8 @@
 .main .catSection {
   padding: 0;
   background: transparent;
+  /* 面として見せないため、コントラストを上げたときの輪郭も付けない */
+  box-shadow: none;
 }
 
 .catList {

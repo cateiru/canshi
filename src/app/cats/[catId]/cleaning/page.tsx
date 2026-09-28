@@ -46,6 +46,7 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
           <ButtonLink
             href={`/cats/${catId}/notification-settings`}
             variant="secondary"
+            className={styles.secondaryAction}
           >
             通知設定
           </ButtonLink>
@@ -140,6 +141,7 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                   <ButtonLink
                     href={`/cats/${catId}/cleaning/targets/${status.target.id}/records`}
                     variant="secondary"
+                    className={styles.secondaryAction}
                   >
                     記録を見る
                   </ButtonLink>
@@ -176,6 +178,7 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                     <ButtonLink
                       href={`/cats/${catId}/cleaning/targets/${status.target.id}/records`}
                       variant="secondary"
+                      className={styles.secondaryAction}
                     >
                       記録を見る
                     </ButtonLink>
