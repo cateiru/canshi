@@ -2,8 +2,9 @@
 
 import { useActionState } from "react";
 import { TbCake, TbCheck, TbScale, TbSpray, TbWash } from "react-icons/tb";
-import { Button, Checkbox, FormField, Heading } from "@/components/ui";
+import { Button, Checkbox, FormField } from "@/components/ui";
 import type { CleaningTarget } from "@/db/schema";
+import { Surface } from "@/features/shared/Surface";
 import styles from "./NotificationSettingsForm.module.css";
 import type { ResolvedNotificationSettings } from "./rules";
 import type { CatNotificationSettingsFormState } from "./settingsActions";
@@ -28,11 +29,11 @@ export function NotificationSettingsForm({
 
   return (
     <form action={formAction} className={styles.form}>
-      <section className={styles.section}>
-        <Heading level={2} size="md">
-          <TbCake aria-hidden="true" size={20} />
-          誕生日
-        </Heading>
+      <Surface
+        title="誕生日"
+        icon={<TbCake aria-hidden="true" size={20} />}
+        gap="sm"
+      >
         <Checkbox
           name="birthdayYearlyEnabled"
           defaultSelected={settings.birthdayYearly.isEnabled}
@@ -51,13 +52,13 @@ export function NotificationSettingsForm({
         >
           生後100日ごとの節目を通知する
         </Checkbox>
-      </section>
+      </Surface>
 
-      <section className={styles.section}>
-        <Heading level={2} size="md">
-          <TbWash aria-hidden="true" size={20} />
-          シャンプー
-        </Heading>
+      <Surface
+        title="シャンプー"
+        icon={<TbWash aria-hidden="true" size={20} />}
+        gap="sm"
+      >
         <Checkbox
           name="shampooElapsedEnabled"
           defaultSelected={settings.shampooElapsed.isEnabled}
@@ -73,13 +74,13 @@ export function NotificationSettingsForm({
           errorMessage={state.fieldErrors?.shampooElapsedMonths?.[0]}
           isRequired
         />
-      </section>
+      </Surface>
 
-      <section className={styles.section}>
-        <Heading level={2} size="md">
-          <TbScale aria-hidden="true" size={20} />
-          体重測定
-        </Heading>
+      <Surface
+        title="体重測定"
+        icon={<TbScale aria-hidden="true" size={20} />}
+        gap="sm"
+      >
         <Checkbox
           name="weightMeasurementEnabled"
           defaultSelected={settings.weightMeasurement.isEnabled}
@@ -95,14 +96,14 @@ export function NotificationSettingsForm({
           errorMessage={state.fieldErrors?.weightMeasurementDays?.[0]}
           isRequired
         />
-      </section>
+      </Surface>
 
       {cleaningTargets.length > 0 ? (
-        <section className={styles.section}>
-          <Heading level={2} size="md">
-            <TbSpray aria-hidden="true" size={20} />
-            掃除
-          </Heading>
+        <Surface
+          title="掃除"
+          icon={<TbSpray aria-hidden="true" size={20} />}
+          gap="sm"
+        >
           {cleaningTargets.map((target) => (
             <Checkbox
               key={target.id}
@@ -114,7 +115,7 @@ export function NotificationSettingsForm({
               {target.name}の通知を有効にする
             </Checkbox>
           ))}
-        </section>
+        </Surface>
       ) : null}
 
       {state.formError ? (

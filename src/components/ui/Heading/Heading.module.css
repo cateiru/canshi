@@ -17,3 +17,7 @@
 .md {
   font-size: var(--text-md);
 }
+
+.sm {
+  font-size: var(--text-sm);
+}

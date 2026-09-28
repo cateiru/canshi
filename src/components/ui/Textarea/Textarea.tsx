@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   FieldError,
   Label,
@@ -7,11 +8,14 @@ import {
   TextField,
   type TextFieldProps,
 } from "react-aria-components";
+import { FieldDescription } from "../FormField/FieldDescription";
 import styles from "./Textarea.module.css";
 
 export type TextareaProps = TextFieldProps & {
   label: string;
   errorMessage?: string;
+  /** 入力欄の下に添える補足説明。読み上げでも入力欄の説明として伝わる */
+  description?: ReactNode;
   rows?: number;
   placeholder?: string;
 };
@@ -19,6 +23,7 @@ export type TextareaProps = TextFieldProps & {
 export function Textarea({
   label,
   errorMessage,
+  description,
   className,
   rows,
   placeholder,
@@ -34,6 +39,7 @@ export function Textarea({
         rows={rows}
         placeholder={placeholder}
       />
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
       {errorMessage ? (
         <FieldError className={styles.errorMessage}>{errorMessage}</FieldError>
       ) : null}

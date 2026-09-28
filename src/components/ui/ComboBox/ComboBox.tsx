@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   ComboBox as AriaComboBox,
   type ComboBoxProps as AriaComboBoxProps,
@@ -11,6 +12,7 @@ import {
   ListBoxItem,
   Popover,
 } from "react-aria-components";
+import { FieldDescription } from "../FormField/FieldDescription";
 import styles from "./ComboBox.module.css";
 
 export type ComboBoxOption = {
@@ -24,6 +26,8 @@ export type ComboBoxProps = Omit<
 > & {
   label: string;
   errorMessage?: string;
+  /** 入力欄の下に添える補足説明。読み上げでも入力欄の説明として伝わる */
+  description?: ReactNode;
   placeholder?: string;
   options: ComboBoxOption[];
 };
@@ -31,6 +35,7 @@ export type ComboBoxProps = Omit<
 export function ComboBox({
   label,
   errorMessage,
+  description,
   placeholder,
   options,
   className,
@@ -67,6 +72,7 @@ export function ComboBox({
           )}
         </ListBox>
       </Popover>
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
       {errorMessage ? (
         <FieldError className={styles.errorMessage}>{errorMessage}</FieldError>
       ) : null}

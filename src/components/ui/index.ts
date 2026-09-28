@@ -13,6 +13,8 @@ export * from "./ComboBox/ComboBox";
 export * from "./FilterTabs/FilterTabs";
 export * from "./Footer/Footer";
 export * from "./FormField/FormField";
+export * from "./FormGroup/FormGroup";
+export * from "./FormRow/FormRow";
 export * from "./Heading/Heading";
 export * from "./ImagePreview/ImagePreview";
 export * from "./ImagePreview/ImageStage";

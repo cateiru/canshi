@@ -22,6 +22,8 @@
   font-size: var(--text-input);
   color: var(--color-ink);
   background-color: var(--color-bg);
+  /* 日付・時刻のネイティブUIが枠からはみ出さないようにする */
+  overflow: hidden;
   outline: var(--focus-ring-width) solid transparent;
   outline-offset: var(--focus-ring-offset);
   transition:
@@ -68,4 +70,11 @@
 .errorMessage {
   font-size: var(--text-xs);
   color: var(--color-error-strong);
+}
+
+/* 狭い画面では 2 列に並べた入力欄の文字が収まるよう、左右の余白を詰める */
+@media (max-width: 480px) {
+  .input {
+    padding-inline: var(--space-2);
+  }
 }

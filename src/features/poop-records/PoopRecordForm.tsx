@@ -6,6 +6,7 @@ import {
   Button,
   Checkbox,
   FormField,
+  FormRow,
   Radio,
   RadioGroup,
   Textarea,
@@ -74,7 +75,7 @@ export function PoopRecordForm({
 
   return (
     <form action={formAction} className={styles.form}>
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="occurredDate"
           label="記録日"
@@ -91,7 +92,7 @@ export function PoopRecordForm({
           errorMessage={state.fieldErrors?.occurredTime?.[0]}
           isRequired
         />
-      </div>
+      </FormRow>
 
       <RadioGroup
         name="consistency"

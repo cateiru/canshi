@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { TbCheck } from "react-icons/tb";
-import { Button, FormField, Textarea } from "@/components/ui";
+import { Button, FormField, FormRow, Textarea } from "@/components/ui";
 import type { CleaningRecord } from "@/db/schema";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
@@ -36,7 +36,7 @@ export function CleaningRecordForm({
 
   return (
     <form action={formAction} className={styles.form}>
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="performedDate"
           label="実施日"
@@ -53,7 +53,7 @@ export function CleaningRecordForm({
           errorMessage={state.fieldErrors?.performedTime?.[0]}
           isRequired
         />
-      </div>
+      </FormRow>
 
       <Textarea
         name="memo"

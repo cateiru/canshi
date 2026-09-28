@@ -50,3 +50,10 @@
 .input[data-invalid]:hover:not(:disabled) {
   border-color: var(--color-error);
 }
+
+/* 狭い画面では入力欄の左右の余白を詰める（FormField と揃える） */
+@media (max-width: 480px) {
+  .input {
+    padding-inline: var(--space-2);
+  }
+}

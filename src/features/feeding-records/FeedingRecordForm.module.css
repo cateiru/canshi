@@ -5,33 +5,6 @@
   max-width: 800px;
 }
 
-.row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-3);
-}
-
-.row > * {
-  min-width: 0;
-}
-
-.row input {
-  min-height: 48px;
-  padding-inline: var(--space-3);
-  max-width: 100%;
-  overflow: hidden;
-  border-color: var(--color-border-input);
-  border-radius: 8px;
-}
-
-.row input[data-invalid] {
-  border-color: var(--color-error);
-}
-
-.row input:focus-visible {
-  outline-color: var(--color-focus-ring);
-}
-
 .dateSection,
 .quickSelect {
   display: flex;
@@ -155,9 +128,5 @@
 
   .productRow {
     gap: var(--space-2);
-  }
-
-  .row input {
-    padding-inline: var(--space-2);
   }
 }

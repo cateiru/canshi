@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { TbCheck } from "react-icons/tb";
-import { Button, FormField, Select, Textarea } from "@/components/ui";
+import { Button, FormField, FormRow, Select, Textarea } from "@/components/ui";
 import type { HospitalVisit, Symptom } from "@/db/schema";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import type { MediaLimits } from "@/features/media/limits";
@@ -94,7 +94,7 @@ export function SymptomForm({
         isRequired
       />
 
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="onsetDate"
           label="発症日"
@@ -111,7 +111,7 @@ export function SymptomForm({
           errorMessage={state.fieldErrors?.onsetTime?.[0]}
           isRequired
         />
-      </div>
+      </FormRow>
 
       <FormField
         name="frequencyOrSeverity"

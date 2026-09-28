@@ -6,6 +6,7 @@ import {
   Button,
   Checkbox,
   FormField,
+  FormRow,
   Radio,
   RadioGroup,
   Select,
@@ -51,7 +52,7 @@ export function WaterRecordForm({
 
   return (
     <form action={formAction} className={styles.form}>
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="occurredDate"
           label="記録日"
@@ -68,7 +69,7 @@ export function WaterRecordForm({
           errorMessage={state.fieldErrors?.occurredTime?.[0]}
           isRequired
         />
-      </div>
+      </FormRow>
 
       <RadioGroup
         name="measurementMethod"
@@ -85,7 +86,7 @@ export function WaterRecordForm({
         </span>
       ) : null}
 
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="suppliedAmountMl"
           label="給水量（ml）"
@@ -103,7 +104,7 @@ export function WaterRecordForm({
           defaultValue={waterRecord?.remainingAmountMl?.toString() ?? ""}
           errorMessage={state.fieldErrors?.remainingAmountMl?.[0]}
         />
-      </div>
+      </FormRow>
 
       <Checkbox name="hasSpill" defaultSelected={waterRecord?.hasSpill}>
         こぼれがあった

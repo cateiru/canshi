@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { TbCheck } from "react-icons/tb";
-import { Button, Checkbox, FormField, Textarea } from "@/components/ui";
+import {
+  Button,
+  Checkbox,
+  FormField,
+  FormRow,
+  Textarea,
+} from "@/components/ui";
 import type { VomitRecord } from "@/db/schema";
 import type { MediaLimits } from "@/features/media/limits";
 import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
@@ -67,7 +73,7 @@ export function VomitRecordForm({
 
   return (
     <form action={formAction} className={styles.form}>
-      <div className={styles.row}>
+      <FormRow>
         <FormField
           name="occurredDate"
           label="記録日"
@@ -84,7 +90,7 @@ export function VomitRecordForm({
           errorMessage={state.fieldErrors?.occurredTime?.[0]}
           isRequired
         />
-      </div>
+      </FormRow>
 
       <FormField
         name="amount"

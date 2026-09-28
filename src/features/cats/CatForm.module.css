@@ -5,23 +5,6 @@
   max-width: 800px;
 }
 
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  min-width: 0;
-  padding: var(--space-6);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
-}
-
-.sectionHeading {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-lg);
-}
-
 .description {
   color: var(--color-ink-muted);
 }
@@ -45,10 +28,4 @@
 .errorMessage {
   font-size: var(--text-sm);
   color: var(--color-error-strong);
-}
-
-@media (max-width: 600px) {
-  .section {
-    padding: var(--space-4);
-  }
 }

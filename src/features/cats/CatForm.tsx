@@ -12,6 +12,7 @@ import {
 import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { Cat } from "@/db/schema";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
+import { Surface } from "@/features/shared/Surface";
 import type { CatFormState } from "./actions";
 import { BirthDateField } from "./BirthDateField";
 import { CAT_BREEDS, matchesBreed } from "./breeds";
@@ -47,11 +48,13 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
 
   return (
     <form action={formAction} className={styles.form}>
-      <section className={styles.section} aria-labelledby="cat-basic-heading">
-        <h2 id="cat-basic-heading" className={styles.sectionHeading}>
-          <CatIcon aria-hidden="true" size={24} />
-          基本情報
-        </h2>
+      <Surface
+        titleId="cat-basic-heading"
+        title="基本情報"
+        titleSize="lg"
+        icon={<CatIcon aria-hidden="true" size={24} />}
+        gap="md"
+      >
         <FormField
           name="name"
           label="名前"
@@ -77,16 +80,15 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
           errorMessage={state.fieldErrors?.breed?.[0]}
           allowsCustomValue
         />
-      </section>
+      </Surface>
       {cat ? (
-        <section
-          className={styles.section}
-          aria-labelledby="cat-profile-image-heading"
+        <Surface
+          titleId="cat-profile-image-heading"
+          title="プロフィール画像"
+          titleSize="lg"
+          icon={<PhotoIcon aria-hidden="true" size={24} />}
+          gap="md"
         >
-          <h2 id="cat-profile-image-heading" className={styles.sectionHeading}>
-            <PhotoIcon aria-hidden="true" size={24} />
-            プロフィール画像
-          </h2>
           <p className={styles.description}>
             画像を選ぶと、正方形に切り抜く範囲を調整できます。
           </p>
@@ -100,13 +102,15 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
             onBusyChange={setIsProfileImageBusy}
             isDisabled={isPending}
           />
-        </section>
+        </Surface>
       ) : null}
-      <section className={styles.section} aria-labelledby="cat-dates-heading">
-        <h2 id="cat-dates-heading" className={styles.sectionHeading}>
-          <TbCalendar aria-hidden="true" size={20} />
-          大切な日
-        </h2>
+      <Surface
+        titleId="cat-dates-heading"
+        title="大切な日"
+        titleSize="lg"
+        icon={<TbCalendar aria-hidden="true" size={20} />}
+        gap="md"
+      >
         <p className={styles.description}>
           わかる日付だけ入力できます。あとから変更することもできます。
         </p>
@@ -128,7 +132,7 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
             errorMessage={state.fieldErrors?.adoptedAt?.[0]}
           />
         </div>
-      </section>
+      </Surface>
 
       {state.formError ? (
         <p className={styles.errorMessage}>{state.formError}</p>
