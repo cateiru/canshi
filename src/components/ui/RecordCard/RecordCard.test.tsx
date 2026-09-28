@@ -20,7 +20,10 @@ describe("RecordCard", () => {
 describe("RecordEmptyState", () => {
   it("アイコン・文・ボタンを描画し、アイコンは読み上げない", () => {
     const { container } = render(
-      <RecordEmptyState icon={TbBellOff} actions={<button>記録する</button>}>
+      <RecordEmptyState
+        icon={TbBellOff}
+        actions={<button type="button">記録する</button>}
+      >
         まだ記録がありません。
       </RecordEmptyState>,
     );
