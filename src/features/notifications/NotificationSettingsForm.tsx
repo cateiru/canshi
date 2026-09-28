@@ -121,8 +121,12 @@ export function NotificationSettingsForm({
         <p className={styles.errorMessage}>{state.formError}</p>
       ) : null}
 
-      <Button type="submit" variant="primary" isDisabled={isPending}>
-        <TbCheck aria-hidden="true" size={18} />
+      <Button
+        type="submit"
+        variant="primary"
+        isDisabled={isPending}
+        leftIcon={TbCheck}
+      >
         {isPending ? "保存中..." : "保存する"}
       </Button>
     </form>

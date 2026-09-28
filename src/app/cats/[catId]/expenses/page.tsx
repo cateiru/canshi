@@ -107,8 +107,8 @@ export default async function ExpensesPage({
           href={`/cats/${catId}/expenses/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>

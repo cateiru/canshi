@@ -292,8 +292,8 @@ export function FeedingRecordForm({
         variant="secondary"
         className={styles.addButton}
         onPress={() => addItem(foodProducts[0]?.id ?? "")}
+        leftIcon={TbPlus}
       >
-        <TbPlus aria-hidden="true" size={18} />
         商品を追加する
       </Button>
 
@@ -304,10 +304,9 @@ export function FeedingRecordForm({
       <Button
         type="submit"
         variant="primary"
-        className={styles.submitButton}
         isDisabled={isPending}
+        leftIcon={TbCheck}
       >
-        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

@@ -283,10 +283,9 @@ export function HospitalVisitForm({
       <Button
         type="submit"
         variant="primary"
-        className={styles.submitButton}
         isDisabled={isPending || isCheckingExpenses}
+        leftIcon={TbCheck}
       >
-        <TbCheck aria-hidden="true" size={18} />
         {isPending || isCheckingExpenses ? "保存中..." : submitLabel}
       </Button>
 

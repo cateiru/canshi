@@ -70,8 +70,8 @@ export default async function FeedingRecordsPage({
           href={`/cats/${catId}/feeding-records/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>

@@ -58,8 +58,8 @@ export default async function PoopRecordsPage({
           href={`/cats/${catId}/poop-records/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>

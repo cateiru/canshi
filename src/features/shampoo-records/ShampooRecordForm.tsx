@@ -70,10 +70,9 @@ export function ShampooRecordForm({
       <Button
         type="submit"
         variant="primary"
-        className={styles.submitButton}
         isDisabled={isPending}
+        leftIcon={TbCheck}
       >
-        <TbCheck aria-hidden="true" size={18} />
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

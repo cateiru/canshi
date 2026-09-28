@@ -125,17 +125,17 @@ export function MediaGallery({
                     variant="secondary"
                     isDisabled={!hasPrev}
                     onPress={() => setOpenIndex((index) => (index ?? 0) - 1)}
+                    leftIcon={TbChevronLeft}
                   >
-                    <TbChevronLeft aria-hidden="true" />
                     前へ
                   </Button>
                   <Button
                     variant="secondary"
                     isDisabled={!hasNext}
                     onPress={() => setOpenIndex((index) => (index ?? 0) + 1)}
+                    rightIcon={TbChevronRight}
                   >
                     次へ
-                    <TbChevronRight aria-hidden="true" />
                   </Button>
                 </div>
               ) : (

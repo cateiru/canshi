@@ -28,8 +28,11 @@ export default async function FeedingPresetsPage() {
         <RecordPageHeading icon={FeedingPresetIcon}>
           ごはんプリセット一覧
         </RecordPageHeading>
-        <ButtonLink href="/feeding-presets/new" variant="primary">
-          <TbPlus aria-hidden="true" size={18} />
+        <ButtonLink
+          href="/feeding-presets/new"
+          variant="primary"
+          leftIcon={TbPlus}
+        >
           プリセットを登録する
         </ButtonLink>
       </div>

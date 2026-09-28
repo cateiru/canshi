@@ -11,9 +11,6 @@
 }
 
 .main .createButton {
-  border: 0;
-  border-radius: 8px;
-  min-height: 44px;
   flex-shrink: 0;
 }
 
@@ -95,12 +92,6 @@
 
 .primaryAction {
   margin-top: var(--space-4);
-}
-
-.primaryAction .dosesButton {
-  border: 0;
-  border-radius: 8px;
-  min-height: 44px;
 }
 
 @media (max-width: 480px) {

@@ -52,8 +52,8 @@ export default async function MedicationDosesPage({
           href={`/cats/${catId}/medications/${medicationId}/doses/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>

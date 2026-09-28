@@ -163,8 +163,8 @@ export function FeedingPresetForm({
         variant="secondary"
         className={styles.addButton}
         onPress={addItem}
+        leftIcon={TbPlus}
       >
-        <TbPlus aria-hidden="true" size={18} />
         商品を追加する
       </Button>
 
@@ -172,8 +172,12 @@ export function FeedingPresetForm({
         <p className={styles.errorMessage}>{state.formError}</p>
       ) : null}
 
-      <Button type="submit" variant="primary" isDisabled={isPending}>
-        <TbCheck aria-hidden="true" size={18} />
+      <Button
+        type="submit"
+        variant="primary"
+        isDisabled={isPending}
+        leftIcon={TbCheck}
+      >
         {isPending ? "保存中..." : submitLabel}
       </Button>
     </form>

@@ -139,8 +139,8 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
           type="submit"
           variant="primary"
           isDisabled={isPending || isProfileImageBusy}
+          leftIcon={TbCheck}
         >
-          <TbCheck aria-hidden="true" size={18} />
           {isPending ? "保存中..." : submitLabel}
         </Button>
         <ButtonLink

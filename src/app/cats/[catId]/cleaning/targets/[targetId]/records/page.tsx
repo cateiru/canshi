@@ -55,8 +55,8 @@ export default async function CleaningRecordsPage({
             href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
             variant="primary"
             className={styles.createButton}
+            leftIcon={TbPlus}
           >
-            <TbPlus aria-hidden="true" size={18} />
             記録する
           </ButtonLink>
         ) : null}

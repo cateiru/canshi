@@ -51,8 +51,8 @@ export default async function WaterRecordsPage({
           href={`/cats/${catId}/water-records/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           記録する
         </ButtonLink>
       </div>

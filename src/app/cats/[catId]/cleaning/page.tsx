@@ -52,15 +52,14 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
           <ButtonLink
             href={`/cats/${catId}/notification-settings`}
             variant="secondary"
-            className={styles.secondaryAction}
           >
             通知設定
           </ButtonLink>
           <ButtonLink
             href={`/cats/${catId}/cleaning/targets/new`}
             variant="primary"
+            leftIcon={TbPlus}
           >
-            <TbPlus aria-hidden="true" size={18} />
             対象を追加する
           </ButtonLink>
         </div>
@@ -74,7 +73,6 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
             <ButtonLink
               href={`/cats/${catId}/cleaning/targets/new`}
               variant="primary"
-              className={styles.createButton}
             >
               最初の対象を追加する
             </ButtonLink>
@@ -144,7 +142,6 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                   <ButtonLink
                     href={`/cats/${catId}/cleaning/targets/${status.target.id}/records`}
                     variant="secondary"
-                    className={styles.secondaryAction}
                   >
                     記録を見る
                   </ButtonLink>
@@ -178,7 +175,6 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                     <ButtonLink
                       href={`/cats/${catId}/cleaning/targets/${status.target.id}/records`}
                       variant="secondary"
-                      className={styles.secondaryAction}
                     >
                       記録を見る
                     </ButtonLink>

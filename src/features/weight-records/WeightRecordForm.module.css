@@ -37,13 +37,6 @@
   color: var(--color-error-strong);
 }
 
-.form .submitButton {
-  min-height: 48px;
-  border: 0;
-  border-radius: 8px;
-  font-size: var(--text-md);
-}
-
 @media (max-width: 480px) {
   .row {
     gap: var(--space-2);

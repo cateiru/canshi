@@ -38,8 +38,11 @@ export default async function FoodProductsPage() {
         <RecordPageHeading icon={FoodProductIcon}>
           ごはん商品一覧
         </RecordPageHeading>
-        <ButtonLink href="/food-products/new" variant="primary">
-          <TbPlus aria-hidden="true" size={18} />
+        <ButtonLink
+          href="/food-products/new"
+          variant="primary"
+          leftIcon={TbPlus}
+        >
           商品を登録する
         </ButtonLink>
       </div>

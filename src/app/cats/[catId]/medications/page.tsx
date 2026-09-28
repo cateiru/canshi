@@ -70,8 +70,8 @@ export default async function MedicationsPage({
           href={`/cats/${catId}/medications/new`}
           variant="primary"
           className={styles.createButton}
+          leftIcon={TbPlus}
         >
-          <TbPlus aria-hidden="true" size={18} />
           服薬予定を登録する
         </ButtonLink>
       </div>
@@ -168,9 +168,8 @@ export default async function MedicationsPage({
                   <ButtonLink
                     href={`/cats/${catId}/medications/${medication.id}/doses`}
                     variant="primary"
-                    className={styles.dosesButton}
+                    leftIcon={TbActivity}
                   >
-                    <TbActivity aria-hidden="true" size={18} />
                     投薬実績を見る
                   </ButtonLink>
                 </div>
