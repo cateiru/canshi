@@ -77,20 +77,22 @@ test("猫一覧ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/cats");
   await expect(page.getByRole("heading", { name: "猫一覧" })).toBeVisible();
 
-  // 固定フィクスチャの年齢とお迎えからの日数は撮影日で変わる。
+  // 固定フィクスチャの年齢とお迎えからの期間は撮影日で変わる。
   // 既存のベースラインを撮影した 2026-09-22 の表示に揃える。
   const catDetails = page
     .getByRole("heading", { name: "VRTテスト猫", exact: true })
     .locator("..");
   const age = catDetails.getByText(/^\d+歳(?:\d+ヶ月)?$/);
-  const adoptionDays = catDetails.getByText(/^お迎えから\d+日$/);
+  const timeSinceAdoption = catDetails.getByText(
+    /^お迎えから\d+年(?:\d+ヶ月)?$/,
+  );
   await expect(age).toBeVisible();
-  await expect(adoptionDays).toBeVisible();
+  await expect(timeSinceAdoption).toBeVisible();
   await age.evaluate((element) => {
     element.textContent = "11歳5ヶ月";
   });
-  await adoptionDays.evaluate((element) => {
-    element.textContent = "お迎えから4131日";
+  await timeSinceAdoption.evaluate((element) => {
+    element.textContent = "お迎えから11年3ヶ月";
   });
 
   await takeSnapshot(page, testInfo);
@@ -168,7 +170,7 @@ test("更新情報ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
-// 猫の年齢・お迎えからの日数は実行日時から計算されるため、その部分だけ除外する
+// 猫の年齢・お迎えからの期間は実行日時から計算されるため、その部分だけ除外する
 test.describe("猫の詳細ページ（データがある）", () => {
   test.use({ ignoreSelectors: ['[class*="details"] dd'] });
 
