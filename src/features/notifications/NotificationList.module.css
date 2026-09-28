@@ -47,7 +47,7 @@
 
 .dueAt {
   margin-top: var(--space-2);
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
 }

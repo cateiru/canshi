@@ -20,7 +20,7 @@
   padding-inline: var(--space-3);
   max-width: 100%;
   overflow: hidden;
-  border-color: color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border-color: var(--color-border);
   border-radius: 8px;
 }
 
@@ -34,7 +34,7 @@
 
 .select > button {
   min-height: 48px;
-  border-color: color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border-color: var(--color-border);
   border-radius: 8px;
   font-size: var(--text-input);
 }

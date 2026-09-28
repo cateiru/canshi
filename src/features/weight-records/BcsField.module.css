@@ -30,7 +30,7 @@
   gap: var(--space-1);
   min-height: 44px;
   padding: var(--space-2);
-  border: 2px solid color-mix(in srgb, var(--color-ink) 15%, var(--color-bg));
+  border: 2px solid var(--color-border-subtle);
   border-radius: 12px;
   background-color: var(--color-bg);
   font-family: var(--font-sans);
@@ -158,7 +158,7 @@
 .guideNote {
   margin: var(--space-4) 0 0;
   font-size: var(--text-xs);
-  color: color-mix(in srgb, var(--color-ink) 70%, var(--color-bg));
+  color: var(--color-ink-subtle);
 }
 
 .guideNoteLink {

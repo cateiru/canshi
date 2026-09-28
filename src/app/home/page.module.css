@@ -26,7 +26,7 @@
 }
 
 .description {
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
 }
 
 .welcome > a {
@@ -56,7 +56,7 @@
 
 .link p {
   font-size: var(--text-sm);
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
 }
 
 .link > svg {

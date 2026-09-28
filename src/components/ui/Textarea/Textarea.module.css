@@ -15,8 +15,7 @@
   min-width: 0;
   resize: vertical;
   min-height: 80px;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border: var(--border-width) solid var(--color-border);
   border-radius: 8px;
   padding: var(--space-2) var(--space-3);
   font-family: var(--font-sans);

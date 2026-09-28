@@ -81,7 +81,7 @@
 .memo {
   margin: var(--space-3) 0 0;
   font-size: var(--text-sm);
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
   overflow-wrap: anywhere;
 }
 

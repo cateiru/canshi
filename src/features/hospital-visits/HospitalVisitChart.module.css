@@ -53,7 +53,7 @@
   gap: var(--space-1);
   margin: var(--space-3) 0 0;
   font-size: var(--text-xs);
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
 }
 
 .legendSwatches {

@@ -10,7 +10,7 @@
 
 .description,
 .sectionDescription {
-  color: color-mix(in srgb, var(--color-ink) 75%, var(--color-bg));
+  color: var(--color-ink-muted);
 }
 
 .sectionDescription {
@@ -92,7 +92,7 @@
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  color: color-mix(in srgb, var(--color-ink) 60%, var(--color-bg));
+  color: var(--color-ink-subtle);
 }
 
 .emptyState {
@@ -101,7 +101,7 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-6) var(--space-4);
-  border: 1px dashed color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border: 1px dashed var(--color-border);
   border-radius: 12px;
   text-align: center;
 }

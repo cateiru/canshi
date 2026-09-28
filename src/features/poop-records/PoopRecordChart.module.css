@@ -137,7 +137,7 @@
   align-items: center;
   justify-content: center;
   height: 280px;
-  color: color-mix(in srgb, var(--color-ink) 60%, var(--color-bg));
+  color: var(--color-ink-subtle);
   font-size: var(--text-sm);
 }
 

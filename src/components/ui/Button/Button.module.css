@@ -54,7 +54,7 @@
 .secondary {
   color: var(--color-ink);
   background-color: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
-  border-color: transparent;
+  border-color: var(--color-border-emphasis);
 }
 
 .danger {

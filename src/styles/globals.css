@@ -2,6 +2,8 @@
 
 html {
   height: 100%;
+  /* iOS のオーバースクロールで見える領域もテーマの背景色にする */
+  background-color: var(--color-bg);
 }
 
 html,

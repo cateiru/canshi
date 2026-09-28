@@ -20,8 +20,7 @@
   min-height: 48px;
   width: 100%;
   max-width: 100%;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border: var(--border-width) solid var(--color-border);
   border-radius: 8px;
   /* 右端の候補ボタンに文字が重ならないよう余白を取る */
   padding: var(--space-2) calc(44px + var(--space-1)) var(--space-2)
@@ -95,11 +94,10 @@
 
 .popover {
   width: var(--trigger-width);
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
+  border: var(--border-width) solid var(--color-border);
   border-radius: 8px;
   background-color: var(--color-bg);
-  box-shadow: 0 4px 12px rgb(46 49 66 / 15%);
+  box-shadow: 0 4px 12px var(--color-shadow);
   overflow: hidden;
 }
 

@@ -9,7 +9,7 @@
 .date {
   display: block;
   font-size: var(--text-sm);
-  color: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
+  color: var(--color-ink-muted);
 }
 
 .items {
