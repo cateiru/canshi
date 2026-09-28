@@ -15,6 +15,7 @@ export * from "./FormField/FormField";
 export * from "./Heading/Heading";
 export * from "./Modal/Modal";
 export * from "./Radio/Radio";
+export * from "./RecordCard/RecordCard";
 export * from "./Select/Select";
 export * from "./Slider/Slider";
 export * from "./Tabs/Tabs";

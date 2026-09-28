@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
+import {
+  Breadcrumb,
+  ButtonLink,
+  IconButtonLink,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
 import { WaterIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
@@ -58,10 +64,9 @@ export default async function WaterRecordsPage({
       </div>
 
       {records.length === 0 ? (
-        <div className={styles.emptyState}>
-          <WaterIcon aria-hidden="true" size={32} />
-          <p>まだ水の記録がありません。</p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={WaterIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/water-records/new`}
               variant="primary"
@@ -69,16 +74,15 @@ export default async function WaterRecordsPage({
             >
               最初の記録をする
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          まだ水の記録がありません。
+        </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
           {records.map((record) => (
             <li key={record.id}>
-              <article
-                className={styles.record}
-                aria-label={formatDateTimeUtc(record.occurredAt)}
-              >
+              <RecordCard aria-label={formatDateTimeUtc(record.occurredAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
                     <TbClock aria-hidden="true" size={18} />
@@ -168,7 +172,7 @@ export default async function WaterRecordsPage({
                     </div>
                   ) : null}
                 </dl>
-              </article>
+              </RecordCard>
             </li>
           ))}
         </ul>

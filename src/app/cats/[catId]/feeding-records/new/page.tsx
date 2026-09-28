@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { Breadcrumb, ButtonLink, RecordEmptyState } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
@@ -56,16 +56,19 @@ export default async function NewFeedingRecordPage({
         <RecordPageHeading icon={FeedingIcon}>
           {cat.name}のごはんを記録する
         </RecordPageHeading>
-        <div className={styles.emptyState}>
-          <p>先にごはん商品を登録してください。</p>
-          <ButtonLink
-            href="/food-products/new"
-            variant="primary"
-            className={styles.createButton}
-          >
-            商品を登録する
-          </ButtonLink>
-        </div>
+        <RecordEmptyState
+          actions={
+            <ButtonLink
+              href="/food-products/new"
+              variant="primary"
+              className={styles.createButton}
+            >
+              商品を登録する
+            </ButtonLink>
+          }
+        >
+          先にごはん商品を登録してください。
+        </RecordEmptyState>
       </main>
     );
   }

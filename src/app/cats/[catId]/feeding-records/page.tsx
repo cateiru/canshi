@@ -1,6 +1,13 @@
 import { notFound } from "next/navigation";
 import { TbCalendarEvent, TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Badge, Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
+import {
+  Badge,
+  Breadcrumb,
+  ButtonLink,
+  IconButtonLink,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
 import {
   CalorieIcon,
   FeedingIcon,
@@ -84,10 +91,9 @@ export default async function FeedingRecordsPage({
       )}
 
       {records.length === 0 ? (
-        <div className={styles.emptyState}>
-          <FeedingIcon aria-hidden="true" size={32} />
-          <p>まだごはん記録がありません。</p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={FeedingIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/feeding-records/new`}
               variant="primary"
@@ -95,8 +101,10 @@ export default async function FeedingRecordsPage({
             >
               最初の記録をする
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          まだごはん記録がありません。
+        </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
           {dateGroups.map((group) => (
@@ -132,8 +140,7 @@ export default async function FeedingRecordsPage({
 
                   return (
                     <li key={record.id}>
-                      <article
-                        className={styles.record}
+                      <RecordCard
                         aria-label={formatDateTimeUtc(record.occurredAt)}
                       >
                         <div className={styles.recordHeader}>
@@ -218,7 +225,7 @@ export default async function FeedingRecordsPage({
                             </dd>
                           </div>
                         </dl>
-                      </article>
+                      </RecordCard>
                     </li>
                   );
                 })}

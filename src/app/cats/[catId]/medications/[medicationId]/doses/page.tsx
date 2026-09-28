@@ -1,6 +1,13 @@
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
-import { Badge, Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
+import {
+  Badge,
+  Breadcrumb,
+  ButtonLink,
+  IconButtonLink,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteMedicationDoseAction } from "@/features/medications/doseActions";
@@ -59,10 +66,9 @@ export default async function MedicationDosesPage({
       </div>
 
       {doses.length === 0 ? (
-        <div className={styles.emptyState}>
-          <MedicationIcon aria-hidden="true" size={32} />
-          <p>まだ投薬実績がありません。</p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={MedicationIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/medications/${medicationId}/doses/new`}
               variant="primary"
@@ -70,16 +76,15 @@ export default async function MedicationDosesPage({
             >
               最初の実績を記録する
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          まだ投薬実績がありません。
+        </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
           {doses.map((dose) => (
             <li key={dose.id}>
-              <article
-                className={styles.record}
-                aria-label={formatDateTimeUtc(dose.occurredAt)}
-              >
+              <RecordCard aria-label={formatDateTimeUtc(dose.occurredAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
                     <TbClock aria-hidden="true" size={18} />
@@ -115,7 +120,7 @@ export default async function MedicationDosesPage({
                 </div>
 
                 {dose.memo ? <p className={styles.memo}>{dose.memo}</p> : null}
-              </article>
+              </RecordCard>
             </li>
           ))}
         </ul>

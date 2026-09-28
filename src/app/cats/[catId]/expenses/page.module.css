@@ -87,25 +87,3 @@
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
 }
-
-.emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-6);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.emptyActions {
-  margin-top: var(--space-2);
-}
-
-@media (max-width: 480px) {
-  .emptyState {
-    padding: var(--space-4);
-  }
-}

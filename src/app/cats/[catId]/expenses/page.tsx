@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TbCheck, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { Breadcrumb, ButtonLink, RecordEmptyState } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById, listCats } from "@/features/cats/queries";
 import {
@@ -166,14 +166,9 @@ export default async function ExpensesPage({
       </Surface>
 
       {expenses.length === 0 ? (
-        <div className={styles.emptyState}>
-          <ExpenseIcon aria-hidden="true" size={32} />
-          <p>
-            {year}年{month}月の
-            {scope === "cat" ? `${cat.name}に関連する` : ""}
-            支出記録がありません。
-          </p>
-          <div className={styles.emptyActions}>
+        <RecordEmptyState
+          icon={ExpenseIcon}
+          actions={
             <ButtonLink
               href={`/cats/${catId}/expenses/new`}
               variant="primary"
@@ -181,8 +176,12 @@ export default async function ExpensesPage({
             >
               最初の記録をする
             </ButtonLink>
-          </div>
-        </div>
+          }
+        >
+          {year}年{month}月の
+          {scope === "cat" ? `${cat.name}に関連する` : ""}
+          支出記録がありません。
+        </RecordEmptyState>
       ) : (
         <ExpenseList
           catId={catId}
