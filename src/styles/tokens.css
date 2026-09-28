@@ -30,6 +30,11 @@
   --color-on-accent: #2e3142;
   /* フォーカスリング */
   --color-focus-ring: var(--color-accent-strong);
+  /*
+   * アクセント色の枠（カレンダーの今日のセルなど）。普段は明るいアクセント色で、
+   * コントラストを上げたときは背景との差が 3:1 以上になる濃い色にする
+   */
+  --color-accent-border: var(--color-accent);
 
   /*
    * カラーのイラストアイコン（RecordIcons）の輪郭。パステルの塗りとの差を保つため、
@@ -225,4 +230,5 @@
   --mix-border-input: 75%;
 
   --color-border-emphasis: var(--color-border);
+  --color-accent-border: var(--color-accent-strong);
 }

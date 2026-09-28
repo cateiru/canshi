@@ -26,7 +26,7 @@ const settings = [
     href: "/settings/appearance",
     title: "見た目設定",
     description:
-      "この端末でのテーマ（ライト・ダーク）やコントラストを設定します。",
+      "この端末でのテーマ（ライト・ダーク・システム）やコントラストを設定します。",
     icon: AppearanceSettingsIcon,
   },
   {
