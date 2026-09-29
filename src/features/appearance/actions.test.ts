@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { set } = vi.hoisted(() => ({ set: vi.fn() }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ set }) }));
 
-import { saveContrastAction, saveThemeAction } from "./actions";
+import {
+  saveContrastAction,
+  saveFontSizeAction,
+  saveThemeAction,
+} from "./actions";
 
 describe("見た目設定の保存", () => {
   beforeEach(() => {
@@ -31,10 +35,21 @@ describe("見た目設定の保存", () => {
     );
   });
 
+  it("文字サイズを端末の cookie に保存する", async () => {
+    await saveFontSizeAction("xlarge");
+
+    expect(set).toHaveBeenCalledWith(
+      "canshi-font-size",
+      "xlarge",
+      expect.anything(),
+    );
+  });
+
   it.each([
     { label: "テーマ", action: saveThemeAction, value: "sepia" },
     { label: "テーマ", action: saveThemeAction, value: 1 },
     { label: "コントラスト", action: saveContrastAction, value: "high" },
+    { label: "文字サイズ", action: saveFontSizeAction, value: "huge" },
   ])("不正な$label（$value）は保存しない", async ({ action, value }) => {
     await action(value);
 

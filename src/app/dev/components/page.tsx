@@ -53,6 +53,7 @@ const TEXT_TOKENS = [
   "--text-md",
   "--text-sm",
   "--text-xs",
+  "--text-chart",
 ] as const;
 
 const BADGE_COLORS = ["info", "success", "warning", "error", "accent"] as const;

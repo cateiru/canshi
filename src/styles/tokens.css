@@ -1,7 +1,8 @@
 /*
- * 見た目設定（src/features/appearance）で選んだテーマ・コントラストは、
- * <html> の data-theme（light / dark / system）と data-contrast（default / more）に出力される。
- * 色はこのファイルのトークンだけで切り替え、各コンポーネントはトークン経由で参照すること。
+ * 見た目設定（src/features/appearance）で選んだテーマ・コントラスト・文字サイズは、
+ * <html> の data-theme（light / dark / system）・data-contrast（default / more）・
+ * data-font-size（small / medium / large / xlarge）に出力される。
+ * 色と文字サイズはこのファイルのトークンだけで切り替え、各コンポーネントはトークン経由で参照すること。
  */
 :root {
   color-scheme: light;
@@ -112,13 +113,21 @@
     system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", "Yu Gothic",
     "Noto Sans JP", sans-serif;
 
-  --text-xl: 26px;
-  --text-lg: 20px;
-  --text-md: 17px;
-  --text-sm: 15px;
-  --text-xs: 12px;
-  /* iOS Safari は16px未満の入力欄でフォーカス時に自動ズームする */
-  --text-input: 16px;
+  /*
+   * 文字サイズの倍率。見た目設定の文字サイズで下のブロックが上書きする。
+   * 下の --text-* はこの倍率から :root で計算されるため、子要素で上書きしても追従しない点に注意する。
+   */
+  --font-scale: 1;
+
+  --text-xl: calc(26px * var(--font-scale));
+  --text-lg: calc(20px * var(--font-scale));
+  --text-md: calc(17px * var(--font-scale));
+  --text-sm: calc(15px * var(--font-scale));
+  --text-xs: calc(12px * var(--font-scale));
+  /* グラフの軸ラベルなど、グラフ内に描く文字 */
+  --text-chart: calc(11px * var(--font-scale));
+  /* iOS Safari は16px未満の入力欄でフォーカス時に自動ズームするため、文字サイズを小さくしても 16px を下回らない */
+  --text-input: max(16px, calc(16px * var(--font-scale)));
 
   --font-weight-bold: 700;
   --font-weight-regular: 400;
@@ -231,4 +240,17 @@
 
   --color-border-emphasis: var(--color-border);
   --color-accent-border: var(--color-accent-strong);
+}
+
+/* 文字サイズ。「中」（medium）が標準で、:root の --font-scale: 1 をそのまま使う */
+:root[data-font-size="small"] {
+  --font-scale: 0.9;
+}
+
+:root[data-font-size="large"] {
+  --font-scale: 1.15;
+}
+
+:root[data-font-size="xlarge"] {
+  --font-scale: 1.3;
 }

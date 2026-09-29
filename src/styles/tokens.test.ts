@@ -58,3 +58,23 @@ describe("ダークテーマのトークン", () => {
     expect(darkNames).toEqual(expect.arrayContaining(lightColorNames));
   });
 });
+
+describe("文字サイズのトークン", () => {
+  it.each([
+    'root[data-font-size="small"]',
+    'root[data-font-size="large"]',
+    'root[data-font-size="xlarge"]',
+  ])(":%s は倍率だけを上書きする", (selector) => {
+    const names = declarationsOf(`:${selector}`).map(
+      (declaration) => declaration.split(":")[0],
+    );
+
+    expect(names).toEqual(["--font-scale"]);
+  });
+
+  it("入力欄の文字は文字サイズを小さくしても 16px を下回らない", () => {
+    expect(css).toContain(
+      "--text-input: max(16px, calc(16px * var(--font-scale)));",
+    );
+  });
+});

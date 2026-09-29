@@ -65,10 +65,15 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   // 見た目設定は src/styles/tokens.css が <html> の data 属性で切り替える
-  const { theme, contrast } = await getAppearance();
+  const { theme, contrast, fontSize } = await getAppearance();
 
   return (
-    <html lang="ja" data-theme={theme} data-contrast={contrast}>
+    <html
+      lang="ja"
+      data-theme={theme}
+      data-contrast={contrast}
+      data-font-size={fontSize}
+    >
       <body>
         <header className={styles.header}>
           <NotificationBadge className={styles.iconLink} />

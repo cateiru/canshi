@@ -15,7 +15,7 @@ const nivoTheme = {
   text: {
     fill: "var(--color-ink)",
     fontFamily: "var(--font-sans)",
-    fontSize: 11,
+    fontSize: "var(--text-chart)",
     fontVariantNumeric: "tabular-nums",
   },
   tooltip: {
@@ -23,7 +23,7 @@ const nivoTheme = {
       background: "var(--color-bg)",
       color: "var(--color-ink)",
       fontFamily: "var(--font-sans)",
-      fontSize: 12,
+      fontSize: "var(--text-xs)",
     },
   },
 };

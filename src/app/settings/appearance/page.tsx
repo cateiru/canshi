@@ -28,7 +28,7 @@ export default async function AppearanceSettingsPage() {
           見た目設定
         </RecordPageHeading>
         <p className={styles.description}>
-          この端末での画面の明るさや、枠線・文字の見やすさを設定できます。
+          この端末での画面の明るさや、枠線・文字の見やすさ、文字の大きさを設定できます。
         </p>
       </header>
 

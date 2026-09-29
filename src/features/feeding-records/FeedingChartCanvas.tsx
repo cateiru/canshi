@@ -36,7 +36,7 @@ function unitLabelStyle() {
   return {
     fill: "var(--color-ink)",
     fontFamily: "var(--font-sans)",
-    fontSize: 11,
+    fontSize: "var(--text-chart)",
   } as const;
 }
 
@@ -129,7 +129,7 @@ const nivoTheme = {
   text: {
     fill: "var(--color-ink)",
     fontFamily: "var(--font-sans)",
-    fontSize: 11,
+    fontSize: "var(--text-chart)",
   },
   axis: {
     domain: {
@@ -158,7 +158,7 @@ const nivoTheme = {
       background: "var(--color-bg)",
       color: "var(--color-ink)",
       fontFamily: "var(--font-sans)",
-      fontSize: 12,
+      fontSize: "var(--text-xs)",
     },
   },
 };
@@ -193,7 +193,7 @@ export default function FeedingChartCanvas({
   return (
     <ResponsiveLine
       data={data}
-      margin={{ top: 26, right: 10, bottom: 40, left: 38 }}
+      margin={{ top: 30, right: 10, bottom: 40, left: 50 }}
       xScale={{ type: "time", precision: "day", useUTC: true }}
       xFormat={(value) => splitDateTimeUtc(value as Date).date}
       yScale={{ type: "linear", min: yMin, max: yMax, nice: false }}

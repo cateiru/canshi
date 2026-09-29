@@ -53,7 +53,7 @@ const nivoTheme = {
   text: {
     fill: "var(--color-ink)",
     fontFamily: "var(--font-sans)",
-    fontSize: 11,
+    fontSize: "var(--text-chart)",
   },
   axis: {
     domain: {
@@ -82,7 +82,7 @@ const nivoTheme = {
       background: "var(--color-bg)",
       color: "var(--color-ink)",
       fontFamily: "var(--font-sans)",
-      fontSize: 12,
+      fontSize: "var(--text-xs)",
     },
   },
 };
@@ -116,7 +116,7 @@ export default function PoopRecordChartCanvas({
       layout="vertical"
       valueScale={{ type: "linear", min: 0, max: 24, reverse: true }}
       valueFormat={formatHourValue}
-      margin={{ top: 10, right: 16, bottom: 10, left: 46 }}
+      margin={{ top: 10, right: 16, bottom: 10, left: 56 }}
       size={isCompact ? 9 : 13}
       spacing={isCompact ? 2 : 3}
       gap={isCompact ? 4 : 8}
