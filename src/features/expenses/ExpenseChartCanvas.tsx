@@ -53,7 +53,7 @@ function YAxisUnitLabel() {
       style={{
         fill: "var(--color-ink)",
         fontFamily: "var(--font-sans)",
-        fontSize: 11,
+        fontSize: "var(--text-chart)",
       }}
     >
       (円)
@@ -96,7 +96,7 @@ function ExpenseBarTooltip({
         background: "var(--color-bg)",
         color: "var(--color-ink)",
         fontFamily: "var(--font-sans)",
-        fontSize: 12,
+        fontSize: "var(--text-xs)",
         fontVariantNumeric: "tabular-nums",
         boxShadow: "0 1px 3px rgba(0, 0, 0, 0.25)",
         whiteSpace: "nowrap",
@@ -125,7 +125,7 @@ const nivoTheme = {
   text: {
     fill: "var(--color-ink)",
     fontFamily: "var(--font-sans)",
-    fontSize: 11,
+    fontSize: "var(--text-chart)",
   },
   axis: {
     domain: {
@@ -168,7 +168,7 @@ export default function ExpenseChartCanvas({
       keys={EXPENSE_CATEGORIES}
       indexBy="ym"
       groupMode="stacked"
-      margin={{ top: 26, right: 10, bottom: 32, left: 40 }}
+      margin={{ top: 30, right: 10, bottom: 32, left: 50 }}
       padding={isCompact ? 0.25 : 0.35}
       valueScale={{ type: "linear", nice: true }}
       colors={({ id }) => EXPENSE_CATEGORY_COLOR[id as ExpenseCategory]}

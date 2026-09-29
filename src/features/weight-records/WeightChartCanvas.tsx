@@ -39,7 +39,7 @@ function YAxisUnitLabel() {
       style={{
         fill: "var(--color-ink)",
         fontFamily: "var(--font-sans)",
-        fontSize: 11,
+        fontSize: "var(--text-chart)",
       }}
     >
       (kg)
@@ -97,7 +97,7 @@ const nivoTheme = {
   text: {
     fill: "var(--color-ink)",
     fontFamily: "var(--font-sans)",
-    fontSize: 11,
+    fontSize: "var(--text-chart)",
   },
   axis: {
     domain: {
@@ -126,7 +126,7 @@ const nivoTheme = {
       background: "var(--color-bg)",
       color: "var(--color-ink)",
       fontFamily: "var(--font-sans)",
-      fontSize: 12,
+      fontSize: "var(--text-xs)",
     },
   },
 };
@@ -156,7 +156,7 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
   return (
     <ResponsiveLine
       data={data}
-      margin={{ top: 26, right: 10, bottom: 40, left: 34 }}
+      margin={{ top: 30, right: 10, bottom: 40, left: 46 }}
       xScale={{ type: "time", precision: "day", useUTC: true }}
       xFormat={(value) => splitDateTimeUtc(value as Date).date}
       yScale={{ type: "linear", min: yMin, max: yMax, nice: false }}

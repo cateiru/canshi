@@ -124,6 +124,8 @@
   --text-md: calc(17px * var(--font-scale));
   --text-sm: calc(15px * var(--font-scale));
   --text-xs: calc(12px * var(--font-scale));
+  /* グラフの軸ラベルなど、グラフ内に描く文字 */
+  --text-chart: calc(11px * var(--font-scale));
   /* iOS Safari は16px未満の入力欄でフォーカス時に自動ズームするため、文字サイズを小さくしても 16px を下回らない */
   --text-input: max(16px, calc(16px * var(--font-scale)));
 
