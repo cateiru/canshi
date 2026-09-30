@@ -13,7 +13,8 @@ vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
 
-const { generateNotifications } = await import("./generate");
+const { generateNotifications, insertSymptomOngoingNotification } =
+  await import("./generate");
 
 /**
  * 症状の確認通知（`symptom_ongoing`）について、`generateNotifications` が DB から集める
@@ -101,5 +102,92 @@ describe("generateNotifications（症状の確認通知）", () => {
 
     await generateNotifications(new Date("2026-09-01T09:00:00.000Z"));
     expect(await listSymptomNotifications(symptom.id)).toHaveLength(0);
+  });
+});
+
+/**
+ * 症状を読んでから通知を INSERT するまでの間に、別のリクエストで症状が解消・削除された
+ * 場合を、判定済みの候補を直接 INSERT することで再現する
+ */
+describe("insertSymptomOngoingNotification", () => {
+  async function setup(status: "ongoing" | "resolved") {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "くろ", sex: "male" })
+      .returning();
+    const [symptom] = await db
+      .insert(symptoms)
+      .values({
+        catId: cat.id,
+        symptomType: "くしゃみ",
+        onsetAt: new Date("2026-08-01T09:00:00.000Z"),
+        status,
+      })
+      .returning();
+    const candidate = {
+      catId: cat.id,
+      kind: "symptom_ongoing" as const,
+      referenceId: symptom.id,
+      dedupeKey: `${cat.id}:symptom_ongoing:${symptom.id}:2026-08-01`,
+      dueAt: new Date("2026-09-01T00:00:00.000Z"),
+      symptomId: symptom.id,
+      symptomType: "くしゃみ",
+      status: "ongoing" as const,
+      elapsedMonths: 1,
+    };
+    const message = {
+      title: "くろの「くしゃみ」は解消しましたか？",
+      body: "「くしゃみ」の症状が「継続中」のまま1ヶ月が経過しました",
+      url: `/cats/${cat.id}/symptoms/${symptom.id}/edit`,
+    };
+    return { cat, symptom, candidate, message };
+  }
+
+  async function listByReference(referenceId: string) {
+    return db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.referenceId, referenceId));
+  }
+
+  it("症状が未解消なら、候補どおりの内容で未対応の通知を作る", async () => {
+    const { cat, symptom, candidate, message } = await setup("ongoing");
+
+    await insertSymptomOngoingNotification(db, candidate, message);
+    // 同じ dedupe_key では二重に作られない
+    await insertSymptomOngoingNotification(db, candidate, message);
+
+    const rows = await listByReference(symptom.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      catId: cat.id,
+      kind: "symptom_ongoing",
+      dedupeKey: candidate.dedupeKey,
+      title: message.title,
+      body: message.body,
+      url: message.url,
+      dueAt: candidate.dueAt,
+      status: "pending",
+      snoozedUntil: null,
+      readAt: null,
+      pushedAt: null,
+    });
+  });
+
+  it("判定後に症状が解消されていれば、通知を作らない", async () => {
+    const { symptom, candidate, message } = await setup("resolved");
+
+    await insertSymptomOngoingNotification(db, candidate, message);
+
+    expect(await listByReference(symptom.id)).toHaveLength(0);
+  });
+
+  it("判定後に症状が削除されていれば、通知を作らない", async () => {
+    const { symptom, candidate, message } = await setup("ongoing");
+    await db.delete(symptoms).where(eq(symptoms.id, symptom.id));
+
+    await insertSymptomOngoingNotification(db, candidate, message);
+
+    expect(await listByReference(symptom.id)).toHaveLength(0);
   });
 });

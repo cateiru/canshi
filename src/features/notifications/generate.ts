@@ -1,4 +1,4 @@
-import { desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   notifications,
@@ -9,9 +9,13 @@ import {
 import { listCats } from "@/features/cats/queries";
 import { listCleaningTargetsWithStatus } from "@/features/cleaning/targetQueries";
 import { NOTIFY_TIMEZONE } from "./defaults";
-import { buildNotificationMessage } from "./messages";
+import { buildNotificationMessage, type NotificationMessage } from "./messages";
 import { getResolvedSettingsForCat } from "./queries";
-import { evaluateNotificationRules, type OpenSymptom } from "./rules";
+import {
+  evaluateNotificationRules,
+  type OpenSymptom,
+  type SymptomOngoingCandidate,
+} from "./rules";
 
 /**
  * 全猫の未解消（`ongoing`・`improving`）の症状記録を、その症状に対する `symptom_ongoing` 通知の
@@ -81,6 +85,55 @@ async function listOpenSymptomsByCat(
 }
 
 /**
+ * 症状の確認通知を、対象の症状がまだ存在し未解消である場合に限って INSERT する。
+ * `listOpenSymptomsByCat` で読んでからここで INSERT するまでの間に、別のリクエストで症状が
+ * 解消・削除されることがある。`notifications.reference_id` には外部キーがないため、そのまま
+ * INSERT すると解消済み・存在しない症状への通知が残ってしまう。症状の再確認と INSERT を
+ * 1 つの `INSERT ... SELECT` にすることで、両者の間に更新が割り込まないようにする。
+ * INSERT ... SELECT では `$defaultFn` や SQL の既定値が効かないため、全カラムの値を
+ * テーブル定義の順に明示する（`markCleaningNotificationDoneAction` と同じ方式）
+ */
+export async function insertSymptomOngoingNotification(
+  db: ReturnType<typeof getDb>,
+  candidate: SymptomOngoingCandidate,
+  message: NotificationMessage,
+) {
+  await db
+    .insert(notifications)
+    .select(
+      db
+        .select({
+          id: sql`${crypto.randomUUID()}`.as("id"),
+          catId: symptoms.catId,
+          kind: sql`${candidate.kind}`.as("kind"),
+          referenceId: symptoms.id,
+          dedupeKey: sql`${candidate.dedupeKey}`.as("dedupeKey"),
+          title: sql`${message.title}`.as("title"),
+          body: sql`${message.body}`.as("body"),
+          url: sql`${message.url}`.as("url"),
+          dueAt: sql`${sql.param(candidate.dueAt, notifications.dueAt)}`.as(
+            "dueAt",
+          ),
+          status: sql`'pending'`.as("status"),
+          snoozedUntil: sql`null`.as("snoozedUntil"),
+          readAt: sql`null`.as("readAt"),
+          pushedAt: sql`null`.as("pushedAt"),
+          createdAt: sql`(unixepoch())`.as("createdAt"),
+          updatedAt: sql`(unixepoch())`.as("updatedAt"),
+        })
+        .from(symptoms)
+        .where(
+          and(
+            eq(symptoms.id, candidate.symptomId),
+            eq(symptoms.catId, candidate.catId),
+            ne(symptoms.status, "resolved"),
+          ),
+        ),
+    )
+    .onConflictDoNothing({ target: notifications.dedupeKey });
+}
+
+/**
  * 全猫について通知判定を行い、まだ生成していない候補（`dedupe_key` が未登録のもの）だけを
  * `notifications` に INSERT する。`29`（スケジュール実行）と `30`（通知センター表示）の
  * 両方から呼ばれる想定で、同じ `now` に対して何度呼んでも重複して生成されない。
@@ -137,6 +190,10 @@ export async function generateNotifications(
 
     for (const candidate of candidates) {
       const message = buildNotificationMessage(cat.name, candidate);
+      if (candidate.kind === "symptom_ongoing") {
+        await insertSymptomOngoingNotification(db, candidate, message);
+        continue;
+      }
       await db
         .insert(notifications)
         .values({
