@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { desc, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   notifications,
@@ -14,24 +14,27 @@ import { getResolvedSettingsForCat } from "./queries";
 import { evaluateNotificationRules, type OpenSymptom } from "./rules";
 
 /**
- * 未解消（`ongoing`・`improving`）の症状記録を、その症状に対する `symptom_ongoing` 通知の
- * 対応状況とあわせて返す（`evaluateSymptomOngoing` の入力）
+ * 全猫の未解消（`ongoing`・`improving`）の症状記録を、その症状に対する `symptom_ongoing` 通知の
+ * 対応状況とあわせて、猫 id ごとにまとめて返す（`evaluateSymptomOngoing` の入力）。
+ * 猫ごとのループ内で問い合わせるとクエリ数が猫の数に比例して増えるため、全猫分を
+ * 2 回のクエリでまとめて取得する
  */
-async function listOpenSymptoms(
+async function listOpenSymptomsByCat(
   db: ReturnType<typeof getDb>,
-  catId: string,
-): Promise<OpenSymptom[]> {
+): Promise<Map<string, OpenSymptom[]>> {
+  const byCat = new Map<string, OpenSymptom[]>();
   const rows = await db
     .select({
       id: symptoms.id,
+      catId: symptoms.catId,
       symptomType: symptoms.symptomType,
       onsetAt: symptoms.onsetAt,
       status: symptoms.status,
     })
     .from(symptoms)
-    .where(and(eq(symptoms.catId, catId), ne(symptoms.status, "resolved")));
+    .where(ne(symptoms.status, "resolved"));
   if (rows.length === 0) {
-    return [];
+    return byCat;
   }
 
   const symptomNotifications = await db
@@ -41,14 +44,8 @@ async function listOpenSymptoms(
       updatedAt: notifications.updatedAt,
     })
     .from(notifications)
-    .where(
-      and(
-        eq(notifications.catId, catId),
-        eq(notifications.kind, "symptom_ongoing"),
-      ),
-    );
+    .where(eq(notifications.kind, "symptom_ongoing"));
 
-  const result: OpenSymptom[] = [];
   for (const row of rows) {
     // SQL で除外済みだが、型を `ongoing`・`improving` に絞り込むために判定する
     if (row.status === "resolved") {
@@ -68,7 +65,8 @@ async function listOpenSymptoms(
           notification.status === "done" || notification.status === "dismissed",
       )
       .map((notification) => notification.updatedAt.getTime());
-    result.push({
+    const symptomsOfCat = byCat.get(row.catId) ?? [];
+    symptomsOfCat.push({
       id: row.id,
       symptomType: row.symptomType,
       onsetAt: row.onsetAt,
@@ -77,8 +75,9 @@ async function listOpenSymptoms(
       lastAnsweredAt:
         answeredTimes.length > 0 ? new Date(Math.max(...answeredTimes)) : null,
     });
+    byCat.set(row.catId, symptomsOfCat);
   }
-  return result;
+  return byCat;
 }
 
 /**
@@ -97,6 +96,7 @@ export async function generateNotifications(
 ): Promise<void> {
   const db = getDb(d1);
   const cats = await listCats(d1);
+  const openSymptomsByCat = await listOpenSymptomsByCat(db);
 
   for (const cat of cats) {
     const [latestShampoo] = await db
@@ -124,8 +124,6 @@ export async function generateNotifications(
       d1,
     );
 
-    const openSymptoms = await listOpenSymptoms(db, cat.id);
-
     const candidates = evaluateNotificationRules({
       now,
       timezone: NOTIFY_TIMEZONE,
@@ -134,7 +132,7 @@ export async function generateNotifications(
       latestShampooAt: latestShampoo?.performedAt ?? null,
       latestWeightAt: latestWeight?.occurredAt ?? null,
       cleaningTargets,
-      openSymptoms,
+      openSymptoms: openSymptomsByCat.get(cat.id) ?? [],
     });
 
     for (const candidate of candidates) {
