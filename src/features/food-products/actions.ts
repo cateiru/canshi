@@ -30,6 +30,7 @@ function parseFormData(formData: FormData) {
     name: formData.get("name"),
     kcalPer100g: formData.get("kcalPer100g"),
     packageAmountG: formData.get("packageAmountG"),
+    packageUnit: formData.get("packageUnit"),
     nutritionType: formData.get("nutritionType"),
     textureType: formData.get("textureType"),
   });

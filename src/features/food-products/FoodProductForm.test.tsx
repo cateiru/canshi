@@ -35,6 +35,9 @@ describe("FoodProductForm", () => {
     fireEvent.change(screen.getByLabelText("内容量（g）"), {
       target: { value: "1500" },
     });
+    fireEvent.change(screen.getByLabelText("単位（任意）"), {
+      target: { value: "袋" },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "登録する" }));
 
@@ -44,6 +47,7 @@ describe("FoodProductForm", () => {
     expect(formData.get("name")).toBe("モンプチ");
     expect(formData.get("kcalPer100g")).toBe("380");
     expect(formData.get("packageAmountG")).toBe("1500");
+    expect(formData.get("packageUnit")).toBe("袋");
     expect(formData.get("nutritionType")).toBe("complete");
     expect(formData.get("textureType")).toBe("dry");
   });

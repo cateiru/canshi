@@ -25,6 +25,20 @@ export const foodProductFormSchema = z.object({
       .number({ error: "内容量（g）を入力してください" })
       .positive("内容量（g）は0より大きい値を入力してください"),
   ),
+  // 未入力は「商品全体の内容量」を表すため null に揃える（undefined だと更新時に
+  // 列が更新されず、一度入れた単位を消せなくなる）。「1本」のように数量ごと
+  // 入力されても「14g/1本」とならないよう、先頭の「1」は取り除く
+  packageUnit: z.preprocess(
+    (value) =>
+      typeof value === "string"
+        ? value.trim().replace(/^[1１]\s*(?=\D)/, "")
+        : value,
+    z
+      .string()
+      .max(10, "単位は10文字以内で入力してください")
+      .nullish()
+      .transform((value) => (value ? value : null)),
+  ),
   nutritionType: z.enum(["complete", "general"], {
     error: "総合栄養食／一般食の区分を選択してください",
   }),
