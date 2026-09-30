@@ -103,7 +103,12 @@ export default async function FoodProductsPage() {
                     <dt>内容量</dt>
                     <dd>
                       {foodProduct.packageAmountG}
-                      <span>g</span>
+                      <span>
+                        g
+                        {foodProduct.packageUnit
+                          ? `/${foodProduct.packageUnit}`
+                          : null}
+                      </span>
                     </dd>
                   </div>
                 </dl>

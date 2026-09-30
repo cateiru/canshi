@@ -71,6 +71,13 @@
   gap: var(--space-3);
 }
 
+/* 与えた量を決める参考に、選んだ商品の内容量を添える */
+.packageAmount {
+  margin-top: calc(-1 * var(--space-2));
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
 .productSelect {
   flex: 1;
   min-width: 0;

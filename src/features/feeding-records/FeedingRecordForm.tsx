@@ -19,6 +19,7 @@ import {
 import type { FoodProduct } from "@/db/schema";
 import type { FeedingPresetWithItems } from "@/features/feeding-presets/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
+import { formatPackageAmount } from "@/features/food-products/labels";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { FeedingRecordFormState } from "./actions";
@@ -216,6 +217,9 @@ export function FeedingRecordForm({
       <div className={styles.itemsList}>
         {items.map((item, index) => {
           const itemErrors = state.fieldErrors?.itemErrors?.[index];
+          const selectedFoodProduct = foodProducts.find(
+            (foodProduct) => foodProduct.id === item.foodProductId,
+          );
           return (
             <fieldset
               key={item.key}
@@ -225,11 +229,7 @@ export function FeedingRecordForm({
               <div className={styles.productRow}>
                 <span className={styles.productImage}>
                   <FoodProductImage
-                    name={
-                      foodProducts.find(
-                        (foodProduct) => foodProduct.id === item.foodProductId,
-                      )?.name ?? "商品"
-                    }
+                    name={selectedFoodProduct?.name ?? "商品"}
                     thumbnailUrl={foodProductImageUrls[item.foodProductId]}
                   />
                 </span>
@@ -257,6 +257,12 @@ export function FeedingRecordForm({
                   </span>
                 ) : null}
               </div>
+
+              {selectedFoodProduct ? (
+                <p className={styles.packageAmount}>
+                  内容量: {formatPackageAmount(selectedFoodProduct)}
+                </p>
+              ) : null}
 
               <FormRow>
                 <FormField

@@ -1,0 +1,1 @@
+ALTER TABLE `food_products` ADD `package_unit` text;

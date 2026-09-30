@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, FormField, Select } from "@/components/ui";
+import { Button, FormField, FormRow, Select } from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
 import type { MediaLimits } from "@/features/media/limits";
 import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
@@ -88,15 +88,25 @@ export function FoodProductForm({
         isRequired
       />
 
-      <FormField
-        name="packageAmountG"
-        label="内容量（g）"
-        type="number"
-        inputMode="decimal"
-        defaultValue={foodProduct?.packageAmountG?.toString()}
-        errorMessage={state.fieldErrors?.packageAmountG?.[0]}
-        isRequired
-      />
+      <FormRow>
+        <FormField
+          name="packageAmountG"
+          label="内容量（g）"
+          type="number"
+          inputMode="decimal"
+          defaultValue={foodProduct?.packageAmountG?.toString()}
+          errorMessage={state.fieldErrors?.packageAmountG?.[0]}
+          isRequired
+        />
+        <FormField
+          name="packageUnit"
+          label="単位（任意）"
+          placeholder="本・袋・パック"
+          defaultValue={foodProduct?.packageUnit ?? undefined}
+          description="「14g/本」のように1本・1袋あたりの内容量で登録するときに入力します。未入力の場合は商品全体の内容量として扱います"
+          errorMessage={state.fieldErrors?.packageUnit?.[0]}
+        />
+      </FormRow>
 
       <Select
         name="nutritionType"

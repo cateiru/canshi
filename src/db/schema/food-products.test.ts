@@ -31,5 +31,7 @@ describe("food_products テーブル", () => {
     expect(rows[0].kcalPer100g).toBe(380);
     expect(rows[0].nutritionType).toBe("complete");
     expect(rows[0].id).toEqual(expect.any(String));
+    // 単位を指定しない既存の商品は、商品全体の内容量として NULL のまま
+    expect(rows[0].packageUnit).toBeNull();
   });
 });
