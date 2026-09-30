@@ -7,6 +7,7 @@ import {
   cleaningTargets,
   notifications,
   pushDeliveries,
+  symptoms,
 } from "@/db/schema";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
 
@@ -128,6 +129,74 @@ export async function markCleaningNotificationDoneAction(
   } catch (error) {
     console.error("掃除記録の追加と通知の完了処理に失敗しました", error);
     return { error: "掃除記録の追加と通知の完了処理に失敗しました" };
+  }
+}
+
+/**
+ * 症状の確認通知（`symptom_ongoing`）に「解消した」と答えたときに呼ぶ。通知を完了にすると
+ * 同時に、対象の症状記録の状態を「解消」に更新する。2つの更新は同じバッチ（D1 では
+ * 1 トランザクション）で実行し、片方だけが反映されないようにする
+ */
+export async function resolveSymptomNotificationAction(
+  id: string,
+): Promise<NotificationActionResult> {
+  try {
+    const db = getDb();
+    const [notification] = await db
+      .select({
+        catId: notifications.catId,
+        kind: notifications.kind,
+        referenceId: notifications.referenceId,
+      })
+      .from(notifications)
+      .where(eq(notifications.id, id))
+      .limit(1);
+
+    if (
+      notification?.kind !== "symptom_ongoing" ||
+      notification.referenceId == null
+    ) {
+      return { error: "通知が見つかりませんでした" };
+    }
+
+    const [symptom] = await db
+      .select({ id: symptoms.id })
+      .from(symptoms)
+      .where(
+        and(
+          eq(symptoms.id, notification.referenceId),
+          eq(symptoms.catId, notification.catId),
+        ),
+      )
+      .limit(1);
+
+    if (!symptom) {
+      return {
+        error:
+          "症状の記録が見つかりませんでした。「無視する」で通知を閉じてください",
+      };
+    }
+
+    await db.batch([
+      db
+        .update(symptoms)
+        .set({ status: "resolved", updatedAt: new Date() })
+        .where(
+          and(
+            eq(symptoms.id, symptom.id),
+            eq(symptoms.catId, notification.catId),
+            ne(symptoms.status, "resolved"),
+          ),
+        ),
+      db
+        .update(notifications)
+        .set({ status: "done", updatedAt: new Date() })
+        .where(eq(notifications.id, id)),
+    ]);
+    return {};
+  } catch (error) {
+    console.error("症状の解消と通知の完了処理に失敗しました", error);
+    return { error: "症状の解消と通知の完了処理に失敗しました" };
   }
 }
 

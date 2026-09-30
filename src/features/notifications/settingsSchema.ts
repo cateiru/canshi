@@ -15,6 +15,7 @@ export const catNotificationSettingsFormSchema = z.object({
     .number({ error: "体重測定の日数は数値で入力してください" })
     .int("体重測定の日数は整数で入力してください")
     .positive("体重測定の日数は0より大きい値を入力してください"),
+  symptomOngoingEnabled: checkboxBooleanSchema,
 });
 
 export type CatNotificationSettingsFormInput = z.infer<

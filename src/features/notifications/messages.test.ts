@@ -50,4 +50,21 @@ describe("buildNotificationMessage", () => {
       url: "/cats/cat-1/cleaning/targets/target-1/records",
     });
   });
+
+  it("symptom_ongoing の文言を組み立てる", () => {
+    const candidate: NotificationCandidate = {
+      ...base,
+      kind: "symptom_ongoing",
+      referenceId: "symptom-1",
+      symptomId: "symptom-1",
+      symptomType: "くしゃみ",
+      status: "improving",
+      elapsedMonths: 2,
+    };
+    expect(buildNotificationMessage("たま", candidate)).toEqual({
+      title: "たまの「くしゃみ」は解消しましたか？",
+      body: "「くしゃみ」の症状が「改善中」のまま2ヶ月が経過しました",
+      url: "/cats/cat-1/symptoms/symptom-1/edit",
+    });
+  });
 });

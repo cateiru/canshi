@@ -5,6 +5,7 @@ import { evaluateCleaningDue } from "./cleaningDue";
 import { evaluateDaysMilestone } from "./daysMilestone";
 import { getLocalTimeString } from "./localDate";
 import { evaluateShampooElapsed } from "./shampooElapsed";
+import { evaluateSymptomOngoing } from "./symptomOngoing";
 import type {
   EvaluateNotificationRulesInput,
   NotificationCandidate,
@@ -31,6 +32,7 @@ export function evaluateNotificationRules(
     latestShampooAt,
     latestWeightAt,
     cleaningTargets,
+    openSymptoms,
   } = input;
 
   const candidates: NotificationCandidate[] = [
@@ -103,6 +105,16 @@ export function evaluateNotificationRules(
   if (weightMeasurement) {
     candidates.push(weightMeasurement);
   }
+
+  candidates.push(
+    ...evaluateSymptomOngoing(
+      cat.id,
+      now,
+      timezone,
+      settings.symptomOngoing.isEnabled,
+      openSymptoms,
+    ),
+  );
 
   return candidates;
 }
