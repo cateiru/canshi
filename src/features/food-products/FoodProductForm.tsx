@@ -103,7 +103,7 @@ export function FoodProductForm({
           label="単位（任意）"
           placeholder="本・袋・パック"
           defaultValue={foodProduct?.packageUnit ?? undefined}
-          description="「14g/本」のように1本・1袋あたりの内容量で登録するときに入力します。未入力の場合は商品全体の内容量として扱います"
+          description="1本・1袋あたりで登録する場合に入力。未入力は商品全体の内容量"
           errorMessage={state.fieldErrors?.packageUnit?.[0]}
         />
       </FormRow>
