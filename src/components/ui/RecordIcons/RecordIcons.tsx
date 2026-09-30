@@ -511,10 +511,12 @@ export function SettingsIcon(props: RecordIconProps) {
     <RecordIcon
       {...props}
       fills={
-        <>
-          <path fill="#d7c4e9" d={gear} />
-          <circle fill="#fff4df" cx="12" cy="12" r="3.5" />
-        </>
+        // 中心の穴は塗らずにくり抜き、ダークテーマでも背景色が見えるようにする。
+        <path
+          fill="#d7c4e9"
+          fillRule="evenodd"
+          d={`${gear}M8.5 12a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0Z`}
+        />
       }
     >
       <path d={gear} />
