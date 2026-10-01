@@ -1,7 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
-import { TbCake, TbCheck, TbScale, TbSpray, TbWash } from "react-icons/tb";
+import {
+  TbCake,
+  TbCheck,
+  TbScale,
+  TbSpray,
+  TbThermometer,
+  TbWash,
+} from "react-icons/tb";
 import { Button, Checkbox, FormField } from "@/components/ui";
 import type { CleaningTarget } from "@/db/schema";
 import { Surface } from "@/features/shared/Surface";
@@ -96,6 +103,19 @@ export function NotificationSettingsForm({
           errorMessage={state.fieldErrors?.weightMeasurementDays?.[0]}
           isRequired
         />
+      </Surface>
+
+      <Surface
+        title="症状"
+        icon={<TbThermometer aria-hidden="true" size={20} />}
+        gap="sm"
+      >
+        <Checkbox
+          name="symptomOngoingEnabled"
+          defaultSelected={settings.symptomOngoing.isEnabled}
+        >
+          1ヶ月以上解消していない症状を確認する
+        </Checkbox>
       </Surface>
 
       {cleaningTargets.length > 0 ? (

@@ -1,4 +1,10 @@
-import type { NotificationCandidate } from "./rules";
+import type { NotificationCandidate, SymptomOngoingCandidate } from "./rules";
+
+const SYMPTOM_STATUS_PHRASE: Record<SymptomOngoingCandidate["status"], string> =
+  {
+    ongoing: "継続中",
+    improving: "改善中",
+  };
 
 export type NotificationMessage = {
   title: string;
@@ -47,6 +53,12 @@ export function buildNotificationMessage(
         title: `${candidate.targetName}のお手入れの時期です`,
         body: `${catName}の${candidate.targetName}が予定日を迎えました`,
         url: `/cats/${candidate.catId}/cleaning/targets/${candidate.targetId}/records`,
+      };
+    case "symptom_ongoing":
+      return {
+        title: `${catName}の「${candidate.symptomType}」は解消しましたか？`,
+        body: `「${candidate.symptomType}」の症状が「${SYMPTOM_STATUS_PHRASE[candidate.status]}」のまま${candidate.elapsedMonths}ヶ月が経過しました`,
+        url: `/cats/${candidate.catId}/symptoms/${candidate.symptomId}/edit`,
       };
   }
 }

@@ -12,6 +12,7 @@ import {
   notifications,
   pushDeliveries,
   pushSubscriptions,
+  symptoms,
 } from "@/db/schema";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
 
@@ -24,8 +25,11 @@ vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
 
-const { markCleaningNotificationDoneAction, snoozeNotificationAction } =
-  await import("./actions");
+const {
+  markCleaningNotificationDoneAction,
+  resolveSymptomNotificationAction,
+  snoozeNotificationAction,
+} = await import("./actions");
 
 beforeAll(async () => {
   const SQL = await initSqlJs();
@@ -231,5 +235,110 @@ describe("markCleaningNotificationDoneAction", () => {
 
     expect(result).toEqual({ error: "通知が見つかりませんでした" });
     expect((await findNotification(notification.id)).status).toBe("pending");
+  });
+});
+
+describe("resolveSymptomNotificationAction", () => {
+  async function setup() {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "たま", sex: "female" })
+      .returning();
+    const [symptom] = await db
+      .insert(symptoms)
+      .values({
+        catId: cat.id,
+        symptomType: "くしゃみ",
+        onsetAt: new Date("2026-08-01T09:00:00.000Z"),
+        status: "ongoing",
+      })
+      .returning();
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        catId: cat.id,
+        kind: "symptom_ongoing",
+        referenceId: symptom.id,
+        dedupeKey: `dedupe-${crypto.randomUUID()}`,
+        title: "たまの「くしゃみ」は解消しましたか？",
+        body: "「くしゃみ」の症状が「継続中」のまま1ヶ月が経過しました",
+        url: `/cats/${cat.id}/symptoms/${symptom.id}/edit`,
+        dueAt: new Date(),
+      })
+      .returning();
+    return { cat, symptom, notification };
+  }
+
+  it("通知を完了にし、症状記録を解消にする", async () => {
+    const { symptom, notification } = await setup();
+
+    const result = await resolveSymptomNotificationAction(notification.id);
+
+    expect(result).toEqual({});
+    const [updatedNotification] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, notification.id));
+    expect(updatedNotification.status).toBe("done");
+    const [updatedSymptom] = await db
+      .select()
+      .from(symptoms)
+      .where(eq(symptoms.id, symptom.id));
+    expect(updatedSymptom.status).toBe("resolved");
+  });
+
+  it("症状の確認通知でなければエラーを返し、何も更新しない", async () => {
+    const { cat } = await setup();
+    const [other] = await db
+      .insert(notifications)
+      .values({
+        catId: cat.id,
+        kind: "weight_measurement",
+        dedupeKey: `dedupe-${crypto.randomUUID()}`,
+        title: "たまの体重測定のお願い",
+        body: "前回の体重測定から14日が経過しました",
+        url: `/cats/${cat.id}/weight-records`,
+        dueAt: new Date(),
+      })
+      .returning();
+
+    const result = await resolveSymptomNotificationAction(other.id);
+
+    expect(result.error).toBeDefined();
+    const [unchanged] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, other.id));
+    expect(unchanged.status).toBe("pending");
+  });
+
+  it("別の猫の症状を指している通知では症状を更新しない", async () => {
+    const { symptom } = await setup();
+    const [otherCat] = await db
+      .insert(cats)
+      .values({ name: "みけ", sex: "male" })
+      .returning();
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        catId: otherCat.id,
+        kind: "symptom_ongoing",
+        referenceId: symptom.id,
+        dedupeKey: `dedupe-${crypto.randomUUID()}`,
+        title: "みけの「くしゃみ」は解消しましたか？",
+        body: "「くしゃみ」の症状が「継続中」のまま1ヶ月が経過しました",
+        url: `/cats/${otherCat.id}/symptoms/${symptom.id}/edit`,
+        dueAt: new Date(),
+      })
+      .returning();
+
+    const result = await resolveSymptomNotificationAction(notification.id);
+
+    expect(result.error).toBeDefined();
+    const [unchanged] = await db
+      .select()
+      .from(symptoms)
+      .where(eq(symptoms.id, symptom.id));
+    expect(unchanged.status).toBe("ongoing");
   });
 });

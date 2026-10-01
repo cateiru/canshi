@@ -57,6 +57,11 @@ export function buildCatNotificationSettingsBatch(
       isEnabled: data.weightMeasurementEnabled,
       params: { days: data.weightMeasurementDays },
     },
+    {
+      kind: "symptom_ongoing",
+      isEnabled: data.symptomOngoingEnabled,
+      params: null,
+    },
   ];
 
   const kindStatements = kindEntries.map((entry) =>
@@ -99,7 +104,7 @@ export function buildCatNotificationSettingsBatch(
       }),
   );
 
-  // kindStatements は常に5件（固定の種類分）あるため、db.batch が要求する
+  // kindStatements は常に6件（固定の種類分）あるため、db.batch が要求する
   // 「1件以上」のタプル型を満たすことは実行時に保証されている
   return [...kindStatements, ...cleaningStatements] as [
     (typeof kindStatements)[number],

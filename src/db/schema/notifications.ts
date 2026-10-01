@@ -18,7 +18,8 @@ export const notifications = sqliteTable(
       .notNull()
       .references(() => cats.id),
     kind: text("kind", { enum: NOTIFICATION_KINDS }).notNull(),
-    // cleaning_due の場合のみ cleaning_targets.id を持つ。それ以外は null
+    // cleaning_due の場合は cleaning_targets.id、symptom_ongoing の場合は symptoms.id を持つ。
+    // それ以外は null
     referenceId: text("reference_id"),
     dedupeKey: text("dedupe_key").notNull().unique(),
     title: text("title").notNull(),

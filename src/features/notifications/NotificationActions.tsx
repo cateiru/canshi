@@ -9,6 +9,7 @@ import {
   markCleaningNotificationDoneAction,
   markNotificationDoneAction,
   type NotificationActionResult,
+  resolveSymptomNotificationAction,
   snoozeNotificationAction,
 } from "./actions";
 import styles from "./NotificationActions.module.css";
@@ -30,7 +31,8 @@ type NotificationActionsProps = {
  * 通知センター（`src/app/notifications/`）の各通知に対する、完了・延期・無視の操作。
  * Server Action の実行後、`router.refresh()` でサーバー側の一覧を取り直す。
  * 掃除の通知は「完了にする」の代わりに「掃除して完了にする」を表示し、
- * 完了と同時に掃除記録を追加する
+ * 完了と同時に掃除記録を追加する。症状の確認通知は「解消した」（症状記録を解消に更新して完了）と
+ * 「まだ続いている」（症状記録はそのままで完了。1ヶ月後に再び確認する）を表示する
  */
 export function NotificationActions({
   notificationId,
@@ -71,6 +73,30 @@ export function NotificationActions({
         >
           掃除して完了にする
         </Button>
+      ) : kind === "symptom_ongoing" ? (
+        <>
+          <Button
+            variant="primary"
+            isDisabled={isPending}
+            onPress={() =>
+              run(
+                () => resolveSymptomNotificationAction(notificationId),
+                "症状を解消にしました",
+              )
+            }
+          >
+            解消した
+          </Button>
+          <Button
+            variant="secondary"
+            isDisabled={isPending}
+            onPress={() =>
+              run(() => markNotificationDoneAction(notificationId))
+            }
+          >
+            まだ続いている
+          </Button>
+        </>
       ) : (
         <Button
           variant="primary"

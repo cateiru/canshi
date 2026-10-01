@@ -30,6 +30,7 @@ const baseFormInput: CatNotificationSettingsFormInput = {
   shampooElapsedMonths: 2,
   weightMeasurementEnabled: true,
   weightMeasurementDays: 14,
+  symptomOngoingEnabled: true,
 };
 
 describe("buildCatNotificationSettingsBatch", () => {
@@ -63,7 +64,7 @@ describe("buildCatNotificationSettingsBatch", () => {
       .select()
       .from(notificationSettings)
       .where(eq(notificationSettings.catId, cat.id));
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(6);
     expect(rows.every((row) => row.referenceId === null)).toBe(true);
   });
 
@@ -87,7 +88,7 @@ describe("buildCatNotificationSettingsBatch", () => {
       .select()
       .from(notificationSettings)
       .where(eq(notificationSettings.catId, cat.id));
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(6);
     const shampoo = rows.find((row) => row.kind === "shampoo_elapsed");
     expect(shampoo?.isEnabled).toBe(false);
     expect(shampoo?.params).toEqual({ months: 3 });

@@ -6,4 +6,5 @@ export const NOTIFICATION_KINDS = [
   "shampoo_elapsed",
   "weight_measurement",
   "cleaning_due",
+  "symptom_ongoing",
 ] as const;

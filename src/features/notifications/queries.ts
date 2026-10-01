@@ -60,6 +60,9 @@ export async function getResolvedSettingsForCat(
         { isEnabled: byCleaningTarget.get(id)?.isEnabled ?? true },
       ]),
     ),
+    symptomOngoing: {
+      isEnabled: byKind.get("symptom_ongoing")?.isEnabled ?? true,
+    },
   };
 }
 

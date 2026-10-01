@@ -38,6 +38,7 @@ export async function updateCatNotificationSettingsAction(
     shampooElapsedMonths: formData.get("shampooElapsedMonths"),
     weightMeasurementEnabled: formData.get("weightMeasurementEnabled"),
     weightMeasurementDays: formData.get("weightMeasurementDays"),
+    symptomOngoingEnabled: formData.get("symptomOngoingEnabled"),
   });
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };

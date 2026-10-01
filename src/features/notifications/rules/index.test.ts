@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Cat } from "@/db/schema";
 import { evaluateNotificationRules } from "./index";
-import type { ResolvedNotificationSettings } from "./types";
+import type { OpenSymptom, ResolvedNotificationSettings } from "./types";
 
 function makeCat(overrides: Partial<Cat> = {}): Cat {
   return {
@@ -30,6 +30,16 @@ const allEnabledSettings: ResolvedNotificationSettings = {
   shampooElapsed: { isEnabled: true, months: 2 },
   weightMeasurement: { isEnabled: true, days: 14 },
   cleaningDue: new Map(),
+  symptomOngoing: { isEnabled: true },
+};
+
+const longOngoingSymptom: OpenSymptom = {
+  id: "symptom-1",
+  symptomType: "くしゃみ",
+  onsetAt: new Date("2026-08-11T09:00:00.000Z"),
+  status: "ongoing",
+  hasOpenNotification: false,
+  lastAnsweredAt: null,
 };
 
 describe("evaluateNotificationRules", () => {
@@ -42,6 +52,7 @@ describe("evaluateNotificationRules", () => {
       latestShampooAt: null,
       latestWeightAt: null,
       cleaningTargets: [],
+      openSymptoms: [],
     });
 
     expect(candidates.map((c) => c.kind)).toEqual(["birthday_yearly"]);
@@ -59,6 +70,7 @@ describe("evaluateNotificationRules", () => {
       latestShampooAt: null,
       latestWeightAt: null,
       cleaningTargets: [],
+      openSymptoms: [],
     });
 
     expect(candidates).toEqual([]);
@@ -73,6 +85,7 @@ describe("evaluateNotificationRules", () => {
       latestShampooAt: new Date("2026-07-11T00:00:00.000Z"),
       latestWeightAt: new Date("2026-08-28T00:00:00.000Z"),
       cleaningTargets: [],
+      openSymptoms: [],
     });
 
     expect(candidates.map((c) => c.kind).sort()).toEqual(
@@ -89,6 +102,7 @@ describe("evaluateNotificationRules", () => {
       latestShampooAt: new Date("2026-07-11T00:00:00.000Z"),
       latestWeightAt: new Date("2026-08-28T00:00:00.000Z"),
       cleaningTargets: [],
+      openSymptoms: [longOngoingSymptom],
     });
 
     expect(candidates).toEqual([]);
@@ -121,8 +135,39 @@ describe("evaluateNotificationRules", () => {
           isOverdue: false,
         },
       ],
+      openSymptoms: [longOngoingSymptom],
     });
 
     expect(candidates.map((c) => c.kind)).toEqual(["cleaning_due"]);
+  });
+
+  it("1ヶ月以上解消していない症状があれば、18:00 以降に確認の通知を返す", () => {
+    const candidates = evaluateNotificationRules({
+      now: new Date("2026-09-11T18:00:00.000Z"),
+      timezone: "UTC",
+      cat: makeCat({ birthDate: null }),
+      settings: allEnabledSettings,
+      latestShampooAt: null,
+      latestWeightAt: null,
+      cleaningTargets: [],
+      openSymptoms: [longOngoingSymptom],
+    });
+
+    expect(candidates.map((c) => c.kind)).toEqual(["symptom_ongoing"]);
+  });
+
+  it("症状の確認通知を無効にすると生成されない", () => {
+    const candidates = evaluateNotificationRules({
+      now: new Date("2026-09-11T18:00:00.000Z"),
+      timezone: "UTC",
+      cat: makeCat({ birthDate: null }),
+      settings: { ...allEnabledSettings, symptomOngoing: { isEnabled: false } },
+      latestShampooAt: null,
+      latestWeightAt: null,
+      cleaningTargets: [],
+      openSymptoms: [longOngoingSymptom],
+    });
+
+    expect(candidates).toEqual([]);
   });
 });
