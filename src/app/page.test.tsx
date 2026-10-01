@@ -25,10 +25,6 @@ function buildCat(id: string): Cat {
     breed: null,
     adoptedAt: null,
     profileMediaAssetId: null,
-    profileCropX: null,
-    profileCropY: null,
-    profileCropZoom: null,
-    profileCropRotation: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

@@ -120,10 +120,6 @@ export type BirthdayCelebrationCat = {
   name: string;
   birthDate: string | null;
   profileMediaAssetId: string | null;
-  profileCropX: number | null;
-  profileCropY: number | null;
-  profileCropZoom: number | null;
-  profileCropRotation: number | null;
 };
 
 export function toBirthdayCelebrationCat(
@@ -134,9 +130,5 @@ export function toBirthdayCelebrationCat(
     name: cat.name,
     birthDate: cat.birthDate,
     profileMediaAssetId: cat.profileMediaAssetId,
-    profileCropX: cat.profileCropX,
-    profileCropY: cat.profileCropY,
-    profileCropZoom: cat.profileCropZoom,
-    profileCropRotation: cat.profileCropRotation,
   };
 }

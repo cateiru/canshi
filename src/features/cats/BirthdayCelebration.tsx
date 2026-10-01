@@ -108,10 +108,6 @@ export function BirthdayCelebration({
           <CatAvatar
             name={cat.name}
             profileMediaAssetId={cat.profileMediaAssetId}
-            profileCropX={cat.profileCropX}
-            profileCropY={cat.profileCropY}
-            profileCropZoom={cat.profileCropZoom}
-            profileCropRotation={cat.profileCropRotation}
             size="lg"
           />
           <p className={styles.lead}>

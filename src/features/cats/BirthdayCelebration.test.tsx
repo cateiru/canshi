@@ -11,10 +11,6 @@ function buildCat(
     name: "たま",
     birthDate: "2023-09-26",
     profileMediaAssetId: null,
-    profileCropX: null,
-    profileCropY: null,
-    profileCropZoom: null,
-    profileCropRotation: null,
     ...overrides,
   };
 }

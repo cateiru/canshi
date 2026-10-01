@@ -61,10 +61,6 @@ export default async function CatsPage() {
                       <CatAvatar
                         name={cat.name}
                         profileMediaAssetId={cat.profileMediaAssetId}
-                        profileCropX={cat.profileCropX}
-                        profileCropY={cat.profileCropY}
-                        profileCropZoom={cat.profileCropZoom}
-                        profileCropRotation={cat.profileCropRotation}
                       />
                       <div>
                         <h2 className={styles.catName}>{cat.name}</h2>

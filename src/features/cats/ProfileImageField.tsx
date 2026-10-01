@@ -22,10 +22,6 @@ import {
 type ProfileImageFieldProps = {
   catName: string;
   profileMediaAssetId: string | null;
-  profileCropX: number | null;
-  profileCropY: number | null;
-  profileCropZoom: number | null;
-  profileCropRotation: number | null;
   /** 切り抜き・アップロード中は true（フォームの送信を止めるため） */
   onBusyChange: (isBusy: boolean) => void;
   isDisabled?: boolean;
@@ -45,10 +41,6 @@ type Selection =
 export function ProfileImageField({
   catName,
   profileMediaAssetId,
-  profileCropX,
-  profileCropY,
-  profileCropZoom,
-  profileCropRotation,
   onBusyChange,
   isDisabled = false,
 }: ProfileImageFieldProps) {
@@ -140,8 +132,6 @@ export function ProfileImageField({
       : selection.type === "remove"
         ? null
         : profileMediaAssetId;
-  // 以前の写真記録から選んだ画像だけが表示位置・ズーム・回転の値を持つ
-  const keepsLegacyCrop = selection.type === "keep";
 
   return (
     <div className={styles.field}>
@@ -149,10 +139,6 @@ export function ProfileImageField({
         <CatAvatar
           name={catName}
           profileMediaAssetId={previewAssetId}
-          profileCropX={keepsLegacyCrop ? profileCropX : null}
-          profileCropY={keepsLegacyCrop ? profileCropY : null}
-          profileCropZoom={keepsLegacyCrop ? profileCropZoom : null}
-          profileCropRotation={keepsLegacyCrop ? profileCropRotation : null}
           size="lg"
         />
         <div className={styles.controls}>

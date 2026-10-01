@@ -12,17 +12,11 @@ export async function detachProfileImages(assetIds: string[]): Promise<void> {
     return;
   }
   const db = getDb();
-  // D1 のバインドパラメーター上限を超えないよう、set の値 5 個分を差し引いて分割する
-  for (const ids of chunkForBoundParameters(assetIds, 5)) {
+  // D1 のバインドパラメーター上限を超えないよう、set の値 1 個分を差し引いて分割する
+  for (const ids of chunkForBoundParameters(assetIds, 1)) {
     await db
       .update(cats)
-      .set({
-        profileMediaAssetId: null,
-        profileCropX: null,
-        profileCropY: null,
-        profileCropZoom: null,
-        profileCropRotation: null,
-      })
+      .set({ profileMediaAssetId: null })
       .where(inArray(cats.profileMediaAssetId, ids));
   }
 }

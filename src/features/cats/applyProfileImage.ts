@@ -7,18 +7,6 @@ import { CAT_PROFILE_MEDIA_TYPE } from "./media";
 import type { ProfileImageChange } from "./profileImageForm";
 
 /**
- * プロフィール画像の表示位置・ズーム・回転の列。以前の写真記録から選んだ画像
- * （切り抜く前の元画像）の表示にだけ使う。フロントエンドで切り抜いてからアップロードした
- * 画像には不要なため、画像を差し替える・外すときは必ず消す
- */
-const CLEARED_PROFILE_CROP = {
-  profileCropX: null,
-  profileCropY: null,
-  profileCropZoom: null,
-  profileCropRotation: null,
-};
-
-/**
  * 猫に紐付くプロフィール画像のうち、その時点で猫が参照していない画像（差し替え・削除前の古い画像）を
  * R2 のオブジェクトごと削除する。
  *
@@ -74,7 +62,6 @@ export async function applyProfileImageChange(
         .update(cats)
         .set({
           profileMediaAssetId: null,
-          ...CLEARED_PROFILE_CROP,
           updatedAt: new Date(),
         })
         .where(eq(cats.id, catId));
@@ -106,7 +93,6 @@ export async function applyProfileImageChange(
         .update(cats)
         .set({
           profileMediaAssetId: change.assetId,
-          ...CLEARED_PROFILE_CROP,
           updatedAt: new Date(),
         })
         .where(
