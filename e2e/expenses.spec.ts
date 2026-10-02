@@ -1,5 +1,20 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { fillAndKeep } from "./helpers";
+
+const EXPENSE_DATE = "2026-09-08";
+
+/**
+ * 支出を記録した月の一覧を、この猫の支出だけに絞り込んで開く。
+ * 一覧は既定で今月を表示し、「すべての支出」には他の猫の支出も含まれ得るため
+ */
+async function openRecordedMonth(page: Page) {
+  // 保存後の一覧への遷移を待つ（/expenses/new や /expenses/:id/edit のままの URL を使わないため）
+  await expect(page).toHaveURL(/\/cats\/[^/]+\/expenses(\?.*)?$/);
+  const url = new URL(page.url());
+  url.searchParams.set("ym", EXPENSE_DATE.slice(0, 7));
+  url.searchParams.set("scope", "cat");
+  await page.goto(url.toString());
+}
 
 // 支出記録の登録・編集・削除ができることを検証する
 test("支出記録の登録・編集・削除ができる", async ({ page }) => {
@@ -18,16 +33,14 @@ test("支出記録の登録・編集・削除ができる", async ({ page }) => 
   await expect(page).toHaveURL(/\/expenses/);
   await page.getByRole("link", { name: "記録する" }).click();
 
-  await fillAndKeep(page.getByLabel("支出日"), "2026-09-08");
+  await fillAndKeep(page.getByLabel("支出日"), EXPENSE_DATE);
   await page.getByLabel("金額（円）").fill("1980");
   await page.getByLabel("カテゴリ").click();
   await page.getByRole("option", { name: "衛生用品" }).click();
   await page.getByLabel("メモ").fill("トイレの砂を購入");
   await page.getByRole("button", { name: "記録する" }).click();
 
-  await expect(page).toHaveURL(/\/expenses/);
-  // 「すべての支出」には他の猫の支出も含まれ得るため、この猫だけに絞り込む
-  await page.getByRole("link", { name: `${catName}のみ` }).click();
+  await openRecordedMonth(page);
 
   const record = page.getByRole("article", { name: "衛生用品 1,980円" });
   await expect(record).toBeVisible();
@@ -41,8 +54,7 @@ test("支出記録の登録・編集・削除ができる", async ({ page }) => 
   await page.getByLabel("金額（円）").fill("2500");
   await page.getByRole("button", { name: "更新する" }).click();
 
-  await expect(page).toHaveURL(/\/expenses/);
-  await page.getByRole("link", { name: `${catName}のみ` }).click();
+  await openRecordedMonth(page);
   const updatedRecord = page.getByRole("article", {
     name: "衛生用品 2,500円",
   });
