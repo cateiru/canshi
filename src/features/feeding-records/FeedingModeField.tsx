@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useId } from "react";
 import { TbAdjustments, TbHelpCircle } from "react-icons/tb";
 import { SegmentedControl } from "@/components/ui";
-import { FEEDING_MODES, type FeedingMode } from "@/db/schema";
+import { FEEDING_MODES, type FeedingMode } from "@/db/schema/feeding-modes";
 import styles from "./FeedingModeField.module.css";
 import { FEEDING_MODE_HELP_HREF, FEEDING_MODE_LABEL } from "./labels";
 

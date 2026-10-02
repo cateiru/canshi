@@ -18,14 +18,14 @@ import {
   RadioGroup,
   Select,
 } from "@/components/ui";
+import type { FoodProduct } from "@/db/schema";
 import {
   type FeedingMode,
-  type FoodProduct,
   GIVEN_AMOUNT_LEVELS,
   type GivenAmountLevel,
   LEFTOVER_LEVELS,
   type LeftoverLevel,
-} from "@/db/schema";
+} from "@/db/schema/feeding-modes";
 import type { FeedingPresetWithItems } from "@/features/feeding-presets/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { formatPackageAmount } from "@/features/food-products/labels";

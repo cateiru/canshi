@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { FEEDING_MODES, GIVEN_AMOUNT_LEVELS } from "./feeding-records";
+import { FEEDING_MODES, GIVEN_AMOUNT_LEVELS } from "./feeding-modes";
 import { foodProducts } from "./food-products";
 
 /**

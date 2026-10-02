@@ -10,12 +10,12 @@ import {
   RadioGroup,
   Select,
 } from "@/components/ui";
+import type { FoodProduct } from "@/db/schema";
 import {
   type FeedingMode,
-  type FoodProduct,
   GIVEN_AMOUNT_LEVELS,
   type GivenAmountLevel,
-} from "@/db/schema";
+} from "@/db/schema/feeding-modes";
 import { FeedingModeField } from "@/features/feeding-records/FeedingModeField";
 import { GIVEN_AMOUNT_LEVEL_LABEL } from "@/features/feeding-records/labels";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
