@@ -246,6 +246,13 @@
       "when": 1790816708151,
       "tag": "0034_volatile_zodiak",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1790933959461,
+      "tag": "0035_flippant_catseye",
+      "breakpoints": true
     }
   ]
 }

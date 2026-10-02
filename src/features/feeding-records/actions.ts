@@ -13,6 +13,8 @@ import {
 } from "./calculations";
 import {
   type FeedingRecordFormFieldErrors,
+  type FeedingRecordFormInput,
+  type FeedingRecordItemFieldName,
   feedingRecordFormSchema,
 } from "./schema";
 
@@ -33,15 +35,20 @@ function parseFormData(formData: FormData) {
   }
   const sortedIndices = Array.from(indices).sort((a, b) => a - b);
 
+  // フォームは選択中のモードの入力欄だけを送るため、両モードの項目をまとめて
+  // 読み取り、どちらを使うかはスキーマの mode による判別に任せる
   const items = sortedIndices.map((index) => ({
     foodProductId: formData.get(`items.${index}.foodProductId`),
     givenAmountG: formData.get(`items.${index}.givenAmountG`),
     leftoverAmountG: formData.get(`items.${index}.leftoverAmountG`),
+    givenAmountLevel: formData.get(`items.${index}.givenAmountLevel`),
+    leftoverLevel: formData.get(`items.${index}.leftoverLevel`),
   }));
 
   return feedingRecordFormSchema.safeParse({
     occurredDate: formData.get("occurredDate"),
     occurredTime: formData.get("occurredTime"),
+    mode: formData.get("mode"),
     items,
   });
 }
@@ -55,17 +62,18 @@ function mapZodErrors(error: z.ZodError): FeedingRecordFormFieldErrors {
   for (const issue of error.issues) {
     const [first, second, third] = issue.path;
     if (first === "items" && typeof second === "number" && third) {
-      const fieldName = String(third) as
-        | "foodProductId"
-        | "givenAmountG"
-        | "leftoverAmountG";
+      const fieldName = String(third) as FeedingRecordItemFieldName;
       itemErrors[second] ??= {};
       const rowErrors = itemErrors[second];
       rowErrors[fieldName] ??= [];
       rowErrors[fieldName].push(issue.message);
       continue;
     }
-    if (first === "occurredDate" || first === "occurredTime") {
+    if (
+      first === "occurredDate" ||
+      first === "occurredTime" ||
+      first === "mode"
+    ) {
       fieldErrors[first] ??= [];
       fieldErrors[first].push(issue.message);
       continue;
@@ -83,15 +91,11 @@ function mapZodErrors(error: z.ZodError): FeedingRecordFormFieldErrors {
   return fieldErrors;
 }
 
-async function buildItemsToInsert(
-  items: {
-    foodProductId: string;
-    givenAmountG: number;
-    leftoverAmountG: number;
-  }[],
-) {
+async function buildItemsToInsert(input: FeedingRecordFormInput) {
   const db = getDb();
-  const foodProductIds = [...new Set(items.map((item) => item.foodProductId))];
+  const foodProductIds = [
+    ...new Set(input.items.map((item) => item.foodProductId)),
+  ];
   const products = await db
     .select()
     .from(foodProducts)
@@ -102,7 +106,22 @@ async function buildItemsToInsert(
     return { error: "選択された商品が見つかりませんでした" } as const;
   }
 
-  const values = items.map((item, index) => {
+  // あいまいモードは量を段階でしか持たないため、摂取量・カロリーは計算しない
+  if (input.mode === "approximate") {
+    const values = input.items.map((item, index) => ({
+      foodProductId: item.foodProductId,
+      givenAmountG: null,
+      leftoverAmountG: null,
+      estimatedIntakeG: null,
+      estimatedKcal: null,
+      givenAmountLevel: item.givenAmountLevel,
+      leftoverLevel: item.leftoverLevel,
+      sortOrder: index,
+    }));
+    return { values } as const;
+  }
+
+  const values = input.items.map((item, index) => {
     // biome-ignore lint/style/noNonNullAssertion: 上の size チェックで全件存在を確認済み
     const product = productById.get(item.foodProductId)!;
     const estimatedIntakeG = calculateEstimatedIntakeG(
@@ -118,6 +137,8 @@ async function buildItemsToInsert(
         estimatedIntakeG,
         product.kcalPer100g,
       ),
+      givenAmountLevel: null,
+      leftoverLevel: null,
       sortOrder: index,
     };
   });
@@ -136,7 +157,7 @@ export async function createFeedingRecordAction(
     return { fieldErrors: mapZodErrors(parsed.error) };
   }
 
-  const built = await buildItemsToInsert(parsed.data.items);
+  const built = await buildItemsToInsert(parsed.data);
   if ("error" in built) {
     return { formError: built.error };
   }
@@ -153,6 +174,7 @@ export async function createFeedingRecordAction(
       id: feedingRecordId,
       catId,
       occurredAt,
+      mode: parsed.data.mode,
     }),
     db.insert(feedingRecordItems).values(
       built.values.map((value) => ({
@@ -177,7 +199,7 @@ export async function updateFeedingRecordAction(
     return { fieldErrors: mapZodErrors(parsed.error) };
   }
 
-  const built = await buildItemsToInsert(parsed.data.items);
+  const built = await buildItemsToInsert(parsed.data);
   if ("error" in built) {
     return { formError: built.error };
   }
@@ -201,7 +223,7 @@ export async function updateFeedingRecordAction(
   await db.batch([
     db
       .update(feedingRecords)
-      .set({ occurredAt, updatedAt: new Date() })
+      .set({ occurredAt, mode: parsed.data.mode, updatedAt: new Date() })
       .where(eq(feedingRecords.id, id)),
     db
       .delete(feedingRecordItems)

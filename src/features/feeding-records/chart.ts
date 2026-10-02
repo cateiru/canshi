@@ -1,4 +1,5 @@
-import type { FeedingRecordWithItems } from "./queries";
+import type { FeedingMode } from "@/db/schema";
+import { sumFeedingTotals } from "./calculations";
 
 export type FeedingChartPoint = {
   occurredAtIso: string;
@@ -19,13 +20,20 @@ const PERIOD_DAYS: Record<Exclude<FeedingChartPeriod, "all">, number> = {
   "3m": 90,
 };
 
+type FeedingChartRecord = {
+  occurredAt: Date;
+  mode: FeedingMode;
+  items: { estimatedIntakeG: number | null; estimatedKcal: number | null }[];
+};
+
 /**
  * listFeedingRecords() の結果を、Nivo の折れ線グラフ用に日付単位で集計する。
  * 同じ日に複数回食事した記録があっても、その日の合計を1点として扱う
  * （一覧の日付区切りと表示単位を揃える）。
+ * あいまいモードの記録は摂取量・カロリーを持たないため、グラフには含めない
  */
 export function toFeedingChartPoints(
-  records: Pick<FeedingRecordWithItems, "occurredAt" | "items">[],
+  records: FeedingChartRecord[],
 ): FeedingChartPoint[] {
   const totalsByDate = new Map<
     string,
@@ -33,15 +41,17 @@ export function toFeedingChartPoints(
   >();
 
   for (const record of records) {
+    if (record.mode !== "strict") {
+      continue;
+    }
     const dateKey = record.occurredAt.toISOString().slice(0, 10);
     const totals = totalsByDate.get(dateKey) ?? {
       totalIntakeG: 0,
       totalKcal: 0,
     };
-    for (const item of record.items) {
-      totals.totalIntakeG += item.estimatedIntakeG;
-      totals.totalKcal += item.estimatedKcal;
-    }
+    const recordTotals = sumFeedingTotals(record.items);
+    totals.totalIntakeG += recordTotals.totalIntakeG;
+    totals.totalKcal += recordTotals.totalKcal;
     totalsByDate.set(dateKey, totals);
   }
 
