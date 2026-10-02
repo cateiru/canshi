@@ -118,15 +118,15 @@ describe("applyProfileImageChange", () => {
 
   it("下書きを猫のプロフィール画像として紐付け、差し替えると古い画像を削除する", async () => {
     const cat = await createCat();
-    // 以前の写真記録から引き継いだ画像（表示位置の値を持つ）
-    const legacyId = await createPendingAsset();
+    // 紐付け済みの古い画像
+    const previousId = await createPendingAsset();
     await db
       .update(mediaAssets)
       .set({ recordType: "cat_profile", recordId: cat.id, catId: cat.id })
-      .where(eq(mediaAssets.id, legacyId));
+      .where(eq(mediaAssets.id, previousId));
     await db
       .update(cats)
-      .set({ profileMediaAssetId: legacyId, profileCropX: 10 })
+      .set({ profileMediaAssetId: previousId })
       .where(eq(cats.id, cat.id));
 
     const nextId = await createPendingAsset();
@@ -136,13 +136,12 @@ describe("applyProfileImageChange", () => {
 
     const updated = await getCat(cat.id);
     expect(updated.profileMediaAssetId).toBe(nextId);
-    expect(updated.profileCropX).toBeNull();
     expect(await getAsset(nextId)).toMatchObject({
       recordType: "cat_profile",
       recordId: cat.id,
       catId: cat.id,
     });
-    expect(await getAsset(legacyId)).toBeUndefined();
+    expect(await getAsset(previousId)).toBeUndefined();
   });
 
   it("下書き以外・画像以外の asset ID は紐付けずにエラーを返す", async () => {

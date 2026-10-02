@@ -2,7 +2,6 @@ import { sql } from "drizzle-orm";
 import {
   type AnySQLiteColumn,
   integer,
-  real,
   sqliteTable,
   text,
 } from "drizzle-orm/sqlite-core";
@@ -30,16 +29,6 @@ export const cats = sqliteTable("cats", {
   profileMediaAssetId: text("profile_media_asset_id").references(
     (): AnySQLiteColumn => mediaAssets.id,
   ),
-  // 以下の profile_crop_* は、廃止した写真記録から選んだ画像（切り抜く前の元画像）の表示にだけ使う。
-  // 猫の編集画面でアップロードする画像はブラウザで切り抜き済みのため、差し替え・削除時に null にする
-  // プロフィール画像の表示位置（枠のサイズに対する百分率オフセット。0 が中央）。
-  // 未設定（null）なら中央（0, 0）として扱う
-  profileCropX: real("profile_crop_x"),
-  profileCropY: real("profile_crop_y"),
-  // プロフィール画像のズーム倍率（1 以上。1 = ズームなし）。未設定（null）なら 1 として扱う
-  profileCropZoom: real("profile_crop_zoom"),
-  // プロフィール画像の回転角度（度）。未設定（null）なら 0 として扱う
-  profileCropRotation: real("profile_crop_rotation"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

@@ -90,10 +90,6 @@ export default async function NotificationSettingsPage() {
                     <CatAvatar
                       name={cat.name}
                       profileMediaAssetId={cat.profileMediaAssetId}
-                      profileCropX={cat.profileCropX}
-                      profileCropY={cat.profileCropY}
-                      profileCropZoom={cat.profileCropZoom}
-                      profileCropRotation={cat.profileCropRotation}
                     />
                   }
                   title={cat.name}

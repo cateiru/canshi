@@ -95,10 +95,6 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
           <ProfileImageField
             catName={cat.name}
             profileMediaAssetId={cat.profileMediaAssetId}
-            profileCropX={cat.profileCropX}
-            profileCropY={cat.profileCropY}
-            profileCropZoom={cat.profileCropZoom}
-            profileCropRotation={cat.profileCropRotation}
             onBusyChange={setIsProfileImageBusy}
             isDisabled={isPending}
           />
