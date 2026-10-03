@@ -15,6 +15,8 @@ import { expect, takeSnapshot, test } from "./vrt-snapshot";
 //   ネストした一覧ページの「データがある/何もない」の両方をこの1匹で再現する
 // - BUSY_CAT: 同じ日に5種類の記録を登録した猫。タイムラインのカレンダーで1日のアイコンが
 //   表示上限を超えて「+1」になるケース用
+// - APPROXIMATE_CAT: あいまいモードのごはん記録だけを登録した猫。ごはん記録一覧・
+//   タイムラインのあいまいモード表示用
 //
 // 以下は対象外 (意図的な除外):
 // - "/" : 登録済みの猫の数によってリダイレクト先が変わる (top-page.spec.ts 参照)
@@ -31,6 +33,7 @@ import { expect, takeSnapshot, test } from "./vrt-snapshot";
 const EMPTY_CAT = "vrt-cat-empty";
 const CAT = "vrt-cat-populated";
 const BUSY_CAT = "vrt-cat-busy";
+const APPROXIMATE_CAT = "vrt-cat-approximate";
 const YM = "2024-06";
 
 // CAT の誕生日（フィクスチャの生年月日 2015-04-01 と同じ 4/1）に実行すると、猫一覧・猫の詳細で
@@ -136,6 +139,32 @@ test("ごはんプリセット登録ページの見た目", async ({ page }, tes
   await page.goto("/feeding-presets/new");
   await expect(
     page.getByRole("heading", { name: "ごはんプリセットを登録する" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+// 記録方法を「あいまいモード」に切り替え、与える量が段階の選択肢になった状態を撮る。
+// 保存はしないため、フィクスチャのデータは変わらない
+test("ごはんプリセット登録ページ（あいまいモード）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/feeding-presets/new");
+  await expect(
+    page.getByRole("heading", { name: "ごはんプリセットを登録する" }),
+  ).toBeVisible();
+  await page.getByRole("radio", { name: "あいまいモード" }).click();
+  await expect(
+    page.getByRole("radiogroup", { name: "与える量" }).first(),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+test("記録方法のヘルプページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/help/feeding-modes");
+  await expect(
+    page.getByRole("heading", {
+      name: "「厳格モード」「あいまいモード」とは？",
+    }),
   ).toBeVisible();
   await takeSnapshot(page, testInfo);
 });
@@ -296,6 +325,16 @@ test("タイムライン（データがあるケース）の見た目", async ({
   await takeSnapshot(page, testInfo);
 });
 
+test("タイムライン（あいまいモードのごはん記録）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${APPROXIMATE_CAT}/timeline?ym=${YM}`);
+  await expect(
+    page.getByRole("heading", { name: "VRTあいまい猫のタイムライン" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 // スマートフォン幅ではカレンダーのマスが狭く、アイコンと「+1」が複数行に折り返す。
 // マスの下端に余白が残る（中身がはみ出さない）ことを確認する
 test.describe("タイムライン（スマートフォン幅）", () => {
@@ -377,6 +416,19 @@ for (const {
     await takeSnapshot(page, testInfo);
   });
 }
+
+// あいまいモードの記録は食べた量・カロリーを計算しないため、あいまいモードの記録しかない
+// 猫ではグラフ（「ごはんの推移」）を表示しない
+test("ごはん記録一覧（あいまいモードの記録だけのケース）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${APPROXIMATE_CAT}/feeding-records`);
+  await expect(
+    page.getByRole("heading", { name: "VRTあいまい猫のごはん記録" }),
+  ).toBeVisible();
+  await expect(page.getByText("あいまいモード")).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
 
 // チャートを持たない、猫1匹に対して単純な一覧を表示する記録
 const FLAT_RECORD_LISTS: RecordListCase[] = [
@@ -584,6 +636,22 @@ test.describe("記録追加ページ（日付欄あり）", () => {
       await takeSnapshot(page, testInfo);
     });
   }
+
+  // 記録方法を「あいまいモード」に切り替え、与えた量・残した量が段階の選択肢になった
+  // 状態を撮る。保存はしないため、フィクスチャのデータは変わらない
+  test("ごはん記録追加ページ（あいまいモード）の見た目", async ({
+    page,
+  }, testInfo) => {
+    await page.goto(`/cats/${EMPTY_CAT}/feeding-records/new`);
+    await expect(
+      page.getByRole("heading", { name: "ごはんを記録する" }),
+    ).toBeVisible();
+    await page.getByRole("radio", { name: "あいまいモード" }).click();
+    await expect(
+      page.getByRole("radiogroup", { name: "残した量" }).first(),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
 
   test("投薬実績追加ページの見た目", async ({ page }, testInfo) => {
     await page.goto(`/cats/${CAT}/medications/vrt-med-1/doses/new`);
