@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { FEEDING_MODES, GIVEN_AMOUNT_LEVELS } from "./feeding-modes";
 import { foodProducts } from "./food-products";
 
 /**
@@ -11,6 +12,8 @@ export const feedingPresets = sqliteTable("feeding_presets", {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
+  // プリセットを選んだときに記録フォームへ反映する記録方法（feeding_records.mode と同じ）
+  mode: text("mode", { enum: FEEDING_MODES }).notNull().default("strict"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -33,8 +36,10 @@ export const feedingPresetItems = sqliteTable("feeding_preset_items", {
     .notNull()
     .references(() => foodProducts.id),
   // フォーム自動入力用のデフォルトの与える量。残した量はプリセットには
-  // 持たせない（記録のたびに実測する値のため）
-  givenAmountG: real("given_amount_g").notNull(),
+  // 持たせない（記録のたびに実測する値のため）。厳格モードのプリセットでは
+  // givenAmountG（グラム）、あいまいモードのプリセットでは givenAmountLevel（段階）を持つ
+  givenAmountG: real("given_amount_g"),
+  givenAmountLevel: text("given_amount_level", { enum: GIVEN_AMOUNT_LEVELS }),
   sortOrder: integer("sort_order").notNull().default(0),
 });
 

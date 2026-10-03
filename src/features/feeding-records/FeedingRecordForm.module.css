@@ -48,6 +48,13 @@
   color: var(--color-error-strong);
 }
 
+.levelField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
 .itemsList {
   display: flex;
   flex-direction: column;

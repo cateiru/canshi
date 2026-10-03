@@ -3,6 +3,7 @@ import { feedingPresetFormSchema } from "./schema";
 
 const validInput = {
   name: "朝ごはんセット",
+  mode: "strict",
   items: [
     { foodProductId: "food-1", givenAmountG: "40" },
     { foodProductId: "food-2", givenAmountG: "20" },
@@ -35,6 +36,33 @@ describe("feedingPresetFormSchema", () => {
     const result = feedingPresetFormSchema.safeParse({
       ...validInput,
       items: [{ ...validInput.items[0], foodProductId: "" }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("あいまいモードは段階での与える量で成功する", () => {
+    const result = feedingPresetFormSchema.safeParse({
+      name: "おやつ",
+      mode: "approximate",
+      items: [
+        {
+          foodProductId: "food-1",
+          givenAmountG: null,
+          givenAmountLevel: "less",
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.items).toEqual([
+      { foodProductId: "food-1", givenAmountLevel: "less" },
+    ]);
+  });
+
+  it("あいまいモードで与える量の段階が未選択の場合は失敗する", () => {
+    const result = feedingPresetFormSchema.safeParse({
+      name: "おやつ",
+      mode: "approximate",
+      items: [{ foodProductId: "food-1", givenAmountLevel: null }],
     });
     expect(result.success).toBe(false);
   });

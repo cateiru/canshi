@@ -16,3 +16,20 @@ test("オフラインページに案内文言が表示される", async ({ page 
     page.getByText("インターネットに接続されていないため"),
   ).toBeVisible();
 });
+
+test("ごはん記録の記録方法のヘルプページに両モードの説明が表示される", async ({
+  page,
+}) => {
+  await page.goto("/help/feeding-modes");
+  await expect(
+    page.getByRole("heading", {
+      name: "「厳格モード」「あいまいモード」とは？",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "厳格モード", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "あいまいモード", exact: true }),
+  ).toBeVisible();
+});

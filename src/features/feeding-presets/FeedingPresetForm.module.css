@@ -69,3 +69,10 @@
 .productImage {
   flex-shrink: 0;
 }
+
+.levelField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}

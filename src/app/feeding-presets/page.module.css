@@ -27,8 +27,15 @@
   composes: surface from "../../features/shared/Surface.module.css";
 }
 
-.presetName {
+.presetHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   margin-bottom: var(--space-4);
+}
+
+.presetName {
   font-size: var(--text-lg);
 }
 

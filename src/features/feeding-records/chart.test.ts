@@ -21,14 +21,17 @@ describe("toFeedingChartPoints", () => {
   it("日付の昇順に並べ替える", () => {
     const records = [
       {
+        mode: "strict" as const,
         occurredAt: new Date("2026-09-10T00:00:00.000Z"),
         items: [item(30, 90)],
       },
       {
+        mode: "strict" as const,
         occurredAt: new Date("2026-09-01T00:00:00.000Z"),
         items: [item(20, 60)],
       },
       {
+        mode: "strict" as const,
         occurredAt: new Date("2026-09-05T00:00:00.000Z"),
         items: [item(25, 75)],
       },
@@ -42,6 +45,7 @@ describe("toFeedingChartPoints", () => {
   it("同一記録内の複数商品の量・カロリーを合算する", () => {
     const records = [
       {
+        mode: "strict" as const,
         occurredAt: new Date("2026-09-01T00:00:00.000Z"),
         items: [item(20, 60), item(10, 40)],
       },
@@ -56,14 +60,17 @@ describe("toFeedingChartPoints", () => {
   it("同じ日付の複数記録を1点に合算する", () => {
     const records = [
       {
+        mode: "strict" as const,
         occurredAt: new Date("2026-09-01T08:00:00.000Z"),
         items: [item(20, 60)],
       },
       {
+        mode: "strict" as const,
         occurredAt: new Date("2026-09-01T20:00:00.000Z"),
         items: [item(10, 40)],
       },
       {
+        mode: "strict" as const,
         occurredAt: new Date("2026-09-02T08:00:00.000Z"),
         items: [item(15, 45)],
       },
@@ -88,10 +95,12 @@ describe("toFeedingChartPoints", () => {
   it("日付境界をまたぐ時刻でも日付単位で正しく分ける（23:30 と翌 00:30）", () => {
     const records = [
       {
+        mode: "strict" as const,
         occurredAt: new Date("2026-09-01T23:30:00.000Z"),
         items: [item(20, 60)],
       },
       {
+        mode: "strict" as const,
         occurredAt: new Date("2026-09-02T00:30:00.000Z"),
         items: [item(10, 40)],
       },
@@ -116,6 +125,7 @@ describe("toFeedingChartPoints", () => {
   it("occurredAt を日付（0時0分）の ISO 文字列に変換する", () => {
     const records = [
       {
+        mode: "strict" as const,
         occurredAt: new Date("2026-09-01T12:34:00.000Z"),
         items: [item(20, 60)],
       },
@@ -124,6 +134,34 @@ describe("toFeedingChartPoints", () => {
     const points = toFeedingChartPoints(records);
 
     expect(points[0]?.occurredAtIso).toBe("2026-09-01T00:00:00.000Z");
+  });
+
+  it("あいまいモードの記録はグラフに含めない", () => {
+    const records = [
+      {
+        mode: "strict" as const,
+        occurredAt: new Date("2026-09-01T08:00:00.000Z"),
+        items: [item(20, 60)],
+      },
+      {
+        mode: "approximate" as const,
+        occurredAt: new Date("2026-09-01T18:00:00.000Z"),
+        items: [{ estimatedIntakeG: null, estimatedKcal: null }],
+      },
+      {
+        mode: "approximate" as const,
+        occurredAt: new Date("2026-09-02T08:00:00.000Z"),
+        items: [{ estimatedIntakeG: null, estimatedKcal: null }],
+      },
+    ];
+
+    expect(toFeedingChartPoints(records)).toEqual([
+      {
+        occurredAtIso: "2026-09-01T00:00:00.000Z",
+        totalIntakeG: 20,
+        totalKcal: 60,
+      },
+    ]);
   });
 
   it("空配列を渡すと空配列を返す", () => {

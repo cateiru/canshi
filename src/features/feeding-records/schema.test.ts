@@ -4,6 +4,7 @@ import { feedingRecordFormSchema } from "./schema";
 const validInput = {
   occurredDate: "2026-09-07",
   occurredTime: "08:00",
+  mode: "strict",
   items: [
     { foodProductId: "food-1", givenAmountG: "30", leftoverAmountG: "5" },
   ],
@@ -58,5 +59,75 @@ describe("feedingRecordFormSchema", () => {
       occurredTime: "25:00",
     });
     expect(result.success).toBe(false);
+  });
+
+  it("記録方法が未指定・不正な場合は失敗する", () => {
+    expect(
+      feedingRecordFormSchema.safeParse({ ...validInput, mode: null }).success,
+    ).toBe(false);
+    expect(
+      feedingRecordFormSchema.safeParse({ ...validInput, mode: "other" })
+        .success,
+    ).toBe(false);
+  });
+
+  describe("あいまいモード", () => {
+    const approximateInput = {
+      occurredDate: "2026-09-07",
+      occurredTime: "08:00",
+      mode: "approximate",
+      items: [
+        {
+          foodProductId: "food-1",
+          givenAmountG: null,
+          leftoverAmountG: null,
+          givenAmountLevel: "normal",
+          leftoverLevel: "little",
+        },
+      ],
+    };
+
+    it("段階での量を渡せば、グラム単位の量が無くても成功する", () => {
+      const result = feedingRecordFormSchema.safeParse(approximateInput);
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({
+        occurredDate: "2026-09-07",
+        occurredTime: "08:00",
+        mode: "approximate",
+        items: [
+          {
+            foodProductId: "food-1",
+            givenAmountLevel: "normal",
+            leftoverLevel: "little",
+          },
+        ],
+      });
+    });
+
+    it("与えた量・残した量の段階が未選択・不正な場合は失敗する", () => {
+      const result = feedingRecordFormSchema.safeParse({
+        ...approximateInput,
+        items: [
+          {
+            foodProductId: "food-1",
+            givenAmountLevel: null,
+            leftoverLevel: "all",
+          },
+        ],
+      });
+      expect(result.success).toBe(false);
+      expect(result.error?.issues.map((issue) => issue.path)).toEqual([
+        ["items", 0, "givenAmountLevel"],
+        ["items", 0, "leftoverLevel"],
+      ]);
+    });
+
+    it("厳格モードではグラム単位の量が必須になる", () => {
+      const result = feedingRecordFormSchema.safeParse({
+        ...approximateInput,
+        mode: "strict",
+      });
+      expect(result.success).toBe(false);
+    });
   });
 });

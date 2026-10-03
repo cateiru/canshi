@@ -14,9 +14,14 @@ import {
 } from "@/components/ui/RecordIcons/RecordIcons";
 import { getCatById } from "@/features/cats/queries";
 import { deleteFeedingRecordAction } from "@/features/feeding-records/actions";
+import { sumFeedingTotals } from "@/features/feeding-records/calculations";
 import { toFeedingChartPoints } from "@/features/feeding-records/chart";
 import { FeedingChart } from "@/features/feeding-records/FeedingChart";
 import { groupRecordsByDate } from "@/features/feeding-records/groupByDate";
+import {
+  FEEDING_MODE_LABEL,
+  formatFeedingItemAmounts,
+} from "@/features/feeding-records/labels";
 import { listFeedingRecords } from "@/features/feeding-records/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { listFoodProductImageUrls } from "@/features/food-products/queries";
@@ -49,6 +54,8 @@ export default async function FeedingRecordsPage({
 
   const records = await listFeedingRecords(catId);
   const dateGroups = groupRecordsByDate(records);
+  // あいまいモードの記録はグラフに含めないため、点が無ければグラフ自体を出さない
+  const chartPoints = toFeedingChartPoints(records);
   const now = getNaiveUtcNow();
   const foodProductImageUrls = await listFoodProductImageUrls([
     ...new Set(
@@ -83,11 +90,8 @@ export default async function FeedingRecordsPage({
         </ButtonLink>
       </div>
 
-      {records.length > 0 && (
-        <FeedingChart
-          points={toFeedingChartPoints(records)}
-          now={now.toISOString()}
-        />
+      {chartPoints.length > 0 && (
+        <FeedingChart points={chartPoints} now={now.toISOString()} />
       )}
 
       {records.length === 0 ? (
@@ -129,13 +133,8 @@ export default async function FeedingRecordsPage({
               </div>
               <ul className={styles.dateRecords}>
                 {group.records.map((record) => {
-                  const totalIntakeG = record.items.reduce(
-                    (sum, item) => sum + item.estimatedIntakeG,
-                    0,
-                  );
-                  const totalKcal = record.items.reduce(
-                    (sum, item) => sum + item.estimatedKcal,
-                    0,
+                  const { totalIntakeG, totalKcal } = sumFeedingTotals(
+                    record.items,
                   );
 
                   return (
@@ -149,6 +148,11 @@ export default async function FeedingRecordsPage({
                             <time dateTime={record.occurredAt.toISOString()}>
                               {splitDateTimeUtc(record.occurredAt).time}
                             </time>
+                            {record.mode === "approximate" ? (
+                              <Badge color="info">
+                                {FEEDING_MODE_LABEL[record.mode]}
+                              </Badge>
+                            ) : null}
                           </h3>
                           <div className={styles.cardActions}>
                             <IconButtonLink
@@ -170,61 +174,73 @@ export default async function FeedingRecordsPage({
                           </div>
                         </div>
                         <ul className={styles.itemsList}>
-                          {record.items.map((item) => (
-                            <li key={item.id} className={styles.product}>
-                              <span className={styles.productImage}>
-                                <FoodProductImage
-                                  name={item.foodProductName}
-                                  thumbnailUrl={
-                                    foodProductImageUrls[item.foodProductId]
-                                  }
-                                />
-                              </span>
-                              <div className={styles.productInfo}>
-                                <h4 className={styles.productName}>
-                                  {item.foodProductName}
-                                </h4>
-                                <dl className={styles.amounts}>
-                                  <div>
-                                    <dt>与えた量</dt>
-                                    <dd>{item.givenAmountG} g</dd>
-                                  </div>
-                                  <div>
-                                    <dt>残した量</dt>
-                                    <dd>{item.leftoverAmountG} g</dd>
-                                  </div>
-                                </dl>
-                              </div>
-                            </li>
-                          ))}
+                          {record.items.map((item) => {
+                            const amounts = formatFeedingItemAmounts(
+                              record.mode,
+                              item,
+                            );
+                            return (
+                              <li key={item.id} className={styles.product}>
+                                <span className={styles.productImage}>
+                                  <FoodProductImage
+                                    name={item.foodProductName}
+                                    thumbnailUrl={
+                                      foodProductImageUrls[item.foodProductId]
+                                    }
+                                  />
+                                </span>
+                                <div className={styles.productInfo}>
+                                  <h4 className={styles.productName}>
+                                    {item.foodProductName}
+                                  </h4>
+                                  <dl className={styles.amounts}>
+                                    <div>
+                                      <dt>与えた量</dt>
+                                      <dd>{amounts.given}</dd>
+                                    </div>
+                                    <div>
+                                      <dt>残した量</dt>
+                                      <dd>{amounts.leftover}</dd>
+                                    </div>
+                                  </dl>
+                                </div>
+                              </li>
+                            );
+                          })}
                         </ul>
-                        <dl
-                          className={styles.summary}
-                          aria-label="食事の合計（推定）"
-                        >
-                          <div>
-                            <dt>
-                              <FeedingIcon aria-hidden="true" size={18} />
-                              食べた量
-                              <span className={styles.estimate}>（推定）</span>
-                            </dt>
-                            <dd>
-                              {totalIntakeG}
-                              <span>g</span>
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>
-                              <CalorieIcon aria-hidden="true" size={18} />
-                              カロリー
-                              <span className={styles.estimate}>（推定）</span>
-                            </dt>
-                            <dd>
-                              {totalKcal.toFixed(1)}
-                              <span>kcal</span>
-                            </dd>
-                          </div>
-                        </dl>
+                        {record.mode === "strict" ? (
+                          <dl
+                            className={styles.summary}
+                            aria-label="食事の合計（推定）"
+                          >
+                            <div>
+                              <dt>
+                                <FeedingIcon aria-hidden="true" size={18} />
+                                食べた量
+                                <span className={styles.estimate}>
+                                  （推定）
+                                </span>
+                              </dt>
+                              <dd>
+                                {totalIntakeG}
+                                <span>g</span>
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>
+                                <CalorieIcon aria-hidden="true" size={18} />
+                                カロリー
+                                <span className={styles.estimate}>
+                                  （推定）
+                                </span>
+                              </dt>
+                              <dd>
+                                {totalKcal.toFixed(1)}
+                                <span>kcal</span>
+                              </dd>
+                            </div>
+                          </dl>
+                        ) : null}
                       </RecordCard>
                     </li>
                   );

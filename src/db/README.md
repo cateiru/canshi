@@ -35,6 +35,18 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 生年月日（`cats.birth_date`）は年のみ・年月のみの入力も受け付ける。その場合も未入力の月・日を 1月・1日で補完した `YYYY-MM-DD` で保持し、わかっている範囲は `cats.birth_date_precision`（`year`・`month`・`day`）で別に持つ。年齢・誕生日の判定は補完した日付をそのまま使い、表示やフォームの初期値だけが精度を参照する
 - 発生日時・作成日時・更新日時など時刻を持つ列は `integer("...", { mode: "timestamp" })`（unix タイムスタンプ）で保持する
 
+## ごはん記録（`feeding_records`・`feeding_record_items`・`feeding_presets`・`feeding_preset_items`）
+
+- `feeding_records.mode` は記録方法で、`strict`（厳格モード）と `approximate`（あいまいモード）を持つ。
+  モードは記録単位で選び、1 回の食事の中で商品ごとにモードを混在させない
+  - 厳格モードの明細は `given_amount_g`・`leftover_amount_g`・`estimated_intake_g`・`estimated_kcal`
+    を持ち、`given_amount_level`・`leftover_level` は NULL
+  - あいまいモードの明細は段階での量 `given_amount_level`（`less`・`normal`・`more`）と
+    `leftover_level`（`none`・`little`・`most`）を持ち、グラム単位の量・推定値はすべて NULL。
+    摂取量・カロリーを計算しないため、グラフの集計からも除外する
+- `feeding_presets.mode` も同様で、厳格モードのプリセットの明細は `given_amount_g`、
+  あいまいモードのプリセットの明細は `given_amount_level` を持つ
+
 ## 支出記録（`expense_records`・`expense_record_cats`・`expense_record_hospital_visits`）
 
 - 病院代・ごはん・猫砂などの支出を家計簿として月ごとに集計するためのテーブル（`38`）

@@ -5,6 +5,11 @@ import {
   FeedingIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
 import { EXPENSE_CATEGORY_LABEL, formatYen } from "@/features/expenses/labels";
+import { sumFeedingTotals } from "@/features/feeding-records/calculations";
+import {
+  FEEDING_MODE_LABEL,
+  formatFeedingItemAmounts,
+} from "@/features/feeding-records/labels";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { MediaThumbnailStrip } from "@/features/media/MediaThumbnailStrip";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
@@ -153,14 +158,7 @@ function renderBody(
       );
     case "feeding": {
       const { record } = entry;
-      const totalIntakeG = record.items.reduce(
-        (sum, item) => sum + item.estimatedIntakeG,
-        0,
-      );
-      const totalKcal = record.items.reduce(
-        (sum, item) => sum + item.estimatedKcal,
-        0,
-      );
+      const { totalIntakeG, totalKcal } = sumFeedingTotals(record.items);
       return (
         <div className={styles.body}>
           <ul className={styles.feedingImages}>
@@ -173,30 +171,47 @@ function renderBody(
               </li>
             ))}
           </ul>
-          <dl className={styles.summary} aria-label="食事の合計（推定）">
-            <div>
-              <dt>
-                <FeedingIcon aria-hidden="true" size={18} />
-                食べた量
-                <span className={styles.estimate}>（推定）</span>
-              </dt>
-              <dd>
-                {totalIntakeG}
-                <span>g</span>
-              </dd>
-            </div>
-            <div>
-              <dt>
-                <CalorieIcon aria-hidden="true" size={18} />
-                カロリー
-                <span className={styles.estimate}>（推定）</span>
-              </dt>
-              <dd>
-                {totalKcal.toFixed(1)}
-                <span>kcal</span>
-              </dd>
-            </div>
-          </dl>
+          {record.mode === "approximate" ? (
+            // あいまいモードは摂取量・カロリーを計算しないため、段階の量をそのまま並べる
+            <ul
+              className={styles.feedingLevels}
+              aria-label={FEEDING_MODE_LABEL[record.mode]}
+            >
+              {record.items.map((item) => {
+                const amounts = formatFeedingItemAmounts(record.mode, item);
+                return (
+                  <li key={item.id}>
+                    {`${item.foodProductName}：与えた量 ${amounts.given}・残した量 ${amounts.leftover}`}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <dl className={styles.summary} aria-label="食事の合計（推定）">
+              <div>
+                <dt>
+                  <FeedingIcon aria-hidden="true" size={18} />
+                  食べた量
+                  <span className={styles.estimate}>（推定）</span>
+                </dt>
+                <dd>
+                  {totalIntakeG}
+                  <span>g</span>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <CalorieIcon aria-hidden="true" size={18} />
+                  カロリー
+                  <span className={styles.estimate}>（推定）</span>
+                </dt>
+                <dd>
+                  {totalKcal.toFixed(1)}
+                  <span>kcal</span>
+                </dd>
+              </div>
+            </dl>
+          )}
         </div>
       );
     }
