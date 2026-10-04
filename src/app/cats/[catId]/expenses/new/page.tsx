@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById, listCats } from "@/features/cats/queries";
+import { listCurrentUserCats } from "@/features/auth/session";
+import { getCatById } from "@/features/cats/queries";
 import {
   createExpenseAction,
   updateExpenseAction,
@@ -19,7 +20,10 @@ type NewExpensePageProps = {
 
 export default async function NewExpensePage({ params }: NewExpensePageProps) {
   const { catId } = await params;
-  const [cat, allCats] = await Promise.all([getCatById(catId), listCats()]);
+  const [cat, allCats] = await Promise.all([
+    getCatById(catId),
+    listCurrentUserCats(),
+  ]);
 
   if (!cat) {
     notFound();

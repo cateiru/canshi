@@ -15,9 +15,19 @@ export const baseConfig: PlaywrightTestConfig = {
     trace: "on-first-retry",
   },
   projects: [
+    // すべてのページはログインが必要なため、先にログインしてセッションを保存する
+    // （e2e/auth.setup.ts）
+    {
+      name: "setup",
+      testMatch: /auth\.setup\.ts$/,
+    },
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "e2e/.auth/user.json",
+      },
+      dependencies: ["setup"],
     },
   ],
   webServer: {

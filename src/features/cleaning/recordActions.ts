@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { cleaningRecords, cleaningTargets } from "@/db/schema";
+import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {
@@ -30,6 +31,7 @@ export async function createCleaningRecordAction(
   _prevState: CleaningRecordFormState,
   formData: FormData,
 ): Promise<CleaningRecordFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -78,6 +80,7 @@ export async function updateCleaningRecordAction(
   _prevState: CleaningRecordFormState,
   formData: FormData,
 ): Promise<CleaningRecordFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -118,6 +121,7 @@ export async function deleteCleaningRecordAction(
   cleaningTargetId: string,
   id: string,
 ): Promise<void> {
+  await requireCatAccess(catId);
   const db = getDb();
   await db
     .delete(cleaningRecords)
@@ -143,6 +147,7 @@ export async function quickCreateCleaningRecordAction(
   cleaningTargetId: string,
   _formData: FormData,
 ): Promise<void> {
+  await requireCatAccess(catId);
   const db = getDb();
   // 無効化済みの掃除対象は編集・記録閲覧のみが仕様のため新規登録は拒否する
   const [target] = await db

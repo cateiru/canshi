@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockHeaders } = vi.hoisted(() => ({ mockHeaders: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: mockHeaders }));
+vi.mock("@/features/auth/session", () => ({ getCurrentUser: vi.fn() }));
 
 import { generateMetadata } from "./layout";
 

@@ -9,7 +9,9 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - DB：Cloudflare D1
 - オブジェクトストレージ：Cloudflare R2（写真・動画の本体は非公開バケットに保存）
 - バックグラウンド処理：Cloudflare Workflows（定期通知のスケジュール実行）
-- 認証・外部アクセス制御：Cloudflare Access（アプリ内のユーザー管理・認可は実装しない）
+- 外部アクセス制御：Cloudflare Access
+- アプリ内のログイン・認可：Auth.js（Cookie のセッション）。ユーザーは所属する「家」の猫だけを参照できる。
+  認証（パスワード等）はまだ実装しておらず、`/login` のログインボタンで登録済みのユーザーとしてログインする
 
 ## 必要な Cloudflare リソース
 
@@ -26,6 +28,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 `docs/plans/01_project_setup.md` で用意する `.env.example` を基準に、本番用の値を Cloudflare のシークレット管理（`wrangler secret put` 等）で設定する。
 
 - D1・R2 のバインディング名（`wrangler.toml` で定義）
+- `AUTH_SECRET`：ログインセッションの Cookie の署名・暗号化に使う秘密鍵（「ログインと家」の節を参照）
 - OpenAI API キー（第3段階の AI 機能実装時に追加）
 
 ## デプロイ手順（TODO）
@@ -38,6 +41,49 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - ステージング環境を用意するかどうか
 - マイグレーション（`wrangler d1 migrations apply`）の本番適用フロー
 
+## ログインと家（ユーザー・猫の紐付け）
+
+ログインセッションは Auth.js（`next-auth`）で管理し、署名・暗号化した JWT を Cookie に保持する。
+ログインしていないリクエストは `src/middleware.ts` が `/login` へリダイレクトする（API・メディアは 401）。
+猫は「家」に所属し、ユーザーは所属する家の猫だけを参照できる（テーブル設計は
+[`src/db/README.md`](../src/db/README.md) を参照）。
+
+### 秘密鍵の設定
+
+デプロイ環境ごとに 1 回、ランダムな値を生成して設定する。未設定のままでは本番でログインできない。
+
+```sh
+openssl rand -base64 32
+wrangler secret put AUTH_SECRET
+```
+
+ローカルの `next dev` では未設定でも開発用の固定値で動作する。`pnpm cf:preview` で確認する場合は
+`.dev.vars` に `AUTH_SECRET` を設定する。
+
+### 導入時の手順（既存の猫の紐付け）
+
+家の導入（マイグレーション `0036`）より前から登録されていた猫は、どの家にも所属しないため
+アプリに表示されない。マイグレーションでユーザー・家を自動で作らないため、デプロイ後に次の順で
+紐付ける。
+
+1. メインアプリをデプロイし、`pnpm db:migrate:remote` でマイグレーションを適用する。
+2. `/login` を開いてログインボタンを押す。ユーザーが 1 件もなければ、管理者ユーザーが作られる。
+3. `pnpm household:link --remote` を実行する。最初に登録されたユーザーをオーナーとする家を作り
+   （名前は `--name` で指定、既定は「わが家」）、家に未所属の猫をすべてその家に紐付ける。
+   ユーザーがすでに家に所属している場合は、その家に紐付ける。何度実行しても結果は変わらない。
+4. MCP 用 Worker（`packages/mcp-server`）をデプロイし、ChatGPT などのコネクタを接続し直す
+   （次の注意を参照）。
+
+ローカル開発の DB では `pnpm household:link --local --persist-to ./.wrangler/state` を実行する。
+
+- 猫を新しく登録すると、ログイン中のユーザーの家に所属する。家に所属していないユーザーは猫を
+  登録できない
+- MCP のトークンには、認可時（`/callback`）に CANSHI のユーザー ID を保存する。家の導入前に発行
+  されたトークンはユーザー ID を持たないため、ツールを呼ぶと接続し直すよう案内するエラーになる
+- メインアプリの RPC（`McpRpc`）の引数が変わったため、メインアプリと MCP 用 Worker は上記の順
+  （メインアプリが先）でデプロイする。MCP 用 Worker だけが古いと、ユーザー ID なしの呼び出しが
+  メインアプリに拒否される
+
 ## R2 バケット（メディア）
 
 写真・動画の本体とサムネイルは `wrangler.toml` の `[[r2_buckets]]`（バインディング名 `MEDIA_BUCKET`、バケット名 `canshi-media`）に保存する。ローカル開発では Miniflare が `.wrangler/state` 配下にエミュレートするため、バケットの作成は不要。
@@ -48,7 +94,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 wrangler r2 bucket create canshi-media
 ```
 
-- バケットは非公開のまま運用する（パブリックアクセス・カスタムドメインは設定しない）。配信はアプリの `GET /media/[assetId]` 経由で行い、Cloudflare Access で保護する
+- バケットは非公開のまま運用する（パブリックアクセス・カスタムドメインは設定しない）。配信はアプリの `GET /media/[assetId]` 経由で行い、Cloudflare Access とログインセッションで保護する（猫に紐付くメディアは、その猫の家のユーザーだけが取得できる）
 - オブジェクトキーは `{recordType}/{recordId}/{assetId}`（元データ）と `{recordType}/{recordId}/{assetId}.thumb.webp`（サムネイル）
 
 ### 上限値

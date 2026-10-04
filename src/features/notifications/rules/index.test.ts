@@ -6,6 +6,7 @@ import type { OpenSymptom, ResolvedNotificationSettings } from "./types";
 function makeCat(overrides: Partial<Cat> = {}): Cat {
   return {
     id: "cat-1",
+    householdId: "household-1",
     name: "たま",
     sex: "female",
     birthDate: "2025-09-11",

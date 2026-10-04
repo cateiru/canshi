@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { medicationDoses, medications } from "@/db/schema";
+import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import {
@@ -31,6 +32,7 @@ export async function createMedicationDoseAction(
   _prevState: MedicationDoseFormState,
   formData: FormData,
 ): Promise<MedicationDoseFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -72,6 +74,7 @@ export async function updateMedicationDoseAction(
   _prevState: MedicationDoseFormState,
   formData: FormData,
 ): Promise<MedicationDoseFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -111,6 +114,7 @@ export async function deleteMedicationDoseAction(
   medicationId: string,
   id: string,
 ): Promise<void> {
+  await requireCatAccess(catId);
   const db = getDb();
   await db
     .delete(medicationDoses)

@@ -1,3 +1,5 @@
+import { getCurrentUser } from "@/features/auth/session";
+import { getCatForUser } from "@/features/households/queries";
 import { resolveMediaRecordOwner } from "@/features/media/recordOwner";
 import {
   DEV_MEDIA_RECORD_TYPE,
@@ -22,6 +24,11 @@ function jsonError(message: string, status: number) {
  * - `thumbnail`：ブラウザ側で縮小したサムネイル候補（動画では切り出したフレーム画像。動画では必須、画像では任意）
  */
 export async function POST(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return jsonError("ログインしてください", 401);
+  }
+
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -55,7 +62,11 @@ export async function POST(request: Request) {
       return jsonError("添付先のレコード種別が正しくありません", 400);
     }
     const owner = await resolveMediaRecordOwner(recordType, recordId);
-    if (!owner) {
+    // 別の家の猫の記録は、存在しない記録と同じ扱いにする
+    if (
+      !owner ||
+      (owner.catId != null && !(await getCatForUser(user.id, owner.catId)))
+    ) {
       return jsonError("添付先のレコードが見つかりませんでした", 404);
     }
     catId = owner.catId;

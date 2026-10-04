@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Footer, IconButtonLink, ToastRegionRoot } from "@/components/ui";
 import { SettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAppearance } from "@/features/appearance/queries";
+import { getCurrentUser } from "@/features/auth/session";
 import { NavigationTracker } from "@/features/navigation/NavigationTracker";
 import { NotificationBadge } from "@/features/notifications/NotificationBadge";
 import { ServiceWorkerRegistration } from "@/features/pwa/ServiceWorkerRegistration";
@@ -65,7 +66,10 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   // 見た目設定は src/styles/tokens.css が <html> の data 属性で切り替える
-  const { theme, contrast, fontSize } = await getAppearance();
+  const [{ theme, contrast, fontSize }, user] = await Promise.all([
+    getAppearance(),
+    getCurrentUser(),
+  ]);
 
   return (
     <html
@@ -76,14 +80,19 @@ export default async function RootLayout({
     >
       <body>
         <header className={styles.header}>
-          <NotificationBadge className={styles.iconLink} />
-          <IconButtonLink
-            href="/settings"
-            icon={SettingsIcon}
-            className={styles.iconLink}
-            aria-label="設定"
-            title="設定"
-          />
+          {/* 未ログイン（`/login`）では通知・設定へのリンクを出さない */}
+          {user ? (
+            <>
+              <NotificationBadge userId={user.id} className={styles.iconLink} />
+              <IconButtonLink
+                href="/settings"
+                icon={SettingsIcon}
+                className={styles.iconLink}
+                aria-label="設定"
+                title="設定"
+              />
+            </>
+          ) : null}
         </header>
         <div className={styles.content}>{children}</div>
         <Footer />

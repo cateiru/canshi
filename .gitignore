@@ -16,6 +16,7 @@ packages/*/.wrangler/
 /coverage
 /playwright-report/
 /test-results/
+/e2e/.auth/
 
 # VRT (reg-suit)
 /.reg/

@@ -1,5 +1,8 @@
 "use server";
 
+import { requireUser } from "@/features/auth/session";
+import { canAccessMediaAsset } from "./access";
+import { getMediaAssetById } from "./queries";
 import { deleteMediaAsset, deletePendingMediaAsset } from "./storage";
 
 export type DeleteMediaAssetResult = { error?: string };
@@ -11,7 +14,13 @@ export type DeleteMediaAssetResult = { error?: string };
 export async function deleteMediaAssetAction(
   assetId: string,
 ): Promise<DeleteMediaAssetResult> {
+  // requireUser は未ログイン時にリダイレクト（例外）するため、try の外で呼ぶ
+  const user = await requireUser();
   try {
+    const asset = await getMediaAssetById(assetId);
+    if (!asset || !(await canAccessMediaAsset(user.id, asset))) {
+      return { error: "メディアが見つかりませんでした" };
+    }
     await deleteMediaAsset(assetId);
     return {};
   } catch (error) {
@@ -27,6 +36,7 @@ export async function deleteMediaAssetAction(
 export async function discardPendingMediaAction(
   assetId: string,
 ): Promise<DeleteMediaAssetResult> {
+  await requireUser();
   try {
     await deletePendingMediaAsset(assetId);
     return {};

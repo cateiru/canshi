@@ -8,3 +8,8 @@
   gap: var(--space-4);
   list-style: none;
 }
+
+.logout {
+  display: flex;
+  justify-content: center;
+}

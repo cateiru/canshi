@@ -20,6 +20,9 @@ import {
   expenseRecordHospitalVisits,
   expenseRecords,
   hospitalVisits,
+  householdMembers,
+  households,
+  users,
 } from "@/db/schema";
 
 let db: ReturnType<typeof getDb>;
@@ -33,6 +36,12 @@ vi.mock("next/navigation", () => ({
   redirect: (url: string) => {
     throw new Error(`redirect:${url}`);
   },
+}));
+// ログイン中のユーザーは常に user-1（household-1 のメンバー）とする。
+// 猫単位の認可（requireCatAccess）はこのテストの対象外のため常に許可する
+vi.mock("@/features/auth/session", () => ({
+  requireUser: async () => ({ id: "user-1" }),
+  requireCatAccess: async () => ({}),
 }));
 
 const {
@@ -80,8 +89,8 @@ function visitForm(values: Record<string, string> = {}) {
     ...values,
   });
 }
-async function addCat(id: string) {
-  await db.insert(cats).values({ id, name: id, sex: "unknown" });
+async function addCat(id: string, householdId = "household-1") {
+  await db.insert(cats).values({ id, name: id, sex: "unknown", householdId });
 }
 
 beforeAll(async () => {
@@ -114,12 +123,38 @@ beforeEach(async () => {
     }
   };
   db = Object.assign(raw, { batch }) as unknown as ReturnType<typeof getDb>;
+  await db.insert(users).values([
+    { id: "user-1", name: "管理者" },
+    { id: "user-2", name: "別の家の人" },
+  ]);
+  await db.insert(households).values([
+    { id: "household-1", name: "わが家", ownerUserId: "user-1" },
+    { id: "household-2", name: "別の家", ownerUserId: "user-2" },
+  ]);
+  await db.insert(householdMembers).values([
+    { householdId: "household-1", userId: "user-1" },
+    { householdId: "household-2", userId: "user-2" },
+  ]);
   await addCat("tama");
   await addCat("mike");
 });
 afterEach(() => sqlite.close());
 
 describe("支出の保存と月別表示", () => {
+  it("別の家の猫は関連する猫に選べない", async () => {
+    await addCat("kuro", "household-2");
+
+    const result = await createExpenseAction(
+      {},
+      expenseForm({ catIds: ["tama", "kuro"] }),
+    );
+
+    expect(result.fieldErrors?.catIds).toEqual([
+      "関連する猫が見つかりませんでした。選び直してください",
+    ]);
+    expect(await db.select().from(expenseRecords)).toEqual([]);
+  });
+
   it("複数の猫に関連付けても全体の支出は重複しない", async () => {
     const { savedRecordId: id } = await createExpenseAction(
       {},

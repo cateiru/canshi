@@ -9,6 +9,7 @@ import {
   medications,
   symptoms,
 } from "@/db/schema";
+import { requireCatAccess } from "@/features/auth/session";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
@@ -74,6 +75,7 @@ export async function createMedicationAction(
   _prevState: MedicationFormState,
   formData: FormData,
 ): Promise<MedicationFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -122,6 +124,7 @@ export async function updateMedicationAction(
   _prevState: MedicationFormState,
   formData: FormData,
 ): Promise<MedicationFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -173,6 +176,7 @@ export async function deleteMedicationAction(
   catId: string,
   id: string,
 ): Promise<void> {
+  await requireCatAccess(catId);
   const db = getDb();
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(MEDICATION_MEDIA_TYPE, id);

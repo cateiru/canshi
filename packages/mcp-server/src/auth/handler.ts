@@ -3,6 +3,7 @@ import {
   type AuthRequest,
   type OAuthHelpers,
 } from "@cloudflare/workers-oauth-provider";
+import type { McpProps } from "../mcp/props";
 import { verifyAccessIdToken } from "./access";
 import {
   addApprovedClient,
@@ -255,12 +256,21 @@ async function handleCallback(
     return new Response(message, { status: 403 });
   }
 
+  // MCP ツールからメインアプリのデータを読むときに使う CANSHI のユーザー。
+  // メインアプリはこのユーザーの家の猫だけを返す（src/worker.ts の McpRpc）
+  const { userId } = await env.MAIN_APP.resolveMcpUser();
+
+  const props: McpProps = {
+    email: identity.email,
+    sub: identity.sub,
+    userId,
+  };
   const { redirectTo } = await env.OAUTH_PROVIDER.completeAuthorization({
     request: oauthReqInfo,
     userId: identity.sub,
     metadata: { email: identity.email },
     scope: oauthReqInfo.scope,
-    props: { email: identity.email, sub: identity.sub },
+    props,
   });
 
   return Response.redirect(redirectTo, 302);

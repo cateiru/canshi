@@ -6,7 +6,7 @@ import {
   symptoms,
   weightRecords,
 } from "@/db/schema";
-import { listCats } from "@/features/cats/queries";
+import { listAllCats } from "@/features/cats/queries";
 import { listCleaningTargetsWithStatus } from "@/features/cleaning/targetQueries";
 import { NOTIFY_TIMEZONE } from "./defaults";
 import { buildNotificationMessage, type NotificationMessage } from "./messages";
@@ -148,7 +148,7 @@ export async function generateNotifications(
   d1?: D1Database,
 ): Promise<void> {
   const db = getDb(d1);
-  const cats = await listCats(d1);
+  const cats = await listAllCats(d1);
   const openSymptomsByCat = await listOpenSymptomsByCat(db);
 
   for (const cat of cats) {

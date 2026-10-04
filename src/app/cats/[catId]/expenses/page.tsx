@@ -8,7 +8,8 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById, listCats } from "@/features/cats/queries";
+import { listCurrentUserCats } from "@/features/auth/session";
+import { getCatById } from "@/features/cats/queries";
 import {
   sumExpenseAmounts,
   sumExpenseAmountsByCategory,
@@ -73,7 +74,7 @@ export default async function ExpensesPage({
     listExpenseAmountsForMonthRange(chartRange.from, chartRange.to, {
       catId: scopedCatId,
     }),
-    listCats(),
+    listCurrentUserCats(),
   ]);
   const catNameById = new Map(allCats.map((entry) => [entry.id, entry.name]));
   const [mediaByRecordId, hospitalVisitById] = await Promise.all([

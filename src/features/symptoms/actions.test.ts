@@ -23,6 +23,10 @@ vi.mock("@/features/media/storage", () => ({
 vi.mock("next/navigation", () => ({
   redirect: () => {},
 }));
+// 猫の家による認可はこのテストの対象外のため、常に許可する
+vi.mock("@/features/auth/session", () => ({
+  requireCatAccess: async () => ({}),
+}));
 
 const { deleteSymptomAction, updateSymptomAction } = await import("./actions");
 

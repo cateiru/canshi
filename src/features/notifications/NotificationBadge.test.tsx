@@ -11,7 +11,7 @@ describe("NotificationBadge", () => {
   it("未読が無い場合は aria-label が「通知」のままになる", async () => {
     vi.mocked(countUnreadNotifications).mockResolvedValue(0);
 
-    render(await NotificationBadge());
+    render(await NotificationBadge({ userId: "user-1" }));
 
     expect(screen.getByRole("link", { name: "通知" })).toBeInTheDocument();
   });
@@ -19,7 +19,7 @@ describe("NotificationBadge", () => {
   it("未読件数を aria-label に含め、スクリーンリーダーからも件数がわかるようにする", async () => {
     vi.mocked(countUnreadNotifications).mockResolvedValue(3);
 
-    render(await NotificationBadge());
+    render(await NotificationBadge({ userId: "user-1" }));
 
     expect(
       screen.getByRole("link", { name: "通知、未読 3 件" }),
@@ -29,7 +29,7 @@ describe("NotificationBadge", () => {
   it("99件を超える場合は 99+ と表示しつつ、実際の件数を aria-label に含める", async () => {
     vi.mocked(countUnreadNotifications).mockResolvedValue(120);
 
-    render(await NotificationBadge());
+    render(await NotificationBadge({ userId: "user-1" }));
 
     expect(
       screen.getByRole("link", { name: "通知、未読 120 件" }),

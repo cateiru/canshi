@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { pushSubscriptions } from "@/db/schema";
+import { requireUser } from "@/features/auth/session";
 import { pushSubscribeSchema } from "./subscriptionSchema";
 
 export type PushSubscriptionActionResult = { error?: string };
@@ -14,6 +15,7 @@ export type PushSubscriptionActionResult = { error?: string };
 export async function subscribeToPushAction(
   input: unknown,
 ): Promise<PushSubscriptionActionResult> {
+  await requireUser();
   const parsed = pushSubscribeSchema.safeParse(input);
   if (!parsed.success) {
     return { error: "購読情報が正しくありません" };
@@ -48,6 +50,7 @@ export async function subscribeToPushAction(
 export async function unsubscribeFromPushAction(
   endpoint: string,
 ): Promise<PushSubscriptionActionResult> {
+  await requireUser();
   try {
     const db = getDb();
     await db

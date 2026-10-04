@@ -11,6 +11,7 @@ import {
   foodProducts,
   type NewFeedingRecordItem,
 } from "@/db/schema";
+import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import {
@@ -170,6 +171,7 @@ export async function createFeedingRecordAction(
   _prevState: FeedingRecordFormState,
   formData: FormData,
 ): Promise<FeedingRecordFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -207,6 +209,7 @@ export async function updateFeedingRecordAction(
   _prevState: FeedingRecordFormState,
   formData: FormData,
 ): Promise<FeedingRecordFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -252,6 +255,7 @@ export async function deleteFeedingRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
+  await requireCatAccess(catId);
   const db = getDb();
   await db.batch([
     db

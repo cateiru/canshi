@@ -1,11 +1,12 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 import type { Cat } from "@/db/schema";
-import { getCatById, listCats } from "@/features/cats/queries";
+import { getOrCreateLoginUser, getUserById } from "@/features/auth/users";
 import {
   FEEDING_MODE_LABEL,
   GIVEN_AMOUNT_LEVEL_LABEL,
   LEFTOVER_LEVEL_LABEL,
 } from "@/features/feeding-records/labels";
+import { getCatForUser, listCatsForUser } from "@/features/households/queries";
 import {
   type ListTimelineForMonthOptions,
   listTimelineForMonth,
@@ -87,26 +88,45 @@ function toTimelineEntrySummary(entry: TimelineEntry) {
 // MCP 用 Worker（`packages/mcp-server`）から Service Bindings 経由で呼ばれる
 // RPC エントリーポイント（`docs/plans/32_mcp_oidc_overview.md` 参照）。
 // 公開 URL・DNS を経由しない Worker 間の直接呼び出しのため、このアプリの
-// Cloudflare Access ポリシーの対象にはならない。呼び出し元（MCP 用 Worker）側で
-// OAuth 検証を通過したリクエストだけがこの RPC を呼べる前提で、ここでは
-// 追加の認可判定をしない
+// Cloudflare Access ポリシーやセッション（Cookie）の対象にはならない。
+// 呼び出し元（MCP 用 Worker）は OAuth 検証を通過したリクエストのユーザー ID
+// （`resolveMcpUser` で取得し、トークンに保存したもの）を必ず渡し、ここでは
+// そのユーザーの家の猫だけを返す
 export class McpRpc extends WorkerEntrypoint<Env> {
-  async listCats() {
-    const cats = await listCats(this.env.DB);
+  /**
+   * MCP の認可（`/callback`）で、トークンに紐付けるユーザーを決める。認証を実装する
+   * までは `/login` のログインボタンと同じく、登録済みのユーザー（いなければ
+   * 新しく作った管理者ユーザー）を使う
+   */
+  async resolveMcpUser() {
+    const user = await getOrCreateLoginUser(this.env.DB);
+    return { userId: user.id };
+  }
+
+  async listCats(userId: string) {
+    await this.assertUser(userId);
+    const cats = await listCatsForUser(userId, this.env.DB);
     return cats.map(toCatSummary);
   }
 
-  async getCatProfile(catId: string) {
-    const cat = await getCatById(catId, this.env.DB);
+  async getCatProfile(userId: string, catId: string) {
+    await this.assertUser(userId);
+    const cat = await getCatForUser(userId, catId, this.env.DB);
     return cat ? toCatSummary(cat) : null;
   }
 
+  /** 別の家の猫・存在しない猫は区別せず null を返す */
   async listTimeline(
+    userId: string,
     catId: string,
     year: number,
     month: number,
     options?: ListTimelineForMonthOptions,
   ) {
+    await this.assertUser(userId);
+    if (!(await getCatForUser(userId, catId, this.env.DB))) {
+      return null;
+    }
     const result = await listTimelineForMonth(
       catId,
       year,
@@ -118,6 +138,16 @@ export class McpRpc extends WorkerEntrypoint<Env> {
       entries: result.entries.map(toTimelineEntrySummary),
       hasMore: result.hasMore,
     };
+  }
+
+  /**
+   * ユーザー ID を持たない呼び出し（ユーザーの導入前に発行されたトークンなど）や、
+   * 削除されたユーザーでの呼び出しを拒否する
+   */
+  private async assertUser(userId: string) {
+    if (!userId || !(await getUserById(userId, this.env.DB))) {
+      throw new Error("ユーザーが見つかりません。MCP に接続し直してください");
+    }
   }
 }
 

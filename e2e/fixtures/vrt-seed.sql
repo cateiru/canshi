@@ -24,6 +24,20 @@
 -- 固定値であればスナップショットは実行日に関わらず安定する
 -- (e2e/vrt.spec.ts のコメントで対象外にしているページを参照)。
 
+-- 猫はすべて VRT 用の家に所属させる。ユーザーは `/login` のログインボタンが最初に
+-- 登録されたユーザーを使うため、created_at を固定の過去日時にしておく
+-- (e2e/auth.setup.ts 参照)
+INSERT INTO users (id, name, role, created_at, updated_at)
+VALUES ('vrt-user', 'VRTユーザー', 'admin',
+  strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
+
+INSERT INTO households (id, name, owner_user_id, created_at, updated_at)
+VALUES ('vrt-household', 'VRTの家', 'vrt-user',
+  strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
+
+INSERT INTO household_members (household_id, user_id, created_at)
+VALUES ('vrt-household', 'vrt-user', strftime('%s', '2024-06-01 00:00:00'));
+
 INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, created_at, updated_at)
 VALUES ('vrt-cat-empty', 'VRT空猫', 'unknown', NULL, NULL, NULL,
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
@@ -171,3 +185,6 @@ VALUES ('vrt-expense-hospital-2', strftime('%s', '2024-05-20 00:00:00'), 1500, '
 
 INSERT INTO expense_record_cats (expense_record_id, cat_id)
 VALUES ('vrt-expense-hospital-1', 'vrt-cat-busy'), ('vrt-expense-hospital-2', 'vrt-cat-busy');
+
+-- ここまでに登録した猫をすべて VRT 用の家に所属させる
+UPDATE cats SET household_id = 'vrt-household' WHERE id LIKE 'vrt-cat-%';

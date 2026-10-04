@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import { shampooRecords } from "@/db/schema";
+import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import {
@@ -29,6 +30,7 @@ export async function createShampooRecordAction(
   _prevState: ShampooRecordFormState,
   formData: FormData,
 ): Promise<ShampooRecordFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -54,6 +56,7 @@ export async function updateShampooRecordAction(
   _prevState: ShampooRecordFormState,
   formData: FormData,
 ): Promise<ShampooRecordFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -85,6 +88,7 @@ export async function deleteShampooRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
+  await requireCatAccess(catId);
   const db = getDb();
   await db
     .delete(shampooRecords)

@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Cat } from "@/db/schema/cats";
-import { listCats } from "@/features/cats/queries";
+import { listCurrentUserCats } from "@/features/auth/session";
 import RootPage from "./page";
 
-vi.mock("@/features/cats/queries", () => ({
-  listCats: vi.fn(),
+vi.mock("@/features/auth/session", () => ({
+  listCurrentUserCats: vi.fn(),
 }));
 
 const redirect = vi.fn((url: string) => {
@@ -18,6 +18,7 @@ vi.mock("next/navigation", () => ({
 function buildCat(id: string): Cat {
   return {
     id,
+    householdId: "household-1",
     name: "たま",
     sex: "male",
     birthDate: null,
@@ -32,19 +33,19 @@ function buildCat(id: string): Cat {
 
 describe("RootPage", () => {
   it("猫が登録されていない場合は /home にリダイレクトする", async () => {
-    vi.mocked(listCats).mockResolvedValue([]);
+    vi.mocked(listCurrentUserCats).mockResolvedValue([]);
 
     await expect(RootPage()).rejects.toThrow("REDIRECT:/home");
   });
 
   it("猫が1匹だけ登録されている場合はその猫の詳細ページにリダイレクトする", async () => {
-    vi.mocked(listCats).mockResolvedValue([buildCat("cat-1")]);
+    vi.mocked(listCurrentUserCats).mockResolvedValue([buildCat("cat-1")]);
 
     await expect(RootPage()).rejects.toThrow("REDIRECT:/cats/cat-1");
   });
 
   it("猫が2匹以上登録されている場合は猫一覧にリダイレクトする", async () => {
-    vi.mocked(listCats).mockResolvedValue([
+    vi.mocked(listCurrentUserCats).mockResolvedValue([
       buildCat("cat-1"),
       buildCat("cat-2"),
     ]);

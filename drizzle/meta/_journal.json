@@ -253,6 +253,13 @@
       "when": 1790933959461,
       "tag": "0035_flippant_catseye",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1791081193115,
+      "tag": "0036_acoustic_the_leader",
+      "breakpoints": true
     }
   ]
 }

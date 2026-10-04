@@ -1,3 +1,4 @@
+import { getCurrentUser } from "@/features/auth/session";
 import {
   deleteStalePendingMediaAssets,
   MediaUploadError,
@@ -22,6 +23,10 @@ function jsonError(message: string, status: number) {
  * 紐付かないまま放置された下書きは、次回以降のアップロード時に削除する
  */
 export async function POST(request: Request) {
+  if (!(await getCurrentUser())) {
+    return jsonError("ログインしてください", 401);
+  }
+
   let formData: FormData;
   try {
     formData = await request.formData();

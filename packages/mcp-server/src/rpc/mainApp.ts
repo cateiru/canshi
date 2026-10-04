@@ -52,13 +52,24 @@ export interface ListTimelineResult {
   hasMore: boolean;
 }
 
+/**
+ * 各メソッドの `userId` は `resolveMcpUser` で取得し、OAuth のトークン（`props.userId`）に
+ * 保存したユーザー ID。メインアプリはそのユーザーの家の猫だけを返し、ユーザー ID が
+ * 無い・存在しない場合は例外を投げる
+ */
 export abstract class MainAppRpc extends WorkerEntrypoint<unknown> {
-  abstract listCats(): Promise<CatSummary[]>;
-  abstract getCatProfile(catId: string): Promise<CatSummary | null>;
+  abstract resolveMcpUser(): Promise<{ userId: string }>;
+  abstract listCats(userId: string): Promise<CatSummary[]>;
+  abstract getCatProfile(
+    userId: string,
+    catId: string,
+  ): Promise<CatSummary | null>;
+  /** 別の家の猫・存在しない猫の場合は null */
   abstract listTimeline(
+    userId: string,
     catId: string,
     year: number,
     month: number,
     options?: ListTimelineOptions,
-  ): Promise<ListTimelineResult>;
+  ): Promise<ListTimelineResult | null>;
 }
