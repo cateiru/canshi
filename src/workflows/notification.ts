@@ -8,11 +8,13 @@ import { getDb } from "@/db/client";
 import { notifications } from "@/db/schema";
 import { generateNotifications } from "@/features/notifications/generate";
 import {
+  listCatAccessesOfSubscribers,
   listPushDeliveries,
   listPushSubscriptions,
   listUnpushedNotifications,
 } from "@/features/push/queries";
 import { sendPushToSubscription } from "@/features/push/sendPush";
+import { groupCatIdsByUser, selectPushTargets } from "@/features/push/targets";
 import { getVapidKeys } from "@/features/push/vapid";
 
 function deliveryKey(notificationId: string, subscriptionId: string): string {
@@ -50,16 +52,22 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
       return;
     }
 
-    const { pending, subscriptions } = await step.do(
+    const { pending, subscriptions, catAccesses } = await step.do(
       "list pending pushes",
       async () => {
-        const [pending, subscriptions] = await Promise.all([
+        const [pending, subscriptions, catAccesses] = await Promise.all([
           listUnpushedNotifications(now, this.env.DB),
           listPushSubscriptions(this.env.DB),
+          listCatAccessesOfSubscribers(this.env.DB),
         ]);
-        return { pending, subscriptions };
+        return { pending, subscriptions, catAccesses };
       },
     );
+    // 通知は、その猫の家のメンバーの購読にだけ送る。別の家の猫の通知（タイトル・本文に
+    // 猫の名前を含む）を、関係のない端末に送らない
+    const catIdsByUser = groupCatIdsByUser(catAccesses);
+    const targetsOf = (notification: { catId: string }) =>
+      selectPushTargets(notification, subscriptions, catIdsByUser);
 
     if (pending.length === 0 || subscriptions.length === 0) {
       return;
@@ -83,7 +91,7 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
     const removedSubscriptionIds = new Set<string>();
 
     for (const notification of pending) {
-      for (const subscription of subscriptions) {
+      for (const subscription of targetsOf(notification)) {
         if (removedSubscriptionIds.has(subscription.id)) {
           continue;
         }
@@ -142,10 +150,11 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
       const db = getDb(this.env.DB);
       const pushedAt = new Date();
       for (const notification of pending) {
-        // この実行時点で存在した購読すべてが、送信済みか削除済みになっている場合だけ
+        // この実行時点で存在した送り先の購読すべてが、送信済みか削除済みになっている場合だけ
         // 送信済みとして確定する。未解決の組み合わせが残る通知は pushedAt を更新せず、
-        // 次回のスケジュール実行でその購読だけを対象に再試行する
-        const allResolved = subscriptions.every(
+        // 次回のスケジュール実行でその購読だけを対象に再試行する。送り先がない通知
+        // （家のメンバーが誰も購読していない）は、そのまま送信済みにする
+        const allResolved = targetsOf(notification).every(
           (subscription) =>
             removedSubscriptionIds.has(subscription.id) ||
             delivered.has(deliveryKey(notification.id, subscription.id)),

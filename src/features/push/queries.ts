@@ -1,10 +1,44 @@
-import { and, eq, inArray, isNull, lte, or } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { notifications, pushDeliveries, pushSubscriptions } from "@/db/schema";
+import {
+  cats,
+  householdMembers,
+  notifications,
+  pushDeliveries,
+  pushSubscriptions,
+} from "@/db/schema";
+import type { UserCatAccess } from "./targets";
 
+/** 通知を送りうる購読（ユーザーに紐付いたもの）の一覧 */
 export async function listPushSubscriptions(d1?: D1Database) {
   const db = getDb(d1);
-  return db.select().from(pushSubscriptions);
+  return db
+    .select()
+    .from(pushSubscriptions)
+    .where(isNotNull(pushSubscriptions.userId));
+}
+
+/**
+ * 購読しているユーザーと、そのユーザーが参照できる猫（所属する家の猫）の組の一覧。
+ * 通知ごとの送り先を `selectPushTargets`（`./targets`）で絞り込むために使う
+ */
+export async function listCatAccessesOfSubscribers(
+  d1?: D1Database,
+): Promise<UserCatAccess[]> {
+  const db = getDb(d1);
+  return db
+    .selectDistinct({ userId: householdMembers.userId, catId: cats.id })
+    .from(householdMembers)
+    .innerJoin(cats, eq(cats.householdId, householdMembers.householdId))
+    .where(
+      inArray(
+        householdMembers.userId,
+        db
+          .select({ userId: pushSubscriptions.userId })
+          .from(pushSubscriptions)
+          .where(isNotNull(pushSubscriptions.userId)),
+      ),
+    );
 }
 
 /**

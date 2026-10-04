@@ -1,14 +1,19 @@
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { users } from "./users";
 
 /**
  * Web Push（`29`）の購読。猫には紐付かない、端末ごとの購読情報。
- * `endpoint` は購読ごとに一意（同じ端末・ブラウザから再購読すると更新される）
+ * `endpoint` は購読ごとに一意（同じ端末・ブラウザから再購読すると更新される）。
+ * 購読したユーザーを持ち、そのユーザーの家の猫の通知だけを送る（`src/workflows/notification.ts`）
  */
 export const pushSubscriptions = sqliteTable("push_subscriptions", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
+  // 購読したユーザー。ユーザーの導入（`0036`）より前の購読は NULL で、どの通知も送らない。
+  // `scripts/link-household.mts` でユーザーに紐付ける
+  userId: text("user_id").references(() => users.id),
   endpoint: text("endpoint").notNull().unique(),
   p256dh: text("p256dh").notNull(),
   auth: text("auth").notNull(),

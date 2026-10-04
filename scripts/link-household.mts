@@ -3,6 +3,8 @@
 // ユーザー・家の導入前から登録されていた猫は、どの家にも所属しないためアプリに表示されない。
 // デプロイ後に `/login` でログインして（ユーザーが作成される）から、このスクリプトで
 // そのユーザーをオーナーとする家を作り、既存の猫をまとめて紐付ける（docs/deploy.md 参照）。
+// ユーザーに紐付いていない Web Push の購読（push_subscriptions.user_id が NULL）も、
+// どの通知も届かないため、同じユーザーに紐付ける。
 //
 // 使い方:
 //   pnpm household:link --local  [--persist-to ./.wrangler/state] [--user-id <id>] [--name <家の名前>]
@@ -104,6 +106,9 @@ const [membership] = execute<NamedRow>(
 const [{ count: orphanCount }] = execute<CountRow>(
   "SELECT COUNT(*) AS count FROM cats WHERE household_id IS NULL",
 );
+const [{ count: orphanSubscriptionCount }] = execute<CountRow>(
+  "SELECT COUNT(*) AS count FROM push_subscriptions WHERE user_id IS NULL",
+);
 
 console.log(
   `対象のデータベース: ${args.local ? "ローカル" : "本番（remote）"}`,
@@ -115,6 +120,9 @@ console.log(
     : `家: ${args.name}（新しく作成し、このユーザーをオーナーにする）`,
 );
 console.log(`家に紐付ける猫: ${orphanCount} 匹`);
+console.log(
+  `ユーザーに紐付ける Push 通知の購読: ${orphanSubscriptionCount} 件`,
+);
 
 if (args.remote && !args.yes) {
   const readline = createInterface({
@@ -150,3 +158,8 @@ const [{ count: linkedCount }] = execute<CountRow>(
 console.log(
   `家に未所属だった猫を紐付けました（この家の猫: ${linkedCount} 匹）`,
 );
+
+execute(
+  `UPDATE push_subscriptions SET user_id = ${quote(user.id)} WHERE user_id IS NULL`,
+);
+console.log("ユーザーに未紐付けだった Push 通知の購読を紐付けました");

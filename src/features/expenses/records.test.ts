@@ -523,6 +523,68 @@ describe("支出記録から通院記録への紐付け", () => {
     expect([...visitsById.keys()]).toEqual([tamaVisit]);
   });
 
+  it("共通の支出を編集しても、フォームに出ない別の家の猫・通院記録との紐付けは残す", async () => {
+    await addCat("kuro", "household-2");
+    const kuroVisit = await addVisit("kuro");
+    const tamaVisit = await addVisit("tama");
+    const { savedRecordId } = await createExpenseAction(
+      {},
+      expenseForm({ category: "hospital", hospitalVisitIds: [tamaVisit] }),
+    );
+    const id = savedRecordId as string;
+    // 別の家のユーザーが、同じ支出に自分の家の猫・通院記録を紐付けた状態を作る
+    await db
+      .insert(expenseRecordHospitalVisits)
+      .values({ expenseRecordId: id, hospitalVisitId: kuroVisit });
+    await db
+      .insert(expenseRecordCats)
+      .values({ expenseRecordId: id, catId: "kuro" });
+
+    async function links() {
+      const catIds = (
+        await db
+          .select({ catId: expenseRecordCats.catId })
+          .from(expenseRecordCats)
+          .where(eq(expenseRecordCats.expenseRecordId, id))
+      ).map((row) => row.catId);
+      const visitIds = (
+        await db
+          .select({ visitId: expenseRecordHospitalVisits.hospitalVisitId })
+          .from(expenseRecordHospitalVisits)
+          .where(eq(expenseRecordHospitalVisits.expenseRecordId, id))
+      ).map((row) => row.visitId);
+      return { catIds: catIds.sort(), visitIds: visitIds.sort() };
+    }
+
+    // user-1 のフォームには tama の分だけが表示され、そのまま保存し直す
+    await updateExpenseAction(
+      id,
+      {},
+      expenseForm({
+        category: "hospital",
+        memo: "メモだけ変更",
+        catIds: ["tama"],
+        hospitalVisitIds: [tamaVisit],
+      }),
+    );
+    expect(await links()).toEqual({
+      catIds: ["kuro", "tama"],
+      visitIds: [kuroVisit, tamaVisit].sort(),
+    });
+
+    // 自分の家の紐付けを外しても、別の家の紐付けは残る
+    await updateExpenseAction(
+      id,
+      {},
+      expenseForm({ category: "hospital", catIds: [], hospitalVisitIds: [] }),
+    );
+    expect(await links()).toEqual({ catIds: ["kuro"], visitIds: [kuroVisit] });
+
+    // 「病院」以外にすると、通院記録との紐付けは別の家の分も外す（猫の紐付けは残す）
+    await updateExpenseAction(id, {}, expenseForm({ category: "food" }));
+    expect(await links()).toEqual({ catIds: ["kuro"], visitIds: [] });
+  });
+
   it("支出日と違う日の通院記録や、ほかの支出に紐付いた通院記録は紐付けない", async () => {
     const otherDayVisit = await addVisit("tama", { visitedDate: "2026-09-14" });
     const linkedVisit = await addVisit("mike", { expenseAmountYen: "3000" });

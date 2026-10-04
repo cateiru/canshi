@@ -1,6 +1,7 @@
 "use server";
 
 import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
   cleaningRecords,
@@ -295,15 +296,19 @@ export async function markNotificationsReadAction(
   }
   try {
     const db = getDb();
-    await db
-      .update(notifications)
-      .set({ readAt: new Date() })
-      .where(
-        and(
-          inArray(notifications.id, ids),
-          inArray(notifications.catId, accessibleCatIdsQuery(db, user.id)),
-        ),
-      );
+    const readAt = new Date();
+    // `set` の既読日時と `accessibleCatIdsQuery` の userId の分を 2 個予約する
+    for (const chunk of chunkForBoundParameters(ids, 2)) {
+      await db
+        .update(notifications)
+        .set({ readAt })
+        .where(
+          and(
+            inArray(notifications.id, chunk),
+            inArray(notifications.catId, accessibleCatIdsQuery(db, user.id)),
+          ),
+        );
+    }
     return {};
   } catch (error) {
     console.error("通知の既読処理に失敗しました", error);

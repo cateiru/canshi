@@ -44,7 +44,9 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   `getCatForUser`・`listCatsForUser`・`accessibleCatIdsQuery` で絞り込む（認可の入口は
   `src/features/auth/session.ts` の `requireUser`・`requireCatAccess`）
   - 猫に紐付くテーブル（記録・通知など）は `cat_id` 経由で家に紐付くため、家の列は持たない
-  - 支出記録・ごはん商品・ごはんプリセット・Web Push の購読は、現時点では家に紐付けず全ユーザーで共通
+  - 支出記録・ごはん商品・ごはんプリセットは、現時点では家に紐付けず全ユーザーで共通
+  - Web Push の購読（`push_subscriptions.user_id`）は購読したユーザーを持ち、通知はその猫の家のメンバーの
+    購読にだけ送る（`src/features/push/targets.ts`）。ユーザーの導入前の購読（NULL）には送らない
 - `users.role` はアプリ全体の権限（`admin`・`member`）。`/login` のログインボタンで最初に作られる
   ユーザーは `admin`
 - 家の中での権限は `household_members.role`（`owner`・`member`）で持つ。今はオーナーを 1 名で運用し、

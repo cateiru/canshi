@@ -181,6 +181,14 @@ export async function deleteSymptomAction(
 ): Promise<void> {
   await requireCatAccess(catId);
   const db = getDb();
+  // 添付の削除は記録 ID だけで行うため、先に記録がこの猫のものであることを確かめる。
+  // 確かめないと、自分の猫の catId と別の家の記録 ID を渡して添付を消せてしまう
+  const [existing] = await db
+    .select({ id: symptoms.id })
+    .from(symptoms)
+    .where(and(eq(symptoms.id, id), eq(symptoms.catId, catId)))
+    .limit(1);
+  if (!existing) redirect(`/cats/${catId}/symptoms`, "replace");
   // 紐付く写真・動画（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(SYMPTOM_MEDIA_TYPE, id);
   // medications.symptom_id / hospital_visits.symptom_id からの外部キー参照が

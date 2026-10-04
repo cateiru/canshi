@@ -17,11 +17,15 @@ vi.mock("@/db/client", () => ({
 vi.mock("@/features/media/attach", () => ({
   syncRecordMediaFromForm: async () => undefined,
 }));
-vi.mock("@/features/media/storage", () => ({
-  deleteMediaAssetsByRecord: async () => {},
+const { deleteMediaAssetsByRecord } = vi.hoisted(() => ({
+  deleteMediaAssetsByRecord: vi.fn(async () => {}),
 }));
+vi.mock("@/features/media/storage", () => ({ deleteMediaAssetsByRecord }));
+// Next.js の redirect と同じく例外を投げ、以降の処理を止める
 vi.mock("next/navigation", () => ({
-  redirect: () => {},
+  redirect: (url: string) => {
+    throw new Error(`REDIRECT:${url}`);
+  },
 }));
 // 猫の家による認可はこのテストの対象外のため、常に許可する
 vi.mock("@/features/auth/session", () => ({
@@ -125,13 +129,40 @@ describe("deleteSymptomAction", () => {
   it("症状を削除すると、その症状の確認通知も削除する", async () => {
     const { cat, symptom, notification } = await setup();
 
-    await deleteSymptomAction(cat.id, symptom.id);
+    await expect(deleteSymptomAction(cat.id, symptom.id)).rejects.toThrow(
+      `REDIRECT:/cats/${cat.id}/symptoms`,
+    );
 
+    expect(deleteMediaAssetsByRecord).toHaveBeenCalledWith(
+      "symptom",
+      symptom.id,
+    );
     expect(await findNotification(notification.id)).toBeUndefined();
     const [deleted] = await db
       .select()
       .from(symptoms)
       .where(eq(symptoms.id, symptom.id));
     expect(deleted).toBeUndefined();
+  });
+
+  it("別の猫の症状 ID を渡しても、添付も症状も削除しない", async () => {
+    const { symptom } = await setup();
+    // 認可を通過する自分の猫（`requireCatAccess` はこのテストでは常に許可する）
+    const [ownCat] = await db
+      .insert(cats)
+      .values({ name: "ミケ", sex: "female" })
+      .returning();
+    deleteMediaAssetsByRecord.mockClear();
+
+    await expect(deleteSymptomAction(ownCat.id, symptom.id)).rejects.toThrow(
+      `REDIRECT:/cats/${ownCat.id}/symptoms`,
+    );
+
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
+    const [kept] = await db
+      .select()
+      .from(symptoms)
+      .where(eq(symptoms.id, symptom.id));
+    expect(kept).toBeDefined();
   });
 });

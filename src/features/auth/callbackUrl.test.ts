@@ -6,6 +6,9 @@ describe("sanitizeCallbackUrl", () => {
     expect(sanitizeCallbackUrl("/cats/abc?month=2026-10")).toBe(
       "/cats/abc?month=2026-10",
     );
+    expect(sanitizeCallbackUrl("/cats/abc#weight")).toBe("/cats/abc#weight");
+    // パーセントエンコードされたタブはパスの一部のままで、外部への遷移にはならない
+    expect(sanitizeCallbackUrl("/%09/evil.example")).toBe("/%09/evil.example");
   });
 
   it.each([
@@ -18,7 +21,15 @@ describe("sanitizeCallbackUrl", () => {
     "cats",
     "/login",
     "/login?callbackUrl=%2Fcats",
-  ])("%s は既定値にする", (value) => {
+    // ブラウザは URL のタブ・改行を取り除くため、`//evil.example` として外部へ遷移してしまう
+    "/\t/evil.example",
+    "/\n/evil.example",
+    "/\r/evil.example",
+    "/cats\u0000",
+    // パスとして解釈すると `/login` になるもの
+    "/./login",
+    "/cats/../login?callbackUrl=%2F",
+  ])("%j は既定値にする", (value) => {
     expect(sanitizeCallbackUrl(value)).toBe(DEFAULT_CALLBACK_URL);
   });
 });

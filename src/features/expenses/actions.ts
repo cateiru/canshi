@@ -63,7 +63,8 @@ async function verifyCatsExist(
   userId: string,
   catIds: string[],
 ): Promise<boolean> {
-  for (const ids of chunkForBoundParameters(catIds)) {
+  // `accessibleCatIdsQuery` の userId の分を 1 個予約する
+  for (const ids of chunkForBoundParameters(catIds, 1)) {
     const rows = await db
       .select({ id: cats.id })
       .from(cats)
@@ -98,7 +99,8 @@ async function resolveLinks(
   const hospitalVisitIds =
     data.category === "hospital" ? data.hospitalVisitIds : [];
   const visitCatIds: string[] = [];
-  for (const ids of chunkForBoundParameters(hospitalVisitIds)) {
+  // `accessibleCatIdsQuery` の userId の分を 1 個予約する
+  for (const ids of chunkForBoundParameters(hospitalVisitIds, 1)) {
     const rows = await db
       .select({
         catId: hospitalVisits.catId,
@@ -244,17 +246,42 @@ export async function updateExpenseAction(
     return { fieldErrors: links.fieldErrors };
   }
 
-  // 紐付く猫・通院記録は差分更新せず、いったん全削除してから選択されたものを入れ直す
+  // 紐付く猫・通院記録は差分更新せず、いったん削除してから選択されたものを入れ直す。
+  // 支出記録は家を問わず共通で、フォームにはユーザーの家の猫・通院記録しか出さないため、
+  // 削除するのもユーザーの家の分だけにし、別の家の猫・通院記録との紐付けは残す
   const updateRecord = db
     .update(expenseRecords)
     .set({ ...buildValues(parsed.data), updatedAt: new Date() })
     .where(eq(expenseRecords.id, id));
   const deleteCatLinks = db
     .delete(expenseRecordCats)
-    .where(eq(expenseRecordCats.expenseRecordId, id));
-  const deleteHospitalVisitLinks = db
-    .delete(expenseRecordHospitalVisits)
-    .where(eq(expenseRecordHospitalVisits.expenseRecordId, id));
+    .where(
+      and(
+        eq(expenseRecordCats.expenseRecordId, id),
+        inArray(expenseRecordCats.catId, accessibleCatIdsQuery(db, user.id)),
+      ),
+    );
+  // 通院記録を紐付けられるのはカテゴリ「病院」だけのため、ほかのカテゴリに変えたときは
+  // 別の家の通院記録との紐付けも外す
+  const deleteHospitalVisitLinks = db.delete(expenseRecordHospitalVisits).where(
+    and(
+      eq(expenseRecordHospitalVisits.expenseRecordId, id),
+      parsed.data.category === "hospital"
+        ? inArray(
+            expenseRecordHospitalVisits.hospitalVisitId,
+            db
+              .select({ id: hospitalVisits.id })
+              .from(hospitalVisits)
+              .where(
+                inArray(
+                  hospitalVisits.catId,
+                  accessibleCatIdsQuery(db, user.id),
+                ),
+              ),
+          )
+        : undefined,
+    ),
+  );
 
   await db.batch([
     updateRecord,

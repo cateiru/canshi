@@ -43,7 +43,8 @@ export async function listHospitalVisitsByIds(
     return byId;
   }
   const db = getDb();
-  for (const chunk of chunkForBoundParameters(ids)) {
+  // `accessibleCatIdsQuery` の userId の分を 1 個予約する
+  for (const chunk of chunkForBoundParameters(ids, 1)) {
     const rows = await db
       .select()
       .from(hospitalVisits)
