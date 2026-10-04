@@ -36,9 +36,9 @@ export async function deleteMediaAssetAction(
 export async function discardPendingMediaAction(
   assetId: string,
 ): Promise<DeleteMediaAssetResult> {
-  await requireUser();
+  const user = await requireUser();
   try {
-    await deletePendingMediaAsset(assetId);
+    await deletePendingMediaAsset(assetId, user.id);
     return {};
   } catch (error) {
     console.error("下書きの削除に失敗しました", error);

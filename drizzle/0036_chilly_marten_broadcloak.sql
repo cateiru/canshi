@@ -35,4 +35,5 @@ CREATE TABLE `users` (
 --> statement-breakpoint
 ALTER TABLE `cats` ADD `household_id` text REFERENCES households(id);--> statement-breakpoint
 CREATE INDEX `cats_household_id_idx` ON `cats` (`household_id`);--> statement-breakpoint
-ALTER TABLE `push_subscriptions` ADD `user_id` text REFERENCES users(id);
+ALTER TABLE `push_subscriptions` ADD `user_id` text REFERENCES users(id);--> statement-breakpoint
+ALTER TABLE `media_assets` ADD `uploaded_by_user_id` text REFERENCES users(id);

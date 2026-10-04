@@ -51,6 +51,7 @@ async function deleteReplacedProfileAssets(catId: string): Promise<void> {
 export async function applyProfileImageChange(
   catId: string,
   change: ProfileImageChange,
+  userId: string,
 ): Promise<string | undefined> {
   if (change.type === "keep") {
     return undefined;
@@ -72,7 +73,8 @@ export async function applyProfileImageChange(
     // 下書き（画像）の紐付けと猫の参照の更新を 1 つの batch（トランザクション）で行う。
     // 途中で失敗しても下書きのまま戻るため、保存し直せる
     const [, referenced] = await db.batch([
-      // 下書き（画像）のときだけ紐付ける。同時に別の記録へ紐付けられていないことも条件にする
+      // 下書き（画像）のときだけ紐付ける。同時に別の記録へ紐付けられていないことと、
+      // 保存したユーザー本人がアップロードした下書きであることも条件にする
       db
         .update(mediaAssets)
         .set({
@@ -85,6 +87,7 @@ export async function applyProfileImageChange(
           and(
             eq(mediaAssets.id, change.assetId),
             eq(mediaAssets.recordType, PENDING_MEDIA_RECORD_TYPE),
+            eq(mediaAssets.uploadedByUserId, userId),
             like(mediaAssets.mimeType, "image/%"),
           ),
         ),

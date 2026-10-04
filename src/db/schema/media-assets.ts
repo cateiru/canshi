@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { cats } from "./cats";
+import { users } from "./users";
 
 /**
  * 画像・動画を一元管理する正規化テーブル。
@@ -15,6 +16,10 @@ export const mediaAssets = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
     // ごはん商品画像など猫に紐付かないメディアを許容するため nullable
     catId: text("cat_id").references(() => cats.id),
+    // アップロードしたユーザー。記録に紐付く前の下書き（`record_type = 'pending'`）は、
+    // このユーザーだけが参照・削除・添付できる（`src/features/media/access.ts`）。
+    // ユーザーの導入（`0036`）より前のメディアは NULL
+    uploadedByUserId: text("uploaded_by_user_id").references(() => users.id),
     recordType: text("record_type").notNull(),
     recordId: text("record_id").notNull(),
     objectKey: text("object_key").notNull(),

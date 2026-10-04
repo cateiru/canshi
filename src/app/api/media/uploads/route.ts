@@ -23,7 +23,8 @@ function jsonError(message: string, status: number) {
  * 紐付かないまま放置された下書きは、次回以降のアップロード時に削除する
  */
 export async function POST(request: Request) {
-  if (!(await getCurrentUser())) {
+  const user = await getCurrentUser();
+  if (!user) {
     return jsonError("ログインしてください", 401);
   }
 
@@ -45,10 +46,13 @@ export async function POST(request: Request) {
     await deleteStalePendingMediaAssets().catch((error) => {
       console.error("古い下書きの削除に失敗しました", error);
     });
-    const asset = await storePendingMediaAsset({
-      file,
-      thumbnail: thumbnail instanceof Blob ? thumbnail : null,
-    });
+    const asset = await storePendingMediaAsset(
+      {
+        file,
+        thumbnail: thumbnail instanceof Blob ? thumbnail : null,
+      },
+      user.id,
+    );
     return Response.json({ asset: toMediaAssetView(asset) }, { status: 201 });
   } catch (error) {
     if (error instanceof MediaUploadError) {

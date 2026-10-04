@@ -5,7 +5,7 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { cats, type MediaAsset, mediaAssets } from "@/db/schema";
+import { cats, type MediaAsset, mediaAssets, users } from "@/db/schema";
 
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
@@ -37,6 +37,9 @@ vi.mock("@/features/media/storage", async () => {
 
 const { applyProfileImageChange } = await import("./applyProfileImage");
 
+/** 猫を編集しているユーザー。下書きはこのユーザーがアップロードしたものとして作る */
+const USER_ID = "user-1";
+
 beforeAll(async () => {
   const SQL = await initSqlJs();
   const raw = drizzle(new SQL.Database());
@@ -58,6 +61,10 @@ beforeAll(async () => {
     batchQueue = run.catch(() => {});
     return run;
   };
+  await db.insert(users).values([
+    { id: USER_ID, name: "管理者" },
+    { id: "user-2", name: "別のユーザー" },
+  ]);
 });
 
 async function createCat() {
@@ -68,11 +75,15 @@ async function createCat() {
   return cat;
 }
 
-async function createPendingAsset(mimeType = "image/jpeg") {
+async function createPendingAsset(
+  mimeType = "image/jpeg",
+  uploadedByUserId = USER_ID,
+) {
   const id = crypto.randomUUID();
   await db.insert(mediaAssets).values({
     id,
     catId: null,
+    uploadedByUserId,
     recordType: "pending",
     recordId: id,
     objectKey: `pending/${id}`,
@@ -111,7 +122,7 @@ describe("applyProfileImageChange", () => {
   it("keep では何も変更しない", async () => {
     const cat = await createCat();
     expect(
-      await applyProfileImageChange(cat.id, { type: "keep" }),
+      await applyProfileImageChange(cat.id, { type: "keep" }, USER_ID),
     ).toBeUndefined();
     expect((await getCat(cat.id)).profileMediaAssetId).toBeNull();
   });
@@ -131,7 +142,11 @@ describe("applyProfileImageChange", () => {
 
     const nextId = await createPendingAsset();
     expect(
-      await applyProfileImageChange(cat.id, { type: "set", assetId: nextId }),
+      await applyProfileImageChange(
+        cat.id,
+        { type: "set", assetId: nextId },
+        USER_ID,
+      ),
     ).toBeUndefined();
 
     const updated = await getCat(cat.id);
@@ -148,26 +163,52 @@ describe("applyProfileImageChange", () => {
     const cat = await createCat();
     const videoId = await createPendingAsset("video/mp4");
     expect(
-      await applyProfileImageChange(cat.id, { type: "set", assetId: videoId }),
+      await applyProfileImageChange(
+        cat.id,
+        { type: "set", assetId: videoId },
+        USER_ID,
+      ),
     ).toMatch(/見つかりませんでした/);
     expect(
-      await applyProfileImageChange(cat.id, {
-        type: "set",
-        assetId: "missing",
-      }),
+      await applyProfileImageChange(
+        cat.id,
+        {
+          type: "set",
+          assetId: "missing",
+        },
+        USER_ID,
+      ),
     ).toMatch(/見つかりませんでした/);
     expect((await getCat(cat.id)).profileMediaAssetId).toBeNull();
     expect((await getAsset(videoId)).recordType).toBe("pending");
+  });
+
+  it("別のユーザーがアップロードした下書きは紐付けない", async () => {
+    const cat = await createCat();
+    const othersDraftId = await createPendingAsset("image/jpeg", "user-2");
+    expect(
+      await applyProfileImageChange(
+        cat.id,
+        { type: "set", assetId: othersDraftId },
+        USER_ID,
+      ),
+    ).toMatch(/見つかりませんでした/);
+    expect((await getCat(cat.id)).profileMediaAssetId).toBeNull();
+    expect((await getAsset(othersDraftId)).recordType).toBe("pending");
   });
 
   it("他の猫のプロフィール画像は奪えない", async () => {
     const owner = await createCat();
     const other = await createCat();
     const assetId = await createPendingAsset();
-    await applyProfileImageChange(owner.id, { type: "set", assetId });
+    await applyProfileImageChange(owner.id, { type: "set", assetId }, USER_ID);
 
     expect(
-      await applyProfileImageChange(other.id, { type: "set", assetId }),
+      await applyProfileImageChange(
+        other.id,
+        { type: "set", assetId },
+        USER_ID,
+      ),
     ).toMatch(/見つかりませんでした/);
     expect((await getCat(owner.id)).profileMediaAssetId).toBe(assetId);
     expect((await getCat(other.id)).profileMediaAssetId).toBeNull();
@@ -176,10 +217,10 @@ describe("applyProfileImageChange", () => {
   it("remove ではプロフィール画像を外して削除する", async () => {
     const cat = await createCat();
     const assetId = await createPendingAsset();
-    await applyProfileImageChange(cat.id, { type: "set", assetId });
+    await applyProfileImageChange(cat.id, { type: "set", assetId }, USER_ID);
 
     expect(
-      await applyProfileImageChange(cat.id, { type: "remove" }),
+      await applyProfileImageChange(cat.id, { type: "remove" }, USER_ID),
     ).toBeUndefined();
     expect((await getCat(cat.id)).profileMediaAssetId).toBeNull();
     expect(await getAsset(assetId)).toBeUndefined();
@@ -189,13 +230,25 @@ describe("applyProfileImageChange", () => {
   it("同じ猫の画像を同時に更新しても、最後に反映した画像は残す", async () => {
     const cat = await createCat();
     const oldId = await createPendingAsset();
-    await applyProfileImageChange(cat.id, { type: "set", assetId: oldId });
+    await applyProfileImageChange(
+      cat.id,
+      { type: "set", assetId: oldId },
+      USER_ID,
+    );
 
     const firstId = await createPendingAsset();
     const secondId = await createPendingAsset();
     const results = await Promise.all([
-      applyProfileImageChange(cat.id, { type: "set", assetId: firstId }),
-      applyProfileImageChange(cat.id, { type: "set", assetId: secondId }),
+      applyProfileImageChange(
+        cat.id,
+        { type: "set", assetId: firstId },
+        USER_ID,
+      ),
+      applyProfileImageChange(
+        cat.id,
+        { type: "set", assetId: secondId },
+        USER_ID,
+      ),
     ]);
     expect(results).toEqual([undefined, undefined]);
 
@@ -207,12 +260,20 @@ describe("applyProfileImageChange", () => {
   it("同時に画像を外しても、同時に設定した画像は消さない", async () => {
     const cat = await createCat();
     const oldId = await createPendingAsset();
-    await applyProfileImageChange(cat.id, { type: "set", assetId: oldId });
+    await applyProfileImageChange(
+      cat.id,
+      { type: "set", assetId: oldId },
+      USER_ID,
+    );
 
     const nextId = await createPendingAsset();
     await Promise.all([
-      applyProfileImageChange(cat.id, { type: "remove" }),
-      applyProfileImageChange(cat.id, { type: "set", assetId: nextId }),
+      applyProfileImageChange(cat.id, { type: "remove" }, USER_ID),
+      applyProfileImageChange(
+        cat.id,
+        { type: "set", assetId: nextId },
+        USER_ID,
+      ),
     ]);
 
     const { profileMediaAssetId } = await getCat(cat.id);
@@ -225,18 +286,30 @@ describe("applyProfileImageChange", () => {
   it("古い画像の削除に失敗しても、同じ画像で保存し直すと削除をやり直す", async () => {
     const cat = await createCat();
     const oldId = await createPendingAsset();
-    await applyProfileImageChange(cat.id, { type: "set", assetId: oldId });
+    await applyProfileImageChange(
+      cat.id,
+      { type: "set", assetId: oldId },
+      USER_ID,
+    );
 
     const nextId = await createPendingAsset();
     failNextDelete = true;
     expect(
-      await applyProfileImageChange(cat.id, { type: "set", assetId: nextId }),
+      await applyProfileImageChange(
+        cat.id,
+        { type: "set", assetId: nextId },
+        USER_ID,
+      ),
     ).toMatch(/保存できませんでした/);
     expect((await getCat(cat.id)).profileMediaAssetId).toBe(nextId);
     expect(await getAsset(oldId)).toBeDefined();
 
     expect(
-      await applyProfileImageChange(cat.id, { type: "set", assetId: nextId }),
+      await applyProfileImageChange(
+        cat.id,
+        { type: "set", assetId: nextId },
+        USER_ID,
+      ),
     ).toBeUndefined();
     expect((await getCat(cat.id)).profileMediaAssetId).toBe(nextId);
     expect(await getProfileAssetIds(cat.id)).toEqual([nextId]);
@@ -245,7 +318,11 @@ describe("applyProfileImageChange", () => {
   it("紐付け済みで参照が古いままの画像でも、保存し直すと付け替える", async () => {
     const cat = await createCat();
     const oldId = await createPendingAsset();
-    await applyProfileImageChange(cat.id, { type: "set", assetId: oldId });
+    await applyProfileImageChange(
+      cat.id,
+      { type: "set", assetId: oldId },
+      USER_ID,
+    );
     // 紐付けた後、猫の参照を更新する前に失敗した状態
     const nextId = await createPendingAsset();
     await db
@@ -254,7 +331,11 @@ describe("applyProfileImageChange", () => {
       .where(eq(mediaAssets.id, nextId));
 
     expect(
-      await applyProfileImageChange(cat.id, { type: "set", assetId: nextId }),
+      await applyProfileImageChange(
+        cat.id,
+        { type: "set", assetId: nextId },
+        USER_ID,
+      ),
     ).toBeUndefined();
     expect((await getCat(cat.id)).profileMediaAssetId).toBe(nextId);
     expect(await getProfileAssetIds(cat.id)).toEqual([nextId]);

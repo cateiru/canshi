@@ -204,6 +204,8 @@ type MediaAssetPlacement = {
   recordType: string;
   recordId: string;
   catId: string | null;
+  /** アップロードしたユーザー。下書きでは必須（本人だけが扱える） */
+  uploadedByUserId?: string | null;
   objectKey: string;
   thumbnailObjectKey: string;
   /** 省略時は同一レコード内の末尾 */
@@ -231,10 +233,12 @@ export async function storeMediaAsset(
 
 /**
  * 記録に紐付けない下書きとして保存する。フォームでファイルを選んだ時点で呼び、
- * 記録の保存時に `syncRecordMedia` で記録へ紐付ける
+ * 記録の保存時に `syncRecordMedia` で記録へ紐付ける。下書きはアップロードした
+ * ユーザー（`uploadedByUserId`）だけが参照・削除・添付できる
  */
 export async function storePendingMediaAsset(
   input: StoreMediaFileInput,
+  uploadedByUserId: string,
 ): Promise<MediaAsset> {
   const assetId = crypto.randomUUID();
   return storeMediaFile(input, {
@@ -242,6 +246,7 @@ export async function storePendingMediaAsset(
     recordType: PENDING_MEDIA_RECORD_TYPE,
     recordId: assetId,
     catId: null,
+    uploadedByUserId,
     objectKey: buildPendingObjectKey(assetId),
     thumbnailObjectKey: buildPendingThumbnailObjectKey(assetId),
     sortOrder: 0,
@@ -258,6 +263,7 @@ async function storeMediaFile(
     recordType,
     recordId,
     catId,
+    uploadedByUserId,
     objectKey,
     thumbnailObjectKey,
   } = placement;
@@ -323,6 +329,7 @@ async function storeMediaFile(
       .values({
         id: assetId,
         catId,
+        uploadedByUserId: uploadedByUserId ?? null,
         recordType,
         recordId,
         objectKey,
@@ -426,10 +433,14 @@ export async function deleteMediaAssetsByRecord(
 }
 
 /**
- * 記録に紐付く前の下書きを 1 件削除する。下書き以外（記録に紐付いたもの）は削除しない。
+ * 記録に紐付く前の下書きを 1 件削除する。下書き以外（記録に紐付いたもの）や、
+ * 別のユーザーがアップロードした下書きは削除しない。
  * フォームで選んだファイルを保存前に取り消したときに呼ぶ
  */
-export async function deletePendingMediaAsset(assetId: string): Promise<void> {
+export async function deletePendingMediaAsset(
+  assetId: string,
+  userId: string,
+): Promise<void> {
   const db = getDb();
   const rows = await db
     .select()
@@ -438,6 +449,7 @@ export async function deletePendingMediaAsset(assetId: string): Promise<void> {
       and(
         eq(mediaAssets.id, assetId),
         eq(mediaAssets.recordType, PENDING_MEDIA_RECORD_TYPE),
+        eq(mediaAssets.uploadedByUserId, userId),
       ),
     )
     .limit(1);

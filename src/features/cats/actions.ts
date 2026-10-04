@@ -137,7 +137,7 @@ export async function updateCatAction(
   _prevState: CatFormState,
   formData: FormData,
 ): Promise<CatFormState> {
-  await requireCatAccess(id);
+  const { user } = await requireCatAccess(id);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -161,6 +161,7 @@ export async function updateCatAction(
   const profileImageError = await applyProfileImageChange(
     id,
     parseProfileImageChange(formData),
+    user.id,
   );
   if (profileImageError) {
     return { formError: profileImageError };
