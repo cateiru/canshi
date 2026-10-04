@@ -1,14 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  TbCalendar,
-  TbCheck,
-  TbHistory,
-  TbPlus,
-  TbStack2,
-  TbX,
-} from "react-icons/tb";
+import { TbCalendar, TbCheck, TbPlus, TbStack2, TbX } from "react-icons/tb";
 import {
   Button,
   FormField,
@@ -55,6 +48,7 @@ type FeedingRecordFormProps = {
   foodProducts: FoodProduct[];
   /** 商品 ID → 商品画像の URL（画像のない商品は含まない） */
   foodProductImageUrls: Record<string, string>;
+  /** 直近使用した商品の ID（新しい順）。先頭の商品を新規記録の初期選択にする */
   recentlyUsedFoodProductIds: string[];
   presets: FeedingPresetWithItems[];
   feedingRecord?: FeedingRecordWithItems;
@@ -118,10 +112,6 @@ export function FeedingRecordForm({
     value: foodProduct.id,
     label: foodProduct.name,
   }));
-
-  const recentFoodProducts = recentlyUsedFoodProductIds
-    .map((id) => foodProducts.find((foodProduct) => foodProduct.id === id))
-    .filter((foodProduct): foodProduct is FoodProduct => foodProduct != null);
 
   const updateItem = (index: number, patch: Partial<ItemRow>) => {
     setItems((current) =>
@@ -205,39 +195,6 @@ export function FeedingRecordForm({
                 onPress={() => applyPreset(preset)}
               >
                 <span className={styles.quickSelectName}>{preset.name}</span>
-              </Button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {recentFoodProducts.length > 0 ? (
-        <div className={styles.quickSelect}>
-          <h2 className={styles.sectionHeading}>
-            <TbHistory aria-hidden="true" size={18} />
-            最近使った商品
-          </h2>
-          <div className={styles.quickSelectOptions}>
-            {recentFoodProducts.map((foodProduct) => (
-              <Button
-                key={foodProduct.id}
-                type="button"
-                variant="secondary"
-                className={styles.quickSelectButton}
-                aria-label={`${foodProduct.name}を追加`}
-                onPress={() => addItem(foodProduct.id)}
-              >
-                <span className={styles.productImage}>
-                  <FoodProductImage
-                    name={foodProduct.name}
-                    thumbnailUrl={foodProductImageUrls[foodProduct.id]}
-                    size="sm"
-                  />
-                </span>
-                <span className={styles.quickSelectName}>
-                  {foodProduct.name}
-                </span>
-                <TbPlus aria-hidden="true" size={16} />
               </Button>
             ))}
           </div>

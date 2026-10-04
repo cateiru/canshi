@@ -131,7 +131,7 @@ export async function getFeedingRecordById(
 }
 
 /**
- * ワンタップ入力のクイック選択用に、直近使用した商品の ID を新しい順・重複なしで返す。
+ * 記録フォームの初期選択に使うため、直近使用した商品の ID を新しい順・重複なしで返す。
  */
 export async function listRecentlyUsedFoodProductIds(catId: string, limit = 5) {
   const db = getDb();
