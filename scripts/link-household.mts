@@ -30,7 +30,10 @@ const { values: args } = parseArgs({
   },
 });
 
-function fail(message) {
+/** `wrangler d1 execute --json` の結果の 1 行。列の型は SELECT ごとに呼び出し側で決める */
+type Row = Record<string, unknown>;
+
+function fail(message: string): never {
   console.error(`エラー: ${message}`);
   process.exit(1);
 }
@@ -46,12 +49,12 @@ if (!args.name.trim()) {
 }
 
 /** SQL の文字列リテラルにする（シングルクォートをエスケープする） */
-function quote(value) {
+function quote(value: string) {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
 /** `wrangler d1 execute` で SQL を実行し、最後の文の結果行を返す */
-function execute(sql) {
+function execute<T extends Row = Row>(sql: string): T[] {
   const wranglerArgs = [
     "exec",
     "wrangler",
@@ -70,15 +73,20 @@ function execute(sql) {
     encoding: "utf8",
     stdio: ["inherit", "pipe", "inherit"],
   });
-  const results = JSON.parse(output);
+  const results: { results?: T[] }[] = JSON.parse(output);
   return results.at(-1)?.results ?? [];
 }
 
+type NamedRow = { id: string; name: string };
+type CountRow = { count: number };
+
 const [user] = args["user-id"]
-  ? execute(
+  ? execute<NamedRow>(
       `SELECT id, name FROM users WHERE id = ${quote(args["user-id"])} LIMIT 1`,
     )
-  : execute("SELECT id, name FROM users ORDER BY created_at, id LIMIT 1");
+  : execute<NamedRow>(
+      "SELECT id, name FROM users ORDER BY created_at, id LIMIT 1",
+    );
 if (!user) {
   fail(
     args["user-id"]
@@ -87,13 +95,13 @@ if (!user) {
   );
 }
 
-const [membership] = execute(
+const [membership] = execute<NamedRow>(
   `SELECT h.id, h.name FROM household_members m
      JOIN households h ON h.id = m.household_id
      WHERE m.user_id = ${quote(user.id)}
      ORDER BY m.created_at, h.id LIMIT 1`,
 );
-const [{ count: orphanCount }] = execute(
+const [{ count: orphanCount }] = execute<CountRow>(
   "SELECT COUNT(*) AS count FROM cats WHERE household_id IS NULL",
 );
 
@@ -126,8 +134,8 @@ if (!householdId) {
   householdId = randomUUID();
   execute(
     [
-      `INSERT INTO households (id, name, owner_user_id) VALUES (${quote(householdId)}, ${quote(args.name.trim())}, ${quote(user.id)})`,
-      `INSERT INTO household_members (household_id, user_id) VALUES (${quote(householdId)}, ${quote(user.id)})`,
+      `INSERT INTO households (id, name) VALUES (${quote(householdId)}, ${quote(args.name.trim())})`,
+      `INSERT INTO household_members (household_id, user_id, role) VALUES (${quote(householdId)}, ${quote(user.id)}, 'owner')`,
     ].join(";\n"),
   );
   console.log(`家を作成しました（${householdId}）`);
@@ -136,7 +144,7 @@ if (!householdId) {
 execute(
   `UPDATE cats SET household_id = ${quote(householdId)}, updated_at = unixepoch() WHERE household_id IS NULL`,
 );
-const [{ count: linkedCount }] = execute(
+const [{ count: linkedCount }] = execute<CountRow>(
   `SELECT COUNT(*) AS count FROM cats WHERE household_id = ${quote(householdId)}`,
 );
 console.log(

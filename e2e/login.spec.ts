@@ -20,6 +20,26 @@ test("未ログインでページを開くとログイン画面にリダイレ�
   ).toBeVisible();
 });
 
+test("DB にないセッションの Cookie ではログインしたことにならない", async ({
+  page,
+  baseURL,
+}) => {
+  // middleware は Cookie の有無ではなく、D1 のセッションと照合して判定する
+  await page
+    .context()
+    .addCookies([
+      { name: "canshi-session", value: "forged-session-token", url: baseURL },
+    ]);
+
+  await page.goto("/food-products");
+  await expect(page).toHaveURL(/\/login\?callbackUrl=%2Ffood-products$/);
+
+  const media = await page.request.get("/media/unknown-asset", {
+    maxRedirects: 0,
+  });
+  expect(media.status()).toBe(401);
+});
+
 test("未ログインでは API・メディアに 401 を返す", async ({ request }) => {
   const media = await request.get("/media/unknown-asset", {
     maxRedirects: 0,
@@ -44,10 +64,21 @@ test("ログアウトするとログイン画面に戻り、ページを開け�
   await page.getByRole("button", { name: "ログイン" }).click();
   await expect(page).not.toHaveURL(/\/login/);
 
+  const [sessionCookie] = (await page.context().cookies()).filter(
+    (cookie) => cookie.name === "canshi-session",
+  );
+  expect(sessionCookie).toBeDefined();
+
   await page.goto("/settings");
   await page.getByRole("button", { name: "ログアウト" }).click();
   await expect(page).toHaveURL(/\/login/);
 
+  await page.goto("/cats");
+  await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fcats$/);
+
+  // ログアウトでセッションを DB から削除するため、ログアウト前の Cookie を
+  // 持ち出して使い回してもログインしたことにならない
+  await page.context().addCookies([sessionCookie]);
   await page.goto("/cats");
   await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fcats$/);
 });

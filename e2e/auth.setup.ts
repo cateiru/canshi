@@ -19,7 +19,7 @@ setup("ログインして家を用意する", async ({ page }) => {
     execFileSync(
       "node",
       [
-        "scripts/link-household.mjs",
+        "scripts/link-household.mts",
         "--local",
         "--persist-to",
         ".wrangler/state",

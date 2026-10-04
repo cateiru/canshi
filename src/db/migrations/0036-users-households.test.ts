@@ -5,7 +5,7 @@ import initSqlJs, { type Database } from "sql.js";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const MIGRATIONS_DIR = path.resolve("drizzle");
-const TARGET_TAG = "0036_acoustic_the_leader";
+const TARGET_TAG = "0036_chilly_marten_broadcloak";
 
 type Journal = { entries: { tag: string }[] };
 
@@ -31,9 +31,9 @@ function selectRows(sqlite: Database, sql: string) {
 }
 
 /**
- * ユーザー・家を追加し、猫に家（household_id）を持たせるマイグレーションで、
+ * ユーザー・家・ログインセッションを追加し、猫に家（household_id）を持たせるマイグレーションで、
  * cats を作り直さずに既存の猫と記録が残り、家に未所属（NULL）になることを確認する。
- * 既存の猫は `scripts/link-household.mjs` で家に紐付ける
+ * 既存の猫は `scripts/link-household.mts` で家に紐付ける
  */
 describe(`${TARGET_TAG}（ユーザーと家）`, () => {
   let sqlite: Database;
@@ -77,8 +77,8 @@ describe(`${TARGET_TAG}（ユーザーと家）`, () => {
   it("ユーザー・家を作って既存の猫を紐付けられる", () => {
     sqlite.run(`
       INSERT INTO users (id, name, role) VALUES ('user-1', '管理者', 'admin');
-      INSERT INTO households (id, name, owner_user_id) VALUES ('household-1', 'わが家', 'user-1');
-      INSERT INTO household_members (household_id, user_id) VALUES ('household-1', 'user-1');
+      INSERT INTO households (id, name) VALUES ('household-1', 'わが家');
+      INSERT INTO household_members (household_id, user_id, role) VALUES ('household-1', 'user-1', 'owner');
       UPDATE cats SET household_id = 'household-1' WHERE household_id IS NULL;
     `);
 
@@ -95,6 +95,11 @@ describe(`${TARGET_TAG}（ユーザーと家）`, () => {
     expect(() =>
       sqlite.run(
         "INSERT INTO household_members (household_id, user_id) VALUES ('household-1', 'missing')",
+      ),
+    ).toThrow();
+    expect(() =>
+      sqlite.run(
+        "INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ('hash', 'missing', 0)",
       ),
     ).toThrow();
   });

@@ -35,7 +35,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 生年月日（`cats.birth_date`）は年のみ・年月のみの入力も受け付ける。その場合も未入力の月・日を 1月・1日で補完した `YYYY-MM-DD` で保持し、わかっている範囲は `cats.birth_date_precision`（`year`・`month`・`day`）で別に持つ。年齢・誕生日の判定は補完した日付をそのまま使い、表示やフォームの初期値だけが精度を参照する
 - 発生日時・作成日時・更新日時など時刻を持つ列は `integer("...", { mode: "timestamp" })`（unix タイムスタンプ）で保持する
 
-## ユーザーと家（`users`・`households`・`household_members`）
+## ユーザーと家（`users`・`households`・`household_members`・`sessions`）
 
 - アプリの利用者（`users`）と、猫を飼っている「家」（`households`）を表す。家には 1 名以上のユーザー
   （`household_members`、`household_id` + `user_id` の複合主キー）と複数の猫（`cats.household_id`）が所属する
@@ -47,11 +47,14 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 支出記録・ごはん商品・ごはんプリセット・Web Push の購読は、現時点では家に紐付けず全ユーザーで共通
 - `users.role` はアプリ全体の権限（`admin`・`member`）。`/login` のログインボタンで最初に作られる
   ユーザーは `admin`
-- 家のオーナーは常に 1 名で、`households.owner_user_id` で持つ。オーナーも `household_members` に
-  メンバーとして登録する。移譲は `owner_user_id` を同じ家の別のメンバーに書き換える
-  （`src/features/households/ownership.ts`）
+- 家の中での権限は `household_members.role`（`owner`・`member`）で持つ。今はオーナーを 1 名で運用し、
+  移譲は 2 人のロールを 1 つの UPDATE 文で入れ替える（`src/features/households/ownership.ts`）。
+  将来オーナーを複数にできるよう、オーナーの人数はスキーマでは制限しない
+- ログインセッションは `sessions` に保存する。主キーはセッショントークンの SHA-256（`token_hash`）で、
+  トークンそのものは Cookie にだけ持つ。ログアウトで行を削除し、期限切れの行は同じユーザーが次に
+  ログインしたときに削除する（`src/features/auth/sessions.ts`）
 - `cats.household_id` は、家の導入（`0036`）より前から登録されていた猫を残すため nullable。
-  NULL の猫はどのユーザーからも見えないため、`scripts/link-household.mjs`（`pnpm household:link`）で
+  NULL の猫はどのユーザーからも見えないため、`scripts/link-household.mts`（`pnpm household:link`）で
   家に紐付ける（`docs/deploy.md` 参照）
 
 ## ごはん記録（`feeding_records`・`feeding_record_items`・`feeding_presets`・`feeding_preset_items`）

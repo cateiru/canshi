@@ -60,12 +60,5 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     exclude: ["e2e/**"],
-    server: {
-      deps: {
-        // next-auth は拡張子なしの `next/server` を import しており、Node の ESM ローダーでは
-        // 解決できない。Vite 側で変換させて Next.js の package.json に沿って解決する
-        inline: ["next-auth"],
-      },
-    },
   },
 });

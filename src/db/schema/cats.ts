@@ -17,7 +17,7 @@ export const cats = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
     // 猫を飼っている家。家に所属するユーザーだけがこの猫を参照・編集できる。
     // 家の導入前から登録されていた猫は NULL のまま残り、どのユーザーからも見えない。
-    // `scripts/link-household.mjs` で家に紐付ける
+    // `scripts/link-household.mts` で家に紐付ける
     householdId: text("household_id").references(() => households.id),
     name: text("name").notNull(),
     sex: text("sex", { enum: ["male", "female", "unknown"] }).notNull(),

@@ -22,6 +22,7 @@ export * from "./notifications";
 export * from "./poop-records";
 export * from "./push-deliveries";
 export * from "./push-subscriptions";
+export * from "./sessions";
 export * from "./shampoo-records";
 export * from "./symptoms";
 export * from "./users";

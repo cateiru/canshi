@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sql-js";
 import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
@@ -25,21 +25,25 @@ beforeEach(async () => {
     { id: "member", name: "家族" },
     { id: "stranger", name: "別の家の人" },
   ]);
-  await db
-    .insert(households)
-    .values({ id: "home", name: "わが家", ownerUserId: "owner" });
+  await db.insert(households).values({ id: "home", name: "わが家" });
   await db.insert(householdMembers).values([
-    { householdId: "home", userId: "owner" },
+    { householdId: "home", userId: "owner", role: "owner" },
     { householdId: "home", userId: "member" },
   ]);
 });
 
-async function getOwner() {
-  const [household] = await db
-    .select({ ownerUserId: households.ownerUserId })
-    .from(households)
-    .where(eq(households.id, "home"));
-  return household.ownerUserId;
+/** 家のオーナーの ID 一覧（移譲の前後でちょうど 1 名であることを確かめる） */
+async function getOwners() {
+  const rows = await db
+    .select({ userId: householdMembers.userId })
+    .from(householdMembers)
+    .where(
+      and(
+        eq(householdMembers.householdId, "home"),
+        eq(householdMembers.role, "owner"),
+      ),
+    );
+  return rows.map((row) => row.userId);
 }
 
 describe("transferHouseholdOwnership", () => {
@@ -47,13 +51,13 @@ describe("transferHouseholdOwnership", () => {
     expect(await transferHouseholdOwnership("home", "owner", "member")).toEqual(
       { ok: true },
     );
-    expect(await getOwner()).toBe("member");
+    expect(await getOwners()).toEqual(["member"]);
 
     // 移譲後は新しいオーナーがさらに移譲できる
     expect(await transferHouseholdOwnership("home", "member", "owner")).toEqual(
       { ok: true },
     );
-    expect(await getOwner()).toBe("owner");
+    expect(await getOwners()).toEqual(["owner"]);
   });
 
   it("オーナー以外は移譲できない", async () => {
@@ -66,7 +70,7 @@ describe("transferHouseholdOwnership", () => {
       "member",
     );
     expect(byMember.ok).toBe(false);
-    expect(await getOwner()).toBe("owner");
+    expect(await getOwners()).toEqual(["owner"]);
   });
 
   it("家のメンバーでないユーザーには移譲できない", async () => {
@@ -76,6 +80,18 @@ describe("transferHouseholdOwnership", () => {
       "stranger",
     );
     expect(result.ok).toBe(false);
-    expect(await getOwner()).toBe("owner");
+    expect(await getOwners()).toEqual(["owner"]);
+  });
+
+  it("すでにオーナーのメンバーへ移譲しても、移譲元はオーナーのまま", async () => {
+    // 今後オーナーが複数になった場合に、移譲元だけが降格してしまわないことを確かめる
+    await db
+      .update(householdMembers)
+      .set({ role: "owner" })
+      .where(eq(householdMembers.userId, "member"));
+
+    const result = await transferHouseholdOwnership("home", "owner", "member");
+    expect(result.ok).toBe(false);
+    expect((await getOwners()).sort()).toEqual(["member", "owner"]);
   });
 });

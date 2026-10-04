@@ -31,12 +31,12 @@ INSERT INTO users (id, name, role, created_at, updated_at)
 VALUES ('vrt-user', 'VRTユーザー', 'admin',
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
-INSERT INTO households (id, name, owner_user_id, created_at, updated_at)
-VALUES ('vrt-household', 'VRTの家', 'vrt-user',
+INSERT INTO households (id, name, created_at, updated_at)
+VALUES ('vrt-household', 'VRTの家',
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
-INSERT INTO household_members (household_id, user_id, created_at)
-VALUES ('vrt-household', 'vrt-user', strftime('%s', '2024-06-01 00:00:00'));
+INSERT INTO household_members (household_id, user_id, role, created_at)
+VALUES ('vrt-household', 'vrt-user', 'owner', strftime('%s', '2024-06-01 00:00:00'));
 
 INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, created_at, updated_at)
 VALUES ('vrt-cat-empty', 'VRT空猫', 'unknown', NULL, NULL, NULL,

@@ -11,7 +11,7 @@ export const users = sqliteTable("users", {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
-  // アプリ全体の権限。家（households）の中での権限（オーナー）とは別
+  // アプリ全体の権限。家の中での権限（household_members.role）とは別
   role: text("role", { enum: ["admin", "member"] })
     .notNull()
     .default("member"),

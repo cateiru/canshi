@@ -42,9 +42,7 @@ describe("延期した通知の期日到来による再表示（時刻を制御�
       migrationsFolder: "./drizzle",
     });
     await db.insert(users).values({ id: userId, name: "管理者" });
-    await db
-      .insert(households)
-      .values({ id: "household-1", name: "わが家", ownerUserId: userId });
+    await db.insert(households).values({ id: "household-1", name: "わが家" });
     await db
       .insert(householdMembers)
       .values({ householdId: "household-1", userId });
@@ -117,8 +115,8 @@ describe("通知の家による絞り込み", () => {
       { id: "user-b", name: "B" },
     ]);
     await db.insert(households).values([
-      { id: "household-a", name: "A の家", ownerUserId: "user-a" },
-      { id: "household-b", name: "B の家", ownerUserId: "user-b" },
+      { id: "household-a", name: "A の家" },
+      { id: "household-b", name: "B の家" },
     ]);
     await db.insert(householdMembers).values([
       { householdId: "household-a", userId: "user-a" },

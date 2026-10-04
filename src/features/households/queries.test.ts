@@ -31,13 +31,13 @@ beforeAll(async () => {
     { id: "homeless", name: "家のない人" },
   ]);
   await db.insert(households).values([
-    { id: "home", name: "わが家", ownerUserId: "owner" },
-    { id: "other", name: "別の家", ownerUserId: "stranger" },
+    { id: "home", name: "わが家" },
+    { id: "other", name: "別の家" },
   ]);
   await db.insert(householdMembers).values([
-    { householdId: "home", userId: "owner" },
+    { householdId: "home", userId: "owner", role: "owner" },
     { householdId: "home", userId: "member" },
-    { householdId: "other", userId: "stranger" },
+    { householdId: "other", userId: "stranger", role: "owner" },
   ]);
   await db.insert(cats).values([
     {
@@ -88,11 +88,16 @@ describe("getCatForUser", () => {
 });
 
 describe("getPrimaryHouseholdForUser", () => {
-  it("所属する家を返し、所属していなければ null", async () => {
+  it("所属する家と家の中での権限を返し、所属していなければ null", async () => {
     expect(await getPrimaryHouseholdForUser("member")).toEqual({
       id: "home",
       name: "わが家",
-      ownerUserId: "owner",
+      role: "member",
+    });
+    expect(await getPrimaryHouseholdForUser("owner")).toEqual({
+      id: "home",
+      name: "わが家",
+      role: "owner",
     });
     expect(await getPrimaryHouseholdForUser("homeless")).toBeNull();
   });

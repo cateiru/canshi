@@ -1,21 +1,23 @@
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { cache } from "react";
 import { getCatForUser, listCatsForUser } from "@/features/households/queries";
-import { getUserById } from "./users";
+import { getSessionUser } from "./sessions";
+import { SESSION_COOKIE_NAME } from "./sessionToken";
 
 /**
- * Cookie のセッションからログイン中のユーザーを返す。セッションがない場合に加え、
- * セッションのユーザーが DB に存在しない場合（ローカル DB を作り直したあとの古い
- * Cookie など）も null を返す
+ * Cookie のセッショントークンからログイン中のユーザーを返す。Cookie がない場合に加え、
+ * セッションが DB に存在しない・期限切れの場合（ログアウト済み、ローカル DB を
+ * 作り直したあとの古い Cookie など）も null を返す。
+ * レイアウトとページの両方から呼ばれるため、1 回のリクエストの中では結果を使い回す
  */
-export async function getCurrentUser() {
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) {
+export const getCurrentUser = cache(async () => {
+  const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  if (!token) {
     return null;
   }
-  return getUserById(userId);
-}
+  return getSessionUser(token);
+});
 
 /**
  * ログイン中のユーザーを返す。ログインしていなければ `/login` へリダイレクトする。

@@ -131,8 +131,8 @@ beforeEach(async () => {
     { id: "user-2", name: "別の家の人" },
   ]);
   await db.insert(households).values([
-    { id: "household-1", name: "わが家", ownerUserId: "user-1" },
-    { id: "household-2", name: "別の家", ownerUserId: "user-2" },
+    { id: "household-1", name: "わが家" },
+    { id: "household-2", name: "別の家" },
   ]);
   await db.insert(householdMembers).values([
     { householdId: "household-1", userId: "user-1" },

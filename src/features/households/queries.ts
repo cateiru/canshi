@@ -22,8 +22,8 @@ export function accessibleCatIdsQuery(
 }
 
 /**
- * ユーザーが所属する家を、所属した順に返す。今は 1 ユーザー 1 家の運用だが、
- * 複数の家に所属することもスキーマ上は許容している
+ * ユーザーが所属する家と、その家での権限（`role`）を所属した順に返す。今は
+ * 1 ユーザー 1 家の運用だが、複数の家に所属することもスキーマ上は許容している
  */
 export async function listHouseholdsForUser(userId: string, d1?: D1Database) {
   const db = getDb(d1);
@@ -31,7 +31,7 @@ export async function listHouseholdsForUser(userId: string, d1?: D1Database) {
     .select({
       id: households.id,
       name: households.name,
-      ownerUserId: households.ownerUserId,
+      role: householdMembers.role,
     })
     .from(householdMembers)
     .innerJoin(households, eq(householdMembers.householdId, households.id))

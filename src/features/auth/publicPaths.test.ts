@@ -5,8 +5,6 @@ describe("isPublicPath", () => {
   it.each([
     "/login",
     "/login?callbackUrl=%2Fcats",
-    "/api/auth/session",
-    "/api/auth/callback/credentials",
     "/manifest.webmanifest",
     "/sw.js",
     "/offline",
@@ -23,6 +21,7 @@ describe("isPublicPath", () => {
     "/cats",
     "/cats/abc/poop-records",
     "/settings",
+    "/api/auth/session",
     "/api/media",
     "/api/media/uploads",
     "/media/asset-1",
