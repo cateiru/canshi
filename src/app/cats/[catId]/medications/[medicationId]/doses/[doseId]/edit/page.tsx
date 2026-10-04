@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { updateMedicationDoseAction } from "@/features/medications/doseActions";
 import { getMedicationDoseById } from "@/features/medications/doseQueries";
 import { MedicationDoseForm } from "@/features/medications/MedicationDoseForm";
@@ -20,7 +20,7 @@ export default async function EditMedicationDosePage({
 }: EditMedicationDosePageProps) {
   const { catId, medicationId, doseId } = await params;
   const [cat, medication, dose] = await Promise.all([
-    getCatById(catId),
+    getAccessibleCat(catId),
     getMedicationById(medicationId),
     getMedicationDoseById(doseId),
   ]);

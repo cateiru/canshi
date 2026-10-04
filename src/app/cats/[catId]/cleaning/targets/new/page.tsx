@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { TbPlus, TbStack2 } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { CleaningTargetForm } from "@/features/cleaning/CleaningTargetForm";
 import { CleaningTargetPresetButton } from "@/features/cleaning/CleaningTargetPresetButton";
 import { CLEANING_TARGET_PRESETS } from "@/features/cleaning/presets";
@@ -24,7 +24,7 @@ export default async function NewCleaningTargetPage({
   params,
 }: NewCleaningTargetPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

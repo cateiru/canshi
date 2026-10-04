@@ -8,7 +8,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { CleaningRecordChart } from "@/features/cleaning/CleaningRecordChart";
 import { deleteCleaningRecordAction } from "@/features/cleaning/recordActions";
 import { toCleaningRecordCalendarData } from "@/features/cleaning/recordChart";
@@ -30,7 +30,7 @@ export default async function CleaningRecordsPage({
 }: CleaningRecordsPageProps) {
   const { catId, targetId } = await params;
   const [cat, cleaningTarget] = await Promise.all([
-    getCatById(catId),
+    getAccessibleCat(catId),
     getCleaningTargetById(targetId),
   ]);
 

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { createWeightRecordAction } from "@/features/weight-records/actions";
 import { WeightRecordForm } from "@/features/weight-records/WeightRecordForm";
@@ -17,7 +17,7 @@ export default async function NewWeightRecordPage({
   params,
 }: NewWeightRecordPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

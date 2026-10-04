@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { CleaningRecordForm } from "@/features/cleaning/CleaningRecordForm";
 import { updateCleaningRecordAction } from "@/features/cleaning/recordActions";
 import { getCleaningRecordById } from "@/features/cleaning/recordQueries";
@@ -20,7 +20,7 @@ export default async function EditCleaningRecordPage({
 }: EditCleaningRecordPageProps) {
   const { catId, targetId, recordId } = await params;
   const [cat, cleaningTarget, cleaningRecord] = await Promise.all([
-    getCatById(catId),
+    getAccessibleCat(catId),
     getCleaningTargetById(targetId),
     getCleaningRecordById(recordId),
   ]);

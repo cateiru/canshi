@@ -6,6 +6,7 @@ import {
   Collapsible,
   Heading,
 } from "@/components/ui";
+import { getAccessibleCat } from "@/features/auth/session";
 import { deleteCatAction } from "@/features/cats/actions";
 import {
   calculateAge,
@@ -19,7 +20,6 @@ import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
 import { CatAvatar } from "@/features/cats/CatAvatar";
 import { DeleteCatButton } from "@/features/cats/DeleteCatButton";
 import { SEX_LABEL } from "@/features/cats/labels";
-import { getCatById } from "@/features/cats/queries";
 import { RecordNavGrid } from "@/features/cats/RecordNavGrid";
 import styles from "./page.module.css";
 
@@ -31,7 +31,7 @@ type CatDetailPageProps = {
 
 export default async function CatDetailPage({ params }: CatDetailPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

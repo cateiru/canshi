@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { listCurrentUserCats } from "@/features/auth/session";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat, listCurrentUserCats } from "@/features/auth/session";
 import { updateExpenseAction } from "@/features/expenses/actions";
 import { ExpenseForm } from "@/features/expenses/ExpenseForm";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
@@ -26,7 +25,7 @@ export default async function EditExpensePage({
 }: EditExpensePageProps) {
   const { catId, expenseId } = await params;
   const [cat, expense, allCats] = await Promise.all([
-    getCatById(catId),
+    getAccessibleCat(catId),
     getExpenseById(expenseId),
     listCurrentUserCats(),
   ]);

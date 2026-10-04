@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { createShampooRecordAction } from "@/features/shampoo-records/actions";
 import { ShampooRecordForm } from "@/features/shampoo-records/ShampooRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -17,7 +17,7 @@ export default async function NewShampooRecordPage({
   params,
 }: NewShampooRecordPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

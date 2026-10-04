@@ -8,7 +8,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { WaterIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -30,7 +30,7 @@ export default async function WaterRecordsPage({
   params,
 }: WaterRecordsPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

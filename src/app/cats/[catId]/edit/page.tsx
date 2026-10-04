@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
+import { getAccessibleCat } from "@/features/auth/session";
 import { updateCatAction } from "@/features/cats/actions";
 import { CatForm } from "@/features/cats/CatForm";
 import { CatIcon } from "@/features/cats/CatIcon";
-import { getCatById } from "@/features/cats/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
@@ -15,7 +15,7 @@ type EditCatPageProps = {
 
 export default async function EditCatPage({ params }: EditCatPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

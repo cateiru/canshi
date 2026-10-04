@@ -8,7 +8,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/queries";
 import { MediaGallery } from "@/features/media/MediaGallery";
@@ -32,7 +32,7 @@ export default async function MedicationsPage({
   params,
 }: MedicationsPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

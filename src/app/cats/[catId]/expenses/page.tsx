@@ -8,8 +8,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { listCurrentUserCats } from "@/features/auth/session";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat, listCurrentUserCats } from "@/features/auth/session";
 import {
   sumExpenseAmounts,
   sumExpenseAmountsByCategory,
@@ -52,7 +51,7 @@ export default async function ExpensesPage({
 }: ExpensesPageProps) {
   const { catId } = await params;
   const { ym: ymParam, scope: scopeParam } = await searchParams;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

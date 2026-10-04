@@ -9,7 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { deleteMedicationDoseAction } from "@/features/medications/doseActions";
 import { listMedicationDoses } from "@/features/medications/doseQueries";
 import { getMedicationById } from "@/features/medications/queries";
@@ -29,7 +29,7 @@ export default async function MedicationDosesPage({
 }: MedicationDosesPageProps) {
   const { catId, medicationId } = await params;
   const [cat, medication] = await Promise.all([
-    getCatById(catId),
+    getAccessibleCat(catId),
     getMedicationById(medicationId),
   ]);
 

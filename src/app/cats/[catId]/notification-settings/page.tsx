@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { NotificationSettingsForm } from "@/features/notifications/NotificationSettingsForm";
 import { updateCatNotificationSettingsAction } from "@/features/notifications/settingsActions";
 import { getCatNotificationSettingsPageData } from "@/features/notifications/settingsQueries";
@@ -18,7 +18,7 @@ export default async function CatNotificationSettingsPage({
   params,
 }: NotificationSettingsPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

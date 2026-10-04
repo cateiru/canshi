@@ -8,7 +8,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -33,7 +33,7 @@ export default async function WeightRecordsPage({
   params,
 }: WeightRecordsPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

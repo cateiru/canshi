@@ -43,6 +43,16 @@ export async function requireCatAccess(catId: string) {
   return { user, cat };
 }
 
+/**
+ * ログイン中のユーザーが参照できる猫であれば返す。存在しない・別の家の猫なら null。
+ * `/cats/[catId]` 配下のページはレイアウトでも確認しているが、レイアウトは画面遷移の
+ * たびに再実行されるとは限らないため、ページ自身もこれで猫を取得する
+ */
+export async function getAccessibleCat(catId: string) {
+  const user = await requireUser();
+  return getCatForUser(user.id, catId);
+}
+
 /** ログイン中のユーザーが参照できる猫（所属する家の猫）の一覧。新しく登録した順 */
 export async function listCurrentUserCats() {
   const user = await requireUser();

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { listMediaAssetsByRecord } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
@@ -23,7 +23,7 @@ export default async function EditVomitRecordPage({
 }: EditVomitRecordPageProps) {
   const { catId, vomitRecordId } = await params;
   const [cat, vomitRecord] = await Promise.all([
-    getCatById(catId),
+    getAccessibleCat(catId),
     getVomitRecordById(vomitRecordId),
   ]);
 

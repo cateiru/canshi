@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
 import { updateFeedingRecordAction } from "@/features/feeding-records/actions";
 import { FeedingRecordForm } from "@/features/feeding-records/FeedingRecordForm";
@@ -27,7 +27,7 @@ export default async function EditFeedingRecordPage({
 }: EditFeedingRecordPageProps) {
   const { catId, feedingRecordId } = await params;
   const [cat, feedingRecord] = await Promise.all([
-    getCatById(catId),
+    getAccessibleCat(catId),
     getFeedingRecordById(feedingRecordId),
   ]);
 

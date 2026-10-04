@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { updateWeightRecordAction } from "@/features/weight-records/actions";
 import { getWeightRecordById } from "@/features/weight-records/queries";
@@ -19,7 +19,7 @@ export default async function EditWeightRecordPage({
 }: EditWeightRecordPageProps) {
   const { catId, weightRecordId } = await params;
   const [cat, weightRecord] = await Promise.all([
-    getCatById(catId),
+    getAccessibleCat(catId),
     getWeightRecordById(weightRecordId),
   ]);
 

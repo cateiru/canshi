@@ -9,7 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { MediaGallery } from "@/features/media/MediaGallery";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
@@ -34,7 +34,7 @@ export default async function PoopRecordsPage({
   params,
 }: PoopRecordsPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

@@ -13,18 +13,22 @@ setup("ログインして家を用意する", async ({ page }) => {
   await page.getByRole("button", { name: "ログイン" }).click();
   await expect(page).not.toHaveURL(/\/login/);
 
-  execFileSync(
-    "node",
-    [
-      "scripts/link-household.mjs",
-      "--local",
-      "--persist-to",
-      ".wrangler/state",
-      "--name",
-      "E2Eの家",
-    ],
-    { stdio: "inherit" },
-  );
+  // dev サーバーが同じローカル D1 を使っているため、書き込みが重なると SQLITE_BUSY で
+  // 失敗することがある。スクリプトは何度実行しても同じ結果になるため、少し待ってやり直す
+  await expect(async () => {
+    execFileSync(
+      "node",
+      [
+        "scripts/link-household.mjs",
+        "--local",
+        "--persist-to",
+        ".wrangler/state",
+        "--name",
+        "E2Eの家",
+      ],
+      { stdio: "inherit" },
+    );
+  }).toPass({ intervals: [1_000, 2_000, 5_000], timeout: 60_000 });
 
   await page.context().storageState({ path: AUTH_STORAGE_STATE });
 });
