@@ -62,6 +62,9 @@ const {
   updateHospitalVisitAction,
   deleteHospitalVisitAction,
 } = await import("@/features/hospital-visits/actions");
+const { listHospitalVisitsByIds } = await import(
+  "@/features/hospital-visits/queries"
+);
 const { deleteMediaAssetsByRecord } = await import("@/features/media/storage");
 
 function form(values: Record<string, string | string[]>) {
@@ -489,6 +492,37 @@ describe("支出記録から通院記録への紐付け", () => {
     expect(await listLinkableHospitalVisitsAction("2026-09-14")).toEqual([]);
   });
 
+  it("別の家の猫の通院記録は、同じ日でも共有の支出記録を指定しても候補に含めない", async () => {
+    await addCat("kuro", "household-2");
+    const kuroVisit = await addVisit("kuro");
+    const tamaVisit = await addVisit("tama");
+    const { savedRecordId: id } = await createExpenseAction(
+      {},
+      expenseForm({ category: "hospital", hospitalVisitIds: [tamaVisit] }),
+    );
+    // 支出記録は家を問わず共通のため、別の家の通院記録が同じ支出に紐付いている状態を作る
+    await db
+      .insert(expenseRecordHospitalVisits)
+      .values({ expenseRecordId: id as string, hospitalVisitId: kuroVisit });
+
+    expect(
+      (await listLinkableHospitalVisitsAction("2026-09-15")).map(
+        (visit) => visit.id,
+      ),
+    ).toEqual([tamaVisit]);
+    expect(
+      (await listLinkableHospitalVisitsAction("2026-09-14", id as string)).map(
+        (visit) => visit.id,
+      ),
+    ).toEqual([tamaVisit]);
+    // 支出一覧で表示する、支出に紐付いた通院記録も家で絞り込む
+    const visitsById = await listHospitalVisitsByIds("user-1", [
+      tamaVisit,
+      kuroVisit,
+    ]);
+    expect([...visitsById.keys()]).toEqual([tamaVisit]);
+  });
+
   it("支出日と違う日の通院記録や、ほかの支出に紐付いた通院記録は紐付けない", async () => {
     const otherDayVisit = await addVisit("tama", { visitedDate: "2026-09-14" });
     const linkedVisit = await addVisit("mike", { expenseAmountYen: "3000" });
@@ -649,6 +683,18 @@ describe("通院記録の作成時に同じ日の支出記録へ紐付ける", (
       { id: hospitalId, amountYen: 11000, memo: "2匹分", catNames: ["mike"] },
     ]);
     expect(await listSameDayHospitalExpensesAction("invalid")).toEqual([]);
+  });
+
+  it("別の家の猫の名前は候補に含めず「不明な猫」と表示する", async () => {
+    await addCat("kuro", "household-2");
+    const hospitalId = await createHospitalExpense({ catIds: "tama" });
+    // 支出記録は家を問わず共通のため、別の家の猫が同じ支出に関連付いている状態を作る
+    await db
+      .insert(expenseRecordCats)
+      .values({ expenseRecordId: hospitalId, catId: "kuro" });
+
+    const [candidate] = await listSameDayHospitalExpensesAction("2026-09-15");
+    expect(candidate.catNames.sort()).toEqual(["tama", "不明な猫"].sort());
   });
 
   it("選んだ支出記録に紐付け、通院した猫も関連付ける", async () => {

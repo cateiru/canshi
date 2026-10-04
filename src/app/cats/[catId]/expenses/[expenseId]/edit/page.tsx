@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat, listCurrentUserCats } from "@/features/auth/session";
+import {
+  getAccessibleCat,
+  listCurrentUserCats,
+  requireUser,
+} from "@/features/auth/session";
 import { updateExpenseAction } from "@/features/expenses/actions";
 import { ExpenseForm } from "@/features/expenses/ExpenseForm";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
@@ -24,7 +28,8 @@ export default async function EditExpensePage({
   params,
 }: EditExpensePageProps) {
   const { catId, expenseId } = await params;
-  const [cat, expense, allCats] = await Promise.all([
+  const [user, cat, expense, allCats] = await Promise.all([
+    requireUser(),
     getAccessibleCat(catId),
     getExpenseById(expenseId),
     listCurrentUserCats(),
@@ -39,7 +44,7 @@ export default async function EditExpensePage({
     listMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, expense.id),
     // 「病院」の支出は、紐付けの候補になる同じ日の通院記録を最初から表示する
     expense.category === "hospital"
-      ? listHospitalVisitsOnDate(spentDate, expense.id)
+      ? listHospitalVisitsOnDate(user.id, spentDate, expense.id)
       : undefined,
   ]);
 

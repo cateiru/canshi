@@ -8,7 +8,11 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat, listCurrentUserCats } from "@/features/auth/session";
+import {
+  getAccessibleCat,
+  listCurrentUserCats,
+  requireUser,
+} from "@/features/auth/session";
 import {
   sumExpenseAmounts,
   sumExpenseAmountsByCategory,
@@ -51,7 +55,10 @@ export default async function ExpensesPage({
 }: ExpensesPageProps) {
   const { catId } = await params;
   const { ym: ymParam, scope: scopeParam } = await searchParams;
-  const cat = await getAccessibleCat(catId);
+  const [user, cat] = await Promise.all([
+    requireUser(),
+    getAccessibleCat(catId),
+  ]);
 
   if (!cat) {
     notFound();
@@ -82,6 +89,7 @@ export default async function ExpensesPage({
       expenses.map((expense) => expense.id),
     ),
     listHospitalVisitsByIds(
+      user.id,
       expenses.flatMap((expense) => expense.hospitalVisitIds),
     ),
   ]);

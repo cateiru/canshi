@@ -295,12 +295,12 @@ export async function listLinkableHospitalVisitsAction(
   date: string,
   expenseRecordId?: string,
 ): Promise<LinkableHospitalVisit[]> {
-  await requireUser();
+  const user = await requireUser();
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];
   }
-  return listHospitalVisitsOnDate(parsed.data, expenseRecordId);
+  return listHospitalVisitsOnDate(user.id, parsed.data, expenseRecordId);
 }
 
 /**
@@ -310,10 +310,10 @@ export async function listLinkableHospitalVisitsAction(
 export async function listSameDayHospitalExpensesAction(
   date: string,
 ): Promise<HospitalExpenseCandidate[]> {
-  await requireUser();
+  const user = await requireUser();
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];
   }
-  return listHospitalExpensesOnDate(parsed.data);
+  return listHospitalExpensesOnDate(user.id, parsed.data);
 }
