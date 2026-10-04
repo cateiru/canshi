@@ -8,11 +8,14 @@ import {
   type ExpenseRecord,
   expenseRecordCats,
   expenseRecords,
+  type FeedingMode,
   feedingRecordItems,
   feedingRecords,
   foodProducts,
+  type GivenAmountLevel,
   type HospitalVisit,
   hospitalVisits,
+  type LeftoverLevel,
   type MedicationDose,
   medicationDoses,
   medications,
@@ -106,16 +109,21 @@ export type TimelineFeedingItem = {
   id: string;
   foodProductId: string;
   foodProductName: string;
-  givenAmountG: number;
-  leftoverAmountG: number;
-  estimatedIntakeG: number;
-  estimatedKcal: number;
+  /** グラム単位の量・推定値。あいまいモードの記録では null */
+  givenAmountG: number | null;
+  leftoverAmountG: number | null;
+  estimatedIntakeG: number | null;
+  estimatedKcal: number | null;
+  /** 段階での量。厳格モードの記録では null */
+  givenAmountLevel: GivenAmountLevel | null;
+  leftoverLevel: LeftoverLevel | null;
 };
 
 export type TimelineFeedingRecord = {
   id: string;
   catId: string;
   occurredAt: Date;
+  mode: FeedingMode;
   items: TimelineFeedingItem[];
 };
 
@@ -150,6 +158,7 @@ async function fetchFeedingEntries(
       id: feedingRecords.id,
       catId: feedingRecords.catId,
       occurredAt: feedingRecords.occurredAt,
+      mode: feedingRecords.mode,
     })
     .from(feedingRecords)
     .where(
@@ -175,6 +184,8 @@ async function fetchFeedingEntries(
       leftoverAmountG: feedingRecordItems.leftoverAmountG,
       estimatedIntakeG: feedingRecordItems.estimatedIntakeG,
       estimatedKcal: feedingRecordItems.estimatedKcal,
+      givenAmountLevel: feedingRecordItems.givenAmountLevel,
+      leftoverLevel: feedingRecordItems.leftoverLevel,
     })
     .from(feedingRecordItems)
     .innerJoin(
@@ -200,6 +211,8 @@ async function fetchFeedingEntries(
       leftoverAmountG: row.leftoverAmountG,
       estimatedIntakeG: row.estimatedIntakeG,
       estimatedKcal: row.estimatedKcal,
+      givenAmountLevel: row.givenAmountLevel,
+      leftoverLevel: row.leftoverLevel,
     });
     itemsByRecordId.set(row.feedingRecordId, list);
   }

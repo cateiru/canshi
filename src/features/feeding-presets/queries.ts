@@ -1,6 +1,12 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { feedingPresetItems, feedingPresets, foodProducts } from "@/db/schema";
+import {
+  type FeedingMode,
+  feedingPresetItems,
+  feedingPresets,
+  foodProducts,
+  type GivenAmountLevel,
+} from "@/db/schema";
 import { listFoodProductImageUrls } from "@/features/food-products/queries";
 
 export type FeedingPresetItemWithProduct = {
@@ -9,17 +15,21 @@ export type FeedingPresetItemWithProduct = {
   foodProductName: string;
   /** 商品画像（サムネイル）の URL。未登録なら null */
   foodProductImageUrl: string | null;
-  givenAmountG: number;
+  /** 与える量（グラム）。あいまいモードのプリセットでは null */
+  givenAmountG: number | null;
+  /** 与える量（段階）。厳格モードのプリセットでは null */
+  givenAmountLevel: GivenAmountLevel | null;
 };
 
 export type FeedingPresetWithItems = {
   id: string;
   name: string;
+  mode: FeedingMode;
   items: FeedingPresetItemWithProduct[];
 };
 
 async function attachItems(
-  presets: { id: string; name: string }[],
+  presets: { id: string; name: string; mode: FeedingMode }[],
 ): Promise<FeedingPresetWithItems[]> {
   if (presets.length === 0) {
     return [];
@@ -33,6 +43,7 @@ async function attachItems(
       foodProductId: feedingPresetItems.foodProductId,
       foodProductName: foodProducts.name,
       givenAmountG: feedingPresetItems.givenAmountG,
+      givenAmountLevel: feedingPresetItems.givenAmountLevel,
       sortOrder: feedingPresetItems.sortOrder,
     })
     .from(feedingPresetItems)
@@ -61,6 +72,7 @@ async function attachItems(
       foodProductName: row.foodProductName,
       foodProductImageUrl: imageUrls[row.foodProductId] ?? null,
       givenAmountG: row.givenAmountG,
+      givenAmountLevel: row.givenAmountLevel,
     });
     itemsByPresetId.set(row.presetId, list);
   }
@@ -74,7 +86,11 @@ async function attachItems(
 export async function listFeedingPresets(): Promise<FeedingPresetWithItems[]> {
   const db = getDb();
   const presets = await db
-    .select({ id: feedingPresets.id, name: feedingPresets.name })
+    .select({
+      id: feedingPresets.id,
+      name: feedingPresets.name,
+      mode: feedingPresets.mode,
+    })
     .from(feedingPresets)
     .orderBy(desc(feedingPresets.createdAt));
 
@@ -86,7 +102,11 @@ export async function getFeedingPresetById(
 ): Promise<FeedingPresetWithItems | null> {
   const db = getDb();
   const [preset] = await db
-    .select({ id: feedingPresets.id, name: feedingPresets.name })
+    .select({
+      id: feedingPresets.id,
+      name: feedingPresets.name,
+      mode: feedingPresets.mode,
+    })
     .from(feedingPresets)
     .where(eq(feedingPresets.id, id))
     .limit(1);

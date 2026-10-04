@@ -2,6 +2,11 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import type { Cat } from "@/db/schema";
 import { getCatById, listCats } from "@/features/cats/queries";
 import {
+  FEEDING_MODE_LABEL,
+  GIVEN_AMOUNT_LEVEL_LABEL,
+  LEFTOVER_LEVEL_LABEL,
+} from "@/features/feeding-records/labels";
+import {
   type ListTimelineForMonthOptions,
   listTimelineForMonth,
   type TimelineEntry,
@@ -34,10 +39,26 @@ function toCatSummary(cat: Cat) {
 }
 
 /**
- * 記録本体を MCP ツール向けに整える。体重記録の BCS は数値だけでは意味が
- * 伝わりにくいため、「理想体重」などのラベルを `bcsLabel` として添える
+ * 記録本体を MCP ツール向けに整える。体重記録の BCS やごはん記録の記録方法・
+ * 段階での量は値だけでは意味が伝わりにくいため、表示用のラベルを添える
  */
 function toRecordSummary(entry: TimelineEntry) {
+  if (entry.type === "feeding") {
+    const { record } = entry;
+    return {
+      ...record,
+      modeLabel: FEEDING_MODE_LABEL[record.mode],
+      items: record.items.map((item) => ({
+        ...item,
+        givenAmountLevelLabel: item.givenAmountLevel
+          ? GIVEN_AMOUNT_LEVEL_LABEL[item.givenAmountLevel]
+          : null,
+        leftoverLevelLabel: item.leftoverLevel
+          ? LEFTOVER_LEVEL_LABEL[item.leftoverLevel]
+          : null,
+      })),
+    };
+  }
   if (entry.type === "weight") {
     const { bcs } = entry.record;
     return {

@@ -2,11 +2,18 @@
 
 import { eq } from "drizzle-orm";
 import type { z } from "zod";
+import { chunkRowsForInsert } from "@/db/batch";
 import { getDb } from "@/db/client";
-import { feedingPresetItems, feedingPresets } from "@/db/schema";
+import {
+  feedingPresetItems,
+  feedingPresets,
+  type NewFeedingPresetItem,
+} from "@/db/schema";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   type FeedingPresetFormFieldErrors,
+  type FeedingPresetFormInput,
+  type FeedingPresetItemFieldName,
   feedingPresetFormSchema,
 } from "./schema";
 
@@ -27,13 +34,17 @@ function parseFormData(formData: FormData) {
   }
   const sortedIndices = Array.from(indices).sort((a, b) => a - b);
 
+  // フォームは選択中のモードの入力欄だけを送るため、両モードの項目をまとめて
+  // 読み取り、どちらを使うかはスキーマの mode による判別に任せる
   const items = sortedIndices.map((index) => ({
     foodProductId: formData.get(`items.${index}.foodProductId`),
     givenAmountG: formData.get(`items.${index}.givenAmountG`),
+    givenAmountLevel: formData.get(`items.${index}.givenAmountLevel`),
   }));
 
   return feedingPresetFormSchema.safeParse({
     name: formData.get("name"),
+    mode: formData.get("mode"),
     items,
   });
 }
@@ -47,16 +58,16 @@ function mapZodErrors(error: z.ZodError): FeedingPresetFormFieldErrors {
   for (const issue of error.issues) {
     const [first, second, third] = issue.path;
     if (first === "items" && typeof second === "number" && third) {
-      const fieldName = String(third) as "foodProductId" | "givenAmountG";
+      const fieldName = String(third) as FeedingPresetItemFieldName;
       itemErrors[second] ??= {};
       const rowErrors = itemErrors[second];
       rowErrors[fieldName] ??= [];
       rowErrors[fieldName].push(issue.message);
       continue;
     }
-    if (first === "name") {
-      fieldErrors.name ??= [];
-      fieldErrors.name.push(issue.message);
+    if (first === "name" || first === "mode") {
+      fieldErrors[first] ??= [];
+      fieldErrors[first].push(issue.message);
       continue;
     }
     if (first === "items") {
@@ -70,6 +81,41 @@ function mapZodErrors(error: z.ZodError): FeedingPresetFormFieldErrors {
   }
 
   return fieldErrors;
+}
+
+// 明細が多いと 1 回の INSERT が D1 のバインド上限を超えるため、行を分割して
+// 複数の INSERT にする。呼び出し側で同じ batch に並べて原子性を保つ
+function insertPresetItems(
+  db: ReturnType<typeof getDb>,
+  presetId: string,
+  input: FeedingPresetFormInput,
+) {
+  return chunkRowsForInsert(
+    toPresetItemValues(presetId, input),
+    feedingPresetItems,
+  ).map((chunk) => db.insert(feedingPresetItems).values(chunk));
+}
+
+function toPresetItemValues(
+  presetId: string,
+  input: FeedingPresetFormInput,
+): NewFeedingPresetItem[] {
+  if (input.mode === "approximate") {
+    return input.items.map((item, index) => ({
+      presetId,
+      foodProductId: item.foodProductId,
+      givenAmountG: null,
+      givenAmountLevel: item.givenAmountLevel,
+      sortOrder: index,
+    }));
+  }
+  return input.items.map((item, index) => ({
+    presetId,
+    foodProductId: item.foodProductId,
+    givenAmountG: item.givenAmountG,
+    givenAmountLevel: null,
+    sortOrder: index,
+  }));
 }
 
 export async function createFeedingPresetAction(
@@ -86,15 +132,12 @@ export async function createFeedingPresetAction(
   const presetId = crypto.randomUUID();
 
   await db.batch([
-    db.insert(feedingPresets).values({ id: presetId, name: parsed.data.name }),
-    db.insert(feedingPresetItems).values(
-      parsed.data.items.map((item, index) => ({
-        presetId,
-        foodProductId: item.foodProductId,
-        givenAmountG: item.givenAmountG,
-        sortOrder: index,
-      })),
-    ),
+    db.insert(feedingPresets).values({
+      id: presetId,
+      name: parsed.data.name,
+      mode: parsed.data.mode,
+    }),
+    ...insertPresetItems(db, presetId, parsed.data),
   ]);
 
   return { redirectTo: "/feeding-presets" };
@@ -125,17 +168,14 @@ export async function updateFeedingPresetAction(
   await db.batch([
     db
       .update(feedingPresets)
-      .set({ name: parsed.data.name, updatedAt: new Date() })
+      .set({
+        name: parsed.data.name,
+        mode: parsed.data.mode,
+        updatedAt: new Date(),
+      })
       .where(eq(feedingPresets.id, id)),
     db.delete(feedingPresetItems).where(eq(feedingPresetItems.presetId, id)),
-    db.insert(feedingPresetItems).values(
-      parsed.data.items.map((item, index) => ({
-        presetId: id,
-        foodProductId: item.foodProductId,
-        givenAmountG: item.givenAmountG,
-        sortOrder: index,
-      })),
-    ),
+    ...insertPresetItems(db, id, parsed.data),
   ]);
 
   return { redirectTo: "/feeding-presets" };

@@ -14,23 +14,37 @@ import {
   FormField,
   FormRow,
   IconButton,
+  Radio,
+  RadioGroup,
   Select,
 } from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
+import {
+  type FeedingMode,
+  GIVEN_AMOUNT_LEVELS,
+  type GivenAmountLevel,
+  LEFTOVER_LEVELS,
+  type LeftoverLevel,
+} from "@/db/schema/feeding-modes";
 import type { FeedingPresetWithItems } from "@/features/feeding-presets/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { formatPackageAmount } from "@/features/food-products/labels";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { FeedingRecordFormState } from "./actions";
+import { FeedingModeField } from "./FeedingModeField";
 import styles from "./FeedingRecordForm.module.css";
+import { GIVEN_AMOUNT_LEVEL_LABEL, LEFTOVER_LEVEL_LABEL } from "./labels";
 import type { FeedingRecordWithItems } from "./queries";
 
+// モードを切り替えても入力済みの値を失わないよう、両モードの値を行ごとに持つ
 type ItemRow = {
   key: string;
   foodProductId: string;
   givenAmountG: string;
   leftoverAmountG: string;
+  givenAmountLevel: GivenAmountLevel;
+  leftoverLevel: LeftoverLevel;
 };
 
 type FeedingRecordFormProps = {
@@ -55,6 +69,8 @@ function createEmptyRow(foodProductId: string): ItemRow {
     foodProductId,
     givenAmountG: "",
     leftoverAmountG: "0",
+    givenAmountLevel: "normal",
+    leftoverLevel: "none",
   };
 }
 
@@ -75,13 +91,18 @@ export function FeedingRecordForm({
   const defaultFoodProductId =
     recentlyUsedFoodProductIds[0] ?? foodProducts[0]?.id ?? "";
 
+  const [mode, setMode] = useState<FeedingMode>(
+    feedingRecord?.mode ?? "strict",
+  );
   const [items, setItems] = useState<ItemRow[]>(() =>
     feedingRecord && feedingRecord.items.length > 0
       ? feedingRecord.items.map((item) => ({
           key: item.id,
           foodProductId: item.foodProductId,
-          givenAmountG: item.givenAmountG.toString(),
-          leftoverAmountG: item.leftoverAmountG.toString(),
+          givenAmountG: item.givenAmountG?.toString() ?? "",
+          leftoverAmountG: item.leftoverAmountG?.toString() ?? "0",
+          givenAmountLevel: item.givenAmountLevel ?? "normal",
+          leftoverLevel: item.leftoverLevel ?? "none",
         }))
       : [createEmptyRow(defaultFoodProductId)],
   );
@@ -116,15 +137,18 @@ export function FeedingRecordForm({
     setItems((current) => current.filter((_, i) => i !== index));
   };
 
-  // プリセットを選ぶと、現在の商品行をプリセットの内容で置き換えて
-  // フォームを自動でフィルインする（残した量は毎回の実測値のため常に0で初期化）
+  // プリセットを選ぶと、記録方法と現在の商品行をプリセットの内容で置き換えて
+  // フォームを自動でフィルインする（残した量は毎回の実測値のため常に0・完食で初期化）
   const applyPreset = (preset: FeedingPresetWithItems) => {
+    setMode(preset.mode);
     setItems(
       preset.items.map((item) => ({
         key: crypto.randomUUID(),
         foodProductId: item.foodProductId,
-        givenAmountG: item.givenAmountG.toString(),
+        givenAmountG: item.givenAmountG?.toString() ?? "",
         leftoverAmountG: "0",
+        givenAmountLevel: item.givenAmountLevel ?? "normal",
+        leftoverLevel: "none",
       })),
     );
   };
@@ -158,6 +182,12 @@ export function FeedingRecordForm({
           />
         </FormRow>
       </section>
+
+      <FeedingModeField
+        value={mode}
+        onChange={setMode}
+        errorMessage={state.fieldErrors?.mode?.[0]}
+      />
 
       {presets.length > 0 ? (
         <div className={styles.quickSelect}>
@@ -264,32 +294,85 @@ export function FeedingRecordForm({
                 </p>
               ) : null}
 
-              <FormRow>
-                <FormField
-                  name={`items.${index}.givenAmountG`}
-                  label="与えた量（g）"
-                  type="number"
-                  inputMode="decimal"
-                  value={item.givenAmountG}
-                  onChange={(value) =>
-                    updateItem(index, { givenAmountG: value })
-                  }
-                  errorMessage={itemErrors?.givenAmountG?.[0]}
-                  isRequired
-                />
-                <FormField
-                  name={`items.${index}.leftoverAmountG`}
-                  label="残した量（g）"
-                  type="number"
-                  inputMode="decimal"
-                  value={item.leftoverAmountG}
-                  onChange={(value) =>
-                    updateItem(index, { leftoverAmountG: value })
-                  }
-                  errorMessage={itemErrors?.leftoverAmountG?.[0]}
-                  isRequired
-                />
-              </FormRow>
+              {mode === "strict" ? (
+                <FormRow>
+                  <FormField
+                    name={`items.${index}.givenAmountG`}
+                    label="与えた量（g）"
+                    type="number"
+                    inputMode="decimal"
+                    value={item.givenAmountG}
+                    onChange={(value) =>
+                      updateItem(index, { givenAmountG: value })
+                    }
+                    errorMessage={itemErrors?.givenAmountG?.[0]}
+                    isRequired
+                  />
+                  <FormField
+                    name={`items.${index}.leftoverAmountG`}
+                    label="残した量（g）"
+                    type="number"
+                    inputMode="decimal"
+                    value={item.leftoverAmountG}
+                    onChange={(value) =>
+                      updateItem(index, { leftoverAmountG: value })
+                    }
+                    errorMessage={itemErrors?.leftoverAmountG?.[0]}
+                    isRequired
+                  />
+                </FormRow>
+              ) : (
+                <FormRow>
+                  <div className={styles.levelField}>
+                    <RadioGroup
+                      name={`items.${index}.givenAmountLevel`}
+                      label="与えた量"
+                      value={item.givenAmountLevel}
+                      onChange={(value) =>
+                        updateItem(index, {
+                          givenAmountLevel: value as GivenAmountLevel,
+                        })
+                      }
+                      isInvalid={itemErrors?.givenAmountLevel != null}
+                    >
+                      {GIVEN_AMOUNT_LEVELS.map((level) => (
+                        <Radio key={level} value={level}>
+                          {GIVEN_AMOUNT_LEVEL_LABEL[level]}
+                        </Radio>
+                      ))}
+                    </RadioGroup>
+                    {itemErrors?.givenAmountLevel?.[0] ? (
+                      <p className={styles.errorMessage}>
+                        {itemErrors.givenAmountLevel[0]}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className={styles.levelField}>
+                    <RadioGroup
+                      name={`items.${index}.leftoverLevel`}
+                      label="残した量"
+                      value={item.leftoverLevel}
+                      onChange={(value) =>
+                        updateItem(index, {
+                          leftoverLevel: value as LeftoverLevel,
+                        })
+                      }
+                      isInvalid={itemErrors?.leftoverLevel != null}
+                    >
+                      {LEFTOVER_LEVELS.map((level) => (
+                        <Radio key={level} value={level}>
+                          {LEFTOVER_LEVEL_LABEL[level]}
+                        </Radio>
+                      ))}
+                    </RadioGroup>
+                    {itemErrors?.leftoverLevel?.[0] ? (
+                      <p className={styles.errorMessage}>
+                        {itemErrors.leftoverLevel[0]}
+                      </p>
+                    ) : null}
+                  </div>
+                </FormRow>
+              )}
             </fieldset>
           );
         })}

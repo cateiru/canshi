@@ -1,9 +1,13 @@
 import { TbPencil, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
+import { Badge, Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { FeedingPresetIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { deleteFeedingPresetAction } from "@/features/feeding-presets/actions";
 import { DeleteFeedingPresetButton } from "@/features/feeding-presets/DeleteFeedingPresetButton";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
+import {
+  FEEDING_MODE_LABEL,
+  GIVEN_AMOUNT_LEVEL_LABEL,
+} from "@/features/feeding-records/labels";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -52,7 +56,14 @@ export default async function FeedingPresetsPage() {
           {presets.map((preset) => (
             <li key={preset.id}>
               <article className={styles.preset} aria-label={preset.name}>
-                <h2 className={styles.presetName}>{preset.name}</h2>
+                <div className={styles.presetHeader}>
+                  <h2 className={styles.presetName}>{preset.name}</h2>
+                  {preset.mode === "approximate" ? (
+                    <Badge color="info">
+                      {FEEDING_MODE_LABEL[preset.mode]}
+                    </Badge>
+                  ) : null}
+                </div>
                 <dl className={styles.details}>
                   {preset.items.map((item) => (
                     <div key={item.id} className={styles.product}>
@@ -64,8 +75,18 @@ export default async function FeedingPresetsPage() {
                         <span>{item.foodProductName}</span>
                       </dt>
                       <dd>
-                        {item.givenAmountG}
-                        <span>g</span>
+                        {preset.mode === "approximate" ? (
+                          item.givenAmountLevel ? (
+                            GIVEN_AMOUNT_LEVEL_LABEL[item.givenAmountLevel]
+                          ) : (
+                            "-"
+                          )
+                        ) : (
+                          <>
+                            {item.givenAmountG}
+                            <span>g</span>
+                          </>
+                        )}
                       </dd>
                     </div>
                   ))}

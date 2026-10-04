@@ -1,26 +1,38 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { feedingRecordItems, feedingRecords, foodProducts } from "@/db/schema";
+import {
+  type FeedingMode,
+  feedingRecordItems,
+  feedingRecords,
+  foodProducts,
+  type GivenAmountLevel,
+  type LeftoverLevel,
+} from "@/db/schema";
 
 export type FeedingRecordItemWithProduct = {
   id: string;
   foodProductId: string;
   foodProductName: string;
-  givenAmountG: number;
-  leftoverAmountG: number;
-  estimatedIntakeG: number;
-  estimatedKcal: number;
+  /** グラム単位の量・推定値。あいまいモードの記録では null */
+  givenAmountG: number | null;
+  leftoverAmountG: number | null;
+  estimatedIntakeG: number | null;
+  estimatedKcal: number | null;
+  /** 段階での量。厳格モードの記録では null */
+  givenAmountLevel: GivenAmountLevel | null;
+  leftoverLevel: LeftoverLevel | null;
 };
 
 export type FeedingRecordWithItems = {
   id: string;
   catId: string;
   occurredAt: Date;
+  mode: FeedingMode;
   items: FeedingRecordItemWithProduct[];
 };
 
 async function attachItems(
-  headers: { id: string; catId: string; occurredAt: Date }[],
+  headers: { id: string; catId: string; occurredAt: Date; mode: FeedingMode }[],
 ): Promise<FeedingRecordWithItems[]> {
   if (headers.length === 0) {
     return [];
@@ -37,6 +49,8 @@ async function attachItems(
       leftoverAmountG: feedingRecordItems.leftoverAmountG,
       estimatedIntakeG: feedingRecordItems.estimatedIntakeG,
       estimatedKcal: feedingRecordItems.estimatedKcal,
+      givenAmountLevel: feedingRecordItems.givenAmountLevel,
+      leftoverLevel: feedingRecordItems.leftoverLevel,
       sortOrder: feedingRecordItems.sortOrder,
     })
     .from(feedingRecordItems)
@@ -63,6 +77,8 @@ async function attachItems(
       leftoverAmountG: row.leftoverAmountG,
       estimatedIntakeG: row.estimatedIntakeG,
       estimatedKcal: row.estimatedKcal,
+      givenAmountLevel: row.givenAmountLevel,
+      leftoverLevel: row.leftoverLevel,
     });
     itemsByRecordId.set(row.feedingRecordId, list);
   }
@@ -82,6 +98,7 @@ export async function listFeedingRecords(
       id: feedingRecords.id,
       catId: feedingRecords.catId,
       occurredAt: feedingRecords.occurredAt,
+      mode: feedingRecords.mode,
     })
     .from(feedingRecords)
     .where(eq(feedingRecords.catId, catId))
@@ -99,6 +116,7 @@ export async function getFeedingRecordById(
       id: feedingRecords.id,
       catId: feedingRecords.catId,
       occurredAt: feedingRecords.occurredAt,
+      mode: feedingRecords.mode,
     })
     .from(feedingRecords)
     .where(eq(feedingRecords.id, id))

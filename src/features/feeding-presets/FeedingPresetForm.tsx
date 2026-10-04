@@ -2,18 +2,34 @@
 
 import { useState } from "react";
 import { TbCheck, TbPlus, TbX } from "react-icons/tb";
-import { Button, FormField, IconButton, Select } from "@/components/ui";
+import {
+  Button,
+  FormField,
+  IconButton,
+  Radio,
+  RadioGroup,
+  Select,
+} from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
+import {
+  type FeedingMode,
+  GIVEN_AMOUNT_LEVELS,
+  type GivenAmountLevel,
+} from "@/db/schema/feeding-modes";
+import { FeedingModeField } from "@/features/feeding-records/FeedingModeField";
+import { GIVEN_AMOUNT_LEVEL_LABEL } from "@/features/feeding-records/labels";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import type { FeedingPresetFormState } from "./actions";
 import styles from "./FeedingPresetForm.module.css";
 import type { FeedingPresetWithItems } from "./queries";
 
+// モードを切り替えても入力済みの値を失わないよう、両モードの値を行ごとに持つ
 type ItemRow = {
   key: string;
   foodProductId: string;
   givenAmountG: string;
+  givenAmountLevel: GivenAmountLevel;
 };
 
 type FeedingPresetFormProps = {
@@ -35,6 +51,7 @@ function createEmptyRow(foodProductId: string): ItemRow {
     key: crypto.randomUUID(),
     foodProductId,
     givenAmountG: "",
+    givenAmountLevel: "normal",
   };
 }
 
@@ -50,12 +67,14 @@ export function FeedingPresetForm({
     initialState,
   );
 
+  const [mode, setMode] = useState<FeedingMode>(preset?.mode ?? "strict");
   const [items, setItems] = useState<ItemRow[]>(() =>
     preset && preset.items.length > 0
       ? preset.items.map((item) => ({
           key: item.id,
           foodProductId: item.foodProductId,
-          givenAmountG: item.givenAmountG.toString(),
+          givenAmountG: item.givenAmountG?.toString() ?? "",
+          givenAmountLevel: item.givenAmountLevel ?? "normal",
         }))
       : [createEmptyRow(foodProducts[0]?.id ?? "")],
   );
@@ -90,6 +109,12 @@ export function FeedingPresetForm({
         defaultValue={preset?.name}
         errorMessage={state.fieldErrors?.name?.[0]}
         isRequired
+      />
+
+      <FeedingModeField
+        value={mode}
+        onChange={setMode}
+        errorMessage={state.fieldErrors?.mode?.[0]}
       />
 
       <div className={styles.itemsList}>
@@ -139,16 +164,45 @@ export function FeedingPresetForm({
                 ) : null}
               </div>
 
-              <FormField
-                name={`items.${index}.givenAmountG`}
-                label="与える量（g）"
-                type="number"
-                inputMode="decimal"
-                value={item.givenAmountG}
-                onChange={(value) => updateItem(index, { givenAmountG: value })}
-                errorMessage={itemErrors?.givenAmountG?.[0]}
-                isRequired
-              />
+              {mode === "strict" ? (
+                <FormField
+                  name={`items.${index}.givenAmountG`}
+                  label="与える量（g）"
+                  type="number"
+                  inputMode="decimal"
+                  value={item.givenAmountG}
+                  onChange={(value) =>
+                    updateItem(index, { givenAmountG: value })
+                  }
+                  errorMessage={itemErrors?.givenAmountG?.[0]}
+                  isRequired
+                />
+              ) : (
+                <div className={styles.levelField}>
+                  <RadioGroup
+                    name={`items.${index}.givenAmountLevel`}
+                    label="与える量"
+                    value={item.givenAmountLevel}
+                    onChange={(value) =>
+                      updateItem(index, {
+                        givenAmountLevel: value as GivenAmountLevel,
+                      })
+                    }
+                    isInvalid={itemErrors?.givenAmountLevel != null}
+                  >
+                    {GIVEN_AMOUNT_LEVELS.map((level) => (
+                      <Radio key={level} value={level}>
+                        {GIVEN_AMOUNT_LEVEL_LABEL[level]}
+                      </Radio>
+                    ))}
+                  </RadioGroup>
+                  {itemErrors?.givenAmountLevel?.[0] ? (
+                    <p className={styles.errorMessage}>
+                      {itemErrors.givenAmountLevel[0]}
+                    </p>
+                  ) : null}
+                </div>
+              )}
             </fieldset>
           );
         })}

@@ -2,7 +2,7 @@
 -- `pnpm db:migrate:local` 直後のローカル D1、および CI の vrt ジョブに適用する
 -- (README.md / .github/workflows/ci.yml 参照)。
 --
--- 猫は3匹だけ用意する。
+-- 猫は4匹だけ用意する。
 -- - vrt-cat-empty     : どの記録も一切登録しない（各記録一覧の「何もないケース」用）
 -- - vrt-cat-populated : 各記録種別を1件ずつ登録する（「データがあるケース」用）。
 --   掃除記録・服薬予定はネストした一覧ページの「データがある/何もない」の両方を
@@ -11,6 +11,13 @@
 --   1日のアイコンが表示上限を超えて「+1」になるケース用）。vrt-cat-populated の
 --   「各記録種別を1件ずつ」を崩さないよう別の猫にしている。猫一覧で末尾に並ぶよう
 --   created_at は他の2匹より前にする。
+-- - vrt-cat-approximate : あいまいモードのごはん記録だけを登録する（ごはん記録一覧・
+--   タイムラインのあいまいモード表示用）。vrt-cat-populated の「各記録種別を1件ずつ」を
+--   崩さないよう別の猫にしている。猫一覧で vrt-cat-busy のさらに後ろに並ぶよう
+--   created_at は他の3匹より前にする。
+--
+-- ごはんプリセットは厳格モード・あいまいモードを1件ずつ登録する（プリセット一覧と、
+-- 記録フォームのプリセット選択ボタンの表示用）。
 --
 -- 日時はすべて実行日時に依存しない固定値 (2024-06) にする。VRT の対象ページは
 -- 「今日」からの相対計算をしないもの（占める割合の大半）に限定しているため、
@@ -65,6 +72,32 @@ VALUES ('vrt-feeding-1', 'vrt-cat-populated', strftime('%s', '2024-06-15 08:00:0
 
 INSERT INTO feeding_record_items (id, feeding_record_id, food_product_id, given_amount_g, leftover_amount_g, estimated_intake_g, estimated_kcal, sort_order)
 VALUES ('vrt-feeding-item-1', 'vrt-feeding-1', 'vrt-food-1', 50, 0, 50, 175, 0);
+
+-- あいまいモードのごはん記録。グラム単位の値・推定値は持たず、段階だけを持つ
+INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, created_at, updated_at)
+VALUES ('vrt-cat-approximate', 'VRTあいまい猫', 'unknown', NULL, NULL, NULL,
+  strftime('%s', '2024-05-30 00:00:00'), strftime('%s', '2024-05-30 00:00:00'));
+
+INSERT INTO feeding_records (id, cat_id, occurred_at, mode, created_at, updated_at)
+VALUES ('vrt-feeding-approximate-1', 'vrt-cat-approximate', strftime('%s', '2024-06-15 08:00:00'), 'approximate',
+  strftime('%s', '2024-06-15 08:00:00'), strftime('%s', '2024-06-15 08:00:00'));
+
+INSERT INTO feeding_record_items (id, feeding_record_id, food_product_id, given_amount_level, leftover_level, sort_order)
+VALUES ('vrt-feeding-approximate-item-1', 'vrt-feeding-approximate-1', 'vrt-food-1', 'normal', 'little', 0);
+
+INSERT INTO feeding_presets (id, name, mode, created_at, updated_at)
+VALUES ('vrt-preset-strict', 'VRT朝ごはん', 'strict',
+  strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
+
+INSERT INTO feeding_preset_items (id, preset_id, food_product_id, given_amount_g, sort_order)
+VALUES ('vrt-preset-strict-item-1', 'vrt-preset-strict', 'vrt-food-1', 50, 0);
+
+INSERT INTO feeding_presets (id, name, mode, created_at, updated_at)
+VALUES ('vrt-preset-approximate', 'VRTおやつ', 'approximate',
+  strftime('%s', '2024-06-02 00:00:00'), strftime('%s', '2024-06-02 00:00:00'));
+
+INSERT INTO feeding_preset_items (id, preset_id, food_product_id, given_amount_level, sort_order)
+VALUES ('vrt-preset-approximate-item-1', 'vrt-preset-approximate', 'vrt-food-1', 'less', 0);
 
 -- 服薬予定: med-1 は投薬実績あり、med-2 はなし（ネストした一覧の両ケースに使う）
 INSERT INTO medications (id, cat_id, name, dose_amount, doses_per_day, start_date, created_at, updated_at)
