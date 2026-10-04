@@ -29,6 +29,9 @@ export const authConfig = {
   // セッションは署名・暗号化した JWT として Cookie に保持する
   session: {
     strategy: "jwt",
+    // middleware ではセッションの Cookie を更新しない（`src/middleware.ts`）ため、
+    // ログインから 30 日で期限が切れ、再度ログインが必要になる
+    maxAge: 30 * 24 * 60 * 60,
   },
   // Cloudflare Workers の前段（カスタムドメイン・workers.dev）から届く Host ヘッダーを
   // 信頼する。未設定だと本番で UntrustedHost エラーになる
