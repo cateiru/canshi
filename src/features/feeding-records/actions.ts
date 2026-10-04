@@ -257,10 +257,20 @@ export async function deleteFeedingRecordAction(
 ): Promise<void> {
   await requireCatAccess(catId);
   const db = getDb();
+  // 明細は記録 ID で紐付くため、この猫の記録の明細だけを消すよう親の記録で絞り込む。
+  // 絞り込まないと、自分の猫の catId と別の家の記録 ID を渡して明細だけを消せてしまう
   await db.batch([
-    db
-      .delete(feedingRecordItems)
-      .where(eq(feedingRecordItems.feedingRecordId, id)),
+    db.delete(feedingRecordItems).where(
+      inArray(
+        feedingRecordItems.feedingRecordId,
+        db
+          .select({ id: feedingRecords.id })
+          .from(feedingRecords)
+          .where(
+            and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)),
+          ),
+      ),
+    ),
     db
       .delete(feedingRecords)
       .where(and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId))),
