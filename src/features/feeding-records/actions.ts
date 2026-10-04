@@ -3,8 +3,14 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import type { z } from "zod";
+import { chunkRowsForInsert } from "@/db/batch";
 import { getDb } from "@/db/client";
-import { feedingRecordItems, feedingRecords, foodProducts } from "@/db/schema";
+import {
+  feedingRecordItems,
+  feedingRecords,
+  foodProducts,
+  type NewFeedingRecordItem,
+} from "@/db/schema";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import {
@@ -146,6 +152,19 @@ async function buildItemsToInsert(input: FeedingRecordFormInput) {
   return { values } as const;
 }
 
+// 明細が多いと 1 回の INSERT が D1 のバインド上限を超えるため、行を分割して
+// 複数の INSERT にする。呼び出し側で同じ batch に並べて原子性を保つ
+function insertFeedingRecordItems(
+  db: ReturnType<typeof getDb>,
+  feedingRecordId: string,
+  values: Omit<NewFeedingRecordItem, "feedingRecordId">[],
+) {
+  const rows = values.map((value) => ({ ...value, feedingRecordId }));
+  return chunkRowsForInsert(rows, feedingRecordItems).map((chunk) =>
+    db.insert(feedingRecordItems).values(chunk),
+  );
+}
+
 export async function createFeedingRecordAction(
   catId: string,
   _prevState: FeedingRecordFormState,
@@ -176,12 +195,7 @@ export async function createFeedingRecordAction(
       occurredAt,
       mode: parsed.data.mode,
     }),
-    db.insert(feedingRecordItems).values(
-      built.values.map((value) => ({
-        ...value,
-        feedingRecordId,
-      })),
-    ),
+    ...insertFeedingRecordItems(db, feedingRecordId, built.values),
   ]);
 
   return { redirectTo: `/cats/${catId}/feeding-records` };
@@ -228,12 +242,7 @@ export async function updateFeedingRecordAction(
     db
       .delete(feedingRecordItems)
       .where(eq(feedingRecordItems.feedingRecordId, id)),
-    db.insert(feedingRecordItems).values(
-      built.values.map((value) => ({
-        ...value,
-        feedingRecordId: id,
-      })),
-    ),
+    ...insertFeedingRecordItems(db, id, built.values),
   ]);
 
   return { redirectTo: `/cats/${catId}/feeding-records` };

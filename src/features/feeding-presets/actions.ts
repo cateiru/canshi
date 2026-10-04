@@ -2,8 +2,13 @@
 
 import { eq } from "drizzle-orm";
 import type { z } from "zod";
+import { chunkRowsForInsert } from "@/db/batch";
 import { getDb } from "@/db/client";
-import { feedingPresetItems, feedingPresets } from "@/db/schema";
+import {
+  feedingPresetItems,
+  feedingPresets,
+  type NewFeedingPresetItem,
+} from "@/db/schema";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   type FeedingPresetFormFieldErrors,
@@ -78,7 +83,23 @@ function mapZodErrors(error: z.ZodError): FeedingPresetFormFieldErrors {
   return fieldErrors;
 }
 
-function toPresetItemValues(presetId: string, input: FeedingPresetFormInput) {
+// 明細が多いと 1 回の INSERT が D1 のバインド上限を超えるため、行を分割して
+// 複数の INSERT にする。呼び出し側で同じ batch に並べて原子性を保つ
+function insertPresetItems(
+  db: ReturnType<typeof getDb>,
+  presetId: string,
+  input: FeedingPresetFormInput,
+) {
+  return chunkRowsForInsert(
+    toPresetItemValues(presetId, input),
+    feedingPresetItems,
+  ).map((chunk) => db.insert(feedingPresetItems).values(chunk));
+}
+
+function toPresetItemValues(
+  presetId: string,
+  input: FeedingPresetFormInput,
+): NewFeedingPresetItem[] {
   if (input.mode === "approximate") {
     return input.items.map((item, index) => ({
       presetId,
@@ -116,9 +137,7 @@ export async function createFeedingPresetAction(
       name: parsed.data.name,
       mode: parsed.data.mode,
     }),
-    db
-      .insert(feedingPresetItems)
-      .values(toPresetItemValues(presetId, parsed.data)),
+    ...insertPresetItems(db, presetId, parsed.data),
   ]);
 
   return { redirectTo: "/feeding-presets" };
@@ -156,7 +175,7 @@ export async function updateFeedingPresetAction(
       })
       .where(eq(feedingPresets.id, id)),
     db.delete(feedingPresetItems).where(eq(feedingPresetItems.presetId, id)),
-    db.insert(feedingPresetItems).values(toPresetItemValues(id, parsed.data)),
+    ...insertPresetItems(db, id, parsed.data),
   ]);
 
   return { redirectTo: "/feeding-presets" };

@@ -1,3 +1,5 @@
+import { getTableColumns, type Table } from "drizzle-orm";
+
 /**
  * D1 の 1 クエリあたりのバインドパラメーター上限。
  * `inArray` などで可変長の値を渡すクエリは、この上限を超えないよう分割して実行する
@@ -32,4 +34,15 @@ export function chunkForBoundParameters<T>(
     );
   }
   return chunk(values, size);
+}
+
+/**
+ * 複数行の INSERT に渡す行を D1 のバインドパラメーター上限内に収まるよう分割する。
+ * Drizzle は値を明示した列（`null` を含む）と `$defaultFn` の列をすべてバインドするため、
+ * 1 行あたりのパラメーター数はテーブルの列数を上限として見積もる。
+ * 分割した INSERT は同じ `db.batch` に並べ、明細の保存を 1 トランザクションに保つこと
+ */
+export function chunkRowsForInsert<T>(rows: readonly T[], table: Table): T[][] {
+  const columnCount = Object.keys(getTableColumns(table)).length;
+  return chunk(rows, Math.floor(D1_MAX_BOUND_PARAMETERS / columnCount));
 }
