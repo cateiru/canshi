@@ -26,6 +26,8 @@ describe("画面", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     const html = await response.text();
     expect(html).toContain("家に所属していない猫が 1");
+    // `household:link` は --local・--remote のどちらかが無いと実行できない
+    expect(html).toContain("pnpm household:link --remote");
   });
 
   it("ユーザー一覧で、利用者の入力した名前をエスケープして表示する", async () => {

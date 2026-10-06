@@ -27,7 +27,8 @@ export function OverviewPage(props: { overview: Overview }) {
         <p class="warning" role="status">
           家に所属していない猫が {overview.unassignedCatCount}{" "}
           匹います。どのユーザーからも表示されないため、
-          <code>pnpm household:link</code> で家に紐付けてください。
+          <code>pnpm household:link --remote</code>
+          （ローカルの D1 では <code>--local</code>）で家に紐付けてください。
         </p>
       )}
     </>
