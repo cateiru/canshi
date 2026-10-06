@@ -9,6 +9,7 @@ import {
   notificationSettings,
   notifications,
 } from "@/db/schema";
+import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   type CleaningTargetFormFieldErrors,
@@ -46,6 +47,7 @@ export async function createCleaningTargetAction(
   _prevState: CleaningTargetFormState,
   formData: FormData,
 ): Promise<CleaningTargetFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -75,6 +77,7 @@ export async function createCleaningTargetFromPresetAction(
   frequencyValue: number,
   frequencyUnit: CleaningTarget["frequencyUnit"],
 ): Promise<SubmitRedirect> {
+  await requireCatAccess(catId);
   const db = getDb();
   await db.insert(cleaningTargets).values({
     catId,
@@ -94,6 +97,7 @@ export async function updateCleaningTargetAction(
   _prevState: CleaningTargetFormState,
   formData: FormData,
 ): Promise<CleaningTargetFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -125,6 +129,7 @@ export async function deleteCleaningTargetAction(
   catId: string,
   id: string,
 ): Promise<SubmitRedirect> {
+  await requireCatAccess(catId);
   const db = getDb();
   // cleaning_records から cleaning_targets への外部キー制約があるため実施記録も同時に削除する。
   // notifications・notification_settings の reference_id もこの対象を指しうるため

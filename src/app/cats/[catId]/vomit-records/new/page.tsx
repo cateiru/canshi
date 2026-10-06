@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import {
@@ -21,7 +21,7 @@ export default async function NewVomitRecordPage({
   params,
 }: NewVomitRecordPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

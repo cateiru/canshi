@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TbTimeline } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { listFoodProductImageUrls } from "@/features/food-products/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -59,7 +59,7 @@ export default async function TimelinePage({
 }: TimelinePageProps) {
   const { catId } = await params;
   const { page: pageParam, ym: ymParam, date: dateParam } = await searchParams;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

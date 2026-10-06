@@ -20,6 +20,9 @@ import {
   expenseRecordHospitalVisits,
   expenseRecords,
   hospitalVisits,
+  householdMembers,
+  households,
+  users,
 } from "@/db/schema";
 
 let db: ReturnType<typeof getDb>;
@@ -33,6 +36,12 @@ vi.mock("next/navigation", () => ({
   redirect: (url: string) => {
     throw new Error(`redirect:${url}`);
   },
+}));
+// ログイン中のユーザーは常に user-1（household-1 のメンバー）とする。
+// 猫単位の認可（requireCatAccess）はこのテストの対象外のため常に許可する
+vi.mock("@/features/auth/session", () => ({
+  requireUser: async () => ({ id: "user-1" }),
+  requireCatAccess: async () => ({}),
 }));
 
 const {
@@ -53,6 +62,9 @@ const {
   updateHospitalVisitAction,
   deleteHospitalVisitAction,
 } = await import("@/features/hospital-visits/actions");
+const { listHospitalVisitsByIds } = await import(
+  "@/features/hospital-visits/queries"
+);
 const { deleteMediaAssetsByRecord } = await import("@/features/media/storage");
 
 function form(values: Record<string, string | string[]>) {
@@ -80,8 +92,8 @@ function visitForm(values: Record<string, string> = {}) {
     ...values,
   });
 }
-async function addCat(id: string) {
-  await db.insert(cats).values({ id, name: id, sex: "unknown" });
+async function addCat(id: string, householdId = "household-1") {
+  await db.insert(cats).values({ id, name: id, sex: "unknown", householdId });
 }
 
 beforeAll(async () => {
@@ -114,12 +126,38 @@ beforeEach(async () => {
     }
   };
   db = Object.assign(raw, { batch }) as unknown as ReturnType<typeof getDb>;
+  await db.insert(users).values([
+    { id: "user-1", name: "管理者" },
+    { id: "user-2", name: "別の家の人" },
+  ]);
+  await db.insert(households).values([
+    { id: "household-1", name: "わが家" },
+    { id: "household-2", name: "別の家" },
+  ]);
+  await db.insert(householdMembers).values([
+    { householdId: "household-1", userId: "user-1" },
+    { householdId: "household-2", userId: "user-2" },
+  ]);
   await addCat("tama");
   await addCat("mike");
 });
 afterEach(() => sqlite.close());
 
 describe("支出の保存と月別表示", () => {
+  it("別の家の猫は関連する猫に選べない", async () => {
+    await addCat("kuro", "household-2");
+
+    const result = await createExpenseAction(
+      {},
+      expenseForm({ catIds: ["tama", "kuro"] }),
+    );
+
+    expect(result.fieldErrors?.catIds).toEqual([
+      "関連する猫が見つかりませんでした。選び直してください",
+    ]);
+    expect(await db.select().from(expenseRecords)).toEqual([]);
+  });
+
   it("複数の猫に関連付けても全体の支出は重複しない", async () => {
     const { savedRecordId: id } = await createExpenseAction(
       {},
@@ -454,6 +492,99 @@ describe("支出記録から通院記録への紐付け", () => {
     expect(await listLinkableHospitalVisitsAction("2026-09-14")).toEqual([]);
   });
 
+  it("別の家の猫の通院記録は、同じ日でも共有の支出記録を指定しても候補に含めない", async () => {
+    await addCat("kuro", "household-2");
+    const kuroVisit = await addVisit("kuro");
+    const tamaVisit = await addVisit("tama");
+    const { savedRecordId: id } = await createExpenseAction(
+      {},
+      expenseForm({ category: "hospital", hospitalVisitIds: [tamaVisit] }),
+    );
+    // 支出記録は家を問わず共通のため、別の家の通院記録が同じ支出に紐付いている状態を作る
+    await db
+      .insert(expenseRecordHospitalVisits)
+      .values({ expenseRecordId: id as string, hospitalVisitId: kuroVisit });
+
+    expect(
+      (await listLinkableHospitalVisitsAction("2026-09-15")).map(
+        (visit) => visit.id,
+      ),
+    ).toEqual([tamaVisit]);
+    expect(
+      (await listLinkableHospitalVisitsAction("2026-09-14", id as string)).map(
+        (visit) => visit.id,
+      ),
+    ).toEqual([tamaVisit]);
+    // 支出一覧で表示する、支出に紐付いた通院記録も家で絞り込む
+    const visitsById = await listHospitalVisitsByIds("user-1", [
+      tamaVisit,
+      kuroVisit,
+    ]);
+    expect([...visitsById.keys()]).toEqual([tamaVisit]);
+  });
+
+  it("共通の支出を編集しても、フォームに出ない別の家の猫・通院記録との紐付けは残す", async () => {
+    await addCat("kuro", "household-2");
+    const kuroVisit = await addVisit("kuro");
+    const tamaVisit = await addVisit("tama");
+    const { savedRecordId } = await createExpenseAction(
+      {},
+      expenseForm({ category: "hospital", hospitalVisitIds: [tamaVisit] }),
+    );
+    const id = savedRecordId as string;
+    // 別の家のユーザーが、同じ支出に自分の家の猫・通院記録を紐付けた状態を作る
+    await db
+      .insert(expenseRecordHospitalVisits)
+      .values({ expenseRecordId: id, hospitalVisitId: kuroVisit });
+    await db
+      .insert(expenseRecordCats)
+      .values({ expenseRecordId: id, catId: "kuro" });
+
+    async function links() {
+      const catIds = (
+        await db
+          .select({ catId: expenseRecordCats.catId })
+          .from(expenseRecordCats)
+          .where(eq(expenseRecordCats.expenseRecordId, id))
+      ).map((row) => row.catId);
+      const visitIds = (
+        await db
+          .select({ visitId: expenseRecordHospitalVisits.hospitalVisitId })
+          .from(expenseRecordHospitalVisits)
+          .where(eq(expenseRecordHospitalVisits.expenseRecordId, id))
+      ).map((row) => row.visitId);
+      return { catIds: catIds.sort(), visitIds: visitIds.sort() };
+    }
+
+    // user-1 のフォームには tama の分だけが表示され、そのまま保存し直す
+    await updateExpenseAction(
+      id,
+      {},
+      expenseForm({
+        category: "hospital",
+        memo: "メモだけ変更",
+        catIds: ["tama"],
+        hospitalVisitIds: [tamaVisit],
+      }),
+    );
+    expect(await links()).toEqual({
+      catIds: ["kuro", "tama"],
+      visitIds: [kuroVisit, tamaVisit].sort(),
+    });
+
+    // 自分の家の紐付けを外しても、別の家の紐付けは残る
+    await updateExpenseAction(
+      id,
+      {},
+      expenseForm({ category: "hospital", catIds: [], hospitalVisitIds: [] }),
+    );
+    expect(await links()).toEqual({ catIds: ["kuro"], visitIds: [kuroVisit] });
+
+    // 「病院」以外にすると、通院記録との紐付けは別の家の分も外す（猫の紐付けは残す）
+    await updateExpenseAction(id, {}, expenseForm({ category: "food" }));
+    expect(await links()).toEqual({ catIds: ["kuro"], visitIds: [] });
+  });
+
   it("支出日と違う日の通院記録や、ほかの支出に紐付いた通院記録は紐付けない", async () => {
     const otherDayVisit = await addVisit("tama", { visitedDate: "2026-09-14" });
     const linkedVisit = await addVisit("mike", { expenseAmountYen: "3000" });
@@ -614,6 +745,18 @@ describe("通院記録の作成時に同じ日の支出記録へ紐付ける", (
       { id: hospitalId, amountYen: 11000, memo: "2匹分", catNames: ["mike"] },
     ]);
     expect(await listSameDayHospitalExpensesAction("invalid")).toEqual([]);
+  });
+
+  it("別の家の猫の名前は候補に含めず「不明な猫」と表示する", async () => {
+    await addCat("kuro", "household-2");
+    const hospitalId = await createHospitalExpense({ catIds: "tama" });
+    // 支出記録は家を問わず共通のため、別の家の猫が同じ支出に関連付いている状態を作る
+    await db
+      .insert(expenseRecordCats)
+      .values({ expenseRecordId: hospitalId, catId: "kuro" });
+
+    const [candidate] = await listSameDayHospitalExpensesAction("2026-09-15");
+    expect(candidate.catNames.sort()).toEqual(["tama", "不明な猫"].sort());
   });
 
   it("選んだ支出記録に紐付け、通院した猫も関連付ける", async () => {

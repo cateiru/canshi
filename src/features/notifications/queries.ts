@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { notificationSettings, notifications } from "@/db/schema";
+import { accessibleCatIdsQuery } from "@/features/households/queries";
 import {
   DEFAULT_SHAMPOO_ELAPSED_MONTHS,
   DEFAULT_WEIGHT_MEASUREMENT_DAYS,
@@ -66,17 +67,24 @@ export async function getResolvedSettingsForCat(
   };
 }
 
+/** 通知一覧の絞り込み。ユーザーが参照できる猫（所属する家の猫）の通知だけを返す */
+export type NotificationFilter = {
+  userId: string;
+  catId?: string;
+};
+
 /**
  * 未対応（`pending`、または `snoozed` で `snoozedUntil` が到来済み）の通知一覧。
  * `src/features/notifications/status.ts` の `isNotificationPending` と同じ判定を SQL で行う
  */
 export async function listPendingNotifications(
   now: Date,
-  catId?: string,
+  { userId, catId }: NotificationFilter,
   d1?: D1Database,
 ) {
   const db = getDb(d1);
   const conditions = [
+    inArray(notifications.catId, accessibleCatIdsQuery(db, userId)),
     or(
       eq(notifications.status, "pending"),
       and(
@@ -98,11 +106,12 @@ export async function listPendingNotifications(
 
 /** 対応済み（`done`・`dismissed`）の通知一覧。直近に対応したものから並べる */
 export async function listResolvedNotifications(
-  catId?: string,
+  { userId, catId }: NotificationFilter,
   d1?: D1Database,
 ) {
   const db = getDb(d1);
   const conditions = [
+    inArray(notifications.catId, accessibleCatIdsQuery(db, userId)),
     inArray(notifications.status, ["done", "dismissed"] as const),
   ];
   if (catId) {
@@ -121,6 +130,7 @@ export async function listResolvedNotifications(
  */
 export async function countUnreadNotifications(
   now: Date,
+  userId: string,
   d1?: D1Database,
 ): Promise<number> {
   const db = getDb(d1);
@@ -129,6 +139,7 @@ export async function countUnreadNotifications(
     .from(notifications)
     .where(
       and(
+        inArray(notifications.catId, accessibleCatIdsQuery(db, userId)),
         isNull(notifications.readAt),
         or(
           eq(notifications.status, "pending"),

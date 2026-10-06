@@ -9,6 +9,7 @@ import {
   medications,
   symptoms,
 } from "@/db/schema";
+import { requireCatAccess } from "@/features/auth/session";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
@@ -74,6 +75,7 @@ export async function createMedicationAction(
   _prevState: MedicationFormState,
   formData: FormData,
 ): Promise<MedicationFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -122,6 +124,7 @@ export async function updateMedicationAction(
   _prevState: MedicationFormState,
   formData: FormData,
 ): Promise<MedicationFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -173,7 +176,16 @@ export async function deleteMedicationAction(
   catId: string,
   id: string,
 ): Promise<void> {
+  await requireCatAccess(catId);
   const db = getDb();
+  // 添付の削除は記録 ID だけで行うため、先に記録がこの猫のものであることを確かめる。
+  // 確かめないと、自分の猫の catId と別の家の記録 ID を渡して添付を消せてしまう
+  const [existing] = await db
+    .select({ id: medications.id })
+    .from(medications)
+    .where(and(eq(medications.id, id), eq(medications.catId, catId)))
+    .limit(1);
+  if (!existing) redirect(`/cats/${catId}/medications`, "replace");
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(MEDICATION_MEDIA_TYPE, id);
   // medication_doses から medications への外部キー制約があるため投薬実績も同時に削除する。

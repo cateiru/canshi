@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Breadcrumb, NavCard } from "@/components/ui";
+import { Breadcrumb, Button, NavCard } from "@/components/ui";
 import {
   AppearanceSettingsIcon,
   FeedingPresetIcon,
@@ -7,6 +7,7 @@ import {
   NotificationSettingsIcon,
   ReleaseNotesIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
+import { logoutAction } from "@/features/auth/actions";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -71,6 +72,10 @@ export default function SettingsPage() {
           ))}
         </ul>
       </nav>
+
+      <form action={logoutAction} className={styles.logout}>
+        <Button type="submit">ログアウト</Button>
+      </form>
     </main>
   );
 }

@@ -8,7 +8,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { formatYen } from "@/features/expenses/labels";
 import { listExpensesByHospitalVisitIds } from "@/features/expenses/queries";
 import { deleteHospitalVisitAction } from "@/features/hospital-visits/actions";
@@ -36,7 +36,7 @@ export default async function HospitalVisitsPage({
   params,
 }: HospitalVisitsPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

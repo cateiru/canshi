@@ -1,15 +1,19 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpAgent } from "agents/mcp";
 import { z } from "zod";
+import {
+  getUserIdFromProps,
+  type McpProps,
+  MISSING_USER_ERROR_MESSAGE,
+} from "./props";
 
-/**
- * `/callback`（`src/auth/handler.ts`）が `completeAuthorization()` の `props` に
- * 渡す値と対応する。Durable Object 上で永続化され、`this.props` として
- * ツール実装から参照できる
- */
-export interface McpProps extends Record<string, unknown> {
-  email: string;
-  sub: string;
+export type { McpProps };
+
+function errorResult(text: string) {
+  return {
+    content: [{ type: "text" as const, text }],
+    isError: true,
+  };
 }
 
 /** 猫のプロフィールを返すツールの説明に添える、生年月日の精度の補足 */
@@ -23,9 +27,10 @@ const BIRTH_DATE_PRECISION_DESCRIPTION =
  * `McpRpc`（src/worker.ts）を呼び出すことで実装する。
  *
  * 書き込み系ツールは対象外（docs/plans/32_mcp_oidc_overview.md 参照）。
- * `this.props.email` は今回は認可判定に使わない（単一世帯利用のため、
- * Cloudflare Access を通過したユーザーは全員同じ権限を持つ想定）が、
- * 将来の監査ログ用に残しておく
+ * 各ツールはトークンに保存した CANSHI のユーザー ID（`this.props.userId`）を
+ * メインアプリへ渡し、そのユーザーの家の猫だけを参照する。ユーザー ID を持たない
+ * 古いトークンでは、データを返さずに接続し直すよう案内する。
+ * `this.props.email` は認可判定に使わないが、将来の監査ログ用に残しておく
  */
 export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
   server = new McpServer({ name: "CANSHI MCP Server", version: "0.1.0" });
@@ -40,7 +45,11 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
           BIRTH_DATE_PRECISION_DESCRIPTION,
       },
       async () => {
-        const cats = await this.env.MAIN_APP.listCats();
+        const userId = getUserIdFromProps(this.props);
+        if (!userId) {
+          return errorResult(MISSING_USER_ERROR_MESSAGE);
+        }
+        const cats = await this.env.MAIN_APP.listCats(userId);
         return {
           content: [{ type: "text", text: JSON.stringify({ cats }) }],
         };
@@ -59,14 +68,13 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         },
       },
       async ({ catId }) => {
-        const cat = await this.env.MAIN_APP.getCatProfile(catId);
+        const userId = getUserIdFromProps(this.props);
+        if (!userId) {
+          return errorResult(MISSING_USER_ERROR_MESSAGE);
+        }
+        const cat = await this.env.MAIN_APP.getCatProfile(userId, catId);
         if (!cat) {
-          return {
-            content: [
-              { type: "text", text: `catId="${catId}" の猫が見つかりません` },
-            ],
-            isError: true,
-          };
+          return errorResult(`catId="${catId}" の猫が見つかりません`);
         }
         return { content: [{ type: "text", text: JSON.stringify(cat) }] };
       },
@@ -115,12 +123,20 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         },
       },
       async ({ catId, year, month, date, page }) => {
+        const userId = getUserIdFromProps(this.props);
+        if (!userId) {
+          return errorResult(MISSING_USER_ERROR_MESSAGE);
+        }
         const result = await this.env.MAIN_APP.listTimeline(
+          userId,
           catId,
           year,
           month,
           { date, page },
         );
+        if (!result) {
+          return errorResult(`catId="${catId}" の猫が見つかりません`);
+        }
         return { content: [{ type: "text", text: JSON.stringify(result) }] };
       },
     );

@@ -10,6 +10,7 @@ import {
   medications,
   symptoms,
 } from "@/db/schema";
+import { requireCatAccess } from "@/features/auth/session";
 import { saveHospitalVisitWithExpense } from "@/features/expenses/hospitalVisitExpense";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
@@ -114,6 +115,7 @@ export async function createHospitalVisitAction(
   _prevState: HospitalVisitFormState,
   formData: FormData,
 ): Promise<HospitalVisitFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -170,6 +172,7 @@ export async function updateHospitalVisitAction(
   _prevState: HospitalVisitFormState,
   formData: FormData,
 ): Promise<HospitalVisitFormState> {
+  await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -220,6 +223,7 @@ export async function deleteHospitalVisitAction(
   catId: string,
   id: string,
 ): Promise<void> {
+  await requireCatAccess(catId);
   const db = getDb();
   const [existing] = await db
     .select({ id: hospitalVisits.id })

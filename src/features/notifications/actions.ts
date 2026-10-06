@@ -1,6 +1,7 @@
 "use server";
 
 import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
   cleaningRecords,
@@ -9,20 +10,39 @@ import {
   pushDeliveries,
   symptoms,
 } from "@/db/schema";
+import { requireUser } from "@/features/auth/session";
+import { accessibleCatIdsQuery } from "@/features/households/queries";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
 
 export type NotificationActionResult = { error?: string };
+
+/**
+ * 指定した ID の通知のうち、ユーザーの家の猫の通知だけに一致する条件。
+ * 別の家の猫の通知は、存在しない通知と同じく更新対象にしない
+ */
+function accessibleNotification(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+  id: string,
+) {
+  return and(
+    eq(notifications.id, id),
+    inArray(notifications.catId, accessibleCatIdsQuery(db, userId)),
+  );
+}
 
 /** 通知センター（`30`）から呼ばれる想定の Server Action。結果は戻り値で返す */
 export async function markNotificationDoneAction(
   id: string,
 ): Promise<NotificationActionResult> {
+  // requireUser は未ログイン時にリダイレクト（例外）するため、try の外で呼ぶ
+  const user = await requireUser();
   try {
     const db = getDb();
     await db
       .update(notifications)
       .set({ status: "done", updatedAt: new Date() })
-      .where(eq(notifications.id, id));
+      .where(accessibleNotification(db, user.id, id));
     return {};
   } catch (error) {
     console.error("通知の完了処理に失敗しました", error);
@@ -39,6 +59,8 @@ export async function markNotificationDoneAction(
 export async function markCleaningNotificationDoneAction(
   id: string,
 ): Promise<NotificationActionResult> {
+  // requireUser は未ログイン時にリダイレクト（例外）するため、try の外で呼ぶ
+  const user = await requireUser();
   try {
     const db = getDb();
     const [notification] = await db
@@ -49,7 +71,7 @@ export async function markCleaningNotificationDoneAction(
         status: notifications.status,
       })
       .from(notifications)
-      .where(eq(notifications.id, id))
+      .where(accessibleNotification(db, user.id, id))
       .limit(1);
 
     if (
@@ -140,6 +162,8 @@ export async function markCleaningNotificationDoneAction(
 export async function resolveSymptomNotificationAction(
   id: string,
 ): Promise<NotificationActionResult> {
+  // requireUser は未ログイン時にリダイレクト（例外）するため、try の外で呼ぶ
+  const user = await requireUser();
   try {
     const db = getDb();
     const [notification] = await db
@@ -149,7 +173,7 @@ export async function resolveSymptomNotificationAction(
         referenceId: notifications.referenceId,
       })
       .from(notifications)
-      .where(eq(notifications.id, id))
+      .where(accessibleNotification(db, user.id, id))
       .limit(1);
 
     if (
@@ -203,12 +227,14 @@ export async function resolveSymptomNotificationAction(
 export async function dismissNotificationAction(
   id: string,
 ): Promise<NotificationActionResult> {
+  // requireUser は未ログイン時にリダイレクト（例外）するため、try の外で呼ぶ
+  const user = await requireUser();
   try {
     const db = getDb();
     await db
       .update(notifications)
       .set({ status: "dismissed", updatedAt: new Date() })
-      .where(eq(notifications.id, id));
+      .where(accessibleNotification(db, user.id, id));
     return {};
   } catch (error) {
     console.error("通知の無視処理に失敗しました", error);
@@ -228,8 +254,18 @@ export async function snoozeNotificationAction(
   id: string,
   snoozedUntil: Date,
 ): Promise<NotificationActionResult> {
+  // requireUser は未ログイン時にリダイレクト（例外）するため、try の外で呼ぶ
+  const user = await requireUser();
   try {
     const db = getDb();
+    const [notification] = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(accessibleNotification(db, user.id, id))
+      .limit(1);
+    if (!notification) {
+      return { error: "通知が見つかりませんでした" };
+    }
     await db.batch([
       db
         .update(notifications)
@@ -254,15 +290,25 @@ export async function snoozeNotificationAction(
 export async function markNotificationsReadAction(
   ids: string[],
 ): Promise<NotificationActionResult> {
+  const user = await requireUser();
   if (ids.length === 0) {
     return {};
   }
   try {
     const db = getDb();
-    await db
-      .update(notifications)
-      .set({ readAt: new Date() })
-      .where(inArray(notifications.id, ids));
+    const readAt = new Date();
+    // `set` の既読日時と `accessibleCatIdsQuery` の userId の分を 2 個予約する
+    for (const chunk of chunkForBoundParameters(ids, 2)) {
+      await db
+        .update(notifications)
+        .set({ readAt })
+        .where(
+          and(
+            inArray(notifications.id, chunk),
+            inArray(notifications.catId, accessibleCatIdsQuery(db, user.id)),
+          ),
+        );
+    }
     return {};
   } catch (error) {
     console.error("通知の既読処理に失敗しました", error);

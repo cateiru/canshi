@@ -7,6 +7,7 @@ import {
   feedingRecordItems,
   foodProducts,
 } from "@/db/schema";
+import { requireUser } from "@/features/auth/session";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
@@ -40,6 +41,7 @@ export async function createFoodProductAction(
   _prevState: FoodProductFormState,
   formData: FormData,
 ): Promise<FoodProductFormState> {
+  await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -65,6 +67,7 @@ export async function updateFoodProductAction(
   _prevState: FoodProductFormState,
   formData: FormData,
 ): Promise<FoodProductFormState> {
+  await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -97,6 +100,7 @@ export type DeleteFoodProductResult = { error?: string };
 export async function deleteFoodProductAction(
   id: string,
 ): Promise<DeleteFoodProductResult> {
+  await requireUser();
   const db = getDb();
   // food_product_id は ON DELETE 制約でこのまま削除すると失敗するため、
   // ごはん記録から参照されている場合は削除せずにエラーを返す

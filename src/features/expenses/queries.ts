@@ -9,6 +9,7 @@ import {
   expenseRecords,
   hospitalVisits,
 } from "@/db/schema";
+import { accessibleCatIdsQuery } from "@/features/households/queries";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import type { YearMonth } from "@/features/shared/yearMonth";
 
@@ -271,9 +272,12 @@ export type HospitalExpenseCandidate = Pick<
 
 /**
  * 指定した日（`YYYY-MM-DD`）のカテゴリ「病院」の支出記録を、関連する猫の名前と一緒に返す。
- * 通院記録を作成するときに、同じ日の病院代と紐付けるかを確認するために使う
+ * 通院記録を作成するときに、同じ日の病院代と紐付けるかを確認するために使う。
+ * 支出記録は家を問わず共通だが、猫の名前はユーザーの家の猫のものだけを引き、
+ * 別の家の猫は支出一覧（`ExpenseList`）と同じく「不明な猫」と表示する
  */
 export async function listHospitalExpensesOnDate(
+  userId: string,
   date: string,
 ): Promise<HospitalExpenseCandidate[]> {
   const db = getDb();
@@ -297,9 +301,12 @@ export async function listHospitalExpensesOnDate(
     records.map((record) => record.id),
   );
   const catNameById = new Map(
-    (await db.select({ id: cats.id, name: cats.name }).from(cats)).map(
-      (cat) => [cat.id, cat.name],
-    ),
+    (
+      await db
+        .select({ id: cats.id, name: cats.name })
+        .from(cats)
+        .where(inArray(cats.id, accessibleCatIdsQuery(db, userId)))
+    ).map((cat) => [cat.id, cat.name]),
   );
   return records.map((record) => ({
     id: record.id,

@@ -9,10 +9,13 @@ import {
   cats,
   cleaningRecords,
   cleaningTargets,
+  householdMembers,
+  households,
   notifications,
   pushDeliveries,
   pushSubscriptions,
   symptoms,
+  users,
 } from "@/db/schema";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
 
@@ -23,6 +26,10 @@ import { getNaiveUtcNow } from "@/features/shared/datetime";
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
   getDb: () => db,
+}));
+// ログイン中のユーザーは常に user-1（household-1 のメンバー）とする
+vi.mock("@/features/auth/session", () => ({
+  requireUser: async () => ({ id: "user-1" }),
 }));
 
 const {
@@ -36,6 +43,18 @@ beforeAll(async () => {
   const raw = drizzle(new SQL.Database());
   await migrate(raw, { migrationsFolder: "./drizzle" });
   db = raw as unknown as ReturnType<typeof getDb>;
+  await db.insert(users).values([
+    { id: "user-1", name: "管理者" },
+    { id: "user-2", name: "別の家の人" },
+  ]);
+  await db.insert(households).values([
+    { id: "household-1", name: "わが家" },
+    { id: "household-2", name: "別の家" },
+  ]);
+  await db.insert(householdMembers).values([
+    { householdId: "household-1", userId: "user-1" },
+    { householdId: "household-2", userId: "user-2" },
+  ]);
   let batchQueue: Promise<unknown> = Promise.resolve();
   // biome-ignore lint/suspicious/noExplicitAny: テスト用に D1 の batch を簡易実装する
   (db as any).batch = (statements: PromiseLike<unknown>[]) => {
@@ -52,10 +71,41 @@ beforeAll(async () => {
 });
 
 describe("snoozeNotificationAction", () => {
+  it("別の家の猫の通知は延期できない", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "クロ", sex: "male", householdId: "household-2" })
+      .returning();
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        catId: cat.id,
+        kind: "weight_measurement",
+        dedupeKey: `dedupe-${crypto.randomUUID()}`,
+        title: "クロの体重測定のお願い",
+        body: "そろそろ体重を測りましょう",
+        url: `/cats/${cat.id}`,
+        dueAt: new Date(),
+      })
+      .returning();
+
+    const result = await snoozeNotificationAction(
+      notification.id,
+      new Date("2026-09-20T00:00:00.000Z"),
+    );
+
+    expect(result).toEqual({ error: "通知が見つかりませんでした" });
+    const [unchanged] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, notification.id));
+    expect(unchanged.status).toBe("pending");
+  });
+
   it("延期すると status・snoozedUntil を更新し、readAt・pushedAt と push_deliveries の記録をリセットする", async () => {
     const [cat] = await db
       .insert(cats)
-      .values({ name: "たま", sex: "female" })
+      .values({ name: "たま", sex: "female", householdId: "household-1" })
       .returning();
     const [notification] = await db
       .insert(notifications)
@@ -117,7 +167,7 @@ describe("markCleaningNotificationDoneAction", () => {
   async function setup(targetValues: { isActive?: boolean } = {}) {
     const [cat] = await db
       .insert(cats)
-      .values({ name: "たま", sex: "female" })
+      .values({ name: "たま", sex: "female", householdId: "household-1" })
       .returning();
     const [target] = await db
       .insert(cleaningTargets)
@@ -216,7 +266,7 @@ describe("markCleaningNotificationDoneAction", () => {
   it("掃除以外の通知にはエラーを返す", async () => {
     const [cat] = await db
       .insert(cats)
-      .values({ name: "たま", sex: "female" })
+      .values({ name: "たま", sex: "female", householdId: "household-1" })
       .returning();
     const [notification] = await db
       .insert(notifications)
@@ -242,7 +292,7 @@ describe("resolveSymptomNotificationAction", () => {
   async function setup() {
     const [cat] = await db
       .insert(cats)
-      .values({ name: "たま", sex: "female" })
+      .values({ name: "たま", sex: "female", householdId: "household-1" })
       .returning();
     const [symptom] = await db
       .insert(symptoms)
@@ -316,7 +366,7 @@ describe("resolveSymptomNotificationAction", () => {
     const { symptom } = await setup();
     const [otherCat] = await db
       .insert(cats)
-      .values({ name: "みけ", sex: "male" })
+      .values({ name: "みけ", sex: "male", householdId: "household-1" })
       .returning();
     const [notification] = await db
       .insert(notifications)

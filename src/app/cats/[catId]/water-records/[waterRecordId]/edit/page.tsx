@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { WaterIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { updateWaterRecordAction } from "@/features/water-records/actions";
 import { getWaterRecordById } from "@/features/water-records/queries";
@@ -19,7 +19,7 @@ export default async function EditWaterRecordPage({
 }: EditWaterRecordPageProps) {
   const { catId, waterRecordId } = await params;
   const [cat, waterRecord] = await Promise.all([
-    getCatById(catId),
+    getAccessibleCat(catId),
     getWaterRecordById(waterRecordId),
   ]);
 

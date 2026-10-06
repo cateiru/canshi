@@ -1,3 +1,5 @@
+import { getCurrentUser } from "@/features/auth/session";
+import { canAccessMediaAsset } from "@/features/media/access";
 import { THUMBNAIL_MIME_TYPE } from "@/features/media/mimeSniff";
 import { getMediaAssetById } from "@/features/media/queries";
 import { serveR2Object } from "@/features/media/serve";
@@ -10,9 +12,17 @@ type RouteContext = {
 
 /** サムネイルの配信 */
 export async function GET(request: Request, { params }: RouteContext) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
   const { assetId } = await params;
   const asset = await getMediaAssetById(assetId);
-  if (!asset?.thumbnailObjectKey) {
+  // 別の家の猫のメディアは存在を明かさないよう 404 にする
+  if (
+    !asset?.thumbnailObjectKey ||
+    !(await canAccessMediaAsset(user.id, asset))
+  ) {
     return new Response("Not Found", { status: 404 });
   }
   return serveR2Object(request, asset.thumbnailObjectKey, THUMBNAIL_MIME_TYPE);

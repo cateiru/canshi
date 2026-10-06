@@ -1,9 +1,9 @@
 import { TbClock, TbDeviceMobile, TbPaw } from "react-icons/tb";
 import { Alert, Breadcrumb, ButtonLink, NavCard } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { listCurrentUserCats } from "@/features/auth/session";
 import { CatAvatar } from "@/features/cats/CatAvatar";
 import { CatIcon } from "@/features/cats/CatIcon";
-import { listCats } from "@/features/cats/queries";
 import { PushSubscriptionToggle } from "@/features/push/PushSubscriptionToggle";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -12,7 +12,7 @@ import styles from "./page.module.css";
 export const dynamic = "force-dynamic";
 
 export default async function NotificationSettingsPage() {
-  const cats = await listCats();
+  const cats = await listCurrentUserCats();
 
   return (
     <main className={styles.main}>

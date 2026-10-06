@@ -8,7 +8,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { deleteShampooRecordAction } from "@/features/shampoo-records/actions";
 import { calculateElapsedDays } from "@/features/shampoo-records/calculations";
 import { listShampooRecords } from "@/features/shampoo-records/queries";
@@ -27,7 +27,7 @@ export default async function ShampooRecordsPage({
   params,
 }: ShampooRecordsPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

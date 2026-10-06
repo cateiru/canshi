@@ -70,6 +70,17 @@ test("オフラインページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+test.describe("ログインページ", () => {
+  // ログイン済みだと元のページへリダイレクトされるため、保存済みのセッションを使わない
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("ログインページの見た目", async ({ page }, testInfo) => {
+    await page.goto("/login");
+    await expect(page.getByRole("button", { name: "ログイン" })).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+});
+
 test("ホームページの見た目", async ({ page }, testInfo) => {
   await page.goto("/home");
   await expect(page.getByRole("heading", { name: "CANSHI" })).toBeVisible();

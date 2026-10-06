@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb, ButtonLink, RecordEmptyState } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { listFeedingPresets } from "@/features/feeding-presets/queries";
 import { createFeedingRecordAction } from "@/features/feeding-records/actions";
 import { FeedingRecordForm } from "@/features/feeding-records/FeedingRecordForm";
@@ -23,7 +23,7 @@ export default async function NewFeedingRecordPage({
   params,
 }: NewFeedingRecordPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

@@ -10,7 +10,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { quickCreateCleaningRecordAction } from "@/features/cleaning/recordActions";
 import { listCleaningTargetsWithStatus } from "@/features/cleaning/targetQueries";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
@@ -25,7 +25,7 @@ type CleaningPageProps = {
 
 export default async function CleaningPage({ params }: CleaningPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

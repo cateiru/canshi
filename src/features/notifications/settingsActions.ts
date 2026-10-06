@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
+import { requireCatAccess } from "@/features/auth/session";
 import {
   type CatNotificationSettingsFormFieldErrors,
   catNotificationSettingsFormSchema,
@@ -30,6 +31,7 @@ export async function updateCatNotificationSettingsAction(
   _prevState: CatNotificationSettingsFormState,
   formData: FormData,
 ): Promise<CatNotificationSettingsFormState> {
+  await requireCatAccess(catId);
   const parsed = catNotificationSettingsFormSchema.safeParse({
     birthdayYearlyEnabled: formData.get("birthdayYearlyEnabled"),
     birthdayHalfYearEnabled: formData.get("birthdayHalfYearEnabled"),

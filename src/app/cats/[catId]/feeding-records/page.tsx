@@ -12,7 +12,7 @@ import {
   CalorieIcon,
   FeedingIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { deleteFeedingRecordAction } from "@/features/feeding-records/actions";
 import { sumFeedingTotals } from "@/features/feeding-records/calculations";
 import { toFeedingChartPoints } from "@/features/feeding-records/chart";
@@ -46,7 +46,7 @@ export default async function FeedingRecordsPage({
   params,
 }: FeedingRecordsPageProps) {
   const { catId } = await params;
-  const cat = await getCatById(catId);
+  const cat = await getAccessibleCat(catId);
 
   if (!cat) {
     notFound();

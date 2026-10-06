@@ -21,6 +21,8 @@ import {
   waterRecords,
   weightRecords,
 } from "@/db/schema";
+import { requireCatAccess, requireUser } from "@/features/auth/session";
+import { getPrimaryHouseholdForUser } from "@/features/households/queries";
 import { deleteMediaAssetsByCat } from "@/features/media/storage";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { applyProfileImageChange } from "./applyProfileImage";
@@ -95,10 +97,15 @@ function parseFormData(formData: FormData) {
   };
 }
 
+/** 猫を登録する家がないときのエラー。家は `scripts/link-household.mjs` で作る */
+const NO_HOUSEHOLD_ERROR =
+  "猫を登録する家がまだありません。管理者に家の作成を依頼してください";
+
 export async function createCatAction(
   _prevState: CatFormState,
   formData: FormData,
 ): Promise<CatFormState> {
+  const user = await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -108,10 +115,18 @@ export async function createCatAction(
     };
   }
 
+  const household = await getPrimaryHouseholdForUser(user.id);
+  if (!household) {
+    return {
+      formError: NO_HOUSEHOLD_ERROR,
+      submittedBirthDate: readSubmittedBirthDate(formData),
+    };
+  }
+
   const db = getDb();
   const [created] = await db
     .insert(cats)
-    .values(parsed.data)
+    .values({ ...parsed.data, householdId: household.id })
     .returning({ id: cats.id });
 
   return { redirectTo: `/cats/${created.id}` };
@@ -122,6 +137,7 @@ export async function updateCatAction(
   _prevState: CatFormState,
   formData: FormData,
 ): Promise<CatFormState> {
+  const { user } = await requireCatAccess(id);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -145,6 +161,7 @@ export async function updateCatAction(
   const profileImageError = await applyProfileImageChange(
     id,
     parseProfileImageChange(formData),
+    user.id,
   );
   if (profileImageError) {
     return { formError: profileImageError };
@@ -154,6 +171,7 @@ export async function updateCatAction(
 }
 
 export async function deleteCatAction(id: string): Promise<SubmitRedirect> {
+  await requireCatAccess(id);
   const db = getDb();
   // media_assets.cat_id が cats.id を参照しているため、猫に紐付くメディア（R2 のオブジェクトと行）を
   // 先に削除する。R2 の削除に失敗した場合はここで例外になり、猫と記録は残る

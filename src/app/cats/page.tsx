@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TbPlus } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
+import { listCurrentUserCats } from "@/features/auth/session";
 import {
   calculateAge,
   calculateTimeSinceAdoption,
@@ -12,7 +13,6 @@ import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
 import { CatAvatar } from "@/features/cats/CatAvatar";
 import { CatIcon } from "@/features/cats/CatIcon";
 import { SEX_LABEL } from "@/features/cats/labels";
-import { listCats } from "@/features/cats/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
@@ -20,7 +20,7 @@ import styles from "./page.module.css";
 export const dynamic = "force-dynamic";
 
 export default async function CatsPage() {
-  const catList = await listCats();
+  const catList = await listCurrentUserCats();
 
   return (
     <main className={styles.main}>

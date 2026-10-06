@@ -1,5 +1,6 @@
 import { Breadcrumb, FilterTabs, Tabs } from "@/components/ui";
-import { listCats } from "@/features/cats/queries";
+import { requireUser } from "@/features/auth/session";
+import { listCatsForUser } from "@/features/households/queries";
 import { generateNotifications } from "@/features/notifications/generate";
 import { MarkNotificationsRead } from "@/features/notifications/MarkNotificationsRead";
 import { NotificationList } from "@/features/notifications/NotificationList";
@@ -20,14 +21,15 @@ export default async function NotificationsPage({
 }: NotificationsPageProps) {
   const { catId } = await searchParams;
   const now = new Date();
+  const user = await requireUser();
 
   // スケジュール実行（`29`）を待たず、通知センターを開いた時点で最新の通知を反映する
   await generateNotifications(now);
 
   const [pending, resolved, cats] = await Promise.all([
-    listPendingNotifications(now, catId),
-    listResolvedNotifications(catId),
-    listCats(),
+    listPendingNotifications(now, { userId: user.id, catId }),
+    listResolvedNotifications({ userId: user.id, catId }),
+    listCatsForUser(user.id),
   ]);
 
   // 表示する未対応通知のうち、未読のものは画面表示後（マウント後）にまとめて既読にする

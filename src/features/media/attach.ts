@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
+import { requireUser } from "@/features/auth/session";
 import { parseMediaAssetIds } from "./formFields";
 import { listMediaAssetsByRecord } from "./queries";
 import { resolveMediaRecordOwner } from "./recordOwner";
@@ -45,10 +46,15 @@ export function planMediaSync({
   return { assign, remove, missing };
 }
 
-async function listPendingAssets(ids: string[]): Promise<MediaAsset[]> {
+/** 指定した ID のうち、`userId` がアップロードした下書きだけを返す */
+async function listPendingAssets(
+  ids: string[],
+  userId: string,
+): Promise<MediaAsset[]> {
   const db = getDb();
   const rows: MediaAsset[] = [];
-  for (const chunk of chunkForBoundParameters(ids, 1)) {
+  // recordType と uploadedByUserId の分を 2 個予約する
+  for (const chunk of chunkForBoundParameters(ids, 2)) {
     rows.push(
       ...(await db
         .select()
@@ -56,6 +62,7 @@ async function listPendingAssets(ids: string[]): Promise<MediaAsset[]> {
         .where(
           and(
             eq(mediaAssets.recordType, PENDING_MEDIA_RECORD_TYPE),
+            eq(mediaAssets.uploadedByUserId, userId),
             inArray(mediaAssets.id, chunk),
           ),
         )),
@@ -69,7 +76,8 @@ export type SyncRecordMediaResult = { error?: string };
 /**
  * 記録の保存時に、フォームで指定された添付の並びへ記録のメディアを揃える。
  *
- * - 下書き（先にアップロード済みのファイル）を記録に紐付ける
+ * - 下書き（先にアップロード済みのファイル）を記録に紐付ける。紐付けられるのは
+ *   `userId`（保存したユーザー）がアップロードした下書きだけで、それ以外は見つからない扱いにする
  * - フォームから外された既存の添付を削除する
  * - 送られた順に表示順を振り直す
  *
@@ -79,6 +87,7 @@ export async function syncRecordMedia(
   recordType: MediaRecordType,
   recordId: string,
   assetIds: string[] | null,
+  userId: string,
 ): Promise<SyncRecordMediaResult> {
   if (assetIds == null) {
     return {};
@@ -91,6 +100,7 @@ export async function syncRecordMedia(
   const current = await listMediaAssetsByRecord(recordType, recordId);
   const pending = await listPendingAssets(
     assetIds.filter((id) => !current.some((asset) => asset.id === id)),
+    userId,
   );
   const plan = planMediaSync({
     submittedIds: assetIds,
@@ -124,6 +134,7 @@ export async function syncRecordMedia(
             mediaAssets.recordType,
             item.isPending ? PENDING_MEDIA_RECORD_TYPE : recordType,
           ),
+          item.isPending ? eq(mediaAssets.uploadedByUserId, userId) : undefined,
         ),
       );
   }
@@ -144,11 +155,15 @@ export async function syncRecordMediaFromForm(
   recordId: string,
   formData: FormData,
 ): Promise<string | undefined> {
+  // 呼び出し元の Server Action で認可済みのため、ここではログイン中のユーザーを引くだけ
+  // （requireUser は未ログイン時にリダイレクト＝例外にするため、try の外で呼ぶ）
+  const user = await requireUser();
   try {
     const result = await syncRecordMedia(
       recordType,
       recordId,
       parseMediaAssetIds(formData),
+      user.id,
     );
     return result.error ? `記録は保存しましたが、${result.error}` : undefined;
   } catch (error) {

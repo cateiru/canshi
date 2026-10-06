@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getCatById } from "@/features/cats/queries";
+import { getAccessibleCat } from "@/features/auth/session";
 import { getExpenseByHospitalVisitId } from "@/features/expenses/queries";
 import { updateHospitalVisitAction } from "@/features/hospital-visits/actions";
 import { HospitalVisitForm } from "@/features/hospital-visits/HospitalVisitForm";
@@ -25,7 +25,7 @@ export default async function EditHospitalVisitPage({
 }: EditHospitalVisitPageProps) {
   const { catId, hospitalVisitId } = await params;
   const [cat, hospitalVisit] = await Promise.all([
-    getCatById(catId),
+    getAccessibleCat(catId),
     getHospitalVisitById(hospitalVisitId),
   ]);
 

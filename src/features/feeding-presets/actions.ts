@@ -9,6 +9,7 @@ import {
   feedingPresets,
   type NewFeedingPresetItem,
 } from "@/db/schema";
+import { requireUser } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   type FeedingPresetFormFieldErrors,
@@ -122,6 +123,7 @@ export async function createFeedingPresetAction(
   _prevState: FeedingPresetFormState,
   formData: FormData,
 ): Promise<FeedingPresetFormState> {
+  await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -148,6 +150,7 @@ export async function updateFeedingPresetAction(
   _prevState: FeedingPresetFormState,
   formData: FormData,
 ): Promise<FeedingPresetFormState> {
+  await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -188,6 +191,7 @@ export type DeleteFeedingPresetResult = { error?: string };
 export async function deleteFeedingPresetAction(
   id: string,
 ): Promise<DeleteFeedingPresetResult> {
+  await requireUser();
   const db = getDb();
   await db.batch([
     db.delete(feedingPresetItems).where(eq(feedingPresetItems.presetId, id)),

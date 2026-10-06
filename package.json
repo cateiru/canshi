@@ -1,6 +1,6 @@
 {
   "name": "canshi",
-  "version": "0.27.1",
+  "version": "0.28.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +11,7 @@
     "icons:generate": "node scripts/generate-icons.mjs",
     "og:generate": "node scripts/generate-og-image.mjs",
     "vapid:generate": "node scripts/generate-vapid-keys.mjs",
+    "household:link": "node scripts/link-household.mts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

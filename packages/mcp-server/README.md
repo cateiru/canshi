@@ -53,6 +53,9 @@ pnpm dev
 | `list_timeline` | 指定した猫・年月の記録（ごはん・うんち・体重・通院・投薬など）一覧 |
 
 いずれもメインアプリの `McpRpc`（`src/worker.ts`）を Service Bindings 経由で呼び出す薄いラッパー。
+各ツールはトークンの `props.userId`（CANSHI のユーザー ID）をメインアプリへ渡し、メインアプリは
+そのユーザーが所属する家の猫だけを返す。ユーザー ID を持たない古いトークン（ユーザーの導入前に
+発行されたもの）では、データを返さずにコネクタを接続し直すよう案内する。
 RPC の戻り値の型は `src/rpc/mainApp.ts` に手動で複製した契約（`MainAppRpc`）を参照しており、
 `McpRpc` 側でメソッドを追加・変更したら、あわせて更新すること。
 
@@ -62,6 +65,10 @@ RPC の戻り値の型は `src/rpc/mainApp.ts` に手動で複製した契約（
 リダイレクト → `/callback` という OAuth 2.1 認可コードフロー（PKCE 付き）を実装している。
 詳細は `src/auth/handler.ts`・`src/auth/oauth-state.ts`・`src/auth/access.ts`・
 `src/auth/approval.ts` のコメントを参照。
+
+`/callback` では Access のログイン後に、メインアプリの `McpRpc.resolveMcpUser` でトークンに
+紐付ける CANSHI のユーザーを決め、`props.userId` に保存する。認証を実装するまでは、メインアプリの
+`/login` のログインボタンと同じユーザー（最初に登録されたユーザー）になる。
 
 DCR（`/register`）は誰でも呼べるため、`/authorize` では要求元クライアントを表示する
 承認ダイアログ（CSRF トークン付き）を経由してから Access へリダイレクトする。一度承認した

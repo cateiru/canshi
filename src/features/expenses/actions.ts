@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { chunkForBoundParameters } from "@/db/batch";
@@ -12,10 +12,12 @@ import {
   expenseRecords,
   hospitalVisits,
 } from "@/db/schema";
+import { requireCatAccess, requireUser } from "@/features/auth/session";
 import {
   type LinkableHospitalVisit,
   listHospitalVisitsOnDate,
 } from "@/features/hospital-visits/queries";
+import { accessibleCatIdsQuery } from "@/features/households/queries";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
@@ -55,15 +57,23 @@ function parseFormData(formData: FormData) {
   });
 }
 
+/** 関連する猫がすべて存在し、ログイン中のユーザーの家の猫であることを確認する */
 async function verifyCatsExist(
   db: ReturnType<typeof getDb>,
+  userId: string,
   catIds: string[],
 ): Promise<boolean> {
-  for (const ids of chunkForBoundParameters(catIds)) {
+  // `accessibleCatIdsQuery` の userId の分を 1 個予約する
+  for (const ids of chunkForBoundParameters(catIds, 1)) {
     const rows = await db
       .select({ id: cats.id })
       .from(cats)
-      .where(inArray(cats.id, ids));
+      .where(
+        and(
+          inArray(cats.id, ids),
+          inArray(cats.id, accessibleCatIdsQuery(db, userId)),
+        ),
+      );
     if (rows.length !== ids.length) return false;
   }
   return true;
@@ -82,13 +92,15 @@ type ResolvedLinks =
  */
 async function resolveLinks(
   db: ReturnType<typeof getDb>,
+  userId: string,
   data: ExpenseFormData,
   expenseId: string | null,
 ): Promise<ResolvedLinks> {
   const hospitalVisitIds =
     data.category === "hospital" ? data.hospitalVisitIds : [];
   const visitCatIds: string[] = [];
-  for (const ids of chunkForBoundParameters(hospitalVisitIds)) {
+  // `accessibleCatIdsQuery` の userId の分を 1 個予約する
+  for (const ids of chunkForBoundParameters(hospitalVisitIds, 1)) {
     const rows = await db
       .select({
         catId: hospitalVisits.catId,
@@ -100,7 +112,12 @@ async function resolveLinks(
         expenseRecordHospitalVisits,
         eq(expenseRecordHospitalVisits.hospitalVisitId, hospitalVisits.id),
       )
-      .where(inArray(hospitalVisits.id, ids));
+      .where(
+        and(
+          inArray(hospitalVisits.id, ids),
+          inArray(hospitalVisits.catId, accessibleCatIdsQuery(db, userId)),
+        ),
+      );
     if (rows.length !== ids.length) {
       return {
         ok: false,
@@ -144,7 +161,7 @@ async function resolveLinks(
   }
 
   const catIds = [...new Set([...data.catIds, ...visitCatIds])];
-  if (!(await verifyCatsExist(db, catIds))) {
+  if (!(await verifyCatsExist(db, userId, catIds))) {
     return {
       ok: false,
       fieldErrors: {
@@ -169,6 +186,7 @@ export async function createExpenseAction(
   _prevState: ExpenseFormState,
   formData: FormData,
 ): Promise<ExpenseFormState> {
+  const user = await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -176,7 +194,7 @@ export async function createExpenseAction(
   }
 
   const db = getDb();
-  const links = await resolveLinks(db, parsed.data, null);
+  const links = await resolveLinks(db, user.id, parsed.data, null);
   if (!links.ok) {
     return { fieldErrors: links.fieldErrors };
   }
@@ -205,6 +223,7 @@ export async function updateExpenseAction(
   _prevState: ExpenseFormState,
   formData: FormData,
 ): Promise<ExpenseFormState> {
+  const user = await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -222,22 +241,47 @@ export async function updateExpenseAction(
     return { formError: "支出記録が見つかりませんでした" };
   }
 
-  const links = await resolveLinks(db, parsed.data, id);
+  const links = await resolveLinks(db, user.id, parsed.data, id);
   if (!links.ok) {
     return { fieldErrors: links.fieldErrors };
   }
 
-  // 紐付く猫・通院記録は差分更新せず、いったん全削除してから選択されたものを入れ直す
+  // 紐付く猫・通院記録は差分更新せず、いったん削除してから選択されたものを入れ直す。
+  // 支出記録は家を問わず共通で、フォームにはユーザーの家の猫・通院記録しか出さないため、
+  // 削除するのもユーザーの家の分だけにし、別の家の猫・通院記録との紐付けは残す
   const updateRecord = db
     .update(expenseRecords)
     .set({ ...buildValues(parsed.data), updatedAt: new Date() })
     .where(eq(expenseRecords.id, id));
   const deleteCatLinks = db
     .delete(expenseRecordCats)
-    .where(eq(expenseRecordCats.expenseRecordId, id));
-  const deleteHospitalVisitLinks = db
-    .delete(expenseRecordHospitalVisits)
-    .where(eq(expenseRecordHospitalVisits.expenseRecordId, id));
+    .where(
+      and(
+        eq(expenseRecordCats.expenseRecordId, id),
+        inArray(expenseRecordCats.catId, accessibleCatIdsQuery(db, user.id)),
+      ),
+    );
+  // 通院記録を紐付けられるのはカテゴリ「病院」だけのため、ほかのカテゴリに変えたときは
+  // 別の家の通院記録との紐付けも外す
+  const deleteHospitalVisitLinks = db.delete(expenseRecordHospitalVisits).where(
+    and(
+      eq(expenseRecordHospitalVisits.expenseRecordId, id),
+      parsed.data.category === "hospital"
+        ? inArray(
+            expenseRecordHospitalVisits.hospitalVisitId,
+            db
+              .select({ id: hospitalVisits.id })
+              .from(hospitalVisits)
+              .where(
+                inArray(
+                  hospitalVisits.catId,
+                  accessibleCatIdsQuery(db, user.id),
+                ),
+              ),
+          )
+        : undefined,
+    ),
+  );
 
   await db.batch([
     updateRecord,
@@ -259,6 +303,7 @@ export async function deleteExpenseAction(
   catId: string,
   id: string,
 ): Promise<void> {
+  await requireCatAccess(catId);
   const db = getDb();
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, id);
@@ -277,11 +322,12 @@ export async function listLinkableHospitalVisitsAction(
   date: string,
   expenseRecordId?: string,
 ): Promise<LinkableHospitalVisit[]> {
+  const user = await requireUser();
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];
   }
-  return listHospitalVisitsOnDate(parsed.data, expenseRecordId);
+  return listHospitalVisitsOnDate(user.id, parsed.data, expenseRecordId);
 }
 
 /**
@@ -291,9 +337,10 @@ export async function listLinkableHospitalVisitsAction(
 export async function listSameDayHospitalExpensesAction(
   date: string,
 ): Promise<HospitalExpenseCandidate[]> {
+  const user = await requireUser();
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];
   }
-  return listHospitalExpensesOnDate(parsed.data);
+  return listHospitalExpensesOnDate(user.id, parsed.data);
 }
