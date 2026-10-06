@@ -34,6 +34,22 @@ beforeEach(async () => {
   await migrate(db as unknown as ReturnType<typeof drizzle>, {
     migrationsFolder: "./drizzle",
   });
+  // sql.js は `db.batch`（D1 専用）を持たないため、順番に実行するだけの簡易実装で補う。
+  // D1 の batch は 1 トランザクションとして実行され他の batch と混ざらないため、
+  // 同時に呼ばれた batch も 1 つずつ直列に実行する（`cats/applyProfileImage.test.ts` と同様）
+  let batchQueue: Promise<unknown> = Promise.resolve();
+  // biome-ignore lint/suspicious/noExplicitAny: テスト用に D1 の batch を簡易実装する
+  (db as any).batch = (statements: PromiseLike<unknown>[]) => {
+    const run = batchQueue.then(async () => {
+      const results: unknown[] = [];
+      for (const statement of statements) {
+        results.push(await statement);
+      }
+      return results;
+    });
+    batchQueue = run.catch(() => {});
+    return run;
+  };
   await db.insert(users).values([
     { id: "owner", name: "オーナー" },
     { id: "member", name: "家族" },
@@ -182,6 +198,16 @@ describe("acceptHouseholdInvitation", () => {
     expect(invitation.acceptedAt).not.toBeNull();
   });
 
+  it("招待の使用済み化とメンバーの追加は、1 つの batch（トランザクション）で行う", async () => {
+    const { token } = await issueInvitation();
+    const batch = vi.spyOn(db, "batch");
+
+    await acceptHouseholdInvitation(token, "guest");
+    expect(batch).toHaveBeenCalledTimes(1);
+    expect(batch.mock.calls[0][0]).toHaveLength(2);
+    expect(await getMemberIds()).toEqual(["guest", "member", "owner"]);
+  });
+
   it("1 つの招待で参加できるのは 1 人だけ", async () => {
     const { token } = await issueInvitation();
     await acceptHouseholdInvitation(token, "guest");
@@ -222,9 +248,13 @@ describe("acceptHouseholdInvitation", () => {
   });
 
   it("参加したあとに家から抜けたユーザーは、同じ招待で参加し直せない", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-01T00:00:00Z"));
     const { token } = await issueInvitation();
     await acceptHouseholdInvitation(token, "guest");
     await leaveHousehold("home", "guest");
+
+    vi.setSystemTime(new Date("2026-10-01T00:00:01Z"));
 
     expect(await getHouseholdInvitationPreview(token, "guest")).toEqual({
       status: "invalid",

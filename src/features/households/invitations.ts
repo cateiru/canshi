@@ -215,10 +215,12 @@ export type AcceptHouseholdInvitationResult =
 /**
  * 招待を使って家に参加する。1 つの招待で参加できるのは 1 人だけ。
  *
- * 先に招待を「使用済み」にする UPDATE で 1 人分の枠を確保し、確保できたときだけ
- * メンバーに加える。同時に別のユーザーが参加しようとしても、UPDATE の WHERE に
- * 未使用であることを含めているため、枠を確保できるのは 1 人だけになる。
- * すでにその家のメンバーであるユーザーが開いた場合は、枠を使わずに失敗させる
+ * 招待を「使用済み」にする UPDATE と、メンバーに加える INSERT を 1 つの batch
+ * （トランザクション）で実行し、どちらか一方だけが反映された状態を作らない。
+ * UPDATE の WHERE に未使用であることを含めているため、同時に別のユーザーが参加しようと
+ * しても使用済みにできるのは 1 人だけで、INSERT は「このリクエストで使用済みにした
+ * 招待」（参加したユーザーと日時が一致する招待）からだけメンバーを作る。
+ * すでにその家のメンバーであるユーザーが開いた場合は、使用済みにせずに失敗させる
  * （オーナーが自分で URL を試しても、招待した相手が参加できなくならないように）
  */
 export async function acceptHouseholdInvitation(
@@ -227,49 +229,60 @@ export async function acceptHouseholdInvitation(
   d1?: D1Database,
 ): Promise<AcceptHouseholdInvitationResult> {
   const db = getDb(d1);
-  const now = new Date();
-  const [claimed] = await db
-    .update(householdInvitations)
-    .set({ acceptedByUserId: userId, acceptedAt: now })
-    .where(
-      and(
-        eq(householdInvitations.tokenHash, await hashSessionToken(token)),
-        isNull(householdInvitations.acceptedByUserId),
-        gt(householdInvitations.expiresAt, now),
-        sql`NOT EXISTS (
-          SELECT 1 FROM ${householdMembers} AS m
-          WHERE m.household_id = ${householdInvitations.householdId}
-            AND m.user_id = ${userId}
-        )`,
-      ),
-    )
-    .returning({
-      id: householdInvitations.id,
-      householdId: householdInvitations.householdId,
-    });
+  // DB には秒単位で保存されるため、INSERT の条件で比べられるよう秒に切り捨てておく
+  const now = new Date(toUnixSeconds(new Date()) * 1000);
+  const tokenHash = await hashSessionToken(token);
+  const notMemberCondition = sql`NOT EXISTS (
+    SELECT 1 FROM ${householdMembers} AS m
+    WHERE m.household_id = ${householdInvitations.householdId}
+      AND m.user_id = ${userId}
+  )`;
 
-  if (!claimed) {
+  const [claimed] = await db.batch([
+    db
+      .update(householdInvitations)
+      .set({ acceptedByUserId: userId, acceptedAt: now })
+      .where(
+        and(
+          eq(householdInvitations.tokenHash, tokenHash),
+          isNull(householdInvitations.acceptedByUserId),
+          gt(householdInvitations.expiresAt, now),
+          notMemberCondition,
+        ),
+      )
+      .returning({ householdId: householdInvitations.householdId }),
+    // 以前この招待で参加して家から抜けたユーザーが開き直しても、使用済みにした日時が
+    // 一致しないため参加し直せない（参加・脱退・開き直しが同じ 1 秒の中で起きた場合だけは、
+    // 本人が参加し直せてしまうが、招待された本人のため実害はない）
+    db.insert(householdMembers).select(
+      db
+        .select({
+          householdId: householdInvitations.householdId,
+          userId: sql`${userId}`.as("user_id"),
+          role: sql`'member'`.as("role"),
+          createdAt: sql`${toUnixSeconds(now)}`.as("created_at"),
+        })
+        .from(householdInvitations)
+        .where(
+          and(
+            eq(householdInvitations.tokenHash, tokenHash),
+            eq(householdInvitations.acceptedByUserId, userId),
+            eq(householdInvitations.acceptedAt, now),
+            notMemberCondition,
+          ),
+        ),
+    ),
+  ]);
+
+  const [invitation] = claimed;
+  if (!invitation) {
     return {
       ok: false,
       error:
         "家に参加できませんでした。招待 URL の期限が切れているか、すでに使われています",
     };
   }
-
-  try {
-    await db
-      .insert(householdMembers)
-      .values({ householdId: claimed.householdId, userId, role: "member" })
-      .onConflictDoNothing();
-  } catch (error) {
-    // メンバーに加えられなかったときは、招待を未使用に戻して使い直せるようにする
-    await db
-      .update(householdInvitations)
-      .set({ acceptedByUserId: null, acceptedAt: null })
-      .where(eq(householdInvitations.id, claimed.id));
-    throw error;
-  }
-  return { ok: true, householdId: claimed.householdId };
+  return { ok: true, householdId: invitation.householdId };
 }
 
 function toUnixSeconds(date: Date) {
