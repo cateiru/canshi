@@ -32,6 +32,10 @@ export const householdInvitations = sqliteTable(
     // 招待で家に参加したユーザー。NULL のあいだは未使用
     acceptedByUserId: text("accepted_by_user_id").references(() => users.id),
     acceptedAt: integer("accepted_at", { mode: "timestamp" }),
+    // 参加の処理ごとに発行する ID。招待を使用済みにする UPDATE と同じ batch の INSERT が、
+    // その処理で使用済みにした招待からだけメンバーを作るための目印
+    // （`src/features/households/invitations.ts` の `acceptHouseholdInvitation`）
+    acceptanceId: text("acceptance_id"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

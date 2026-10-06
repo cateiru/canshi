@@ -6,6 +6,7 @@ CREATE TABLE `household_invitations` (
 	`expires_at` integer NOT NULL,
 	`accepted_by_user_id` text,
 	`accepted_at` integer,
+	`acceptance_id` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`household_id`) REFERENCES `households`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`created_by_user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,

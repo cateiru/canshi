@@ -19,7 +19,7 @@ import {
   listPendingHouseholdInvitations,
   revokeHouseholdInvitation,
 } from "./invitations";
-import { leaveHousehold } from "./management";
+import { leaveHousehold, removeHouseholdMember } from "./management";
 import { transferHouseholdOwnership } from "./ownership";
 
 // `management.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
@@ -127,6 +127,23 @@ describe("createHouseholdInvitation", () => {
 });
 
 describe("listPendingHouseholdInvitations", () => {
+  it("同じ秒に発行した招待も、新しく発行した順に並ぶ", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-01T00:00:00Z"));
+    const older = await issueInvitation();
+    const newer = await issueInvitation();
+
+    // 先頭（新しい方）を無効化すると、後から発行した招待だけが使えなくなる
+    const [first] = await listPendingHouseholdInvitations("home");
+    await revokeHouseholdInvitation("home", "owner", first.id);
+    expect(
+      (await getHouseholdInvitationPreview(newer.token, "guest")).status,
+    ).toBe("invalid");
+    expect(
+      (await getHouseholdInvitationPreview(older.token, "guest")).status,
+    ).toBe("valid");
+  });
+
   it("未使用で期限内の招待だけを返す", async () => {
     const used = await issueInvitation();
     await acceptHouseholdInvitation(used.token, "guest");
@@ -247,19 +264,26 @@ describe("acceptHouseholdInvitation", () => {
     });
   });
 
-  it("参加したあとに家から抜けたユーザーは、同じ招待で参加し直せない", async () => {
+  // 参加・脱退・開き直しが同じ 1 秒の中で起きても、参加の処理ごとの ID で判定するため参加し直せない
+  it("参加したあとに家から抜けた・外されたユーザーは、同じ招待で参加し直せない", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-10-01T00:00:00Z"));
-    const { token } = await issueInvitation();
-    await acceptHouseholdInvitation(token, "guest");
+    const left = await issueInvitation();
+    await acceptHouseholdInvitation(left.token, "guest");
     await leaveHousehold("home", "guest");
+    const removed = await issueInvitation();
+    await acceptHouseholdInvitation(removed.token, "another-guest");
+    await removeHouseholdMember("home", "owner", "another-guest");
 
-    vi.setSystemTime(new Date("2026-10-01T00:00:01Z"));
-
-    expect(await getHouseholdInvitationPreview(token, "guest")).toEqual({
-      status: "invalid",
-    });
-    expect((await acceptHouseholdInvitation(token, "guest")).ok).toBe(false);
+    for (const [token, userId] of [
+      [left.token, "guest"],
+      [removed.token, "another-guest"],
+    ]) {
+      expect(await getHouseholdInvitationPreview(token, userId)).toEqual({
+        status: "invalid",
+      });
+      expect((await acceptHouseholdInvitation(token, userId)).ok).toBe(false);
+    }
     expect(await getMemberIds()).toEqual(["member", "owner"]);
   });
 

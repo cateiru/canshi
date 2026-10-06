@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "deef8de5-ea41-4312-833a-fa53ff9ed037",
+  "id": "d700ab64-add9-4539-acd9-4b0f164b9900",
   "prevId": "455a1a05-a41b-4884-a1d6-b49be50c6701",
   "tables": {
     "ai_evaluations": {
@@ -1165,6 +1165,13 @@
         "accepted_at": {
           "name": "accepted_at",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "acceptance_id": {
+          "name": "acceptance_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

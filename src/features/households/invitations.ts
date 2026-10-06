@@ -65,6 +65,7 @@ export async function createHouseholdInvitation(
           expiresAt: sql`${toUnixSeconds(expiresAt)}`.as("expires_at"),
           acceptedByUserId: sql`NULL`.as("accepted_by_user_id"),
           acceptedAt: sql`NULL`.as("accepted_at"),
+          acceptanceId: sql`NULL`.as("acceptance_id"),
           createdAt: sql`${toUnixSeconds(now)}`.as("created_at"),
         })
         .from(households)
@@ -89,26 +90,30 @@ export async function listPendingHouseholdInvitations(
   d1?: D1Database,
 ) {
   const db = getDb(d1);
-  return db
-    .select({
-      id: householdInvitations.id,
-      createdByName: users.name,
-      expiresAt: householdInvitations.expiresAt,
-      createdAt: householdInvitations.createdAt,
-    })
-    .from(householdInvitations)
-    .innerJoin(users, eq(householdInvitations.createdByUserId, users.id))
-    .where(
-      and(
-        eq(householdInvitations.householdId, householdId),
-        isNull(householdInvitations.acceptedByUserId),
-        gt(householdInvitations.expiresAt, new Date()),
-      ),
-    )
-    .orderBy(
-      desc(householdInvitations.createdAt),
-      desc(householdInvitations.id),
-    );
+  return (
+    db
+      .select({
+        id: householdInvitations.id,
+        createdByName: users.name,
+        expiresAt: householdInvitations.expiresAt,
+        createdAt: householdInvitations.createdAt,
+      })
+      .from(householdInvitations)
+      .innerJoin(users, eq(householdInvitations.createdByUserId, users.id))
+      .where(
+        and(
+          eq(householdInvitations.householdId, householdId),
+          isNull(householdInvitations.acceptedByUserId),
+          gt(householdInvitations.expiresAt, new Date()),
+        ),
+      )
+      // `created_at` は秒単位のため、同じ秒に発行した招待は rowid（挿入順に増える）で
+      // 新しい順に並べる。`id` はランダムな UUID のため発行順にならない
+      .orderBy(
+        desc(householdInvitations.createdAt),
+        desc(sql`${householdInvitations}.rowid`),
+      )
+  );
 }
 
 export type RevokeHouseholdInvitationResult =
@@ -218,8 +223,9 @@ export type AcceptHouseholdInvitationResult =
  * 招待を「使用済み」にする UPDATE と、メンバーに加える INSERT を 1 つの batch
  * （トランザクション）で実行し、どちらか一方だけが反映された状態を作らない。
  * UPDATE の WHERE に未使用であることを含めているため、同時に別のユーザーが参加しようと
- * しても使用済みにできるのは 1 人だけで、INSERT は「このリクエストで使用済みにした
- * 招待」（参加したユーザーと日時が一致する招待）からだけメンバーを作る。
+ * しても使用済みにできるのは 1 人だけ。UPDATE はこの処理ごとに発行した ID
+ * （`acceptance_id`）を招待に書き込み、INSERT はその ID の招待からだけメンバーを作る。
+ * そのため、以前この招待で参加して家から抜けたユーザーが開き直しても参加し直せない。
  * すでにその家のメンバーであるユーザーが開いた場合は、使用済みにせずに失敗させる
  * （オーナーが自分で URL を試しても、招待した相手が参加できなくならないように）
  */
@@ -229,31 +235,26 @@ export async function acceptHouseholdInvitation(
   d1?: D1Database,
 ): Promise<AcceptHouseholdInvitationResult> {
   const db = getDb(d1);
-  // DB には秒単位で保存されるため、INSERT の条件で比べられるよう秒に切り捨てておく
-  const now = new Date(toUnixSeconds(new Date()) * 1000);
-  const tokenHash = await hashSessionToken(token);
-  const notMemberCondition = sql`NOT EXISTS (
-    SELECT 1 FROM ${householdMembers} AS m
-    WHERE m.household_id = ${householdInvitations.householdId}
-      AND m.user_id = ${userId}
-  )`;
+  const now = new Date();
+  const acceptanceId = crypto.randomUUID();
 
   const [claimed] = await db.batch([
     db
       .update(householdInvitations)
-      .set({ acceptedByUserId: userId, acceptedAt: now })
+      .set({ acceptedByUserId: userId, acceptedAt: now, acceptanceId })
       .where(
         and(
-          eq(householdInvitations.tokenHash, tokenHash),
+          eq(householdInvitations.tokenHash, await hashSessionToken(token)),
           isNull(householdInvitations.acceptedByUserId),
           gt(householdInvitations.expiresAt, now),
-          notMemberCondition,
+          sql`NOT EXISTS (
+            SELECT 1 FROM ${householdMembers} AS m
+            WHERE m.household_id = ${householdInvitations.householdId}
+              AND m.user_id = ${userId}
+          )`,
         ),
       )
       .returning({ householdId: householdInvitations.householdId }),
-    // 以前この招待で参加して家から抜けたユーザーが開き直しても、使用済みにした日時が
-    // 一致しないため参加し直せない（参加・脱退・開き直しが同じ 1 秒の中で起きた場合だけは、
-    // 本人が参加し直せてしまうが、招待された本人のため実害はない）
     db.insert(householdMembers).select(
       db
         .select({
@@ -263,14 +264,7 @@ export async function acceptHouseholdInvitation(
           createdAt: sql`${toUnixSeconds(now)}`.as("created_at"),
         })
         .from(householdInvitations)
-        .where(
-          and(
-            eq(householdInvitations.tokenHash, tokenHash),
-            eq(householdInvitations.acceptedByUserId, userId),
-            eq(householdInvitations.acceptedAt, now),
-            notMemberCondition,
-          ),
-        ),
+        .where(eq(householdInvitations.acceptanceId, acceptanceId)),
     ),
   ]);
 
