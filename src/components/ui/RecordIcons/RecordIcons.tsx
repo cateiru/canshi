@@ -644,3 +644,18 @@ export function AppearanceSettingsIcon(props: RecordIconProps) {
     </RecordIcon>
   );
 }
+
+export function HouseholdIcon(props: RecordIconProps) {
+  const roof = "M2 11.5 12 3l10 8.5";
+  const house = "M4.5 9.5V21h15V9.5L12 3.5Z";
+  const door = "M10 21v-5a2 2 0 0 1 4 0v5";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#f5dfb7" d={house} />}>
+      <path d={house} />
+      <path d={roof} />
+      <path className={styles.foregroundFill} fill="#e99a70" d={door} />
+      <path d="M17 6V3.5h2v4" />
+    </RecordIcon>
+  );
+}

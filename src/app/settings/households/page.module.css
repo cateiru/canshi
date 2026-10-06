@@ -1,0 +1,24 @@
+.main {
+  composes: page from "../../../features/shared/PageLayout.module.css";
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.description {
+  color: var(--color-ink-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  list-style: none;
+}
+
+.emptyState {
+  composes: emptyState from "../../../features/shared/PageLayout.module.css";
+}

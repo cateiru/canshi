@@ -1,0 +1,49 @@
+.main {
+  composes: page from "../../../../features/shared/PageLayout.module.css";
+}
+
+.note {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.members {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+}
+
+.member {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.member + .member {
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.memberInfo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.memberName {
+  font-weight: var(--font-weight-bold);
+}
+
+.memberActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.memberActions:empty {
+  display: none;
+}

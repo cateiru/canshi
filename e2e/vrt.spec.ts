@@ -188,6 +188,22 @@ test("設定ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+test("家の設定ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/households");
+  await expect(
+    page.getByRole("heading", { name: "家の設定", exact: true }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+test("家の詳細設定ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/households/vrt-household");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "VRTの家" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("通知設定ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/notifications");
   // 「猫ごとの通知設定」の見出しにも部分一致してしまうため、完全一致で探す
