@@ -125,6 +125,8 @@ async function issueInvitationUrl(page: Page) {
   const url = await urlField.inputValue();
   await dialog.getByRole("button", { name: "閉じる" }).click();
   await expect(dialog).toBeHidden();
+  // 閉じたあとの一覧の取り直しを待たずに数えたり押したりしないよう、読み込み直しておく
+  await page.reload();
   return url;
 }
 
