@@ -1,0 +1,25 @@
+{
+  "name": "@canshi/admin",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --persist-to ../../.wrangler/state",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "cf-typegen": "wrangler types --strict-vars=false"
+  },
+  "dependencies": {
+    "hono": "^4.13.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "@types/sql.js": "^1.4.11",
+    "sql.js": "^1.14.2",
+    "typescript": "^5",
+    "vitest": "^5.0.0",
+    "wrangler": "^4.129.0"
+  },
+  "packageManager": "pnpm@12.8.2"
+}
