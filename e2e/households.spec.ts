@@ -2,7 +2,10 @@ import { expect, test } from "@playwright/test";
 
 // 家の設定（名前の変更）と、猫一覧の家ごとのまとまりの開閉を検証する。
 // メンバーを外す・オーナーを移譲する操作は、ログインできるユーザーが 1 人だけで
-// 再現できないため、`src/features/households/management.test.ts` などで確かめる
+// 再現できないため、`src/features/households/management.test.ts` などで確かめる。
+// 名前を変えるテストと、家の名前で開閉ボタンを探すテストが重ならないよう、直列に実行する
+test.describe.configure({ mode: "serial" });
+
 test("家の名前を変えると、家の設定と猫一覧に反映される", async ({ page }) => {
   await page.goto("/settings/households");
   await expect(
@@ -75,7 +78,9 @@ test("猫一覧の家のまとまりを折りたたむと、開き直すまで�
   const catHeading = page.getByRole("heading", { name: catName });
   // 開閉ボタンの名前には、家の名前に続けて猫の頭数が入る
   const trigger = page.getByRole("button", {
-    name: new RegExp(`^${householdName}\\s*\\d+匹$`),
+    name: new RegExp(
+      `^${householdName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\d+匹$`,
+    ),
   });
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await expect(catHeading).toBeVisible();
