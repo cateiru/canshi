@@ -37,8 +37,8 @@ Cloudflare ダッシュボードの Workers 全体の Access（`All traffic`）�
 （`docs/plans/15_cloudflare_access.md`）。
 
 ただし MCP サーバーのカスタムドメイン（`mcp.canshi.cateiru.dev`）には Workers 全体の Access が
-適用されなかった（[`docs/deploy.md`](../../docs/deploy.md) の「MCP サーバー」節）。公開したら、
-`canshi-admin.cateiru.dev` が Access で保護されていることを必ず確認する（`docs/deploy.md` の
+適用されなかった（[`docs/deploy.md`](../../docs/deploy.md) の「MCP サーバー」節）。デプロイする前に、
+`canshi-admin.cateiru.dev` が Access で保護されることを必ず確かめる（`docs/deploy.md` の
 「管理画面」節）。
 
 ## D1 の参照

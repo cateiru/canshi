@@ -256,13 +256,17 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
 アクセス制御はメインアプリと同じく Workers 全体の Access（`All traffic`）に任せ、アプリ内では
 認証しない。ただし前述の MCP サーバーの節のとおり、MCP サーバーのカスタムドメイン
 （`mcp.canshi.cateiru.dev`）には Workers 全体の Access が適用されなかった。管理画面は全ユーザー・
-全家の情報を表示するため、公開したら次の動作確認を必ず実施し、保護されていなければ Zero Trust で
-`canshi-admin.cateiru.dev` の Self-hosted アプリケーションを追加する。
+全家の情報を表示するため、**デプロイする前に** `canshi-admin.cateiru.dev` が Access で保護される
+ことを確かめる（デプロイしてから確かめると、確認までの間に一覧が誰にでも見えてしまう）。
 
 ### 初回の公開手順
 
-1. `pnpm --filter @canshi/admin deploy` でデプロイする（カスタムドメインも作成される）。
-2. すぐに次の動作確認を実施する。
+1. Zero Trust の Access controls > Applications で、`canshi-admin.cateiru.dev` を対象に含む
+   アプリケーション（ワイルドカードを含む）とポリシーがあるかを確認する。無ければ、デプロイの前に
+   `canshi-admin.cateiru.dev` の **Self-hosted** アプリケーションを追加し、メインアプリと同じ
+   再利用可能なポリシー（または管理者だけを許可するポリシー）を付ける。
+2. `pnpm --filter @canshi/admin deploy` でデプロイする（カスタムドメインも作成される）。
+3. すぐに次の動作確認を実施する。
 
 ### 動作確認
 
