@@ -6,10 +6,9 @@
   "compatibility_flags": ["nodejs_compat"],
 
   // 本番公開ホスト名。メインアプリ（canshi.cateiru.dev）・MCP サーバー
-  // （mcp.canshi.cateiru.dev）とは別ホスト名にする。MCP サーバーのカスタム
-  // ドメインにはアカウント全体の Access（Protect all Workers）が適用されなかった
-  // ため、Zero Trust でこのホスト名の Self-hosted アプリを作成してから公開する
-  // （docs/deploy.md の「管理画面」節を参照）
+  // （mcp.canshi.cateiru.dev）とは別ホスト名にする。アクセス制御は Workers 全体の
+  // Cloudflare Access に任せるため、公開後にこのホスト名が Access で保護されて
+  // いることを必ず確認する（docs/deploy.md の「管理画面」節を参照）
   "routes": [{ "pattern": "canshi-admin.cateiru.dev", "custom_domain": true }],
   // 管理画面はカスタムドメインだけで公開し、workers.dev・プレビュー URL は作らない
   "workers_dev": false,
@@ -32,14 +31,5 @@
       "database_name": "canshi-db",
       "database_id": "1f5e487e-f87e-4896-8190-1ae4f4347ca3"
     }
-  ],
-
-  // Cloudflare Access（Self-hosted アプリ）の JWT を検証するための値
-  // （src/auth/access.ts）。どちらも機密情報ではない。ACCESS_AUD は
-  // Self-hosted アプリ作成後にダッシュボードの「Application Audience (AUD) Tag」を
-  // 設定する。空のままではすべてのリクエストを拒否する
-  "vars": {
-    "ACCESS_TEAM_DOMAIN": "https://cateiru-fe4.cloudflareaccess.com",
-    "ACCESS_AUD": ""
-  }
+  ]
 }

@@ -30,35 +30,16 @@ pnpm deploy      # wrangler deploy
 `pnpm dev` は `--persist-to ../../.wrangler/state` でメインアプリと同じローカル D1 を参照する。
 テーブルが無い場合は、先にリポジトリルートで `pnpm db:migrate:local` を実行しておく。
 
-ローカルには Cloudflare Access が無いため、`.dev.vars.example` を `.dev.vars` にコピーして
-`ACCESS_DEV_BYPASS=true` を設定すると、Access の JWT の検証を省略できる。この設定はリクエストの
-ホスト名が `localhost`・`127.0.0.1` のときだけ効き、本番のホスト名では無視される。
-`wrangler dev` は既定では `routes` のホスト名（`canshi-admin.cateiru.dev`）でリクエストの URL を
-書き換えるため、`pnpm dev` では `--local-upstream localhost` を指定している。
+## アクセス制御
 
-```bash
-cp .dev.vars.example .dev.vars
-pnpm dev
-```
+管理画面は全ユーザー・全家の情報を表示するが、アプリ内では認証しない。メインアプリと同じく、
+Cloudflare ダッシュボードの Workers 全体の Access（`All traffic`）で保護する
+（`docs/plans/15_cloudflare_access.md`）。
 
-## Cloudflare Access による保護
-
-管理画面は全ユーザー・全家の情報を表示するため、Cloudflare Access で管理者だけに公開する。
-
-メインアプリは「Workers 全体の Access（Protect all Workers）」で保護されている前提で、アプリ内では
-Access の JWT を検証しない（`docs/plans/15_cloudflare_access.md`）。しかし MCP サーバーの導入時に、
-MCP サーバーのカスタムドメインにはこの Workers 全体の Access が適用されなかったことを確認している
-（[`docs/deploy.md`](../../docs/deploy.md) の「MCP サーバー」節）。管理画面はそれに頼らず、次の 2 段で守る。
-
-1. Zero Trust で `canshi-admin.cateiru.dev` の Self-hosted アプリケーションを作成し、管理者だけを
-   許可するポリシーを付ける（エッジでの保護。手順は `docs/deploy.md` の「管理画面」節）
-2. Worker 内でも、すべてのリクエストで `Cf-Access-Jwt-Assertion` ヘッダーの JWT を検証する
-   （`src/auth/access.ts`）。署名は Team domain の `/cdn-cgi/access/certs` の鍵で、`aud` は
-   Self-hosted アプリの AUD タグ（`wrangler.jsonc` の `ACCESS_AUD`）で確かめる。
-   `ACCESS_AUD` が空のときや JWT が無い・不正なときは `403` を返す（fail closed）
-
-アプリ内のユーザー（`users.role`）と Access のアカウント（メールアドレス）は紐付いていないため、
-誰が管理画面を使えるかは Access のポリシーだけで決まる。
+ただし MCP サーバーのカスタムドメイン（`mcp.canshi.cateiru.dev`）には Workers 全体の Access が
+適用されなかった（[`docs/deploy.md`](../../docs/deploy.md) の「MCP サーバー」節）。公開したら、
+`canshi-admin.cateiru.dev` が Access で保護されていることを必ず確認する（`docs/deploy.md` の
+「管理画面」節）。
 
 ## D1 の参照
 

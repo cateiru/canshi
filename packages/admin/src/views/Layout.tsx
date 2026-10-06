@@ -36,7 +36,6 @@ body {
 main, header { max-width: 64rem; margin: 0 auto; }
 header { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; align-items: baseline; margin-bottom: 1.5rem; }
 header h1 { font-size: 1.25rem; margin: 0; }
-header .who { margin-left: auto; color: var(--muted); font-size: 0.875rem; }
 nav { display: flex; gap: 1rem; }
 a { color: var(--accent); }
 nav a[aria-current="page"] { font-weight: bold; text-decoration: none; color: var(--fg); }
@@ -65,7 +64,6 @@ const NAV_ITEMS = [
 export function Layout(props: {
   title: string;
   currentPath: string;
-  adminEmail: string;
   children: Child;
 }) {
   return (
@@ -92,7 +90,6 @@ export function Layout(props: {
               </a>
             ))}
           </nav>
-          <span class="who">{props.adminEmail}</span>
         </header>
         <main>
           <h2>{props.title}</h2>
