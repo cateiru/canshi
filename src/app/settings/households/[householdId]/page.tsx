@@ -3,15 +3,23 @@ import { Badge, Breadcrumb } from "@/components/ui";
 import { HouseholdIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireHouseholdAccess } from "@/features/auth/session";
 import {
+  createHouseholdInvitationAction,
   leaveHouseholdAction,
   removeHouseholdMemberAction,
+  revokeHouseholdInvitationAction,
   transferHouseholdOwnershipAction,
   updateHouseholdNameAction,
 } from "@/features/households/actions";
+import { HouseholdInvitationIssueButton } from "@/features/households/HouseholdInvitationIssueButton";
 import { HouseholdMemberActionButton } from "@/features/households/HouseholdMemberActionButton";
 import { HouseholdNameForm } from "@/features/households/HouseholdNameForm";
+import {
+  HOUSEHOLD_INVITATION_MAX_AGE_SECONDS,
+  listPendingHouseholdInvitations,
+} from "@/features/households/invitations";
 import { HOUSEHOLD_ROLE_LABEL } from "@/features/households/labels";
 import { listHouseholdMembers } from "@/features/households/queries";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
@@ -33,6 +41,9 @@ export default async function HouseholdSettingsPage({
   const { user, household } = await requireHouseholdAccess(householdId);
   const members = await listHouseholdMembers(household.id);
   const isOwner = household.role === "owner";
+  const invitations = isOwner
+    ? await listPendingHouseholdInvitations(household.id)
+    : [];
 
   return (
     <main className={styles.main}>
@@ -126,6 +137,55 @@ export default async function HouseholdSettingsPage({
           </p>
         ) : null}
       </Surface>
+
+      {isOwner ? (
+        <Surface title="招待" titleId="household-invitations-heading" gap="md">
+          <p className={styles.note}>
+            招待 URL を開いた人が、この家にメンバーとして参加できます。1 つの
+            URL で参加できるのは 1 人だけで、発行から{" "}
+            {HOUSEHOLD_INVITATION_MAX_AGE_SECONDS / (24 * 60 * 60)}{" "}
+            日で使えなくなります。
+          </p>
+          <div>
+            <HouseholdInvitationIssueButton
+              householdName={household.name}
+              action={createHouseholdInvitationAction.bind(null, household.id)}
+            />
+          </div>
+          {invitations.length > 0 ? (
+            <ul className={styles.members} aria-label="まだ使われていない招待">
+              {invitations.map((invitation) => (
+                <li key={invitation.id} className={styles.member}>
+                  <div className={styles.invitationInfo}>
+                    <span>
+                      有効期限:{" "}
+                      {formatDateTimeUtc(getNaiveUtcNow(invitation.expiresAt))}
+                    </span>
+                    <span className={styles.note}>
+                      {formatDateTimeUtc(getNaiveUtcNow(invitation.createdAt))}{" "}
+                      に{invitation.createdByName}が発行
+                    </span>
+                  </div>
+                  <HouseholdMemberActionButton
+                    label="無効化する"
+                    title="招待の無効化"
+                    description="この招待を無効化しますか？無効化した招待 URL を開いても、家には参加できなくなります。"
+                    variant="danger"
+                    successMessage="招待を無効化しました"
+                    action={revokeHouseholdInvitationAction.bind(
+                      null,
+                      household.id,
+                      invitation.id,
+                    )}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.note}>まだ使われていない招待はありません。</p>
+          )}
+        </Surface>
+      ) : null}
     </main>
   );
 }

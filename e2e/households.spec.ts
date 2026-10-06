@@ -1,8 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
-// 家の設定（名前の変更）と、猫一覧の家ごとのまとまりの開閉を検証する。
-// メンバーを外す・オーナーを移譲する操作は、ログインできるユーザーが 1 人だけで
-// 再現できないため、`src/features/households/management.test.ts` などで確かめる。
+// 家の設定（名前の変更・招待 URL）と、猫一覧の家ごとのまとまりの開閉を検証する。
+// メンバーを外す・オーナーを移譲する・招待 URL で別のユーザーが参加する操作は、
+// ログインできるユーザーが 1 人だけで再現できないため、
+// `src/features/households/management.test.ts`・`invitations.test.ts` などで確かめる。
 // 名前を変えるテストと、家の名前で開閉ボタンを探すテストが重ならないよう、直列に実行する
 test.describe.configure({ mode: "serial" });
 
@@ -105,4 +106,100 @@ test("猫一覧の家のまとまりを折りたたむと、開き直すまで�
   await dialog.getByRole("textbox").fill(catName);
   await dialog.getByRole("button", { name: "削除する" }).click();
   await expect(page).toHaveURL(/\/cats$/);
+});
+
+/** オーナーとして家の設定を開き、招待 URL を発行してその URL を返す */
+async function issueInvitationUrl(page: Page) {
+  await page.goto("/settings/households");
+  await page
+    .getByRole("link")
+    .filter({ hasText: "あなたはオーナー" })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/settings\/households\/[^/]+$/);
+
+  await page.getByRole("button", { name: "招待 URL を発行する" }).click();
+  const dialog = page.getByRole("dialog", { name: "招待 URL" });
+  const urlField = dialog.getByRole("textbox", { name: "招待 URL" });
+  await expect(urlField).toHaveValue(/\/invitations\/[A-Za-z0-9_-]+$/);
+  const url = await urlField.inputValue();
+  await dialog.getByRole("button", { name: "閉じる" }).click();
+  await expect(dialog).toBeHidden();
+  return url;
+}
+
+test("招待 URL を発行し、無効化すると使えなくなる", async ({ page }) => {
+  const url = await issueInvitationUrl(page);
+  const householdPage = page.url();
+  const invitations = page.getByRole("list", {
+    name: "まだ使われていない招待",
+  });
+  await expect(
+    invitations.getByRole("button", { name: "無効化する" }).first(),
+  ).toBeVisible();
+  const countBefore = await invitations.getByRole("listitem").count();
+
+  // オーナー自身が開いても参加済みとして案内され、招待は使用済みにならない
+  await page.goto(url);
+  await expect(
+    page.getByText(/あなたはすでに「.+」のメンバーです/),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "参加する" })).toHaveCount(0);
+
+  await page.goto(householdPage);
+  await expect(invitations.getByRole("listitem")).toHaveCount(countBefore);
+
+  // 一覧は新しい順のため、先頭が今発行した招待
+  await invitations.getByRole("button", { name: "無効化する" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "招待の無効化" });
+  await dialog.getByRole("button", { name: "無効化する" }).click();
+  await expect(page.getByText("招待を無効化しました")).toBeVisible();
+  if (countBefore > 1) {
+    await expect(invitations.getByRole("listitem")).toHaveCount(
+      countBefore - 1,
+    );
+  } else {
+    await expect(
+      page.getByText("まだ使われていない招待はありません。"),
+    ).toBeVisible();
+  }
+
+  await page.goto(url);
+  await expect(page.getByText("この招待 URL は使えません。")).toBeVisible();
+});
+
+test("ログインしていない状態で招待 URL を開くと、ログイン後に招待のページへ戻る", async ({
+  page,
+  browser,
+}) => {
+  const url = await issueInvitationUrl(page);
+
+  const guestContext = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+  });
+  try {
+    const guestPage = await guestContext.newPage();
+    await guestPage.goto(url);
+    await expect(guestPage).toHaveURL(/\/login\?callbackUrl=/);
+    await guestPage.getByRole("button", { name: "ログイン" }).click();
+
+    await expect(guestPage).toHaveURL(new URL(url).pathname);
+    await expect(
+      guestPage.getByRole("heading", { name: "家への招待" }),
+    ).toBeVisible();
+  } finally {
+    await guestContext.close();
+    // 後片付け: 発行した招待を無効化する
+    await page.reload();
+    await page
+      .getByRole("list", { name: "まだ使われていない招待" })
+      .getByRole("button", { name: "無効化する" })
+      .first()
+      .click();
+    await page
+      .getByRole("dialog", { name: "招待の無効化" })
+      .getByRole("button", { name: "無効化する" })
+      .click();
+    await expect(page.getByText("招待を無効化しました")).toBeVisible();
+  }
 });

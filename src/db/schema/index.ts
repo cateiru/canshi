@@ -10,6 +10,7 @@ export * from "./feeding-presets";
 export * from "./feeding-records";
 export * from "./food-products";
 export * from "./hospital-visits";
+export * from "./household-invitations";
 export * from "./household-members";
 export * from "./households";
 export * from "./media-assets";

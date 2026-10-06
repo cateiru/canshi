@@ -11,6 +11,11 @@ describe("sanitizeCallbackUrl", () => {
     expect(sanitizeCallbackUrl("/%09/evil.example")).toBe("/%09/evil.example");
   });
 
+  it("家への招待 URL（base64url のトークンを含む）はそのまま返す", () => {
+    const path = "/invitations/Ab0-_Zz9xY8wV7uT6sR5qP4oN3mL2kJ1iH0gF9eD8cB";
+    expect(sanitizeCallbackUrl(path)).toBe(path);
+  });
+
   it.each([
     undefined,
     null,

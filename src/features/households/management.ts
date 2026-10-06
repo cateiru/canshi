@@ -11,7 +11,7 @@ export type HouseholdManagementResult =
  * 判定と更新の間にオーナーを移譲された場合に元オーナーの操作が通ってしまうため、
  * 更新・削除の WHERE に含めて 1 文で判定する
  */
-function isOwnerCondition(householdId: string, userId: string) {
+export function isOwnerCondition(householdId: string, userId: string) {
   return sql`EXISTS (
     SELECT 1 FROM ${householdMembers} AS owner
     WHERE owner.household_id = ${householdId}

@@ -260,6 +260,13 @@
       "when": 1791099299974,
       "tag": "0036_chilly_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "6",
+      "when": 1791296026068,
+      "tag": "0037_silent_salo",
+      "breakpoints": true
     }
   ]
 }
