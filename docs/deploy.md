@@ -17,7 +17,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 ## 必要な Cloudflare リソース
 
 - Workers（アプリ本体）
-- Workers（管理画面、`packages/admin`）
+- Workers（管理画面、`packages/admin`）と、管理者だけを許可する Access の Self-hosted アプリケーション
 - D1 データベース（本番・ステージング用に分離するかは要検討）
 - R2 バケット
   - メディア（写真・動画）用バケット（非公開）
@@ -253,28 +253,32 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
 プレビュー URL は作らない）。メインアプリと同じ D1（`canshi-db`）を直接参照し、現時点では
 ユーザー・家の一覧を閲覧するだけで、データは書き換えない。
 
-アクセス制御はメインアプリと同じく Workers 全体の Access（`All traffic`）に任せ、アプリ内では
-認証しない。ただし前述の MCP サーバーの節のとおり、MCP サーバーのカスタムドメイン
-（`mcp.canshi.cateiru.dev`）には Workers 全体の Access が適用されなかった。管理画面は全ユーザー・
-全家の情報を表示するため、**デプロイする前に** `canshi-admin.cateiru.dev` が Access で保護される
-ことを確かめる（デプロイしてから確かめると、確認までの間に一覧が誰にでも見えてしまう）。
+アクセス制御は Cloudflare Access に任せ、アプリ内では認証しない。管理画面は家ごとの絞り込みを
+せず全ユーザー・全家の情報を表示するため、メインアプリの利用者（家族など）を含む Workers 全体の
+Access のポリシーではなく、**管理者だけを許可する専用のポリシー**で保護する。
+
+`canshi-admin.cateiru.dev` の Self-hosted アプリケーションを作れば、Workers 全体の Access より
+具体的な設定として優先される（「Cloudflare Access 設定」節）。また前述の MCP サーバーの節のとおり、
+MCP サーバーのカスタムドメイン（`mcp.canshi.cateiru.dev`）には Workers 全体の Access が
+適用されなかったため、Workers 全体の Access だけには頼れない。Self-hosted アプリケーションは
+**デプロイする前に**作る（デプロイしてから作ると、それまでの間に一覧が誰にでも見えてしまう）。
 
 ### 初回の公開手順
 
-1. Zero Trust の Access controls > Applications で、`canshi-admin.cateiru.dev` を対象に含む
-   アプリケーション（ワイルドカードを含む）とポリシーがあるかを確認する。無ければ、デプロイの前に
-   `canshi-admin.cateiru.dev` の **Self-hosted** アプリケーションを追加し、メインアプリと同じ
-   再利用可能なポリシー（または管理者だけを許可するポリシー）を付ける。
-2. `pnpm --filter @canshi/admin deploy` でデプロイする（カスタムドメインも作成される）。
-3. すぐに次の動作確認を実施する。
+1. Zero Trust の Access controls > Policies で、管理者（運用者）だけを Include するポリシーを作る。
+   Workers 全体の Access に適用している、メインアプリの利用者全員を許可するポリシーは使わない。
+2. Access controls > Applications で **Self-hosted** アプリケーションを追加し、ドメインに
+   `canshi-admin.cateiru.dev` を指定して、1. のポリシーだけを付ける。
+3. `pnpm --filter @canshi/admin deploy` でデプロイする（カスタムドメインも作成される）。
+4. すぐに次の動作確認を実施する。
 
 ### 動作確認
 
-- ログアウト状態または許可対象外のアカウントで `https://canshi-admin.cateiru.dev/` を開き、
-  Access のログイン画面または拒否画面が表示されることを確認する（一覧が表示されたら、直ちに
-  Worker を削除するか Self-hosted アプリケーションで保護する）
-- 許可対象のアカウントで認証し、ユーザー・家の一覧を閲覧できることを確認する
-- Access のポリシーを変更したときは再確認する
+- ログアウト状態で `https://canshi-admin.cateiru.dev/` を開き、Access のログイン画面が表示される
+  ことを確認する（一覧が表示されたら、直ちに Worker を削除する）
+- 管理者ではないメインアプリの利用者のアカウントで認証し、拒否されることを確認する
+- 管理者のアカウントで認証し、ユーザー・家の一覧を閲覧できることを確認する
+- Access のポリシーやアプリケーションを変更したときは再確認する
 
 管理画面のコードはマイグレーションを持たない。メインアプリのマイグレーションで列名を変えたときは、
 管理画面も合わせて更新・デプロイする（`packages/admin/src/db/queries.ts`）。

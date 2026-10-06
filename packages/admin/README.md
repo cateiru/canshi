@@ -32,14 +32,15 @@ pnpm deploy      # wrangler deploy
 
 ## アクセス制御
 
-管理画面は全ユーザー・全家の情報を表示するが、アプリ内では認証しない。メインアプリと同じく、
-Cloudflare ダッシュボードの Workers 全体の Access（`All traffic`）で保護する
-（`docs/plans/15_cloudflare_access.md`）。
+管理画面はアプリ内では認証せず、Cloudflare Access に任せる。家ごとの絞り込みをせず全ユーザー・
+全家の情報を表示するため、メインアプリの利用者（家族など）を含む Workers 全体の Access の
+ポリシーではなく、`canshi-admin.cateiru.dev` の Self-hosted アプリケーションに管理者だけを
+許可するポリシーを付けて保護する。Self-hosted アプリケーションは Workers 全体の Access より
+優先され、Workers 全体の Access が適用されなかったカスタムドメイン（MCP サーバーで確認済み）も
+確実に保護できる。
 
-ただし MCP サーバーのカスタムドメイン（`mcp.canshi.cateiru.dev`）には Workers 全体の Access が
-適用されなかった（[`docs/deploy.md`](../../docs/deploy.md) の「MCP サーバー」節）。デプロイする前に、
-`canshi-admin.cateiru.dev` が Access で保護されることを必ず確かめる（`docs/deploy.md` の
-「管理画面」節）。
+Self-hosted アプリケーションはデプロイする前に作ること。手順は
+[`docs/deploy.md`](../../docs/deploy.md) の「管理画面」節を参照。
 
 ## D1 の参照
 

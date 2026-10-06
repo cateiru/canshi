@@ -5,8 +5,9 @@ import { Layout } from "./views/Layout";
 import { HouseholdsPage, OverviewPage, UsersPage } from "./views/pages";
 
 /**
- * 管理画面のアプリ。アクセス制御は Workers 全体の Cloudflare Access に任せ、
- * アプリ内では認証しない（メインアプリと同じ方針。docs/deploy.md の「管理画面」節）
+ * 管理画面のアプリ。アクセス制御は Cloudflare Access（管理者だけを許可する
+ * Self-hosted アプリケーション）に任せ、アプリ内では認証しない
+ * （docs/deploy.md の「管理画面」節）
  */
 export function createApp() {
   const app = new Hono<{ Bindings: Env }>();
