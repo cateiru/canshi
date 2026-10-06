@@ -92,19 +92,17 @@ export default async function CatsPage() {
         </ButtonLink>
       </div>
 
-      {catList.length === 0 ? (
+      {groups.length === 0 ? (
         <Surface className={styles.emptyState}>
           <CatIcon aria-hidden="true" size={32} />
-          <p>まだ猫が登録されていません。</p>
-          <div className={styles.emptyActions}>
-            <ButtonLink href="/cats/new" variant="primary">
-              最初の猫を登録する
-            </ButtonLink>
-          </div>
+          <p>所属している家がありません。</p>
+          <p>
+            猫を登録するには家が必要です。管理者に家の作成を依頼してください。
+          </p>
         </Surface>
       ) : (
         <div className={styles.households}>
-          {groups.map(({ household, cats }) => (
+          {groups.map(({ household, cats }, index) => (
             <Collapsible
               key={household.id}
               title={household.name}
@@ -112,9 +110,15 @@ export default async function CatsPage() {
               storageKey={householdExpandedStorageKey(household.id)}
             >
               {cats.length === 0 ? (
-                <p className={styles.householdEmpty}>
-                  この家にはまだ猫が登録されていません。
-                </p>
+                <div className={styles.householdEmpty}>
+                  <p>この家にはまだ猫が登録されていません。</p>
+                  {/* 猫の登録先は最初に所属した家（先頭のまとまり）のため、そこにだけ案内を出す */}
+                  {index === 0 ? (
+                    <ButtonLink href="/cats/new" variant="primary">
+                      最初の猫を登録する
+                    </ButtonLink>
+                  ) : null}
+                </div>
               ) : (
                 <CatCardList catList={cats} />
               )}
