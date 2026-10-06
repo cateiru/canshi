@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { TbPlus } from "react-icons/tb";
-import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
-import { listCurrentUserCats } from "@/features/auth/session";
+import { Badge, Breadcrumb, ButtonLink, Collapsible } from "@/components/ui";
+import type { Cat } from "@/db/schema";
+import { requireUser } from "@/features/auth/session";
 import {
   calculateAge,
   calculateTimeSinceAdoption,
@@ -13,14 +14,69 @@ import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
 import { CatAvatar } from "@/features/cats/CatAvatar";
 import { CatIcon } from "@/features/cats/CatIcon";
 import { SEX_LABEL } from "@/features/cats/labels";
+import { groupCatsByHousehold } from "@/features/households/groupCats";
+import {
+  listCatsForUser,
+  listHouseholdsForUser,
+} from "@/features/households/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
+/** 家ごとの開閉状態を保存する localStorage のキー */
+function householdExpandedStorageKey(householdId: string) {
+  return `canshi:cats-household-expanded:${householdId}`;
+}
+
+function CatCardList({ catList }: { catList: Cat[] }) {
+  return (
+    <ul className={styles.householdCats}>
+      {catList.map((cat) => {
+        const timeSinceAdoption = cat.adoptedAt
+          ? calculateTimeSinceAdoption(cat.adoptedAt)
+          : null;
+
+        return (
+          <li key={cat.id}>
+            <Link href={`/cats/${cat.id}`} className={styles.cardLink}>
+              <Surface className={styles.catCard}>
+                <div className={styles.cardBody}>
+                  <CatAvatar
+                    name={cat.name}
+                    profileMediaAssetId={cat.profileMediaAssetId}
+                  />
+                  <div>
+                    <h3 className={styles.catName}>{cat.name}</h3>
+                    <Badge>{SEX_LABEL[cat.sex]}</Badge>
+                    {cat.birthDate ? (
+                      <p>{formatAge(calculateAge(cat.birthDate))}</p>
+                    ) : null}
+                    {timeSinceAdoption ? (
+                      <p>
+                        お迎えから
+                        {formatTimeSinceAdoption(timeSinceAdoption)}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </Surface>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export default async function CatsPage() {
-  const catList = await listCurrentUserCats();
+  const user = await requireUser();
+  const [householdList, catList] = await Promise.all([
+    listHouseholdsForUser(user.id),
+    listCatsForUser(user.id),
+  ]);
+  const groups = groupCatsByHousehold(householdList, catList);
 
   return (
     <main className={styles.main}>
@@ -47,41 +103,24 @@ export default async function CatsPage() {
           </div>
         </Surface>
       ) : (
-        <ul className={styles.list}>
-          {catList.map((cat) => {
-            const timeSinceAdoption = cat.adoptedAt
-              ? calculateTimeSinceAdoption(cat.adoptedAt)
-              : null;
-
-            return (
-              <li key={cat.id}>
-                <Link href={`/cats/${cat.id}`} className={styles.cardLink}>
-                  <Surface>
-                    <div className={styles.cardBody}>
-                      <CatAvatar
-                        name={cat.name}
-                        profileMediaAssetId={cat.profileMediaAssetId}
-                      />
-                      <div>
-                        <h2 className={styles.catName}>{cat.name}</h2>
-                        <Badge>{SEX_LABEL[cat.sex]}</Badge>
-                        {cat.birthDate ? (
-                          <p>{formatAge(calculateAge(cat.birthDate))}</p>
-                        ) : null}
-                        {timeSinceAdoption ? (
-                          <p>
-                            お迎えから
-                            {formatTimeSinceAdoption(timeSinceAdoption)}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  </Surface>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className={styles.households}>
+          {groups.map(({ household, cats }) => (
+            <Collapsible
+              key={household.id}
+              title={household.name}
+              titleAside={`${cats.length}匹`}
+              storageKey={householdExpandedStorageKey(household.id)}
+            >
+              {cats.length === 0 ? (
+                <p className={styles.householdEmpty}>
+                  この家にはまだ猫が登録されていません。
+                </p>
+              ) : (
+                <CatCardList catList={cats} />
+              )}
+            </Collapsible>
+          ))}
+        </div>
       )}
     </main>
   );

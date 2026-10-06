@@ -1,7 +1,11 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
-import { getCatForUser, listCatsForUser } from "@/features/households/queries";
+import {
+  getCatForUser,
+  getHouseholdForUser,
+  listCatsForUser,
+} from "@/features/households/queries";
 import { getSessionUser } from "./sessions";
 import { SESSION_COOKIE_NAME } from "./sessionToken";
 
@@ -43,6 +47,19 @@ export async function requireCatAccess(catId: string) {
     notFound();
   }
   return { user, cat };
+}
+
+/**
+ * ログイン中のユーザーが所属する家であることを確認し、ユーザーと家（家での権限を含む）を返す。
+ * 存在しない家・所属していない家は区別せず 404 にする
+ */
+export async function requireHouseholdAccess(householdId: string) {
+  const user = await requireUser();
+  const household = await getHouseholdForUser(user.id, householdId);
+  if (!household) {
+    notFound();
+  }
+  return { user, household };
 }
 
 /**

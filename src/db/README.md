@@ -52,6 +52,9 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 家の中での権限は `household_members.role`（`owner`・`member`）で持つ。今はオーナーを 1 名で運用し、
   移譲は 2 人のロールを 1 つの UPDATE 文で入れ替える（`src/features/households/ownership.ts`）。
   将来オーナーを複数にできるよう、オーナーの人数はスキーマでは制限しない
+- 家の名前の変更とメンバーを家から外す操作はオーナーだけができ、オーナーは家から抜けられない
+  （`src/features/households/management.ts`）。オーナーかどうかの判定は UPDATE・DELETE の WHERE に
+  含め、移譲と同時に操作されても元のオーナーの操作が通らないようにする
 - ログインセッションは `sessions` に保存する。主キーはセッショントークンの SHA-256（`token_hash`）で、
   トークンそのものは Cookie にだけ持つ。ログアウトで行を削除し、期限切れの行は同じユーザーが次に
   ログインしたときに削除する（`src/features/auth/sessions.ts`）

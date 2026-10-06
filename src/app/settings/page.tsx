@@ -4,6 +4,7 @@ import {
   AppearanceSettingsIcon,
   FeedingPresetIcon,
   FoodProductIcon,
+  HouseholdIcon,
   NotificationSettingsIcon,
   ReleaseNotesIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
@@ -15,6 +16,12 @@ export const metadata: Metadata = {
 };
 
 const settings = [
+  {
+    href: "/settings/households",
+    title: "家の設定",
+    description: "所属している家の名前や、家のメンバーを管理します。",
+    icon: HouseholdIcon,
+  },
   {
     href: "/settings/notifications",
     title: "通知設定",
@@ -55,7 +62,9 @@ export default function SettingsPage() {
         items={[{ label: "トップ", href: "/home" }, { label: "設定" }]}
       />
       <h1>設定</h1>
-      <p>通知や見た目、ごはんの共通設定、アプリの更新情報を確認できます。</p>
+      <p>
+        家や通知、見た目、ごはんの共通設定、アプリの更新情報を確認できます。
+      </p>
 
       <nav aria-label="設定メニュー">
         <ul className={styles.list}>

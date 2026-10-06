@@ -7,8 +7,11 @@ import type { getDb } from "@/db/client";
 import { cats, householdMembers, households, users } from "@/db/schema";
 import {
   getCatForUser,
+  getHouseholdForUser,
   getPrimaryHouseholdForUser,
   listCatsForUser,
+  listHouseholdMembers,
+  listHouseholdSummariesForUser,
 } from "./queries";
 
 // `src/features/notifications/queries.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
@@ -100,5 +103,44 @@ describe("getPrimaryHouseholdForUser", () => {
       role: "owner",
     });
     expect(await getPrimaryHouseholdForUser("homeless")).toBeNull();
+  });
+});
+
+describe("listHouseholdSummariesForUser", () => {
+  it("所属する家を、権限・メンバーの人数・猫の頭数とあわせて返す", async () => {
+    expect(await listHouseholdSummariesForUser("member")).toEqual([
+      {
+        id: "home",
+        name: "わが家",
+        role: "member",
+        memberCount: 2,
+        catCount: 2,
+      },
+    ]);
+    expect(await listHouseholdSummariesForUser("homeless")).toEqual([]);
+  });
+});
+
+describe("getHouseholdForUser", () => {
+  it("所属する家だけを返し、別の家・存在しない家は null", async () => {
+    expect(await getHouseholdForUser("owner", "home")).toEqual({
+      id: "home",
+      name: "わが家",
+      role: "owner",
+    });
+    expect(await getHouseholdForUser("owner", "other")).toBeNull();
+    expect(await getHouseholdForUser("owner", "missing")).toBeNull();
+  });
+});
+
+describe("listHouseholdMembers", () => {
+  it("家のメンバーをオーナーを先頭にして返す", async () => {
+    const members = await listHouseholdMembers("home");
+    expect(
+      members.map(({ userId, name, role }) => ({ userId, name, role })),
+    ).toEqual([
+      { userId: "owner", name: "オーナー", role: "owner" },
+      { userId: "member", name: "家族", role: "member" },
+    ]);
   });
 });

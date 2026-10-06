@@ -55,3 +55,25 @@
   margin-bottom: var(--space-2);
   font-size: var(--text-lg);
 }
+
+.households {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.householdCats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  list-style: none;
+}
+
+/* 家のまとまりの面と同じ色にならないよう、まとまりの中のカードはページの背景色にする */
+.households .catCard {
+  background: var(--color-bg);
+}
+
+.householdEmpty {
+  color: var(--color-ink-muted);
+}
