@@ -17,6 +17,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 ## 必要な Cloudflare リソース
 
 - Workers（アプリ本体）
+- Workers（管理画面、`packages/admin`）と、そのホスト名を保護する Access の Self-hosted アプリケーション
 - D1 データベース（本番・ステージング用に分離するかは要検討）
 - R2 バケット
   - メディア（写真・動画）用バケット（非公開）
@@ -243,6 +244,41 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
     CANSHI の本番（`cateiru.dev` ゾーン）はこの方法で解決した
   - **Pro プラン以上**: Super Bot Fight Mode に切り替え、
     `/mcp`・`/oauth/*`・`/.well-known/oauth*` にスキップルールを追加する
+
+## 管理画面
+
+運用者向けの管理画面を、メインアプリとは別の Cloudflare Workers（`packages/admin/`、Worker 名
+`canshi-admin`）として用意している。公開ホスト名は `canshi-admin.cateiru.dev`
+（`packages/admin/wrangler.jsonc` の `routes` で `custom_domain` として設定。`workers.dev`・
+プレビュー URL は作らない）。メインアプリと同じ D1（`canshi-db`）を直接参照し、現時点では
+ユーザー・家の一覧を閲覧するだけで、データは書き換えない。
+
+前述の MCP サーバーの節のとおり、**カスタムドメインには Workers 全体の Access（`All traffic`）が
+適用されない**。管理画面は全ユーザー・全家の情報を表示するため、Self-hosted アプリケーションで
+保護したうえで、Worker 内でも Access の JWT を検証する（`packages/admin/README.md` 参照）。
+
+### 初回の公開手順
+
+1. Zero Trust の Access controls > Applications で **Self-hosted** アプリケーションを追加し、
+   ドメインに `canshi-admin.cateiru.dev` を指定する。ポリシーは管理者だけを許可する
+   （メインアプリの許可ユーザー全員ではなく、運用者に絞る）。
+2. 作成したアプリケーションの **Application Audience (AUD) Tag** を、
+   `packages/admin/wrangler.jsonc` の `vars.ACCESS_AUD` に設定してコミットする（機密情報ではない）。
+   Team domain（`vars.ACCESS_TEAM_DOMAIN`）が Zero Trust の設定と一致していることも確認する。
+   `ACCESS_AUD` が空のままデプロイすると、すべてのリクエストが `403` になる。
+3. `pnpm --filter @canshi/admin deploy` でデプロイする（カスタムドメインも作成される）。
+4. 次の動作確認を実施する。
+
+### 動作確認
+
+- ログアウト状態または許可対象外のアカウントで `https://canshi-admin.cateiru.dev/` を開き、
+  Access のログイン画面または拒否画面が表示されることを確認する
+- 許可対象のアカウントで認証し、画面右上に自分のメールアドレスが表示され、ユーザー・家の一覧を
+  閲覧できることを確認する
+- Access のポリシーやアプリケーションを変更したときは再確認する
+
+管理画面のコードはマイグレーションを持たない。メインアプリのマイグレーションで列名を変えたときは、
+管理画面も合わせて更新・デプロイする（`packages/admin/src/db/queries.ts`）。
 
 ## 監視・運用（TODO）
 

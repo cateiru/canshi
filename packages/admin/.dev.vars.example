@@ -1,0 +1,3 @@
+# ローカルの `wrangler dev` だけで Cloudflare Access の検証を省略する。
+# リクエストのホストが localhost / 127.0.0.1 のときだけ効き、本番のホスト名では無視される
+ACCESS_DEV_BYPASS=true

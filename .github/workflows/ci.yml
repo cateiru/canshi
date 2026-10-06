@@ -30,11 +30,17 @@ jobs:
       - name: Type check (mcp-server)
         run: pnpm --filter @canshi/mcp-server typecheck
 
+      - name: Type check (admin)
+        run: pnpm --filter @canshi/admin typecheck
+
       - name: Test
         run: pnpm test
 
       - name: Test (mcp-server)
         run: pnpm --filter @canshi/mcp-server test
+
+      - name: Test (admin)
+        run: pnpm --filter @canshi/admin test
 
       - name: Build
         run: pnpm build
