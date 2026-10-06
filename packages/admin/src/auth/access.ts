@@ -74,9 +74,9 @@ export type AdminEnv = {
 /**
  * すべてのリクエストに Access の JWT を要求するミドルウェア。
  *
- * カスタムドメインにはアカウント全体の Access（Protect all Workers）が適用されない
- * （MCP サーバーの導入時に確認済み。docs/deploy.md 参照）。管理画面は全ユーザー・全家の
- * 情報を表示するため、Zero Trust の Self-hosted アプリによるエッジでの保護に加えて
+ * MCP サーバーのカスタムドメインにはアカウント全体の Access（Protect all Workers）が
+ * 適用されなかった（docs/deploy.md 参照）。管理画面は全ユーザー・全家の情報を表示するため、
+ * それに頼らず、Zero Trust の Self-hosted アプリによるエッジでの保護に加えて
  * Worker 内でも JWT を検証し、設定漏れのときは表示せずに拒否する（fail closed）
  */
 export function requireAccess(options?: {

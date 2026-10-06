@@ -253,9 +253,10 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
 プレビュー URL は作らない）。メインアプリと同じ D1（`canshi-db`）を直接参照し、現時点では
 ユーザー・家の一覧を閲覧するだけで、データは書き換えない。
 
-前述の MCP サーバーの節のとおり、**カスタムドメインには Workers 全体の Access（`All traffic`）が
-適用されない**。管理画面は全ユーザー・全家の情報を表示するため、Self-hosted アプリケーションで
-保護したうえで、Worker 内でも Access の JWT を検証する（`packages/admin/README.md` 参照）。
+前述の MCP サーバーの節のとおり、MCP サーバーのカスタムドメイン（`mcp.canshi.cateiru.dev`）には
+Workers 全体の Access（`All traffic`）が適用されなかった。管理画面は全ユーザー・全家の情報を
+表示するため、Workers 全体の Access には頼らず、Self-hosted アプリケーションで保護したうえで、
+Worker 内でも Access の JWT を検証する（`packages/admin/README.md` 参照）。
 
 ### 初回の公開手順
 

@@ -47,8 +47,8 @@ pnpm dev
 
 メインアプリは「Workers 全体の Access（Protect all Workers）」で保護されている前提で、アプリ内では
 Access の JWT を検証しない（`docs/plans/15_cloudflare_access.md`）。しかし MCP サーバーの導入時に、
-**カスタムドメインにはこの Workers 全体の Access が適用されない**ことを確認している
-（[`docs/deploy.md`](../../docs/deploy.md) の「MCP サーバー」節）。そのため管理画面では次の 2 段で守る。
+MCP サーバーのカスタムドメインにはこの Workers 全体の Access が適用されなかったことを確認している
+（[`docs/deploy.md`](../../docs/deploy.md) の「MCP サーバー」節）。管理画面はそれに頼らず、次の 2 段で守る。
 
 1. Zero Trust で `canshi-admin.cateiru.dev` の Self-hosted アプリケーションを作成し、管理者だけを
    許可するポリシーを付ける（エッジでの保護。手順は `docs/deploy.md` の「管理画面」節）

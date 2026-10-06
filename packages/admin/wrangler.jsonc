@@ -6,9 +6,9 @@
   "compatibility_flags": ["nodejs_compat"],
 
   // 本番公開ホスト名。メインアプリ（canshi.cateiru.dev）・MCP サーバー
-  // （mcp.canshi.cateiru.dev）とは別ホスト名にする。カスタムドメインには
-  // アカウント全体の Access（Protect all Workers）が適用されないため、
-  // Zero Trust で このホスト名の Self-hosted アプリを作成してから公開する
+  // （mcp.canshi.cateiru.dev）とは別ホスト名にする。MCP サーバーのカスタム
+  // ドメインにはアカウント全体の Access（Protect all Workers）が適用されなかった
+  // ため、Zero Trust でこのホスト名の Self-hosted アプリを作成してから公開する
   // （docs/deploy.md の「管理画面」節を参照）
   "routes": [{ "pattern": "canshi-admin.cateiru.dev", "custom_domain": true }],
   // 管理画面はカスタムドメインだけで公開し、workers.dev・プレビュー URL は作らない
