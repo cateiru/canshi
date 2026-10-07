@@ -188,6 +188,14 @@ test("設定ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+test("プロフィール設定ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/profile");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "プロフィール設定" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("家の設定ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/households");
   await expect(

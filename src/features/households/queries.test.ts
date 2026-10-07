@@ -12,6 +12,7 @@ import {
   listCatsForUser,
   listHouseholdMembers,
   listHouseholdSummariesForUser,
+  sharesHousehold,
 } from "./queries";
 
 // `src/features/notifications/queries.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
@@ -130,6 +131,20 @@ describe("getHouseholdForUser", () => {
     });
     expect(await getHouseholdForUser("owner", "other")).toBeNull();
     expect(await getHouseholdForUser("owner", "missing")).toBeNull();
+  });
+});
+
+describe("sharesHousehold", () => {
+  it("同じ家に所属するユーザーどうし・本人どうしは true", async () => {
+    expect(await sharesHousehold("owner", "member")).toBe(true);
+    expect(await sharesHousehold("member", "owner")).toBe(true);
+    expect(await sharesHousehold("homeless", "homeless")).toBe(true);
+  });
+
+  it("別の家のユーザー・家に所属していないユーザーとは false", async () => {
+    expect(await sharesHousehold("owner", "stranger")).toBe(false);
+    expect(await sharesHousehold("owner", "homeless")).toBe(false);
+    expect(await sharesHousehold("homeless", "owner")).toBe(false);
   });
 });
 

@@ -659,3 +659,23 @@ export function HouseholdIcon(props: RecordIconProps) {
     </RecordIcon>
   );
 }
+
+export function ProfileSettingsIcon(props: RecordIconProps) {
+  const head = "M12 3.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z";
+  const body = "M4 20.5c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#f5dfb7" d={head} />
+          <path fill="#b7d7ee" d={body} />
+        </>
+      }
+    >
+      <path d={head} />
+      <path d={body} />
+    </RecordIcon>
+  );
+}

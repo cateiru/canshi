@@ -1,7 +1,7 @@
 "use server";
 
 import { requireUser } from "@/features/auth/session";
-import { canAccessMediaAsset } from "./access";
+import { canDeleteMediaAsset } from "./access";
 import { getMediaAssetById } from "./queries";
 import { deleteMediaAsset, deletePendingMediaAsset } from "./storage";
 
@@ -18,7 +18,7 @@ export async function deleteMediaAssetAction(
   const user = await requireUser();
   try {
     const asset = await getMediaAssetById(assetId);
-    if (!asset || !(await canAccessMediaAsset(user.id, asset))) {
+    if (!asset || !(await canDeleteMediaAsset(user.id, asset))) {
       return { error: "メディアが見つかりませんでした" };
     }
     await deleteMediaAsset(assetId);
