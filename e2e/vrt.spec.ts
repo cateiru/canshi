@@ -196,11 +196,86 @@ test("家の設定ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
-test("家の詳細設定ページの見た目", async ({ page }, testInfo) => {
-  await page.goto("/settings/households/vrt-household");
+// 招待 URL のダイアログを撮るときは実際に招待を発行するため、家の詳細設定ページの撮影と
+// 重ならないよう直列にし、撮影後に発行した招待を無効化して元に戻す
+test.describe("家の詳細設定", () => {
+  test.describe.configure({ mode: "serial" });
+
+  test("家の詳細設定ページの見た目", async ({ page }, testInfo) => {
+    await page.goto("/settings/households/vrt-household");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "VRTの家" }),
+    ).toBeVisible();
+    // フィクスチャの未使用の招待（vrt-invitation-member）が一覧に並ぶ
+    await expect(
+      page
+        .getByRole("list", { name: "まだ使われていない招待" })
+        .getByRole("listitem"),
+    ).toHaveCount(1);
+    await takeSnapshot(page, testInfo);
+  });
+
+  test("招待 URL のダイアログの見た目", async ({ page }, testInfo) => {
+    await page.goto("/settings/households/vrt-household");
+    await page.getByRole("button", { name: "招待 URL を発行する" }).click();
+    const dialog = page.getByRole("dialog", { name: "招待 URL" });
+    const urlField = dialog.getByRole("textbox", { name: "招待 URL" });
+    await expect(urlField).toHaveValue(/\/invitations\//);
+
+    try {
+      // URL のトークンと有効期限は発行のたびに変わるため、固定の値に置き換えて撮る
+      await urlField.evaluate((element: HTMLInputElement) => {
+        element.value = `${location.origin}/invitations/vrt-invitation-token`;
+      });
+      await dialog.getByText(/^有効期限: /).evaluate((element) => {
+        element.textContent = "有効期限: 2024-06-08 09:00";
+      });
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    } finally {
+      await dialog.getByRole("button", { name: "閉じる" }).click();
+      // 閉じると一覧を取り直す。取り直す前の一覧で押さないよう、フィクスチャ
+      // （2024-06-01 に発行）以外の招待が並ぶのを待ってから、それを無効化する
+      const issued = page
+        .getByRole("list", { name: "まだ使われていない招待" })
+        .getByRole("listitem")
+        .filter({ hasNotText: "2024-06-01" });
+      await expect(issued).toHaveCount(1);
+      await issued.getByRole("button", { name: "無効化する" }).click();
+      await page
+        .getByRole("dialog", { name: "招待の無効化" })
+        .getByRole("button", { name: "無効化する" })
+        .click();
+      await expect(page.getByText("招待を無効化しました")).toBeVisible();
+    }
+  });
+});
+
+// 招待ページ。フィクスチャの招待は固定のトークンの SHA-256 で保存している
+// （e2e/fixtures/vrt-seed.sql）。「参加する」は押さない（フィクスチャが変わるため）
+const VRT_INVITATION_TOKENS = {
+  /** VRT ユーザーが所属していない家への招待 */
+  valid: "vrt-invitation-valid",
+  /** VRT ユーザーがすでにメンバーの家への招待 */
+  member: "vrt-invitation-member",
+};
+
+test("招待ページ（参加できる）の見た目", async ({ page }, testInfo) => {
+  await page.goto(`/invitations/${VRT_INVITATION_TOKENS.valid}`);
+  await expect(page.getByRole("button", { name: "参加する" })).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+test("招待ページ（参加済み）の見た目", async ({ page }, testInfo) => {
+  await page.goto(`/invitations/${VRT_INVITATION_TOKENS.member}`);
   await expect(
-    page.getByRole("heading", { level: 1, name: "VRTの家" }),
+    page.getByText("あなたはすでに「VRTの家」のメンバーです。"),
   ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+test("招待ページ（使えない招待）の見た目", async ({ page }, testInfo) => {
+  await page.goto("/invitations/vrt-invitation-unknown");
+  await expect(page.getByText("この招待 URL は使えません。")).toBeVisible();
   await takeSnapshot(page, testInfo);
 });
 

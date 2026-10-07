@@ -55,6 +55,18 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 家の名前の変更とメンバーを家から外す操作はオーナーだけができ、オーナーは家から抜けられない
   （`src/features/households/management.ts`）。オーナーかどうかの判定は UPDATE・DELETE の WHERE に
   含め、移譲と同時に操作されても元のオーナーの操作が通らないようにする
+- 家への招待は `household_invitations` に保存する（`src/features/households/invitations.ts`）
+  - 招待 URL（`/invitations/{トークン}`）のトークンそのものは保存せず、`sessions` と同じく SHA-256 の
+    ハッシュ（`token_hash`）だけを持つ。そのため URL を表示できるのは発行したときだけ
+  - 発行・無効化はオーナーだけができる。オーナーかどうかの判定は INSERT・DELETE の WHERE に含める。
+    無効化は行の削除で、期限切れで未使用の行は同じ家で次に発行したときに削除する
+  - 1 つの招待で参加できるのは 1 人だけ。参加したユーザーを `accepted_by_user_id` に残し、使用済みの行は
+    削除しない。参加時は、未使用・期限内・まだメンバーでないことを WHERE に含めた UPDATE で招待を
+    使用済みにし、同じ `db.batch` の INSERT で `household_members` の行を作る。UPDATE は参加の処理ごとに
+    発行した ID（`acceptance_id`）を書き込み、INSERT はその ID の招待からだけ行を作るため、片方だけが
+    反映されることはなく、同時に参加しても 1 人だけが通る。すでにメンバーのユーザーが開いても招待は
+    使用済みにならない
+  - `created_at` は秒単位のため、未使用の招待の一覧は同じ秒に発行したものを rowid（挿入順）で新しい順に並べる
 - ログインセッションは `sessions` に保存する。主キーはセッショントークンの SHA-256（`token_hash`）で、
   トークンそのものは Cookie にだけ持つ。ログアウトで行を削除し、期限切れの行は同じユーザーが次に
   ログインしたときに削除する（`src/features/auth/sessions.ts`）

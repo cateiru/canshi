@@ -1,8 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireHouseholdAccess } from "@/features/auth/session";
+import { requireHouseholdAccess, requireUser } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
+import {
+  acceptHouseholdInvitation,
+  createHouseholdInvitation,
+  householdInvitationPath,
+  revokeHouseholdInvitation,
+} from "./invitations";
 import {
   leaveHousehold,
   removeHouseholdMember,
@@ -84,4 +90,55 @@ export async function leaveHouseholdAction(
   return result.ok
     ? { redirectTo: "/settings/households" }
     : { error: result.error };
+}
+
+export type CreateHouseholdInvitationActionResult =
+  | { ok: true; path: string; expiresAt: Date }
+  | { ok: false; error: string };
+
+/**
+ * 家への招待 URL を発行する。URL のオリジンは Host ヘッダーに頼らず、呼び出し側（ブラウザ）で
+ * `location.origin` を付けるため、ここではパスだけを返す
+ */
+export async function createHouseholdInvitationAction(
+  householdId: string,
+): Promise<CreateHouseholdInvitationActionResult> {
+  const { user } = await requireHouseholdAccess(householdId);
+  const result = await createHouseholdInvitation(householdId, user.id);
+  if (!result.ok) {
+    return result;
+  }
+  return {
+    ok: true,
+    path: householdInvitationPath(result.token),
+    expiresAt: result.expiresAt,
+  };
+}
+
+export async function revokeHouseholdInvitationAction(
+  householdId: string,
+  invitationId: string,
+): Promise<HouseholdMemberActionResult> {
+  const { user } = await requireHouseholdAccess(householdId);
+  const result = await revokeHouseholdInvitation(
+    householdId,
+    user.id,
+    invitationId,
+  );
+  return result.ok ? {} : { error: result.error };
+}
+
+/** 招待 URL から家に参加する。参加したら、家の猫が並ぶ猫一覧へ移る */
+export async function acceptHouseholdInvitationAction(
+  token: string,
+): Promise<HouseholdMemberActionResult> {
+  const user = await requireUser();
+  const result = await acceptHouseholdInvitation(token, user.id);
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  revalidatePath("/settings/households", "layout");
+  revalidatePath("/cats");
+  return { redirectTo: "/cats" };
 }

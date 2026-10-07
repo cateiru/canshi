@@ -38,6 +38,33 @@ VALUES ('vrt-household', 'VRTの家',
 INSERT INTO household_members (household_id, user_id, role, created_at)
 VALUES ('vrt-household', 'vrt-user', 'owner', strftime('%s', '2024-06-01 00:00:00'));
 
+-- 家への招待（招待ページ・家の詳細設定の招待一覧用）。トークンはハッシュだけを保存するため、
+-- 招待ページは固定のトークン（e2e/vrt.spec.ts の VRT_INVITATION_TOKENS）を SHA-256 にした
+-- 値で引けるようにする。有効期限は実行日に関わらず期限内になるよう遠い未来にする
+-- - vrt-invitation-member : VRTの家への招待。VRT ユーザーはすでにメンバーのため
+--   「すでにメンバーです」の表示になる。家の詳細設定の「まだ使われていない招待」にも並ぶ
+-- - vrt-invitation-valid  : VRT ユーザーが所属していない別の家への招待（「参加する」の表示用）。
+--   招待した人は `/login` で使われないよう、VRT ユーザーより後に登録したユーザーにする
+INSERT INTO users (id, name, role, created_at, updated_at)
+VALUES ('vrt-inviter', 'VRT招待者', 'member',
+  strftime('%s', '2024-06-02 00:00:00'), strftime('%s', '2024-06-02 00:00:00'));
+
+INSERT INTO households (id, name, created_at, updated_at)
+VALUES ('vrt-invite-household', 'VRT招待元の家',
+  strftime('%s', '2024-06-02 00:00:00'), strftime('%s', '2024-06-02 00:00:00'));
+
+INSERT INTO household_members (household_id, user_id, role, created_at)
+VALUES ('vrt-invite-household', 'vrt-inviter', 'owner', strftime('%s', '2024-06-02 00:00:00'));
+
+INSERT INTO household_invitations (id, household_id, token_hash, created_by_user_id, expires_at, created_at)
+VALUES
+  ('vrt-invitation-member', 'vrt-household',
+    'bf7adb758fd19575bbe4a26e6c7150f68255cb640bfb4bc8b5002c4632bec702', 'vrt-user',
+    strftime('%s', '2099-12-31 00:00:00'), strftime('%s', '2024-06-01 00:00:00')),
+  ('vrt-invitation-valid', 'vrt-invite-household',
+    'd50cba6528a3c95064f916588f74e203d382b13fb8392e0825ded3a1c03f0a11', 'vrt-inviter',
+    strftime('%s', '2099-12-31 00:00:00'), strftime('%s', '2024-06-02 00:00:00'));
+
 INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, created_at, updated_at)
 VALUES ('vrt-cat-empty', 'VRT空猫', 'unknown', NULL, NULL, NULL,
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
