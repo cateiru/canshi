@@ -75,6 +75,35 @@ describe("createCatForUser", () => {
     });
   });
 
+  it("入力したすべての項目を、それぞれの列に保存する", async () => {
+    const id = await createCatForUser("both", {
+      name: "ミケ",
+      sex: "male",
+      birthDate: "2020-04-01",
+      birthDatePrecision: "month",
+      breed: "雑種",
+      adoptedAt: "2020-06-01",
+      householdId: "home",
+    });
+    const [row] = await db
+      .select()
+      .from(cats)
+      .where(eq(cats.id, id as string));
+    expect(row).toMatchObject({
+      id,
+      householdId: "home",
+      name: "ミケ",
+      sex: "male",
+      birthDate: "2020-04-01",
+      birthDatePrecision: "month",
+      breed: "雑種",
+      adoptedAt: "2020-06-01",
+      profileMediaAssetId: null,
+    });
+    expect(row.createdAt).toBeInstanceOf(Date);
+    expect(row.updatedAt).toBeInstanceOf(Date);
+  });
+
   it("所属していない家・存在しない家には登録しない", async () => {
     expect(await createCatForUser("home-only", catValues("second"))).toBeNull();
     expect(await createCatForUser("both", catValues("missing"))).toBeNull();

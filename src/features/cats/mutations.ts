@@ -14,22 +14,47 @@ export const HOUSEHOLD_NOT_ALLOWED_ERROR = "所属している家を選択して
 
 /**
  * 猫を登録する。登録先の家は、ユーザーが所属する家でなければならない。
- * 登録した猫の ID を返し、所属していない家なら null を返す
+ * 登録した猫の ID を返し、所属していない家なら null を返す。
+ * 判定と登録の間に家から外された場合に登録が通らないよう、INSERT ... SELECT で
+ * 登録先の家のメンバーの行があるときだけ 1 文で挿入する
  */
 export async function createCatForUser(
   userId: string,
   values: CatValues,
   d1?: D1Database,
 ) {
-  if (!(await getHouseholdForUser(userId, values.householdId, d1))) {
-    return null;
-  }
   const db = getDb(d1);
+  // INSERT ... SELECT では列の既定値（`$defaultFn`）が使われないため、ID はここで作る。
+  // 選ぶ列はテーブル定義と同じ並びにする（違うと drizzle が実行時にエラーにする）
   const [created] = await db
     .insert(cats)
-    .values(values)
+    .select((qb) =>
+      qb
+        .select({
+          id: sql`${crypto.randomUUID()}`.as("id"),
+          householdId: householdMembers.householdId,
+          name: sql`${values.name}`.as("name"),
+          sex: sql`${values.sex}`.as("sex"),
+          birthDate: sql`${values.birthDate ?? null}`.as("birth_date"),
+          birthDatePrecision: sql`${values.birthDatePrecision ?? "day"}`.as(
+            "birth_date_precision",
+          ),
+          breed: sql`${values.breed ?? null}`.as("breed"),
+          adoptedAt: sql`${values.adoptedAt ?? null}`.as("adopted_at"),
+          profileMediaAssetId: sql`NULL`.as("profile_media_asset_id"),
+          createdAt: sql`(unixepoch())`.as("created_at"),
+          updatedAt: sql`(unixepoch())`.as("updated_at"),
+        })
+        .from(householdMembers)
+        .where(
+          and(
+            eq(householdMembers.householdId, values.householdId),
+            eq(householdMembers.userId, userId),
+          ),
+        ),
+    )
     .returning({ id: cats.id });
-  return created.id;
+  return created?.id ?? null;
 }
 
 export type UpdateCatResult = "updated" | "household-not-allowed" | "not-found";
