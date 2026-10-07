@@ -102,7 +102,7 @@ export default async function CatsPage() {
         </Surface>
       ) : (
         <div className={styles.households}>
-          {groups.map(({ household, cats }, index) => (
+          {groups.map(({ household, cats }) => (
             <Collapsible
               key={household.id}
               title={household.name}
@@ -112,12 +112,13 @@ export default async function CatsPage() {
               {cats.length === 0 ? (
                 <div className={styles.householdEmpty}>
                   <p>この家にはまだ猫が登録されていません。</p>
-                  {/* 猫の登録先は最初に所属した家（先頭のまとまり）のため、そこにだけ案内を出す */}
-                  {index === 0 ? (
-                    <ButtonLink href="/cats/new" variant="primary">
-                      最初の猫を登録する
-                    </ButtonLink>
-                  ) : null}
+                  {/* 登録画面でこの家を最初から選んでおく */}
+                  <ButtonLink
+                    href={`/cats/new?householdId=${encodeURIComponent(household.id)}`}
+                    variant="primary"
+                  >
+                    最初の猫を登録する
+                  </ButtonLink>
                 </div>
               ) : (
                 <CatCardList catList={cats} />

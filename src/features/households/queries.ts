@@ -143,15 +143,6 @@ export async function listHouseholdMembers(
     );
 }
 
-/** 猫を新しく登録するときの登録先として使う、ユーザーの家（所属がなければ null） */
-export async function getPrimaryHouseholdForUser(
-  userId: string,
-  d1?: D1Database,
-) {
-  const [household] = await listHouseholdsForUser(userId, d1);
-  return household ?? null;
-}
-
 /** ユーザーが参照できる猫（所属する家の猫）の一覧。新しく登録した順 */
 export async function listCatsForUser(userId: string, d1?: D1Database) {
   const db = getDb(d1);
