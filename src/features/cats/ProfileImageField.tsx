@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 import { Button as AriaButton, FileTrigger } from "react-aria-components";
 import { TbPhotoPlus, TbTrash } from "react-icons/tb";
 import { Button, Modal } from "@/components/ui";
 import { getButtonClassName } from "@/components/ui/Button/buttonStyles";
 import { discardPendingMediaAction } from "@/features/media/actions";
 import { uploadPendingMedia } from "@/features/media/upload";
-import { CatAvatar } from "./CatAvatar";
 import { cropProfileImage } from "./cropProfileImage";
 import {
   ProfileCropEditor,
@@ -20,8 +19,14 @@ import {
 } from "./profileImageForm";
 
 type ProfileImageFieldProps = {
-  catName: string;
-  profileMediaAssetId: string | null;
+  /** 保存済みの画像の asset ID（未設定なら null） */
+  currentAssetId: string | null;
+  /** 保存したときの見た目のプレビュー。画像を外す・未設定のときは null を渡す */
+  renderPreview: (assetId: string | null) => ReactNode;
+  /** 画像を選び直した・外したときに表示する、保存ボタンを押すよう促す案内 */
+  pendingNote: string;
+  /** 画像の種類の呼び方（ファイル入力のラベルや切り抜きモーダルの見出しに使う） */
+  imageLabel?: string;
   /** 切り抜き・アップロード中は true（フォームの送信を止めるため） */
   onBusyChange: (isBusy: boolean) => void;
   isDisabled?: boolean;
@@ -34,13 +39,15 @@ type Selection =
   | { type: "remove" };
 
 /**
- * 猫の編集フォームのプロフィール画像欄。画像を選ぶと切り抜き用のモーダルを開き、
+ * 猫のプロフィール画像・ユーザーのアイコン画像の入力欄。画像を選ぶと切り抜き用のモーダルを開き、
  * 正方形に切り抜いた画像をブラウザで作ってから下書きとしてアップロードする。
- * フォームの保存時に asset ID を送り、`updateCatAction` がプロフィール画像として紐付ける
+ * フォームの保存時に asset ID を送り、保存アクション（`updateCatAction` など）が画像として紐付ける
  */
 export function ProfileImageField({
-  catName,
-  profileMediaAssetId,
+  currentAssetId,
+  renderPreview,
+  pendingNote,
+  imageLabel = "プロフィール画像",
   onBusyChange,
   isDisabled = false,
 }: ProfileImageFieldProps) {
@@ -131,16 +138,12 @@ export function ProfileImageField({
       ? selection.assetId
       : selection.type === "remove"
         ? null
-        : profileMediaAssetId;
+        : currentAssetId;
 
   return (
     <div className={styles.field}>
       <div className={styles.body}>
-        <CatAvatar
-          name={catName}
-          profileMediaAssetId={previewAssetId}
-          size="lg"
-        />
+        {renderPreview(previewAssetId)}
         <div className={styles.controls}>
           <FileTrigger
             // FileTrigger の props は id を受け付けないため、描画された input に直接付ける
@@ -173,10 +176,10 @@ export function ProfileImageField({
         </div>
       </div>
       <label htmlFor={inputId} className={styles.visuallyHidden}>
-        プロフィール画像のファイル
+        {imageLabel}のファイル
       </label>
       {selection.type !== "keep" ? (
-        <p className={styles.note}>「更新する」を押すと反映されます。</p>
+        <p className={styles.note}>{pendingNote}</p>
       ) : null}
       {error && sourceUrl == null ? (
         <p className={styles.error}>{error}</p>
@@ -198,7 +201,7 @@ export function ProfileImageField({
       <Modal
         open={sourceUrl != null}
         onClose={closeCropModal}
-        title="プロフィール画像の範囲を選ぶ"
+        title={`${imageLabel}の範囲を選ぶ`}
       >
         {sourceUrl ? (
           <div className={styles.modalBody}>

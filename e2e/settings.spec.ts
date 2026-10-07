@@ -16,6 +16,7 @@ for (const viewport of [
     ).toBeVisible();
 
     for (const { name, path } of [
+      { name: "プロフィール設定", path: "/settings/profile" },
       { name: "家の設定", path: "/settings/households" },
       { name: "通知設定", path: "/settings/notifications" },
       { name: "見た目設定", path: "/settings/appearance" },

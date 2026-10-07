@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  type AnySQLiteColumn,
+  integer,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
+import { mediaAssets } from "./media-assets";
 
 /**
  * アプリの利用者。現時点では認証を持たず、`/login` のログインボタンで
@@ -15,6 +21,11 @@ export const users = sqliteTable("users", {
   role: text("role", { enum: ["admin", "member"] })
     .notNull()
     .default("member"),
+  // アイコン画像（media_assets、record_type = "user_icon"）。users ⇄ media_assets が互いを参照するため
+  // AnySQLiteColumn で型の循環参照を回避する
+  iconMediaAssetId: text("icon_media_asset_id").references(
+    (): AnySQLiteColumn => mediaAssets.id,
+  ),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

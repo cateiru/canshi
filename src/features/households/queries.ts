@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { getDb } from "@/db/client";
 import { cats, householdMembers, households, users } from "@/db/schema";
 
@@ -93,6 +94,31 @@ export async function getHouseholdForUser(
   return row ?? null;
 }
 
+/**
+ * 2 人のユーザーが同じ家に所属していれば true。同じユーザーどうしは、家に所属していなくても true。
+ * ユーザーのアイコン画像を見せてよい相手（本人と、同じ家のメンバー）の判定に使う
+ */
+export async function sharesHousehold(
+  userId: string,
+  otherUserId: string,
+  d1?: D1Database,
+) {
+  if (userId === otherUserId) {
+    return true;
+  }
+  const db = getDb(d1);
+  const other = alias(householdMembers, "other_members");
+  const [row] = await db
+    .select({ householdId: householdMembers.householdId })
+    .from(householdMembers)
+    .innerJoin(other, eq(householdMembers.householdId, other.householdId))
+    .where(
+      and(eq(householdMembers.userId, userId), eq(other.userId, otherUserId)),
+    )
+    .limit(1);
+  return row != null;
+}
+
 /** 家のメンバーを、オーナーを先頭に所属した順で返す */
 export async function listHouseholdMembers(
   householdId: string,
@@ -103,6 +129,7 @@ export async function listHouseholdMembers(
     .select({
       userId: users.id,
       name: users.name,
+      iconMediaAssetId: users.iconMediaAssetId,
       role: householdMembers.role,
       joinedAt: householdMembers.createdAt,
     })

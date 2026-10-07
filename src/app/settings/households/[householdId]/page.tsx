@@ -22,6 +22,7 @@ import { listHouseholdMembers } from "@/features/households/queries";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
+import { UserAvatar } from "@/features/users/UserAvatar";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -80,6 +81,10 @@ export default async function HouseholdSettingsPage({
             return (
               <li key={member.userId} className={styles.member}>
                 <div className={styles.memberInfo}>
+                  <UserAvatar
+                    name={member.name}
+                    iconMediaAssetId={member.iconMediaAssetId}
+                  />
                   <span className={styles.memberName}>
                     {member.name}
                     {isSelf ? "（あなた）" : null}

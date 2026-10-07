@@ -16,6 +16,7 @@ import { Surface } from "@/features/shared/Surface";
 import type { CatFormState } from "./actions";
 import { BirthDateField } from "./BirthDateField";
 import { CAT_BREEDS, matchesBreed } from "./breeds";
+import { CatAvatar } from "./CatAvatar";
 import styles from "./CatForm.module.css";
 import { CatIcon } from "./CatIcon";
 import { ProfileImageField } from "./ProfileImageField";
@@ -93,8 +94,15 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
             画像を選ぶと、正方形に切り抜く範囲を調整できます。
           </p>
           <ProfileImageField
-            catName={cat.name}
-            profileMediaAssetId={cat.profileMediaAssetId}
+            currentAssetId={cat.profileMediaAssetId}
+            renderPreview={(assetId) => (
+              <CatAvatar
+                name={cat.name}
+                profileMediaAssetId={assetId}
+                size="lg"
+              />
+            )}
+            pendingNote="「更新する」を押すと反映されます。"
             onBusyChange={setIsProfileImageBusy}
             isDisabled={isPending}
           />

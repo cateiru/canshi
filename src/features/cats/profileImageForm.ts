@@ -1,6 +1,7 @@
 /**
- * 猫の編集フォームが送るプロフィール画像のフィールド。クライアント（`ProfileImageField`）と
- * サーバー（`updateCatAction`）の両方から参照する
+ * 猫の編集フォーム・プロフィール設定が送る画像（猫のプロフィール画像・ユーザーのアイコン画像）の
+ * フィールド。クライアント（`ProfileImageField`）とサーバー（`updateCatAction`・
+ * `updateUserProfileAction`）の両方から参照する
  */
 
 /** プロフィール画像をどうするか（`ProfileImageChange["type"]`） */

@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `icon_media_asset_id` text REFERENCES media_assets(id);
