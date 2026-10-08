@@ -340,7 +340,7 @@ describe("確認の後に家から外された場合", () => {
     expect(product.name).toBe("food-1");
   });
 
-  it("商品の削除は通らず、商品画像も消さない", async () => {
+  it("商品の削除は通らず、エラーを返す", async () => {
     // 商品の削除は確認の後に 1 文で行うため、DELETE を組み立てる直前に外されたものとする
     const originalDelete = db.delete.bind(db);
     vi.spyOn(db, "delete").mockImplementation((table) => {
@@ -351,10 +351,27 @@ describe("確認の後に家から外された場合", () => {
     expect(await deleteFoodProductAction("food-1")).toEqual({
       error: "商品が見つかりませんでした",
     });
-    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
     expect(
       await db.select().from(foodProducts).where(eq(foodProducts.id, "food-1")),
     ).toHaveLength(1);
+  });
+
+  it("商品画像の削除に失敗したときは商品を残し、削除し直せる", async () => {
+    vi.mocked(deleteMediaAssetsByRecord).mockRejectedValueOnce(
+      new Error("R2 の削除に失敗"),
+    );
+
+    await expect(deleteFoodProductAction("food-1")).rejects.toThrow(
+      "R2 の削除に失敗",
+    );
+    expect(
+      await db.select().from(foodProducts).where(eq(foodProducts.id, "food-1")),
+    ).toHaveLength(1);
+
+    expect(await deleteFoodProductAction("food-1")).toEqual({});
+    expect(
+      await db.select().from(foodProducts).where(eq(foodProducts.id, "food-1")),
+    ).toEqual([]);
   });
 
   it("プリセットの登録・更新・削除は通らない", async () => {

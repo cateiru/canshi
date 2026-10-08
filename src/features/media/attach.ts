@@ -3,6 +3,7 @@ import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
+import { canAccessMediaRecordOwner } from "./access";
 import { parseMediaAssetIds } from "./formFields";
 import { listMediaAssetsByRecord } from "./queries";
 import { resolveMediaRecordOwner } from "./recordOwner";
@@ -93,7 +94,9 @@ export async function syncRecordMedia(
     return {};
   }
   const owner = await resolveMediaRecordOwner(recordType, recordId);
-  if (!owner) {
+  // 呼び出し元の Server Action で認可済みでも、記録の保存の後に家から外された場合に添付を
+  // 削除・付け替えできないよう、添付を書き換える直前にもう一度確かめる
+  if (!owner || !(await canAccessMediaRecordOwner(userId, owner))) {
     return { error: "添付先の記録が見つかりませんでした" };
   }
 
@@ -155,8 +158,8 @@ export async function syncRecordMediaFromForm(
   recordId: string,
   formData: FormData,
 ): Promise<string | undefined> {
-  // 呼び出し元の Server Action で認可済みのため、ここではログイン中のユーザーを引くだけ
-  // （requireUser は未ログイン時にリダイレクト＝例外にするため、try の外で呼ぶ）
+  // 記録への認可は呼び出し元の Server Action と `syncRecordMedia` で行うため、ここではログイン中の
+  // ユーザーを引くだけ（requireUser は未ログイン時にリダイレクト＝例外にするため、try の外で呼ぶ）
   const user = await requireUser();
   try {
     const result = await syncRecordMedia(

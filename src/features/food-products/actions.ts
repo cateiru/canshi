@@ -179,9 +179,11 @@ export async function deleteFoodProductAction(
     };
   }
 
-  // 最初の確認の後に家から外された場合に削除が通らないよう、所属の確認は DELETE の WHERE にも含める。
-  // 商品画像（R2 のオブジェクトと media_assets 行）は、商品を削除できたときだけ後から削除する
-  // （先に削除すると、商品の削除が通らなかったときに画像だけが消えてしまうため）
+  // 商品画像（R2 のオブジェクトと media_assets 行）を先に削除する。ほかの記録の削除と同じく、
+  // R2 の削除に失敗したときは例外で止まり商品が残るため、もう一度削除し直せる（商品を先に削除すると、
+  // 画像の削除に失敗したときに商品がなくなり、残った画像を誰も削除できなくなる）
+  await deleteMediaAssetsByRecord(FOOD_PRODUCT_MEDIA_TYPE, id);
+  // 最初の確認の後に家から外された場合に削除が通らないよう、所属の確認は DELETE の WHERE にも含める
   const deleted = await db
     .delete(foodProducts)
     .where(
@@ -194,6 +196,5 @@ export async function deleteFoodProductAction(
   if (deleted.length === 0) {
     return { error: "商品が見つかりませんでした" };
   }
-  await deleteMediaAssetsByRecord(FOOD_PRODUCT_MEDIA_TYPE, id);
   return {};
 }
