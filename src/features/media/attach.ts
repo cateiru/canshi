@@ -95,7 +95,11 @@ export async function syncRecordMedia(
   }
   const owner = await resolveMediaRecordOwner(recordType, recordId);
   // 呼び出し元の Server Action で認可済みでも、記録の保存の後に家から外された場合に添付を
-  // 削除・付け替えできないよう、添付を書き換える直前にもう一度確かめる
+  // 削除・付け替えできないよう、添付を書き換える直前にもう一度確かめる。
+  // ただし、この確認から下の R2・D1 の書き込みまでの間に家から外された場合は防げない
+  // （R2 の削除は D1 の文やトランザクションに含められないため）。完全に防ぐには、`media_assets` の
+  // 更新・削除の WHERE に所属の条件を含め、R2 は行を論理削除してから非同期で掃除する方式にする
+  // 必要があり、全記録の添付にかかわる設計の変更になるため見送っている（PR #257 のレビューを参照）
   if (!owner || !(await canAccessMediaRecordOwner(userId, owner))) {
     return { error: "添付先の記録が見つかりませんでした" };
   }
