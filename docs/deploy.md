@@ -32,15 +32,21 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - D1・R2 のバインディング名（`wrangler.toml` で定義）
 - OpenAI API キー（第3段階の AI 機能実装時に追加）
 
-## デプロイ手順（TODO）
+## デプロイ手順
 
-未着手の検討事項。着手前に内容を確定させる。
+- メインアプリは、Cloudflare 側の GitHub App（Workers Builds）で自動的にデプロイされる。
+  `main` にマージされるとデプロイがトリガーされるため、手動で `wrangler deploy` する必要はない。
+  GitHub Actions からはデプロイしない
+- 本番 D1 のマイグレーションは自動では適用されない（Workers Builds のブランチプレビューも適用しない）。
+  `pnpm db:migrate:remote`（`wrangler d1 migrations apply DB --remote`）を手動で実行したときだけ適用される
+  - マージと同時に新しいコードがデプロイされるため、新しい列・テーブルを使うコードを含む PR では、
+    マイグレーションの適用とマージの順序に注意する。列・テーブルを追加するだけのマイグレーションは、
+    マージ前に適用しても旧バージョンのアプリはそのまま動く
+  - 適用のタイミングは PR 本文に書く
 
-- Cloudflare アカウント・ゾーンの準備
-- `wrangler.toml` の本番向け設定（D1・R2 バインディング、ルート設定）
-- CI（GitHub Actions）からの `wrangler deploy` 自動化の要否・方法
+未着手の検討事項:
+
 - ステージング環境を用意するかどうか
-- マイグレーション（`wrangler d1 migrations apply`）の本番適用フロー
 
 ## ログインと家（ユーザー・猫の紐付け）
 
