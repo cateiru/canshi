@@ -1,17 +1,10 @@
-import { getHouseholdForUser } from "./queries";
-
 /**
- * フォームの `householdId` が、ユーザーの所属する家であればその ID を返す。未選択・所属していない家なら null。
- * ごはん商品・プリセットのように、登録時に家を選んで家に属させるデータの作成に使う
+ * フォームの家の選択欄（`householdId`）の値を返す。未選択なら null。
+ * ユーザーがその家に所属しているかは、書き込みの文の中で確かめる（`isHouseholdMemberCondition`）
  */
-export async function resolveFormHouseholdId(
-  userId: string,
-  formData: FormData,
-): Promise<string | null> {
+export function readFormHouseholdId(formData: FormData): string | null {
   const householdId = formData.get("householdId");
-  if (typeof householdId !== "string" || householdId === "") {
-    return null;
-  }
-  const household = await getHouseholdForUser(userId, householdId);
-  return household?.id ?? null;
+  return typeof householdId === "string" && householdId !== ""
+    ? householdId
+    : null;
 }

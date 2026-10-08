@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, type SQLWrapper, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { getDb } from "@/db/client";
 import { cats, householdMembers, households, users } from "@/db/schema";
@@ -20,6 +20,22 @@ export function accessibleCatIdsQuery(
       eq(cats.householdId, householdMembers.householdId),
     )
     .where(eq(householdMembers.userId, userId));
+}
+
+/**
+ * `userId` が家のメンバーであるときだけ真になる条件。読んでから書く方式だと、判定と書き込みの間に
+ * 家から外された場合に書き込みが通ってしまうため、INSERT ... SELECT・UPDATE・DELETE の WHERE に
+ * 含めて 1 文で判定する。`householdId` には家の ID か、書き込む行の家の列を渡す
+ */
+export function isHouseholdMemberCondition(
+  householdId: string | SQLWrapper,
+  userId: string,
+) {
+  return sql`EXISTS (
+    SELECT 1 FROM ${householdMembers} AS member
+    WHERE member.household_id = ${householdId}
+      AND member.user_id = ${userId}
+  )`;
 }
 
 /**

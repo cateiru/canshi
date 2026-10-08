@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
-import { foodProducts, householdMembers } from "@/db/schema";
+import { type FoodProduct, foodProducts, householdMembers } from "@/db/schema";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { mediaThumbnailUrl } from "@/features/media/view";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "./media";
@@ -58,19 +59,23 @@ export async function listFoodProductsByIds(
   householdId: string,
   ids: string[],
 ) {
-  if (ids.length === 0) {
-    return [];
-  }
   const db = getDb();
-  return db
-    .select()
-    .from(foodProducts)
-    .where(
-      and(
-        eq(foodProducts.householdId, householdId),
-        inArray(foodProducts.id, ids),
-      ),
+  const rows: FoodProduct[] = [];
+  // 家の比較値の分を 1 個予約し、ID は D1 のバインド上限に収まるよう分割する
+  for (const chunk of chunkForBoundParameters(ids, 1)) {
+    rows.push(
+      ...(await db
+        .select()
+        .from(foodProducts)
+        .where(
+          and(
+            eq(foodProducts.householdId, householdId),
+            inArray(foodProducts.id, chunk),
+          ),
+        )),
     );
+  }
+  return rows;
 }
 
 /**

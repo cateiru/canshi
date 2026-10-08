@@ -30,6 +30,7 @@ import {
 let db: ReturnType<typeof getDb>;
 let sqlite: Database;
 let SQL: Awaited<ReturnType<typeof initSqlJs>>;
+let beforeBatch: (() => Promise<void>) | undefined;
 vi.mock("@/db/client", () => ({ getDb: () => db }));
 vi.mock("@/features/media/storage", () => ({
   deleteMediaAssetsByRecord: vi.fn(),
@@ -143,11 +144,15 @@ beforeAll(async () => {
 });
 beforeEach(async () => {
   vi.clearAllMocks();
+  beforeBatch = undefined;
   sqlite = new SQL.Database();
   const raw = drizzle(sqlite);
   await migrate(raw, { migrationsFolder: "./drizzle" });
   sqlite.run("PRAGMA foreign_keys = ON");
+  // 実際の SQLite トランザクションで D1 の batch を再現する。`beforeBatch` で、Action の確認から
+  // batch の実行までの間に起きた変更（家から外されるなど）を差し込める
   const batch = async (statements: PromiseLike<unknown>[]) => {
+    await beforeBatch?.();
     const results: unknown[] = [];
     for (const statement of statements) {
       results.push(await statement);
@@ -309,6 +314,72 @@ describe("ごはんプリセット", () => {
     ).toEqual({ formError: "選択された商品が見つかりませんでした" });
     expect(await db.select().from(feedingPresetItems)).toMatchObject([
       { presetId: "preset-2", foodProductId: "food-2" },
+    ]);
+  });
+});
+
+describe("確認の後に家から外された場合", () => {
+  async function leaveHousehold() {
+    await db
+      .delete(householdMembers)
+      .where(eq(householdMembers.userId, "user-1"));
+  }
+
+  it("商品の更新は通らない", async () => {
+    // 商品の更新は確認と更新を 1 文で行うため、更新の直前に外されたものとして確かめる
+    await leaveHousehold();
+
+    expect(
+      await updateFoodProductAction("food-1", {}, productForm({ name: "改" })),
+    ).toEqual({ formError: "商品が見つかりませんでした" });
+    const [product] = await db
+      .select()
+      .from(foodProducts)
+      .where(eq(foodProducts.id, "food-1"));
+    expect(product.name).toBe("food-1");
+  });
+
+  it("プリセットの登録・更新・削除は通らない", async () => {
+    await db
+      .insert(feedingPresets)
+      .values({ id: "preset-1", householdId: "household-1", name: "朝" });
+    await db.insert(feedingPresetItems).values({
+      presetId: "preset-1",
+      foodProductId: "food-1",
+      givenAmountG: 20,
+    });
+    beforeBatch = leaveHousehold;
+
+    expect(
+      await createFeedingPresetAction(
+        {},
+        presetForm("food-1", { householdId: "household-1" }),
+      ),
+    ).toEqual({
+      fieldErrors: { householdId: ["所属している家を選択してください"] },
+    });
+    await db.insert(householdMembers).values({
+      householdId: "household-1",
+      userId: "user-1",
+    });
+    expect(
+      await updateFeedingPresetAction(
+        "preset-1",
+        {},
+        presetForm("food-1", { name: "改", "items.0.givenAmountG": "50" }),
+      ),
+    ).toEqual({ formError: "プリセットが見つかりませんでした" });
+    await db.insert(householdMembers).values({
+      householdId: "household-1",
+      userId: "user-1",
+    });
+    expect(await deleteFeedingPresetAction("preset-1")).toEqual({});
+
+    expect(await db.select().from(feedingPresets)).toMatchObject([
+      { id: "preset-1", name: "朝" },
+    ]);
+    expect(await db.select().from(feedingPresetItems)).toMatchObject([
+      { presetId: "preset-1", givenAmountG: 20 },
     ]);
   });
 });
