@@ -13,12 +13,15 @@ vi.mock("@/features/households/queries", () => ({
     userId === otherUserId ||
     [userId, otherUserId].sort().join() === "user-1,user-3",
 }));
-// 支出 expense-1 は household-1 の支出、expense-legacy は家に未所属の支出とする
+// 支出 expense-1・商品 food-1 は household-1 のもの、expense-legacy・food-legacy は
+// 家に未所属のものとする
 vi.mock("./recordOwner", () => ({
   resolveMediaRecordOwner: async (_recordType: string, recordId: string) =>
     ({
       "expense-1": { catId: null, householdId: "household-1" },
       "expense-legacy": { catId: null, householdId: null },
+      "food-1": { catId: null, householdId: "household-1" },
+      "food-legacy": { catId: null, householdId: null },
     })[recordId] ?? null,
 }));
 
@@ -49,14 +52,26 @@ describe("canAccessMediaAsset", () => {
     expect(await canAccessMediaAsset("user-2", asset)).toBe(false);
   });
 
-  it("猫に紐付かない共通のメディア（ごはん商品の画像）は、ログイン中のユーザーなら扱える", async () => {
+  it("ごはん商品の画像は、商品の家のユーザーだけが扱える", async () => {
     const asset = {
       catId: null,
       recordType: "food_product",
-      recordId: "food",
+      recordId: "food-1",
       uploadedByUserId: "user-1",
     };
-    expect(await canAccessMediaAsset("user-2", asset)).toBe(true);
+    expect(await canAccessMediaAsset("user-1", asset)).toBe(true);
+    expect(await canAccessMediaAsset("user-3", asset)).toBe(true);
+    expect(await canAccessMediaAsset("user-2", asset)).toBe(false);
+    // 家に未所属の商品・存在しない商品の画像は誰も扱えない
+    expect(
+      await canAccessMediaAsset("user-1", {
+        ...asset,
+        recordId: "food-legacy",
+      }),
+    ).toBe(false);
+    expect(
+      await canAccessMediaAsset("user-1", { ...asset, recordId: "missing" }),
+    ).toBe(false);
   });
 
   it("支出の添付は、支出の家のユーザーだけが扱える", async () => {

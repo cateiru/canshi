@@ -281,6 +281,13 @@
       "when": 1791421909814,
       "tag": "0039_sticky_masked_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1791428098247,
+      "tag": "0040_zippy_senator_kelly",
+      "breakpoints": true
     }
   ]
 }

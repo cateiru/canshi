@@ -7,6 +7,7 @@ import { updateFeedingRecordAction } from "@/features/feeding-records/actions";
 import { FeedingRecordForm } from "@/features/feeding-records/FeedingRecordForm";
 import {
   getFeedingRecordById,
+  listFoodProductsOfFeedingRecord,
   listRecentlyUsedFoodProductIds,
 } from "@/features/feeding-records/queries";
 import {
@@ -31,19 +32,34 @@ export default async function EditFeedingRecordPage({
     getFeedingRecordById(feedingRecordId),
   ]);
 
-  if (!cat || !feedingRecord || feedingRecord.catId !== catId) {
+  if (!cat?.householdId || !feedingRecord || feedingRecord.catId !== catId) {
     notFound();
   }
 
-  const [foodProducts, recentlyUsedFoodProductIds, presets] = await Promise.all(
-    [
-      listFoodProducts(),
-      listRecentlyUsedFoodProductIds(catId),
-      listFeedingPresets(),
-    ],
-  );
+  const [
+    householdFoodProducts,
+    recordFoodProducts,
+    recentlyUsedFoodProductIds,
+    presets,
+  ] = await Promise.all([
+    listFoodProducts(cat.householdId),
+    listFoodProductsOfFeedingRecord(feedingRecord.id),
+    listRecentlyUsedFoodProductIds(catId, cat.householdId),
+    listFeedingPresets(cat.householdId),
+  ]);
+  // 猫が別の家へ引っ越す前の記録は元の家の商品を使っているため、その商品も選択肢に残す
+  const foodProducts = [
+    ...householdFoodProducts,
+    ...recordFoodProducts.filter(
+      (recordFoodProduct) =>
+        !householdFoodProducts.some(
+          (foodProduct) => foodProduct.id === recordFoodProduct.id,
+        ),
+    ),
+  ];
   const foodProductImageUrls = await listFoodProductImageUrls(
     foodProducts.map((foodProduct) => foodProduct.id),
+    { householdId: cat.householdId },
   );
 
   return (

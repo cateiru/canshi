@@ -1,5 +1,6 @@
 import type { MediaAsset } from "@/db/schema";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
+import { FOOD_PRODUCT_MEDIA_TYPE } from "@/features/food-products/media";
 import {
   getCatForUser,
   getHouseholdForUser,
@@ -15,9 +16,9 @@ type AccessCheckedAsset = Pick<
 >;
 
 /**
- * ユーザーが添付先のレコードを扱えるかを判定する。家に属するレコード（支出）はその家に、
- * 猫に紐付くレコードはその猫の家に所属していることを求める。どちらでもないレコード
- * （ごはん商品）は全ユーザーで共通のデータのため、ログイン中のユーザーなら許可する
+ * ユーザーが添付先のレコードを扱えるかを判定する。家に属するレコード（支出・ごはん商品）は
+ * その家に、猫に紐付くレコードはその猫の家に所属していることを求める。どちらでもないレコードは
+ * 家に関係なくログイン中のユーザーなら許可する（今はそのようなレコードの種別はない）
  */
 export async function canAccessMediaRecordOwner(
   userId: string,
@@ -40,10 +41,9 @@ export async function canAccessMediaRecordOwner(
  *
  * - 記録に紐付く前の下書きは、アップロードした本人だけに許可する
  * - ユーザーのアイコン画像は、本人と、同じ家に所属するメンバーに許可する
- * - 支出の添付は、支出の家に所属していることを求める
+ * - 支出の添付・ごはん商品の画像は、支出・商品の家に所属していることを求める
  * - 猫に紐付くメディアは、その猫の家に所属していることを求める
- * - 猫に紐付かないメディア（ごはん商品の画像）は、全ユーザーで共通のデータのため、
- *   家に関係なくログイン中のユーザーなら許可する
+ * - それ以外の猫に紐付かないメディア（開発確認用のアップロード）は、ログイン中のユーザーなら許可する
  */
 export async function canAccessMediaAsset(
   userId: string,
@@ -55,9 +55,12 @@ export async function canAccessMediaAsset(
   if (asset.recordType === USER_ICON_MEDIA_TYPE) {
     return sharesHousehold(userId, asset.recordId);
   }
-  if (asset.recordType === EXPENSE_MEDIA_TYPE) {
+  if (
+    asset.recordType === EXPENSE_MEDIA_TYPE ||
+    asset.recordType === FOOD_PRODUCT_MEDIA_TYPE
+  ) {
     const owner = await resolveMediaRecordOwner(
-      EXPENSE_MEDIA_TYPE,
+      asset.recordType,
       asset.recordId,
     );
     return owner != null && canAccessMediaRecordOwner(userId, owner);
