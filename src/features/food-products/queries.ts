@@ -75,14 +75,26 @@ export async function listFoodProductsByIds(
 
 /**
  * 商品 ID → 商品画像（サムネイル）の URL。画像のない商品は含まない。
- * ごはん記録フォーム・プリセットなど、商品を画像で識別したい画面に渡す
+ * ごはん記録フォーム・プリセットなど、商品を画像で識別したい画面に渡す。
+ *
+ * 猫のページでは `householdId` に猫の家を渡し、その家の商品の画像だけを返す。猫が別の家へ
+ * 引っ越す前の記録は元の家の商品を使っていて、その画像は元の家のメンバーしか参照できないため、
+ * URL を渡さずにアイコンで表示する
  */
 export async function listFoodProductImageUrls(
   productIds: string[],
+  options?: { householdId: string | null },
 ): Promise<Record<string, string>> {
+  const visibleProductIds = options
+    ? options.householdId == null
+      ? []
+      : (await listFoodProductsByIds(options.householdId, productIds)).map(
+          (product) => product.id,
+        )
+    : productIds;
   const assetsByProduct = await listMediaAssetsByRecords(
     FOOD_PRODUCT_MEDIA_TYPE,
-    productIds,
+    visibleProductIds,
   );
   const urls: Record<string, string> = {};
   for (const [productId, assets] of assetsByProduct) {

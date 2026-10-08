@@ -59,6 +59,7 @@ export default async function EditFeedingRecordPage({
   ];
   const foodProductImageUrls = await listFoodProductImageUrls(
     foodProducts.map((foodProduct) => foodProduct.id),
+    { householdId: cat.householdId },
   );
 
   return (
