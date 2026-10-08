@@ -73,16 +73,26 @@ export default async function ExpensesPage({
   const ym = formatYm({ year, month });
   const scope: ExpenseScope = isExpenseScope(scopeParam) ? scopeParam : "all";
 
+  // 支出は家に属するため、表示中の猫の家の支出を表示する
+  // （アクセスできる猫は家に所属している。`getCatForUser` 参照）
+  const householdId = cat.householdId as string;
   const scopedCatId = scope === "cat" ? catId : undefined;
   const chartRange = getExpenseChartRange({ year, month });
   const [expenses, chartExpenses, allCats] = await Promise.all([
-    listExpensesForMonth(year, month, { catId: scopedCatId }),
-    listExpenseAmountsForMonthRange(chartRange.from, chartRange.to, {
-      catId: scopedCatId,
-    }),
+    listExpensesForMonth(householdId, year, month, { catId: scopedCatId }),
+    listExpenseAmountsForMonthRange(
+      householdId,
+      chartRange.from,
+      chartRange.to,
+      { catId: scopedCatId },
+    ),
     listCurrentUserCats(),
   ]);
-  const catNameById = new Map(allCats.map((entry) => [entry.id, entry.name]));
+  const catNameById = new Map(
+    allCats
+      .filter((entry) => entry.householdId === householdId)
+      .map((entry) => [entry.id, entry.name]),
+  );
   const [mediaByRecordId, hospitalVisitById] = await Promise.all([
     listMediaAssetsByRecords(
       EXPENSE_MEDIA_TYPE,

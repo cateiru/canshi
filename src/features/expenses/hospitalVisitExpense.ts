@@ -17,6 +17,8 @@ import { deleteExpenseStatements } from "./storage";
 export type SyncHospitalVisitExpenseParams = {
   hospitalVisitId: string;
   catId: string;
+  /** 通院した猫の家。病院代の支出記録を新しく作るときは、この家の支出にする */
+  householdId: string;
   /** 通院記録の受診日時。支出日は同じ日付の 00:00 に揃える */
   visitedAt: Date;
   /** 病院代。null のときは紐付く支出記録を削除する（他の通院記録と共有していれば紐付けだけ外す） */
@@ -51,6 +53,7 @@ export async function saveHospitalVisitWithExpense(
   {
     hospitalVisitId,
     catId,
+    householdId,
     visitedAt,
     amountYen,
     linkExpenseRecordId,
@@ -128,6 +131,7 @@ export async function saveHospitalVisitWithExpense(
     statements.push(
       db.insert(expenseRecords).values({
         id,
+        householdId,
         spentAt,
         amountYen,
         // 通院由来の支出は既定で「病院」。支出記録の編集で後から変更できる

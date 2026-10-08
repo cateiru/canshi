@@ -36,7 +36,7 @@ type FormAction = (
 ) => Promise<ExpenseFormState>;
 
 type ExpenseFormProps = {
-  /** 送信後の遷移先に使う、導線になっている猫 */
+  /** 導線になっている猫。送信後の遷移先と、通院記録の候補を探す家に使う */
   catId: string;
   action: FormAction;
   /**
@@ -48,7 +48,7 @@ type ExpenseFormProps = {
     state: ExpenseFormState,
     formData: FormData,
   ) => Promise<ExpenseFormState>;
-  /** 関連付けの選択肢になるすべての猫 */
+  /** 関連付けの選択肢になる猫（支出の家の猫） */
   cats: Cat[];
   expense?: ExpenseWithCats;
   /** 編集時に、支出日と同じ日の通院記録をあらかじめ取得したもの（カテゴリが「病院」の場合） */
@@ -92,6 +92,7 @@ export function ExpenseForm({
   >(() => new Set(expense?.hospitalVisitIds ?? []));
   const isHospital = category === "hospital";
   const linkableHospitalVisitsState = useLinkableHospitalVisits(
+    catId,
     spentDate,
     isHospital,
     expense?.id,

@@ -68,11 +68,12 @@ async function verifySymptomBelongsToCat(
 }
 
 /**
- * 通院記録の作成時に紐付ける既存の支出記録が、受診日と同じ日のカテゴリ「病院」の
- * 支出記録であることを確かめる
+ * 通院記録の作成時に紐付ける既存の支出記録が、通院する猫の家の、受診日と同じ日の
+ * カテゴリ「病院」の支出記録であることを確かめる
  */
 async function verifyLinkableExpense(
   db: ReturnType<typeof getDb>,
+  householdId: string,
   expenseRecordId: string | undefined,
   visitedDate: string,
 ): Promise<boolean> {
@@ -85,7 +86,12 @@ async function verifyLinkableExpense(
       spentAt: expenseRecords.spentAt,
     })
     .from(expenseRecords)
-    .where(eq(expenseRecords.id, expenseRecordId))
+    .where(
+      and(
+        eq(expenseRecords.id, expenseRecordId),
+        eq(expenseRecords.householdId, householdId),
+      ),
+    )
     .limit(1);
   return (
     row != null &&
@@ -115,7 +121,9 @@ export async function createHospitalVisitAction(
   _prevState: HospitalVisitFormState,
   formData: FormData,
 ): Promise<HospitalVisitFormState> {
-  await requireCatAccess(catId);
+  const { cat } = await requireCatAccess(catId);
+  // ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照）
+  const householdId = cat.householdId as string;
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -134,6 +142,7 @@ export async function createHospitalVisitAction(
   if (
     !(await verifyLinkableExpense(
       db,
+      householdId,
       linkExpenseRecordId,
       parsed.data.visitedDate,
     ))
@@ -152,6 +161,7 @@ export async function createHospitalVisitAction(
     {
       hospitalVisitId: id,
       catId,
+      householdId,
       visitedAt: values.visitedAt,
       amountYen: parsed.data.expenseAmountYen ?? null,
       linkExpenseRecordId,
@@ -172,7 +182,9 @@ export async function updateHospitalVisitAction(
   _prevState: HospitalVisitFormState,
   formData: FormData,
 ): Promise<HospitalVisitFormState> {
-  await requireCatAccess(catId);
+  const { cat } = await requireCatAccess(catId);
+  // ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照）
+  const householdId = cat.householdId as string;
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -204,6 +216,7 @@ export async function updateHospitalVisitAction(
     {
       hospitalVisitId: id,
       catId,
+      householdId,
       visitedAt: values.visitedAt,
       amountYen: parsed.data.expenseAmountYen ?? null,
       // 既存の支出記録へ紐付けて作成した後の再送信では、紐付けた支出記録を削除せずに残す

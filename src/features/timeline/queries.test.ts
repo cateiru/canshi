@@ -4,7 +4,15 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { cats, mediaAssets, poopRecords, weightRecords } from "@/db/schema";
+import {
+  cats,
+  expenseRecordCats,
+  expenseRecords,
+  households,
+  mediaAssets,
+  poopRecords,
+  weightRecords,
+} from "@/db/schema";
 import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
 import { listTimelineForMonth, type TimelineEntry } from "./queries";
 
@@ -77,6 +85,43 @@ describe("listTimelineForMonth", () => {
     expect(result.hasMore).toBe(false);
     expect(result.entries[1].media).toHaveLength(1);
     expect(result.entries[1].media[0].id).toBe(media.id);
+  });
+
+  it("支出は、猫に関連付いた猫の家の支出だけを含める", async () => {
+    await db.insert(households).values([
+      { id: "timeline-home", name: "わが家" },
+      { id: "timeline-old-home", name: "前の家" },
+    ]);
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "みけ", sex: "female", householdId: "timeline-home" })
+      .returning();
+    await db.insert(expenseRecords).values([
+      {
+        id: "timeline-expense-home",
+        householdId: "timeline-home",
+        spentAt: new Date("2026-06-10T00:00:00.000Z"),
+        amountYen: 1000,
+        category: "food",
+      },
+      {
+        id: "timeline-expense-old-home",
+        householdId: "timeline-old-home",
+        spentAt: new Date("2026-06-11T00:00:00.000Z"),
+        amountYen: 2000,
+        category: "food",
+      },
+    ]);
+    await db.insert(expenseRecordCats).values([
+      { expenseRecordId: "timeline-expense-home", catId: cat.id },
+      { expenseRecordId: "timeline-expense-old-home", catId: cat.id },
+    ]);
+
+    const result = await listTimelineForMonth(cat.id, 2026, 6);
+
+    expect(result.entries.map((entry) => entry.id)).toEqual([
+      "timeline-expense-home",
+    ]);
   });
 
   it("pageSize を超える件数は hasMore と page で正しく分割される", async () => {

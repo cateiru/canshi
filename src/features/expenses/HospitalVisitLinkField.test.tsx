@@ -16,7 +16,7 @@ describe("useLinkableHospitalVisits", () => {
     );
     listLinkableHospitalVisitsAction.mockResolvedValueOnce([visit]);
     const { result } = renderHook(() =>
-      useLinkableHospitalVisits("2026-09-15", true, "expense-1"),
+      useLinkableHospitalVisits("tama", "2026-09-15", true, "expense-1"),
     );
     expect(result.current.status).toBe("loading");
 

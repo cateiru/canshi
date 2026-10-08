@@ -22,10 +22,11 @@ export type LinkableHospitalVisitsState =
   | { status: "loaded"; visits: LinkableHospitalVisit[] };
 
 /**
- * 支出日と同じ日の通院記録（紐付けの候補）を取得する。編集中の支出記録にすでに
+ * 支出日と同じ日の、`catId`（ページの猫）の家の通院記録（紐付けの候補）を取得する。編集中の支出記録にすでに
  * 紐付いている通院記録も含める。`enabled` が false の間（カテゴリが「病院」以外）は取得しない
  */
 export function useLinkableHospitalVisits(
+  catId: string,
   date: string,
   enabled: boolean,
   expenseId: string | undefined,
@@ -41,7 +42,7 @@ export function useLinkableHospitalVisits(
     }
     // 日付を続けて変えたときに、古い日付の結果で上書きしないようにする
     let ignore = false;
-    listLinkableHospitalVisitsAction(date, expenseId).then(
+    listLinkableHospitalVisitsAction(catId, date, expenseId).then(
       (visits) => {
         if (!ignore) setLoaded({ date, visits });
       },
@@ -52,7 +53,7 @@ export function useLinkableHospitalVisits(
     return () => {
       ignore = true;
     };
-  }, [date, enabled, expenseId, loaded?.date]);
+  }, [catId, date, enabled, expenseId, loaded?.date]);
 
   if (loaded?.date !== date) {
     return { status: "loading" };

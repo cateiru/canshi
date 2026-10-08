@@ -498,7 +498,8 @@ async function fetchHospitalVisitEntries(
 
 /**
  * 支出記録は猫に直接紐付かず expense_record_cats 経由で多対多に紐付くため、
- * 表示中の猫に関連付けられた支出だけをタイムラインに出す
+ * 表示中の猫に関連付けられた支出だけをタイムラインに出す。支出は家に属するため、
+ * 猫の家の支出に限る
  */
 async function fetchExpenseEntries(
   catId: string,
@@ -516,6 +517,13 @@ async function fetchExpenseEntries(
     .where(
       and(
         eq(expenseRecordCats.catId, catId),
+        eq(
+          expenseRecords.householdId,
+          db
+            .select({ householdId: cats.householdId })
+            .from(cats)
+            .where(eq(cats.id, catId)),
+        ),
         gte(expenseRecords.spentAt, range.start),
         lt(expenseRecords.spentAt, range.end),
       ),

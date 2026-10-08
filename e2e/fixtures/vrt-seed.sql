@@ -215,3 +215,6 @@ VALUES ('vrt-expense-hospital-1', 'vrt-cat-busy'), ('vrt-expense-hospital-2', 'v
 
 -- ここまでに登録した猫をすべて VRT 用の家に所属させる
 UPDATE cats SET household_id = 'vrt-household' WHERE id LIKE 'vrt-cat-%';
+
+-- 支出記録は家に属するため、ここまでに登録した支出記録も VRT 用の家の支出にする
+UPDATE expense_records SET household_id = 'vrt-household' WHERE id LIKE 'vrt-expense-%';
