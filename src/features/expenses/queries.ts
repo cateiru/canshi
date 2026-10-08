@@ -9,7 +9,6 @@ import {
   expenseRecords,
   hospitalVisits,
 } from "@/db/schema";
-import { accessibleCatIdsQuery } from "@/features/households/queries";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import type { YearMonth } from "@/features/shared/yearMonth";
 
@@ -115,10 +114,11 @@ export type ListExpensesForMonthOptions = {
 };
 
 /**
- * 指定した年月の支出記録を新しい順に返す。支出はすべての猫で共通のため、
- * 既定では猫で絞り込まず、月全体の支出を返す
+ * 指定した家の、指定した年月の支出記録を新しい順に返す。支出は家の猫で共通のため、
+ * 既定では猫で絞り込まず、家の月全体の支出を返す
  */
 export async function listExpensesForMonth(
+  householdId: string,
   year: number,
   month: number, // 1-12
   options: ListExpensesForMonthOptions = {},
@@ -126,6 +126,7 @@ export async function listExpensesForMonth(
   const db = getDb();
   const range = getMonthRangeUtc(year, month);
   const inMonth = and(
+    eq(expenseRecords.householdId, householdId),
     gte(expenseRecords.spentAt, range.start),
     lt(expenseRecords.spentAt, range.end),
   );
@@ -156,10 +157,11 @@ export type ExpenseAmountRecord = Pick<
 >;
 
 /**
- * 月別の支出グラフ用に、`from` 月の月初から `to` 月の月末までの支出の
+ * 月別の支出グラフ用に、指定した家の `from` 月の月初から `to` 月の月末までの支出の
  * 日付・カテゴリ・金額だけを返す。猫の紐付けは不要なので attachCatIds は通さない
  */
 export async function listExpenseAmountsForMonthRange(
+  householdId: string,
   from: YearMonth,
   to: YearMonth,
   options: ListExpensesForMonthOptions = {},
@@ -187,6 +189,7 @@ export async function listExpenseAmountsForMonthRange(
     .from(expenseRecords)
     .where(
       and(
+        eq(expenseRecords.householdId, householdId),
         gte(expenseRecords.spentAt, start),
         lt(expenseRecords.spentAt, end),
         forCat,
@@ -194,14 +197,21 @@ export async function listExpenseAmountsForMonthRange(
     );
 }
 
+/** 指定した家の支出記録を取得する。別の家の支出記録は存在しないものと同じく null を返す */
 export async function getExpenseById(
+  householdId: string,
   id: string,
 ): Promise<ExpenseWithCats | null> {
   const db = getDb();
   const [record] = await db
     .select()
     .from(expenseRecords)
-    .where(eq(expenseRecords.id, id))
+    .where(
+      and(
+        eq(expenseRecords.id, id),
+        eq(expenseRecords.householdId, householdId),
+      ),
+    )
     .limit(1);
   if (record == null) {
     return null;
@@ -271,13 +281,11 @@ export type HospitalExpenseCandidate = Pick<
 };
 
 /**
- * 指定した日（`YYYY-MM-DD`）のカテゴリ「病院」の支出記録を、関連する猫の名前と一緒に返す。
- * 通院記録を作成するときに、同じ日の病院代と紐付けるかを確認するために使う。
- * 支出記録は家を問わず共通だが、猫の名前はユーザーの家の猫のものだけを引き、
- * 別の家の猫は支出一覧（`ExpenseList`）と同じく「不明な猫」と表示する
+ * 指定した家の、指定した日（`YYYY-MM-DD`）のカテゴリ「病院」の支出記録を、関連する猫の
+ * 名前と一緒に返す。通院記録を作成するときに、同じ日の病院代と紐付けるかを確認するために使う
  */
 export async function listHospitalExpensesOnDate(
-  userId: string,
+  householdId: string,
   date: string,
 ): Promise<HospitalExpenseCandidate[]> {
   const db = getDb();
@@ -288,6 +296,7 @@ export async function listHospitalExpensesOnDate(
     .from(expenseRecords)
     .where(
       and(
+        eq(expenseRecords.householdId, householdId),
         eq(expenseRecords.category, "hospital"),
         gte(expenseRecords.spentAt, start),
         lt(expenseRecords.spentAt, end),
@@ -305,7 +314,7 @@ export async function listHospitalExpensesOnDate(
       await db
         .select({ id: cats.id, name: cats.name })
         .from(cats)
-        .where(inArray(cats.id, accessibleCatIdsQuery(db, userId)))
+        .where(eq(cats.householdId, householdId))
     ).map((cat) => [cat.id, cat.name]),
   );
   return records.map((record) => ({

@@ -129,7 +129,7 @@ export function HospitalVisitForm({
     }
     event.preventDefault();
     setIsCheckingExpenses(true);
-    listSameDayHospitalExpensesAction(visitedDate)
+    listSameDayHospitalExpensesAction(catId, visitedDate)
       .catch(() => [])
       .then((candidates) => {
         setIsCheckingExpenses(false);

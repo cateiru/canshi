@@ -23,6 +23,20 @@ export function accessibleCatIdsQuery(
 }
 
 /**
+ * 家の猫の ID を返すサブクエリ。支出記録のように家に属する記録で、関連する猫・通院記録を
+ * 同じ家のものに絞り込むときに使う（ユーザーが家に所属していることは呼び出し元で確認する）
+ */
+export function householdCatIdsQuery(
+  db: ReturnType<typeof getDb>,
+  householdId: string,
+) {
+  return db
+    .select({ id: cats.id })
+    .from(cats)
+    .where(eq(cats.householdId, householdId));
+}
+
+/**
  * ユーザーが所属する家と、その家での権限（`role`）を所属した順に返す。今は
  * 1 ユーザー 1 家の運用だが、複数の家に所属することもスキーマ上は許容している
  */

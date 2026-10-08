@@ -13,8 +13,13 @@ import {
 import type { MediaRecordType } from "./recordTypes";
 
 export type MediaRecordOwner = {
-  /** 猫に紐付かないレコード（ごはん商品）は null */
+  /** 猫に紐付かないレコード（ごはん商品・支出）は null */
   catId: string | null;
+  /**
+   * 猫に紐付かず家に属するレコード（支出）の家。家に未所属なら null。
+   * 家に属さないレコードでは省略する
+   */
+  householdId?: string | null;
 };
 
 /**
@@ -78,13 +83,13 @@ export async function resolveMediaRecordOwner(
       return row ?? null;
     }
     case "expense": {
-      // 支出はすべての猫で共通のため、特定の猫には紐付けない
+      // 支出は家の猫で共通のため、特定の猫には紐付けず家で判定する
       const [row] = await db
-        .select({ id: expenseRecords.id })
+        .select({ householdId: expenseRecords.householdId })
         .from(expenseRecords)
         .where(eq(expenseRecords.id, recordId))
         .limit(1);
-      return row ? { catId: null } : null;
+      return row ? { catId: null, householdId: row.householdId } : null;
     }
     case "food_product": {
       const [row] = await db

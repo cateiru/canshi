@@ -37,12 +37,29 @@ vi.mock("next/navigation", () => ({
     throw new Error(`redirect:${url}`);
   },
 }));
-// ログイン中のユーザーは常に user-1（household-1 のメンバー）とする。
-// 猫単位の認可（requireCatAccess）はこのテストの対象外のため常に許可する
-vi.mock("@/features/auth/session", () => ({
-  requireUser: async () => ({ id: "user-1" }),
-  requireCatAccess: async () => ({}),
-}));
+// ログイン中のユーザーは既定で user-1（household-1 のメンバー）とし、`asUser` で切り替える。
+// 猫単位の認可（requireCatAccess）は、実際と同じくユーザーの家の猫だけを許可する
+let currentUserId = "user-1";
+vi.mock("@/features/auth/session", async () => {
+  const { getCatForUser } = await import("@/features/households/queries");
+  return {
+    requireUser: async () => ({ id: currentUserId }),
+    requireCatAccess: async (catId: string) => {
+      const cat = await getCatForUser(currentUserId, catId);
+      if (!cat) throw new Error("notFound");
+      return { user: { id: currentUserId }, cat };
+    },
+  };
+});
+
+async function asUser<T>(userId: string, fn: () => Promise<T>): Promise<T> {
+  currentUserId = userId;
+  try {
+    return await fn();
+  } finally {
+    currentUserId = "user-1";
+  }
+}
 
 const {
   createExpenseAction,
@@ -148,6 +165,7 @@ describe("支出の保存と月別表示", () => {
     await addCat("kuro", "household-2");
 
     const result = await createExpenseAction(
+      "tama",
       {},
       expenseForm({ catIds: ["tama", "kuro"] }),
     );
@@ -160,61 +178,76 @@ describe("支出の保存と月別表示", () => {
 
   it("複数の猫に関連付けても全体の支出は重複しない", async () => {
     const { savedRecordId: id } = await createExpenseAction(
+      "tama",
       {},
       expenseForm({ catIds: ["tama", "mike", "tama"] }),
     );
-    expect(await getExpenseById(id as string)).toMatchObject({
+    expect(await getExpenseById("household-1", id as string)).toMatchObject({
       amountYen: 1280,
       catIds: expect.arrayContaining(["tama", "mike"]),
     });
-    expect(await listExpensesForMonth(2026, 9)).toHaveLength(1);
-    expect(await listExpensesForMonth(2026, 9, { catId: "mike" })).toHaveLength(
-      1,
-    );
+    expect(await listExpensesForMonth("household-1", 2026, 9)).toHaveLength(1);
+    expect(
+      await listExpensesForMonth("household-1", 2026, 9, { catId: "mike" }),
+    ).toHaveLength(1);
   });
 
   it("編集で猫を外すと、共通の支出として残る", async () => {
     const { savedRecordId: id } = await createExpenseAction(
+      "tama",
       {},
       expenseForm({ catIds: ["tama"] }),
     );
     await updateExpenseAction(
+      "tama",
       id as string,
       {},
       expenseForm({ amountYen: "0" }),
     );
-    expect(await getExpenseById(id as string)).toMatchObject({
+    expect(await getExpenseById("household-1", id as string)).toMatchObject({
       amountYen: 0,
       catIds: [],
     });
-    expect(await listExpensesForMonth(2026, 9, { catId: "tama" })).toEqual([]);
-    expect(await listExpensesForMonth(2026, 9)).toHaveLength(1);
+    expect(
+      await listExpensesForMonth("household-1", 2026, 9, { catId: "tama" }),
+    ).toEqual([]);
+    expect(await listExpensesForMonth("household-1", 2026, 9)).toHaveLength(1);
   });
 
   it("未入力の金額や存在しない猫では保存しない", async () => {
     expect(
-      await createExpenseAction({}, expenseForm({ amountYen: "" })),
+      await createExpenseAction("tama", {}, expenseForm({ amountYen: "" })),
     ).toHaveProperty("fieldErrors.amountYen");
     expect(
-      await createExpenseAction({}, expenseForm({ catIds: ["missing"] })),
+      await createExpenseAction(
+        "tama",
+        {},
+        expenseForm({ catIds: ["missing"] }),
+      ),
     ).toHaveProperty("fieldErrors.catIds");
-    expect(await listExpensesForMonth(2026, 9)).toEqual([]);
+    expect(await listExpensesForMonth("household-1", 2026, 9)).toEqual([]);
   });
 
   it("猫の関連付けをD1の上限内に分割して保存・更新できる", async () => {
     const ids = Array.from({ length: 101 }, (_, i) => `cat-${i}`);
     for (const id of ids) await addCat(id);
     const { savedRecordId: id } = await createExpenseAction(
+      "tama",
       {},
       expenseForm({ catIds: ids }),
     );
-    expect((await getExpenseById(id as string))?.catIds).toHaveLength(101);
+    expect(
+      (await getExpenseById("household-1", id as string))?.catIds,
+    ).toHaveLength(101);
     await updateExpenseAction(
+      "tama",
       id as string,
       {},
       expenseForm({ catIds: ids.slice(0, 51) }),
     );
-    expect((await getExpenseById(id as string))?.catIds).toHaveLength(51);
+    expect(
+      (await getExpenseById("household-1", id as string))?.catIds,
+    ).toHaveLength(51);
   });
 
   it("月初を含み、翌月の支出を含めない", async () => {
@@ -224,9 +257,9 @@ describe("支出の保存と月別表示", () => {
       "2026-09-30",
       "2026-10-01",
     ]) {
-      await createExpenseAction({}, expenseForm({ spentDate }));
+      await createExpenseAction("tama", {}, expenseForm({ spentDate }));
     }
-    const records = await listExpensesForMonth(2026, 9);
+    const records = await listExpensesForMonth("household-1", 2026, 9);
     expect(
       records.map((record) => record.spentAt.toISOString().slice(0, 10)),
     ).toEqual(["2026-09-30", "2026-09-01"]);
@@ -239,9 +272,10 @@ describe("支出の保存と月別表示", () => {
       "2026-09-30",
       "2026-10-01",
     ]) {
-      await createExpenseAction({}, expenseForm({ spentDate }));
+      await createExpenseAction("tama", {}, expenseForm({ spentDate }));
     }
     const records = await listExpenseAmountsForMonthRange(
+      "household-1",
       { year: 2026, month: 7 },
       { year: 2026, month: 9 },
     );
@@ -252,23 +286,29 @@ describe("支出の保存と月別表示", () => {
 
   it("グラフ用の支出も猫で絞り込める", async () => {
     await createExpenseAction(
+      "tama",
       {},
       expenseForm({ catIds: ["tama"], amountYen: "100" }),
     );
     await createExpenseAction(
+      "tama",
       {},
       expenseForm({ catIds: ["mike"], amountYen: "200" }),
     );
-    await createExpenseAction({}, expenseForm({ amountYen: "300" }));
+    await createExpenseAction("tama", {}, expenseForm({ amountYen: "300" }));
     const range = [
       { year: 2026, month: 9 },
       { year: 2026, month: 9 },
     ] as const;
 
-    const all = await listExpenseAmountsForMonthRange(...range);
-    const forTama = await listExpenseAmountsForMonthRange(...range, {
-      catId: "tama",
-    });
+    const all = await listExpenseAmountsForMonthRange("household-1", ...range);
+    const forTama = await listExpenseAmountsForMonthRange(
+      "household-1",
+      ...range,
+      {
+        catId: "tama",
+      },
+    );
     expect(all.map((record) => record.amountYen).sort()).toEqual([
       100, 200, 300,
     ]);
@@ -279,6 +319,7 @@ describe("支出の保存と月別表示", () => {
 
   it("削除すると添付メディアと猫への関連付けも削除する", async () => {
     const { savedRecordId: id } = await createExpenseAction(
+      "tama",
       {},
       expenseForm({ catIds: ["tama"] }),
     );
@@ -286,8 +327,105 @@ describe("支出の保存と月別表示", () => {
       "redirect:/cats/tama/expenses",
     );
     expect(deleteMediaAssetsByRecord).toHaveBeenCalledWith("expense", id);
-    expect(await getExpenseById(id as string)).toBeNull();
+    expect(await getExpenseById("household-1", id as string)).toBeNull();
     expect(await db.select().from(expenseRecordCats)).toEqual([]);
+  });
+});
+
+describe("家ごとの支出", () => {
+  async function createKuroExpense() {
+    await addCat("kuro", "household-2");
+    const { savedRecordId } = await asUser("user-2", () =>
+      createExpenseAction(
+        "kuro",
+        {},
+        expenseForm({ catIds: ["kuro"], amountYen: "500" }),
+      ),
+    );
+    return savedRecordId as string;
+  }
+
+  it("記録したページの猫の家の支出として保存し、家ごとに一覧・グラフに出す", async () => {
+    const { savedRecordId: tamaExpenseId } = await createExpenseAction(
+      "tama",
+      {},
+      expenseForm({ catIds: [] }),
+    );
+    const kuroExpenseId = await createKuroExpense();
+
+    const householdIds = await db
+      .select({
+        id: expenseRecords.id,
+        householdId: expenseRecords.householdId,
+      })
+      .from(expenseRecords);
+    expect(householdIds).toEqual(
+      expect.arrayContaining([
+        { id: tamaExpenseId, householdId: "household-1" },
+        { id: kuroExpenseId, householdId: "household-2" },
+      ]),
+    );
+    expect(
+      (await listExpensesForMonth("household-1", 2026, 9)).map(
+        (expense) => expense.id,
+      ),
+    ).toEqual([tamaExpenseId]);
+    expect(
+      (
+        await listExpenseAmountsForMonthRange(
+          "household-2",
+          { year: 2026, month: 9 },
+          { year: 2026, month: 9 },
+        )
+      ).map((expense) => expense.amountYen),
+    ).toEqual([500]);
+  });
+
+  it("別の家の支出は取得・編集・削除できない", async () => {
+    const kuroExpenseId = await createKuroExpense();
+
+    expect(await getExpenseById("household-1", kuroExpenseId)).toBeNull();
+    expect(
+      await updateExpenseAction(
+        "tama",
+        kuroExpenseId,
+        {},
+        expenseForm({ amountYen: "1" }),
+      ),
+    ).toEqual({ formError: "支出記録が見つかりませんでした" });
+    await expect(deleteExpenseAction("tama", kuroExpenseId)).rejects.toThrow(
+      "redirect:/cats/tama/expenses",
+    );
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
+    expect(await getExpenseById("household-2", kuroExpenseId)).toMatchObject({
+      amountYen: 500,
+      catIds: ["kuro"],
+    });
+  });
+
+  it("所属していない家の猫のページからは記録できない", async () => {
+    await addCat("kuro", "household-2");
+    await expect(
+      createExpenseAction("kuro", {}, expenseForm()),
+    ).rejects.toThrow("notFound");
+    await expect(
+      listLinkableHospitalVisitsAction("kuro", "2026-09-15"),
+    ).rejects.toThrow("notFound");
+    await expect(
+      listSameDayHospitalExpensesAction("kuro", "2026-09-15"),
+    ).rejects.toThrow("notFound");
+    expect(await db.select().from(expenseRecords)).toEqual([]);
+  });
+
+  it("通院記録の病院代は、通院した猫の家の支出として作る", async () => {
+    await addCat("kuro", "household-2");
+    const kuroVisit = await asUser("user-2", () =>
+      addVisit("kuro", { expenseAmountYen: "3000" }),
+    );
+    expect(await getExpenseByHospitalVisitId(kuroVisit)).toMatchObject({
+      householdId: "household-2",
+      amountYen: 3000,
+    });
   });
 });
 
@@ -305,6 +443,7 @@ describe("通院記録と病院代の連携", () => {
       spentAt: new Date("2026-09-15T00:00:00Z"),
     });
     await updateExpenseAction(
+      "tama",
       expense?.id as string,
       {},
       expenseForm({
@@ -320,7 +459,9 @@ describe("通院記録と病院代の連携", () => {
       {},
       visitForm({ expenseAmountYen: "6200", visitedDate: "2026-09-16" }),
     );
-    expect(await getExpenseById(expense?.id as string)).toMatchObject({
+    expect(
+      await getExpenseById("household-1", expense?.id as string),
+    ).toMatchObject({
       amountYen: 6200,
       category: "hospital",
       memo: "処方薬",
@@ -364,7 +505,9 @@ describe("通院記録と病院代の連携", () => {
     await expect(
       deleteHospitalVisitAction("tama", id as string),
     ).rejects.toThrow("redirect:");
-    expect(await getExpenseById(expense?.id as string)).toMatchObject({
+    expect(
+      await getExpenseById("household-1", expense?.id as string),
+    ).toMatchObject({
       hospitalVisitIds: [],
       catIds: ["tama"],
     });
@@ -461,6 +604,7 @@ describe("支出記録から通院記録への紐付け", () => {
     const tamaVisit = await addVisit("tama");
     const mikeVisit = await addVisit("mike");
     const { savedRecordId: id } = await createExpenseAction(
+      "tama",
       {},
       expenseForm({
         category: "hospital",
@@ -468,12 +612,15 @@ describe("支出記録から通院記録への紐付け", () => {
         hospitalVisitIds: [tamaVisit, mikeVisit],
       }),
     );
-    expect(await getExpenseById(id as string)).toMatchObject({
+    expect(await getExpenseById("household-1", id as string)).toMatchObject({
       catIds: expect.arrayContaining(["tama", "mike"]),
       hospitalVisitIds: expect.arrayContaining([tamaVisit, mikeVisit]),
     });
     expect((await getExpenseByHospitalVisitId(mikeVisit))?.id).toBe(id);
-    const linkable = await listLinkableHospitalVisitsAction("2026-09-15");
+    const linkable = await listLinkableHospitalVisitsAction(
+      "tama",
+      "2026-09-15",
+    );
     expect(linkable).toHaveLength(2);
     expect(linkable).toEqual(
       expect.arrayContaining([
@@ -489,32 +636,28 @@ describe("支出記録から通院記録への紐付け", () => {
         }),
       ]),
     );
-    expect(await listLinkableHospitalVisitsAction("2026-09-14")).toEqual([]);
+    expect(
+      await listLinkableHospitalVisitsAction("tama", "2026-09-14"),
+    ).toEqual([]);
   });
 
-  it("別の家の猫の通院記録は、同じ日でも共有の支出記録を指定しても候補に含めない", async () => {
+  it("別の家の猫の通院記録は、同じ日でも候補に含めず、紐付けられない", async () => {
     await addCat("kuro", "household-2");
-    const kuroVisit = await addVisit("kuro");
+    const kuroVisit = await asUser("user-2", () => addVisit("kuro"));
     const tamaVisit = await addVisit("tama");
-    const { savedRecordId: id } = await createExpenseAction(
-      {},
-      expenseForm({ category: "hospital", hospitalVisitIds: [tamaVisit] }),
-    );
-    // 支出記録は家を問わず共通のため、別の家の通院記録が同じ支出に紐付いている状態を作る
-    await db
-      .insert(expenseRecordHospitalVisits)
-      .values({ expenseRecordId: id as string, hospitalVisitId: kuroVisit });
 
     expect(
-      (await listLinkableHospitalVisitsAction("2026-09-15")).map(
+      (await listLinkableHospitalVisitsAction("tama", "2026-09-15")).map(
         (visit) => visit.id,
       ),
     ).toEqual([tamaVisit]);
     expect(
-      (await listLinkableHospitalVisitsAction("2026-09-14", id as string)).map(
-        (visit) => visit.id,
+      await createExpenseAction(
+        "tama",
+        {},
+        expenseForm({ category: "hospital", hospitalVisitIds: [kuroVisit] }),
       ),
-    ).toEqual([tamaVisit]);
+    ).toHaveProperty("fieldErrors.hospitalVisitIds");
     // 支出一覧で表示する、支出に紐付いた通院記録も家で絞り込む
     const visitsById = await listHospitalVisitsByIds("user-1", [
       tamaVisit,
@@ -523,73 +666,12 @@ describe("支出記録から通院記録への紐付け", () => {
     expect([...visitsById.keys()]).toEqual([tamaVisit]);
   });
 
-  it("共通の支出を編集しても、フォームに出ない別の家の猫・通院記録との紐付けは残す", async () => {
-    await addCat("kuro", "household-2");
-    const kuroVisit = await addVisit("kuro");
-    const tamaVisit = await addVisit("tama");
-    const { savedRecordId } = await createExpenseAction(
-      {},
-      expenseForm({ category: "hospital", hospitalVisitIds: [tamaVisit] }),
-    );
-    const id = savedRecordId as string;
-    // 別の家のユーザーが、同じ支出に自分の家の猫・通院記録を紐付けた状態を作る
-    await db
-      .insert(expenseRecordHospitalVisits)
-      .values({ expenseRecordId: id, hospitalVisitId: kuroVisit });
-    await db
-      .insert(expenseRecordCats)
-      .values({ expenseRecordId: id, catId: "kuro" });
-
-    async function links() {
-      const catIds = (
-        await db
-          .select({ catId: expenseRecordCats.catId })
-          .from(expenseRecordCats)
-          .where(eq(expenseRecordCats.expenseRecordId, id))
-      ).map((row) => row.catId);
-      const visitIds = (
-        await db
-          .select({ visitId: expenseRecordHospitalVisits.hospitalVisitId })
-          .from(expenseRecordHospitalVisits)
-          .where(eq(expenseRecordHospitalVisits.expenseRecordId, id))
-      ).map((row) => row.visitId);
-      return { catIds: catIds.sort(), visitIds: visitIds.sort() };
-    }
-
-    // user-1 のフォームには tama の分だけが表示され、そのまま保存し直す
-    await updateExpenseAction(
-      id,
-      {},
-      expenseForm({
-        category: "hospital",
-        memo: "メモだけ変更",
-        catIds: ["tama"],
-        hospitalVisitIds: [tamaVisit],
-      }),
-    );
-    expect(await links()).toEqual({
-      catIds: ["kuro", "tama"],
-      visitIds: [kuroVisit, tamaVisit].sort(),
-    });
-
-    // 自分の家の紐付けを外しても、別の家の紐付けは残る
-    await updateExpenseAction(
-      id,
-      {},
-      expenseForm({ category: "hospital", catIds: [], hospitalVisitIds: [] }),
-    );
-    expect(await links()).toEqual({ catIds: ["kuro"], visitIds: [kuroVisit] });
-
-    // 「病院」以外にすると、通院記録との紐付けは別の家の分も外す（猫の紐付けは残す）
-    await updateExpenseAction(id, {}, expenseForm({ category: "food" }));
-    expect(await links()).toEqual({ catIds: ["kuro"], visitIds: [] });
-  });
-
   it("支出日と違う日の通院記録や、ほかの支出に紐付いた通院記録は紐付けない", async () => {
     const otherDayVisit = await addVisit("tama", { visitedDate: "2026-09-14" });
     const linkedVisit = await addVisit("mike", { expenseAmountYen: "3000" });
     expect(
       await createExpenseAction(
+        "tama",
         {},
         expenseForm({
           category: "hospital",
@@ -599,12 +681,14 @@ describe("支出記録から通院記録への紐付け", () => {
     ).toHaveProperty("fieldErrors.hospitalVisitIds");
     expect(
       await createExpenseAction(
+        "tama",
         {},
         expenseForm({ category: "hospital", hospitalVisitIds: [linkedVisit] }),
       ),
     ).toHaveProperty("fieldErrors.hospitalVisitIds");
     expect(
       await createExpenseAction(
+        "tama",
         {},
         expenseForm({ category: "hospital", hospitalVisitIds: ["missing"] }),
       ),
@@ -616,6 +700,7 @@ describe("支出記録から通院記録への紐付け", () => {
     const visit = await addVisit("tama", { expenseAmountYen: "5500" });
     const expense = await getExpenseByHospitalVisitId(visit);
     await updateExpenseAction(
+      "tama",
       expense?.id as string,
       {},
       expenseForm({
@@ -624,7 +709,9 @@ describe("支出記録から通院記録への紐付け", () => {
         hospitalVisitIds: [visit],
       }),
     );
-    expect(await getExpenseById(expense?.id as string)).toMatchObject({
+    expect(
+      await getExpenseById("household-1", expense?.id as string),
+    ).toMatchObject({
       category: "medicine",
       hospitalVisitIds: [],
     });
@@ -646,6 +733,7 @@ describe("複数の通院記録で共有している病院代", () => {
     const tamaVisit = await addVisit("tama");
     const mikeVisit = await addVisit("mike");
     const { savedRecordId } = await createExpenseAction(
+      "tama",
       {},
       expenseForm({
         category: "hospital",
@@ -664,7 +752,7 @@ describe("複数の通院記録で共有している病院代", () => {
       {},
       visitForm({ expenseAmountYen: "" }),
     );
-    expect(await getExpenseById(expenseId)).toMatchObject({
+    expect(await getExpenseById("household-1", expenseId)).toMatchObject({
       amountYen: 11000,
       hospitalVisitIds: [mikeVisit],
     });
@@ -682,6 +770,7 @@ describe("複数の通院記録で共有している病院代", () => {
     );
     // 支出フォームは支出日の通院記録に加えて、すでに紐付いている通院記録も候補に出す
     const linkable = await listLinkableHospitalVisitsAction(
+      "tama",
       "2026-09-15",
       expenseId,
     );
@@ -689,6 +778,7 @@ describe("複数の通院記録で共有している病院代", () => {
       [tamaVisit, mikeVisit].sort(),
     );
     await updateExpenseAction(
+      "tama",
       expenseId,
       {},
       expenseForm({
@@ -698,11 +788,13 @@ describe("複数の通院記録で共有している病院代", () => {
         hospitalVisitIds: linkable.map((visit) => visit.id),
       }),
     );
-    expect(await getExpenseById(expenseId)).toMatchObject({
+    expect(await getExpenseById("household-1", expenseId)).toMatchObject({
       memo: "メモだけ変更",
       hospitalVisitIds: expect.arrayContaining([tamaVisit, mikeVisit]),
     });
-    expect((await getExpenseById(expenseId))?.hospitalVisitIds).toHaveLength(2);
+    expect(
+      (await getExpenseById("household-1", expenseId))?.hospitalVisitIds,
+    ).toHaveLength(2);
   });
 
   it("金額の変更は反映し、受診日を変えても支出日は変えない", async () => {
@@ -713,7 +805,7 @@ describe("複数の通院記録で共有している病院代", () => {
       {},
       visitForm({ expenseAmountYen: "12000", visitedDate: "2026-09-16" }),
     );
-    expect(await getExpenseById(expenseId)).toMatchObject({
+    expect(await getExpenseById("household-1", expenseId)).toMatchObject({
       amountYen: 12000,
       spentAt: new Date("2026-09-15T00:00:00Z"),
     });
@@ -723,6 +815,7 @@ describe("複数の通院記録で共有している病院代", () => {
 describe("通院記録の作成時に同じ日の支出記録へ紐付ける", () => {
   async function createHospitalExpense(values: Record<string, string> = {}) {
     const { savedRecordId } = await createExpenseAction(
+      "tama",
       {},
       expenseForm({
         category: "hospital",
@@ -740,23 +833,41 @@ describe("通院記録の作成時に同じ日の支出記録へ紐付ける", (
       memo: "2匹分",
     });
     await createHospitalExpense({ spentDate: "2026-09-14" });
-    await createExpenseAction({}, expenseForm({ category: "food" }));
-    expect(await listSameDayHospitalExpensesAction("2026-09-15")).toEqual([
+    await createExpenseAction("tama", {}, expenseForm({ category: "food" }));
+    expect(
+      await listSameDayHospitalExpensesAction("tama", "2026-09-15"),
+    ).toEqual([
       { id: hospitalId, amountYen: 11000, memo: "2匹分", catNames: ["mike"] },
     ]);
-    expect(await listSameDayHospitalExpensesAction("invalid")).toEqual([]);
+    expect(await listSameDayHospitalExpensesAction("tama", "invalid")).toEqual(
+      [],
+    );
   });
 
-  it("別の家の猫の名前は候補に含めず「不明な猫」と表示する", async () => {
+  it("別の家の病院代は候補に含めず、紐付けられない", async () => {
     await addCat("kuro", "household-2");
-    const hospitalId = await createHospitalExpense({ catIds: "tama" });
-    // 支出記録は家を問わず共通のため、別の家の猫が同じ支出に関連付いている状態を作る
-    await db
-      .insert(expenseRecordCats)
-      .values({ expenseRecordId: hospitalId, catId: "kuro" });
+    const { savedRecordId } = await asUser("user-2", () =>
+      createExpenseAction(
+        "kuro",
+        {},
+        expenseForm({ category: "hospital", catIds: ["kuro"] }),
+      ),
+    );
 
-    const [candidate] = await listSameDayHospitalExpensesAction("2026-09-15");
-    expect(candidate.catNames.sort()).toEqual(["tama", "不明な猫"].sort());
+    expect(
+      await listSameDayHospitalExpensesAction("tama", "2026-09-15"),
+    ).toEqual([]);
+    expect(
+      await createHospitalVisitAction(
+        "tama",
+        {},
+        visitForm({
+          expenseAmountYen: "",
+          linkExpenseRecordId: savedRecordId as string,
+        }),
+      ),
+    ).toHaveProperty("formError");
+    expect(await db.select().from(hospitalVisits)).toEqual([]);
   });
 
   it("選んだ支出記録に紐付け、通院した猫も関連付ける", async () => {
@@ -767,7 +878,7 @@ describe("通院記録の作成時に同じ日の支出記録へ紐付ける", (
     const mikeVisit = await addVisit("mike", {
       linkExpenseRecordId: expenseId,
     });
-    expect(await getExpenseById(expenseId)).toMatchObject({
+    expect(await getExpenseById("household-1", expenseId)).toMatchObject({
       amountYen: 11000,
       catIds: expect.arrayContaining(["tama", "mike"]),
       hospitalVisitIds: expect.arrayContaining([tamaVisit, mikeVisit]),
@@ -787,7 +898,7 @@ describe("通院記録の作成時に同じ日の支出記録へ紐付ける", (
         visitForm({ expenseAmountYen: "", linkExpenseRecordId: expenseId }),
       ),
     ).toEqual({ savedRecordId: visit, formError: undefined });
-    expect(await getExpenseById(expenseId)).toMatchObject({
+    expect(await getExpenseById("household-1", expenseId)).toMatchObject({
       amountYen: 11000,
       hospitalVisitIds: [visit],
     });
@@ -801,8 +912,10 @@ describe("通院記録の作成時に同じ日の支出記録へ紐付ける", (
       {},
       visitForm({ expenseAmountYen: "", linkExpenseRecordId: otherId }),
     );
-    expect(await getExpenseById(expenseId)).toBeNull();
-    expect((await getExpenseById(otherId))?.hospitalVisitIds).toEqual([]);
+    expect(await getExpenseById("household-1", expenseId)).toBeNull();
+    expect(
+      (await getExpenseById("household-1", otherId))?.hospitalVisitIds,
+    ).toEqual([]);
   });
 
   it("病院代を入力した場合は既存の支出記録に紐付けず、新しく作る", async () => {
@@ -812,12 +925,15 @@ describe("通院記録の作成時に同じ日の支出記録へ紐付ける", (
       linkExpenseRecordId: expenseId,
     });
     expect((await getExpenseByHospitalVisitId(visit))?.amountYen).toBe(3000);
-    expect((await getExpenseById(expenseId))?.hospitalVisitIds).toEqual([]);
+    expect(
+      (await getExpenseById("household-1", expenseId))?.hospitalVisitIds,
+    ).toEqual([]);
   });
 
   it("別の日やカテゴリの支出記録には紐付けない", async () => {
     const otherDayId = await createHospitalExpense({ spentDate: "2026-09-14" });
     const { savedRecordId: foodId } = await createExpenseAction(
+      "tama",
       {},
       expenseForm({ category: "food" }),
     );

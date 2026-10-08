@@ -44,7 +44,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   `getCatForUser`・`listCatsForUser`・`accessibleCatIdsQuery` で絞り込む（認可の入口は
   `src/features/auth/session.ts` の `requireUser`・`requireCatAccess`）
   - 猫に紐付くテーブル（記録・通知など）は `cat_id` 経由で家に紐付くため、家の列は持たない
-  - 支出記録・ごはん商品・ごはんプリセットは、現時点では家に紐付けず全ユーザーで共通
+  - 支出記録は猫ではなく家に属するため `expense_records.household_id` を持つ（「支出記録」の節を参照）
+  - ごはん商品・ごはんプリセットは、現時点では家に紐付けず全ユーザーで共通
   - Web Push の購読（`push_subscriptions.user_id`）は購読したユーザーを持ち、通知はその猫の家のメンバーの
     購読にだけ送る（`src/features/push/targets.ts`）。ユーザーの導入前の購読（NULL）には送らない
 - `users.role` はアプリ全体の権限（`admin`・`member`）。`/login` のログインボタンで最初に作られる
@@ -91,8 +92,19 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 ## 支出記録（`expense_records`・`expense_record_cats`・`expense_record_hospital_visits`）
 
 - 病院代・ごはん・猫砂などの支出を家計簿として月ごとに集計するためのテーブル（`38`）
-- 支出はすべての猫で共通のため、`expense_records` は「共通カラム規約」の例外として `cat_id` を持たない。
-  関連する猫は `expense_record_cats`（`expense_record_id` + `cat_id` の複合主キー）で多対多に紐付ける
+- 支出は家（`expense_records.household_id`）に属し、その家の猫で共通のため、`expense_records` は
+  「共通カラム規約」の例外として `cat_id` を持たない。関連する猫は `expense_record_cats`
+  （`expense_record_id` + `cat_id` の複合主キー）で多対多に紐付ける
+  - 支出記録の一覧・グラフは、表示中の猫の家の支出を表示する。記録したページの猫の家を支出の家にし、
+    家はクライアントから受け取らない（`src/features/expenses/actions.ts`）
+  - 関連する猫・病院代として紐付ける通院記録は、支出と同じ家の猫のものに限る
+  - 猫が別の家へ引っ越したときは、支出記録は元の家に残し、引っ越した猫とその通院記録との紐付けだけを
+    猫の更新と同じ `db.batch` で外す（`src/features/cats/mutations.ts`）
+  - 支出の添付（`media_assets`、`record_type = "expense"`）は、支出の家のメンバーだけが参照できる
+    （`src/features/media/access.ts`）
+  - `household_id` は、家に紐付けられなかった導入前の支出記録を残すため nullable（`0039` で、関連する猫の家、
+    家が 1 つだけならその家に紐付けた）。NULL の支出記録はどのユーザーからも見えないため、
+    `scripts/link-household.mts`（`pnpm household:link`）で家に紐付ける
   - 猫のタイムライン（`14`）と一覧の「{猫名}のみ」の絞り込みは、この中間テーブル経由で解決する
   - 紐付けが 0 件の支出記録も「どの猫にも紐付かない共通の支出」として許容する。猫を削除したときは
     中間テーブルの行だけを削除し、支出記録自体は残す（`src/features/cats/actions.ts`）
@@ -108,7 +120,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 通院記録と病院代の作成・更新・削除は、同じ `db.batch` にまとめる
   - 複数の通院記録で共有している支出は、通院記録の病院代を空にしても支出記録を削除せずその通院記録との
     紐付けだけを外し、受診日を変えても支出日を変えない（`src/features/expenses/hospitalVisitExpense.ts`）
-- 月別検索用に `spent_at` のインデックスを設定する
+- 家ごとの月別検索用に `(household_id, spent_at)` のインデックスを設定する
 
 ## 画像・動画（`media_assets`）
 

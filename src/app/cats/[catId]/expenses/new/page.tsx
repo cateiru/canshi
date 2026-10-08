@@ -43,9 +43,10 @@ export default async function NewExpensePage({ params }: NewExpensePageProps) {
       <RecordPageHeading icon={ExpenseIcon}>支出を記録する</RecordPageHeading>
       <ExpenseForm
         catId={catId}
-        action={createExpenseAction}
-        updateAction={updateExpenseAction}
-        cats={allCats}
+        action={createExpenseAction.bind(null, catId)}
+        updateAction={updateExpenseAction.bind(null, catId)}
+        // 支出は表示中の猫の家に属するため、関連する猫も同じ家の猫から選ぶ
+        cats={allCats.filter((entry) => entry.householdId === cat.householdId)}
         mediaLimits={resolveMediaLimits()}
         submitLabel="記録する"
       />

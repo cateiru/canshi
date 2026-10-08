@@ -5,7 +5,16 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { cats, householdMembers, households, users } from "@/db/schema";
+import {
+  cats,
+  expenseRecordCats,
+  expenseRecordHospitalVisits,
+  expenseRecords,
+  hospitalVisits,
+  householdMembers,
+  households,
+  users,
+} from "@/db/schema";
 import {
   type CatValues,
   createCatForUser,
@@ -20,10 +29,17 @@ vi.mock("@/db/client", () => ({
 
 beforeEach(async () => {
   const SQL = await initSqlJs();
-  db = drizzle(new SQL.Database()) as unknown as ReturnType<typeof getDb>;
-  await migrate(db as unknown as ReturnType<typeof drizzle>, {
-    migrationsFolder: "./drizzle",
-  });
+  const raw = drizzle(new SQL.Database());
+  await migrate(raw, { migrationsFolder: "./drizzle" });
+  // D1 の batch の代わりに、文を順に実行して結果を返す
+  const batch = async (statements: PromiseLike<unknown>[]) => {
+    const results: unknown[] = [];
+    for (const statement of statements) {
+      results.push(await statement);
+    }
+    return results;
+  };
+  db = Object.assign(raw, { batch }) as unknown as ReturnType<typeof getDb>;
   await db.insert(users).values([
     { id: "both", name: "2 つの家に所属する人" },
     { id: "home-only", name: "わが家だけに所属する人" },
@@ -150,5 +166,87 @@ describe("updateCatForUser", () => {
     expect(await updateCatForUser("missing", "both", catValues("home"))).toBe(
       "not-found",
     );
+  });
+
+  describe("支出記録との紐付け", () => {
+    beforeEach(async () => {
+      await db.insert(cats).values({
+        id: "mike",
+        name: "みけ",
+        sex: "female",
+        householdId: "home",
+      });
+      await db.insert(hospitalVisits).values({
+        id: "visit-tama",
+        catId: "tama",
+        visitedAt: new Date("2026-09-15T10:00:00Z"),
+        reason: "健診",
+      });
+      await db.insert(expenseRecords).values({
+        id: "expense-1",
+        householdId: "home",
+        spentAt: new Date("2026-09-15T00:00:00Z"),
+        amountYen: 11000,
+        category: "hospital",
+      });
+      await db.insert(expenseRecordCats).values([
+        { expenseRecordId: "expense-1", catId: "tama" },
+        { expenseRecordId: "expense-1", catId: "mike" },
+      ]);
+      await db.insert(expenseRecordHospitalVisits).values({
+        expenseRecordId: "expense-1",
+        hospitalVisitId: "visit-tama",
+      });
+    });
+
+    async function listLinks() {
+      return {
+        catIds: (
+          await db
+            .select({ catId: expenseRecordCats.catId })
+            .from(expenseRecordCats)
+            .orderBy(expenseRecordCats.catId)
+        ).map((row) => row.catId),
+        hospitalVisitIds: (
+          await db
+            .select({ id: expenseRecordHospitalVisits.hospitalVisitId })
+            .from(expenseRecordHospitalVisits)
+        ).map((row) => row.id),
+      };
+    }
+
+    it("引っ越すと、支出記録は元の家に残し、猫と通院記録との紐付けだけを外す", async () => {
+      expect(await updateCatForUser("tama", "both", catValues("second"))).toBe(
+        "updated",
+      );
+      expect(await listLinks()).toEqual({
+        catIds: ["mike"],
+        hospitalVisitIds: [],
+      });
+      const [expense] = await db
+        .select({ householdId: expenseRecords.householdId })
+        .from(expenseRecords);
+      expect(expense).toEqual({ householdId: "home" });
+    });
+
+    it("同じ家のままなら紐付けは外さない", async () => {
+      expect(
+        await updateCatForUser("tama", "home-only", catValues("home", "タマ")),
+      ).toBe("updated");
+      expect(await listLinks()).toEqual({
+        catIds: ["mike", "tama"],
+        hospitalVisitIds: ["visit-tama"],
+      });
+    });
+
+    it("引っ越せなかったときは紐付けを外さない", async () => {
+      expect(
+        await updateCatForUser("tama", "stranger", catValues("other")),
+      ).toBe("not-found");
+      expect(await listLinks()).toEqual({
+        catIds: ["mike", "tama"],
+        hospitalVisitIds: ["visit-tama"],
+      });
+    });
   });
 });

@@ -12,12 +12,12 @@ import {
   expenseRecords,
   hospitalVisits,
 } from "@/db/schema";
-import { requireCatAccess, requireUser } from "@/features/auth/session";
+import { requireCatAccess } from "@/features/auth/session";
 import {
   type LinkableHospitalVisit,
   listHospitalVisitsOnDate,
 } from "@/features/hospital-visits/queries";
-import { accessibleCatIdsQuery } from "@/features/households/queries";
+import { householdCatIdsQuery } from "@/features/households/queries";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
@@ -57,23 +57,28 @@ function parseFormData(formData: FormData) {
   });
 }
 
-/** 関連する猫がすべて存在し、ログイン中のユーザーの家の猫であることを確認する */
+/**
+ * 導線になっている猫にログイン中のユーザーがアクセスできることを確認し、その猫の家の ID を返す。
+ * 支出は家に属し、記録したページの猫の家の支出として扱うため、家はクライアントから受け取らない
+ */
+async function requireExpenseHousehold(catId: string): Promise<string> {
+  const { cat } = await requireCatAccess(catId);
+  // ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照）
+  return cat.householdId as string;
+}
+
+/** 関連する猫がすべて存在し、支出の家の猫であることを確認する */
 async function verifyCatsExist(
   db: ReturnType<typeof getDb>,
-  userId: string,
+  householdId: string,
   catIds: string[],
 ): Promise<boolean> {
-  // `accessibleCatIdsQuery` の userId の分を 1 個予約する
+  // householdId の分を 1 個予約する
   for (const ids of chunkForBoundParameters(catIds, 1)) {
     const rows = await db
       .select({ id: cats.id })
       .from(cats)
-      .where(
-        and(
-          inArray(cats.id, ids),
-          inArray(cats.id, accessibleCatIdsQuery(db, userId)),
-        ),
-      );
+      .where(and(inArray(cats.id, ids), eq(cats.householdId, householdId)));
     if (rows.length !== ids.length) return false;
   }
   return true;
@@ -87,19 +92,19 @@ type ResolvedLinks =
 
 /**
  * 紐付ける通院記録と関連する猫を確定する。通院記録を紐付けられるのはカテゴリ「病院」のときだけで、
- * それ以外のカテゴリでは紐付けを外す。通院記録は支出日と同じ日のもので、他の支出記録に
- * 紐付いていないものに限る。通院した猫は関連する猫にも含める
+ * それ以外のカテゴリでは紐付けを外す。通院記録は支出の家の猫の、支出日と同じ日のもので、
+ * 他の支出記録に紐付いていないものに限る。通院した猫は関連する猫にも含める
  */
 async function resolveLinks(
   db: ReturnType<typeof getDb>,
-  userId: string,
+  householdId: string,
   data: ExpenseFormData,
   expenseId: string | null,
 ): Promise<ResolvedLinks> {
   const hospitalVisitIds =
     data.category === "hospital" ? data.hospitalVisitIds : [];
   const visitCatIds: string[] = [];
-  // `accessibleCatIdsQuery` の userId の分を 1 個予約する
+  // householdId の分を 1 個予約する
   for (const ids of chunkForBoundParameters(hospitalVisitIds, 1)) {
     const rows = await db
       .select({
@@ -115,7 +120,7 @@ async function resolveLinks(
       .where(
         and(
           inArray(hospitalVisits.id, ids),
-          inArray(hospitalVisits.catId, accessibleCatIdsQuery(db, userId)),
+          inArray(hospitalVisits.catId, householdCatIdsQuery(db, householdId)),
         ),
       );
     if (rows.length !== ids.length) {
@@ -161,7 +166,7 @@ async function resolveLinks(
   }
 
   const catIds = [...new Set([...data.catIds, ...visitCatIds])];
-  if (!(await verifyCatsExist(db, userId, catIds))) {
+  if (!(await verifyCatsExist(db, householdId, catIds))) {
     return {
       ok: false,
       fieldErrors: {
@@ -182,11 +187,13 @@ function buildValues(data: ExpenseFormData) {
   };
 }
 
+/** `catId` は記録したページの猫。支出はその猫の家に属する */
 export async function createExpenseAction(
+  catId: string,
   _prevState: ExpenseFormState,
   formData: FormData,
 ): Promise<ExpenseFormState> {
-  const user = await requireUser();
+  const householdId = await requireExpenseHousehold(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -194,7 +201,7 @@ export async function createExpenseAction(
   }
 
   const db = getDb();
-  const links = await resolveLinks(db, user.id, parsed.data, null);
+  const links = await resolveLinks(db, householdId, parsed.data, null);
   if (!links.ok) {
     return { fieldErrors: links.fieldErrors };
   }
@@ -202,7 +209,7 @@ export async function createExpenseAction(
   const id = crypto.randomUUID();
   const insertRecord = db
     .insert(expenseRecords)
-    .values({ id, ...buildValues(parsed.data) });
+    .values({ id, householdId, ...buildValues(parsed.data) });
 
   await db.batch([
     insertRecord,
@@ -218,12 +225,14 @@ export async function createExpenseAction(
   return { savedRecordId: id, formError: mediaError };
 }
 
+/** `catId` は編集しているページの猫。その猫の家の支出記録だけを編集できる */
 export async function updateExpenseAction(
+  catId: string,
   id: string,
   _prevState: ExpenseFormState,
   formData: FormData,
 ): Promise<ExpenseFormState> {
-  const user = await requireUser();
+  const householdId = await requireExpenseHousehold(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -231,57 +240,37 @@ export async function updateExpenseAction(
   }
 
   const db = getDb();
+  const inHousehold = and(
+    eq(expenseRecords.id, id),
+    eq(expenseRecords.householdId, householdId),
+  );
   const [existing] = await db
     .select({ id: expenseRecords.id })
     .from(expenseRecords)
-    .where(eq(expenseRecords.id, id))
+    .where(inHousehold)
     .limit(1);
 
   if (!existing) {
     return { formError: "支出記録が見つかりませんでした" };
   }
 
-  const links = await resolveLinks(db, user.id, parsed.data, id);
+  const links = await resolveLinks(db, householdId, parsed.data, id);
   if (!links.ok) {
     return { fieldErrors: links.fieldErrors };
   }
 
   // 紐付く猫・通院記録は差分更新せず、いったん削除してから選択されたものを入れ直す。
-  // 支出記録は家を問わず共通で、フォームにはユーザーの家の猫・通院記録しか出さないため、
-  // 削除するのもユーザーの家の分だけにし、別の家の猫・通院記録との紐付けは残す
+  // 紐付けられるのは支出と同じ家の猫・通院記録だけのため、すべてフォームの選択肢に含まれる
   const updateRecord = db
     .update(expenseRecords)
     .set({ ...buildValues(parsed.data), updatedAt: new Date() })
-    .where(eq(expenseRecords.id, id));
+    .where(inHousehold);
   const deleteCatLinks = db
     .delete(expenseRecordCats)
-    .where(
-      and(
-        eq(expenseRecordCats.expenseRecordId, id),
-        inArray(expenseRecordCats.catId, accessibleCatIdsQuery(db, user.id)),
-      ),
-    );
-  // 通院記録を紐付けられるのはカテゴリ「病院」だけのため、ほかのカテゴリに変えたときは
-  // 別の家の通院記録との紐付けも外す
-  const deleteHospitalVisitLinks = db.delete(expenseRecordHospitalVisits).where(
-    and(
-      eq(expenseRecordHospitalVisits.expenseRecordId, id),
-      parsed.data.category === "hospital"
-        ? inArray(
-            expenseRecordHospitalVisits.hospitalVisitId,
-            db
-              .select({ id: hospitalVisits.id })
-              .from(hospitalVisits)
-              .where(
-                inArray(
-                  hospitalVisits.catId,
-                  accessibleCatIdsQuery(db, user.id),
-                ),
-              ),
-          )
-        : undefined,
-    ),
-  );
+    .where(eq(expenseRecordCats.expenseRecordId, id));
+  const deleteHospitalVisitLinks = db
+    .delete(expenseRecordHospitalVisits)
+    .where(eq(expenseRecordHospitalVisits.expenseRecordId, id));
 
   await db.batch([
     updateRecord,
@@ -303,8 +292,19 @@ export async function deleteExpenseAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
+  const householdId = await requireExpenseHousehold(catId);
   const db = getDb();
+  const [existing] = await db
+    .select({ id: expenseRecords.id })
+    .from(expenseRecords)
+    .where(
+      and(
+        eq(expenseRecords.id, id),
+        eq(expenseRecords.householdId, householdId),
+      ),
+    )
+    .limit(1);
+  if (!existing) redirect(`/cats/${catId}/expenses`, "replace");
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, id);
   await db.batch(deleteExpenseStatements(db, id));
@@ -314,33 +314,35 @@ export async function deleteExpenseAction(
 const dateSchema = z.string().date();
 
 /**
- * 支出記録のフォームで、支出日と同じ日の通院記録（紐付けの候補）を取得する。
+ * 支出記録のフォームで、支出日と同じ日の、ページの猫の家の通院記録（紐付けの候補）を取得する。
  * 編集中の支出記録の ID を渡すと、すでに紐付いている通院記録も含める。
  * 日付を変えるたびにクライアントから呼ぶ読み取り専用の Action
  */
 export async function listLinkableHospitalVisitsAction(
+  catId: string,
   date: string,
   expenseRecordId?: string,
 ): Promise<LinkableHospitalVisit[]> {
-  const user = await requireUser();
+  const householdId = await requireExpenseHousehold(catId);
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];
   }
-  return listHospitalVisitsOnDate(user.id, parsed.data, expenseRecordId);
+  return listHospitalVisitsOnDate(householdId, parsed.data, expenseRecordId);
 }
 
 /**
- * 通院記録のフォームで、受診日と同じ日のカテゴリ「病院」の支出記録（紐付けの候補）を取得する。
- * 通院記録の作成時にクライアントから呼ぶ読み取り専用の Action
+ * 通院記録のフォームで、受診日と同じ日の、通院する猫の家のカテゴリ「病院」の支出記録
+ * （紐付けの候補）を取得する。通院記録の作成時にクライアントから呼ぶ読み取り専用の Action
  */
 export async function listSameDayHospitalExpensesAction(
+  catId: string,
   date: string,
 ): Promise<HospitalExpenseCandidate[]> {
-  const user = await requireUser();
+  const householdId = await requireExpenseHousehold(catId);
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];
   }
-  return listHospitalExpensesOnDate(user.id, parsed.data);
+  return listHospitalExpensesOnDate(householdId, parsed.data);
 }
