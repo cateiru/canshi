@@ -218,3 +218,7 @@ UPDATE cats SET household_id = 'vrt-household' WHERE id LIKE 'vrt-cat-%';
 
 -- 支出記録は家に属するため、ここまでに登録した支出記録も VRT 用の家の支出にする
 UPDATE expense_records SET household_id = 'vrt-household' WHERE id LIKE 'vrt-expense-%';
+
+-- ごはん商品・プリセットも家に属するため、ここまでに登録した商品・プリセットも VRT 用の家のものにする
+UPDATE food_products SET household_id = 'vrt-household' WHERE id LIKE 'vrt-food-%';
+UPDATE feeding_presets SET household_id = 'vrt-household' WHERE id LIKE 'vrt-preset-%';

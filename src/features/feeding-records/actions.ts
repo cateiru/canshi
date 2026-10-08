@@ -98,7 +98,15 @@ function mapZodErrors(error: z.ZodError): FeedingRecordFormFieldErrors {
   return fieldErrors;
 }
 
-async function buildItemsToInsert(input: FeedingRecordFormInput) {
+/**
+ * 明細の商品は、猫の家の商品に限る。猫が別の家へ引っ越す前の記録を編集するときは、
+ * その記録ですでに使っている商品（元の家の商品）も、そのまま残せるよう `keptFoodProductIds` で許可する
+ */
+async function buildItemsToInsert(
+  input: FeedingRecordFormInput,
+  householdId: string | null,
+  keptFoodProductIds: string[] = [],
+) {
   const db = getDb();
   const foodProductIds = [
     ...new Set(input.items.map((item) => item.foodProductId)),
@@ -107,7 +115,15 @@ async function buildItemsToInsert(input: FeedingRecordFormInput) {
     .select()
     .from(foodProducts)
     .where(inArray(foodProducts.id, foodProductIds));
-  const productById = new Map(products.map((product) => [product.id, product]));
+  const productById = new Map(
+    products
+      .filter(
+        (product) =>
+          (householdId != null && product.householdId === householdId) ||
+          keptFoodProductIds.includes(product.id),
+      )
+      .map((product) => [product.id, product]),
+  );
 
   if (productById.size !== foodProductIds.length) {
     return { error: "選択された商品が見つかりませんでした" } as const;
@@ -171,14 +187,14 @@ export async function createFeedingRecordAction(
   _prevState: FeedingRecordFormState,
   formData: FormData,
 ): Promise<FeedingRecordFormState> {
-  await requireCatAccess(catId);
+  const { cat } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: mapZodErrors(parsed.error) };
   }
 
-  const built = await buildItemsToInsert(parsed.data);
+  const built = await buildItemsToInsert(parsed.data, cat.householdId);
   if ("error" in built) {
     return { formError: built.error };
   }
@@ -209,16 +225,11 @@ export async function updateFeedingRecordAction(
   _prevState: FeedingRecordFormState,
   formData: FormData,
 ): Promise<FeedingRecordFormState> {
-  await requireCatAccess(catId);
+  const { cat } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: mapZodErrors(parsed.error) };
-  }
-
-  const built = await buildItemsToInsert(parsed.data);
-  if ("error" in built) {
-    return { formError: built.error };
   }
 
   const db = getDb();
@@ -230,6 +241,19 @@ export async function updateFeedingRecordAction(
 
   if (!existing) {
     return { formError: "記録が見つかりませんでした" };
+  }
+
+  const currentItems = await db
+    .select({ foodProductId: feedingRecordItems.foodProductId })
+    .from(feedingRecordItems)
+    .where(eq(feedingRecordItems.feedingRecordId, id));
+  const built = await buildItemsToInsert(
+    parsed.data,
+    cat.householdId,
+    currentItems.map((item) => item.foodProductId),
+  );
+  if ("error" in built) {
+    return { formError: built.error };
   }
 
   const occurredAt = combineDateTimeUtc(

@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   type FeedingMode,
@@ -6,6 +6,7 @@ import {
   feedingPresets,
   foodProducts,
   type GivenAmountLevel,
+  householdMembers,
 } from "@/db/schema";
 import { listFoodProductImageUrls } from "@/features/food-products/queries";
 
@@ -23,13 +24,38 @@ export type FeedingPresetItemWithProduct = {
 
 export type FeedingPresetWithItems = {
   id: string;
+  /** プリセットを管理する家。家に属するプリセットだけを返すため null にはならない */
+  householdId: string;
   name: string;
   mode: FeedingMode;
   items: FeedingPresetItemWithProduct[];
 };
 
+type FeedingPresetHeader = Omit<FeedingPresetWithItems, "items">;
+
+const presetColumns = {
+  id: feedingPresets.id,
+  householdId: feedingPresets.householdId,
+  name: feedingPresets.name,
+  mode: feedingPresets.mode,
+};
+
+/** 家に属するプリセットだけを扱うため、`householdId` が NULL の行を除いて型を絞る */
+function withHousehold(
+  presets: {
+    id: string;
+    householdId: string | null;
+    name: string;
+    mode: FeedingMode;
+  }[],
+): FeedingPresetHeader[] {
+  return presets.flatMap(({ householdId, ...preset }) =>
+    householdId == null ? [] : [{ ...preset, householdId }],
+  );
+}
+
 async function attachItems(
-  presets: { id: string; name: string; mode: FeedingMode }[],
+  presets: FeedingPresetHeader[],
 ): Promise<FeedingPresetWithItems[]> {
   if (presets.length === 0) {
     return [];
@@ -83,33 +109,59 @@ async function attachItems(
   }));
 }
 
-export async function listFeedingPresets(): Promise<FeedingPresetWithItems[]> {
+/**
+ * 家のごはんプリセットの一覧。新しく登録した順（ユーザーが家に所属していることは呼び出し元で確認する）
+ */
+export async function listFeedingPresets(
+  householdId: string,
+): Promise<FeedingPresetWithItems[]> {
   const db = getDb();
   const presets = await db
-    .select({
-      id: feedingPresets.id,
-      name: feedingPresets.name,
-      mode: feedingPresets.mode,
-    })
+    .select(presetColumns)
     .from(feedingPresets)
+    .where(eq(feedingPresets.householdId, householdId))
     .orderBy(desc(feedingPresets.createdAt));
 
-  return attachItems(presets);
+  return attachItems(withHousehold(presets));
 }
 
-export async function getFeedingPresetById(
+/** ユーザーが所属する家のごはんプリセットの一覧。新しく登録した順 */
+export async function listFeedingPresetsForUser(
+  userId: string,
+): Promise<FeedingPresetWithItems[]> {
+  const db = getDb();
+  const presets = await db
+    .select(presetColumns)
+    .from(feedingPresets)
+    .innerJoin(
+      householdMembers,
+      eq(feedingPresets.householdId, householdMembers.householdId),
+    )
+    .where(eq(householdMembers.userId, userId))
+    .orderBy(desc(feedingPresets.createdAt));
+
+  return attachItems(withHousehold(presets));
+}
+
+/** ユーザーが所属する家のごはんプリセットであれば返す。存在しない・別の家のプリセットなら null */
+export async function getFeedingPresetForUser(
+  userId: string,
   id: string,
 ): Promise<FeedingPresetWithItems | null> {
   const db = getDb();
-  const [preset] = await db
-    .select({
-      id: feedingPresets.id,
-      name: feedingPresets.name,
-      mode: feedingPresets.mode,
-    })
-    .from(feedingPresets)
-    .where(eq(feedingPresets.id, id))
-    .limit(1);
+  const [preset] = withHousehold(
+    await db
+      .select(presetColumns)
+      .from(feedingPresets)
+      .innerJoin(
+        householdMembers,
+        eq(feedingPresets.householdId, householdMembers.householdId),
+      )
+      .where(
+        and(eq(feedingPresets.id, id), eq(householdMembers.userId, userId)),
+      )
+      .limit(1),
+  );
 
   if (!preset) {
     return null;

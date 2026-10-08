@@ -10,7 +10,11 @@ import {
   type NewFeedingPresetItem,
 } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
+import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "@/features/cats/mutations";
+import { listFoodProductsByIds } from "@/features/food-products/queries";
+import { resolveFormHouseholdId } from "@/features/households/formHousehold";
 import type { SubmitRedirect } from "@/features/navigation/types";
+import { getFeedingPresetForUser } from "./queries";
 import {
   type FeedingPresetFormFieldErrors,
   type FeedingPresetFormInput,
@@ -19,9 +23,23 @@ import {
 } from "./schema";
 
 export type FeedingPresetFormState = SubmitRedirect & {
-  fieldErrors?: FeedingPresetFormFieldErrors;
+  fieldErrors?: FeedingPresetFormFieldErrors & { householdId?: string[] };
   formError?: string;
 };
+
+const PRODUCT_NOT_FOUND_ERROR = "選択された商品が見つかりませんでした";
+
+/** 明細の商品がすべてプリセットと同じ家の商品であれば true */
+async function areProductsInHousehold(
+  householdId: string,
+  input: FeedingPresetFormInput,
+) {
+  const foodProductIds = [
+    ...new Set(input.items.map((item) => item.foodProductId)),
+  ];
+  const products = await listFoodProductsByIds(householdId, foodProductIds);
+  return products.length === foodProductIds.length;
+}
 
 const ITEM_FIELD_PATTERN = /^items\.(\d+)\.(.+)$/;
 
@@ -123,11 +141,20 @@ export async function createFeedingPresetAction(
   _prevState: FeedingPresetFormState,
   formData: FormData,
 ): Promise<FeedingPresetFormState> {
-  await requireUser();
+  const user = await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: mapZodErrors(parsed.error) };
+  }
+
+  // プリセットは登録時に選んだ家に属し、明細はその家の商品に限る。登録後に家は変えられない
+  const householdId = await resolveFormHouseholdId(user.id, formData);
+  if (!householdId) {
+    return { fieldErrors: { householdId: [HOUSEHOLD_NOT_ALLOWED_ERROR] } };
+  }
+  if (!(await areProductsInHousehold(householdId, parsed.data))) {
+    return { formError: PRODUCT_NOT_FOUND_ERROR };
   }
 
   const db = getDb();
@@ -136,6 +163,7 @@ export async function createFeedingPresetAction(
   await db.batch([
     db.insert(feedingPresets).values({
       id: presetId,
+      householdId,
       name: parsed.data.name,
       mode: parsed.data.mode,
     }),
@@ -150,24 +178,23 @@ export async function updateFeedingPresetAction(
   _prevState: FeedingPresetFormState,
   formData: FormData,
 ): Promise<FeedingPresetFormState> {
-  await requireUser();
+  const user = await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: mapZodErrors(parsed.error) };
   }
 
-  const db = getDb();
-  const [existing] = await db
-    .select({ id: feedingPresets.id })
-    .from(feedingPresets)
-    .where(eq(feedingPresets.id, id))
-    .limit(1);
-
+  // 別の家のプリセットは、存在しないプリセットと区別せずに扱う
+  const existing = await getFeedingPresetForUser(user.id, id);
   if (!existing) {
     return { formError: "プリセットが見つかりませんでした" };
   }
+  if (!(await areProductsInHousehold(existing.householdId, parsed.data))) {
+    return { formError: PRODUCT_NOT_FOUND_ERROR };
+  }
 
+  const db = getDb();
   await db.batch([
     db
       .update(feedingPresets)
@@ -191,7 +218,12 @@ export type DeleteFeedingPresetResult = { error?: string };
 export async function deleteFeedingPresetAction(
   id: string,
 ): Promise<DeleteFeedingPresetResult> {
-  await requireUser();
+  const user = await requireUser();
+  const existing = await getFeedingPresetForUser(user.id, id);
+  if (!existing) {
+    return { error: "プリセットが見つかりませんでした" };
+  }
+
   const db = getDb();
   await db.batch([
     db.delete(feedingPresetItems).where(eq(feedingPresetItems.presetId, id)),

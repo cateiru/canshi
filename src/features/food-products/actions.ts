@@ -8,10 +8,13 @@ import {
   foodProducts,
 } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
+import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "@/features/cats/mutations";
+import { resolveFormHouseholdId } from "@/features/households/formHousehold";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "./media";
+import { getFoodProductForUser } from "./queries";
 import {
   type FoodProductFormFieldErrors,
   foodProductFormSchema,
@@ -23,7 +26,7 @@ import {
  * 一覧への遷移はクライアント側（useMediaFormAction）が行うため、ここではリダイレクトしない
  */
 export type FoodProductFormState = MediaFormState & {
-  fieldErrors?: FoodProductFormFieldErrors;
+  fieldErrors?: FoodProductFormFieldErrors & { householdId?: string[] };
 };
 
 function parseFormData(formData: FormData) {
@@ -41,17 +44,24 @@ export async function createFoodProductAction(
   _prevState: FoodProductFormState,
   formData: FormData,
 ): Promise<FoodProductFormState> {
-  await requireUser();
+  const user = await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
+  // 商品は登録時に選んだ家に属する。登録後に家は変えられない（ほかの家のプリセット・
+  // ごはん記録から参照されないようにするため）
+  const householdId = await resolveFormHouseholdId(user.id, formData);
+  if (!householdId) {
+    return { fieldErrors: { householdId: [HOUSEHOLD_NOT_ALLOWED_ERROR] } };
+  }
+
   const db = getDb();
   const [created] = await db
     .insert(foodProducts)
-    .values(parsed.data)
+    .values({ ...parsed.data, householdId })
     .returning({ id: foodProducts.id });
 
   const mediaError = await syncRecordMediaFromForm(
@@ -67,23 +77,24 @@ export async function updateFoodProductAction(
   _prevState: FoodProductFormState,
   formData: FormData,
 ): Promise<FoodProductFormState> {
-  await requireUser();
+  const user = await requireUser();
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  const result = await db
-    .update(foodProducts)
-    .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(foodProducts.id, id))
-    .returning({ id: foodProducts.id });
-
-  if (result.length === 0) {
+  // 別の家の商品は、存在しない商品と区別せずに扱う
+  const foodProduct = await getFoodProductForUser(user.id, id);
+  if (!foodProduct) {
     return { formError: "商品が見つかりませんでした" };
   }
+
+  const db = getDb();
+  await db
+    .update(foodProducts)
+    .set({ ...parsed.data, updatedAt: new Date() })
+    .where(eq(foodProducts.id, id));
 
   const mediaError = await syncRecordMediaFromForm(
     FOOD_PRODUCT_MEDIA_TYPE,
@@ -100,7 +111,12 @@ export type DeleteFoodProductResult = { error?: string };
 export async function deleteFoodProductAction(
   id: string,
 ): Promise<DeleteFoodProductResult> {
-  await requireUser();
+  const user = await requireUser();
+  const foodProduct = await getFoodProductForUser(user.id, id);
+  if (!foodProduct) {
+    return { error: "商品が見つかりませんでした" };
+  }
+
   const db = getDb();
   // food_product_id は ON DELETE 制約でこのまま削除すると失敗するため、
   // ごはん記録から参照されている場合は削除せずにエラーを返す
