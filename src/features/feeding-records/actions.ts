@@ -1,11 +1,11 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import type { z } from "zod";
-import { chunkRowsForInsert } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
+  cats,
   feedingRecordItems,
   feedingRecords,
   foodProducts,
@@ -169,17 +169,68 @@ async function buildItemsToInsert(
   return { values } as const;
 }
 
-// 明細が多いと 1 回の INSERT が D1 のバインド上限を超えるため、行を分割して
-// 複数の INSERT にする。呼び出し側で同じ batch に並べて原子性を保つ
+const HOUSEHOLD_CHANGED_ERROR =
+  "猫の家が変わったため保存できませんでした。もう一度やり直してください";
+
+/** INSERT ... SELECT の取得元。猫がまだ `householdId` の家にいるときだけ 1 行を返す */
+function catInHouseholdRow(catId: string, householdId: string) {
+  return and(eq(cats.id, catId), eq(cats.householdId, householdId));
+}
+
+/** 猫がまだ `householdId` の家にいるときだけ真になる条件（UPDATE・DELETE の WHERE に含める） */
+function catInHouseholdCondition(catId: string, householdId: string) {
+  return sql`EXISTS (
+    SELECT 1 FROM ${cats}
+    WHERE ${cats.id} = ${catId} AND ${cats.householdId} = ${householdId}
+  )`;
+}
+
+// 明細の商品は保存前に猫の家の商品か確かめているため、確認と保存の間に猫が別の家へ引っ越すと、
+// 元の家の商品が引っ越し先の家の記録に入ってしまう。これを防ぐよう明細は 1 行ずつ
+// INSERT ... SELECT にし、猫が確認した時点の家にいるときだけ挿入する。1 行ずつのため D1 の
+// バインド上限も超えない。呼び出し側で同じ batch に並べて原子性を保つ。
+// INSERT ... SELECT では列の既定値が使われないため ID はここで作り、列はテーブル定義と同じ並びにする
 function insertFeedingRecordItems(
   db: ReturnType<typeof getDb>,
   feedingRecordId: string,
+  catId: string,
+  householdId: string,
   values: Omit<NewFeedingRecordItem, "feedingRecordId">[],
 ) {
-  const rows = values.map((value) => ({ ...value, feedingRecordId }));
-  return chunkRowsForInsert(rows, feedingRecordItems).map((chunk) =>
-    db.insert(feedingRecordItems).values(chunk),
+  return values.map((value) =>
+    db.insert(feedingRecordItems).select((qb) =>
+      qb
+        .select({
+          id: sql`${crypto.randomUUID()}`.as("id"),
+          feedingRecordId: sql`${feedingRecordId}`.as("feeding_record_id"),
+          foodProductId: sql`${value.foodProductId}`.as("food_product_id"),
+          givenAmountG: sql`${value.givenAmountG ?? null}`.as("given_amount_g"),
+          leftoverAmountG: sql`${value.leftoverAmountG ?? null}`.as(
+            "leftover_amount_g",
+          ),
+          estimatedIntakeG: sql`${value.estimatedIntakeG ?? null}`.as(
+            "estimated_intake_g",
+          ),
+          estimatedKcal: sql`${value.estimatedKcal ?? null}`.as(
+            "estimated_kcal",
+          ),
+          givenAmountLevel: sql`${value.givenAmountLevel ?? null}`.as(
+            "given_amount_level",
+          ),
+          leftoverLevel: sql`${value.leftoverLevel ?? null}`.as(
+            "leftover_level",
+          ),
+          sortOrder: sql`${value.sortOrder ?? 0}`.as("sort_order"),
+        })
+        .from(cats)
+        .where(catInHouseholdRow(catId, householdId)),
+    ),
   );
+}
+
+/** `timestamp` 列に INSERT ... SELECT で入れる値（UNIX 秒） */
+function toUnixSeconds(date: Date) {
+  return Math.floor(date.getTime() / 1000);
 }
 
 export async function createFeedingRecordAction(
@@ -194,9 +245,14 @@ export async function createFeedingRecordAction(
     return { fieldErrors: mapZodErrors(parsed.error) };
   }
 
-  const built = await buildItemsToInsert(parsed.data, cat.householdId);
+  const householdId = cat.householdId;
+  const built = await buildItemsToInsert(parsed.data, householdId);
   if ("error" in built) {
     return { formError: built.error };
+  }
+  // 家のない猫は商品を選べないため、ここには来ない（型を絞るための確認）
+  if (householdId == null) {
+    return { formError: HOUSEHOLD_CHANGED_ERROR };
   }
 
   const db = getDb();
@@ -205,16 +261,37 @@ export async function createFeedingRecordAction(
     parsed.data.occurredDate,
     parsed.data.occurredTime,
   );
+  const { mode } = parsed.data;
 
-  await db.batch([
-    db.insert(feedingRecords).values({
-      id: feedingRecordId,
+  // 記録も明細と同じく、猫が確認した時点の家にいるときだけ挿入する
+  const [created] = await db.batch([
+    db
+      .insert(feedingRecords)
+      .select((qb) =>
+        qb
+          .select({
+            id: sql`${feedingRecordId}`.as("id"),
+            catId: cats.id,
+            occurredAt: sql`${toUnixSeconds(occurredAt)}`.as("occurred_at"),
+            mode: sql`${mode}`.as("mode"),
+            createdAt: sql`(unixepoch())`.as("created_at"),
+            updatedAt: sql`(unixepoch())`.as("updated_at"),
+          })
+          .from(cats)
+          .where(catInHouseholdRow(catId, householdId)),
+      )
+      .returning({ id: feedingRecords.id }),
+    ...insertFeedingRecordItems(
+      db,
+      feedingRecordId,
       catId,
-      occurredAt,
-      mode: parsed.data.mode,
-    }),
-    ...insertFeedingRecordItems(db, feedingRecordId, built.values),
+      householdId,
+      built.values,
+    ),
   ]);
+  if (created.length === 0) {
+    return { formError: HOUSEHOLD_CHANGED_ERROR };
+  }
 
   return { redirectTo: `/cats/${catId}/feeding-records` };
 }
@@ -247,13 +324,18 @@ export async function updateFeedingRecordAction(
     .select({ foodProductId: feedingRecordItems.foodProductId })
     .from(feedingRecordItems)
     .where(eq(feedingRecordItems.feedingRecordId, id));
+  const householdId = cat.householdId;
   const built = await buildItemsToInsert(
     parsed.data,
-    cat.householdId,
+    householdId,
     currentItems.map((item) => item.foodProductId),
   );
   if ("error" in built) {
     return { formError: built.error };
+  }
+  // 参照できる猫は必ず家に所属している（型を絞るための確認）
+  if (householdId == null) {
+    return { formError: HOUSEHOLD_CHANGED_ERROR };
   }
 
   const occurredAt = combineDateTimeUtc(
@@ -261,16 +343,31 @@ export async function updateFeedingRecordAction(
     parsed.data.occurredTime,
   );
 
-  await db.batch([
+  // 更新・明細の削除と挿入のいずれも、猫が確認した時点の家にいるときだけ行う
+  const [updated] = await db.batch([
     db
       .update(feedingRecords)
       .set({ occurredAt, mode: parsed.data.mode, updatedAt: new Date() })
-      .where(eq(feedingRecords.id, id)),
+      .where(
+        and(
+          eq(feedingRecords.id, id),
+          catInHouseholdCondition(catId, householdId),
+        ),
+      )
+      .returning({ id: feedingRecords.id }),
     db
       .delete(feedingRecordItems)
-      .where(eq(feedingRecordItems.feedingRecordId, id)),
-    ...insertFeedingRecordItems(db, id, built.values),
+      .where(
+        and(
+          eq(feedingRecordItems.feedingRecordId, id),
+          catInHouseholdCondition(catId, householdId),
+        ),
+      ),
+    ...insertFeedingRecordItems(db, id, catId, householdId, built.values),
   ]);
+  if (updated.length === 0) {
+    return { formError: HOUSEHOLD_CHANGED_ERROR };
+  }
 
   return { redirectTo: `/cats/${catId}/feeding-records` };
 }

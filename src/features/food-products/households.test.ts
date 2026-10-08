@@ -87,6 +87,7 @@ const { createFeedingRecordAction, updateFeedingRecordAction } = await import(
 const { listRecentlyUsedFoodProductIds } = await import(
   "@/features/feeding-records/queries"
 );
+const { deleteMediaAssetsByRecord } = await import("@/features/media/storage");
 
 function form(values: Record<string, string>) {
   const data = new FormData();
@@ -339,6 +340,23 @@ describe("確認の後に家から外された場合", () => {
     expect(product.name).toBe("food-1");
   });
 
+  it("商品の削除は通らず、商品画像も消さない", async () => {
+    // 商品の削除は確認の後に 1 文で行うため、DELETE を組み立てる直前に外されたものとする
+    const originalDelete = db.delete.bind(db);
+    vi.spyOn(db, "delete").mockImplementation((table) => {
+      sqlite.run("DELETE FROM household_members WHERE user_id = 'user-1'");
+      return originalDelete(table);
+    });
+
+    expect(await deleteFoodProductAction("food-1")).toEqual({
+      error: "商品が見つかりませんでした",
+    });
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
+    expect(
+      await db.select().from(foodProducts).where(eq(foodProducts.id, "food-1")),
+    ).toHaveLength(1);
+  });
+
   it("プリセットの登録・更新・削除は通らない", async () => {
     await db
       .insert(feedingPresets)
@@ -385,6 +403,45 @@ describe("確認の後に家から外された場合", () => {
 });
 
 describe("ごはん記録の商品", () => {
+  it("確認の後に猫が別の家へ引っ越した場合、記録の登録・更新は通らない", async () => {
+    await db.insert(feedingRecords).values({
+      id: "meal",
+      catId: "tama",
+      occurredAt: new Date("2026-10-01T08:00:00Z"),
+    });
+    await db.insert(feedingRecordItems).values({
+      feedingRecordId: "meal",
+      foodProductId: "food-1",
+      givenAmountG: 20,
+    });
+    beforeBatch = async () => {
+      await db
+        .update(cats)
+        .set({ householdId: "household-2" })
+        .where(eq(cats.id, "tama"));
+    };
+    const error =
+      "猫の家が変わったため保存できませんでした。もう一度やり直してください";
+
+    await expect(
+      createFeedingRecordAction("tama", {}, recordForm("food-1")),
+    ).resolves.toEqual({ formError: error });
+    await db
+      .update(cats)
+      .set({ householdId: "household-1" })
+      .where(eq(cats.id, "tama"));
+    await expect(
+      updateFeedingRecordAction("tama", "meal", {}, recordForm("food-1")),
+    ).resolves.toEqual({ formError: error });
+
+    expect(await db.select().from(feedingRecords)).toMatchObject([
+      { id: "meal" },
+    ]);
+    expect(await db.select().from(feedingRecordItems)).toMatchObject([
+      { feedingRecordId: "meal", foodProductId: "food-1", givenAmountG: 20 },
+    ]);
+  });
+
   it("猫の家の商品だけを記録に使える", async () => {
     await expect(
       createFeedingRecordAction("tama", {}, recordForm("food-2")),
@@ -397,6 +454,24 @@ describe("ごはん記録の商品", () => {
     await expect(
       createFeedingRecordAction("tama", {}, recordForm("food-1")),
     ).resolves.toEqual({ redirectTo: "/cats/tama/feeding-records" });
+    expect(await db.select().from(feedingRecords)).toMatchObject([
+      {
+        catId: "tama",
+        occurredAt: new Date("2026-10-08T08:00:00Z"),
+        mode: "strict",
+      },
+    ]);
+    expect(await db.select().from(feedingRecordItems)).toMatchObject([
+      {
+        foodProductId: "food-1",
+        givenAmountG: 30,
+        leftoverAmountG: 0,
+        estimatedIntakeG: 30,
+        estimatedKcal: 114,
+        givenAmountLevel: null,
+        sortOrder: 0,
+      },
+    ]);
     expect(await listRecentlyUsedFoodProductIds("tama", "household-1")).toEqual(
       ["food-1"],
     );

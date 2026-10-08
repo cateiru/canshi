@@ -179,16 +179,21 @@ export async function deleteFoodProductAction(
     };
   }
 
-  // 商品画像（R2 のオブジェクトと media_assets 行）を先に削除する
-  await deleteMediaAssetsByRecord(FOOD_PRODUCT_MEDIA_TYPE, id);
-  // 最初の確認の後に家から外された場合に削除が通らないよう、所属の確認は DELETE の WHERE にも含める
-  await db
+  // 最初の確認の後に家から外された場合に削除が通らないよう、所属の確認は DELETE の WHERE にも含める。
+  // 商品画像（R2 のオブジェクトと media_assets 行）は、商品を削除できたときだけ後から削除する
+  // （先に削除すると、商品の削除が通らなかったときに画像だけが消えてしまうため）
+  const deleted = await db
     .delete(foodProducts)
     .where(
       and(
         eq(foodProducts.id, id),
         isHouseholdMemberCondition(foodProducts.householdId, user.id),
       ),
-    );
+    )
+    .returning({ id: foodProducts.id });
+  if (deleted.length === 0) {
+    return { error: "商品が見つかりませんでした" };
+  }
+  await deleteMediaAssetsByRecord(FOOD_PRODUCT_MEDIA_TYPE, id);
   return {};
 }
