@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { getAccessibleCat } from "@/features/auth/session";
+import { getAccessibleCat, requireUser } from "@/features/auth/session";
 import { updateCatAction } from "@/features/cats/actions";
 import { CatForm } from "@/features/cats/CatForm";
 import { CatIcon } from "@/features/cats/CatIcon";
+import { listHouseholdsForUser } from "@/features/households/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
@@ -15,11 +16,17 @@ type EditCatPageProps = {
 
 export default async function EditCatPage({ params }: EditCatPageProps) {
   const { catId } = await params;
-  const cat = await getAccessibleCat(catId);
+  const [user, cat] = await Promise.all([
+    requireUser(),
+    getAccessibleCat(catId),
+  ]);
 
   if (!cat) {
     notFound();
   }
+
+  // 引っ越し先として選べる、ユーザーが所属する家
+  const households = await listHouseholdsForUser(user.id);
 
   return (
     <main className={styles.main}>
@@ -33,10 +40,11 @@ export default async function EditCatPage({ params }: EditCatPageProps) {
       />
 
       <RecordPageHeading icon={CatIcon}>{cat.name}を編集する</RecordPageHeading>
-      <p>プロフィールや記念日を変更できます。</p>
+      <p>プロフィールや記念日、飼っている家を変更できます。</p>
       <CatForm
         action={updateCatAction.bind(null, cat.id)}
         cat={cat}
+        households={households}
         submitLabel="更新する"
       />
     </main>

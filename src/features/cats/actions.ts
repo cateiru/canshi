@@ -22,11 +22,15 @@ import {
   weightRecords,
 } from "@/db/schema";
 import { requireCatAccess, requireUser } from "@/features/auth/session";
-import { getPrimaryHouseholdForUser } from "@/features/households/queries";
 import { deleteMediaAssetsByCat } from "@/features/media/storage";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { applyProfileImageChange } from "./applyProfileImage";
 import type { SubmittedBirthDate } from "./birthDate";
+import {
+  createCatForUser,
+  HOUSEHOLD_NOT_ALLOWED_ERROR,
+  updateCatForUser,
+} from "./mutations";
 import { parseProfileImageChange } from "./profileImageForm";
 import {
   BIRTH_DATE_PRECISIONS,
@@ -66,6 +70,7 @@ function parseFormData(formData: FormData) {
     birthMonth: formData.get("birthMonth"),
     breed: formData.get("breed"),
     adoptedAt: formData.get("adoptedAt"),
+    householdId: formData.get("householdId"),
   });
   if (!parsed.success) {
     return {
@@ -93,13 +98,10 @@ function parseFormData(formData: FormData) {
       birthDatePrecision: birth.data.birthDatePrecision,
       breed: parsed.data.breed ?? null,
       adoptedAt: parsed.data.adoptedAt ?? null,
+      householdId: parsed.data.householdId,
     },
   };
 }
-
-/** 猫を登録する家がないときのエラー。家は `scripts/link-household.mjs` で作る */
-const NO_HOUSEHOLD_ERROR =
-  "猫を登録する家がまだありません。管理者に家の作成を依頼してください";
 
 export async function createCatAction(
   _prevState: CatFormState,
@@ -115,21 +117,15 @@ export async function createCatAction(
     };
   }
 
-  const household = await getPrimaryHouseholdForUser(user.id);
-  if (!household) {
+  const createdId = await createCatForUser(user.id, parsed.data);
+  if (!createdId) {
     return {
-      formError: NO_HOUSEHOLD_ERROR,
+      fieldErrors: { householdId: [HOUSEHOLD_NOT_ALLOWED_ERROR] },
       submittedBirthDate: readSubmittedBirthDate(formData),
     };
   }
 
-  const db = getDb();
-  const [created] = await db
-    .insert(cats)
-    .values({ ...parsed.data, householdId: household.id })
-    .returning({ id: cats.id });
-
-  return { redirectTo: `/cats/${created.id}` };
+  return { redirectTo: `/cats/${createdId}` };
 }
 
 export async function updateCatAction(
@@ -147,14 +143,14 @@ export async function updateCatAction(
     };
   }
 
-  const db = getDb();
-  const result = await db
-    .update(cats)
-    .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(cats.id, id))
-    .returning({ id: cats.id });
-
-  if (result.length === 0) {
+  const result = await updateCatForUser(id, user.id, parsed.data);
+  if (result === "household-not-allowed") {
+    return {
+      fieldErrors: { householdId: [HOUSEHOLD_NOT_ALLOWED_ERROR] },
+      submittedBirthDate: readSubmittedBirthDate(formData),
+    };
+  }
+  if (result === "not-found") {
     return { formError: "猫が見つかりませんでした" };
   }
 

@@ -24,6 +24,10 @@ import { ProfileImageField } from "./ProfileImageField";
 type CatFormProps = {
   action: (state: CatFormState, formData: FormData) => Promise<CatFormState>;
   cat?: Cat;
+  /** 猫を飼う家の選択肢（ユーザーが所属する家） */
+  households: { id: string; name: string }[];
+  /** 登録時に最初から選んでおく家。編集時は猫の今の家を選ぶため使わない */
+  defaultHouseholdId?: string;
   submitLabel: string;
 };
 
@@ -40,7 +44,13 @@ const BREED_OPTIONS = CAT_BREEDS.map((breed) => ({
   label: breed.name,
 }));
 
-export function CatForm({ action, cat, submitLabel }: CatFormProps) {
+export function CatForm({
+  action,
+  cat,
+  households,
+  defaultHouseholdId,
+  submitLabel,
+}: CatFormProps) {
   const [state, formAction, isPending] = useSubmitActionState(
     action,
     initialState,
@@ -80,6 +90,24 @@ export function CatForm({ action, cat, submitLabel }: CatFormProps) {
           defaultFilter={matchesBreed}
           errorMessage={state.fieldErrors?.breed?.[0]}
           allowsCustomValue
+        />
+
+        <Select
+          name="householdId"
+          label="家"
+          options={households.map((household) => ({
+            value: household.id,
+            label: household.name,
+          }))}
+          defaultSelectedKey={
+            cat?.householdId ?? defaultHouseholdId ?? households[0]?.id
+          }
+          description={
+            cat
+              ? "別の家を選ぶと、記録ごとその家に移ります。今の家のメンバーからは見えなくなります。"
+              : "選んだ家のメンバーと、この猫の記録を共有します。"
+          }
+          errorMessage={state.fieldErrors?.householdId?.[0]}
         />
       </Surface>
       {cat ? (

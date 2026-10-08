@@ -55,6 +55,11 @@ export const catFormSchema = z.object({
     emptyToUndefined,
     z.string().date("お迎え日の形式が正しくありません").optional(),
   ),
+  // 猫を飼っている家。所属している家かどうかはサーバー側で確認する
+  householdId: z.preprocess(
+    emptyToUndefined,
+    z.string({ error: "家を選択してください" }),
+  ),
 });
 
 export type CatFormInput = z.infer<typeof catFormSchema>;

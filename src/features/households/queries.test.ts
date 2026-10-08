@@ -8,7 +8,6 @@ import { cats, householdMembers, households, users } from "@/db/schema";
 import {
   getCatForUser,
   getHouseholdForUser,
-  getPrimaryHouseholdForUser,
   listCatsForUser,
   listHouseholdMembers,
   listHouseholdSummariesForUser,
@@ -88,22 +87,6 @@ describe("getCatForUser", () => {
     expect(await getCatForUser("owner", "kuro")).toBeNull();
     expect(await getCatForUser("owner", "orphan")).toBeNull();
     expect(await getCatForUser("owner", "missing")).toBeNull();
-  });
-});
-
-describe("getPrimaryHouseholdForUser", () => {
-  it("所属する家と家の中での権限を返し、所属していなければ null", async () => {
-    expect(await getPrimaryHouseholdForUser("member")).toEqual({
-      id: "home",
-      name: "わが家",
-      role: "member",
-    });
-    expect(await getPrimaryHouseholdForUser("owner")).toEqual({
-      id: "home",
-      name: "わが家",
-      role: "owner",
-    });
-    expect(await getPrimaryHouseholdForUser("homeless")).toBeNull();
   });
 });
 
