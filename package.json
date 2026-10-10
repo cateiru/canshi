@@ -36,7 +36,7 @@
     "@nivo/line": "^0.99.0",
     "@nivo/swarmplot": "^0.99.0",
     "drizzle-orm": "^0.45.2",
-    "next": "16.3.8",
+    "next": "16.4.0",
     "react": "19.3.0",
     "react-aria-components": "^1.21.1",
     "react-dom": "19.3.0",
