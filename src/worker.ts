@@ -76,7 +76,7 @@ function toRecordSummary(entry: TimelineEntry) {
 
 /**
  * MCP ツール向けのタイムラインエントリの要約。`media`（`/media/[assetId]` への
- * URL を含む）は Cloudflare Access 保護下にあり外部エージェントからは参照
+ * URL を含む）は CANSHI へのログインが必要で外部エージェントからは参照
  * できないため含めず、件数のみ返す
  */
 function toTimelineEntrySummary(entry: TimelineEntry) {
@@ -92,7 +92,7 @@ function toTimelineEntrySummary(entry: TimelineEntry) {
 // MCP 用 Worker（`packages/mcp-server`）から Service Bindings 経由で呼ばれる
 // RPC エントリーポイント（`docs/plans/32_mcp_oidc_overview.md` 参照）。
 // 公開 URL・DNS を経由しない Worker 間の直接呼び出しのため、このアプリの
-// Cloudflare Access ポリシーやセッション（Cookie）の対象にはならない。
+// ログインセッション（Cookie）の対象にはならない。
 // 呼び出し元（MCP 用 Worker）は OAuth 検証を通過したリクエストのユーザー ID
 // （`resolveMcpUser` で取得し、トークンに保存したもの）を必ず渡し、ここでは
 // そのユーザーの家の猫だけを返す

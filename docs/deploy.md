@@ -9,7 +9,8 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - DB：Cloudflare D1
 - オブジェクトストレージ：Cloudflare R2（写真・動画の本体は非公開バケットに保存）
 - バックグラウンド処理：Cloudflare Workflows（定期通知のスケジュール実行）
-- 外部アクセス制御：Cloudflare Access
+- 外部アクセス制御：Cloudflare Access（プレビュー URL と管理画面。メインアプリの本番ドメインは
+  Access で保護せず、アプリのログインで利用者を制限する）
 - アプリ内のログイン・認可：Cloudflare Access の SaaS OIDC アプリでログインし、D1 に保存する
   ログインセッション（Cookie にはセッショントークンだけを保存）で認可する。
   ユーザーは所属する「家」の猫だけを参照できる。メールアドレス・パスワードでのログインは持たない
@@ -22,7 +23,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - R2 バケット
   - メディア（写真・動画）用バケット（非公開）
   - ISR・SSG のキャッシュ用バケット（メディア用とは分離する。`docs/idea/index.md` の方針）
-- Cloudflare Workers 全体の Access 設定と許可ポリシー
+- Cloudflare Workers 全体の Access 設定と許可ポリシー（プレビュー URL の保護に使う）
 - Cloudflare Workflows（定期通知が実装される第2段階以降で必要）
 
 ## 環境変数・シークレット
@@ -104,9 +105,11 @@ SaaS OIDC アプリの作成:
 2. Redirect URL に `https://canshi.cateiru.dev/login/callback` を登録する。スコープは `openid` と
    `email` だけにする。PKCE を有効にする。
 3. メインアプリの利用者を許可するポリシーを付ける（Workers 全体の Access と同じポリシーでよい）。
+   メインアプリの本番ドメインは Access で保護していないため、このポリシーが「誰が CANSHI を
+   使えるか」を決める（「Cloudflare Access 設定」節）。
 4. 表示された Client ID・Client secret・OIDC discovery URL を、上の手順でシークレットに設定する。
 
-Redirect URL は登録したホスト名でしか使えないため、Workers Builds のプレビュー URL・`workers.dev`
+Redirect URL は登録したホスト名でしか使えないため、Workers Builds のプレビュー URL
 ではログインできない（必要ならその URL も Redirect URL に追加する）。
 
 ローカル開発（`next dev`）では、`ACCESS_*` が未設定なら `/login` が開発用のログイン（Access を
@@ -198,7 +201,7 @@ OIDC でのログインの導入前（マイグレーション `0041` より前�
 wrangler r2 bucket create canshi-media
 ```
 
-- バケットは非公開のまま運用する（パブリックアクセス・カスタムドメインは設定しない）。配信はアプリの `GET /media/[assetId]` 経由で行い、Cloudflare Access とログインセッションで保護する（猫に紐付くメディアは、その猫の家のユーザーだけが取得できる）
+- バケットは非公開のまま運用する（パブリックアクセス・カスタムドメインは設定しない）。配信はアプリの `GET /media/[assetId]` 経由で行い、ログインセッションで保護する（猫に紐付くメディアは、その猫の家のユーザーだけが取得できる）
 - オブジェクトキーは `{recordType}/{recordId}/{assetId}`（元データ）と `{recordType}/{recordId}/{assetId}.thumb.webp`（サムネイル）
 
 ### 上限値
@@ -226,31 +229,42 @@ MEDIA_STORAGE_LIMIT_BYTES = "10737418240"
 
 Cloudflare ダッシュボードの Workers & Pages で、Workers 全体を保護する設定を `All traffic` として設定済み（2026-09 時点）。この設定により、既存・新規 Worker の本番 URL とプレビュー URL へのリクエストは、Worker が実行される前に Access で評価される。
 
-CANSHI はこのエッジでの保護を利用する。アプリケーション内で `Cf-Access-Jwt-Assertion` を検証する処理や、そのための Team ドメイン・Audience タグの環境変数は不要。アプリ内でのユーザーの識別は、これとは別に Access の SaaS OIDC アプリで行う（「ログインと家」節を参照）。
+メインアプリ（Worker 名 `canshi`）は、Worker 単位の設定で本番のカスタムドメイン（`canshi.cateiru.dev`）だけを Access の対象から外している（2026-10 時点）。本番ドメインでの利用者の制限は、アプリのログイン（Access の SaaS OIDC アプリ。「ログインと家」節を参照）で行う。
+
+- `src/middleware.ts` が、`src/features/auth/publicPaths.ts` に挙げたパス（`/login`、PWA の manifest・アイコンなど）以外のすべてのリクエストで、D1 のログインセッションを確認する
+- ログインできるのは、SaaS OIDC アプリのポリシーで許可された人だけになる。初めてログインしたメールアドレスではユーザーが作られるため、このポリシーが「誰が CANSHI を使えるか」を決める
+- プレビュー URL は、引き続き Workers 全体の Access で保護する。プレビュービルドは本番と同じ D1・R2 に接続するため、レビュー前のコードを本番データ付きで公開しないためである
+- `workers.dev` は無効にしている
+
+アプリケーション内で `Cf-Access-Jwt-Assertion` を検証する処理や、そのための Team ドメイン・Audience タグの環境変数は持たない。
 
 ### 設定の確認
 
 1. Cloudflare ダッシュボードの Workers & Pages を開く。
 2. Overview の **Protect all Workers** で、保護対象が **All traffic** になっていることを確認する。
-3. 適用されている Access ポリシーが、意図したユーザーまたはグループだけを許可していることを確認する。
-4. Workers & Pages から CANSHI の Worker を開き、Worker 単位で公開設定や Bypass ポリシーが追加されていないことを確認する。
+3. Workers 全体の Access に適用されているポリシーが、意図したユーザーまたはグループだけを許可していることを確認する。
+4. Workers & Pages から CANSHI の Worker を開き、Access の対象から外しているのが本番のカスタムドメインだけであること、プレビュー URL が保護されていること、`workers.dev` が無効であることを確認する。
 5. Zero Trust の Access controls > Applications で、CANSHI のホスト名・パスに対する、意図しない公開設定や Bypass ポリシーがないことを確認する。
+6. メインアプリの SaaS OIDC アプリのポリシーが、メインアプリの利用者だけを許可していることを確認する。
 
 Access の設定は、ホスト名・パス単位、Worker 単位、Workers 全体の順に具体的なものが優先される。Workers 全体を保護していても、より具体的な設定で公開するとその経路が保護されないため、設定変更時は手順 4・5 も確認する。
 
 ### 許可ユーザーの追加・削除
 
 1. Zero Trust の Access controls > Policies を開く。
-2. Workers 全体の Access に適用している再利用可能なポリシーを開く。
+2. メインアプリの SaaS OIDC アプリに適用しているポリシーを開く。Workers 全体の Access と同じ再利用可能なポリシーを使っている場合は、プレビュー URL の許可対象も同時に変わる。
 3. Include ルールのメールアドレスまたはグループを更新して保存する。
-4. 次の動作確認を実施する。
+4. 利用者を削除したときは、管理画面（`canshi-admin.cateiru.dev`）でそのユーザーを「すべての端末からログアウト」させる。ポリシーから外しても、ログイン済みのセッションは有効期限まで使えるためである。
+5. 次の動作確認を実施する。
 
 許可対象の具体的なメールアドレスやグループは機密性のある運用情報として扱い、リポジトリには記載しない。
 
 ### 動作確認
 
-- ログアウト状態または許可対象外のアカウントで、カスタムドメイン、`workers.dev`、プレビュー URL を開き、Access のログイン画面または拒否画面が表示されることを確認する
-- 許可対象のアカウントで認証し、同じ URL から CANSHI を利用できることを確認する
+- ログアウト状態で本番のカスタムドメインを開き、Access の画面ではなく CANSHI のログイン画面（`/login`）が表示されることを確認する
+- 許可対象外のアカウントで `/login` からログインし、Access の拒否画面が表示されてログインできないことを確認する
+- ログアウト状態または許可対象外のアカウントでプレビュー URL を開き、Access のログイン画面または拒否画面が表示されることを確認する
+- 許可対象のアカウントでログインし、CANSHI を利用できることを確認する
 - Worker や公開経路を追加したとき、および Access ポリシーを変更したときは再確認する
 
 詳細は [Cloudflare Access for Workers](https://developers.cloudflare.com/workers/configuration/cloudflare-access/) と [Access policies](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/) を参照する。

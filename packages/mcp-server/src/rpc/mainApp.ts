@@ -37,7 +37,7 @@ export interface TimelineEntrySummary {
   type: string;
   occurredAt: Date;
   record: JsonRecord;
-  /** 添付メディアの件数。URL は Access 保護下にあるため RPC 契約には含めない */
+  /** 添付メディアの件数。URL は CANSHI へのログインが必要なため RPC 契約には含めない */
   mediaCount: number;
 }
 
