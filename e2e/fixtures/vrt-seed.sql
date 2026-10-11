@@ -24,11 +24,13 @@
 -- 固定値であればスナップショットは実行日に関わらず安定する
 -- (e2e/vrt.spec.ts のコメントで対象外にしているページを参照)。
 
--- 猫はすべて VRT 用の家に所属させる。ユーザーは `/login` のログインボタンが最初に
--- 登録されたユーザーを使うため、created_at を固定の過去日時にしておく
--- (e2e/auth.setup.ts 参照)
-INSERT INTO users (id, name, role, created_at, updated_at)
+-- 猫はすべて VRT 用の家に所属させる。`/login` の開発用ログインで VRT ユーザーとして
+-- ログインできるよう、e2e/auth.setup.ts がログインに使うメールアドレス（e2e@example.com）を
+-- 開発用の SALT でハッシュにした値を email_hash にする
+-- (src/features/auth/emailHash.test.ts で同じ値になることを確認している)
+INSERT INTO users (id, name, role, email_hash, created_at, updated_at)
 VALUES ('vrt-user', 'VRTユーザー', 'admin',
+  '67534d9e2c2cbdba8b5cc51b13f29cda8a204335369ea791404d411d86e9a59e',
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
 INSERT INTO households (id, name, created_at, updated_at)
@@ -44,7 +46,7 @@ VALUES ('vrt-household', 'vrt-user', 'owner', strftime('%s', '2024-06-01 00:00:0
 -- - vrt-invitation-member : VRTの家への招待。VRT ユーザーはすでにメンバーのため
 --   「すでにメンバーです」の表示になる。家の詳細設定の「まだ使われていない招待」にも並ぶ
 -- - vrt-invitation-valid  : VRT ユーザーが所属していない別の家への招待（「参加する」の表示用）。
---   招待した人は `/login` で使われないよう、VRT ユーザーより後に登録したユーザーにする
+--   招待した人は VRT ユーザーとは別のユーザーにする
 INSERT INTO users (id, name, role, created_at, updated_at)
 VALUES ('vrt-inviter', 'VRT招待者', 'member',
   strftime('%s', '2024-06-02 00:00:00'), strftime('%s', '2024-06-02 00:00:00'));

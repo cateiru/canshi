@@ -202,7 +202,8 @@ async function redirectToAccess(
     upstream_url: discovery.authorization_endpoint,
     client_id: env.ACCESS_CLIENT_ID,
     redirect_uri: new URL("/callback", request.url).href,
-    scope: "openid email profile",
+    // 個人情報をできるだけ持たないため、メインアプリのログインと同じくメールアドレスだけにする
+    scope: "openid email",
     state: stateToken,
     code_challenge: codeChallenge,
   });
@@ -257,8 +258,16 @@ async function handleCallback(
   }
 
   // MCP ツールからメインアプリのデータを読むときに使う CANSHI のユーザー。
-  // メインアプリはこのユーザーの家の猫だけを返す（src/worker.ts の McpRpc）
-  const { userId } = await env.MAIN_APP.resolveMcpUser();
+  // メインアプリはこのユーザーの家の猫だけを返す（src/worker.ts の McpRpc）。
+  // まだ CANSHI にログインしたことがないメールアドレスでは見つからず、例外になる
+  let userId: string;
+  try {
+    ({ userId } = await env.MAIN_APP.resolveMcpUser(identity.email));
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "ユーザーが見つかりません";
+    return new Response(message, { status: 403 });
+  }
 
   const props: McpProps = {
     email: identity.email,

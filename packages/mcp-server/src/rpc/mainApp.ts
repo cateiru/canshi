@@ -58,7 +58,12 @@ export interface ListTimelineResult {
  * 無い・存在しない場合は例外を投げる
  */
 export abstract class MainAppRpc extends WorkerEntrypoint<unknown> {
-  abstract resolveMcpUser(): Promise<{ userId: string }>;
+  /**
+   * Access の ID トークンで確かめたメールアドレスから、CANSHI のユーザーを探す。
+   * メールアドレスのハッシュ化（SALT）はメインアプリ側で行う。まだ CANSHI に
+   * ログインしたことがないメールアドレスでは例外を投げる
+   */
+  abstract resolveMcpUser(email: string): Promise<{ userId: string }>;
   abstract listCats(userId: string): Promise<CatSummary[]>;
   abstract getCatProfile(
     userId: string,

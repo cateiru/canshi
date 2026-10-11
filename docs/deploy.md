@@ -10,9 +10,9 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - オブジェクトストレージ：Cloudflare R2（写真・動画の本体は非公開バケットに保存）
 - バックグラウンド処理：Cloudflare Workflows（定期通知のスケジュール実行）
 - 外部アクセス制御：Cloudflare Access
-- アプリ内のログイン・認可：D1 に保存するログインセッション（Cookie にはセッショントークンだけを保存）。
-  ユーザーは所属する「家」の猫だけを参照できる。
-  認証（パスワード等）はまだ実装しておらず、`/login` のログインボタンで登録済みのユーザーとしてログインする
+- アプリ内のログイン・認可：Cloudflare Access の SaaS OIDC アプリでログインし、D1 に保存する
+  ログインセッション（Cookie にはセッショントークンだけを保存）で認可する。
+  ユーザーは所属する「家」の猫だけを参照できる。メールアドレス・パスワードでのログインは持たない
 
 ## 必要な Cloudflare リソース
 
@@ -30,6 +30,8 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 `docs/plans/01_project_setup.md` で用意する `.env.example` を基準に、本番用の値を Cloudflare のシークレット管理（`wrangler secret put` 等）で設定する。
 
 - D1・R2 のバインディング名（`wrangler.toml` で定義）
+- ログイン（OIDC）の設定と、メールアドレスをハッシュにする SALT（「ログインと家」節の
+  「ログイン（Cloudflare Access の OIDC）」を参照）
 - OpenAI API キー（第3段階の AI 機能実装時に追加）
 
 ## デプロイ手順
@@ -53,9 +55,96 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 ログインセッションは D1 の `sessions` テーブルで管理する。Cookie（`canshi-session`）にはランダムな
 セッショントークンだけを保存し、DB にはそのハッシュを保存する（`src/features/auth/sessions.ts`）。
 `src/middleware.ts` はリクエストごとに Cookie のトークンを D1 のセッションと照合し、有効なセッションが
-なければ `/login` へリダイレクトする（API・メディアは 401）。秘密鍵などのシークレットは不要。
+なければ `/login` へリダイレクトする（API・メディアは 401）。
 猫は「家」に所属し、ユーザーは所属する家の猫だけを参照できる（テーブル設計は
 [`src/db/README.md`](../src/db/README.md) を参照）。
+
+### ログイン（Cloudflare Access の OIDC）
+
+`/login` のログインボタンは `/login/start` から Cloudflare Access の SaaS OIDC アプリへ
+リダイレクトし、Access でログインすると `/login/callback` に戻る（認可コードフロー + PKCE、
+`src/features/auth/oidc.ts`）。メールアドレス・パスワードでのログインは持たない。
+
+- 要求するスコープは `openid email` だけで、ID トークンからはメールアドレスだけを使う
+- DB にはメールアドレスそのものを保存しない。SALT（`EMAIL_HASH_SALT`）を使って argon2id で
+  ハッシュにした値を `users.email_hash` に保存し、同じユーザーかどうかもこの値で判定する
+  （`src/features/auth/emailHash.ts`）。ハッシュの計算に CPU を 200 ms 以上使うため、計算は
+  ログイン時だけ行う（Workers の Paid プランが前提）
+- 初めてログインしたメールアドレスでは、ユーザーを新しく作る（家には所属しない。家への招待 URL で
+  参加する）。ユーザーが 1 件もないときに最初にログインしたユーザーは管理者になる
+- **`EMAIL_HASH_SALT` は運用を始めたら変えない。** 変えると全員のハッシュが一致しなくなり、
+  ログインすると別の新しいユーザーになる。ハッシュのパラメータ（`EMAIL_HASH_PARAMS`）も同じ
+
+設定する値（いずれも `wrangler secret put` で設定する。`ACCESS_DISCOVERY_URL` は機密情報では
+ないが、`wrangler.toml` の `[vars]` にない値はデプロイのたびに消えるため、シークレットにする）:
+
+| 名前 | 内容 |
+| --- | --- |
+| `ACCESS_DISCOVERY_URL` | SaaS OIDC アプリの OIDC discovery URL（`.../.well-known/openid-configuration`） |
+| `ACCESS_CLIENT_ID` | SaaS OIDC アプリの Client ID |
+| `ACCESS_CLIENT_SECRET` | SaaS OIDC アプリの Client secret |
+| `EMAIL_HASH_SALT` | メールアドレスのハッシュに使う SALT（16 文字以上。`openssl rand -hex 32` などで作る） |
+
+```sh
+wrangler secret put ACCESS_DISCOVERY_URL
+wrangler secret put ACCESS_CLIENT_ID
+wrangler secret put ACCESS_CLIENT_SECRET
+wrangler secret put EMAIL_HASH_SALT
+```
+
+`ACCESS_*` のどれかが未設定の本番環境では、ログインボタンを押すとエラーになる（ログインせずに
+使える状態にはならない）。`EMAIL_HASH_SALT` は MCP 用 Worker からのユーザーの解決
+（`McpRpc.resolveMcpUser`）でも使うが、SALT はメインアプリだけが持つ。
+
+SaaS OIDC アプリの作成:
+
+1. Zero Trust の Access controls > Applications で **SaaS** アプリケーションを追加し、
+   認証プロトコルに **OIDC** を選ぶ。MCP サーバー用のアプリ（「MCP サーバー」節）とは別に作る
+   （同じアプリに Redirect URL を足して共用してもよい）。
+2. Redirect URL に `https://canshi.cateiru.dev/login/callback` を登録する。スコープは `openid` と
+   `email` だけにする。PKCE を有効にする。
+3. メインアプリの利用者を許可するポリシーを付ける（Workers 全体の Access と同じポリシーでよい）。
+4. 表示された Client ID・Client secret・OIDC discovery URL を、上の手順でシークレットに設定する。
+
+Redirect URL は登録したホスト名でしか使えないため、Workers Builds のプレビュー URL・`workers.dev`
+ではログインできない（必要ならその URL も Redirect URL に追加する）。
+
+ローカル開発（`next dev`）では、`ACCESS_*` が未設定なら `/login` が開発用のログイン（Access を
+通さず、入力したメールアドレスでログインする）になる。e2e・VRT もこれを使う。`EMAIL_HASH_SALT` が
+未設定なら開発用の SALT を使う（VRT の seed はこの SALT を前提にしている）。`.dev.vars` に
+`ACCESS_*` を設定すれば、ローカルでも Access でのログインを確認できる（Redirect URL に
+`http://localhost:3000/login/callback` を追加する）。開発用のログインは本番ビルドでは使えない
+（`src/features/auth/developmentLogin.ts`）。
+
+### OIDC でのログインの導入手順
+
+OIDC でのログインの導入前（マイグレーション `0041` より前）から使っていたユーザーは、メールアドレスの
+ハッシュを持たない。紐付けずにログインすると、同じ人でも別の新しいユーザー（家に未所属）が作られる。
+また、導入前のセッションはすべてログインボタンで作られた同じユーザーのものなので、導入後に削除する。
+次の順で導入する。
+
+1. 上の手順で SaaS OIDC アプリを作り、4 つのシークレットを設定する。
+2. `pnpm db:migrate:remote` で `0041` を適用する。列とインデックスを追加するだけなので、デプロイより
+   前に適用しても旧バージョンのアプリはそのまま動く。
+3. 既存のユーザーにメールアドレスを紐付ける。ユーザーの ID は管理画面で確かめる。SALT は手順 1 で
+   設定した値と同じにする（違うとログインしても一致しない）。
+
+   ```sh
+   read -rs EMAIL_HASH_SALT && export EMAIL_HASH_SALT
+   pnpm user:link-email --remote --user-id <ユーザー ID> --email <Access でログインするメールアドレス>
+   ```
+
+4. マージしてデプロイする。
+5. 導入前のセッションをすべて削除する。全員がログアウトし、次のログインから Access でログインする。
+
+   ```sh
+   pnpm exec wrangler d1 execute DB --remote --command "DELETE FROM sessions"
+   ```
+
+6. MCP 用 Worker（`packages/mcp-server`）をデプロイし、ChatGPT などのコネクタを接続し直す。
+   MCP の認可（`/callback`）は Access のメールアドレスでユーザーを探すようになり、まだメインアプリに
+   ログインしたことがないメールアドレスでは接続できない。メインアプリの RPC（`McpRpc.resolveMcpUser`）の
+   引数が変わったため、メインアプリを先にデプロイする。
 
 ### セッションの有効期限とログアウト
 
@@ -72,8 +161,9 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 1. `pnpm db:migrate:remote` でマイグレーションを適用し、メインアプリをデプロイする。マイグレーションは
    テーブルと列を追加するだけなので、先に適用しても旧バージョンのアプリはそのまま動く。逆に
    マイグレーションより先にデプロイすると、`sessions` テーブルがないためログインできない。
-2. `/login` を開いてログインボタンを押す。ユーザーが 1 件もなければ、管理者ユーザーが作られる。
-3. `pnpm household:link --remote` を実行する。最初に登録されたユーザーをオーナーとする家を作り
+2. `/login` を開いてログインする。ユーザーが 1 件もなければ、管理者ユーザーが作られる。
+3. `pnpm household:link --remote` を実行する。最初に登録されたユーザー（`--user-id` または
+   `--email` で指定もできる）をオーナーとする家を作り
    （名前は `--name` で指定、既定は「わが家」）、家に未所属の猫をすべてその家に紐付ける。
    ユーザーがすでに家に所属している場合は、その家に紐付ける。家に未所属の支出記録（マイグレーション
    `0039` で家を決められなかったもの）と、家に未所属のごはん商品・ごはんプリセット（マイグレーション
@@ -130,7 +220,7 @@ MEDIA_STORAGE_LIMIT_BYTES = "10737418240"
 
 Cloudflare ダッシュボードの Workers & Pages で、Workers 全体を保護する設定を `All traffic` として設定済み（2026-09 時点）。この設定により、既存・新規 Worker の本番 URL とプレビュー URL へのリクエストは、Worker が実行される前に Access で評価される。
 
-CANSHI はこのエッジでの保護を利用する。アプリケーション内で `Cf-Access-Jwt-Assertion` を検証する処理や、そのための Team ドメイン・Audience タグの環境変数は不要。
+CANSHI はこのエッジでの保護を利用する。アプリケーション内で `Cf-Access-Jwt-Assertion` を検証する処理や、そのための Team ドメイン・Audience タグの環境変数は不要。アプリ内でのユーザーの識別は、これとは別に Access の SaaS OIDC アプリで行う（「ログインと家」節を参照）。
 
 ### 設定の確認
 

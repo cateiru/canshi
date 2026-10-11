@@ -1,6 +1,10 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 import type { Cat } from "@/db/schema";
-import { getOrCreateLoginUser, getUserById } from "@/features/auth/users";
+import {
+  findUserByEmailHash,
+  getUserById,
+  hashEmailWithEnv,
+} from "@/features/auth/users";
 import {
   FEEDING_MODE_LABEL,
   GIVEN_AMOUNT_LEVEL_LABEL,
@@ -94,12 +98,26 @@ function toTimelineEntrySummary(entry: TimelineEntry) {
 // そのユーザーの家の猫だけを返す
 export class McpRpc extends WorkerEntrypoint<Env> {
   /**
-   * MCP の認可（`/callback`）で、トークンに紐付けるユーザーを決める。認証を実装する
-   * までは `/login` のログインボタンと同じく、登録済みのユーザー（いなければ
-   * 新しく作った管理者ユーザー）を使う
+   * MCP の認可（`/callback`）で、トークンに紐付けるユーザーを決める。MCP 用 Worker が
+   * Cloudflare Access の ID トークンで確かめたメールアドレスを受け取り、メインアプリと
+   * 同じ方法でハッシュにしてユーザーを探す（SALT はメインアプリだけが持つ）。
+   * まだアプリにログインしたことがないメールアドレスでは、ユーザーを作らずに拒否する
    */
-  async resolveMcpUser() {
-    const user = await getOrCreateLoginUser(this.env.DB);
+  async resolveMcpUser(email: string) {
+    if (typeof email !== "string" || !email) {
+      throw new Error(
+        "メールアドレスがありません。MCP 用 Worker を新しいバージョンにしてください",
+      );
+    }
+    const user = await findUserByEmailHash(
+      hashEmailWithEnv(email, this.env),
+      this.env.DB,
+    );
+    if (!user) {
+      throw new Error(
+        "CANSHI のユーザーが見つかりません。先に CANSHI にログインしてから接続してください",
+      );
+    }
     return { userId: user.id };
   }
 
