@@ -15,6 +15,10 @@ import {
 } from "@/features/food-products/queries";
 import { groupByHousehold } from "@/features/households/groupCats";
 import { HouseholdSections } from "@/features/households/HouseholdSections";
+import {
+  findFilterHousehold,
+  householdSettingsBreadcrumbItems,
+} from "@/features/households/householdFilter";
 import { listHouseholdsForUser } from "@/features/households/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -27,25 +31,44 @@ function householdExpandedStorageKey(householdId: string) {
   return `canshi:food-products-household-expanded:${householdId}`;
 }
 
-export default async function FoodProductsPage() {
+type FoodProductsPageProps = {
+  // 家の詳細設定から来たときは、その家の商品だけを表示する
+  searchParams: Promise<{ householdId?: string | string[] }>;
+};
+
+export default async function FoodProductsPage({
+  searchParams,
+}: FoodProductsPageProps) {
+  const { householdId } = await searchParams;
   const user = await requireUser();
   const [householdList, foodProductList] = await Promise.all([
     listHouseholdsForUser(user.id),
     listFoodProductsForUser(user.id),
   ]);
-  const imageUrls = await listFoodProductImageUrls(
-    foodProductList.map((foodProduct) => foodProduct.id),
+  const filterHousehold = findFilterHousehold(householdList, householdId);
+  const groups = groupByHousehold(
+    filterHousehold ? [filterHousehold] : householdList,
+    foodProductList,
   );
-  const groups = groupByHousehold(householdList, foodProductList);
+  const imageUrls = await listFoodProductImageUrls(
+    groups.flatMap(({ items }) => items.map((foodProduct) => foodProduct.id)),
+  );
 
   return (
     <main className={styles.main}>
       <Breadcrumb
-        items={[
-          { label: "トップ", href: "/home" },
-          { label: "設定", href: "/settings" },
-          { label: "ごはん商品一覧" },
-        ]}
+        items={
+          filterHousehold
+            ? householdSettingsBreadcrumbItems(
+                filterHousehold,
+                "ごはん商品一覧",
+              )
+            : [
+                { label: "トップ", href: "/home" },
+                { label: "設定", href: "/settings" },
+                { label: "ごはん商品一覧" },
+              ]
+        }
       />
 
       <div className={styles.header}>
@@ -53,7 +76,11 @@ export default async function FoodProductsPage() {
           ごはん商品一覧
         </RecordPageHeading>
         <ButtonLink
-          href="/food-products/new"
+          href={
+            filterHousehold
+              ? `/food-products/new?householdId=${encodeURIComponent(filterHousehold.id)}`
+              : "/food-products/new"
+          }
           variant="primary"
           leftIcon={TbPlus}
         >

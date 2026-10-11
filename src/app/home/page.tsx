@@ -35,7 +35,7 @@ export default function Home() {
           icon={SettingsIcon}
           title="設定を開く"
           titleAs="h2"
-          description="通知やごはんの共通設定をまとめて管理。"
+          description="家や通知などの設定をまとめて管理。"
         />
         <NavCard
           href="/release-notes"

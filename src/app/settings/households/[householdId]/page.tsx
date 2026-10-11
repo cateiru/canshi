@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
-import { Badge, Breadcrumb } from "@/components/ui";
-import { HouseholdIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { Badge, Breadcrumb, NavCard } from "@/components/ui";
+import {
+  FeedingPresetIcon,
+  FoodProductIcon,
+  HouseholdIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
 import { requireHouseholdAccess } from "@/features/auth/session";
 import {
   createHouseholdInvitationAction,
@@ -141,6 +145,31 @@ export default async function HouseholdSettingsPage({
             オーナーは家から抜けられません。抜けるときは、先にほかのメンバーをオーナーにしてください。
           </p>
         ) : null}
+      </Surface>
+
+      <Surface title="ごはん" titleId="household-food-heading" gap="md">
+        <nav aria-label="ごはんの設定">
+          <ul className={styles.navList}>
+            <li>
+              <NavCard
+                href={`/food-products?householdId=${encodeURIComponent(household.id)}`}
+                icon={FoodProductIcon}
+                title="ごはん商品一覧"
+                titleAs="h3"
+                description="この家のごはんの記録に使う商品を登録・編集します。"
+              />
+            </li>
+            <li>
+              <NavCard
+                href={`/feeding-presets?householdId=${encodeURIComponent(household.id)}`}
+                icon={FeedingPresetIcon}
+                title="ごはんプリセット一覧"
+                titleAs="h3"
+                description="この家でよく使うごはんの組み合わせと量を登録・編集します。"
+              />
+            </li>
+          </ul>
+        </nav>
       </Surface>
 
       {isOwner ? (

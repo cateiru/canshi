@@ -20,8 +20,6 @@ for (const viewport of [
       { name: "家の設定", path: "/settings/households" },
       { name: "通知設定", path: "/settings/notifications" },
       { name: "見た目設定", path: "/settings/appearance" },
-      { name: "ごはん商品一覧", path: "/food-products" },
-      { name: "ごはんプリセット一覧", path: "/feeding-presets" },
       { name: "更新情報", path: "/release-notes" },
     ]) {
       await page

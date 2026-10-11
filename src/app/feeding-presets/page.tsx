@@ -12,6 +12,10 @@ import {
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { groupByHousehold } from "@/features/households/groupCats";
 import { HouseholdSections } from "@/features/households/HouseholdSections";
+import {
+  findFilterHousehold,
+  householdSettingsBreadcrumbItems,
+} from "@/features/households/householdFilter";
 import { listHouseholdsForUser } from "@/features/households/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -24,22 +28,41 @@ function householdExpandedStorageKey(householdId: string) {
   return `canshi:feeding-presets-household-expanded:${householdId}`;
 }
 
-export default async function FeedingPresetsPage() {
+type FeedingPresetsPageProps = {
+  // 家の詳細設定から来たときは、その家のプリセットだけを表示する
+  searchParams: Promise<{ householdId?: string | string[] }>;
+};
+
+export default async function FeedingPresetsPage({
+  searchParams,
+}: FeedingPresetsPageProps) {
+  const { householdId } = await searchParams;
   const user = await requireUser();
   const [householdList, presets] = await Promise.all([
     listHouseholdsForUser(user.id),
     listFeedingPresetsForUser(user.id),
   ]);
-  const groups = groupByHousehold(householdList, presets);
+  const filterHousehold = findFilterHousehold(householdList, householdId);
+  const groups = groupByHousehold(
+    filterHousehold ? [filterHousehold] : householdList,
+    presets,
+  );
 
   return (
     <main className={styles.main}>
       <Breadcrumb
-        items={[
-          { label: "トップ", href: "/home" },
-          { label: "設定", href: "/settings" },
-          { label: "ごはんプリセット一覧" },
-        ]}
+        items={
+          filterHousehold
+            ? householdSettingsBreadcrumbItems(
+                filterHousehold,
+                "ごはんプリセット一覧",
+              )
+            : [
+                { label: "トップ", href: "/home" },
+                { label: "設定", href: "/settings" },
+                { label: "ごはんプリセット一覧" },
+              ]
+        }
       />
 
       <div className={styles.header}>
@@ -47,7 +70,11 @@ export default async function FeedingPresetsPage() {
           ごはんプリセット一覧
         </RecordPageHeading>
         <ButtonLink
-          href="/feeding-presets/new"
+          href={
+            filterHousehold
+              ? `/feeding-presets/new?householdId=${encodeURIComponent(filterHousehold.id)}`
+              : "/feeding-presets/new"
+          }
           variant="primary"
           leftIcon={TbPlus}
         >

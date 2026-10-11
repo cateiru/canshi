@@ -108,6 +108,45 @@ test("猫一覧の家のまとまりを折りたたむと、開き直すまで�
   await expect(page).toHaveURL(/\/cats$/);
 });
 
+test("家の設定からその家のごはん商品・プリセットの一覧へ移動して戻れる", async ({
+  page,
+}) => {
+  await page.goto("/settings/households");
+  await page
+    .getByRole("link")
+    .filter({ hasText: "あなたはオーナー" })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/settings\/households\/[^/]+$/);
+  const householdPage = new URL(page.url()).pathname;
+  const householdId = householdPage.split("/").at(-1) ?? "";
+  const householdName = await page
+    .getByRole("heading", { level: 1 })
+    .innerText();
+
+  for (const { name, path } of [
+    { name: "ごはん商品一覧", path: "/food-products" },
+    { name: "ごはんプリセット一覧", path: "/feeding-presets" },
+  ]) {
+    await page
+      .getByRole("navigation", { name: "ごはんの設定" })
+      .getByRole("link", { name: new RegExp(name) })
+      .click();
+    await expect(page).toHaveURL(
+      `${path}?householdId=${encodeURIComponent(householdId)}`,
+    );
+    await expect(
+      page.getByRole("heading", { name, exact: true }),
+    ).toBeVisible();
+    // パンくずの家の名前から、家の設定へ戻れる
+    await page
+      .getByRole("navigation", { name: "パンくずリスト" })
+      .getByRole("link", { name: householdName, exact: true })
+      .click();
+    await expect(page).toHaveURL(householdPage);
+  }
+});
+
 /** オーナーとして家の設定を開き、招待 URL を発行してその URL を返す */
 async function issueInvitationUrl(page: Page) {
   await page.goto("/settings/households");

@@ -144,6 +144,38 @@ test("ごはんプリセット一覧ページの見た目", async ({ page }, tes
   await takeSnapshot(page, testInfo);
 });
 
+// 家の詳細設定から開いたときは、その家の商品・プリセットだけを表示し、
+// パンくずに家の設定と家の名前が入る
+test("家の設定から開いたごはん商品一覧ページの見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/food-products?householdId=vrt-household");
+  await expect(
+    page.getByRole("heading", { name: "ごはん商品一覧" }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "パンくずリスト" })
+      .getByRole("link", { name: "VRTの家", exact: true }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+test("家の設定から開いたごはんプリセット一覧ページの見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/feeding-presets?householdId=vrt-household");
+  await expect(
+    page.getByRole("heading", { name: "ごはんプリセット一覧" }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "パンくずリスト" })
+      .getByRole("link", { name: "VRTの家", exact: true }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 // フィクスチャ投入後は food_products が1件存在するため、このページは
 // 「先に商品を登録してください」の分岐ではなく、実際の登録フォームの分岐を表示する
 test("ごはんプリセット登録ページの見た目", async ({ page }, testInfo) => {

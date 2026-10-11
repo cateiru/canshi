@@ -31,7 +31,7 @@ export default async function HouseholdsSettingsPage() {
       <header className={styles.header}>
         <RecordPageHeading icon={HouseholdIcon}>家の設定</RecordPageHeading>
         <p className={styles.description}>
-          所属している家の名前や、家のメンバーを管理できます。
+          所属している家の名前やメンバー、ごはん商品・プリセットを管理できます。
         </p>
       </header>
 
