@@ -189,7 +189,7 @@ importers:
         version: 0.99.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       drizzle-orm:
         specifier: ^0.45.2
-        version: 0.45.3(@types/sql.js@1.4.11)(sql.js@1.14.2)
+        version: 0.45.4(@types/sql.js@1.4.11)(sql.js@1.14.2)
       next:
         specifier: 16.3.8
         version: 16.3.8(@babel/core@8.0.6)(@playwright/test@1.64.0)(@types/node@24.19.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -3237,8 +3237,8 @@ packages:
     resolution: {integrity: sha512-YCYqxTLIB2OCqf6w9/Vef13baBVbwQIPcbT4Y56AfO6B9ajZhDhD8Jkveg/hJvT/iuMloKD/IYYkyMMNhr7Kqg==}
     hasBin: true
 
-  drizzle-orm@0.45.3:
-    resolution: {integrity: sha512-CAloER21cDdcgZ1OmjrZX82EeRNsdP+y0onX/eyoYDaYzki/adrAa91lzM5jWh7zZPK4qUbw/6LGv9J+A+uizA==}
+  drizzle-orm@0.45.4:
+    resolution: {integrity: sha512-NiM1YZpJ2UxyeE67DpDDZ+Tsw4YLX3trSlkNT7Tm9eKoUNb1LvaAaQzXgYQsWs+AQ9TUmmwMmBOCXuqqxUWKKQ==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -7896,7 +7896,7 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.3(@types/sql.js@1.4.11)(sql.js@1.14.2):
+  drizzle-orm@0.45.4(@types/sql.js@1.4.11)(sql.js@1.14.2):
     optionalDependencies:
       '@types/sql.js': 1.4.11
       sql.js: 1.14.2
