@@ -29,3 +29,17 @@ export async function hashSessionToken(token: string): Promise<string> {
     byte.toString(16).padStart(2, "0"),
   ).join("");
 }
+
+/** セッションの Cookie の属性。ログイン（OIDC のコールバック・開発用ログイン）で共通 */
+export function sessionCookieOptions(expiresAt: Date) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    // `next dev` は http で動くため、開発時だけ Secure を外す。本番ビルド（`pnpm cf:preview` を
+    // 含む）では常に付ける。cf:preview は http://localhost だが、ブラウザは localhost を
+    // 安全な接続として扱うため Secure の Cookie も保存される
+    secure: process.env.NODE_ENV !== "development",
+    path: "/",
+    expires: expiresAt,
+  };
+}

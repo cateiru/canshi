@@ -9,19 +9,27 @@
 // どの通知も届かないため、同じユーザーに紐付ける。
 //
 // 使い方:
-//   pnpm household:link --local  [--persist-to ./.wrangler/state] [--user-id <id>] [--name <家の名前>]
-//   pnpm household:link --remote [--user-id <id>] [--name <家の名前>] [--yes]
+//   pnpm household:link --local  [--persist-to ./.wrangler/state] [--user-id <id> | --email <メールアドレス>] [--name <家の名前>]
+//   pnpm household:link --remote [--user-id <id> | --email <メールアドレス>] [--name <家の名前>] [--yes]
 //
-// - `--user-id` を省略すると、最初に登録されたユーザー（`/login` のログインボタンで使われるユーザー）を使う
+// - `--user-id` で ID を、`--email` でログインに使うメールアドレスを指定してユーザーを選ぶ。
+//   `--email` は環境変数 `EMAIL_HASH_SALT` でハッシュにしてから探す（`--local` で未設定なら
+//   開発用の SALT を使う。`scripts/link-user-email.mts` と同じ）
+// - どちらも省略すると、最初に登録されたユーザーを使う
 // - ユーザーがすでに家に所属している場合は新しく作らず、その家に猫を紐付ける（何度実行しても同じ結果になる）
 // - `--remote` では実行前に確認する。`--yes` で確認を省略できる
-import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
+import { getEmailHashSalt, hashEmail } from "../src/features/auth/emailHash.ts";
+import {
+  confirmOrExit,
+  createExecutor,
+  fail,
+  ID_PATTERN,
+  quote,
+} from "./d1.mts";
 
 const DEFAULT_HOUSEHOLD_NAME = "わが家";
-const ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 const { values: args } = parseArgs({
   options: {
@@ -29,21 +37,17 @@ const { values: args } = parseArgs({
     remote: { type: "boolean", default: false },
     "persist-to": { type: "string" },
     "user-id": { type: "string" },
+    email: { type: "string" },
     name: { type: "string", default: DEFAULT_HOUSEHOLD_NAME },
     yes: { type: "boolean", default: false },
   },
 });
 
-/** `wrangler d1 execute --json` の結果の 1 行。列の型は SELECT ごとに呼び出し側で決める */
-type Row = Record<string, unknown>;
-
-function fail(message: string): never {
-  console.error(`エラー: ${message}`);
-  process.exit(1);
-}
-
 if (args.local === args.remote) {
   fail("--local か --remote のどちらか一方を指定してください");
+}
+if (args["user-id"] && args.email) {
+  fail("--user-id と --email は同時に指定できません");
 }
 if (args["user-id"] && !ID_PATTERN.test(args["user-id"])) {
   fail("--user-id の形式が正しくありません");
@@ -52,50 +56,46 @@ if (!args.name.trim()) {
   fail("--name に家の名前を指定してください");
 }
 
-/** SQL の文字列リテラルにする（シングルクォートをエスケープする） */
-function quote(value: string) {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-
-/** `wrangler d1 execute` で SQL を実行し、最後の文の結果行を返す */
-function execute<T extends Row = Row>(sql: string): T[] {
-  const wranglerArgs = [
-    "exec",
-    "wrangler",
-    "d1",
-    "execute",
-    "DB",
-    args.local ? "--local" : "--remote",
-    "--json",
-    "--command",
-    sql,
-  ];
-  if (args["persist-to"]) {
-    wranglerArgs.push("--persist-to", args["persist-to"]);
-  }
-  const output = execFileSync("pnpm", wranglerArgs, {
-    encoding: "utf8",
-    stdio: ["inherit", "pipe", "inherit"],
-  });
-  const results: { results?: T[] }[] = JSON.parse(output);
-  return results.at(-1)?.results ?? [];
-}
+const execute = createExecutor({
+  local: args.local,
+  persistTo: args["persist-to"],
+});
 
 type NamedRow = { id: string; name: string };
 type CountRow = { count: number };
 
-const [user] = args["user-id"]
-  ? execute<NamedRow>(
+function findUser(): NamedRow | undefined {
+  if (args["user-id"]) {
+    return execute<NamedRow>(
       `SELECT id, name FROM users WHERE id = ${quote(args["user-id"])} LIMIT 1`,
-    )
-  : execute<NamedRow>(
-      "SELECT id, name FROM users ORDER BY created_at, id LIMIT 1",
-    );
+    )[0];
+  }
+  if (args.email) {
+    let salt: string;
+    try {
+      salt = getEmailHashSalt(process.env.EMAIL_HASH_SALT, {
+        allowDevelopmentSalt: args.local,
+      });
+    } catch (error) {
+      fail(error instanceof Error ? error.message : String(error));
+    }
+    return execute<NamedRow>(
+      `SELECT id, name FROM users WHERE email_hash = ${quote(hashEmail(args.email, salt))} LIMIT 1`,
+    )[0];
+  }
+  return execute<NamedRow>(
+    "SELECT id, name FROM users ORDER BY created_at, id LIMIT 1",
+  )[0];
+}
+
+const user = findUser();
 if (!user) {
   fail(
     args["user-id"]
       ? `ユーザー ${args["user-id"]} が見つかりません`
-      : "ユーザーがいません。先にアプリの /login でログインしてユーザーを作成してください",
+      : args.email
+        ? "このメールアドレスのユーザーが見つかりません。先にアプリの /login でログインしてください"
+        : "ユーザーがいません。先にアプリの /login でログインしてユーザーを作成してください",
   );
 }
 
@@ -139,16 +139,7 @@ console.log(
 );
 
 if (args.remote && !args.yes) {
-  const readline = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  const answer = await readline.question("実行しますか？ [y/N] ");
-  readline.close();
-  if (answer.trim().toLowerCase() !== "y") {
-    console.log("中止しました");
-    process.exit(0);
-  }
+  await confirmOrExit();
 }
 
 let householdId = membership?.id;

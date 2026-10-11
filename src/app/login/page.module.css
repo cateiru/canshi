@@ -29,8 +29,25 @@
   color: var(--color-ink-muted);
 }
 
+.alert {
+  width: 100%;
+  max-width: 360px;
+  text-align: left;
+}
+
 .form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 360px;
   margin-top: var(--space-2);
+  text-align: left;
+}
+
+.field {
+  align-self: stretch;
 }
 
 .button {

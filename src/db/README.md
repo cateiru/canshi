@@ -49,8 +49,15 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     `feeding_presets.household_id` を持つ（「ごはん記録」の節を参照）
   - Web Push の購読（`push_subscriptions.user_id`）は購読したユーザーを持ち、通知はその猫の家のメンバーの
     購読にだけ送る（`src/features/push/targets.ts`）。ユーザーの導入前の購読（NULL）には送らない
-- `users.role` はアプリ全体の権限（`admin`・`member`）。`/login` のログインボタンで最初に作られる
-  ユーザーは `admin`
+- ログインは Cloudflare Access の OIDC で行い、ID トークンのメールアドレスだけを受け取る。DB には
+  メールアドレスそのものを保存せず、環境変数の SALT（`EMAIL_HASH_SALT`）を使って argon2id で
+  ハッシュにした値を `users.email_hash`（一意）に保存し、同じユーザーかどうかもこの値で判定する
+  （`src/features/auth/emailHash.ts`・`src/features/auth/users.ts`）
+  - 初めてログインしたメールアドレスでは、ユーザーを新しく作る。名前はメールアドレスから作らず、
+    既定の名前にする
+  - OIDC の導入前に作られたユーザーは `email_hash` が NULL のため、`pnpm user:link-email` で紐付ける
+- `users.role` はアプリ全体の権限（`admin`・`member`）。ユーザーが 1 件もないときに最初に
+  ログインしたユーザーは `admin`
 - `users.name`・`users.icon_media_asset_id` は本人が「プロフィール設定」（`/settings/profile`）で変えられる。
   アイコン画像は同じ家のメンバーにも表示する（詳細は「画像・動画」の節）
 - 家の中での権限は `household_members.role`（`owner`・`member`）で持つ。今はオーナーを 1 名で運用し、

@@ -1,30 +1,37 @@
 "use server";
 
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { sanitizeCallbackUrl } from "./callbackUrl";
-import { createSession, deleteSession } from "./sessions";
-import { SESSION_COOKIE_NAME } from "./sessionToken";
-import { getOrCreateLoginUser } from "./users";
+import { isDevelopmentLoginEnabled } from "./developmentLogin";
+import { loginWithEmail } from "./login";
+import { deleteSession } from "./sessions";
+import { SESSION_COOKIE_NAME, sessionCookieOptions } from "./sessionToken";
 
 /**
- * `/login` のログインボタン。認証はまだ行わず（Issue #160）、登録済みのユーザー
- * （いなければ新しく作った管理者ユーザー）としてログインし、セッションを作る
+ * 開発環境（`next dev`）だけで使えるログイン。Cloudflare Access を通さず、入力した
+ * メールアドレスでログインする（e2e・VRT もこれを使う）。本番ビルドでは
+ * `process.env.NODE_ENV` が "production" に置き換わるため、常にエラーになる
  */
-export async function loginAction(formData: FormData): Promise<void> {
-  const user = await getOrCreateLoginUser();
-  const { token, expiresAt } = await createSession(user.id);
+export async function developmentLoginAction(
+  formData: FormData,
+): Promise<void> {
+  const { env } = getCloudflareContext();
+  if (!isDevelopmentLoginEnabled(env)) {
+    throw new Error("開発用のログインは使えません");
+  }
+  const email = formData.get("email");
+  if (typeof email !== "string" || !email.includes("@")) {
+    throw new Error("メールアドレスを入力してください");
+  }
 
-  (await cookies()).set(SESSION_COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    // `next dev` は http で動くため、開発時だけ Secure を外す。本番ビルド（`pnpm cf:preview` を
-    // 含む）では常に付ける。cf:preview は http://localhost だが、ブラウザは localhost を
-    // 安全な接続として扱うため Secure の Cookie も保存される
-    secure: process.env.NODE_ENV !== "development",
-    path: "/",
-    expires: expiresAt,
-  });
+  const { token, expiresAt } = await loginWithEmail(email, env);
+  (await cookies()).set(
+    SESSION_COOKIE_NAME,
+    token,
+    sessionCookieOptions(expiresAt),
+  );
   redirect(sanitizeCallbackUrl(formData.get("callbackUrl")));
 }
 

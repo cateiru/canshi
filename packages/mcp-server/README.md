@@ -66,9 +66,12 @@ RPC の戻り値の型は `src/rpc/mainApp.ts` に手動で複製した契約（
 詳細は `src/auth/handler.ts`・`src/auth/oauth-state.ts`・`src/auth/access.ts`・
 `src/auth/approval.ts` のコメントを参照。
 
-`/callback` では Access のログイン後に、メインアプリの `McpRpc.resolveMcpUser` でトークンに
-紐付ける CANSHI のユーザーを決め、`props.userId` に保存する。認証を実装するまでは、メインアプリの
-`/login` のログインボタンと同じユーザー（最初に登録されたユーザー）になる。
+`/callback` では Access のログイン後に、ID トークンのメールアドレスをメインアプリの
+`McpRpc.resolveMcpUser` に渡してトークンに紐付ける CANSHI のユーザーを決め、`props.userId` に
+保存する。メインアプリはメールアドレスをハッシュにして（SALT はメインアプリだけが持つ）、
+メインアプリのログインと同じユーザーを探す。まだメインアプリにログインしたことがない
+メールアドレスでは、ユーザーを作らずに `403` を返す。Access に要求するスコープは、
+メインアプリと同じく `openid email` だけにしている。
 
 DCR（`/register`）は誰でも呼べるため、`/authorize` では要求元クライアントを表示する
 承認ダイアログ（CSRF トークン付き）を経由してから Access へリダイレクトする。一度承認した

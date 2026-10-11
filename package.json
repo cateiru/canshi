@@ -1,6 +1,6 @@
 {
   "name": "canshi",
-  "version": "0.35.0",
+  "version": "0.36.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +11,8 @@
     "icons:generate": "node scripts/generate-icons.mjs",
     "og:generate": "node scripts/generate-og-image.mjs",
     "vapid:generate": "node scripts/generate-vapid-keys.mjs",
-    "household:link": "node scripts/link-household.mts",
+    "household:link": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/link-household.mts",
+    "user:link-email": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/link-user-email.mts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -35,7 +36,9 @@
     "@nivo/core": "^0.99.0",
     "@nivo/line": "^0.99.0",
     "@nivo/swarmplot": "^0.99.0",
+    "@noble/hashes": "2.4.0",
     "drizzle-orm": "^0.45.2",
+    "jose": "^6.2.12",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-aria-components": "^1.21.1",

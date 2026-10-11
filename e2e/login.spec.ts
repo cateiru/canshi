@@ -82,3 +82,26 @@ test("ログアウトするとログイン画面に戻り、ページを開け�
   await page.goto("/cats");
   await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fcats$/);
 });
+
+test("別のメールアドレスでログインすると、別のユーザーになる", async ({
+  page,
+}) => {
+  // e2e は `next dev` に対して実行するため、`/login` は開発用のログインになる
+  // （Cloudflare Access を通さず、入力したメールアドレスでログインする）
+  await page.goto("/login?callbackUrl=%2Fsettings%2Fprofile");
+  await page
+    .getByLabel("メールアドレス（開発用）")
+    .fill("e2e-another-user@example.com");
+  await page.getByRole("button", { name: "ログイン" }).click();
+  await expect(page).toHaveURL(/\/settings\/profile$/);
+
+  // 新しく作ったユーザーは、メールアドレスから名前を作らない
+  await expect(page.getByRole("textbox", { name: "名前" })).toHaveValue(
+    "ユーザー",
+  );
+  // 家に所属していないため、e2e のユーザーの家（オーナーの家）は見えない
+  await page.goto("/settings/households");
+  await expect(
+    page.getByRole("link").filter({ hasText: "あなたはオーナー" }),
+  ).toHaveCount(0);
+});
