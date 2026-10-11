@@ -23,8 +23,8 @@
 
   // メインアプリと同じ D1 を参照する。マイグレーションはメインアプリ
   // （リポジトリルートの wrangler.toml・drizzle/）が管理するため、ここでは
-  // migrations_dir を持たない。バインディング自体は書き込みもできるが、
-  // このパッケージからは SELECT だけを発行する（src/db/queries.ts）
+  // migrations_dir を持たない。書き込みはユーザーのセッションの削除（すべての端末から
+  // ログアウトさせる）だけにする（src/db/queries.ts）
   "d1_databases": [
     {
       "binding": "DB",

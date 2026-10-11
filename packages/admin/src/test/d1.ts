@@ -54,10 +54,19 @@ class SqlJsStatement {
       statement.free();
     }
   }
+
+  async run() {
+    this.db.run(this.sql, this.params);
+    return {
+      results: [],
+      success: true,
+      meta: { changes: this.db.getRowsModified() },
+    };
+  }
 }
 
 /**
- * sql.js の DB を、`src/db/queries.ts` が使う範囲（`prepare`・`bind`・`all`・`batch`）だけ
+ * sql.js の DB を、`src/db/queries.ts` が使う範囲（`prepare`・`bind`・`all`・`run`・`batch`）だけ
  * D1 と同じ形で呼べるようにする
  */
 export function toAdminDb(db: Database): AdminDb {

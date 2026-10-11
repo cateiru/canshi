@@ -8,7 +8,8 @@
  * （`queries.test.ts` はリポジトリルートの `drizzle/` のマイグレーションを適用した DB で
  * 実行するため、列名の食い違いはテストで検出できる）。
  *
- * 管理画面は閲覧専用のため、SELECT だけを発行する。
+ * 管理画面は基本的に閲覧用で、書き込みはユーザーのセッションの削除（すべての端末から
+ * ログアウトさせる）だけにする。
  */
 
 /** このファイルのクエリが使う D1 の機能（テストで sql.js に差し替えるため最小限にする） */
@@ -206,4 +207,20 @@ export async function listHouseholds(db: AdminDb): Promise<AdminHousehold[]> {
     catCount: row.cat_count,
     members: membersByHousehold.get(row.id) ?? [],
   }));
+}
+
+/**
+ * ユーザーのログインセッションをすべて削除し（すべての端末からログアウトさせる）、
+ * 削除した数を返す。メインアプリはリクエストのたびに D1 のセッションと照合するため、
+ * 削除した時点でそのユーザーのどの端末の Cookie も使えなくなる
+ */
+export async function deleteUserSessions(
+  db: AdminDb,
+  userId: string,
+): Promise<number> {
+  const result = await db
+    .prepare("DELETE FROM sessions WHERE user_id = ?1")
+    .bind(userId)
+    .run();
+  return result.meta.changes;
 }

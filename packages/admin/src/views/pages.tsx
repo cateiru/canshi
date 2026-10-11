@@ -35,60 +35,87 @@ export function OverviewPage(props: { overview: Overview }) {
   );
 }
 
-export function UsersPage(props: { users: AdminUser[] }) {
+export function UsersPage(props: {
+  users: AdminUser[];
+  /** 直前にすべての端末からログアウトさせたユーザー */
+  loggedOutUser?: AdminUser;
+}) {
   if (props.users.length === 0) {
     return <p class="empty">ユーザーはまだいません。</p>;
   }
   return (
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">名前</th>
-            <th scope="col">権限</th>
-            <th scope="col">所属する家</th>
-            <th scope="col">有効なセッション</th>
-            <th scope="col">セッションの期限</th>
-            <th scope="col">登録日時</th>
-          </tr>
-        </thead>
-        <tbody>
-          {props.users.map((user) => (
+    <>
+      {props.loggedOutUser && (
+        <p class="notice" role="status">
+          {props.loggedOutUser.name} をすべての端末からログアウトさせました。
+        </p>
+      )}
+      <div class="table-wrap">
+        <table>
+          <thead>
             <tr>
-              <td>
-                {user.name}
-                <br />
-                <code>{user.id}</code>
-              </td>
-              <td>{userRoleLabel(user.role)}</td>
-              <td>
-                {user.households.length === 0 ? (
-                  <span class="empty">なし</span>
-                ) : (
-                  <ul class="plain">
-                    {user.households.map((household) => (
-                      <li>
-                        {household.householdName}（
-                        {householdRoleLabel(household.role)}）
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </td>
-              <td class="num">{user.activeSessionCount}</td>
-              <td>
-                {user.latestSessionExpiresAt ? (
-                  formatDateTime(user.latestSessionExpiresAt)
-                ) : (
-                  <span class="empty">-</span>
-                )}
-              </td>
-              <td>{formatDateTime(user.createdAt)}</td>
+              <th scope="col">名前</th>
+              <th scope="col">権限</th>
+              <th scope="col">所属する家</th>
+              <th scope="col">有効なセッション</th>
+              <th scope="col">セッションの期限</th>
+              <th scope="col">登録日時</th>
+              <th scope="col">操作</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {props.users.map((user) => (
+              <tr>
+                <td>
+                  {user.name}
+                  <br />
+                  <code>{user.id}</code>
+                </td>
+                <td>{userRoleLabel(user.role)}</td>
+                <td>
+                  {user.households.length === 0 ? (
+                    <span class="empty">なし</span>
+                  ) : (
+                    <ul class="plain">
+                      {user.households.map((household) => (
+                        <li>
+                          {household.householdName}（
+                          {householdRoleLabel(household.role)}）
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </td>
+                <td class="num">{user.activeSessionCount}</td>
+                <td>
+                  {user.latestSessionExpiresAt ? (
+                    formatDateTime(user.latestSessionExpiresAt)
+                  ) : (
+                    <span class="empty">-</span>
+                  )}
+                </td>
+                <td>{formatDateTime(user.createdAt)}</td>
+                <td>
+                  {user.activeSessionCount > 0 ? (
+                    // 確認文にはユーザー名などの入力値を含めない（属性値の中の JS として
+                    // 実行されるため、エスケープしてもスクリプトを差し込まれうる）
+                    <form
+                      method="post"
+                      action={`/users/${encodeURIComponent(user.id)}/sessions/delete`}
+                      onsubmit="return confirm('このユーザーをすべての端末からログアウトさせますか？')"
+                    >
+                      <button type="submit">すべての端末からログアウト</button>
+                    </form>
+                  ) : (
+                    <span class="empty">-</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 

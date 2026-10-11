@@ -6,7 +6,8 @@ import { redirect } from "next/navigation";
 import { sanitizeCallbackUrl } from "./callbackUrl";
 import { isDevelopmentLoginEnabled } from "./developmentLogin";
 import { loginWithEmail } from "./login";
-import { deleteSession } from "./sessions";
+import { requireUser } from "./session";
+import { deleteSession, deleteUserSessions } from "./sessions";
 import { SESSION_COOKIE_NAME, sessionCookieOptions } from "./sessionToken";
 
 /**
@@ -43,5 +44,17 @@ export async function logoutAction(): Promise<void> {
     await deleteSession(token);
   }
   cookieStore.delete(SESSION_COOKIE_NAME);
+  redirect("/login");
+}
+
+/**
+ * ログイン中のユーザーのセッションをすべて削除し（この端末以外も含めてログアウトする）、
+ * この端末の Cookie も消す。Server Action はどのパスからでも呼べるため、
+ * Cookie のセッションが有効なことを `requireUser` で確かめてから削除する
+ */
+export async function logoutAllDevicesAction(): Promise<void> {
+  const user = await requireUser();
+  await deleteUserSessions(user.id);
+  (await cookies()).delete(SESSION_COOKIE_NAME);
   redirect("/login");
 }
