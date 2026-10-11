@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 // 家の設定（名前の変更・招待 URL）と、猫一覧の家ごとのまとまりの開閉を検証する。
 // メンバーを外す・オーナーを移譲する・招待 URL で別のユーザーが参加する操作は、
-// ログインできるユーザーが 1 人だけで再現できないため、
+// 複数のユーザーでのログインを組み合わせる必要があるため、
 // `src/features/households/management.test.ts`・`invitations.test.ts` などで確かめる。
 // 名前を変えるテストと、家の名前で開閉ボタンを探すテストが重ならないよう、直列に実行する
 test.describe.configure({ mode: "serial" });

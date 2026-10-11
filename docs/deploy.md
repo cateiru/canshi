@@ -126,25 +126,27 @@ OIDC でのログインの導入前（マイグレーション `0041` より前�
 1. 上の手順で SaaS OIDC アプリを作り、4 つのシークレットを設定する。
 2. `pnpm db:migrate:remote` で `0041` を適用する。列とインデックスを追加するだけなので、デプロイより
    前に適用しても旧バージョンのアプリはそのまま動く。
-3. 既存のユーザーにメールアドレスを紐付ける。ユーザーの ID は管理画面で確かめる。SALT は手順 1 で
-   設定した値と同じにする（違うとログインしても一致しない）。
+3. 既存のユーザーにメールアドレスを紐付ける。ユーザーの ID は管理画面のユーザー一覧で確かめる。
+   SALT は手順 1 で設定した値と同じにする（違うとログインしても一致しない）。
 
-   ```sh
-   read -rs EMAIL_HASH_SALT && export EMAIL_HASH_SALT
-   pnpm user:link-email --remote --user-id <ユーザー ID> --email <Access でログインするメールアドレス>
-   ```
+        read -rs EMAIL_HASH_SALT && export EMAIL_HASH_SALT
+        pnpm user:link-email --remote --user-id <ユーザー ID> --email <Access でログインするメールアドレス>
 
 4. マージしてデプロイする。
 5. 導入前のセッションをすべて削除する。全員がログアウトし、次のログインから Access でログインする。
 
-   ```sh
-   pnpm exec wrangler d1 execute DB --remote --command "DELETE FROM sessions"
-   ```
+        pnpm exec wrangler d1 execute DB --remote --command "DELETE FROM sessions"
 
 6. MCP 用 Worker（`packages/mcp-server`）をデプロイし、ChatGPT などのコネクタを接続し直す。
    MCP の認可（`/callback`）は Access のメールアドレスでユーザーを探すようになり、まだメインアプリに
    ログインしたことがないメールアドレスでは接続できない。メインアプリの RPC（`McpRpc.resolveMcpUser`）の
    引数が変わったため、メインアプリを先にデプロイする。
+
+手順 3 より先にログインしてしまうと、そのメールアドレスで新しいユーザー（家に未所属）が作られ、
+手順 3 のスクリプトは「すでに別のユーザーに紐付いています」で止まる。その場合は、作られたユーザーの
+セッションと行を削除してから手順 3 をやり直す（新しいユーザーは家に所属しておらず、記録も持たない）。
+
+    pnpm exec wrangler d1 execute DB --remote --command "DELETE FROM sessions WHERE user_id = '<新しいユーザーの ID>'; DELETE FROM users WHERE id = '<新しいユーザーの ID>'"
 
 ### セッションの有効期限とログアウト
 
