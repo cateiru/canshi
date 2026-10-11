@@ -9,6 +9,11 @@
       "description": "パッチ・マイナーアップデートは CI が通れば自動マージする",
       "matchUpdateTypes": ["patch", "minor", "digest"],
       "automerge": true
+    },
+    {
+      "description": "CI は next dev でしか動かさず、OpenNext の本番ビルドを確かめないため、next と OpenNext は自動マージしない（next 16.4.0 では本番が全ページ 500 になった）。pnpm cf:build のあと wrangler dev で開けることを確かめてからマージする。lockFileMaintenance（自動マージ）で上がらないよう、package.json ではどちらもバージョンを固定する",
+      "matchPackageNames": ["next", "@opennextjs/cloudflare"],
+      "automerge": false
     }
   ],
   "lockFileMaintenance": {
