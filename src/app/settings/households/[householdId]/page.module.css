@@ -7,6 +7,13 @@
   font-size: var(--text-sm);
 }
 
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  list-style: none;
+}
+
 .members {
   display: flex;
   flex-direction: column;

@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Breadcrumb, Button, NavCard } from "@/components/ui";
 import {
   AppearanceSettingsIcon,
-  FeedingPresetIcon,
-  FoodProductIcon,
   HouseholdIcon,
   NotificationSettingsIcon,
   ProfileSettingsIcon,
@@ -26,7 +24,8 @@ const settings = [
   {
     href: "/settings/households",
     title: "家の設定",
-    description: "所属している家の名前や、家のメンバーを管理します。",
+    description:
+      "所属している家の名前やメンバー、ごはん商品・プリセットを管理します。",
     icon: HouseholdIcon,
   },
   {
@@ -41,18 +40,6 @@ const settings = [
     description:
       "この端末でのテーマ（ライト・ダーク・システム）やコントラスト、文字サイズを設定します。",
     icon: AppearanceSettingsIcon,
-  },
-  {
-    href: "/food-products",
-    title: "ごはん商品一覧",
-    description: "ごはんの記録に使う商品を登録・編集します。",
-    icon: FoodProductIcon,
-  },
-  {
-    href: "/feeding-presets",
-    title: "ごはんプリセット一覧",
-    description: "よく使うごはんの組み合わせと量を登録・編集します。",
-    icon: FeedingPresetIcon,
   },
   {
     href: "/release-notes",
@@ -70,7 +57,7 @@ export default function SettingsPage() {
       />
       <h1>設定</h1>
       <p>
-        プロフィールや家、通知、見た目、ごはんの共通設定、アプリの更新情報を確認できます。
+        プロフィールや家、通知、見た目の設定、アプリの更新情報を確認できます。
       </p>
 
       <nav aria-label="設定メニュー">
