@@ -3,6 +3,7 @@ import { createMigratedDatabase, toAdminDb } from "../test/d1";
 import { BASE_TIME, seed } from "../test/fixtures";
 import {
   type AdminDb,
+  deleteUserSessions,
   getOverview,
   listHouseholds,
   listUsers,
@@ -100,5 +101,20 @@ describe("listHouseholds", () => {
         members: [{ userId: "user-1", userName: "たろう", role: "owner" }],
       },
     ]);
+  });
+});
+
+describe("deleteUserSessions", () => {
+  it("そのユーザーのセッションだけを、期限切れのものも含めてすべて削除する", async () => {
+    expect(await deleteUserSessions(db, "user-1")).toBe(3);
+
+    const users = await listUsers(db, NOW);
+    expect(users[0].activeSessionCount).toBe(0);
+    // ほかのユーザーのセッションは残る
+    expect(await deleteUserSessions(db, "user-3")).toBe(1);
+  });
+
+  it("セッションが無いユーザーでは何も削除しない", async () => {
+    expect(await deleteUserSessions(db, "user-2")).toBe(0);
   });
 });

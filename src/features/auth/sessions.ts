@@ -55,3 +55,12 @@ export async function deleteSession(token: string, d1?: D1Database) {
     .delete(sessions)
     .where(eq(sessions.tokenHash, await hashSessionToken(token)));
 }
+
+/**
+ * ユーザーのセッションをすべて削除する（すべての端末からログアウト）。ほかの端末に残った
+ * Cookie も、次のリクエストからは使えなくなる
+ */
+export async function deleteUserSessions(userId: string, d1?: D1Database) {
+  const db = getDb(d1);
+  await db.delete(sessions).where(eq(sessions.userId, userId));
+}

@@ -6,7 +6,12 @@ import initSqlJs from "sql.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import { sessions, users } from "@/db/schema";
-import { createSession, deleteSession, getSessionUser } from "./sessions";
+import {
+  createSession,
+  deleteSession,
+  deleteUserSessions,
+  getSessionUser,
+} from "./sessions";
 import { hashSessionToken, SESSION_MAX_AGE_SECONDS } from "./sessionToken";
 
 // `src/features/notifications/queries.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
@@ -90,5 +95,19 @@ describe("deleteSession", () => {
 
     expect(await getSessionUser(loggedOut.token)).toBeNull();
     expect((await getSessionUser(other.token))?.id).toBe("user-1");
+  });
+});
+
+describe("deleteUserSessions", () => {
+  it("そのユーザーのセッションだけをすべて使えなくする", async () => {
+    const first = await createSession("user-1");
+    const second = await createSession("user-1");
+    const other = await createSession("user-2");
+
+    await deleteUserSessions("user-1");
+
+    expect(await getSessionUser(first.token)).toBeNull();
+    expect(await getSessionUser(second.token)).toBeNull();
+    expect((await getSessionUser(other.token))?.id).toBe("user-2");
   });
 });

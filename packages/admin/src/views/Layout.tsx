@@ -52,6 +52,9 @@ ul.plain { list-style: none; margin: 0; padding: 0; }
 .stat dt { color: var(--muted); font-size: 0.875rem; }
 .stat dd { margin: 0; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
 .warning { border: 1px solid var(--warn-border); background: var(--warn-bg); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-top: 1rem; }
+.notice { border: 1px solid var(--accent); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+td form { margin: 0; }
+td button { white-space: nowrap; font: inherit; cursor: pointer; }
 .empty { color: var(--muted); }
 `;
 

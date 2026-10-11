@@ -350,8 +350,9 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
 運用者向けの管理画面を、メインアプリとは別の Cloudflare Workers（`packages/admin/`、Worker 名
 `canshi-admin`）として用意している。公開ホスト名は `canshi-admin.cateiru.dev`
 （`packages/admin/wrangler.jsonc` の `routes` で `custom_domain` として設定。`workers.dev`・
-プレビュー URL は作らない）。メインアプリと同じ D1（`canshi-db`）を直接参照し、現時点では
-ユーザー・家の一覧を閲覧するだけで、データは書き換えない。
+プレビュー URL は作らない）。メインアプリと同じ D1（`canshi-db`）を直接参照し、ユーザー・家の
+一覧を閲覧できる。書き換えるデータは、ユーザーをすべての端末からログアウトさせる操作で削除する
+ログインセッション（`sessions` テーブル）だけ。
 
 アクセス制御は Cloudflare Access に任せ、アプリ内では認証しない。管理画面は家ごとの絞り込みを
 せず全ユーザー・全家の情報を表示するため、メインアプリの利用者（家族など）を含む Workers 全体の

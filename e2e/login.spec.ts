@@ -3,6 +3,9 @@ import { expect, test } from "@playwright/test";
 // ログイン前の状態を確認するため、保存済みのセッションを使わない
 test.use({ storageState: { cookies: [], origins: [] } });
 
+/** ログイン画面の URL（`/settings/login` などパスの途中に `/login` を含むページとは区別する） */
+const LOGIN_PAGE_URL = /^https?:\/\/[^/]+\/login(\?|$)/;
+
 test("未ログインでページを開くとログイン画面にリダイレクトされ、ログイン後に元のページへ戻る", async ({
   page,
 }) => {
@@ -69,9 +72,10 @@ test("ログアウトするとログイン画面に戻り、ページを開け�
   );
   expect(sessionCookie).toBeDefined();
 
-  await page.goto("/settings");
-  await page.getByRole("button", { name: "ログアウト" }).click();
-  await expect(page).toHaveURL(/\/login/);
+  await page.goto("/settings/login");
+  await page.getByRole("button", { name: "ログアウト", exact: true }).click();
+  // ログアウト前のページ（/settings/login）も `/login` を含むため、パス全体で比べる
+  await expect(page).toHaveURL(LOGIN_PAGE_URL);
 
   await page.goto("/cats");
   await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fcats$/);
@@ -81,6 +85,42 @@ test("ログアウトするとログイン画面に戻り、ページを開け�
   await page.context().addCookies([sessionCookie]);
   await page.goto("/cats");
   await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fcats$/);
+});
+
+test("すべての端末からログアウトすると、ほかの端末のセッションも使えなくなる", async ({
+  browser,
+  page,
+}) => {
+  // 共有の e2e ユーザーのセッションを消すと並行して動くほかのテストが失敗するため、
+  // このテスト専用のメールアドレスでログインする
+  const email = "e2e-logout-all-devices@example.com";
+  const login = async (target: typeof page) => {
+    await target.goto("/login?callbackUrl=%2Fsettings%2Flogin");
+    await target.getByLabel("メールアドレス（開発用）").fill(email);
+    await target.getByRole("button", { name: "ログイン" }).click();
+    await expect(target).toHaveURL(/\/settings\/login$/);
+  };
+
+  // 別の端末として、Cookie を共有しない別のコンテキストでもログインしておく
+  const otherDevice = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+  });
+  const otherPage = await otherDevice.newPage();
+  await login(otherPage);
+  await login(page);
+
+  await page
+    .getByRole("button", { name: "すべての端末からログアウト" })
+    .click();
+  await page
+    .getByRole("dialog", { name: "すべての端末からログアウトしますか？" })
+    .getByRole("button", { name: "すべての端末からログアウト" })
+    .click();
+  await expect(page).toHaveURL(LOGIN_PAGE_URL);
+
+  await otherPage.goto("/cats");
+  await expect(otherPage).toHaveURL(/\/login\?callbackUrl=%2Fcats$/);
+  await otherDevice.close();
 });
 
 test("別のメールアドレスでログインすると、別のユーザーになる", async ({
