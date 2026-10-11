@@ -1,6 +1,6 @@
 {
   "name": "canshi",
-  "version": "0.36.0",
+  "version": "0.36.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -39,7 +39,7 @@
     "@noble/hashes": "2.4.0",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.12",
-    "next": "16.4.0",
+    "next": "16.3.8",
     "react": "19.3.0",
     "react-aria-components": "^1.21.1",
     "react-dom": "19.3.0",
