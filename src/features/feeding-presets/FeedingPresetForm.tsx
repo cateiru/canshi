@@ -19,6 +19,7 @@ import {
 import { FeedingModeField } from "@/features/feeding-records/FeedingModeField";
 import { GIVEN_AMOUNT_LEVEL_LABEL } from "@/features/feeding-records/labels";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
+import { HouseholdField } from "@/features/households/HouseholdField";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import type { FeedingPresetFormState } from "./actions";
 import styles from "./FeedingPresetForm.module.css";
@@ -37,10 +38,18 @@ type FeedingPresetFormProps = {
     state: FeedingPresetFormState,
     formData: FormData,
   ) => Promise<FeedingPresetFormState>;
+  /** 選べる商品。明細にはプリセットと同じ家の商品だけを出す */
   foodProducts: FoodProduct[];
   /** 商品 ID → 商品画像の URL（画像のない商品は含まない） */
   foodProductImageUrls: Record<string, string>;
   preset?: FeedingPresetWithItems;
+  /**
+   * 登録先として選べる家（ユーザーが所属する家）。新規登録でだけ渡す。
+   * 登録後は家を変えられない（明細の商品がプリセットと別の家の商品にならないようにするため）
+   */
+  households?: { id: string; name: string }[];
+  /** 新規登録で最初から選んでおく家 */
+  defaultHouseholdId?: string;
   submitLabel: string;
 };
 
@@ -60,11 +69,20 @@ export function FeedingPresetForm({
   foodProducts,
   foodProductImageUrls,
   preset,
+  households,
+  defaultHouseholdId,
   submitLabel,
 }: FeedingPresetFormProps) {
   const [state, formAction, isPending] = useSubmitActionState(
     action,
     initialState,
+  );
+
+  const [householdId, setHouseholdId] = useState(
+    preset?.householdId ?? defaultHouseholdId ?? households?.[0]?.id ?? "",
+  );
+  const householdFoodProducts = foodProducts.filter(
+    (foodProduct) => foodProduct.householdId === householdId,
   );
 
   const [mode, setMode] = useState<FeedingMode>(preset?.mode ?? "strict");
@@ -76,10 +94,10 @@ export function FeedingPresetForm({
           givenAmountG: item.givenAmountG?.toString() ?? "",
           givenAmountLevel: item.givenAmountLevel ?? "normal",
         }))
-      : [createEmptyRow(foodProducts[0]?.id ?? "")],
+      : [createEmptyRow(householdFoodProducts[0]?.id ?? "")],
   );
 
-  const foodProductOptions = foodProducts.map((foodProduct) => ({
+  const foodProductOptions = householdFoodProducts.map((foodProduct) => ({
     value: foodProduct.id,
     label: foodProduct.name,
   }));
@@ -93,8 +111,17 @@ export function FeedingPresetForm({
   const addItem = () => {
     setItems((current) => [
       ...current,
-      createEmptyRow(foodProducts[0]?.id ?? ""),
+      createEmptyRow(householdFoodProducts[0]?.id ?? ""),
     ]);
+  };
+
+  // 家を変えると選べる商品が変わるため、明細をその家の最初の商品 1 件に戻す
+  const changeHousehold = (nextHouseholdId: string) => {
+    setHouseholdId(nextHouseholdId);
+    const firstProduct = foodProducts.find(
+      (foodProduct) => foodProduct.householdId === nextHouseholdId,
+    );
+    setItems([createEmptyRow(firstProduct?.id ?? "")]);
   };
 
   const removeItem = (index: number) => {
@@ -103,6 +130,21 @@ export function FeedingPresetForm({
 
   return (
     <form action={formAction} className={styles.form}>
+      {households ? (
+        <HouseholdField
+          households={households}
+          value={householdId}
+          onChange={changeHousehold}
+          description="選んだ家のメンバーと、このプリセットを共有します。商品はこの家の商品から選びます。登録後は変えられません。"
+          errorMessage={state.fieldErrors?.householdId?.[0]}
+        />
+      ) : null}
+      {householdFoodProducts.length === 0 ? (
+        <p className={styles.errorMessage}>
+          この家にはまだごはん商品が登録されていません。先に商品を登録してください。
+        </p>
+      ) : null}
+
       <FormField
         name="name"
         label="プリセット名"

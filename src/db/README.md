@@ -45,7 +45,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   `src/features/auth/session.ts` の `requireUser`・`requireCatAccess`）
   - 猫に紐付くテーブル（記録・通知など）は `cat_id` 経由で家に紐付くため、家の列は持たない
   - 支出記録は猫ではなく家に属するため `expense_records.household_id` を持つ（「支出記録」の節を参照）
-  - ごはん商品・ごはんプリセットは、現時点では家に紐付けず全ユーザーで共通
+  - ごはん商品・ごはんプリセットも猫ではなく家に属するため `food_products.household_id`・
+    `feeding_presets.household_id` を持つ（「ごはん記録」の節を参照）
   - Web Push の購読（`push_subscriptions.user_id`）は購読したユーザーを持ち、通知はその猫の家のメンバーの
     購読にだけ送る（`src/features/push/targets.ts`）。ユーザーの導入前の購読（NULL）には送らない
 - `users.role` はアプリ全体の権限（`admin`・`member`）。`/login` のログインボタンで最初に作られる
@@ -88,6 +89,21 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     摂取量・カロリーを計算しないため、グラフの集計からも除外する
 - `feeding_presets.mode` も同様で、厳格モードのプリセットの明細は `given_amount_g`、
   あいまいモードのプリセットの明細は `given_amount_level` を持つ
+- ごはん商品（`food_products`）とプリセット（`feeding_presets`）は家（`household_id`）に属し、その家の
+  猫で共通のため `cat_id` を持たない
+  - 商品・プリセットは登録時に選んだ家に属し、登録後に家は変えない。一覧は所属する家ごとにまとめて表示し、
+    参照・編集・削除はその家のメンバーだけができる（`src/features/food-products/queries.ts`・
+    `src/features/feeding-presets/queries.ts`）
+  - プリセットの明細の商品は、プリセットと同じ家の商品に限る。ごはん記録の明細の商品は、猫の家の商品に限る
+    （`src/features/feeding-presets/actions.ts`・`src/features/feeding-records/actions.ts`）
+  - 猫が別の家へ引っ越したときは、ごはん記録は猫と一緒に移り、商品・プリセットは元の家に残る。引っ越す前の
+    記録の編集では、その記録ですでに使っている元の家の商品をそのまま選べる
+  - 商品画像（`media_assets`、`record_type = "food_product"`）は、商品の家のメンバーだけが参照できる
+    （`src/features/media/access.ts`）
+  - `household_id` は、家に紐付けられなかった導入前の商品・プリセットを残すため nullable（`0040` では
+    紐付けない）。NULL の商品・プリセットはどのユーザーからも見えないため、`scripts/link-household.mts`
+    （`pnpm household:link`）で家に紐付ける
+  - 家ごとの一覧用に `(household_id, created_at)` のインデックスを設定する
 
 ## 支出記録（`expense_records`・`expense_record_cats`・`expense_record_hospital_visits`）
 

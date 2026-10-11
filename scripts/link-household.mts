@@ -3,8 +3,8 @@
 // ユーザー・家の導入前から登録されていた猫は、どの家にも所属しないためアプリに表示されない。
 // デプロイ後に `/login` でログインして（ユーザーが作成される）から、このスクリプトで
 // そのユーザーをオーナーとする家を作り、既存の猫をまとめて紐付ける（docs/deploy.md 参照）。
-// 家に未所属の支出記録（expense_records.household_id が NULL）も、どのユーザーからも
-// 見えないため、同じ家に紐付ける。
+// 家に未所属の支出記録・ごはん商品・ごはんプリセット（household_id が NULL）も、
+// どのユーザーからも見えないため、同じ家に紐付ける。
 // ユーザーに紐付いていない Web Push の購読（push_subscriptions.user_id が NULL）も、
 // どの通知も届かないため、同じユーザーに紐付ける。
 //
@@ -111,6 +111,12 @@ const [{ count: orphanCount }] = execute<CountRow>(
 const [{ count: orphanExpenseCount }] = execute<CountRow>(
   "SELECT COUNT(*) AS count FROM expense_records WHERE household_id IS NULL",
 );
+const [{ count: orphanFoodProductCount }] = execute<CountRow>(
+  "SELECT COUNT(*) AS count FROM food_products WHERE household_id IS NULL",
+);
+const [{ count: orphanFeedingPresetCount }] = execute<CountRow>(
+  "SELECT COUNT(*) AS count FROM feeding_presets WHERE household_id IS NULL",
+);
 const [{ count: orphanSubscriptionCount }] = execute<CountRow>(
   "SELECT COUNT(*) AS count FROM push_subscriptions WHERE user_id IS NULL",
 );
@@ -126,6 +132,8 @@ console.log(
 );
 console.log(`家に紐付ける猫: ${orphanCount} 匹`);
 console.log(`家に紐付ける支出記録: ${orphanExpenseCount} 件`);
+console.log(`家に紐付けるごはん商品: ${orphanFoodProductCount} 件`);
+console.log(`家に紐付けるごはんプリセット: ${orphanFeedingPresetCount} 件`);
 console.log(
   `ユーザーに紐付ける Push 通知の購読: ${orphanSubscriptionCount} 件`,
 );
@@ -169,6 +177,15 @@ execute(
   `UPDATE expense_records SET household_id = ${quote(householdId)}, updated_at = unixepoch() WHERE household_id IS NULL`,
 );
 console.log("家に未所属だった支出記録を紐付けました");
+
+// プリセットの明細は同じ家の商品に限るため、商品とプリセットは同じ家にまとめて紐付ける
+execute(
+  [
+    `UPDATE food_products SET household_id = ${quote(householdId)}, updated_at = unixepoch() WHERE household_id IS NULL`,
+    `UPDATE feeding_presets SET household_id = ${quote(householdId)}, updated_at = unixepoch() WHERE household_id IS NULL`,
+  ].join(";\n"),
+);
+console.log("家に未所属だったごはん商品・ごはんプリセットを紐付けました");
 
 execute(
   `UPDATE push_subscriptions SET user_id = ${quote(user.id)} WHERE user_id IS NULL`,

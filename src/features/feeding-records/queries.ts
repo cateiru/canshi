@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   type FeedingMode,
@@ -133,7 +133,15 @@ export async function getFeedingRecordById(
 /**
  * 記録フォームの初期選択に使うため、直近使用した商品の ID を新しい順・重複なしで返す。
  */
-export async function listRecentlyUsedFoodProductIds(catId: string, limit = 5) {
+/**
+ * 猫に最近与えた商品の ID。猫の家の商品に限る（別の家へ引っ越す前に与えた、元の家の商品は
+ * 記録フォームの選択肢にないため含めない）
+ */
+export async function listRecentlyUsedFoodProductIds(
+  catId: string,
+  householdId: string,
+  limit = 5,
+) {
   const db = getDb();
   // 直近の生レコードが同一商品に偏っていても limit 件のユニークIDを拾える
   // よう、スキャン件数を limit に比例させる（最低20件は見る）
@@ -144,7 +152,16 @@ export async function listRecentlyUsedFoodProductIds(catId: string, limit = 5) {
       feedingRecords,
       eq(feedingRecordItems.feedingRecordId, feedingRecords.id),
     )
-    .where(eq(feedingRecords.catId, catId))
+    .innerJoin(
+      foodProducts,
+      eq(feedingRecordItems.foodProductId, foodProducts.id),
+    )
+    .where(
+      and(
+        eq(feedingRecords.catId, catId),
+        eq(foodProducts.householdId, householdId),
+      ),
+    )
     .orderBy(desc(feedingRecords.occurredAt))
     .limit(Math.max(limit * 10, 20));
 
@@ -156,4 +173,21 @@ export async function listRecentlyUsedFoodProductIds(catId: string, limit = 5) {
     }
   }
   return Array.from(seen);
+}
+
+/**
+ * ごはん記録の明細で使っている商品。猫が別の家へ引っ越す前の記録は元の家の商品を使っているため、
+ * 編集フォームの選択肢に足して、そのまま保存し直せるようにする
+ */
+export async function listFoodProductsOfFeedingRecord(feedingRecordId: string) {
+  const db = getDb();
+  const rows = await db
+    .selectDistinct({ foodProduct: foodProducts })
+    .from(feedingRecordItems)
+    .innerJoin(
+      foodProducts,
+      eq(feedingRecordItems.foodProductId, foodProducts.id),
+    )
+    .where(eq(feedingRecordItems.feedingRecordId, feedingRecordId));
+  return rows.map((row) => row.foodProduct);
 }

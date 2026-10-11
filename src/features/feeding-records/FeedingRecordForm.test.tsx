@@ -13,6 +13,7 @@ vi.mock("next/navigation", () => ({
 function createFoodProduct(overrides: Partial<FoodProduct>): FoodProduct {
   return {
     id: "food-1",
+    householdId: "household-1",
     name: "ちゃおちゅーる",
     kcalPer100g: 40,
     packageAmountG: 14,
@@ -112,6 +113,7 @@ describe("FeedingRecordForm", () => {
   it("あいまいモードのプリセットを選ぶと、記録方法と与えた量の段階を反映する", () => {
     const preset: FeedingPresetWithItems = {
       id: "preset-1",
+      householdId: "household-1",
       name: "おやつ",
       mode: "approximate",
       items: [

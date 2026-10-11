@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
+import { requireUser } from "@/features/auth/session";
 import { updateFeedingPresetAction } from "@/features/feeding-presets/actions";
 import { FeedingPresetForm } from "@/features/feeding-presets/FeedingPresetForm";
-import { getFeedingPresetById } from "@/features/feeding-presets/queries";
+import { getFeedingPresetForUser } from "@/features/feeding-presets/queries";
 import {
   listFoodProductImageUrls,
   listFoodProducts,
@@ -19,14 +20,16 @@ export default async function EditFeedingPresetPage({
   params,
 }: EditFeedingPresetPageProps) {
   const { presetId } = await params;
-  const [preset, foodProducts] = await Promise.all([
-    getFeedingPresetById(presetId),
-    listFoodProducts(),
-  ]);
+  const user = await requireUser();
+  // 別の家のプリセットは、存在しないプリセットと区別せずに 404 にする
+  const preset = await getFeedingPresetForUser(user.id, presetId);
 
   if (!preset) {
     notFound();
   }
+
+  // 明細はプリセットと同じ家の商品から選ぶ
+  const foodProducts = await listFoodProducts(preset.householdId);
 
   const foodProductImageUrls = await listFoodProductImageUrls(
     foodProducts.map((foodProduct) => foodProduct.id),

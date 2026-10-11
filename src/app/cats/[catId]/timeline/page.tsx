@@ -121,15 +121,18 @@ export default async function TimelinePage({
     ym: formatYm(nextMonth),
   });
 
-  const foodProductImageUrls = await listFoodProductImageUrls([
-    ...new Set(
-      entries
-        .filter((entry) => entry.type === "feeding")
-        .flatMap((entry) =>
-          entry.record.items.map((item) => item.foodProductId),
-        ),
-    ),
-  ]);
+  const foodProductImageUrls = await listFoodProductImageUrls(
+    [
+      ...new Set(
+        entries
+          .filter((entry) => entry.type === "feeding")
+          .flatMap((entry) =>
+            entry.record.items.map((item) => item.foodProductId),
+          ),
+      ),
+    ],
+    { householdId: cat.householdId },
+  );
 
   const emptyMessage = selectedDate
     ? `${selectedDate.slice(0, 4)}年${Number.parseInt(selectedDate.slice(5, 7), 10)}月${Number.parseInt(selectedDate.slice(8, 10), 10)}日の記録がありません。`

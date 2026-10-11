@@ -25,15 +25,16 @@ export default async function NewFeedingRecordPage({
   const { catId } = await params;
   const cat = await getAccessibleCat(catId);
 
-  if (!cat) {
+  // 商品・プリセットは猫の家のものを使う。参照できる猫は必ず家に所属している
+  if (!cat?.householdId) {
     notFound();
   }
 
   const [foodProducts, recentlyUsedFoodProductIds, presets] = await Promise.all(
     [
-      listFoodProducts(),
-      listRecentlyUsedFoodProductIds(catId),
-      listFeedingPresets(),
+      listFoodProducts(cat.householdId),
+      listRecentlyUsedFoodProductIds(catId, cat.householdId),
+      listFeedingPresets(cat.householdId),
     ],
   );
   const foodProductImageUrls = await listFoodProductImageUrls(
@@ -59,7 +60,7 @@ export default async function NewFeedingRecordPage({
         <RecordEmptyState
           actions={
             <ButtonLink
-              href="/food-products/new"
+              href={`/food-products/new?householdId=${encodeURIComponent(cat.householdId)}`}
               variant="primary"
               className={styles.createButton}
             >

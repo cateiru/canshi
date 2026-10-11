@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Button, FormField, FormRow, Select } from "@/components/ui";
 import type { FoodProduct } from "@/db/schema";
+import { HouseholdField } from "@/features/households/HouseholdField";
 import type { MediaLimits } from "@/features/media/limits";
 import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
 import { useMediaAttachments } from "@/features/media/useMediaAttachments";
@@ -27,6 +29,13 @@ type FoodProductFormProps = {
     formData: FormData,
   ) => Promise<FoodProductFormState>;
   foodProduct?: FoodProduct;
+  /**
+   * 登録先として選べる家（ユーザーが所属する家）。新規登録でだけ渡す。
+   * 登録後は家を変えられない（ほかの家のプリセット・ごはん記録から参照されないようにするため）
+   */
+  households?: { id: string; name: string }[];
+  /** 新規登録で最初から選んでおく家 */
+  defaultHouseholdId?: string;
   mediaAssets?: MediaAssetView[];
   mediaLimits: MediaLimits;
   submitLabel: string;
@@ -48,10 +57,15 @@ export function FoodProductForm({
   action,
   updateAction,
   foodProduct,
+  households,
+  defaultHouseholdId,
   mediaAssets,
   mediaLimits,
   submitLabel,
 }: FoodProductFormProps) {
+  const [householdId, setHouseholdId] = useState(
+    defaultHouseholdId ?? households?.[0]?.id ?? "",
+  );
   // 商品画像は 1 枚だけ。差し替え時は旧画像を削除する
   const media = useMediaAttachments({
     initial: mediaAssets,
@@ -70,6 +84,16 @@ export function FoodProductForm({
 
   return (
     <form action={formAction} className={styles.form}>
+      {households ? (
+        <HouseholdField
+          households={households}
+          value={householdId}
+          onChange={setHouseholdId}
+          description="選んだ家のメンバーと、この商品を共有します。登録後は変えられません。"
+          errorMessage={state.fieldErrors?.householdId?.[0]}
+        />
+      ) : null}
+
       <FormField
         name="name"
         label="商品名"

@@ -16,7 +16,7 @@ export type MediaRecordOwner = {
   /** 猫に紐付かないレコード（ごはん商品・支出）は null */
   catId: string | null;
   /**
-   * 猫に紐付かず家に属するレコード（支出）の家。家に未所属なら null。
+   * 猫に紐付かず家に属するレコード（支出・ごはん商品）の家。家に未所属なら null。
    * 家に属さないレコードでは省略する
    */
   householdId?: string | null;
@@ -92,12 +92,13 @@ export async function resolveMediaRecordOwner(
       return row ? { catId: null, householdId: row.householdId } : null;
     }
     case "food_product": {
+      // ごはん商品は家の猫で共通のため、特定の猫には紐付けず家で判定する
       const [row] = await db
-        .select({ id: foodProducts.id })
+        .select({ householdId: foodProducts.householdId })
         .from(foodProducts)
         .where(eq(foodProducts.id, recordId))
         .limit(1);
-      return row ? { catId: null } : null;
+      return row ? { catId: null, householdId: row.householdId } : null;
     }
     default: {
       const exhaustiveCheck: never = recordType;
