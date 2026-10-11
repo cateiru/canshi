@@ -6,8 +6,8 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
  * - `Range`・`If-None-Match` などの条件付きリクエストに対応する（動画のシーク・キャッシュ検証に必要）。
  *   R2 は `Headers` をそのまま受け取れるが、next dev のバインディングプロキシ（Miniflare）は
  *   `Headers` をシリアライズできないため、プレーンなオブジェクトに変換して渡す
- * - オブジェクトは ID ごとに不変のため長期キャッシュを許可するが、Cloudflare Access の保護対象のため
- *   共有キャッシュ（CDN）には載せない
+ * - オブジェクトは ID ごとに不変のため長期キャッシュを許可するが、ログインしたユーザーごとに参照できる
+ *   メディアが異なるため共有キャッシュ（CDN）には載せない
  */
 export async function serveR2Object(
   request: Request,
