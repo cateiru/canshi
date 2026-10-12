@@ -9,4 +9,5 @@ CREATE TABLE `feeding_schedules` (
 	FOREIGN KEY (`household_id`) REFERENCES `households`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `feeding_schedules_household_id_time_unique` ON `feeding_schedules` (`household_id`,`time`);
+CREATE UNIQUE INDEX `feeding_schedules_household_id_time_unique` ON `feeding_schedules` (`household_id`,`time`);--> statement-breakpoint
+CREATE INDEX `feeding_records_cat_id_occurred_at_idx` ON `feeding_records` (`cat_id`,`occurred_at`);

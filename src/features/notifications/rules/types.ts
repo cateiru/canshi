@@ -104,6 +104,11 @@ type BaseHouseholdCandidate = {
   dueAt: Date;
   /** ごはんの時刻（HH:MM） */
   time: string;
+  /**
+   * この回のごはんの記録を探す範囲（naive UTC、`start` を含み `end` を含まない）。
+   * 判定した後に記録が追加された場合に通知を作らないよう、INSERT するときにも使う
+   */
+  recordWindow: { start: Date; end: Date };
 };
 
 export type FeedingTimeCandidate = BaseHouseholdCandidate & {

@@ -1,6 +1,17 @@
-import { and, desc, eq, gte, ne, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  ne,
+  notExists,
+  sql,
+} from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  cats,
   feedingRecords,
   feedingSchedules,
   notifications,
@@ -20,6 +31,7 @@ import { getResolvedSettingsForCat } from "./queries";
 import {
   evaluateNotificationRules,
   type FeedingScheduleForRule,
+  type HouseholdNotificationCandidate,
   type OpenSymptom,
   type SymptomOngoingCandidate,
 } from "./rules";
@@ -53,7 +65,8 @@ async function listFeedingSchedulesByHousehold(
 
 /**
  * 猫 id ごとの、直近のごはん記録の発生日時（naive UTC）。ごはんの時間の前後に記録があるかの
- * 判定に使う。猫ごとに問い合わせず、全猫分を 1 回のクエリで取得する
+ * 判定に使う。ごはんの時間を登録した家の猫の記録だけを、全猫分まとめて 1 回のクエリで取得する
+ * （`feeding_records_cat_id_occurred_at_idx` で猫ごとに期間を絞って読む）
  */
 async function listRecentFeedingAtsByCat(
   db: ReturnType<typeof getDb>,
@@ -69,7 +82,18 @@ async function listRecentFeedingAtsByCat(
       occurredAt: feedingRecords.occurredAt,
     })
     .from(feedingRecords)
-    .where(gte(feedingRecords.occurredAt, since));
+    .innerJoin(cats, eq(cats.id, feedingRecords.catId))
+    .where(
+      and(
+        inArray(
+          cats.householdId,
+          db
+            .selectDistinct({ householdId: feedingSchedules.householdId })
+            .from(feedingSchedules),
+        ),
+        gte(feedingRecords.occurredAt, since),
+      ),
+    );
   const byCat = new Map<string, Date[]>();
   for (const { catId, occurredAt } of rows) {
     const feedingAts = byCat.get(catId) ?? [];
@@ -77,6 +101,76 @@ async function listRecentFeedingAtsByCat(
     byCat.set(catId, feedingAts);
   }
   return byCat;
+}
+
+/**
+ * 家についての通知（ごはんの時間）を、条件をもう一度確かめたうえで INSERT する。
+ * 記録を読んでから INSERT するまでの間に、別のリクエストでごはんが記録されたり、ごはんの時間が
+ * 削除・オフにされたりすることがある。そのまま INSERT すると、もう不要な通知が残って Push まで
+ * 送られてしまう。ごはんの時間がまだ有効で、範囲内に家の猫のごはん記録がないことの確認と INSERT を
+ * 1 つの `INSERT ... SELECT` にし、両者の間に更新が割り込まないようにする。
+ * INSERT ... SELECT では `$defaultFn` や SQL の既定値が効かないため、全カラムの値をテーブル定義の
+ * 順に明示する（`insertSymptomOngoingNotification` と同じ方式）
+ */
+export async function insertHouseholdNotification(
+  db: ReturnType<typeof getDb>,
+  candidate: HouseholdNotificationCandidate,
+  message: NotificationMessage,
+) {
+  const enabledColumn =
+    candidate.kind === "feeding_time"
+      ? feedingSchedules.notifyAtTime
+      : feedingSchedules.remindIfNotRecorded;
+  await db
+    .insert(notifications)
+    .select(
+      db
+        .select({
+          id: sql`${crypto.randomUUID()}`.as("id"),
+          catId: sql`null`.as("catId"),
+          householdId: feedingSchedules.householdId,
+          kind: sql`${candidate.kind}`.as("kind"),
+          referenceId: feedingSchedules.id,
+          dedupeKey: sql`${candidate.dedupeKey}`.as("dedupeKey"),
+          title: sql`${message.title}`.as("title"),
+          body: sql`${message.body}`.as("body"),
+          url: sql`${message.url}`.as("url"),
+          dueAt: sql`${sql.param(candidate.dueAt, notifications.dueAt)}`.as(
+            "dueAt",
+          ),
+          status: sql`'pending'`.as("status"),
+          snoozedUntil: sql`null`.as("snoozedUntil"),
+          readAt: sql`null`.as("readAt"),
+          pushedAt: sql`null`.as("pushedAt"),
+          createdAt: sql`(unixepoch())`.as("createdAt"),
+          updatedAt: sql`(unixepoch())`.as("updatedAt"),
+        })
+        .from(feedingSchedules)
+        .where(
+          and(
+            eq(feedingSchedules.id, candidate.referenceId),
+            eq(feedingSchedules.householdId, candidate.householdId),
+            eq(enabledColumn, true),
+            notExists(
+              db
+                .select({ id: feedingRecords.id })
+                .from(feedingRecords)
+                .innerJoin(cats, eq(cats.id, feedingRecords.catId))
+                .where(
+                  and(
+                    eq(cats.householdId, candidate.householdId),
+                    gte(
+                      feedingRecords.occurredAt,
+                      candidate.recordWindow.start,
+                    ),
+                    lt(feedingRecords.occurredAt, candidate.recordWindow.end),
+                  ),
+                ),
+            ),
+          ),
+        ),
+    )
+    .onConflictDoNothing({ target: notifications.dedupeKey });
 }
 
 /**
@@ -308,19 +402,7 @@ async function generateHouseholdNotifications(
     );
     for (const candidate of candidates) {
       const message = buildHouseholdNotificationMessage(candidate, catIds);
-      await db
-        .insert(notifications)
-        .values({
-          householdId: candidate.householdId,
-          kind: candidate.kind,
-          referenceId: candidate.referenceId,
-          dedupeKey: candidate.dedupeKey,
-          title: message.title,
-          body: message.body,
-          url: message.url,
-          dueAt: candidate.dueAt,
-        })
-        .onConflictDoNothing({ target: notifications.dedupeKey });
+      await insertHouseholdNotification(db, candidate, message);
     }
   }
 }

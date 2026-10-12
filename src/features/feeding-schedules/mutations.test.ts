@@ -1,4 +1,6 @@
 // @vitest-environment node
+
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sql-js";
 import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
@@ -8,6 +10,7 @@ import {
   feedingSchedules,
   householdMembers,
   households,
+  notifications,
   users,
 } from "@/db/schema";
 import {
@@ -29,6 +32,15 @@ beforeEach(async () => {
   await migrate(db as unknown as ReturnType<typeof drizzle>, {
     migrationsFolder: "./drizzle",
   });
+  // sql.js は `db.batch`（D1 専用）を持たないため、順番に実行するだけの簡易実装で補う
+  // biome-ignore lint/suspicious/noExplicitAny: テスト用に D1 の batch を簡易実装する
+  (db as any).batch = async (statements: PromiseLike<unknown>[]) => {
+    const results: unknown[] = [];
+    for (const statement of statements) {
+      results.push(await statement);
+    }
+    return results;
+  };
   await db.insert(users).values([
     { id: "member", name: "家族" },
     { id: "outsider", name: "別の家の人" },
@@ -147,10 +159,58 @@ describe("updateFeedingScheduleNotify・deleteFeedingSchedule", () => {
     expect(await listFeedingSchedules("home")).toHaveLength(1);
   });
 
-  it("家のメンバーは削除できる", async () => {
+  async function addNotification(
+    id: string,
+    householdId: string,
+    referenceId: string,
+    status: "pending" | "snoozed" | "done",
+  ) {
+    await db.insert(notifications).values({
+      id,
+      householdId,
+      kind: "feeding_time",
+      referenceId,
+      dedupeKey: id,
+      title: "ごはんの時間です",
+      body: "本文",
+      url: "/cats",
+      dueAt: new Date("2026-09-21T07:00:00.000Z"),
+      status,
+    });
+  }
+
+  async function statusOf(id: string) {
+    const [row] = await db
+      .select({ status: notifications.status })
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return row.status;
+  }
+
+  it("家のメンバーは削除でき、その時間の未対応の通知は無視にする", async () => {
+    await addNotification("pending", "home", "home-morning", "pending");
+    await addNotification("snoozed", "home", "home-morning", "snoozed");
+    await addNotification("done", "home", "home-morning", "done");
+    await addNotification("other", "other", "other-morning", "pending");
+
     expect(
       await deleteFeedingSchedule("home", "member", "home-morning"),
     ).toEqual({ ok: true });
     expect(await listFeedingSchedules("home")).toEqual([]);
+
+    expect(await statusOf("pending")).toBe("dismissed");
+    expect(await statusOf("snoozed")).toBe("dismissed");
+    // 対応済みの通知と、ほかの家の通知はそのまま
+    expect(await statusOf("done")).toBe("done");
+    expect(await statusOf("other")).toBe("pending");
+  });
+
+  it("削除できないときは、通知も無視にしない", async () => {
+    await addNotification("pending", "home", "home-morning", "pending");
+
+    expect(
+      await deleteFeedingSchedule("home", "outsider", "home-morning"),
+    ).toMatchObject({ ok: false });
+    expect(await statusOf("pending")).toBe("pending");
   });
 });

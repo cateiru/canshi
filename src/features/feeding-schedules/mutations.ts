@@ -1,6 +1,6 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { feedingSchedules, householdMembers } from "@/db/schema";
+import { feedingSchedules, householdMembers, notifications } from "@/db/schema";
 import { isHouseholdMemberCondition } from "@/features/households/queries";
 import type {
   FeedingScheduleFormInput,
@@ -118,8 +118,10 @@ export async function updateFeedingScheduleNotify(
 }
 
 /**
- * ごはんの時間を削除する。家のメンバーなら誰でも削除できる。すでに生成した通知
- * （`notifications.reference_id`）には外部キーがないため、そのまま残す
+ * ごはんの時間を削除する。家のメンバーなら誰でも削除できる。
+ * すでに生成した、この時間の未対応（`pending`・`snoozed`）の通知は、もう対応する必要がないため
+ * 同じ batch で無視にする（通知センターに残ったり、Push が送られたりしないように）。
+ * 対応済みの通知は履歴として残す（`notifications.reference_id` には外部キーがない）
  */
 export async function deleteFeedingSchedule(
   householdId: string,
@@ -128,16 +130,30 @@ export async function deleteFeedingSchedule(
   d1?: D1Database,
 ): Promise<FeedingScheduleMutationResult> {
   const db = getDb(d1);
-  const deleted = await db
-    .delete(feedingSchedules)
-    .where(
-      and(
-        eq(feedingSchedules.id, scheduleId),
-        eq(feedingSchedules.householdId, householdId),
-        isHouseholdMemberCondition(householdId, userId),
+  const [, deleted] = await db.batch([
+    db
+      .update(notifications)
+      .set({ status: "dismissed", updatedAt: new Date() })
+      .where(
+        and(
+          eq(notifications.householdId, householdId),
+          eq(notifications.referenceId, scheduleId),
+          inArray(notifications.kind, ["feeding_time", "feeding_not_recorded"]),
+          inArray(notifications.status, ["pending", "snoozed"]),
+          isHouseholdMemberCondition(householdId, userId),
+        ),
       ),
-    )
-    .returning({ id: feedingSchedules.id });
+    db
+      .delete(feedingSchedules)
+      .where(
+        and(
+          eq(feedingSchedules.id, scheduleId),
+          eq(feedingSchedules.householdId, householdId),
+          isHouseholdMemberCondition(householdId, userId),
+        ),
+      )
+      .returning({ id: feedingSchedules.id }),
+  ]);
 
   if (deleted.length === 0) {
     return { ok: false, error: NOT_MEMBER_ERROR };

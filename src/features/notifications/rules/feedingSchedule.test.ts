@@ -45,6 +45,10 @@ describe("evaluateFeedingSchedule", () => {
         dedupeKey: "household:home:feeding_time:morning:2026-09-11",
         dueAt: new Date("2026-09-11T07:00:00.000Z"),
         time: "07:00",
+        recordWindow: {
+          start: new Date("2026-09-11T01:00:00.000Z"),
+          end: new Date("2026-09-11T13:00:00.000Z"),
+        },
       },
     ]);
   });
@@ -101,6 +105,10 @@ describe("evaluateFeedingSchedule", () => {
         dedupeKey: "household:home:feeding_not_recorded:morning:2026-09-11",
         dueAt: new Date("2026-09-11T07:00:00.000Z"),
         time: "07:00",
+        recordWindow: {
+          start: new Date("2026-09-11T01:00:00.000Z"),
+          end: new Date("2026-09-11T13:00:00.000Z"),
+        },
       },
     ]);
   });
@@ -116,6 +124,32 @@ describe("evaluateFeedingSchedule", () => {
     ).toEqual([]);
   });
 
+  it("次の時刻との中間以降の記録は、前の時刻の範囲の記録として扱わない", () => {
+    // 07:00 の範囲は 13:00 まで。13:10 の記録は 19:00 の範囲の記録
+    const records = ["2026-09-11T13:10:00.000Z"];
+    // 日本時間 13:15 には、07:00 のリマインダーを出す
+    expect(
+      evaluate("2026-09-11T04:15:00.000Z", [morning, evening], records).map(
+        (c) => [c.kind, c.referenceId],
+      ),
+    ).toEqual([["feeding_not_recorded", "morning"]]);
+    // 日本時間 19:00 には、19:00 の範囲に記録があるため時間の通知を出さない
+    expect(
+      evaluate("2026-09-11T10:00:00.000Z", [morning, evening], records),
+    ).toEqual([]);
+  });
+
+  it("範囲の終わり（次の時刻との中間）ちょうどの記録は、次の時刻の範囲に数える", () => {
+    // 日本時間 13:00 ちょうどの記録は 19:00 の範囲で、07:00 の範囲には含めない
+    expect(
+      evaluate(
+        "2026-09-11T04:00:00.000Z",
+        [morning, evening],
+        ["2026-09-11T13:00:00.000Z"],
+      ).map((c) => c.kind),
+    ).toEqual(["feeding_not_recorded"]);
+  });
+
   it("中間の時刻が翌日になる回は、ごはんの日付で重複を防ぐ", () => {
     // 日本時間 2026-09-12 01:00（前日 19:00 と 07:00 の中間）
     expect(evaluate("2026-09-11T16:00:00.000Z", [morning, evening])).toEqual([
@@ -126,6 +160,10 @@ describe("evaluateFeedingSchedule", () => {
         dedupeKey: "household:home:feeding_not_recorded:evening:2026-09-11",
         dueAt: new Date("2026-09-11T19:00:00.000Z"),
         time: "19:00",
+        recordWindow: {
+          start: new Date("2026-09-11T13:00:00.000Z"),
+          end: new Date("2026-09-12T01:00:00.000Z"),
+        },
       },
     ]);
   });

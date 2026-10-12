@@ -20,8 +20,11 @@ vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
 
-const { generateNotifications, insertSymptomOngoingNotification } =
-  await import("./generate");
+const {
+  generateNotifications,
+  insertHouseholdNotification,
+  insertSymptomOngoingNotification,
+} = await import("./generate");
 
 /**
  * 症状の確認通知（`symptom_ongoing`）について、`generateNotifications` が DB から集める
@@ -313,5 +316,111 @@ describe("generateNotifications（ごはんの時間）", () => {
     // JST 2026-09-23 07:00
     await generateNotifications(new Date("2026-09-22T22:00:00.000Z"));
     expect(await listFeedingNotifications(household.id)).toEqual([]);
+  });
+});
+
+/**
+ * 記録を読んでから通知を INSERT するまでの間に、別のリクエストでごはんが記録されたり、
+ * ごはんの時間が削除・オフにされたりした場合を、判定済みの候補を直接 INSERT することで再現する
+ */
+describe("insertHouseholdNotification", () => {
+  async function setup() {
+    const [household] = await db
+      .insert(households)
+      .values({ name: "確認の家" })
+      .returning();
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "はな", sex: "female", householdId: household.id })
+      .returning();
+    const [schedule] = await db
+      .insert(feedingSchedules)
+      .values({ householdId: household.id, time: "07:00" })
+      .returning();
+    const candidate = {
+      householdId: household.id,
+      kind: "feeding_not_recorded" as const,
+      referenceId: schedule.id,
+      dedupeKey: `household:${household.id}:feeding_not_recorded:${schedule.id}:2026-09-25`,
+      dueAt: new Date("2026-09-25T07:00:00.000Z"),
+      time: "07:00",
+      recordWindow: {
+        start: new Date("2026-09-24T19:00:00.000Z"),
+        end: new Date("2026-09-25T19:00:00.000Z"),
+      },
+    };
+    const message = {
+      title: "ごはんはあげましたか？",
+      body: "07:00のごはんの記録がありません。あげていたら記録しておきましょう",
+      url: `/cats/${cat.id}/feeding-records/new`,
+    };
+    return { household, cat, schedule, candidate, message };
+  }
+
+  async function listByHousehold(householdId: string) {
+    return db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.householdId, householdId));
+  }
+
+  it("条件を満たしていれば、家についての通知を作る", async () => {
+    const { household, schedule, candidate, message } = await setup();
+    // 範囲の終わりちょうどの記録は、範囲外として扱う
+    const [otherCat] = await db
+      .insert(cats)
+      .values({ name: "そら", sex: "male", householdId: household.id })
+      .returning();
+    await db.insert(feedingRecords).values({
+      catId: otherCat.id,
+      occurredAt: candidate.recordWindow.end,
+    });
+
+    await insertHouseholdNotification(db, candidate, message);
+    // 同じ dedupe_key では二重に作られない
+    await insertHouseholdNotification(db, candidate, message);
+
+    const rows = await listByHousehold(household.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      catId: null,
+      householdId: household.id,
+      kind: "feeding_not_recorded",
+      referenceId: schedule.id,
+      title: message.title,
+      url: message.url,
+      dueAt: candidate.dueAt,
+      status: "pending",
+      pushedAt: null,
+    });
+  });
+
+  it("判定後に家の猫のごはんが記録されていれば、通知を作らない", async () => {
+    const { household, cat, candidate, message } = await setup();
+    await db.insert(feedingRecords).values({
+      catId: cat.id,
+      occurredAt: new Date("2026-09-25T08:00:00.000Z"),
+    });
+
+    await insertHouseholdNotification(db, candidate, message);
+
+    expect(await listByHousehold(household.id)).toEqual([]);
+  });
+
+  it("判定後にごはんの時間が削除・オフにされていれば、通知を作らない", async () => {
+    const deleted = await setup();
+    await db
+      .delete(feedingSchedules)
+      .where(eq(feedingSchedules.id, deleted.schedule.id));
+    await insertHouseholdNotification(db, deleted.candidate, deleted.message);
+    expect(await listByHousehold(deleted.household.id)).toEqual([]);
+
+    const disabled = await setup();
+    await db
+      .update(feedingSchedules)
+      .set({ remindIfNotRecorded: false })
+      .where(eq(feedingSchedules.id, disabled.schedule.id));
+    await insertHouseholdNotification(db, disabled.candidate, disabled.message);
+    expect(await listByHousehold(disabled.household.id)).toEqual([]);
   });
 });

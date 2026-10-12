@@ -194,10 +194,15 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     `feeding_time`・`feeding_not_recorded`、`reference_id` は `feeding_schedules.id`。`notify_at_time`・
     `remind_if_not_recorded` で時間ごとにそれぞれの通知を出すかを持つ。猫のいない家には出さない
   - 各時刻の前後の範囲は、前の時刻との中間から次の時刻との中間まで（時刻が 1 つなら前後 12 時間）。
+    範囲は始まりを含み終わりを含まない半開区間で、1 件の記録が隣り合う 2 つの時刻の両方に数えられない。
     家のどれかの猫のごはん記録の `occurred_at`（naive UTC）が範囲内にあれば記録があるとみなす
     （`src/features/notifications/rules/feedingSchedule.ts`）
+  - 通知の INSERT は、ごはんの時間がまだ有効で範囲内に記録がないことを確かめる `INSERT ... SELECT` にし、
+    判定してから INSERT するまでに記録・削除・オフにされた場合は作らない（`src/features/notifications/generate.ts`）
+  - 直近の記録を猫ごとに期間で絞って読むため、`feeding_records` に `(cat_id, occurred_at)` のインデックスを設定する
   - ごはん記録を追加したときは、猫の家の未対応のごはんの通知を同じ `db.batch` で完了にする
-  - 削除した時間の通知は `reference_id` に外部キーがないため残す
+  - ごはんの時間を削除したときは、その時間の未対応の通知を同じ `db.batch` で無視にする。対応済みの通知は、
+    `reference_id` に外部キーがないため履歴として残す
 - 詳細な判定ロジックは `src/features/notifications/` を参照
 
 ## MCP の OAuth（`oauth_kv_entries`）

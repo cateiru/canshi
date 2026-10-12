@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  real,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 import { cats } from "./cats";
 import {
   FEEDING_MODES,
@@ -12,22 +18,33 @@ import { foodProducts } from "./food-products";
  * ごはん記録のヘッダー。1回の食事に複数の商品（ウェット＋カリカリなど）を
  * 組み合わせられるよう、商品ごとの量は `feedingRecordItems` に分離している。
  */
-export const feedingRecords = sqliteTable("feeding_records", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  catId: text("cat_id")
-    .notNull()
-    .references(() => cats.id),
-  occurredAt: integer("occurred_at", { mode: "timestamp" }).notNull(),
-  mode: text("mode", { enum: FEEDING_MODES }).notNull().default("strict"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-});
+export const feedingRecords = sqliteTable(
+  "feeding_records",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    catId: text("cat_id")
+      .notNull()
+      .references(() => cats.id),
+    occurredAt: integer("occurred_at", { mode: "timestamp" }).notNull(),
+    mode: text("mode", { enum: FEEDING_MODES }).notNull().default("strict"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    // ごはんの時間の通知で、猫ごとに直近の記録を期間で絞って読むため
+    // （`src/features/notifications/generate.ts`）
+    index("feeding_records_cat_id_occurred_at_idx").on(
+      table.catId,
+      table.occurredAt,
+    ),
+  ],
+);
 
 export type FeedingRecord = typeof feedingRecords.$inferSelect;
 export type NewFeedingRecord = typeof feedingRecords.$inferInsert;

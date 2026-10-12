@@ -79,6 +79,10 @@ describe("buildHouseholdNotificationMessage", () => {
     dedupeKey: "dedupe",
     dueAt: new Date("2026-09-11T07:00:00.000Z"),
     time: "07:00",
+    recordWindow: {
+      start: new Date("2026-09-11T01:00:00.000Z"),
+      end: new Date("2026-09-11T13:00:00.000Z"),
+    },
   };
 
   it("feeding_time の文言を組み立て、猫が 1 匹ならその猫の記録画面へ遷移する", () => {

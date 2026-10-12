@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "302e1727-4ca6-43fe-8b1c-d3dfcc2806bf",
+  "id": "1a3dbe14-6df9-45dc-9742-5c8f7e48663a",
   "prevId": "a6582e9d-1bf2-4ab8-9903-877376006f4d",
   "tables": {
     "ai_evaluations": {
@@ -951,7 +951,16 @@
           "default": "(unixepoch())"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "feeding_records_cat_id_occurred_at_idx": {
+          "name": "feeding_records_cat_id_occurred_at_idx",
+          "columns": [
+            "cat_id",
+            "occurred_at"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "feeding_records_cat_id_cats_id_fk": {
           "name": "feeding_records_cat_id_cats_id_fk",

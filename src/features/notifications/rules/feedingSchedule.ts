@@ -43,8 +43,9 @@ function atLocalDate(date: LocalDate, minutes: number): number {
  *
  * 家のごはんの時間を時刻順に並べ、各時刻の「前後の範囲」を、前の時刻との中間から次の時刻との
  * 中間までとする（時刻が 1 つだけなら前後 12 時間）。日付をまたいで、最後の時刻の次は翌日の
- * 最初の時刻になる。`recentFeedingAts` は家の猫すべてのごはん記録で、どれかの猫の記録が
- * 範囲内にあれば「記録がある」とみなす。
+ * 最初の時刻になる。範囲は始まりを含み終わりを含まない半開区間とし、1 件の記録が隣り合う
+ * 2 つの時刻の両方に数えられないようにする。`recentFeedingAts` は家の猫すべてのごはん記録で、
+ * どれかの猫の記録が範囲内にあれば「記録がある」とみなす。
  * - 時刻になったら「ごはんの時間です」を出す。すでに範囲内に記録があれば出さない
  * - 次の時刻との中間になっても範囲内に記録がなければ「ごはんはあげましたか？」を出す
  *
@@ -89,7 +90,7 @@ export function evaluateFeedingSchedule(
       const windowStart = atLocalDate(date, (prevMinutes + minutes) / 2);
       const reminderAt = atLocalDate(date, (minutes + nextMinutes) / 2);
       const isRecorded = feedingTimes.some(
-        (at) => at >= windowStart && at <= nowAt,
+        (at) => at >= windowStart && at < reminderAt,
       );
       if (isRecorded) {
         continue;
@@ -101,6 +102,10 @@ export function evaluateFeedingSchedule(
         referenceId: schedule.id,
         dueAt: new Date(slotAt),
         time: schedule.time,
+        recordWindow: {
+          start: new Date(windowStart),
+          end: new Date(reminderAt),
+        },
       };
 
       if (
