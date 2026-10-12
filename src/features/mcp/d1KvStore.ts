@@ -35,12 +35,40 @@ export class D1KvStore {
     return type === "json" ? JSON.parse(row.value) : row.value;
   }
 
+  /**
+   * `grant:{userId}:{grantId}`・`token:{userId}:{grantId}:{tokenId}` は、その grant が
+   * 解除済み（`revokedGrantMarkerKey` の目印がある）なら書き込まずに戻る（`connections.ts` の
+   * `revokeUserMcpConnection` 参照）。ライブラリのトークンの更新は grant を読んでから
+   * grant とトークンを書き戻すため、解除と重なると解除した grant が復活してしまう。
+   * 目印の確認と書き込みを 1 つの文で行い、解除の後に書き戻されないようにする。
+   * 書き込まなかった場合も例外にはせず、解除済みの grant が消えたときと同じく、
+   * 発行されたトークンが使えないだけにする
+   */
   async put(
     key: string,
     value: string,
     options: { expirationTtl?: number; expiration?: number } = {},
   ) {
     const expiresAt = toExpiresAt(options);
+    const grant = parseGrantOfKey(key);
+    if (grant) {
+      const marker = revokedGrantMarkerKey(grant.userId, grant.grantId);
+      const expiresAtSeconds =
+        expiresAt === null ? null : Math.floor(expiresAt.getTime() / 1000);
+      // `INSERT ... SELECT` に `ON CONFLICT` を付けるときは、構文の曖昧さを避けるため
+      // SELECT に WHERE が必要（`NOT EXISTS` がそれを兼ねる）
+      await getDb(this.d1).run(sql`
+        INSERT INTO oauth_kv_entries ("key", "value", "expires_at")
+        SELECT ${key}, ${value}, ${expiresAtSeconds}
+        WHERE NOT EXISTS (
+          SELECT 1 FROM oauth_kv_entries WHERE "key" = ${marker}
+        )
+        ON CONFLICT ("key") DO UPDATE SET
+          "value" = excluded."value",
+          "expires_at" = excluded."expires_at"
+      `);
+      return;
+    }
     await getDb(this.d1)
       .insert(oauthKvEntries)
       .values({ key, value, expiresAt })
@@ -88,6 +116,31 @@ export class D1KvStore {
           cacheStatus: null,
         };
   }
+}
+
+/**
+ * 解除した grant の目印のキー。ライブラリが `grant:{userId}:` で列挙しても混ざらないよう、
+ * `grant:` 以外で始める
+ */
+export function revokedGrantMarkerKey(userId: string, grantId: string) {
+  return `revoked-grant:${userId}:${grantId}`;
+}
+
+/**
+ * ライブラリ（0.10.4）の grant・アクセストークンのキーから、ユーザー ID と grant ID を
+ * 取り出す。それ以外のキーは null
+ */
+function parseGrantOfKey(key: string) {
+  const match = /^(?:grant:([^:]+):([^:]+)|token:([^:]+):([^:]+):[^:]+)$/.exec(
+    key,
+  );
+  if (!match) {
+    return null;
+  }
+  return {
+    userId: match[1] ?? match[3],
+    grantId: match[2] ?? match[4],
+  };
 }
 
 function notExpired() {

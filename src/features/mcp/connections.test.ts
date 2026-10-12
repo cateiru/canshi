@@ -164,6 +164,27 @@ describe("revokeUserMcpConnection", () => {
     ).toEqual(["grantNew2"]);
   });
 
+  it("解除した後は、トークンの更新と重なっても grant・トークンが書き戻されない", async () => {
+    const store = await seed();
+    // 解除の前にトークンの更新が grant を読んでいた場合の書き戻しを再現する
+    const grantBeforeRevoke = await store.get("grant:user-1:grant_old-1");
+
+    await revokeUserMcpConnection("user-1", "grant_old-1", d1);
+    await store.put("grant:user-1:grant_old-1", grantBeforeRevoke as string);
+    await store.put("token:user-1:grant_old-1:token-new", "{}", {
+      expirationTtl: 3600,
+    });
+
+    expect(await store.get("grant:user-1:grant_old-1")).toBeNull();
+    expect(await store.get("token:user-1:grant_old-1:token-new")).toBeNull();
+    expect(
+      (await listUserMcpConnections("user-1", d1)).map(({ id }) => id),
+    ).toEqual(["grantNew2"]);
+    // ほかの接続のトークンは引き続き書き込める
+    await store.put("token:user-1:grantNew2:token-new", "{}");
+    expect(await store.get("token:user-1:grantNew2:token-new")).toBe("{}");
+  });
+
   it("別のユーザーの接続は解除できない", async () => {
     const store = await seed();
 

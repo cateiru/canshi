@@ -1,4 +1,7 @@
-import { D1KvStore } from "./d1KvStore";
+import { D1KvStore, revokedGrantMarkerKey } from "./d1KvStore";
+
+/** 解除した grant の目印を残す秒数 */
+const REVOKED_GRANT_MARKER_TTL_SECONDS = 24 * 60 * 60;
 
 /**
  * 設定の「AIとの接続」に表示する、ユーザーが同意画面で許可した接続（OAuth の grant）
@@ -62,7 +65,7 @@ export async function listUserMcpConnections(
 }
 
 /**
- * 接続を 1 つ解除する。ライブラリの `OAuthHelpers.revokeGrant()` と同じく、発行済みの
+ * 接続を 1 つ解除する。解除済みの目印を置いてから、ライブラリの `OAuthHelpers.revokeGrant()` と同じく、発行済みの
  * アクセストークン（`token:{userId}:{grantId}:{tokenId}`）を消してから grant を消す。
  * リフレッシュトークンは grant の中に保存されているため、grant を消すと使えなくなる。
  * 別のユーザーの接続は解除できない。解除したかどうかを返す
@@ -82,6 +85,13 @@ export async function revokeUserMcpConnection(
   if ((await store.get(grantKey)) === null) {
     return false;
   }
+
+  // 先に解除済みの目印を置き、この後に grant・トークンが書き込まれないようにする
+  // （`D1KvStore.put` 参照）。目印より前に書き込まれたものは、続けて削除する。
+  // トークンの更新は数秒で終わるため、目印は 1 日で消えてよい（定期実行で削除される）
+  await store.put(revokedGrantMarkerKey(userId, grantId), "1", {
+    expirationTtl: REVOKED_GRANT_MARKER_TTL_SECONDS,
+  });
 
   let cursor: string | undefined;
   do {
