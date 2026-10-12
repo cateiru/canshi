@@ -13,6 +13,10 @@ export async function revokeMcpConnectionAction(
   connectionId: string,
 ): Promise<void> {
   const user = await requireUser();
+  // Server Action の引数はクライアントから任意の値を送れるため、文字列であることを確かめる
+  if (typeof connectionId !== "string") {
+    throw new Error("接続の ID が正しくありません");
+  }
   await revokeUserMcpConnection(user.id, connectionId);
   revalidatePath("/settings/ai-connections");
 }
