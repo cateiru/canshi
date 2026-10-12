@@ -1,31 +1,68 @@
 /** ユーザーと、そのユーザーが参照できる猫（所属する家の猫）の組 */
 export type UserCatAccess = { userId: string; catId: string };
 
-/** ユーザー ID ごとに、参照できる猫の ID の集合にまとめる */
-export function groupCatIdsByUser(
-  accesses: readonly UserCatAccess[],
+/** ユーザーと、そのユーザーが所属する家の組 */
+export type UserHouseholdAccess = { userId: string; householdId: string };
+
+/** ユーザー ID ごとの、参照できる猫・所属する家の ID の集合 */
+export type PushAccessIndex = {
+  catIdsByUser: ReadonlyMap<string, ReadonlySet<string>>;
+  householdIdsByUser: ReadonlyMap<string, ReadonlySet<string>>;
+};
+
+function groupByUser<T extends { userId: string }>(
+  accesses: readonly T[],
+  idOf: (access: T) => string,
 ): Map<string, Set<string>> {
-  const catIdsByUser = new Map<string, Set<string>>();
-  for (const { userId, catId } of accesses) {
-    const catIds = catIdsByUser.get(userId) ?? new Set<string>();
-    catIds.add(catId);
-    catIdsByUser.set(userId, catIds);
+  const idsByUser = new Map<string, Set<string>>();
+  for (const access of accesses) {
+    const ids = idsByUser.get(access.userId) ?? new Set<string>();
+    ids.add(idOf(access));
+    idsByUser.set(access.userId, ids);
   }
-  return catIdsByUser;
+  return idsByUser;
+}
+
+/** ユーザー ID ごとに、参照できる猫・所属する家の ID の集合にまとめる */
+export function buildPushAccessIndex(
+  catAccesses: readonly UserCatAccess[],
+  householdAccesses: readonly UserHouseholdAccess[],
+): PushAccessIndex {
+  return {
+    catIdsByUser: groupByUser(catAccesses, (access) => access.catId),
+    householdIdsByUser: groupByUser(
+      householdAccesses,
+      (access) => access.householdId,
+    ),
+  };
 }
 
 /**
- * 通知を送る購読を返す。通知の猫を参照できるユーザー（猫の家のメンバー）の購読だけを対象にし、
- * ユーザーに紐付いていない購読（ユーザーの導入前のもの）には送らない
+ * 通知を送る購読を返す。猫についての通知はその猫を参照できるユーザー（猫の家のメンバー）、
+ * 家についての通知はその家のメンバーの購読だけを対象にし、ユーザーに紐付いていない購読
+ * （ユーザーの導入前のもの）には送らない
  */
 export function selectPushTargets<T extends { userId: string | null }>(
-  notification: { catId: string },
+  notification: { catId: string | null; householdId: string | null },
   subscriptions: readonly T[],
-  catIdsByUser: ReadonlyMap<string, ReadonlySet<string>>,
+  { catIdsByUser, householdIdsByUser }: PushAccessIndex,
 ): T[] {
-  return subscriptions.filter(
-    (subscription) =>
-      subscription.userId != null &&
-      (catIdsByUser.get(subscription.userId)?.has(notification.catId) ?? false),
-  );
+  return subscriptions.filter((subscription) => {
+    if (subscription.userId == null) {
+      return false;
+    }
+    if (notification.catId != null) {
+      return (
+        catIdsByUser.get(subscription.userId)?.has(notification.catId) ?? false
+      );
+    }
+    if (notification.householdId != null) {
+      return (
+        householdIdsByUser
+          .get(subscription.userId)
+          ?.has(notification.householdId) ?? false
+      );
+    }
+    return false;
+  });
 }

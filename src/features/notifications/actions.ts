@@ -11,14 +11,14 @@ import {
   symptoms,
 } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
-import { accessibleCatIdsQuery } from "@/features/households/queries";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
+import { accessibleNotificationsCondition } from "./access";
 
 export type NotificationActionResult = { error?: string };
 
 /**
- * 指定した ID の通知のうち、ユーザーの家の猫の通知だけに一致する条件。
- * 別の家の猫の通知は、存在しない通知と同じく更新対象にしない
+ * 指定した ID の通知のうち、ユーザーが参照できる通知（ユーザーの家の猫・ユーザーの家の通知）
+ * だけに一致する条件。別の家の通知は、存在しない通知と同じく更新対象にしない
  */
 function accessibleNotification(
   db: ReturnType<typeof getDb>,
@@ -27,7 +27,7 @@ function accessibleNotification(
 ) {
   return and(
     eq(notifications.id, id),
-    inArray(notifications.catId, accessibleCatIdsQuery(db, userId)),
+    accessibleNotificationsCondition(db, userId),
   );
 }
 
@@ -76,7 +76,8 @@ export async function markCleaningNotificationDoneAction(
 
     if (
       notification?.kind !== "cleaning_due" ||
-      notification.referenceId == null
+      notification.referenceId == null ||
+      notification.catId == null
     ) {
       return { error: "通知が見つかりませんでした" };
     }
@@ -178,7 +179,8 @@ export async function resolveSymptomNotificationAction(
 
     if (
       notification?.kind !== "symptom_ongoing" ||
-      notification.referenceId == null
+      notification.referenceId == null ||
+      notification.catId == null
     ) {
       return { error: "通知が見つかりませんでした" };
     }
@@ -297,15 +299,15 @@ export async function markNotificationsReadAction(
   try {
     const db = getDb();
     const readAt = new Date();
-    // `set` の既読日時と `accessibleCatIdsQuery` の userId の分を 2 個予約する
-    for (const chunk of chunkForBoundParameters(ids, 2)) {
+    // `set` の既読日時と `accessibleNotificationsCondition` の userId（2 個）の分を 3 個予約する
+    for (const chunk of chunkForBoundParameters(ids, 3)) {
       await db
         .update(notifications)
         .set({ readAt })
         .where(
           and(
             inArray(notifications.id, chunk),
-            inArray(notifications.catId, accessibleCatIdsQuery(db, user.id)),
+            accessibleNotificationsCondition(db, user.id),
           ),
         );
     }

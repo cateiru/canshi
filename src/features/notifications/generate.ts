@@ -105,6 +105,7 @@ export async function insertSymptomOngoingNotification(
         .select({
           id: sql`${crypto.randomUUID()}`.as("id"),
           catId: symptoms.catId,
+          householdId: sql`null`.as("householdId"),
           kind: sql`${candidate.kind}`.as("kind"),
           referenceId: symptoms.id,
           dedupeKey: sql`${candidate.dedupeKey}`.as("dedupeKey"),

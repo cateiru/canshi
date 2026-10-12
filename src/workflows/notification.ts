@@ -9,12 +9,16 @@ import { notifications } from "@/db/schema";
 import { generateNotifications } from "@/features/notifications/generate";
 import {
   listCatAccessesOfSubscribers,
+  listHouseholdAccessesOfSubscribers,
   listPushDeliveries,
   listPushSubscriptions,
   listUnpushedNotifications,
 } from "@/features/push/queries";
 import { sendPushToSubscription } from "@/features/push/sendPush";
-import { groupCatIdsByUser, selectPushTargets } from "@/features/push/targets";
+import {
+  buildPushAccessIndex,
+  selectPushTargets,
+} from "@/features/push/targets";
 import { getVapidKeys } from "@/features/push/vapid";
 
 function deliveryKey(notificationId: string, subscriptionId: string): string {
@@ -52,22 +56,24 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
       return;
     }
 
-    const { pending, subscriptions, catAccesses } = await step.do(
-      "list pending pushes",
-      async () => {
-        const [pending, subscriptions, catAccesses] = await Promise.all([
-          listUnpushedNotifications(now, this.env.DB),
-          listPushSubscriptions(this.env.DB),
-          listCatAccessesOfSubscribers(this.env.DB),
-        ]);
-        return { pending, subscriptions, catAccesses };
-      },
-    );
-    // 通知は、その猫の家のメンバーの購読にだけ送る。別の家の猫の通知（タイトル・本文に
-    // 猫の名前を含む）を、関係のない端末に送らない
-    const catIdsByUser = groupCatIdsByUser(catAccesses);
-    const targetsOf = (notification: { catId: string }) =>
-      selectPushTargets(notification, subscriptions, catIdsByUser);
+    const { pending, subscriptions, catAccesses, householdAccesses } =
+      await step.do("list pending pushes", async () => {
+        const [pending, subscriptions, catAccesses, householdAccesses] =
+          await Promise.all([
+            listUnpushedNotifications(now, this.env.DB),
+            listPushSubscriptions(this.env.DB),
+            listCatAccessesOfSubscribers(this.env.DB),
+            listHouseholdAccessesOfSubscribers(this.env.DB),
+          ]);
+        return { pending, subscriptions, catAccesses, householdAccesses };
+      });
+    // 通知は、その猫の家（家についての通知はその家）のメンバーの購読にだけ送る。
+    // 別の家の通知（タイトル・本文に猫の名前を含む）を、関係のない端末に送らない
+    const accessIndex = buildPushAccessIndex(catAccesses, householdAccesses);
+    const targetsOf = (notification: {
+      catId: string | null;
+      householdId: string | null;
+    }) => selectPushTargets(notification, subscriptions, accessIndex);
 
     if (pending.length === 0 || subscriptions.length === 0) {
       return;
