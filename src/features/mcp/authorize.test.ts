@@ -242,6 +242,19 @@ describe("withMcpAuthorize", () => {
     expect(helpers.completeAuthorization).not.toHaveBeenCalled();
   });
 
+  it("OAuthProvider が処理しない /.well-known/ 配下はログイン画面へ送らず 404 にする", async () => {
+    const { next, fetch } = setup();
+
+    for (const path of [
+      "/.well-known/oauth-authorization-server/mcp",
+      "/.well-known/openid-configuration/mcp",
+    ]) {
+      const response = await fetch(new Request(`${ORIGIN}${path}`));
+      expect(response.status).toBe(404);
+    }
+    expect(next.fetch).not.toHaveBeenCalled();
+  });
+
   it("OIDC discovery には OAuth のエンドポイントを返す", async () => {
     const { next, fetch } = setup();
 

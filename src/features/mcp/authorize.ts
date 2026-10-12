@@ -59,6 +59,14 @@ export function withMcpAuthorize(nextHandler: {
       if (url.pathname === "/.well-known/openid-configuration") {
         return openIdConfiguration(url);
       }
+      // OAuth クライアントは `/.well-known/oauth-authorization-server/mcp` のように
+      // 複数の場所を順に試して設定を探す（ChatGPT もこのパスを要求する）。Next.js に渡すと
+      // ログイン画面（HTML）へリダイレクトされ、クライアントは設定が壊れているとみなして
+      // 次の場所を試さずに失敗するため、`OAuthProvider` が処理しない `/.well-known/` 配下は
+      // 404 にして、次の場所を試してもらう
+      if (url.pathname.startsWith("/.well-known/")) {
+        return new Response("Not Found", { status: 404 });
+      }
       return next(request);
     },
   };
