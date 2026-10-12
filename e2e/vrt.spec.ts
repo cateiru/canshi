@@ -228,12 +228,17 @@ test("プロフィール設定ページの見た目", async ({ page }, testInfo)
   await takeSnapshot(page, testInfo);
 });
 
-test("ログイン設定ページの見た目", async ({ page }, testInfo) => {
-  await page.goto("/settings/login");
-  await expect(
-    page.getByRole("heading", { level: 1, name: "ログイン設定" }),
-  ).toBeVisible();
-  await takeSnapshot(page, testInfo);
+test.describe("ログイン設定", () => {
+  // 端末一覧のログイン日時は実行日時になるため除外する
+  test.use({ ignoreSelectors: ['[class*="loggedInAt"]'] });
+
+  test("ログイン設定ページの見た目", async ({ page }, testInfo) => {
+    await page.goto("/settings/login");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "ログイン設定" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
 });
 
 test("家の設定ページの見た目", async ({ page }, testInfo) => {

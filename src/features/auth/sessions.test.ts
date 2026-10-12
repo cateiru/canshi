@@ -9,8 +9,10 @@ import { sessions, users } from "@/db/schema";
 import {
   createSession,
   deleteSession,
+  deleteUserSession,
   deleteUserSessions,
   getSessionUser,
+  listUserSessions,
 } from "./sessions";
 import { hashSessionToken, SESSION_MAX_AGE_SECONDS } from "./sessionToken";
 
@@ -50,6 +52,19 @@ describe("createSession / getSessionUser", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].tokenHash).not.toBe(token);
     expect(rows[0].tokenHash).toBe(await hashSessionToken(token));
+  });
+
+  it("ログインしたブラウザの User-Agent を保存し、セッションごとに別の ID を振る", async () => {
+    await createSession("user-1", { userAgent: "  Mozilla/5.0 (iPhone)  " });
+    await createSession("user-1");
+
+    const rows = await db.select().from(sessions);
+    expect(rows.map((row) => row.userAgent).sort()).toEqual([
+      "Mozilla/5.0 (iPhone)",
+      null,
+    ]);
+    expect(rows[0].id).toMatch(/^[0-9a-f]{32}$/);
+    expect(rows[0].id).not.toBe(rows[1].id);
   });
 
   it("ログインのたびに別のトークンを発行する", async () => {
@@ -108,6 +123,93 @@ describe("deleteUserSessions", () => {
 
     expect(await getSessionUser(first.token)).toBeNull();
     expect(await getSessionUser(second.token)).toBeNull();
+    expect((await getSessionUser(other.token))?.id).toBe("user-2");
+  });
+});
+
+describe("listUserSessions", () => {
+  it("そのユーザーの期限内のセッションを、この端末を先頭に新しい順で返す", async () => {
+    const current = await createSession("user-1", { userAgent: "current" });
+    await createSession("user-1", { userAgent: "first" });
+    await createSession("user-1", { userAgent: "second" });
+    const expired = await createSession("user-1", { userAgent: "expired" });
+    await db
+      .update(sessions)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(sessions.tokenHash, await hashSessionToken(expired.token)));
+    await createSession("user-2", { userAgent: "other" });
+
+    const list = await listUserSessions("user-1", current.token);
+
+    expect(
+      list.map(({ userAgent, isCurrent }) => ({ userAgent, isCurrent })),
+    ).toEqual([
+      { userAgent: "current", isCurrent: true },
+      { userAgent: "second", isCurrent: false },
+      { userAgent: "first", isCurrent: false },
+    ]);
+    // トークンのハッシュは返さない
+    expect(list[0]).not.toHaveProperty("tokenHash");
+    expect(list[0].createdAt).toBeInstanceOf(Date);
+  });
+
+  it("Cookie がなければ、どのセッションにも印を付けない", async () => {
+    await createSession("user-1");
+
+    const list = await listUserSessions("user-1", undefined);
+
+    expect(list.map((session) => session.isCurrent)).toEqual([false]);
+  });
+});
+
+describe("deleteUserSession", () => {
+  async function sessionIdOf(token: string) {
+    const [row] = await db
+      .select({ id: sessions.id })
+      .from(sessions)
+      .where(eq(sessions.tokenHash, await hashSessionToken(token)));
+    return row.id;
+  }
+
+  it("指定した端末のセッションだけを使えなくする", async () => {
+    const current = await createSession("user-1");
+    const other = await createSession("user-1");
+
+    const result = await deleteUserSession(
+      "user-1",
+      await sessionIdOf(other.token),
+      current.token,
+    );
+
+    expect(result).toEqual({ deleted: true, isCurrent: false });
+    expect(await getSessionUser(other.token)).toBeNull();
+    expect((await getSessionUser(current.token))?.id).toBe("user-1");
+  });
+
+  it("この端末のセッションを指定したときは、そのことを返す", async () => {
+    const current = await createSession("user-1");
+
+    const result = await deleteUserSession(
+      "user-1",
+      await sessionIdOf(current.token),
+      current.token,
+    );
+
+    expect(result).toEqual({ deleted: true, isCurrent: true });
+    expect(await getSessionUser(current.token)).toBeNull();
+  });
+
+  it("別のユーザーのセッションは削除しない", async () => {
+    const current = await createSession("user-1");
+    const other = await createSession("user-2");
+
+    const result = await deleteUserSession(
+      "user-1",
+      await sessionIdOf(other.token),
+      current.token,
+    );
+
+    expect(result).toEqual({ deleted: false, isCurrent: false });
     expect((await getSessionUser(other.token))?.id).toBe("user-2");
   });
 });

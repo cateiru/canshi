@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
-import { Breadcrumb, Button } from "@/components/ui";
+import { cookies } from "next/headers";
+import { Badge, Breadcrumb, Button } from "@/components/ui";
 import { LoginSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { logoutAction } from "@/features/auth/actions";
+import { formatDeviceName } from "@/features/auth/deviceName";
 import { LogoutAllDevicesButton } from "@/features/auth/LogoutAllDevicesButton";
+import { SessionLogoutButton } from "@/features/auth/SessionLogoutButton";
 import { requireUser } from "@/features/auth/session";
+import { listUserSessions } from "@/features/auth/sessions";
+import { SESSION_COOKIE_NAME } from "@/features/auth/sessionToken";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
@@ -16,6 +22,10 @@ export const dynamic = "force-dynamic";
 
 export default async function LoginSettingsPage() {
   const user = await requireUser();
+  const sessions = await listUserSessions(
+    user.id,
+    (await cookies()).get(SESSION_COOKIE_NAME)?.value,
+  );
 
   return (
     <main className={styles.main}>
@@ -32,7 +42,7 @@ export default async function LoginSettingsPage() {
           ログイン設定
         </RecordPageHeading>
         <p className={styles.description}>
-          ログインしているアカウントの確認と、ログアウトができます。
+          ログインしているアカウントと端末の確認と、ログアウトができます。
         </p>
       </header>
 
@@ -43,6 +53,55 @@ export default async function LoginSettingsPage() {
             <code className={styles.userId}>{user.id}</code>
           </dd>
         </dl>
+      </Surface>
+
+      <Surface title="ログイン中の端末" titleId="login-sessions" gap="sm">
+        <p className={styles.sectionDescription}>
+          このアカウントでログインしている端末です。心当たりのない端末や、使わなくなった端末はログアウトできます。
+        </p>
+        <div className={styles.tableScroll}>
+          <table className={styles.sessions} aria-labelledby="login-sessions">
+            <thead>
+              <tr>
+                <th scope="col">端末</th>
+                <th scope="col">ログイン日時</th>
+                <th scope="col">
+                  <span className={styles.srOnly}>操作</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map((session) => {
+                const deviceName = formatDeviceName(session.userAgent);
+                const loggedInAt = formatDateTimeUtc(
+                  getNaiveUtcNow(session.createdAt),
+                );
+                return (
+                  <tr key={session.id}>
+                    <th scope="row" className={styles.deviceName}>
+                      <span className={styles.deviceNameInner}>
+                        {deviceName}
+                        {session.isCurrent ? (
+                          <Badge color="accent">この端末</Badge>
+                        ) : null}
+                      </span>
+                    </th>
+                    <td className={styles.loggedInAt}>{loggedInAt}</td>
+                    <td className={styles.actions}>
+                      {session.isCurrent ? null : (
+                        <SessionLogoutButton
+                          sessionId={session.id}
+                          deviceName={deviceName}
+                          loggedInAt={loggedInAt}
+                        />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </Surface>
 
       <Surface title="ログアウト" titleId="logout" gap="md">

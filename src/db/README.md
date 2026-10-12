@@ -81,6 +81,13 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - ログインセッションは `sessions` に保存する。主キーはセッショントークンの SHA-256（`token_hash`）で、
   トークンそのものは Cookie にだけ持つ。ログアウトで行を削除し、期限切れの行は同じユーザーが次に
   ログインしたときに削除する（`src/features/auth/sessions.ts`）
+  - ログイン設定（`/settings/login`）の「ログイン中の端末」の一覧のため、ログインしたブラウザの
+    User-Agent（`user_agent`、512 文字までに切り詰める）を保存する。生の値を保存し、表示するときに
+    「iPhone・Safari」のような端末名に変換する（`src/features/auth/deviceName.ts`）。`0042` より前の
+    セッションは NULL で、「不明な端末」と表示する
+  - 端末を指定してログアウトするときは、`token_hash` を画面に出さず、画面用の ID（`id`、一意）で指す。
+    `id` は DB 側の既定値（`lower(hex(randomblob(16)))`）で振るため、既存の行にも値が入る。削除は
+    ユーザーの一致を WHERE に含め、別のユーザーのセッションは削除できない
 - `cats.household_id` は、家の導入（`0036`）より前から登録されていた猫を残すため nullable。
   NULL の猫はどのユーザーからも見えないため、`scripts/link-household.mts`（`pnpm household:link`）で
   家に紐付ける（`docs/deploy.md` 参照）

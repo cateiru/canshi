@@ -73,7 +73,11 @@ test("ログアウトするとログイン画面に戻り、ページを開け�
   expect(sessionCookie).toBeDefined();
 
   await page.goto("/settings/login");
-  await page.getByRole("button", { name: "ログアウト", exact: true }).click();
+  // 端末一覧にもほかの端末の「ログアウト」ボタンが並ぶため、「ログアウト」の欄の中から押す
+  await page
+    .getByRole("region", { name: "ログアウト", exact: true })
+    .getByRole("button", { name: "ログアウト", exact: true })
+    .click();
   // ログアウト前のページ（/settings/login）も `/login` を含むため、パス全体で比べる
   await expect(page).toHaveURL(LOGIN_PAGE_URL);
 
@@ -120,6 +124,67 @@ test("すべての端末からログアウトすると、ほかの端末のセ�
 
   await otherPage.goto("/cats");
   await expect(otherPage).toHaveURL(/\/login\?callbackUrl=%2Fcats$/);
+  await otherDevice.close();
+});
+
+test("ログイン中の端末の一覧から、ほかの端末をログアウトさせられる", async ({
+  browser,
+  page,
+}) => {
+  // 共有の e2e ユーザーのセッションを消すと並行して動くほかのテストが失敗するため、
+  // このテスト専用のメールアドレスでログインする
+  const email = "e2e-logout-session@example.com";
+  const login = async (target: typeof page) => {
+    await target.goto("/login?callbackUrl=%2Fsettings%2Flogin");
+    await target.getByLabel("メールアドレス（開発用）").fill(email);
+    await target.getByRole("button", { name: "ログイン" }).click();
+    await expect(target).toHaveURL(/\/settings\/login$/);
+  };
+
+  // 別の端末として、iPhone の Safari の User-Agent を送る別のコンテキストでもログインしておく
+  const otherDevice = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
+  });
+  const otherPage = await otherDevice.newPage();
+  await login(otherPage);
+  await login(page);
+
+  const sessions = page
+    .getByRole("table", { name: "ログイン中の端末" })
+    .getByRole("row");
+  // 前回までの実行で残ったセッションも並ぶため、件数ではなく行の中身で確かめる
+  await expect(sessions.filter({ hasText: "この端末" })).toHaveCount(1);
+  await expect(
+    sessions.filter({ hasText: "この端末" }).getByRole("button"),
+  ).toHaveCount(0);
+  const otherSession = sessions.filter({ hasText: "iPhone・Safari" }).first();
+  // ログイン日時の列に日時を表示する
+  await expect(otherSession.getByRole("cell").first()).toHaveText(
+    /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/,
+  );
+
+  const iphoneCount = await sessions
+    .filter({ hasText: "iPhone・Safari" })
+    .count();
+  await otherSession.getByRole("button", { name: "ログアウト" }).click();
+  await page
+    .getByRole("dialog", { name: "端末をログアウトしますか？" })
+    .getByRole("button", { name: "ログアウト" })
+    .click();
+  await expect(
+    page.getByText("「iPhone・Safari」をログアウトしました"),
+  ).toBeVisible();
+  await expect(sessions.filter({ hasText: "iPhone・Safari" })).toHaveCount(
+    iphoneCount - 1,
+  );
+
+  // ログアウトさせた端末はページを開けなくなり、この端末はログインしたまま
+  await otherPage.goto("/cats");
+  await expect(otherPage).toHaveURL(/\/login\?callbackUrl=%2Fcats$/);
+  await page.goto("/cats");
+  await expect(page).toHaveURL(/\/cats$/);
   await otherDevice.close();
 });
 

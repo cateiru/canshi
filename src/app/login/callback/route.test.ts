@@ -11,6 +11,8 @@ import { GET as start } from "../start/route";
 import { GET as callback } from "./route";
 
 const ORIGIN = "https://canshi.example.com";
+const USER_AGENT =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1";
 const CLIENT_ID = "access-client-id";
 const ISSUER = `https://team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/${CLIENT_ID}`;
 const env = {
@@ -98,7 +100,10 @@ function callbackRequest(query: Record<string, string>, cookie?: string) {
   return new NextRequest(
     `${ORIGIN}/login/callback?${new URLSearchParams(query)}`,
     {
-      headers: cookie ? { cookie: `${OIDC_STATE_COOKIE_NAME}=${cookie}` } : {},
+      headers: {
+        "user-agent": USER_AGENT,
+        ...(cookie ? { cookie: `${OIDC_STATE_COOKIE_NAME}=${cookie}` } : {}),
+      },
     },
   );
 }
@@ -138,7 +143,12 @@ describe("/login/start → /login/callback", () => {
       "session-token",
     );
     expect(response.cookies.get(OIDC_STATE_COOKIE_NAME)?.value).toBe("");
-    expect(loginWithEmail).toHaveBeenCalledWith("Owner@Example.com", env);
+    // ログインしたブラウザの User-Agent をセッションに保存する（端末一覧の表示用）
+    expect(loginWithEmail).toHaveBeenCalledWith(
+      "Owner@Example.com",
+      env,
+      USER_AGENT,
+    );
 
     // 認可コードは PKCE の code_verifier・client secret と一緒に交換する
     const [tokenRequest] = tokenRequests;

@@ -77,7 +77,11 @@ export async function GET(request: NextRequest) {
     return failed("ID トークンを取得・検証できませんでした", error);
   }
 
-  const { token, expiresAt } = await loginWithEmail(email, env);
+  const { token, expiresAt } = await loginWithEmail(
+    email,
+    env,
+    request.headers.get("user-agent"),
+  );
   const response = NextResponse.redirect(
     new URL(loginState.callbackUrl, origin),
   );
