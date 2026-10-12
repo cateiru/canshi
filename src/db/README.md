@@ -58,7 +58,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - OIDC の導入前に作られたユーザーは `email_hash` が NULL のため、`pnpm user:link-email` で紐付ける
 - `users.role` はアプリ全体の権限（`admin`・`member`）。ユーザーが 1 件もないときに最初に
   ログインしたユーザーは `admin`
-- `users.name`・`users.icon_media_asset_id` は本人が「プロフィール設定」（`/settings/profile`）で変えられる。
+- `users.name`・`users.icon_media_asset_id` は本人が「アカウント設定」（`/settings/account`）で変えられる。
   アイコン画像は同じ家のメンバーにも表示する（詳細は「画像・動画」の節）
 - 家の中での権限は `household_members.role`（`owner`・`member`）で持つ。今はオーナーを 1 名で運用し、
   移譲は 2 人のロールを 1 つの UPDATE 文で入れ替える（`src/features/households/ownership.ts`）。
@@ -81,7 +81,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - ログインセッションは `sessions` に保存する。主キーはセッショントークンの SHA-256（`token_hash`）で、
   トークンそのものは Cookie にだけ持つ。ログアウトで行を削除し、期限切れの行は同じユーザーが次に
   ログインしたときに削除する（`src/features/auth/sessions.ts`）
-  - ログイン設定（`/settings/login`）の「ログイン中の端末」の一覧のため、ログインしたブラウザの
+  - アカウント設定（`/settings/account`）の「ログイン中の端末」の一覧のため、ログインしたブラウザの
     User-Agent（`user_agent`、512 文字までに切り詰める）を保存する。生の値を保存し、表示するときに
     「iPhone・Safari」のような端末名に変換する（`src/features/auth/deviceName.ts`）。`0042` より前の
     セッションは NULL で、「不明な端末」と表示する
@@ -169,7 +169,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 下書きにはアップロードしたユーザー（`uploaded_by_user_id`）を保存し、本人だけが取得・削除・記録への紐付けをできる（`src/features/media/access.ts`・`attach.ts`）。asset ID を知っていても、別のユーザーの下書きは扱えない
 - 記録を削除するときは、レコード本体より先に `deleteMediaAssetsByRecord(recordType, recordId)` を呼んで R2 のオブジェクトと行をまとめて削除する
 - `cats.profile_media_asset_id` はプロフィール画像として使う `media_assets` 行（`recordType = "cat_profile"`・`recordId` と `catId` は猫の ID）への参照（nullable）。猫の編集画面でブラウザ側で正方形に切り抜いた画像を下書きとしてアップロードし、保存時に付け替える（`src/features/cats/applyProfileImage.ts`）。下書きの紐付けと猫の参照の更新は同じ `db.batch` で行い、差し替え・削除時はその時点で猫が参照していない古い画像だけを削除する（同時に別のリクエストが設定した画像を消さないため）。`cats` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/cats/profileImage.ts`）
-- `users.icon_media_asset_id` はアイコン画像として使う `media_assets` 行（`recordType = "user_icon"`・`recordId` はユーザーの ID・`catId` は null）への参照（nullable）。猫のプロフィール画像と同じく、切り抜いた画像を下書きとしてアップロードし、プロフィール設定の保存時に同じ `db.batch` で付け替え、ユーザーが参照していない古い画像だけを削除する（`src/features/users/applyUserIcon.ts`）。`users` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/users/iconImage.ts`）
+- `users.icon_media_asset_id` はアイコン画像として使う `media_assets` 行（`recordType = "user_icon"`・`recordId` はユーザーの ID・`catId` は null）への参照（nullable）。猫のプロフィール画像と同じく、切り抜いた画像を下書きとしてアップロードし、アカウント設定でプロフィールを保存するときに同じ `db.batch` で付け替え、ユーザーが参照していない古い画像だけを削除する（`src/features/users/applyUserIcon.ts`）。`users` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/users/iconImage.ts`）
   - `user_icon` は記録への添付ではないため `MEDIA_RECORD_TYPES` に含めず、`POST /api/media` から直接アップロードさせない
   - 参照できるのは本人と同じ家のメンバー、削除できるのは本人だけ（`src/features/media/access.ts`）
 

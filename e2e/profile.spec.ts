@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { createPng } from "../src/features/media/testing/createPng";
 import { fillAndKeep } from "./helpers";
 
-// プロフィール設定（名前・アイコン）を検証する。ログインユーザーは全テストで共有しているため、
+// アカウント設定のプロフィール（名前・アイコン）を検証する。ログインユーザーは全テストで共有しているため、
 // 名前を変えるテストとアイコンを変えるテストが重ならないよう直列に実行し、最後に元へ戻す
 test.describe.configure({ mode: "serial" });
 
@@ -22,9 +22,9 @@ async function openOwnHousehold(page: Page) {
 }
 
 test("名前を変えると、家のメンバー一覧に反映される", async ({ page }) => {
-  await page.goto("/settings/profile");
+  await page.goto("/settings/account");
   await expect(
-    page.getByRole("heading", { level: 1, name: "プロフィール設定" }),
+    page.getByRole("heading", { level: 1, name: "アカウント設定" }),
   ).toBeVisible();
 
   const nameField = page.getByRole("textbox", { name: "名前" });
@@ -41,7 +41,7 @@ test("名前を変えると、家のメンバー一覧に反映される", async
     await openOwnHousehold(page);
     await expect(page.getByText(`${newName}（あなた）`)).toBeVisible();
   } finally {
-    await page.goto("/settings/profile");
+    await page.goto("/settings/account");
     await fillAndKeep(
       page.getByRole("textbox", { name: "名前" }),
       originalName,
@@ -54,7 +54,7 @@ test("名前を変えると、家のメンバー一覧に反映される", async
 });
 
 test("名前を空にすると保存できない", async ({ page }) => {
-  await page.goto("/settings/profile");
+  await page.goto("/settings/account");
   await fillAndKeep(page.getByRole("textbox", { name: "名前" }), " ");
   await page.getByRole("button", { name: "保存する" }).click();
   await expect(page.getByText("名前を入力してください")).toBeVisible();
@@ -63,7 +63,7 @@ test("名前を空にすると保存できない", async ({ page }) => {
 test("アイコンを切り抜いて設定・変更・削除でき、家のメンバー一覧に表示される", async ({
   page,
 }) => {
-  await page.goto("/settings/profile");
+  await page.goto("/settings/account");
   const name = await page.getByRole("textbox", { name: "名前" }).inputValue();
   const icon = () =>
     page.getByRole("img", { name: `${name}のアイコン`, exact: true });
@@ -110,7 +110,7 @@ test("アイコンを切り抜いて設定・変更・削除でき、家のメ�
     await expect(icon()).toHaveAttribute("src", srcA);
 
     // 別の画像に差し替えると、古い画像は配信されなくなる
-    await page.goto("/settings/profile");
+    await page.goto("/settings/account");
     await chooseImage("b.png", [0, 255, 0, 255]);
     await save();
     await expect(icon()).not.toHaveAttribute("src", srcA);
@@ -127,7 +127,7 @@ test("アイコンを切り抜いて設定・変更・削除でき、家のメ�
     expect((await page.request.get(srcB)).status()).toBe(404);
   } finally {
     // 同じローカル DB を使う他のテストに影響しないよう、アイコンなしに戻す
-    await page.goto("/settings/profile");
+    await page.goto("/settings/account");
     const removeButton = page.getByRole("button", { name: "画像を外す" });
     if (await removeButton.isVisible()) {
       await removeButton.click();

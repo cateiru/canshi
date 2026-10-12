@@ -16,8 +16,7 @@ for (const viewport of [
     ).toBeVisible();
 
     for (const { name, path } of [
-      { name: "プロフィール設定", path: "/settings/profile" },
-      { name: "ログイン設定", path: "/settings/login" },
+      { name: "アカウント設定", path: "/settings/account" },
       { name: "家の設定", path: "/settings/households" },
       { name: "通知設定", path: "/settings/notifications" },
       { name: "見た目設定", path: "/settings/appearance" },
@@ -46,3 +45,15 @@ for (const viewport of [
     await expect(page).toHaveURL("/settings");
   });
 }
+
+test("以前のプロフィール設定・ログイン設定の URL を開くと、アカウント設定へ移る", async ({
+  page,
+}) => {
+  for (const path of ["/settings/profile", "/settings/login"]) {
+    await page.goto(path);
+    await expect(page).toHaveURL("/settings/account");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "アカウント設定" }),
+    ).toBeVisible();
+  }
+});

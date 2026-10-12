@@ -3,6 +3,6 @@
  * record_id はユーザーの ID になる（猫には紐付かないため cat_id は null）。
  *
  * 記録への添付ではないため `MEDIA_RECORD_TYPES` には含めない。`POST /api/media` から
- * 任意のユーザー宛てにアップロードされないよう、下書きを経由してプロフィール設定の保存時にだけ紐付ける
+ * 任意のユーザー宛てにアップロードされないよう、下書きを経由してアカウント設定でプロフィールを保存するときにだけ紐付ける
  */
 export const USER_ICON_MEDIA_TYPE = "user_icon";

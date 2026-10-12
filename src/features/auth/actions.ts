@@ -85,5 +85,5 @@ export async function logoutSessionAction(sessionId: string): Promise<void> {
     cookieStore.delete(SESSION_COOKIE_NAME);
     redirect("/login");
   }
-  revalidatePath("/settings/login");
+  revalidatePath("/settings/account");
 }

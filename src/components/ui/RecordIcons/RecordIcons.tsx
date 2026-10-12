@@ -660,7 +660,7 @@ export function HouseholdIcon(props: RecordIconProps) {
   );
 }
 
-export function ProfileSettingsIcon(props: RecordIconProps) {
+export function AccountSettingsIcon(props: RecordIconProps) {
   const head = "M12 3.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z";
   const body = "M4 20.5c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5Z";
 
@@ -676,23 +676,6 @@ export function ProfileSettingsIcon(props: RecordIconProps) {
     >
       <path d={head} />
       <path d={body} />
-    </RecordIcon>
-  );
-}
-
-export function LoginSettingsIcon(props: RecordIconProps) {
-  // 鍵の持ち手。穴は塗らずにくり抜き、ダークテーマでも背景色が見えるようにする。
-  const bow = "M3 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0Z";
-  const hole = "M6.5 12a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0Z";
-
-  return (
-    <RecordIcon
-      {...props}
-      fills={<path fill="#f2d17b" fillRule="evenodd" d={`${bow}${hole}`} />}
-    >
-      <path d={bow} />
-      <path d={hole} />
-      <path className={styles.line} d="M13 12h8v3.5M17.5 12v2.5" />
     </RecordIcon>
   );
 }
