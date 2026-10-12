@@ -201,8 +201,9 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     判定してから INSERT するまでに記録・削除・オフにされた場合は作らない（`src/features/notifications/generate.ts`）
   - 直近の記録を猫ごとに期間で絞って読むため、`feeding_records` に `(cat_id, occurred_at)` のインデックスを設定する
   - ごはん記録を追加したときは、猫の家の未対応のごはんの通知を同じ `db.batch` で完了にする
-  - ごはんの時間を削除したときは、その時間の未対応の通知を同じ `db.batch` で無視にする。対応済みの通知は、
-    `reference_id` に外部キーがないため履歴として残す
+  - ごはんの時間を削除したときは、その時間の未対応の通知を同じ `db.batch` で無視にする。通知をオフにしたときも、
+    オフにした種類の未対応の通知を同じ `db.batch` で無視にする。対応済みの通知は、`reference_id` に外部キーがないため
+    履歴として残す
 - 詳細な判定ロジックは `src/features/notifications/` を参照
 
 ## MCP の OAuth（`oauth_kv_entries`）

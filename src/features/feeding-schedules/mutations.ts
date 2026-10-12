@@ -86,7 +86,45 @@ export async function createFeedingSchedule(
   return { ok: true };
 }
 
-/** ごはんの時間の通知の設定を変える。家のメンバーなら誰でも変えられる */
+type FeedingNotificationKind = "feeding_time" | "feeding_not_recorded";
+
+/**
+ * ごはんの時間の、指定した種類の未対応（`pending`・`snoozed`）の通知を無視にする UPDATE 文。
+ * ごはんの時間の変更・削除と同じ batch に並べ、もう出さない通知が通知センターに残ったり、
+ * Push が送られたりしないようにする。対応済みの通知は履歴として残す。
+ * ごはんの時間がその家のものであることと、家のメンバーであることを WHERE に含め、
+ * 変更・削除が通らない場合は通知も変えない
+ */
+function dismissOpenNotificationsOf(
+  db: ReturnType<typeof getDb>,
+  householdId: string,
+  userId: string,
+  scheduleId: string,
+  kinds: FeedingNotificationKind[],
+) {
+  return db
+    .update(notifications)
+    .set({ status: "dismissed", updatedAt: new Date() })
+    .where(
+      and(
+        eq(notifications.householdId, householdId),
+        eq(notifications.referenceId, scheduleId),
+        inArray(notifications.kind, kinds),
+        inArray(notifications.status, ["pending", "snoozed"]),
+        sql`EXISTS (
+          SELECT 1 FROM ${feedingSchedules}
+          WHERE ${feedingSchedules.id} = ${scheduleId}
+            AND ${feedingSchedules.householdId} = ${householdId}
+        )`,
+        isHouseholdMemberCondition(householdId, userId),
+      ),
+    );
+}
+
+/**
+ * ごはんの時間の通知の設定を変える。家のメンバーなら誰でも変えられる。
+ * オフにした種類の未対応の通知は、同じ batch で無視にする
+ */
 export async function updateFeedingScheduleNotify(
   householdId: string,
   userId: string,
@@ -95,7 +133,11 @@ export async function updateFeedingScheduleNotify(
   d1?: D1Database,
 ): Promise<FeedingScheduleMutationResult> {
   const db = getDb(d1);
-  const updated = await db
+  const disabledKinds: FeedingNotificationKind[] = [
+    ...(input.notifyAtTime ? [] : (["feeding_time"] as const)),
+    ...(input.remindIfNotRecorded ? [] : (["feeding_not_recorded"] as const)),
+  ];
+  const updateSchedule = db
     .update(feedingSchedules)
     .set({
       notifyAtTime: input.notifyAtTime,
@@ -111,6 +153,22 @@ export async function updateFeedingScheduleNotify(
     )
     .returning({ id: feedingSchedules.id });
 
+  const updated =
+    disabledKinds.length === 0
+      ? await updateSchedule
+      : (
+          await db.batch([
+            dismissOpenNotificationsOf(
+              db,
+              householdId,
+              userId,
+              scheduleId,
+              disabledKinds,
+            ),
+            updateSchedule,
+          ])
+        )[1];
+
   if (updated.length === 0) {
     return { ok: false, error: NOT_MEMBER_ERROR };
   }
@@ -119,8 +177,7 @@ export async function updateFeedingScheduleNotify(
 
 /**
  * ごはんの時間を削除する。家のメンバーなら誰でも削除できる。
- * すでに生成した、この時間の未対応（`pending`・`snoozed`）の通知は、もう対応する必要がないため
- * 同じ batch で無視にする（通知センターに残ったり、Push が送られたりしないように）。
+ * すでに生成した、この時間の未対応の通知は同じ batch で無視にする。
  * 対応済みの通知は履歴として残す（`notifications.reference_id` には外部キーがない）
  */
 export async function deleteFeedingSchedule(
@@ -130,19 +187,12 @@ export async function deleteFeedingSchedule(
   d1?: D1Database,
 ): Promise<FeedingScheduleMutationResult> {
   const db = getDb(d1);
+  // 通知の UPDATE はごはんの時間が残っていることを条件にするため、削除より先に並べる
   const [, deleted] = await db.batch([
-    db
-      .update(notifications)
-      .set({ status: "dismissed", updatedAt: new Date() })
-      .where(
-        and(
-          eq(notifications.householdId, householdId),
-          eq(notifications.referenceId, scheduleId),
-          inArray(notifications.kind, ["feeding_time", "feeding_not_recorded"]),
-          inArray(notifications.status, ["pending", "snoozed"]),
-          isHouseholdMemberCondition(householdId, userId),
-        ),
-      ),
+    dismissOpenNotificationsOf(db, householdId, userId, scheduleId, [
+      "feeding_time",
+      "feeding_not_recorded",
+    ]),
     db
       .delete(feedingSchedules)
       .where(

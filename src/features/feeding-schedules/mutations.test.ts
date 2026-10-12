@@ -164,11 +164,12 @@ describe("updateFeedingScheduleNotify・deleteFeedingSchedule", () => {
     householdId: string,
     referenceId: string,
     status: "pending" | "snoozed" | "done",
+    kind: "feeding_time" | "feeding_not_recorded" = "feeding_time",
   ) {
     await db.insert(notifications).values({
       id,
       householdId,
-      kind: "feeding_time",
+      kind,
       referenceId,
       dedupeKey: id,
       title: "ごはんの時間です",
@@ -186,6 +187,58 @@ describe("updateFeedingScheduleNotify・deleteFeedingSchedule", () => {
       .where(eq(notifications.id, id));
     return row.status;
   }
+
+  it("通知をオフにすると、その種類の未対応の通知だけを無視にする", async () => {
+    await addNotification("time", "home", "home-morning", "pending");
+    await addNotification("time-done", "home", "home-morning", "done");
+    await addNotification(
+      "reminder",
+      "home",
+      "home-morning",
+      "snoozed",
+      "feeding_not_recorded",
+    );
+
+    expect(
+      await updateFeedingScheduleNotify("home", "member", "home-morning", {
+        notifyAtTime: false,
+        remindIfNotRecorded: true,
+      }),
+    ).toEqual({ ok: true });
+    expect(await statusOf("time")).toBe("dismissed");
+    // 対応済みの通知と、オンのままの種類の通知はそのまま
+    expect(await statusOf("time-done")).toBe("done");
+    expect(await statusOf("reminder")).toBe("snoozed");
+
+    await updateFeedingScheduleNotify("home", "member", "home-morning", {
+      notifyAtTime: false,
+      remindIfNotRecorded: false,
+    });
+    expect(await statusOf("reminder")).toBe("dismissed");
+  });
+
+  it("変更できないときは、通知も無視にしない", async () => {
+    await addNotification("time", "home", "home-morning", "pending");
+    await addNotification("other", "other", "other-morning", "pending");
+
+    // 家のメンバーでない
+    expect(
+      await updateFeedingScheduleNotify("home", "outsider", "home-morning", {
+        notifyAtTime: false,
+        remindIfNotRecorded: false,
+      }),
+    ).toMatchObject({ ok: false });
+    // 別の家のごはんの時間を、自分の家の ID と組み合わせる
+    expect(
+      await updateFeedingScheduleNotify("home", "member", "other-morning", {
+        notifyAtTime: false,
+        remindIfNotRecorded: false,
+      }),
+    ).toMatchObject({ ok: false });
+
+    expect(await statusOf("time")).toBe("pending");
+    expect(await statusOf("other")).toBe("pending");
+  });
 
   it("家のメンバーは削除でき、その時間の未対応の通知は無視にする", async () => {
     await addNotification("pending", "home", "home-morning", "pending");
