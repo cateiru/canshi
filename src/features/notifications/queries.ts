@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { notificationSettings, notifications } from "@/db/schema";
-import { accessibleCatIdsQuery } from "@/features/households/queries";
+import { accessibleNotificationsCondition } from "./access";
 import {
   DEFAULT_SHAMPOO_ELAPSED_MONTHS,
   DEFAULT_WEIGHT_MEASUREMENT_DAYS,
@@ -70,6 +70,7 @@ export async function getResolvedSettingsForCat(
 /** 通知一覧の絞り込み。ユーザーが参照できる猫（所属する家の猫）の通知だけを返す */
 export type NotificationFilter = {
   userId: string;
+  /** 猫で絞り込む。絞り込んだときは、家についての通知（`household_id` を持つもの）は含めない */
   catId?: string;
 };
 
@@ -84,7 +85,7 @@ export async function listPendingNotifications(
 ) {
   const db = getDb(d1);
   const conditions = [
-    inArray(notifications.catId, accessibleCatIdsQuery(db, userId)),
+    accessibleNotificationsCondition(db, userId),
     or(
       eq(notifications.status, "pending"),
       and(
@@ -111,7 +112,7 @@ export async function listResolvedNotifications(
 ) {
   const db = getDb(d1);
   const conditions = [
-    inArray(notifications.catId, accessibleCatIdsQuery(db, userId)),
+    accessibleNotificationsCondition(db, userId),
     inArray(notifications.status, ["done", "dismissed"] as const),
   ];
   if (catId) {
@@ -139,7 +140,7 @@ export async function countUnreadNotifications(
     .from(notifications)
     .where(
       and(
-        inArray(notifications.catId, accessibleCatIdsQuery(db, userId)),
+        accessibleNotificationsCondition(db, userId),
         isNull(notifications.readAt),
         or(
           eq(notifications.status, "pending"),

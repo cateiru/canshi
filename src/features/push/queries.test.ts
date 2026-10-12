@@ -11,7 +11,11 @@ import {
   pushSubscriptions,
   users,
 } from "@/db/schema";
-import { listCatAccessesOfSubscribers, listPushSubscriptions } from "./queries";
+import {
+  listCatAccessesOfSubscribers,
+  listHouseholdAccessesOfSubscribers,
+  listPushSubscriptions,
+} from "./queries";
 
 // `src/features/notifications/queries.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;
@@ -73,5 +77,16 @@ describe("listCatAccessesOfSubscribers", () => {
     expect(
       accesses.map(({ userId, catId }) => `${userId}:${catId}`).sort(),
     ).toEqual(["neighbor:kuro", "owner:tama"]);
+  });
+});
+
+describe("listHouseholdAccessesOfSubscribers", () => {
+  it("購読しているユーザーと、その家の組を返す", async () => {
+    const accesses = await listHouseholdAccessesOfSubscribers();
+    expect(
+      accesses
+        .map(({ userId, householdId }) => `${userId}:${householdId}`)
+        .sort(),
+    ).toEqual(["neighbor:other", "owner:home"]);
   });
 });

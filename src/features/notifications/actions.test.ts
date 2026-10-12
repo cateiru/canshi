@@ -33,7 +33,10 @@ vi.mock("@/features/auth/session", () => ({
 }));
 
 const {
+  dismissNotificationAction,
   markCleaningNotificationDoneAction,
+  markNotificationDoneAction,
+  markNotificationsReadAction,
   resolveSymptomNotificationAction,
   snoozeNotificationAction,
 } = await import("./actions");
@@ -68,6 +71,75 @@ beforeAll(async () => {
     batchQueue = run.catch(() => {});
     return run;
   };
+});
+
+describe("家についての通知", () => {
+  async function insertHouseholdNotification(householdId: string) {
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        householdId,
+        kind: "weight_measurement",
+        dedupeKey: `dedupe-${crypto.randomUUID()}`,
+        title: "家へのお知らせ",
+        body: "家へのお知らせです",
+        url: "/home",
+        dueAt: new Date(),
+      })
+      .returning();
+    return notification;
+  }
+
+  async function statusOf(id: string) {
+    const [row] = await db
+      .select({ status: notifications.status })
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return row.status;
+  }
+
+  it("所属する家の通知は完了・無視にできる", async () => {
+    const done = await insertHouseholdNotification("household-1");
+    const dismissed = await insertHouseholdNotification("household-1");
+
+    expect(await markNotificationDoneAction(done.id)).toEqual({});
+    expect(await dismissNotificationAction(dismissed.id)).toEqual({});
+
+    expect(await statusOf(done.id)).toBe("done");
+    expect(await statusOf(dismissed.id)).toBe("dismissed");
+  });
+
+  it("別の家の通知は完了・延期・既読にできない", async () => {
+    const notification = await insertHouseholdNotification("household-2");
+
+    await markNotificationDoneAction(notification.id);
+    expect(
+      await snoozeNotificationAction(
+        notification.id,
+        new Date("2026-09-20T00:00:00.000Z"),
+      ),
+    ).toEqual({ error: "通知が見つかりませんでした" });
+    await markNotificationsReadAction([notification.id]);
+
+    const [unchanged] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, notification.id));
+    expect(unchanged.status).toBe("pending");
+    expect(unchanged.readAt).toBeNull();
+  });
+
+  it("掃除・症状の通知の操作は、家についての通知ではエラーを返す", async () => {
+    const notification = await insertHouseholdNotification("household-1");
+
+    expect(await markCleaningNotificationDoneAction(notification.id)).toEqual({
+      error: "通知が見つかりませんでした",
+    });
+    expect(await resolveSymptomNotificationAction(notification.id)).toEqual({
+      error: "通知が見つかりませんでした",
+    });
+    expect(await statusOf(notification.id)).toBe("pending");
+  });
 });
 
 describe("snoozeNotificationAction", () => {

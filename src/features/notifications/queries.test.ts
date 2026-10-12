@@ -139,14 +139,58 @@ describe("通知の家による絞り込み", () => {
         dueAt: new Date("2026-09-01T00:00:00.000Z"),
       })),
     );
+    // 家についての通知（猫を問わないもの）。種類はこのテストでは問わない
+    await db.insert(notifications).values(
+      ["household-a", "household-b"].map((householdId) => ({
+        householdId,
+        kind: "weight_measurement" as const,
+        dedupeKey: `dedupe-${householdId}`,
+        title: "家へのお知らせ",
+        body: "家へのお知らせです",
+        url: "/home",
+        dueAt: new Date("2026-08-31T00:00:00.000Z"),
+      })),
+    );
   });
 
   const now = new Date("2026-09-02T00:00:00.000Z");
 
-  it("所属する家の猫の通知だけを返す", async () => {
+  it("所属する家の猫の通知と、所属する家の通知だけを返す", async () => {
     const pending = await listPendingNotifications(now, { userId: "user-a" });
-    expect(pending.map((n) => n.catId)).toEqual(["cat-a"]);
-    expect(await countUnreadNotifications(now, "user-a")).toBe(1);
+    expect(pending.map((n) => n.dedupeKey)).toEqual([
+      "dedupe-cat-a",
+      "dedupe-household-a",
+    ]);
+    expect(await countUnreadNotifications(now, "user-a")).toBe(2);
+  });
+
+  it("猫で絞り込むと、家についての通知は含めない", async () => {
+    const pending = await listPendingNotifications(now, {
+      userId: "user-a",
+      catId: "cat-a",
+    });
+    expect(pending.map((n) => n.dedupeKey)).toEqual(["dedupe-cat-a"]);
+  });
+
+  it("猫・家のどちらも持たない通知や、両方を持つ通知は保存できない", async () => {
+    const base = {
+      kind: "weight_measurement" as const,
+      title: "お知らせ",
+      body: "お知らせです",
+      url: "/home",
+      dueAt: new Date("2026-09-01T00:00:00.000Z"),
+    };
+    await expect(
+      db.insert(notifications).values({ ...base, dedupeKey: "dedupe-none" }),
+    ).rejects.toThrow();
+    await expect(
+      db.insert(notifications).values({
+        ...base,
+        dedupeKey: "dedupe-both",
+        catId: "cat-a",
+        householdId: "household-a",
+      }),
+    ).rejects.toThrow();
   });
 
   it("別の家の猫で絞り込んでも通知は返さない", async () => {

@@ -23,6 +23,20 @@ export function accessibleCatIdsQuery(
 }
 
 /**
+ * ユーザーが所属する家の ID を返すサブクエリ。家についての通知（`notifications.household_id`）
+ * のように、家に属するデータの絞り込みに使う
+ */
+export function accessibleHouseholdIdsQuery(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+) {
+  return db
+    .select({ id: householdMembers.householdId })
+    .from(householdMembers)
+    .where(eq(householdMembers.userId, userId));
+}
+
+/**
  * `userId` が家のメンバーであるときだけ真になる条件。読んでから書く方式だと、判定と書き込みの間に
  * 家から外された場合に書き込みが通ってしまうため、INSERT ... SELECT・UPDATE・DELETE の WHERE に
  * 含めて 1 文で判定する。`householdId` には家の ID か、書き込む行の家の列を渡す

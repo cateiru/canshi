@@ -7,7 +7,7 @@ import {
   pushDeliveries,
   pushSubscriptions,
 } from "@/db/schema";
-import type { UserCatAccess } from "./targets";
+import type { UserCatAccess, UserHouseholdAccess } from "./targets";
 
 /** 通知を送りうる購読（ユーザーに紐付いたもの）の一覧 */
 export async function listPushSubscriptions(d1?: D1Database) {
@@ -30,6 +30,31 @@ export async function listCatAccessesOfSubscribers(
     .selectDistinct({ userId: householdMembers.userId, catId: cats.id })
     .from(householdMembers)
     .innerJoin(cats, eq(cats.householdId, householdMembers.householdId))
+    .where(
+      inArray(
+        householdMembers.userId,
+        db
+          .select({ userId: pushSubscriptions.userId })
+          .from(pushSubscriptions)
+          .where(isNotNull(pushSubscriptions.userId)),
+      ),
+    );
+}
+
+/**
+ * 購読しているユーザーと、そのユーザーが所属する家の組の一覧。家についての通知の送り先を
+ * `selectPushTargets`（`./targets`）で絞り込むために使う
+ */
+export async function listHouseholdAccessesOfSubscribers(
+  d1?: D1Database,
+): Promise<UserHouseholdAccess[]> {
+  const db = getDb(d1);
+  return db
+    .selectDistinct({
+      userId: householdMembers.userId,
+      householdId: householdMembers.householdId,
+    })
+    .from(householdMembers)
     .where(
       inArray(
         householdMembers.userId,
