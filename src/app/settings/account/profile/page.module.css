@@ -1,5 +1,5 @@
 .main {
-  composes: page from "../../../features/shared/PageLayout.module.css";
+  composes: page from "../../../../features/shared/PageLayout.module.css";
 }
 
 .header {

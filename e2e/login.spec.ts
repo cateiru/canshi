@@ -72,13 +72,13 @@ test("ログアウトするとログイン画面に戻り、ページを開け�
   );
   expect(sessionCookie).toBeDefined();
 
-  await page.goto("/settings/login");
+  await page.goto("/settings/account");
   // 端末一覧にもほかの端末の「ログアウト」ボタンが並ぶため、「ログアウト」の欄の中から押す
   await page
     .getByRole("region", { name: "ログアウト", exact: true })
     .getByRole("button", { name: "ログアウト", exact: true })
     .click();
-  // ログアウト前のページ（/settings/login）も `/login` を含むため、パス全体で比べる
+  // ログイン画面の URL は `/login` を含むほかのページと区別するため、パス全体で比べる
   await expect(page).toHaveURL(LOGIN_PAGE_URL);
 
   await page.goto("/cats");
@@ -99,10 +99,10 @@ test("すべての端末からログアウトすると、ほかの端末のセ�
   // このテスト専用のメールアドレスでログインする
   const email = "e2e-logout-all-devices@example.com";
   const login = async (target: typeof page) => {
-    await target.goto("/login?callbackUrl=%2Fsettings%2Flogin");
+    await target.goto("/login?callbackUrl=%2Fsettings%2Faccount");
     await target.getByLabel("メールアドレス（開発用）").fill(email);
     await target.getByRole("button", { name: "ログイン" }).click();
-    await expect(target).toHaveURL(/\/settings\/login$/);
+    await expect(target).toHaveURL(/\/settings\/account$/);
   };
 
   // 別の端末として、Cookie を共有しない別のコンテキストでもログインしておく
@@ -135,10 +135,10 @@ test("ログイン中の端末の一覧から、ほかの端末をログアウ�
   // このテスト専用のメールアドレスでログインする
   const email = "e2e-logout-session@example.com";
   const login = async (target: typeof page) => {
-    await target.goto("/login?callbackUrl=%2Fsettings%2Flogin");
+    await target.goto("/login?callbackUrl=%2Fsettings%2Faccount");
     await target.getByLabel("メールアドレス（開発用）").fill(email);
     await target.getByRole("button", { name: "ログイン" }).click();
-    await expect(target).toHaveURL(/\/settings\/login$/);
+    await expect(target).toHaveURL(/\/settings\/account$/);
   };
 
   // 別の端末として、iPhone の Safari の User-Agent を送る別のコンテキストでもログインしておく
@@ -193,12 +193,12 @@ test("別のメールアドレスでログインすると、別のユーザー�
 }) => {
   // e2e は `next dev` に対して実行するため、`/login` は開発用のログインになる
   // （Cloudflare Access を通さず、入力したメールアドレスでログインする）
-  await page.goto("/login?callbackUrl=%2Fsettings%2Fprofile");
+  await page.goto("/login?callbackUrl=%2Fsettings%2Faccount%2Fprofile");
   await page
     .getByLabel("メールアドレス（開発用）")
     .fill("e2e-another-user@example.com");
   await page.getByRole("button", { name: "ログイン" }).click();
-  await expect(page).toHaveURL(/\/settings\/profile$/);
+  await expect(page).toHaveURL(/\/settings\/account\/profile$/);
 
   // 新しく作ったユーザーは、メールアドレスから名前を作らない
   await expect(page.getByRole("textbox", { name: "名前" })).toHaveValue(

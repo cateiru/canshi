@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { Breadcrumb, NavCard } from "@/components/ui";
 import {
+  AccountSettingsIcon,
   AppearanceSettingsIcon,
   HouseholdIcon,
-  LoginSettingsIcon,
   NotificationSettingsIcon,
-  ProfileSettingsIcon,
   ReleaseNotesIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
 import styles from "./page.module.css";
@@ -16,16 +15,11 @@ export const metadata: Metadata = {
 
 const settings = [
   {
-    href: "/settings/profile",
-    title: "プロフィール設定",
-    description: "あなたの名前とアイコンを設定します。",
-    icon: ProfileSettingsIcon,
-  },
-  {
-    href: "/settings/login",
-    title: "ログイン設定",
-    description: "ログイン中のアカウントを確認し、ログアウトします。",
-    icon: LoginSettingsIcon,
+    href: "/settings/account",
+    title: "アカウント設定",
+    description:
+      "あなたの名前とアイコンを設定し、ログイン中の端末の確認やログアウトをします。",
+    icon: AccountSettingsIcon,
   },
   {
     href: "/settings/households",
@@ -63,7 +57,7 @@ export default function SettingsPage() {
       />
       <h1>設定</h1>
       <p>
-        プロフィールやログイン、家、通知、見た目の設定、アプリの更新情報を確認できます。
+        アカウントや家、通知、見た目の設定、アプリの更新情報を確認できます。
       </p>
 
       <nav aria-label="設定メニュー">

@@ -220,25 +220,25 @@ test("設定ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
-test("プロフィール設定ページの見た目", async ({ page }, testInfo) => {
-  await page.goto("/settings/profile");
-  await expect(
-    page.getByRole("heading", { level: 1, name: "プロフィール設定" }),
-  ).toBeVisible();
-  await takeSnapshot(page, testInfo);
-});
-
-test.describe("ログイン設定", () => {
+test.describe("アカウント設定", () => {
   // 端末一覧のログイン日時は実行日時になるため除外する
   test.use({ ignoreSelectors: ['[class*="loggedInAt"]'] });
 
-  test("ログイン設定ページの見た目", async ({ page }, testInfo) => {
-    await page.goto("/settings/login");
+  test("アカウント設定ページの見た目", async ({ page }, testInfo) => {
+    await page.goto("/settings/account");
     await expect(
-      page.getByRole("heading", { level: 1, name: "ログイン設定" }),
+      page.getByRole("heading", { level: 1, name: "アカウント設定" }),
     ).toBeVisible();
     await takeSnapshot(page, testInfo);
   });
+});
+
+test("プロフィールの編集ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/account/profile");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "プロフィールを編集する" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
 });
 
 test("家の設定ページの見た目", async ({ page }, testInfo) => {
