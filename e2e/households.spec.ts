@@ -38,8 +38,6 @@ test("家の名前を変えると、家の設定と猫一覧に反映される",
     // 同じローカル DB を使う他のテストに影響しないよう、元の名前に戻す
     await page.goto("/settings/households");
     await page.getByRole("link").filter({ hasText: newName }).click();
-    // 家の一覧にも家を作成するフォームの「家の名前」があるため、家のページへ移るのを待つ
-    await expect(page).toHaveURL(/\/settings\/households\/[^/]+$/);
     await page.getByRole("textbox", { name: "家の名前" }).fill(originalName);
     await page.getByRole("button", { name: "保存する" }).click();
     await expect(page.getByRole("status")).toHaveText("家の名前を保存しました");
@@ -53,8 +51,6 @@ test("家の名前を空にすると保存できない", async ({ page }) => {
     .filter({ hasText: "あなたはオーナー" })
     .first()
     .click();
-  // 家の一覧にも家を作成するフォームの「家の名前」があるため、家のページへ移るのを待つ
-  await expect(page).toHaveURL(/\/settings\/households\/[^/]+$/);
 
   await page.getByRole("textbox", { name: "家の名前" }).fill(" ");
   await page.getByRole("button", { name: "保存する" }).click();
@@ -257,13 +253,16 @@ test("家の設定から家を作成すると、作成した家のページに�
   const householdName = `作成した家-${Date.now()}`;
 
   await page.goto("/settings/households");
-  const createSection = page.getByRole("region", { name: "家を作成する" });
-  await createSection
-    .getByRole("textbox", { name: "家の名前" })
-    .fill(householdName);
-  await createSection.getByRole("button", { name: "家を作成する" }).click();
+  await page.getByRole("link", { name: "家を作成する" }).click();
+  await expect(page).toHaveURL(/\/settings\/households\/new$/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "家を作成する" }),
+  ).toBeVisible();
 
-  await expect(page).toHaveURL(/\/settings\/households\/[^/]+$/);
+  await page.getByRole("textbox", { name: "家の名前" }).fill(householdName);
+  await page.getByRole("button", { name: "家を作成する" }).click();
+
+  await expect(page).toHaveURL(/\/settings\/households\/(?!new$)[^/]+$/);
   await expect(
     page.getByRole("heading", { level: 1, name: householdName }),
   ).toBeVisible();
@@ -279,14 +278,11 @@ test("家の設定から家を作成すると、作成した家のページに�
 });
 
 test("家の名前を空にすると家を作成できない", async ({ page }) => {
-  await page.goto("/settings/households");
-  const createSection = page.getByRole("region", { name: "家を作成する" });
-  await createSection.getByRole("textbox", { name: "家の名前" }).fill(" ");
-  await createSection.getByRole("button", { name: "家を作成する" }).click();
-  await expect(
-    createSection.getByText("家の名前を入力してください"),
-  ).toBeVisible();
-  await expect(page).toHaveURL(/\/settings\/households$/);
+  await page.goto("/settings/households/new");
+  await page.getByRole("textbox", { name: "家の名前" }).fill(" ");
+  await page.getByRole("button", { name: "家を作成する" }).click();
+  await expect(page.getByText("家の名前を入力してください")).toBeVisible();
+  await expect(page).toHaveURL(/\/settings\/households\/new$/);
 });
 
 test("家に所属していないユーザーは、猫一覧から家を作成できる", async ({
@@ -312,13 +308,14 @@ test("家に所属していないユーザーは、猫一覧から家を作成�
       0,
     );
 
-    const householdName = `猫一覧から作成した家-${Date.now()}`;
-    const createSection = page.getByRole("region", { name: "家を作成する" });
-    await createSection
-      .getByRole("textbox", { name: "家の名前" })
-      .fill(householdName);
-    await createSection.getByRole("button", { name: "家を作成する" }).click();
+    await page.getByRole("link", { name: "家を作成する" }).click();
+    await expect(page).toHaveURL(/\/settings\/households\/new\?from=cats$/);
 
+    const householdName = `猫一覧から作成した家-${Date.now()}`;
+    await page.getByRole("textbox", { name: "家の名前" }).fill(householdName);
+    await page.getByRole("button", { name: "家を作成する" }).click();
+
+    // 作成後は猫一覧へ戻り、作成した家のまとまりが表示される
     await expect(page).toHaveURL(/\/cats$/);
     await expect(
       page.getByRole("button", {

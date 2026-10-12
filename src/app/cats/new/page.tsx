@@ -40,7 +40,10 @@ export default async function NewCatPage({ searchParams }: NewCatPageProps) {
           <CatIcon aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>猫を登録するには家が必要です。先に家を作成してください。</p>
-          <ButtonLink href="/settings/households" variant="primary">
+          <ButtonLink
+            href="/settings/households/new?from=cats"
+            variant="primary"
+          >
             家を作成する
           </ButtonLink>
         </Surface>

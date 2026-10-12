@@ -14,9 +14,7 @@ import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
 import { CatAvatar } from "@/features/cats/CatAvatar";
 import { CatIcon } from "@/features/cats/CatIcon";
 import { SEX_LABEL } from "@/features/cats/labels";
-import { createHouseholdAction } from "@/features/households/actions";
 import { groupCatsByHousehold } from "@/features/households/groupCats";
-import { HouseholdCreateForm } from "@/features/households/HouseholdCreateForm";
 import {
   listCatsForUser,
   listHouseholdsForUser,
@@ -98,25 +96,21 @@ export default async function CatsPage() {
       </div>
 
       {groups.length === 0 ? (
-        <>
-          <Surface className={styles.emptyState}>
-            <CatIcon aria-hidden="true" size={32} />
-            <p>所属している家がありません。</p>
-            <p>
-              猫を登録するには家が必要です。家を作成するか、家族から届いた招待
-              URL を開いて家に参加してください。
-            </p>
-          </Surface>
-          <Surface
-            title="家を作成する"
-            titleId="cats-household-create-heading"
-            gap="md"
+        <Surface className={styles.emptyState}>
+          <CatIcon aria-hidden="true" size={32} />
+          <p>所属している家がありません。</p>
+          <p>
+            猫を登録するには家が必要です。家を作成するか、家族から届いた招待 URL
+            を開いて家に参加してください。
+          </p>
+          <ButtonLink
+            href="/settings/households/new?from=cats"
+            variant="primary"
+            leftIcon={TbPlus}
           >
-            <HouseholdCreateForm
-              action={createHouseholdAction.bind(null, "cats")}
-            />
-          </Surface>
-        </>
+            家を作成する
+          </ButtonLink>
+        </Surface>
       ) : (
         <div className={styles.households}>
           {groups.map(({ household, cats }) => (
