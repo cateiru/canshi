@@ -257,6 +257,14 @@ test("家の設定ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+test("ごはんの時間ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/households/vrt-household/feeding-schedules");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "ごはんの時間" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("家の作成ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/households/new");
   await expect(
