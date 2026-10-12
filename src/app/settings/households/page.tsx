@@ -30,18 +30,19 @@ export default async function HouseholdsSettingsPage() {
       />
 
       <header className={styles.header}>
-        <RecordPageHeading icon={HouseholdIcon}>家の設定</RecordPageHeading>
+        <div className={styles.titleRow}>
+          <RecordPageHeading icon={HouseholdIcon}>家の設定</RecordPageHeading>
+          <ButtonLink
+            href="/settings/households/new"
+            variant="primary"
+            leftIcon={TbPlus}
+          >
+            家を作成する
+          </ButtonLink>
+        </div>
         <p className={styles.description}>
           所属している家の名前やメンバー、ごはん商品・プリセットを管理できます。
         </p>
-        <ButtonLink
-          href="/settings/households/new"
-          variant="primary"
-          leftIcon={TbPlus}
-          className={styles.createButton}
-        >
-          家を作成する
-        </ButtonLink>
       </header>
 
       {householdList.length === 0 ? (
