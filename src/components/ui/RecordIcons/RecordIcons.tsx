@@ -679,3 +679,25 @@ export function AccountSettingsIcon(props: RecordIconProps) {
     </RecordIcon>
   );
 }
+
+export function AiConnectionIcon(props: RecordIconProps) {
+  const sparkle =
+    "M10 2.5q1 5.5 6.5 6.5-5.5 1-6.5 6.5-1-5.5-6.5-6.5 5.5-1 6.5-6.5Z";
+  const smallSparkle = "M18 14q.5 2.5 3 3-2.5.5-3 3-.5-2.5-3-3 2.5-.5 3-3Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#f2d17b" d={sparkle} />
+          <path fill="#b7d7ee" d={smallSparkle} />
+        </>
+      }
+    >
+      <path d={sparkle} />
+      <path d={smallSparkle} />
+      <path d="M4.5 18.5h.01" strokeWidth="2" />
+    </RecordIcon>
+  );
+}

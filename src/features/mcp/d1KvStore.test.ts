@@ -1,11 +1,16 @@
 // @vitest-environment node
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sql-js";
 import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import { oauthKvEntries } from "@/db/schema";
-import { D1KvStore, purgeExpiredOAuthKvEntries } from "./d1KvStore";
+import {
+  D1KvStore,
+  purgeExpiredOAuthKvEntries,
+  revokedGrantMarkerKey,
+} from "./d1KvStore";
 
 // `src/features/auth/sessions.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;
@@ -120,6 +125,49 @@ describe("D1KvStore", () => {
     expect((await store.list({ prefix: "a_" })).keys).toEqual([
       { name: "a_b" },
     ]);
+  });
+
+  it("解除済みの目印がある grant・トークンは書き込まない", async () => {
+    const store = new D1KvStore(d1);
+    await store.put("grant:user-1:g1", "old");
+    await store.put(revokedGrantMarkerKey("user-1", "g1"), "1", {
+      expirationTtl: 60,
+    });
+
+    await store.put("grant:user-1:g1", "refreshed");
+    await store.put("token:user-1:g1:t1", "token", { expirationTtl: 3600 });
+
+    // 目印より前に書き込まれた grant は上書きされない（解除の処理が続けて削除する）
+    expect(await store.get("grant:user-1:g1")).toBe("old");
+    expect(await store.get("token:user-1:g1:t1")).toBeNull();
+    // 目印は grant の列挙に混ざらない
+    expect((await store.list({ prefix: "grant:user-1:" })).keys).toEqual([
+      { name: "grant:user-1:g1" },
+    ]);
+  });
+
+  it("目印が無い grant・トークンは、期限付きで書き込み・上書きできる", async () => {
+    const store = new D1KvStore(d1);
+    await store.put(revokedGrantMarkerKey("user-1", "g1"), "1");
+    await store.put(revokedGrantMarkerKey("user-2", "g2"), "1");
+
+    await store.put("grant:user-1:g2", "a");
+    await store.put("grant:user-1:g2", "b", {
+      expiration: NOW.getTime() / 1000 + 600,
+    });
+    await store.put("token:user-1:g2:t1", "token", { expirationTtl: 60 });
+
+    expect(await store.get("grant:user-1:g2")).toBe("b");
+    expect(await store.get("token:user-1:g2:t1")).toBe("token");
+    const [grantRow] = await db
+      .select()
+      .from(oauthKvEntries)
+      .where(eq(oauthKvEntries.key, "grant:user-1:g2"));
+    expect(grantRow.expiresAt).toEqual(new Date(NOW.getTime() + 600 * 1000));
+
+    vi.setSystemTime(new Date(NOW.getTime() + 61 * 1000));
+    expect(await store.get("token:user-1:g2:t1")).toBeNull();
+    expect(await store.get("grant:user-1:g2")).toBe("b");
   });
 });
 

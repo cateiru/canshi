@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Breadcrumb, NavCard } from "@/components/ui";
 import {
   AccountSettingsIcon,
+  AiConnectionIcon,
   AppearanceSettingsIcon,
   HouseholdIcon,
   NotificationSettingsIcon,
@@ -42,6 +43,13 @@ const settings = [
     icon: AppearanceSettingsIcon,
   },
   {
+    href: "/settings/ai-connections",
+    title: "AIとの接続",
+    description:
+      "ChatGPT などの AI のアプリとの接続を確認し、不要な接続を解除します。",
+    icon: AiConnectionIcon,
+  },
+  {
     href: "/release-notes",
     title: "更新情報",
     description: "アプリの新機能や改善内容を確認します。",
@@ -57,7 +65,7 @@ export default function SettingsPage() {
       />
       <h1>設定</h1>
       <p>
-        アカウントや家、通知、見た目の設定、アプリの更新情報を確認できます。
+        アカウントや家、通知、見た目の設定、AIとの接続、アプリの更新情報を確認できます。
       </p>
 
       <nav aria-label="設定メニュー">

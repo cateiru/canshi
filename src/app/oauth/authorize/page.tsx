@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Alert, Button } from "@/components/ui";
-import { AccountSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
 import {
   decodeMcpConsentRequest,
+  formatRedirectUri,
   MCP_CONSENT_HEADER,
 } from "@/features/mcp/consent";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -12,7 +13,7 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "MCP の接続 | CANSHI",
+  title: "AIとの接続 | CANSHI",
   // 認可リクエストの URL（state など）を外部の遷移先へ送らない。`no-referrer` にすると
   // 同意ボタンの POST に `Origin: null` が付き、Worker の Origin の確認で拒否されてしまう
   referrer: "same-origin",
@@ -40,16 +41,14 @@ export default async function AuthorizePage({
 
   return (
     <main className={styles.main}>
-      <RecordPageHeading icon={AccountSettingsIcon}>
-        MCP の接続
-      </RecordPageHeading>
+      <RecordPageHeading icon={AiConnectionIcon}>AIとの接続</RecordPageHeading>
 
       {consent ? (
         <Surface className={styles.content}>
           <p>
             外部のアプリが、<strong>{user.name}</strong>
             さんのアカウントで CANSHI
-            に接続しようとしています。許可すると、このアプリから、あなたが所属する家の猫のプロフィールと記録を読み取れるようになります（記録の追加・変更はできません）。
+            に接続しようとしています。許可すると、このアプリから、あなたが所属する家の猫のプロフィールと記録を読み取れるようになります（記録の追加・変更はできません）。許可した接続は、設定の「AIとの接続」から解除できます。
           </p>
           <dl className={styles.details}>
             <dt>アプリの名前</dt>
@@ -85,18 +84,6 @@ export default async function AuthorizePage({
       )}
     </main>
   );
-}
-
-/** 認可コードを渡す先。http(s) はホスト名だけ、それ以外（アプリのスキーム）は URI 全体を表示する */
-function formatRedirectUri(redirectUri: string) {
-  try {
-    const url = new URL(redirectUri);
-    return url.protocol === "https:" || url.protocol === "http:"
-      ? url.host
-      : redirectUri;
-  } catch {
-    return redirectUri;
-  }
 }
 
 /** 同意画面を開いたときのクエリを、送信先（`POST /oauth/authorize`）でもう一度検証できるよう戻す */
