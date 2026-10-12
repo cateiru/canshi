@@ -18,14 +18,14 @@ function request(path: string, init: RequestInit = {}) {
 }
 
 /** 管理画面のフォームからの送信（ブラウザは Origin を付ける） */
-function postForm(path: string, origin = ORIGIN) {
+function postForm(path: string, origin = ORIGIN, body = "") {
   return request(path, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Origin: origin,
     },
-    body: "",
+    body,
   });
 }
 
@@ -110,5 +110,119 @@ describe("すべての端末からログアウトさせる", () => {
     );
     expect(response.status).toBe(403);
     expect(await countSessions("user-1")).toBe(4);
+  });
+});
+
+async function householdRoles(householdId: string) {
+  const { results } = await env.DB.prepare(
+    "SELECT user_id, role FROM household_members WHERE household_id = ?1 ORDER BY user_id",
+  )
+    .bind(householdId)
+    .all<{ user_id: string; role: string }>();
+  return results.map((row) => `${row.user_id}:${row.role}`);
+}
+
+describe("家のメンバーの追加・削除", () => {
+  it("まだメンバーでないユーザーだけを追加の候補にし、オーナー以外にだけ外すボタンを表示する", async () => {
+    const html = await (await request("/households")).text();
+    expect(html).toContain('action="/households/household-2/members"');
+    // household-1 には user-3 だけが候補になる
+    const household1Form = html.slice(
+      html.indexOf('action="/households/household-1/members"'),
+    );
+    const select = household1Form.slice(0, household1Form.indexOf("</select>"));
+    expect(select).toContain('value="user-3"');
+    expect(select).not.toContain('value="user-1"');
+    expect(select).not.toContain('value="user-2"');
+
+    expect(html).toContain(
+      'action="/households/household-1/members/user-2/delete"',
+    );
+    expect(html).not.toContain(
+      'action="/households/household-1/members/user-1/delete"',
+    );
+  });
+
+  it("ユーザーをメンバーとして追加し、結果を家の一覧に表示する", async () => {
+    const response = await postForm(
+      "/households/household-2/members",
+      ORIGIN,
+      "userId=user-3",
+    );
+    expect(response.status).toBe(303);
+    const location = response.headers.get("Location") ?? "";
+    expect(location).toBe(
+      "/households?memberChange=added&household=household-2&user=user-3",
+    );
+    expect(await householdRoles("household-2")).toEqual([
+      "user-1:owner",
+      "user-3:member",
+    ]);
+
+    const html = await (await request(location)).text();
+    expect(html).toContain("はなこ を 実家 のメンバーに追加しました。");
+  });
+
+  it("すでにメンバーのユーザーは追加せず、失敗を表示する", async () => {
+    const response = await postForm(
+      "/households/household-1/members",
+      ORIGIN,
+      "userId=user-1",
+    );
+    const location = response.headers.get("Location") ?? "";
+    expect(location).toContain("memberChange=add-failed");
+    expect(await householdRoles("household-1")).toEqual([
+      "user-1:owner",
+      "user-2:member",
+    ]);
+    const html = await (await request(location)).text();
+    expect(html).toContain("のメンバーに追加できませんでした");
+  });
+
+  it("オーナー以外のメンバーを家から外し、結果を表示する", async () => {
+    const response = await postForm(
+      "/households/household-1/members/user-2/delete",
+    );
+    expect(response.status).toBe(303);
+    const location = response.headers.get("Location") ?? "";
+    expect(await householdRoles("household-1")).toEqual(["user-1:owner"]);
+    const html = await (await request(location)).text();
+    // ユーザー名はエスケープして表示する
+    expect(html).toContain(
+      "&lt;script&gt;alert(1)&lt;/script&gt; を わが家 から外しました。",
+    );
+  });
+
+  it("オーナーは外さず、失敗を表示する", async () => {
+    const response = await postForm(
+      "/households/household-1/members/user-1/delete",
+    );
+    const location = response.headers.get("Location") ?? "";
+    expect(location).toContain("memberChange=remove-failed");
+    expect(await householdRoles("household-1")).toEqual([
+      "user-1:owner",
+      "user-2:member",
+    ]);
+    const html = await (await request(location)).text();
+    expect(html).toContain("オーナーは外せないため");
+  });
+
+  it("ほかのオリジンからの送信は拒否し、メンバーを変えない", async () => {
+    const added = await postForm(
+      "/households/household-2/members",
+      "https://evil.example.com",
+      "userId=user-3",
+    );
+    expect(added.status).toBe(403);
+    const removed = await postForm(
+      "/households/household-1/members/user-2/delete",
+      "https://evil.example.com",
+    );
+    expect(removed.status).toBe(403);
+    expect(await householdRoles("household-1")).toEqual([
+      "user-1:owner",
+      "user-2:member",
+    ]);
+    expect(await householdRoles("household-2")).toEqual(["user-1:owner"]);
   });
 });

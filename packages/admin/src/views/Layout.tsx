@@ -55,6 +55,9 @@ ul.plain { list-style: none; margin: 0; padding: 0; }
 .notice { border: 1px solid var(--accent); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 1rem; }
 td form { margin: 0; }
 td button { white-space: nowrap; font: inherit; cursor: pointer; }
+td select { font: inherit; max-width: 16rem; }
+li.member { display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; align-items: center; margin-bottom: 0.25rem; }
+form.add-member { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .empty { color: var(--muted); }
 `;
 
