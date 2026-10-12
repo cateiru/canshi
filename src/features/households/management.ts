@@ -7,6 +7,24 @@ export type HouseholdManagementResult =
   | { ok: false; error: string };
 
 /**
+ * 家を作成し、作成したユーザーをその家のオーナーにする。家だけが作られてオーナーのいない家が
+ * 残らないよう、家とメンバーの追加は 1 つの batch（トランザクション）で行う
+ */
+export async function createHousehold(
+  userId: string,
+  name: string,
+  d1?: D1Database,
+): Promise<{ householdId: string }> {
+  const db = getDb(d1);
+  const householdId = crypto.randomUUID();
+  await db.batch([
+    db.insert(households).values({ id: householdId, name }),
+    db.insert(householdMembers).values({ householdId, userId, role: "owner" }),
+  ]);
+  return { householdId };
+}
+
+/**
  * `userId` がその家のオーナーであるときだけ真になる条件。読んでから書く方式だと、
  * 判定と更新の間にオーナーを移譲された場合に元オーナーの操作が通ってしまうため、
  * 更新・削除の WHERE に含めて 1 文で判定する

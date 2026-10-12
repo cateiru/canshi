@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Breadcrumb, NavCard } from "@/components/ui";
 import { HouseholdIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
+import { createHouseholdAction } from "@/features/households/actions";
+import { HouseholdCreateForm } from "@/features/households/HouseholdCreateForm";
 import { HOUSEHOLD_ROLE_LABEL } from "@/features/households/labels";
 import { listHouseholdSummariesForUser } from "@/features/households/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -32,6 +34,7 @@ export default async function HouseholdsSettingsPage() {
         <RecordPageHeading icon={HouseholdIcon}>家の設定</RecordPageHeading>
         <p className={styles.description}>
           所属している家の名前やメンバー、ごはん商品・プリセットを管理できます。
+          新しく家を作成すると、あなたがその家のオーナーになります。
         </p>
       </header>
 
@@ -39,6 +42,9 @@ export default async function HouseholdsSettingsPage() {
         <Surface className={styles.emptyState}>
           <HouseholdIcon aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
+          <p>
+            猫を登録するには家が必要です。下のフォームから家を作成してください。
+          </p>
         </Surface>
       ) : (
         <ul className={styles.list}>
@@ -55,6 +61,12 @@ export default async function HouseholdsSettingsPage() {
           ))}
         </ul>
       )}
+
+      <Surface title="家を作成する" titleId="household-create-heading" gap="md">
+        <HouseholdCreateForm
+          action={createHouseholdAction.bind(null, "settings")}
+        />
+      </Surface>
     </main>
   );
 }

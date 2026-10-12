@@ -1,4 +1,4 @@
-import { Breadcrumb } from "@/components/ui";
+import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { requireUser } from "@/features/auth/session";
 import { createCatAction } from "@/features/cats/actions";
 import { CatForm } from "@/features/cats/CatForm";
@@ -39,9 +39,10 @@ export default async function NewCatPage({ searchParams }: NewCatPageProps) {
         <Surface className={styles.emptyState}>
           <CatIcon aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
-          <p>
-            猫を登録するには家が必要です。管理者に家の作成を依頼してください。
-          </p>
+          <p>猫を登録するには家が必要です。先に家を作成してください。</p>
+          <ButtonLink href="/settings/households" variant="primary">
+            家を作成する
+          </ButtonLink>
         </Surface>
       ) : (
         <>
