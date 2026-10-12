@@ -37,3 +37,22 @@ bucket_name = "canshi-media"
 [observability.logs]
 enabled = true
 invocation_logs = true
+
+# MCP サーバー（`/mcp`）の OAuth 2.1 認可サーバー（`@cloudflare/workers-oauth-provider`）の
+# 標準ストレージ。バインディング名は `OAUTH_KV` で固定。クライアント登録・認可コード・
+# トークンを保存する（`src/features/mcp/oauth.ts` 参照）
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "5fa32d55294d47558036eb8380c49363"
+
+# MCP サーバー本体（`CanshiMcp`, `agents` パッケージの `McpAgent`）がセッション状態を
+# 保持する Durable Object。バインディング名 `MCP_OBJECT` は `McpAgent.serve()` の既定値
+[[durable_objects.bindings]]
+name = "MCP_OBJECT"
+class_name = "CanshiMcp"
+
+# Durable Object のマイグレーションは `wrangler deploy` でだけ適用され、
+# `wrangler versions upload`（プレビュー）では適用できない
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["CanshiMcp"]

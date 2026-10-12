@@ -25,6 +25,8 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
   - ISR・SSG のキャッシュ用バケット（メディア用とは分離する。`docs/idea/index.md` の方針）
 - Cloudflare Workers 全体の Access 設定と許可ポリシー（プレビュー URL の保護に使う）
 - Cloudflare Workflows（定期通知が実装される第2段階以降で必要）
+- Workers KV（MCP の OAuth のクライアント登録・トークン用、バインディング名 `OAUTH_KV`）と
+  Durable Objects（MCP のセッション用。「MCP サーバー」節）
 
 ## 環境変数・シークレット
 
@@ -94,14 +96,12 @@ wrangler secret put EMAIL_HASH_SALT
 ```
 
 `ACCESS_*` のどれかが未設定の本番環境では、ログインボタンを押すとエラーになる（ログインせずに
-使える状態にはならない）。`EMAIL_HASH_SALT` は MCP 用 Worker からのユーザーの解決
-（`McpRpc.resolveMcpUser`）でも使うが、SALT はメインアプリだけが持つ。
+使える状態にはならない）。
 
 SaaS OIDC アプリの作成:
 
 1. Zero Trust の Access controls > Applications で **SaaS** アプリケーションを追加し、
-   認証プロトコルに **OIDC** を選ぶ。MCP サーバー用のアプリ（「MCP サーバー」節）とは別に作る
-   （同じアプリに Redirect URL を足して共用してもよい）。
+   認証プロトコルに **OIDC** を選ぶ。
 2. Redirect URL に `https://canshi.cateiru.dev/login/callback` を登録する。スコープは `openid` と
    `email` だけにする。PKCE を有効にする。
 3. メインアプリの利用者を許可するポリシーを付ける（Workers 全体の Access と同じポリシーでよい）。
@@ -140,10 +140,6 @@ OIDC でのログインの導入前（マイグレーション `0041` より前�
 
         pnpm exec wrangler d1 execute DB --remote --command "DELETE FROM sessions"
 
-6. MCP 用 Worker（`packages/mcp-server`）をデプロイし、ChatGPT などのコネクタを接続し直す。
-   MCP の認可（`/callback`）は Access のメールアドレスでユーザーを探すようになり、まだメインアプリに
-   ログインしたことがないメールアドレスでは接続できない。メインアプリの RPC（`McpRpc.resolveMcpUser`）の
-   引数が変わったため、メインアプリを先にデプロイする。
 
 手順 3 より先にログインしてしまうと、そのメールアドレスで新しいユーザー（家に未所属）が作られ、
 手順 3 のスクリプトは「すでに別のユーザーに紐付いています」で止まる。その場合は、作られたユーザーの
@@ -161,7 +157,7 @@ OIDC でのログインの導入前（マイグレーション `0041` より前�
 - 特定のユーザーを強制的にログアウトさせるときは、管理画面のユーザー一覧の「すべての端末からログアウト」を
   使う（`sessions` テーブルからそのユーザーの行をすべて削除する）
 - セッションを削除しても、MCP コネクタ（ChatGPT など）の接続は解除されない。MCP サーバーの OAuth の
-  認可はセッションとは別に保存している
+  認可はセッションとは別に（`OAUTH_KV`）保存している（「MCP サーバー」節）
 
 ### 導入時の手順（既存の猫の紐付け）
 
@@ -180,18 +176,13 @@ OIDC でのログインの導入前（マイグレーション `0041` より前�
    `0039` で家を決められなかったもの）と、家に未所属のごはん商品・ごはんプリセット（マイグレーション
    `0040` より前に登録したもの）も同じ家に紐付ける。ユーザーに紐付いていない Web Push の
    購読（導入前に登録したもの）も、同じユーザーに紐付ける。何度実行しても結果は変わらない。
-4. MCP 用 Worker（`packages/mcp-server`）をデプロイし、ChatGPT などのコネクタを接続し直す
-   （次の注意を参照）。
 
 ローカル開発の DB では `pnpm household:link --local --persist-to ./.wrangler/state` を実行する。
 
 - 猫を新しく登録すると、ログイン中のユーザーの家に所属する。家に所属していないユーザーは猫を
   登録できない
-- MCP のトークンには、認可時（`/callback`）に CANSHI のユーザー ID を保存する。家の導入前に発行
-  されたトークンはユーザー ID を持たないため、ツールを呼ぶと接続し直すよう案内するエラーになる
-- メインアプリの RPC（`McpRpc`）の引数が変わったため、メインアプリと MCP 用 Worker は上記の順
-  （メインアプリが先）でデプロイする。MCP 用 Worker だけが古いと、ユーザー ID なしの呼び出しが
-  メインアプリに拒否される
+- MCP のトークンには、同意したときにログインしていた CANSHI のユーザー ID を保存する
+  （「MCP サーバー」節）
 
 ## R2 バケット（メディア）
 
@@ -304,46 +295,38 @@ wrangler secret put VAPID_SUBJECT
 ## MCP サーバー（外部 AI エージェント連携）
 
 `docs/plans/32_mcp_oidc_overview.md` の方針に基づき、ChatGPT などの外部 AI エージェントが
-CANSHI のデータを参照できる MCP サーバーを、メインアプリとは別の Cloudflare Workers
-（`packages/mcp-server/`、Worker 名 `canshi-mcp`）として用意している。upstream の ID
-プロバイダーには Cloudflare Access（SaaS OIDC アプリ）を使い、認可サーバーの実装は
-`@cloudflare/workers-oauth-provider`。
+CANSHI のデータを参照できる MCP サーバーを、メインアプリの Worker の `/mcp` で公開している
+（`src/features/mcp/`）。コネクタに登録する URL は `https://canshi.cateiru.dev/mcp`。
+認可サーバーの実装は `@cloudflare/workers-oauth-provider` で、ログインはメインアプリの
+ログイン（セッション）をそのまま使う。
 
-本番環境は以下の構成でデプロイ済み（`36` 相当、2026-09 時点）。値そのもの（Client ID・
-Client secret・各エンドポイント URL 等）は機密情報のため、他の節と同様にこのファイルには
-書かない。
+- `src/worker.ts` が OpenNext のハンドラを `OAuthProvider` で包む。`/mcp`（アクセストークンで
+  保護）・`/oauth/token`・`/oauth/register`（DCR）・`/.well-known/oauth-*` は Next.js に渡さずに
+  処理する
+- `/oauth/authorize` は同意画面。Worker が認可リクエストを検証してから Next.js のページ
+  （`src/app/oauth/authorize/page.tsx`）を表示する。未ログインならログイン画面へ送り、ログイン後に
+  同意画面へ戻る。「許可する」を押すと、ログイン中のユーザーの ID をトークンに保存して認可を完了する
+  （`src/features/mcp/authorize.ts`）。DCR は誰でも呼べるため、一度許可したクライアントでも
+  毎回同意画面を表示する
+- MCP のツールは、トークンに保存したユーザーの家の猫だけを返す
+- `OAUTH_KV`（`@cloudflare/workers-oauth-provider` の標準ストレージ）に、クライアント登録・
+  認可コード・トークンを保存する。KV Namespace の id は `wrangler.toml` の `[[kv_namespaces]]` に
+  設定する
+- MCP のセッション状態は Durable Object（`CanshiMcp`、バインディング名 `MCP_OBJECT`）に保存する。
+  Durable Object のマイグレーション（`wrangler.toml` の `[[migrations]]`）は `wrangler deploy`
+  でだけ適用され、Workers Builds のブランチプレビュー（`wrangler versions upload`）では
+  適用できない。新しいマイグレーションを含む PR のプレビューのビルドは失敗するが、
+  マージ後の本番デプロイで適用される
+- メインアプリの本番ドメインは Access で保護していないため、`/mcp` などには Access のログイン画面を
+  挟まずに到達できる。プレビュー URL は Access で保護しているため、プレビューでは MCP を使えない
 
-- 公開ホスト名：`mcp.canshi.cateiru.dev`（`packages/mcp-server/wrangler.jsonc` の
-  `routes` で `custom_domain` として設定。メインアプリの `canshi.cateiru.dev` とは
-  別ホスト名）
-- Cloudflare Access に SaaS OIDC アプリケーションを作成済み。Authorization callback URL
-  には `https://mcp.canshi.cateiru.dev/callback` を登録（ローカル開発用に
-  `http://localhost:8788/callback` も追加登録する）
-  - **注意**: Access for SaaS の Key endpoint（JWKS）・issuer は、Team domain 全体で
-    共通の `/cdn-cgi/access/certs` ではなく、このアプリ（Client ID）ごとに異なる
-    `https://<team>.cloudflareaccess.com/cdn-cgi/access/sso/oidc/<client-id>/jwks`
-    （issuer は `.../oidc/<client-id>`）になる。ダッシュボードに表示される Key endpoint・
-    Issuer をそのまま使う（`src/auth/access.ts` 参照）
-- 上記アプリの Client ID・Client secret は `packages/mcp-server` に
-  `wrangler secret put` で設定済み（`ACCESS_CLIENT_ID`・`ACCESS_CLIENT_SECRET`・
-  `OAUTH_STATE_SECRET`）。ローカル開発では `.dev.vars`
-  （`packages/mcp-server/.dev.vars.example` 参照）に同じキーで設定する。
-  authorization/token endpoint・JWKS・issuer は機密情報ではないため、
-  OIDC discovery URL（`ACCESS_DISCOVERY_URL`、`.../.well-known/openid-configuration`）
-  を `wrangler.jsonc` の `vars` に平文で設定し、そこから実行時に導出する
-  （`src/auth/discovery.ts` 参照）
-- `OAUTH_KV`（`@cloudflare/workers-oauth-provider` の標準ストレージ）は
-  `wrangler kv namespace create OAUTH_KV` で本番用の KV Namespace を払い出し、
-  `packages/mcp-server/wrangler.jsonc` の `kv_namespaces[0].id` に設定済み
-- アカウント全体の Access（`All traffic`）はこの新しい Worker のホスト名には適用されない
-  ことを確認済み（`/mcp` は未認証で `401`＋`WWW-Authenticate: Bearer`、
-  `/.well-known/oauth-authorization-server` は未認証で認可サーバーのメタデータ
-  （JSON）をそのまま返す。Access のログイン画面に吸われていない）
-- 秘密情報・シークレットのローテーションが必要になった場合は、Access ダッシュボードで
-  SaaS OIDC アプリの Client secret を再発行し、`wrangler secret put ACCESS_CLIENT_SECRET`
-  で上書きする（Client secret はダッシュボードで一度しか表示されない点に注意）
+`next dev` は `src/worker.ts` を通らないため、`/mcp` と同意画面は使えない。ローカルで確認するときは
+`pnpm cf:preview` で起動する。
 
-ChatGPT のカスタムコネクタ（Developer Mode）からの実接続も確認済み（2026-09）。
+以前は別の Worker（`packages/mcp-server`、Worker 名 `canshi-mcp`、`mcp.canshi.cateiru.dev`）で
+動かし、Cloudflare Access の SaaS OIDC アプリでログインしていた。メインアプリへ移したあとは
+使わないため、Worker（とカスタムドメイン）を削除し、そのとき作った MCP 用の SaaS OIDC アプリと
+`mcp.canshi.cateiru.dev/callback` の Redirect URL も不要になる。コネクタは新しい URL で接続し直す。
 
 ### トラブルシューティング
 
@@ -379,9 +362,9 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
 Access のポリシーではなく、**管理者だけを許可する専用のポリシー**で保護する。
 
 `canshi-admin.cateiru.dev` の Self-hosted アプリケーションを作れば、Workers 全体の Access より
-具体的な設定として優先される（「Cloudflare Access 設定」節）。また前述の MCP サーバーの節のとおり、
-MCP サーバーのカスタムドメイン（`mcp.canshi.cateiru.dev`）には Workers 全体の Access が
-適用されなかったため、Workers 全体の Access だけには頼れない。Self-hosted アプリケーションは
+具体的な設定として優先される（「Cloudflare Access 設定」節）。また、以前の MCP サーバーの
+カスタムドメイン（`mcp.canshi.cateiru.dev`）には Workers 全体の Access が適用されなかったため、
+Workers 全体の Access だけには頼れない。Self-hosted アプリケーションは
 **デプロイする前に**作る（デプロイしてから作ると、それまでの間に一覧が誰にでも見えてしまう）。
 
 ### 初回の公開手順

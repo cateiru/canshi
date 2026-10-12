@@ -39,8 +39,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - アプリの利用者（`users`）と、猫を飼っている「家」（`households`）を表す。家には 1 名以上のユーザー
   （`household_members`、`household_id` + `user_id` の複合主キー）と複数の猫（`cats.household_id`）が所属する
-- ユーザーは所属する家の猫だけを参照・編集できる。ページ・Server Action・Route Handler・MCP 用の RPC
-  （`src/worker.ts` の `McpRpc`）は、いずれも `src/features/households/queries.ts` の
+- ユーザーは所属する家の猫だけを参照・編集できる。ページ・Server Action・Route Handler・MCP のツール
+  （`src/features/mcp/agent.ts`）は、いずれも `src/features/households/queries.ts` の
   `getCatForUser`・`listCatsForUser`・`accessibleCatIdsQuery` で絞り込む（認可の入口は
   `src/features/auth/session.ts` の `requireUser`・`requireCatAccess`）
   - 猫に紐付くテーブル（記録・通知など）は `cat_id` 経由で家に紐付くため、家の列は持たない
