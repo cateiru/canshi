@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import { householdMembers, households, users } from "@/db/schema";
 import {
+  createHousehold,
   leaveHousehold,
   removeHouseholdMember,
   renameHousehold,
@@ -24,6 +25,15 @@ beforeEach(async () => {
   await migrate(db as unknown as ReturnType<typeof drizzle>, {
     migrationsFolder: "./drizzle",
   });
+  // sql.js は `db.batch`（D1 専用）を持たないため、順番に実行するだけの簡易実装で補う
+  // biome-ignore lint/suspicious/noExplicitAny: テスト用に D1 の batch を簡易実装する
+  (db as any).batch = async (statements: PromiseLike<unknown>[]) => {
+    const results: unknown[] = [];
+    for (const statement of statements) {
+      results.push(await statement);
+    }
+    return results;
+  };
   await db.insert(users).values([
     { id: "owner", name: "オーナー" },
     { id: "member", name: "家族" },
@@ -55,6 +65,33 @@ async function getMemberIds(householdId: string) {
     .where(eq(householdMembers.householdId, householdId));
   return rows.map((row) => row.userId).sort();
 }
+
+describe("createHousehold", () => {
+  it("家を作成し、作成したユーザーをオーナーにする", async () => {
+    const { householdId } = await createHousehold("member", "ねこの家");
+
+    expect(await getHouseholdName(householdId)).toBe("ねこの家");
+    const members = await db
+      .select({ userId: householdMembers.userId, role: householdMembers.role })
+      .from(householdMembers)
+      .where(eq(householdMembers.householdId, householdId));
+    expect(members).toEqual([{ userId: "member", role: "owner" }]);
+  });
+
+  it("すでに家に所属していても、別の家を作成できる", async () => {
+    const { householdId } = await createHousehold("owner", "別宅");
+
+    expect(householdId).not.toBe("home");
+    expect(await getMemberIds("home")).toEqual(["member", "owner"]);
+    expect(await getMemberIds(householdId)).toEqual(["owner"]);
+  });
+
+  it("家とオーナーの追加は、1 つの batch（トランザクション）で行う", async () => {
+    const batch = vi.spyOn(db, "batch");
+    await createHousehold("member", "ねこの家");
+    expect(batch).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("renameHousehold", () => {
   it("オーナーは家の名前を変えられる", async () => {

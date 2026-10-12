@@ -12,6 +12,11 @@
   color: var(--color-ink-muted);
 }
 
+/* 猫一覧などと同じく、見出しの横に作成ボタンを置く */
+.titleRow {
+  composes: header from "../../../features/shared/PageLayout.module.css";
+}
+
 .list {
   display: flex;
   flex-direction: column;

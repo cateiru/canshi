@@ -87,9 +87,12 @@ export default async function CatsPage() {
 
       <div className={styles.header}>
         <RecordPageHeading icon={CatIcon}>猫一覧</RecordPageHeading>
-        <ButtonLink href="/cats/new" variant="primary" leftIcon={TbPlus}>
-          猫を登録する
-        </ButtonLink>
+        {/* 家がないと猫を登録できないため、家を作成するまでは登録ボタンを出さない */}
+        {householdList.length > 0 ? (
+          <ButtonLink href="/cats/new" variant="primary" leftIcon={TbPlus}>
+            猫を登録する
+          </ButtonLink>
+        ) : null}
       </div>
 
       {groups.length === 0 ? (
@@ -97,8 +100,16 @@ export default async function CatsPage() {
           <CatIcon aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>
-            猫を登録するには家が必要です。管理者に家の作成を依頼してください。
+            猫を登録するには家が必要です。家を作成するか、家族から届いた招待 URL
+            を開いて家に参加してください。
           </p>
+          <ButtonLink
+            href="/settings/households/new?from=cats"
+            variant="primary"
+            leftIcon={TbPlus}
+          >
+            家を作成する
+          </ButtonLink>
         </Surface>
       ) : (
         <div className={styles.households}>

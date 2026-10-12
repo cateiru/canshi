@@ -10,6 +10,7 @@ import {
   revokeHouseholdInvitation,
 } from "./invitations";
 import {
+  createHousehold,
   leaveHousehold,
   removeHouseholdMember,
   renameHousehold,
@@ -49,6 +50,46 @@ export async function updateHouseholdNameAction(
   revalidatePath("/settings/households", "layout");
   revalidatePath("/cats");
   return { message: "家の名前を保存しました" };
+}
+
+export type CreateHouseholdFormState = SubmitRedirect & {
+  fieldErrors?: HouseholdNameFormFieldErrors;
+};
+
+/**
+ * 家を作成したあとの遷移先。家の設定からはメンバーを招待できる家のページへ、
+ * 猫一覧からは作成した家が並ぶ猫一覧へ戻す
+ */
+const CREATE_HOUSEHOLD_REDIRECT = {
+  settings: (householdId: string) => `/settings/households/${householdId}`,
+  cats: () => "/cats",
+} as const;
+
+export type CreateHouseholdDestination = keyof typeof CREATE_HOUSEHOLD_REDIRECT;
+
+/** 家を作成し、作成したユーザーをオーナーにする */
+export async function createHouseholdAction(
+  destination: CreateHouseholdDestination,
+  _prevState: CreateHouseholdFormState,
+  formData: FormData,
+): Promise<CreateHouseholdFormState> {
+  const user = await requireUser();
+  const parsed = householdNameFormSchema.safeParse({
+    name: formData.get("name"),
+  });
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { householdId } = await createHousehold(user.id, parsed.data.name);
+
+  revalidatePath("/settings/households", "layout");
+  revalidatePath("/cats");
+  // bind した値はクライアントから書き換えられるため、知らない値は家の設定へ戻す
+  const redirectTo = Object.hasOwn(CREATE_HOUSEHOLD_REDIRECT, destination)
+    ? CREATE_HOUSEHOLD_REDIRECT[destination](householdId)
+    : CREATE_HOUSEHOLD_REDIRECT.settings(householdId);
+  return { redirectTo };
 }
 
 // メンバーの操作は redirect せず、成功/失敗のどちらも戻り値で表現する。

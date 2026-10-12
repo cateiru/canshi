@@ -244,3 +244,89 @@ test("ログインしていない状態で招待 URL を開くと、ログイン
     await expect(page.getByText("招待を無効化しました")).toBeVisible();
   }
 });
+
+test("家の設定から家を作成すると、作成した家のページに移り、オーナーになる", async ({
+  page,
+}) => {
+  // 家は削除できないため、他のテストの家と取り違えないよう一意な名前にする。
+  // 家の一覧は所属した順に並ぶため、作成した家は末尾に入り、先頭の家を使う他のテストには影響しない
+  const householdName = `作成した家-${Date.now()}`;
+
+  await page.goto("/settings/households");
+  await page.getByRole("link", { name: "家を作成する" }).click();
+  await expect(page).toHaveURL(/\/settings\/households\/new$/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "家を作成する" }),
+  ).toBeVisible();
+
+  await page.getByRole("textbox", { name: "家の名前" }).fill(householdName);
+  await page.getByRole("button", { name: "家を作成する" }).click();
+
+  await expect(page).toHaveURL(/\/settings\/households\/(?!new$)[^/]+$/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: householdName }),
+  ).toBeVisible();
+  await expect(page.getByText("（あなた）")).toBeVisible();
+
+  await page.goto("/settings/households");
+  await expect(
+    page
+      .getByRole("link")
+      .filter({ hasText: householdName })
+      .filter({ hasText: "あなたはオーナー" }),
+  ).toBeVisible();
+});
+
+test("家の名前を空にすると家を作成できない", async ({ page }) => {
+  await page.goto("/settings/households/new");
+  await page.getByRole("textbox", { name: "家の名前" }).fill(" ");
+  await page.getByRole("button", { name: "家を作成する" }).click();
+  await expect(page.getByText("家の名前を入力してください")).toBeVisible();
+  await expect(page).toHaveURL(/\/settings\/households\/new$/);
+});
+
+test("家に所属していないユーザーは、猫一覧から家を作成できる", async ({
+  browser,
+}) => {
+  // e2e のユーザーはすでに家に所属しているため、家のない新しいユーザーでログインし直す。
+  // e2e は `next dev` に対して実行するため、`/login` は入力したメールアドレスでログインする
+  const context = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+  });
+  const page = await context.newPage();
+  try {
+    await page.goto("/login?callbackUrl=%2Fcats");
+    await page
+      .getByLabel("メールアドレス（開発用）")
+      .fill(`e2e-new-household-${Date.now()}@example.com`);
+    await page.getByRole("button", { name: "ログイン" }).click();
+    await expect(page).toHaveURL(/\/cats$/);
+
+    await expect(page.getByText("所属している家がありません。")).toBeVisible();
+    // 家がないうちは猫を登録できないため、登録ボタンを出さない
+    await expect(page.getByRole("link", { name: "猫を登録する" })).toHaveCount(
+      0,
+    );
+
+    await page.getByRole("link", { name: "家を作成する" }).click();
+    await expect(page).toHaveURL(/\/settings\/households\/new\?from=cats$/);
+
+    const householdName = `猫一覧から作成した家-${Date.now()}`;
+    await page.getByRole("textbox", { name: "家の名前" }).fill(householdName);
+    await page.getByRole("button", { name: "家を作成する" }).click();
+
+    // 作成後は猫一覧へ戻り、作成した家のまとまりが表示される
+    await expect(page).toHaveURL(/\/cats$/);
+    await expect(
+      page.getByRole("button", {
+        name: new RegExp(`^${householdName}\\s*0匹$`),
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "最初の猫を登録する" }),
+    ).toBeVisible();
+    await expect(page.getByText("所属している家がありません。")).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});

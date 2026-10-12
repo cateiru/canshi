@@ -87,7 +87,7 @@ export default async function FeedingPresetsPage({
           <FeedingPresetIcon aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>
-            プリセットを登録するには家が必要です。管理者に家の作成を依頼してください。
+            プリセットを登録するには家が必要です。設定の「家の設定」から家を作成してください。
           </p>
         </Surface>
       ) : (

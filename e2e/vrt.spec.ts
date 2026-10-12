@@ -244,6 +244,14 @@ test("家の設定ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+test("家の作成ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/households/new");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "家を作成する" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 // 招待 URL のダイアログを撮るときは実際に招待を発行するため、家の詳細設定ページの撮影と
 // 重ならないよう直列にし、撮影後に発行した招待を無効化して元に戻す
 test.describe("家の詳細設定", () => {
