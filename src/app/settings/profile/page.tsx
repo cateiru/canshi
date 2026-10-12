@@ -1,6 +1,6 @@
 import { permanentRedirect } from "next/navigation";
 
-/** プロフィール設定はアカウント設定にまとめたため、以前の URL を開いたときはアカウント設定へ移す */
+/** プロフィール設定はアカウント設定へまとめたため、以前の URL を開いたときはプロフィールの編集ページへ移す */
 export default function ProfileSettingsPage() {
-  permanentRedirect("/settings/account");
+  permanentRedirect("/settings/account/profile");
 }

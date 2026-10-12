@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { TbDevices, TbKey, TbLogout } from "react-icons/tb";
-import { Badge, Breadcrumb, Button } from "@/components/ui";
+import { TbDevices, TbLogout, TbPencil } from "react-icons/tb";
+import { Badge, Breadcrumb, Button, ButtonLink } from "@/components/ui";
 import { AccountSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { logoutAction } from "@/features/auth/actions";
 import { formatDeviceName } from "@/features/auth/deviceName";
@@ -13,8 +13,7 @@ import { SESSION_COOKIE_NAME } from "@/features/auth/sessionToken";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
-import { updateUserProfileAction } from "@/features/users/actions";
-import { UserProfileForm } from "@/features/users/UserProfileForm";
+import { UserAvatar } from "@/features/users/UserAvatar";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -45,29 +44,31 @@ export default async function AccountSettingsPage() {
           アカウント設定
         </RecordPageHeading>
         <p className={styles.description}>
-          あなたの名前とアイコンの設定、ログインしている端末の確認とログアウトができます。
+          あなたのプロフィールの確認と編集、ログインしている端末の確認とログアウトができます。
         </p>
       </header>
 
-      <UserProfileForm
-        action={updateUserProfileAction}
-        defaultName={user.name}
-        iconMediaAssetId={user.iconMediaAssetId}
-      />
-
-      <Surface
-        title="ログイン中のアカウント"
-        titleId="login-account"
-        titleSize="lg"
-        icon={<TbKey aria-hidden="true" size={20} />}
-        gap="sm"
-      >
-        <dl className={styles.account}>
-          <dt>ユーザー ID</dt>
+      <Surface aria-label="プロフィール" className={styles.profile}>
+        <UserAvatar
+          name={user.name}
+          iconMediaAssetId={user.iconMediaAssetId}
+          size="md"
+        />
+        <dl className={styles.profileDetails}>
+          <dt className={styles.srOnly}>名前</dt>
+          <dd className={styles.userName}>{user.name}</dd>
+          <dt className={styles.srOnly}>ユーザー ID</dt>
           <dd>
             <code className={styles.userId}>{user.id}</code>
           </dd>
         </dl>
+        <ButtonLink
+          href="/settings/account/profile"
+          leftIcon={TbPencil}
+          className={styles.editButton}
+        >
+          編集
+        </ButtonLink>
       </Surface>
 
       <Surface

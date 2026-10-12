@@ -233,6 +233,14 @@ test.describe("アカウント設定", () => {
   });
 });
 
+test("プロフィールの編集ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/account/profile");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "プロフィールを編集する" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("家の設定ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/households");
   await expect(

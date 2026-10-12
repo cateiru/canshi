@@ -10,21 +10,40 @@
 
 .description,
 .sectionDescription,
-.account dt,
 .loggedInAt {
   color: var(--color-ink-muted);
 }
 
-.account {
+/* アバター・名前と ID・編集ボタンを横に並べる。名前と ID の列だけを伸び縮みさせる */
+.profile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.profileDetails {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+.userName {
+  overflow-wrap: anywhere;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
 }
 
 /* UUID は途中で折り返せないため、狭い画面では任意の位置で折り返す */
 .userId {
   overflow-wrap: anywhere;
   user-select: all;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.editButton {
+  white-space: nowrap;
 }
 
 .logoutItem {

@@ -7,7 +7,7 @@ type UserAvatarProps = {
   className?: string;
   name: string;
   iconMediaAssetId: string | null;
-  size?: "sm" | "lg";
+  size?: "sm" | "md" | "lg";
 };
 
 /**

@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { TbCheck, TbId } from "react-icons/tb";
-import { Alert, Button, FormField } from "@/components/ui";
+import { Alert, addToast, Button, FormField } from "@/components/ui";
 import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ProfileImageField } from "@/features/cats/ProfileImageField";
+import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { Surface } from "@/features/shared/Surface";
 import type { UserProfileFormState } from "./actions";
 import { UserAvatar } from "./UserAvatar";
@@ -22,15 +23,24 @@ type UserProfileFormProps = {
 const initialState: UserProfileFormState = {};
 
 /**
- * ログイン中のユーザーの名前とアイコン画像を変えるフォーム。保存後も同じページにとどまり、
- * 結果をフォームの下に表示する
+ * ログイン中のユーザーの名前とアイコン画像を変えるフォーム。保存したらアカウント設定へ戻り、
+ * 保存したことをトーストで知らせる
  */
 export function UserProfileForm({
   action,
   defaultName,
   iconMediaAssetId,
 }: UserProfileFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useSubmitActionState(
+    async (prevState: UserProfileFormState, formData: FormData) => {
+      const result = await action(prevState, formData);
+      if (result.redirectTo) {
+        addToast({ title: "プロフィールを保存しました", color: "success" });
+      }
+      return result;
+    },
+    initialState,
+  );
   const [isIconBusy, setIsIconBusy] = useState(false);
   const name = state.submittedName ?? defaultName;
 
@@ -68,8 +78,6 @@ export function UserProfileForm({
           画像を選ぶと、正方形に切り抜く範囲を調整できます。
         </p>
         <ProfileImageField
-          // 保存したら、選んだ画像を保存済みの画像として表示し直す
-          key={state.savedAt ?? 0}
           currentAssetId={iconMediaAssetId}
           renderPreview={(assetId) => (
             <UserAvatar name={name} iconMediaAssetId={assetId} size="lg" />
@@ -92,9 +100,6 @@ export function UserProfileForm({
         >
           {isPending ? "保存中..." : "保存する"}
         </Button>
-        <p role="status" className={styles.message}>
-          {isPending ? null : state.message}
-        </p>
       </div>
     </form>
   );

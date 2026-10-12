@@ -46,14 +46,25 @@ for (const viewport of [
   });
 }
 
-test("以前のプロフィール設定・ログイン設定の URL を開くと、アカウント設定へ移る", async ({
+test("以前のプロフィール設定・ログイン設定の URL を開くと、アカウント設定の対応するページへ移る", async ({
   page,
 }) => {
-  for (const path of ["/settings/profile", "/settings/login"]) {
+  for (const { path, to, heading } of [
+    {
+      path: "/settings/profile",
+      to: "/settings/account/profile",
+      heading: "プロフィールを編集する",
+    },
+    {
+      path: "/settings/login",
+      to: "/settings/account",
+      heading: "アカウント設定",
+    },
+  ]) {
     await page.goto(path);
-    await expect(page).toHaveURL("/settings/account");
+    await expect(page).toHaveURL(to);
     await expect(
-      page.getByRole("heading", { level: 1, name: "アカウント設定" }),
+      page.getByRole("heading", { level: 1, name: heading }),
     ).toBeVisible();
   }
 });

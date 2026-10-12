@@ -15,8 +15,3 @@
   align-items: center;
   gap: var(--space-3);
 }
-
-.message {
-  color: var(--color-ink-muted);
-  font-size: var(--text-sm);
-}

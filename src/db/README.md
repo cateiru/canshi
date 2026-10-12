@@ -58,7 +58,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - OIDC の導入前に作られたユーザーは `email_hash` が NULL のため、`pnpm user:link-email` で紐付ける
 - `users.role` はアプリ全体の権限（`admin`・`member`）。ユーザーが 1 件もないときに最初に
   ログインしたユーザーは `admin`
-- `users.name`・`users.icon_media_asset_id` は本人が「アカウント設定」（`/settings/account`）で変えられる。
+- `users.name`・`users.icon_media_asset_id` は本人がアカウント設定の「プロフィールを編集する」（`/settings/account/profile`）で変えられる。
   アイコン画像は同じ家のメンバーにも表示する（詳細は「画像・動画」の節）
 - 家の中での権限は `household_members.role`（`owner`・`member`）で持つ。今はオーナーを 1 名で運用し、
   移譲は 2 人のロールを 1 つの UPDATE 文で入れ替える（`src/features/households/ownership.ts`）。
