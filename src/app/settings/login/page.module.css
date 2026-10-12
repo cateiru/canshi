@@ -10,7 +10,8 @@
 
 .description,
 .sectionDescription,
-.account dt {
+.account dt,
+.loggedInAt {
   color: var(--color-ink-muted);
 }
 
@@ -31,4 +32,38 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-3);
+}
+
+.sessions {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+}
+
+.session {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.session + .session {
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.sessionInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.deviceName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-bold);
 }

@@ -1,13 +1,18 @@
 "use server";
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { sanitizeCallbackUrl } from "./callbackUrl";
 import { isDevelopmentLoginEnabled } from "./developmentLogin";
 import { loginWithEmail } from "./login";
 import { requireUser } from "./session";
-import { deleteSession, deleteUserSessions } from "./sessions";
+import {
+  deleteSession,
+  deleteUserSession,
+  deleteUserSessions,
+} from "./sessions";
 import { SESSION_COOKIE_NAME, sessionCookieOptions } from "./sessionToken";
 
 /**
@@ -27,7 +32,11 @@ export async function developmentLoginAction(
     throw new Error("メールアドレスを入力してください");
   }
 
-  const { token, expiresAt } = await loginWithEmail(email, env);
+  const { token, expiresAt } = await loginWithEmail(
+    email,
+    env,
+    (await headers()).get("user-agent"),
+  );
   (await cookies()).set(
     SESSION_COOKIE_NAME,
     token,
@@ -57,4 +66,24 @@ export async function logoutAllDevicesAction(): Promise<void> {
   await deleteUserSessions(user.id);
   (await cookies()).delete(SESSION_COOKIE_NAME);
   redirect("/login");
+}
+
+/**
+ * ログイン中のユーザーのセッションを 1 つ削除する（端末一覧から指定した端末をログアウトする）。
+ * 別のユーザーのセッションは削除できない。この端末のセッションを指定したときは、
+ * Cookie も消してログインページへ移る
+ */
+export async function logoutSessionAction(sessionId: string): Promise<void> {
+  const user = await requireUser();
+  const cookieStore = await cookies();
+  const { isCurrent } = await deleteUserSession(
+    user.id,
+    sessionId,
+    cookieStore.get(SESSION_COOKIE_NAME)?.value,
+  );
+  if (isCurrent) {
+    cookieStore.delete(SESSION_COOKIE_NAME);
+    redirect("/login");
+  }
+  revalidatePath("/settings/login");
 }
