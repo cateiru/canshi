@@ -48,3 +48,18 @@ export function decodeMcpConsentRequest(
   }
   return { clientName: clientName || null, redirectUri };
 }
+
+/**
+ * 認可コードの渡し先を画面に表示する形にする。http(s) はホスト名だけ、
+ * それ以外（アプリのスキーム）は URI 全体を表示する
+ */
+export function formatRedirectUri(redirectUri: string) {
+  try {
+    const url = new URL(redirectUri);
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.host
+      : redirectUri;
+  } catch {
+    return redirectUri;
+  }
+}

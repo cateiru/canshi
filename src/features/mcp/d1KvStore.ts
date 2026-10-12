@@ -16,7 +16,8 @@ const DEFAULT_LIST_LIMIT = 1000;
  * 期限切れの行は読み出し時に無いものとして扱い、定期実行（`purgeExpiredOAuthKvEntries`）で消す
  */
 export class D1KvStore {
-  constructor(private readonly d1: D1Database) {}
+  /** `d1` を省略すると `getDb()` と同じくリクエストスコープの D1 を使う */
+  constructor(private readonly d1?: D1Database) {}
 
   async get(
     key: string,

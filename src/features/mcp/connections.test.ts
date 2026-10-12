@@ -1,0 +1,193 @@
+// @vitest-environment node
+import { drizzle } from "drizzle-orm/sql-js";
+import { migrate } from "drizzle-orm/sql-js/migrator";
+import initSqlJs from "sql.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { getDb } from "@/db/client";
+import { listUserMcpConnections, revokeUserMcpConnection } from "./connections";
+import { D1KvStore } from "./d1KvStore";
+
+// `src/features/auth/sessions.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
+let db: ReturnType<typeof getDb>;
+vi.mock("@/db/client", () => ({
+  getDb: () => db,
+}));
+
+const d1 = {} as D1Database;
+const NOW = new Date("2026-10-12T00:00:00Z");
+const NOW_SECONDS = NOW.getTime() / 1000;
+
+beforeEach(async () => {
+  vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
+  const SQL = await initSqlJs();
+  db = drizzle(new SQL.Database()) as unknown as ReturnType<typeof getDb>;
+  await migrate(db as unknown as ReturnType<typeof drizzle>, {
+    migrationsFolder: "./drizzle",
+  });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+/**
+ * `@cloudflare/workers-oauth-provider`（0.10.4）の `completeAuthorization()` が保存するのと
+ * 同じキー・形式で、クライアント・grant・アクセストークンを保存する
+ */
+async function seed() {
+  const store = new D1KvStore(d1);
+  await store.put(
+    "client:client-chatgpt",
+    JSON.stringify({
+      clientId: "client-chatgpt",
+      clientName: "ChatGPT",
+      clientSecret: "secret-hash",
+      redirectUris: ["https://chatgpt.com/connector/oauth/callback"],
+    }),
+  );
+  await store.put(
+    "client:client-noname",
+    JSON.stringify({ clientId: "client-noname", redirectUris: [] }),
+  );
+  const grants = [
+    {
+      key: "grant:user-1:grant_old-1",
+      value: {
+        id: "grant_old-1",
+        clientId: "client-chatgpt",
+        userId: "user-1",
+        scope: [],
+        metadata: {},
+        encryptedProps: "encrypted",
+        createdAt: NOW_SECONDS - 3600,
+        redirectUri: "https://chatgpt.com/connector/oauth/callback",
+        refreshTokenId: "refresh-hash",
+      },
+    },
+    {
+      key: "grant:user-1:grantNew2",
+      value: {
+        id: "grantNew2",
+        clientId: "client-noname",
+        userId: "user-1",
+        scope: [],
+        metadata: {},
+        encryptedProps: "encrypted",
+        createdAt: NOW_SECONDS - 60,
+      },
+    },
+    {
+      key: "grant:user-1:grantExpired",
+      value: {
+        id: "grantExpired",
+        clientId: "client-chatgpt",
+        userId: "user-1",
+        scope: [],
+        metadata: {},
+        encryptedProps: "encrypted",
+        createdAt: NOW_SECONDS - 7200,
+        expiresAt: NOW_SECONDS - 1,
+      },
+    },
+    {
+      key: "grant:user-2:grantOther",
+      value: {
+        id: "grantOther",
+        clientId: "client-chatgpt",
+        userId: "user-2",
+        scope: [],
+        metadata: {},
+        encryptedProps: "encrypted",
+        createdAt: NOW_SECONDS,
+      },
+    },
+  ];
+  for (const { key, value } of grants) {
+    await store.put(key, JSON.stringify(value));
+  }
+  for (const key of [
+    "token:user-1:grant_old-1:token-a",
+    "token:user-1:grant_old-1:token-b",
+    "token:user-1:grantNew2:token-c",
+    "token:user-2:grantOther:token-d",
+  ]) {
+    await store.put(key, JSON.stringify({ id: key }), { expirationTtl: 3600 });
+  }
+  return store;
+}
+
+describe("listUserMcpConnections", () => {
+  it("ユーザーの期限内の接続を新しい順に、クライアントの名前と合わせて返す", async () => {
+    await seed();
+
+    expect(await listUserMcpConnections("user-1", d1)).toEqual([
+      {
+        id: "grantNew2",
+        clientName: null,
+        redirectUri: null,
+        createdAt: new Date(NOW.getTime() - 60 * 1000),
+      },
+      {
+        id: "grant_old-1",
+        clientName: "ChatGPT",
+        redirectUri: "https://chatgpt.com/connector/oauth/callback",
+        createdAt: new Date(NOW.getTime() - 3600 * 1000),
+      },
+    ]);
+  });
+
+  it("接続が無ければ空の配列を返す", async () => {
+    await seed();
+
+    expect(await listUserMcpConnections("user-3", d1)).toEqual([]);
+  });
+});
+
+describe("revokeUserMcpConnection", () => {
+  it("接続の grant とアクセストークンだけを削除する", async () => {
+    const store = await seed();
+
+    expect(await revokeUserMcpConnection("user-1", "grant_old-1", d1)).toBe(
+      true,
+    );
+
+    expect(await store.get("grant:user-1:grant_old-1")).toBeNull();
+    expect(await store.get("token:user-1:grant_old-1:token-a")).toBeNull();
+    expect(await store.get("token:user-1:grant_old-1:token-b")).toBeNull();
+    // ほかの接続・ほかのユーザーの接続・クライアントの登録は残す
+    expect(await store.get("grant:user-1:grantNew2")).not.toBeNull();
+    expect(await store.get("token:user-1:grantNew2:token-c")).not.toBeNull();
+    expect(await store.get("grant:user-2:grantOther")).not.toBeNull();
+    expect(await store.get("client:client-chatgpt")).not.toBeNull();
+    expect(
+      (await listUserMcpConnections("user-1", d1)).map(({ id }) => id),
+    ).toEqual(["grantNew2"]);
+  });
+
+  it("別のユーザーの接続は解除できない", async () => {
+    const store = await seed();
+
+    expect(await revokeUserMcpConnection("user-1", "grantOther", d1)).toBe(
+      false,
+    );
+
+    expect(await store.get("grant:user-2:grantOther")).not.toBeNull();
+    expect(await store.get("token:user-2:grantOther:token-d")).not.toBeNull();
+  });
+
+  it("存在しない ID や、キーの区切りを含む ID は何も削除しない", async () => {
+    const store = await seed();
+
+    expect(await revokeUserMcpConnection("user-1", "missing", d1)).toBe(false);
+    expect(await revokeUserMcpConnection("user-2:grantOther", "x", d1)).toBe(
+      false,
+    );
+    expect(
+      await revokeUserMcpConnection("user-1", "grantNew2:token-c", d1),
+    ).toBe(false);
+
+    expect(await store.get("grant:user-1:grantNew2")).not.toBeNull();
+    expect(await store.get("token:user-1:grantNew2:token-c")).not.toBeNull();
+    expect(await store.get("grant:user-2:grantOther")).not.toBeNull();
+  });
+});

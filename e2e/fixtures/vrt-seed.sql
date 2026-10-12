@@ -215,6 +215,14 @@ VALUES ('vrt-expense-hospital-2', strftime('%s', '2024-05-20 00:00:00'), 1500, '
 INSERT INTO expense_record_cats (expense_record_id, cat_id)
 VALUES ('vrt-expense-hospital-1', 'vrt-cat-busy'), ('vrt-expense-hospital-2', 'vrt-cat-busy');
 
+-- AIとの接続（設定の「AIとの接続」の一覧用）。`@cloudflare/workers-oauth-provider` が
+-- `oauth_kv_entries` に保存するのと同じキー・形式で、VRT ユーザーが同意した接続を 1 件と、
+-- 接続したクライアントの登録を入れる（src/features/mcp/connections.ts 参照）。
+-- createdAt は unix 秒の固定値（2024-06-01 00:00:00 UTC）
+INSERT INTO oauth_kv_entries (key, value)
+VALUES ('client:vrt-client', '{"clientId":"vrt-client","clientName":"ChatGPT","redirectUris":["https://chatgpt.com/connector/oauth/callback"]}'),
+  ('grant:vrt-user:vrtGrant', '{"id":"vrtGrant","clientId":"vrt-client","userId":"vrt-user","scope":[],"metadata":{},"encryptedProps":"","createdAt":1717200000,"redirectUri":"https://chatgpt.com/connector/oauth/callback"}');
+
 -- ここまでに登録した猫をすべて VRT 用の家に所属させる
 UPDATE cats SET household_id = 'vrt-household' WHERE id LIKE 'vrt-cat-%';
 

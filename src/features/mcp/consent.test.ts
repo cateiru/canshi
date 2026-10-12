@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { decodeMcpConsentRequest, encodeMcpConsentRequest } from "./consent";
+import {
+  decodeMcpConsentRequest,
+  encodeMcpConsentRequest,
+  formatRedirectUri,
+} from "./consent";
 
 describe("encodeMcpConsentRequest / decodeMcpConsentRequest", () => {
   it("日本語のクライアント名も ASCII のヘッダー値にして戻せる", () => {
@@ -49,5 +53,20 @@ describe("encodeMcpConsentRequest / decodeMcpConsentRequest", () => {
         encodeURIComponent(JSON.stringify({ clientName: 1, redirectUri: "a" })),
       ),
     ).toBeNull();
+  });
+});
+
+describe("formatRedirectUri", () => {
+  it("http(s) はホスト名だけ、それ以外は URI 全体を返す", () => {
+    expect(
+      formatRedirectUri("https://chatgpt.com/connector/oauth/callback"),
+    ).toBe("chatgpt.com");
+    expect(formatRedirectUri("http://localhost:6274/oauth/callback")).toBe(
+      "localhost:6274",
+    );
+    expect(formatRedirectUri("cursor://anysphere.cursor-mcp/oauth")).toBe(
+      "cursor://anysphere.cursor-mcp/oauth",
+    );
+    expect(formatRedirectUri("not a url")).toBe("not a url");
   });
 });

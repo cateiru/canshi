@@ -233,6 +233,14 @@ test.describe("アカウント設定", () => {
   });
 });
 
+test("AIとの接続ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/ai-connections");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "AIとの接続" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("プロフィールの編集ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/account/profile");
   await expect(
