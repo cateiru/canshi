@@ -190,12 +190,13 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - ごはんの時間は家ごとに `feeding_schedules`（`household_id`・`time`（`HH:MM`、15 分刻み、日本時間））で持ち、
   同じ家に同じ時刻は 1 つだけ（`(household_id, time)` の一意インデックス）。家のメンバーなら誰でも追加・変更・削除でき、
   メンバーかどうかの判定は INSERT ... SELECT・UPDATE・DELETE の WHERE に含める（`src/features/feeding-schedules/mutations.ts`）
-  - 通知は家ではなく、その家の猫ごとに生成する（`notifications.cat_id` を持つため。種類は `feeding_time`・
-    `feeding_not_recorded`、`reference_id` は `feeding_schedules.id`）。`notify_at_time`・`remind_if_not_recorded` で
-    時間ごとにそれぞれの通知を出すかを持つ
+  - 通知は猫ごとではなく、家についての通知（`notifications.household_id`）として家に 1 件生成する。種類は
+    `feeding_time`・`feeding_not_recorded`、`reference_id` は `feeding_schedules.id`。`notify_at_time`・
+    `remind_if_not_recorded` で時間ごとにそれぞれの通知を出すかを持つ。猫のいない家には出さない
   - 各時刻の前後の範囲は、前の時刻との中間から次の時刻との中間まで（時刻が 1 つなら前後 12 時間）。
-    範囲の判定はごはん記録の `occurred_at`（naive UTC）と比べる（`src/features/notifications/rules/feedingSchedule.ts`）
-  - ごはん記録を追加したときは、その猫の未対応のごはんの通知を同じ `db.batch` で完了にする
+    家のどれかの猫のごはん記録の `occurred_at`（naive UTC）が範囲内にあれば記録があるとみなす
+    （`src/features/notifications/rules/feedingSchedule.ts`）
+  - ごはん記録を追加したときは、猫の家の未対応のごはんの通知を同じ `db.batch` で完了にする
   - 削除した時間の通知は `reference_id` に外部キーがないため残す
 - 詳細な判定ロジックは `src/features/notifications/` を参照
 

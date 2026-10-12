@@ -3,7 +3,6 @@ import { evaluateBirthdayHalfYear } from "./birthdayHalfYear";
 import { evaluateBirthdayYearly } from "./birthdayYearly";
 import { evaluateCleaningDue } from "./cleaningDue";
 import { evaluateDaysMilestone } from "./daysMilestone";
-import { evaluateFeedingSchedule } from "./feedingSchedule";
 import { getLocalTimeString } from "./localDate";
 import { evaluateShampooElapsed } from "./shampooElapsed";
 import { evaluateSymptomOngoing } from "./symptomOngoing";
@@ -19,9 +18,8 @@ export * from "./types";
  * 1匹の猫について、今日発火すべき通知の候補を判定する純粋関数。DB アクセスは持たない
  * （`src/features/notifications/generate.ts` が DB から入力を集めて呼び出す）。
  *
- * 掃除・ごはん以外の通知は全体の通知時刻（18:00）を過ぎるまで生成しない。掃除の通知は対象ごとに
- * 通知時刻を指定でき、ごはんの通知は家のごはんの時間に合わせて出すため、時刻の判定は
- * `evaluateCleaningDue`・`evaluateFeedingSchedule` 側で行う
+ * 掃除以外の通知は全体の通知時刻（18:00）を過ぎるまで生成しない。掃除の通知は対象ごとに
+ * 通知時刻を指定できるため、時刻の判定は `evaluateCleaningDue` 側で行う
  */
 export function evaluateNotificationRules(
   input: EvaluateNotificationRulesInput,
@@ -35,8 +33,6 @@ export function evaluateNotificationRules(
     latestWeightAt,
     cleaningTargets,
     openSymptoms,
-    feedingSchedules,
-    recentFeedingAts,
   } = input;
 
   const candidates: NotificationCandidate[] = [
@@ -46,13 +42,6 @@ export function evaluateNotificationRules(
       timezone,
       cleaningTargets,
       (targetId) => settings.cleaningDue.get(targetId)?.isEnabled ?? true,
-    ),
-    ...evaluateFeedingSchedule(
-      cat.id,
-      now,
-      timezone,
-      feedingSchedules,
-      recentFeedingAts,
     ),
   ];
 

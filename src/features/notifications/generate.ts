@@ -11,7 +11,11 @@ import {
 import { listAllCats } from "@/features/cats/queries";
 import { listCleaningTargetsWithStatus } from "@/features/cleaning/targetQueries";
 import { NOTIFY_TIMEZONE } from "./defaults";
-import { buildNotificationMessage, type NotificationMessage } from "./messages";
+import {
+  buildHouseholdNotificationMessage,
+  buildNotificationMessage,
+  type NotificationMessage,
+} from "./messages";
 import { getResolvedSettingsForCat } from "./queries";
 import {
   evaluateNotificationRules,
@@ -19,7 +23,10 @@ import {
   type OpenSymptom,
   type SymptomOngoingCandidate,
 } from "./rules";
-import { FEEDING_RECORD_LOOKBACK_MS } from "./rules/feedingSchedule";
+import {
+  evaluateFeedingSchedule,
+  FEEDING_RECORD_LOOKBACK_MS,
+} from "./rules/feedingSchedule";
 import { getNaiveLocalNow } from "./rules/localDate";
 
 /** 家 id ごとの、ごはんの時間（`evaluateFeedingSchedule` の入力） */
@@ -206,8 +213,6 @@ export async function generateNotifications(
   const db = getDb(d1);
   const cats = await listAllCats(d1);
   const openSymptomsByCat = await listOpenSymptomsByCat(db);
-  const feedingSchedulesByHousehold = await listFeedingSchedulesByHousehold(db);
-  const recentFeedingAtsByCat = await listRecentFeedingAtsByCat(db, now);
 
   for (const cat of cats) {
     const [latestShampoo] = await db
@@ -244,11 +249,6 @@ export async function generateNotifications(
       latestWeightAt: latestWeight?.occurredAt ?? null,
       cleaningTargets,
       openSymptoms: openSymptomsByCat.get(cat.id) ?? [],
-      feedingSchedules:
-        cat.householdId == null
-          ? []
-          : (feedingSchedulesByHousehold.get(cat.householdId) ?? []),
-      recentFeedingAts: recentFeedingAtsByCat.get(cat.id) ?? [],
     });
 
     for (const candidate of candidates) {
@@ -261,6 +261,57 @@ export async function generateNotifications(
         .insert(notifications)
         .values({
           catId: candidate.catId,
+          kind: candidate.kind,
+          referenceId: candidate.referenceId,
+          dedupeKey: candidate.dedupeKey,
+          title: message.title,
+          body: message.body,
+          url: message.url,
+          dueAt: candidate.dueAt,
+        })
+        .onConflictDoNothing({ target: notifications.dedupeKey });
+    }
+  }
+
+  await generateHouseholdNotifications(db, now, cats);
+}
+
+/**
+ * 家についての通知（ごはんの時間）を判定し、まだ生成していない候補だけを INSERT する。
+ * 猫のいない家には出さない。ごはん記録は猫ごとのため、家の猫すべての記録をまとめて判定に使う
+ */
+async function generateHouseholdNotifications(
+  db: ReturnType<typeof getDb>,
+  now: Date,
+  cats: { id: string; householdId: string | null }[],
+): Promise<void> {
+  const schedulesByHousehold = await listFeedingSchedulesByHousehold(db);
+  if (schedulesByHousehold.size === 0) {
+    return;
+  }
+  const recentFeedingAtsByCat = await listRecentFeedingAtsByCat(db, now);
+
+  for (const [householdId, schedules] of schedulesByHousehold) {
+    const catIds = cats
+      .filter((cat) => cat.householdId === householdId)
+      .map((cat) => cat.id);
+    if (catIds.length === 0) {
+      continue;
+    }
+
+    const candidates = evaluateFeedingSchedule(
+      householdId,
+      now,
+      NOTIFY_TIMEZONE,
+      schedules,
+      catIds.flatMap((catId) => recentFeedingAtsByCat.get(catId) ?? []),
+    );
+    for (const candidate of candidates) {
+      const message = buildHouseholdNotificationMessage(candidate, catIds);
+      await db
+        .insert(notifications)
+        .values({
+          householdId: candidate.householdId,
           kind: candidate.kind,
           referenceId: candidate.referenceId,
           dedupeKey: candidate.dedupeKey,

@@ -25,7 +25,7 @@ function evaluate(
   recentFeedingAts: string[] = [],
 ) {
   return evaluateFeedingSchedule(
-    "cat-1",
+    "home",
     new Date(now),
     "Asia/Tokyo",
     schedules,
@@ -39,12 +39,11 @@ describe("evaluateFeedingSchedule", () => {
     const candidates = evaluate("2026-09-10T22:00:00.000Z", [morning, evening]);
     expect(candidates).toEqual([
       {
-        catId: "cat-1",
+        householdId: "home",
         kind: "feeding_time",
         referenceId: "morning",
-        dedupeKey: "cat-1:feeding_time:morning:2026-09-11",
+        dedupeKey: "household:home:feeding_time:morning:2026-09-11",
         dueAt: new Date("2026-09-11T07:00:00.000Z"),
-        scheduleId: "morning",
         time: "07:00",
       },
     ]);
@@ -96,12 +95,11 @@ describe("evaluateFeedingSchedule", () => {
     // 日本時間 13:00（07:00 と 19:00 の中間）
     expect(evaluate("2026-09-11T04:00:00.000Z", [morning, evening])).toEqual([
       {
-        catId: "cat-1",
+        householdId: "home",
         kind: "feeding_not_recorded",
         referenceId: "morning",
-        dedupeKey: "cat-1:feeding_not_recorded:morning:2026-09-11",
+        dedupeKey: "household:home:feeding_not_recorded:morning:2026-09-11",
         dueAt: new Date("2026-09-11T07:00:00.000Z"),
-        scheduleId: "morning",
         time: "07:00",
       },
     ]);
@@ -122,12 +120,11 @@ describe("evaluateFeedingSchedule", () => {
     // 日本時間 2026-09-12 01:00（前日 19:00 と 07:00 の中間）
     expect(evaluate("2026-09-11T16:00:00.000Z", [morning, evening])).toEqual([
       {
-        catId: "cat-1",
+        householdId: "home",
         kind: "feeding_not_recorded",
         referenceId: "evening",
-        dedupeKey: "cat-1:feeding_not_recorded:evening:2026-09-11",
+        dedupeKey: "household:home:feeding_not_recorded:evening:2026-09-11",
         dueAt: new Date("2026-09-11T19:00:00.000Z"),
-        scheduleId: "evening",
         time: "19:00",
       },
     ]);
@@ -139,7 +136,7 @@ describe("evaluateFeedingSchedule", () => {
     expect(evaluate("2026-09-11T15:15:00.000Z", [lateNight])).toEqual([
       expect.objectContaining({
         kind: "feeding_time",
-        dedupeKey: "cat-1:feeding_time:late:2026-09-11",
+        dedupeKey: "household:home:feeding_time:late:2026-09-11",
       }),
     ]);
   });
@@ -175,7 +172,7 @@ describe("evaluateFeedingSchedule", () => {
     expect(
       evaluate("2026-09-10T22:15:00.000Z", [first, second]).map((c) => [
         c.kind,
-        c.scheduleId,
+        c.referenceId,
       ]),
     ).toEqual([
       ["feeding_time", "first"],

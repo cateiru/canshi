@@ -50,20 +50,6 @@ export type SymptomOngoingCandidate = BaseCandidate & {
   elapsedMonths: number;
 };
 
-export type FeedingTimeCandidate = BaseCandidate & {
-  kind: "feeding_time";
-  scheduleId: string;
-  /** ごはんの時刻（HH:MM） */
-  time: string;
-};
-
-export type FeedingNotRecordedCandidate = BaseCandidate & {
-  kind: "feeding_not_recorded";
-  scheduleId: string;
-  /** ごはんの時刻（HH:MM） */
-  time: string;
-};
-
 export type NotificationCandidate =
   | BirthdayYearlyCandidate
   | BirthdayHalfYearCandidate
@@ -71,9 +57,7 @@ export type NotificationCandidate =
   | ShampooElapsedCandidate
   | WeightMeasurementCandidate
   | CleaningDueCandidate
-  | SymptomOngoingCandidate
-  | FeedingTimeCandidate
-  | FeedingNotRecordedCandidate;
+  | SymptomOngoingCandidate;
 
 /** `notification_settings` を既定値とマージ済みの、猫ごとの通知設定 */
 export type ResolvedNotificationSettings = {
@@ -96,12 +80,6 @@ export type OpenSymptom = Pick<Symptom, "id" | "symptomType" | "onsetAt"> & {
   lastAnsweredAt: Date | null;
 };
 
-/** 通知判定に使う、猫の家のごはんの時間 */
-export type FeedingScheduleForRule = Pick<
-  FeedingSchedule,
-  "id" | "time" | "notifyAtTime" | "remindIfNotRecorded"
->;
-
 export type EvaluateNotificationRulesInput = {
   now: Date;
   timezone: string;
@@ -111,8 +89,37 @@ export type EvaluateNotificationRulesInput = {
   latestWeightAt: Date | null;
   cleaningTargets: CleaningTargetWithStatus[];
   openSymptoms: OpenSymptom[];
-  /** 猫の家のごはんの時間 */
-  feedingSchedules: FeedingScheduleForRule[];
-  /** 直近のごはん記録の発生日時（naive UTC）。ごはんの時間の前後に記録があるかの判定に使う */
-  recentFeedingAts: Date[];
 };
+
+/**
+ * 家についての通知（`notifications.household_id` を持つもの）の候補。猫についての通知
+ * （`NotificationCandidate`）と違い、`cat_id` を持たない
+ */
+type BaseHouseholdCandidate = {
+  householdId: string;
+  /** ごはんの時間（`feeding_schedules.id`） */
+  referenceId: string;
+  /** `notifications.dedupe_key`。同じ判定結果からの二重生成を防ぐ */
+  dedupeKey: string;
+  dueAt: Date;
+  /** ごはんの時刻（HH:MM） */
+  time: string;
+};
+
+export type FeedingTimeCandidate = BaseHouseholdCandidate & {
+  kind: "feeding_time";
+};
+
+export type FeedingNotRecordedCandidate = BaseHouseholdCandidate & {
+  kind: "feeding_not_recorded";
+};
+
+export type HouseholdNotificationCandidate =
+  | FeedingTimeCandidate
+  | FeedingNotRecordedCandidate;
+
+/** 通知判定に使う、家のごはんの時間 */
+export type FeedingScheduleForRule = Pick<
+  FeedingSchedule,
+  "id" | "time" | "notifyAtTime" | "remindIfNotRecorded"
+>;

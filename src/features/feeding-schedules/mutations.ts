@@ -1,6 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { feedingSchedules, householdMembers } from "@/db/schema";
+import { isHouseholdMemberCondition } from "@/features/households/queries";
 import type {
   FeedingScheduleFormInput,
   FeedingScheduleNotifyFormInput,
@@ -11,18 +12,6 @@ export type FeedingScheduleMutationResult =
   | { ok: false; error: string };
 
 const NOT_MEMBER_ERROR = "この家のメンバーではないため変更できませんでした";
-
-/**
- * `userId` がその家のメンバーであるときだけ真になる条件。ページを開いてから保存するまでの間に
- * 家から外された場合に操作が通らないよう、更新・削除の WHERE に含めて 1 文で判定する
- */
-function isMemberCondition(householdId: string, userId: string) {
-  return sql`EXISTS (
-    SELECT 1 FROM ${householdMembers} AS member
-    WHERE member.household_id = ${householdId}
-      AND member.user_id = ${userId}
-  )`;
-}
 
 /** 家のごはんの時間の一覧。時刻順 */
 export async function listFeedingSchedules(
@@ -117,7 +106,7 @@ export async function updateFeedingScheduleNotify(
       and(
         eq(feedingSchedules.id, scheduleId),
         eq(feedingSchedules.householdId, householdId),
-        isMemberCondition(householdId, userId),
+        isHouseholdMemberCondition(householdId, userId),
       ),
     )
     .returning({ id: feedingSchedules.id });
@@ -145,7 +134,7 @@ export async function deleteFeedingSchedule(
       and(
         eq(feedingSchedules.id, scheduleId),
         eq(feedingSchedules.householdId, householdId),
-        isMemberCondition(householdId, userId),
+        isHouseholdMemberCondition(householdId, userId),
       ),
     )
     .returning({ id: feedingSchedules.id });

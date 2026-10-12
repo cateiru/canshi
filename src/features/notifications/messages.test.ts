@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildNotificationMessage } from "./messages";
+import {
+  buildHouseholdNotificationMessage,
+  buildNotificationMessage,
+} from "./messages";
 import type { NotificationCandidate } from "./rules";
 
 const base = {
@@ -67,34 +70,39 @@ describe("buildNotificationMessage", () => {
       url: "/cats/cat-1/symptoms/symptom-1/edit",
     });
   });
+});
 
-  it("feeding_time の文言を組み立てる", () => {
-    const candidate: NotificationCandidate = {
-      ...base,
-      kind: "feeding_time",
-      referenceId: "schedule-1",
-      scheduleId: "schedule-1",
-      time: "07:00",
-    };
-    expect(buildNotificationMessage("たま", candidate)).toEqual({
-      title: "たまのごはんの時間です",
+describe("buildHouseholdNotificationMessage", () => {
+  const base = {
+    householdId: "household-1",
+    referenceId: "schedule-1",
+    dedupeKey: "dedupe",
+    dueAt: new Date("2026-09-11T07:00:00.000Z"),
+    time: "07:00",
+  };
+
+  it("feeding_time の文言を組み立て、猫が 1 匹ならその猫の記録画面へ遷移する", () => {
+    expect(
+      buildHouseholdNotificationMessage({ ...base, kind: "feeding_time" }, [
+        "cat-1",
+      ]),
+    ).toEqual({
+      title: "ごはんの時間です",
       body: "07:00のごはんの時間になりました。ごはんをあげたら記録しておきましょう",
       url: "/cats/cat-1/feeding-records/new",
     });
   });
 
-  it("feeding_not_recorded の文言を組み立てる", () => {
-    const candidate: NotificationCandidate = {
-      ...base,
-      kind: "feeding_not_recorded",
-      referenceId: "schedule-1",
-      scheduleId: "schedule-1",
-      time: "19:00",
-    };
-    expect(buildNotificationMessage("たま", candidate)).toEqual({
-      title: "たまのごはんはあげましたか？",
+  it("feeding_not_recorded の文言を組み立て、猫が複数なら猫一覧へ遷移する", () => {
+    expect(
+      buildHouseholdNotificationMessage(
+        { ...base, kind: "feeding_not_recorded", time: "19:00" },
+        ["cat-1", "cat-2"],
+      ),
+    ).toEqual({
+      title: "ごはんはあげましたか？",
       body: "19:00のごはんの記録がありません。あげていたら記録しておきましょう",
-      url: "/cats/cat-1/feeding-records/new",
+      url: "/cats",
     });
   });
 });

@@ -132,13 +132,13 @@ describe("createFeedingRecordAction", () => {
 
   async function addNotification(
     id: string,
-    catId: string,
+    target: { catId: string } | { householdId: string },
     kind: "feeding_time" | "feeding_not_recorded" | "weight_measurement",
     status: "pending" | "snoozed" | "dismissed" = "pending",
   ) {
     await db.insert(notifications).values({
       id,
-      catId,
+      ...target,
       kind,
       dedupeKey: id,
       title: "タイトル",
@@ -157,26 +157,27 @@ describe("createFeedingRecordAction", () => {
     return row.status;
   }
 
-  it("記録した猫の未対応のごはんの通知だけを完了にする", async () => {
-    await addNotification("time", "tama", "feeding_time");
+  it("記録した猫の家の未対応のごはんの通知だけを完了にする", async () => {
+    await db.insert(households).values({ id: "next-door", name: "となり" });
+    const home = { householdId: "home" };
+    await addNotification("time", home, "feeding_time");
+    await addNotification("reminder", home, "feeding_not_recorded", "snoozed");
+    await addNotification("dismissed", home, "feeding_time", "dismissed");
+    await addNotification("weight", { catId: "tama" }, "weight_measurement");
     await addNotification(
-      "reminder",
-      "tama",
-      "feeding_not_recorded",
-      "snoozed",
+      "other-household",
+      { householdId: "next-door" },
+      "feeding_time",
     );
-    await addNotification("dismissed", "tama", "feeding_time", "dismissed");
-    await addNotification("weight", "tama", "weight_measurement");
-    await addNotification("other-cat", "kuro", "feeding_time");
 
     const result = await createFeedingRecordAction("tama", {}, strictForm());
     expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
 
     expect(await statusOf("time")).toBe("done");
     expect(await statusOf("reminder")).toBe("done");
-    // 対応済みの通知・ほかの種類の通知・ほかの猫の通知はそのまま
+    // 対応済みの通知・ほかの種類の通知・ほかの家の通知はそのまま
     expect(await statusOf("dismissed")).toBe("dismissed");
     expect(await statusOf("weight")).toBe("pending");
-    expect(await statusOf("other-cat")).toBe("pending");
+    expect(await statusOf("other-household")).toBe("pending");
   });
 });

@@ -6,9 +6,8 @@ import {
   localDateKey,
 } from "./localDate";
 import type {
-  FeedingNotRecordedCandidate,
   FeedingScheduleForRule,
-  FeedingTimeCandidate,
+  HouseholdNotificationCandidate,
 } from "./types";
 
 const MS_PER_MINUTE = 60 * 1000;
@@ -39,11 +38,13 @@ function atLocalDate(date: LocalDate, minutes: number): number {
 }
 
 /**
- * ごはんの時間の通知と、記録がないときのリマインダーを判定する。
+ * 家のごはんの時間の通知と、記録がないときのリマインダーを判定する。通知は猫ごとではなく
+ * 家に 1 件だけ出す（家のメンバーに猫の数だけ届かないようにするため）。
  *
  * 家のごはんの時間を時刻順に並べ、各時刻の「前後の範囲」を、前の時刻との中間から次の時刻との
  * 中間までとする（時刻が 1 つだけなら前後 12 時間）。日付をまたいで、最後の時刻の次は翌日の
- * 最初の時刻になる。
+ * 最初の時刻になる。`recentFeedingAts` は家の猫すべてのごはん記録で、どれかの猫の記録が
+ * 範囲内にあれば「記録がある」とみなす。
  * - 時刻になったら「ごはんの時間です」を出す。すでに範囲内に記録があれば出さない
  * - 次の時刻との中間になっても範囲内に記録がなければ「ごはんはあげましたか？」を出す
  *
@@ -53,12 +54,12 @@ function atLocalDate(date: LocalDate, minutes: number): number {
  * 日ではなく、その回のごはんの日付を含める
  */
 export function evaluateFeedingSchedule(
-  catId: string,
+  householdId: string,
   now: Date,
   timezone: string,
   schedules: FeedingScheduleForRule[],
   recentFeedingAts: Date[],
-): (FeedingTimeCandidate | FeedingNotRecordedCandidate)[] {
+): HouseholdNotificationCandidate[] {
   if (schedules.length === 0) {
     return [];
   }
@@ -69,7 +70,7 @@ export function evaluateFeedingSchedule(
     (a, b) => toMinutes(a.time) - toMinutes(b.time),
   );
   const feedingTimes = recentFeedingAts.map((at) => at.getTime());
-  const candidates: (FeedingTimeCandidate | FeedingNotRecordedCandidate)[] = [];
+  const candidates: HouseholdNotificationCandidate[] = [];
 
   for (const [index, schedule] of sorted.entries()) {
     const minutes = toMinutes(schedule.time);
@@ -96,10 +97,9 @@ export function evaluateFeedingSchedule(
 
       const dateKey = localDateKey(date);
       const base = {
-        catId,
+        householdId,
         referenceId: schedule.id,
         dueAt: new Date(slotAt),
-        scheduleId: schedule.id,
         time: schedule.time,
       };
 
@@ -111,7 +111,7 @@ export function evaluateFeedingSchedule(
         candidates.push({
           ...base,
           kind: "feeding_time",
-          dedupeKey: `${catId}:feeding_time:${schedule.id}:${dateKey}`,
+          dedupeKey: `household:${householdId}:feeding_time:${schedule.id}:${dateKey}`,
         });
       }
 
@@ -123,7 +123,7 @@ export function evaluateFeedingSchedule(
         candidates.push({
           ...base,
           kind: "feeding_not_recorded",
-          dedupeKey: `${catId}:feeding_not_recorded:${schedule.id}:${dateKey}`,
+          dedupeKey: `household:${householdId}:feeding_not_recorded:${schedule.id}:${dateKey}`,
         });
       }
     }

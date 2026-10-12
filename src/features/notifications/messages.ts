@@ -1,4 +1,8 @@
-import type { NotificationCandidate, SymptomOngoingCandidate } from "./rules";
+import type {
+  HouseholdNotificationCandidate,
+  NotificationCandidate,
+  SymptomOngoingCandidate,
+} from "./rules";
 
 const SYMPTOM_STATUS_PHRASE: Record<SymptomOngoingCandidate["status"], string> =
   {
@@ -60,17 +64,31 @@ export function buildNotificationMessage(
         body: `「${candidate.symptomType}」の症状が「${SYMPTOM_STATUS_PHRASE[candidate.status]}」のまま${candidate.elapsedMonths}ヶ月が経過しました`,
         url: `/cats/${candidate.catId}/symptoms/${candidate.symptomId}/edit`,
       };
+  }
+}
+
+/**
+ * 家についての通知の候補から、文言と遷移先 URL を組み立てる。遷移先は、家の猫が 1 匹だけなら
+ * その猫のごはん記録の追加画面、複数いれば記録する猫を選べる猫一覧にする
+ */
+export function buildHouseholdNotificationMessage(
+  candidate: HouseholdNotificationCandidate,
+  catIds: readonly string[],
+): NotificationMessage {
+  const url =
+    catIds.length === 1 ? `/cats/${catIds[0]}/feeding-records/new` : "/cats";
+  switch (candidate.kind) {
     case "feeding_time":
       return {
-        title: `${catName}のごはんの時間です`,
+        title: "ごはんの時間です",
         body: `${candidate.time}のごはんの時間になりました。ごはんをあげたら記録しておきましょう`,
-        url: `/cats/${candidate.catId}/feeding-records/new`,
+        url,
       };
     case "feeding_not_recorded":
       return {
-        title: `${catName}のごはんはあげましたか？`,
+        title: "ごはんはあげましたか？",
         body: `${candidate.time}のごはんの記録がありません。あげていたら記録しておきましょう`,
-        url: `/cats/${candidate.catId}/feeding-records/new`,
+        url,
       };
   }
 }
