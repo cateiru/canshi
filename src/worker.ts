@@ -7,6 +7,10 @@ import {
   OAUTH_TOKEN_PATH,
   withMcpAuthorize,
 } from "@/features/mcp/authorize";
+import {
+  D1KvStore,
+  purgeExpiredOAuthKvEntries,
+} from "@/features/mcp/d1KvStore";
 
 // `.open-next/worker.js` は `opennextjs-cloudflare build`（`pnpm cf:build` 等）で
 // 生成される。ビルド前（`.open-next/` が無いクリーンな環境）は型解決できないため抑制する
@@ -33,8 +37,21 @@ const oauthProvider = new OAuthProvider({
 });
 
 export default {
-  fetch: (request, env, ctx) => oauthProvider.fetch(request, env, ctx),
+  fetch(request, env, ctx) {
+    // OAuth のクライアント登録・認可・トークンは Workers KV ではなく D1 に保存する。
+    // ライブラリは `env.OAUTH_KV` を直接読み書きするため、D1 で実装した KV を渡す
+    const envWithOAuthKv: Env & { OAUTH_KV: KVNamespace } = {
+      ...env,
+      OAUTH_KV: new D1KvStore(env.DB) as unknown as KVNamespace,
+    };
+    return oauthProvider.fetch(request, envWithOAuthKv, ctx);
+  },
   async scheduled(controller, env, ctx) {
+    ctx.waitUntil(
+      purgeExpiredOAuthKvEntries(env.DB).catch((error) => {
+        console.error("期限切れの OAuth のデータの削除に失敗しました", error);
+      }),
+    );
     // 同じ scheduledTime での重複実行（cron の at-least-once 配信）は
     // 同じ id での2回目の create() が失敗することで自然に防がれる
     ctx.waitUntil(

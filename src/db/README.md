@@ -181,6 +181,14 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 掃除対象ごとの通知時刻は `cleaning_targets.notify_time`（`HH:MM`、15 分刻み、nullable）で持つ。NULL の場合は 18:00 に通知する
 - 詳細な判定ロジックは `src/features/notifications/` を参照
 
+## MCP の OAuth（`oauth_kv_entries`）
+
+- MCP の OAuth 認可サーバー（`@cloudflare/workers-oauth-provider`）のクライアント登録・認可・トークンを
+  保存する。ライブラリは Workers KV に保存する作りのため、キーと値（JSON の文字列）をそのまま持つ
+  KV と同じ形のテーブルにし、`src/features/mcp/d1KvStore.ts` で KV の操作を実装している
+- キー・値の形式はライブラリが決めるため、アプリのコードから直接読み書きしない
+- `expires_at` を過ぎた行は無いものとして扱い、定期実行で削除する
+
 ## AI 評価結果（`ai_evaluations`）
 
 - AI 評価結果も個別の記録テーブルにカラムを持たせず、`ai_evaluations` テーブルで一元管理する

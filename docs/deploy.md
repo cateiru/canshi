@@ -25,8 +25,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
   - ISR・SSG のキャッシュ用バケット（メディア用とは分離する。`docs/idea/index.md` の方針）
 - Cloudflare Workers 全体の Access 設定と許可ポリシー（プレビュー URL の保護に使う）
 - Cloudflare Workflows（定期通知が実装される第2段階以降で必要）
-- Workers KV（MCP の OAuth のクライアント登録・トークン用、バインディング名 `OAUTH_KV`）と
-  Durable Objects（MCP のセッション用。「MCP サーバー」節）
+- Durable Objects（MCP のセッション用。「MCP サーバー」節）
 
 ## 環境変数・シークレット
 
@@ -157,7 +156,7 @@ OIDC でのログインの導入前（マイグレーション `0041` より前�
 - 特定のユーザーを強制的にログアウトさせるときは、管理画面のユーザー一覧の「すべての端末からログアウト」を
   使う（`sessions` テーブルからそのユーザーの行をすべて削除する）
 - セッションを削除しても、MCP コネクタ（ChatGPT など）の接続は解除されない。MCP サーバーの OAuth の
-  認可はセッションとは別に（`OAUTH_KV`）保存している（「MCP サーバー」節）
+  認可はセッションとは別に（`oauth_kv_entries` テーブル）保存している（「MCP サーバー」節）
 
 ### 導入時の手順（既存の猫の紐付け）
 
@@ -309,9 +308,10 @@ CANSHI のデータを参照できる MCP サーバーを、メインアプリ�
   （`src/features/mcp/authorize.ts`）。DCR は誰でも呼べるため、一度許可したクライアントでも
   毎回同意画面を表示する
 - MCP のツールは、トークンに保存したユーザーの家の猫だけを返す
-- `OAUTH_KV`（`@cloudflare/workers-oauth-provider` の標準ストレージ）に、クライアント登録・
-  認可コード・トークンを保存する。KV Namespace の id は `wrangler.toml` の `[[kv_namespaces]]` に
-  設定する
+- クライアント登録・認可・トークンは D1 の `oauth_kv_entries` テーブルに保存する。
+  `@cloudflare/workers-oauth-provider` は Workers KV（`env.OAUTH_KV`）に保存する作りのため、
+  KV と同じ操作を D1 で実装したもの（`src/features/mcp/d1KvStore.ts`）を `OAUTH_KV` として渡している。
+  期限切れの行は定期実行（15 分ごとの `scheduled`）で削除する
 - MCP のセッション状態は Durable Object（`CanshiMcp`、バインディング名 `MCP_OBJECT`）に保存する。
   Durable Object のマイグレーション（`wrangler.toml` の `[[migrations]]`）は `wrangler deploy`
   でだけ適用され、Workers Builds のブランチプレビュー（`wrangler versions upload`）では
@@ -326,7 +326,8 @@ CANSHI のデータを参照できる MCP サーバーを、メインアプリ�
 以前は別の Worker（`packages/mcp-server`、Worker 名 `canshi-mcp`、`mcp.canshi.cateiru.dev`）で
 動かし、Cloudflare Access の SaaS OIDC アプリでログインしていた。メインアプリへ移したあとは
 使わないため、Worker（とカスタムドメイン）を削除し、そのとき作った MCP 用の SaaS OIDC アプリと
-`mcp.canshi.cateiru.dev/callback` の Redirect URL も不要になる。コネクタは新しい URL で接続し直す。
+`mcp.canshi.cateiru.dev/callback` の Redirect URL、旧 Worker の KV Namespace（`OAUTH_KV`）も
+不要になる。コネクタは新しい URL で接続し直す。
 
 ### トラブルシューティング
 
