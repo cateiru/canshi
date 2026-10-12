@@ -39,8 +39,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - アプリの利用者（`users`）と、猫を飼っている「家」（`households`）を表す。家には 1 名以上のユーザー
   （`household_members`、`household_id` + `user_id` の複合主キー）と複数の猫（`cats.household_id`）が所属する
-- ユーザーは所属する家の猫だけを参照・編集できる。ページ・Server Action・Route Handler・MCP 用の RPC
-  （`src/worker.ts` の `McpRpc`）は、いずれも `src/features/households/queries.ts` の
+- ユーザーは所属する家の猫だけを参照・編集できる。ページ・Server Action・Route Handler・MCP のツール
+  （`src/features/mcp/agent.ts`）は、いずれも `src/features/households/queries.ts` の
   `getCatForUser`・`listCatsForUser`・`accessibleCatIdsQuery` で絞り込む（認可の入口は
   `src/features/auth/session.ts` の `requireUser`・`requireCatAccess`）
   - 猫に紐付くテーブル（記録・通知など）は `cat_id` 経由で家に紐付くため、家の列は持たない
@@ -180,6 +180,14 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - `notification_preferences` は猫に紐付かない、アプリ全体で 1 行だけの設定（通知時刻・タイムゾーン）だったが、通知時刻は 18:00（日本時間）固定になったため現在は未使用（後続で削除予定）
 - 掃除対象ごとの通知時刻は `cleaning_targets.notify_time`（`HH:MM`、15 分刻み、nullable）で持つ。NULL の場合は 18:00 に通知する
 - 詳細な判定ロジックは `src/features/notifications/` を参照
+
+## MCP の OAuth（`oauth_kv_entries`）
+
+- MCP の OAuth 認可サーバー（`@cloudflare/workers-oauth-provider`）のクライアント登録・認可・トークンを
+  保存する。ライブラリは Workers KV に保存する作りのため、キーと値（JSON の文字列）をそのまま持つ
+  KV と同じ形のテーブルにし、`src/features/mcp/d1KvStore.ts` で KV の操作を実装している
+- キー・値の形式はライブラリが決めるため、アプリのコードから直接読み書きしない
+- `expires_at` を過ぎた行は無いものとして扱い、定期実行で削除する
 
 ## AI 評価結果（`ai_evaluations`）
 

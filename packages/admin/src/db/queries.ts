@@ -3,7 +3,7 @@
  *
  * メインアプリの Drizzle スキーマ（`src/db/schema`）は import しない。パッケージ境界を
  * またぐと Next.js 向けの tsconfig・パスエイリアスに連鎖的に依存してしまうため
- * （`packages/mcp-server/src/rpc/mainApp.ts` と同じ理由）、生の SQL で書く。
+ * ため、生の SQL で書く。
  * そのため、メインアプリでテーブル・列を変更したときはここも合わせて更新すること
  * （`queries.test.ts` はリポジトリルートの `drizzle/` のマイグレーションを適用した DB で
  * 実行するため、列名の食い違いはテストで検出できる）。

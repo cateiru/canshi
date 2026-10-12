@@ -1,0 +1,115 @@
+import { and, asc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import { oauthKvEntries } from "@/db/schema";
+
+/** `list()` で `limit` を省略したときの件数（Workers KV と同じ） */
+const DEFAULT_LIST_LIMIT = 1000;
+
+/**
+ * MCP の OAuth 認可サーバー（`@cloudflare/workers-oauth-provider`）に `env.OAUTH_KV` として
+ * 渡す、D1（`oauth_kv_entries`）に保存する KV。ライブラリは保存先を差し替える
+ * オプションを持たず Workers KV の API を直接呼ぶため、ライブラリが使う操作
+ * （`get`・`put` の `expirationTtl`/`expiration`・`delete`・`list` の
+ * `prefix`/`limit`/`cursor`）だけを同じ形で実装する。ライブラリを更新したときは、
+ * ほかの操作を使い始めていないか確かめること。
+ *
+ * 期限切れの行は読み出し時に無いものとして扱い、定期実行（`purgeExpiredOAuthKvEntries`）で消す
+ */
+export class D1KvStore {
+  constructor(private readonly d1: D1Database) {}
+
+  async get(
+    key: string,
+    options?: { type?: "text" | "json" } | "text" | "json",
+  ) {
+    const [row] = await getDb(this.d1)
+      .select({ value: oauthKvEntries.value })
+      .from(oauthKvEntries)
+      .where(and(eq(oauthKvEntries.key, key), notExpired()))
+      .limit(1);
+    if (!row) {
+      return null;
+    }
+    const type = typeof options === "string" ? options : options?.type;
+    return type === "json" ? JSON.parse(row.value) : row.value;
+  }
+
+  async put(
+    key: string,
+    value: string,
+    options: { expirationTtl?: number; expiration?: number } = {},
+  ) {
+    const expiresAt = toExpiresAt(options);
+    await getDb(this.d1)
+      .insert(oauthKvEntries)
+      .values({ key, value, expiresAt })
+      .onConflictDoUpdate({
+        target: oauthKvEntries.key,
+        set: { value, expiresAt },
+      });
+  }
+
+  async delete(key: string) {
+    await getDb(this.d1)
+      .delete(oauthKvEntries)
+      .where(eq(oauthKvEntries.key, key));
+  }
+
+  /**
+   * キーの昇順に返す。`cursor` は前のページの最後のキーで、Workers KV と同じく
+   * 続きがあるときだけ返す
+   */
+  async list(
+    options: { prefix?: string; limit?: number; cursor?: string } = {},
+  ) {
+    const prefix = options.prefix ?? "";
+    const limit = options.limit ?? DEFAULT_LIST_LIMIT;
+    const rows = await getDb(this.d1)
+      .select({ key: oauthKvEntries.key })
+      .from(oauthKvEntries)
+      .where(
+        and(
+          sql`substr(${oauthKvEntries.key}, 1, ${prefix.length}) = ${prefix}`,
+          options.cursor ? gt(oauthKvEntries.key, options.cursor) : undefined,
+          notExpired(),
+        ),
+      )
+      .orderBy(asc(oauthKvEntries.key))
+      .limit(limit + 1);
+    const keys = rows.slice(0, limit).map((row) => ({ name: row.key }));
+    const listComplete = rows.length <= limit;
+    return listComplete
+      ? { keys, list_complete: true as const, cacheStatus: null }
+      : {
+          keys,
+          list_complete: false as const,
+          cursor: keys[keys.length - 1].name,
+          cacheStatus: null,
+        };
+  }
+}
+
+function notExpired() {
+  return or(
+    isNull(oauthKvEntries.expiresAt),
+    gt(oauthKvEntries.expiresAt, new Date()),
+  );
+}
+
+/** Workers KV の `expirationTtl`（今からの秒数）・`expiration`（unix 秒）を期限の日時にする */
+function toExpiresAt(options: { expirationTtl?: number; expiration?: number }) {
+  if (options.expirationTtl !== undefined) {
+    return new Date(Date.now() + options.expirationTtl * 1000);
+  }
+  if (options.expiration !== undefined) {
+    return new Date(options.expiration * 1000);
+  }
+  return null;
+}
+
+/** 期限切れの行を削除する（`src/worker.ts` の定期実行から呼ぶ） */
+export async function purgeExpiredOAuthKvEntries(d1: D1Database) {
+  await getDb(d1)
+    .delete(oauthKvEntries)
+    .where(lte(oauthKvEntries.expiresAt, new Date()));
+}

@@ -1,3 +1,0 @@
-ACCESS_CLIENT_ID=<Access の SaaS OIDC アプリ作成後、ダッシュボードの "Client ID" を貼る>
-ACCESS_CLIENT_SECRET=<同じく "Client secret" を貼る>
-OAUTH_STATE_SECRET=<任意のランダムな文字列。例: `openssl rand -hex 32`>

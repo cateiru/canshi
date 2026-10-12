@@ -1,6 +1,6 @@
 # @canshi/admin
 
-CANSHI の運用者向けの管理画面。メインアプリ（`canshi`）・MCP サーバー（`canshi-mcp`）とは別の
+CANSHI の運用者向けの管理画面。メインアプリ（`canshi`）とは別の
 Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-admin.cateiru.dev` で公開する。
 [Hono](https://hono.dev/) の JSX でサーバーサイドレンダリングする。
 
@@ -43,8 +43,7 @@ pnpm deploy      # wrangler deploy
 全家の情報を表示するため、メインアプリの利用者（家族など）を含む Workers 全体の Access の
 ポリシーではなく、`canshi-admin.cateiru.dev` の Self-hosted アプリケーションに管理者だけを
 許可するポリシーを付けて保護する。Self-hosted アプリケーションは Workers 全体の Access より
-優先され、Workers 全体の Access が適用されなかったカスタムドメイン（MCP サーバーで確認済み）も
-確実に保護できる。
+優先され、Workers 全体の Access が適用されないカスタムドメインも確実に保護できる。
 
 Self-hosted アプリケーションはデプロイする前に作ること。手順は
 [`docs/deploy.md`](../../docs/deploy.md) の「管理画面」節を参照。
@@ -58,7 +57,7 @@ INSERT・DELETE（`household_members` テーブル）だけを発行する。
 
 メインアプリの Drizzle スキーマ（`src/db/schema`）は import せず、`src/db/queries.ts` に生の SQL で
 書いている（パッケージ境界をまたぐと Next.js 向けの tsconfig・パスエイリアスに連鎖的に依存して
-しまうため。MCP サーバーの `src/rpc/mainApp.ts` と同じ理由）。メインアプリでテーブル・列を
+しまうため）。メインアプリでテーブル・列を
 変更したときは `src/db/queries.ts` も合わせて更新すること。`src/db/queries.test.ts` はリポジトリ
 ルートの `drizzle/` のマイグレーションをすべて適用した DB（sql.js）で実行するため、列名の
 食い違いはテストで検出できる。

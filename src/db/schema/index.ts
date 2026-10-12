@@ -20,6 +20,7 @@ export * from "./notification-kinds";
 export * from "./notification-preferences";
 export * from "./notification-settings";
 export * from "./notifications";
+export * from "./oauth-kv-entries";
 export * from "./poop-records";
 export * from "./push-deliveries";
 export * from "./push-subscriptions";

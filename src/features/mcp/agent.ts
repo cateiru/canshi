@@ -1,13 +1,15 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpAgent } from "agents/mcp";
 import { z } from "zod";
+import { getUserById } from "@/features/auth/users";
+import { getCatForUser, listCatsForUser } from "@/features/households/queries";
+import { listTimelineForMonth } from "@/features/timeline/queries";
 import {
   getUserIdFromProps,
   type McpProps,
   MISSING_USER_ERROR_MESSAGE,
 } from "./props";
-
-export type { McpProps };
+import { toCatSummary, toTimelineEntrySummary } from "./summaries";
 
 function errorResult(text: string) {
   return {
@@ -16,24 +18,46 @@ function errorResult(text: string) {
   };
 }
 
+function jsonResult(value: unknown) {
+  return { content: [{ type: "text" as const, text: JSON.stringify(value) }] };
+}
+
 /** 猫のプロフィールを返すツールの説明に添える、生年月日の精度の補足 */
 const BIRTH_DATE_PRECISION_DESCRIPTION =
   "birthDatePrecision は生年月日のわかっている範囲（year=年のみ、month=年月のみ、" +
   "day=年月日すべて）で、year・month の場合 birthDate の不明な月・日は 1月・1日で補完されている。";
 
 /**
- * CANSHI の MCP サーバー本体。読み取り専用ツール（猫のプロフィール参照・
- * タイムライン参照）を、Service Bindings 経由でメインアプリ（canshi）の
- * `McpRpc`（src/worker.ts）を呼び出すことで実装する。
+ * CANSHI の MCP サーバー本体（`/mcp`）。読み取り専用ツール（猫のプロフィール参照・
+ * タイムライン参照）を公開する。書き込み系ツールは対象外
+ * （docs/plans/32_mcp_oidc_overview.md 参照）。
  *
- * 書き込み系ツールは対象外（docs/plans/32_mcp_oidc_overview.md 参照）。
- * 各ツールはトークンに保存した CANSHI のユーザー ID（`this.props.userId`）を
- * メインアプリへ渡し、そのユーザーの家の猫だけを参照する。ユーザー ID を持たない
- * 古いトークンでは、データを返さずに接続し直すよう案内する。
- * `this.props.email` は認可判定に使わないが、将来の監査ログ用に残しておく
+ * 各ツールはトークンに保存した CANSHI のユーザー ID（`this.props.userId`、
+ * `/oauth/authorize` で同意したときにログインしていたユーザー）の家の猫だけを参照する。
+ * Durable Object の中で動くため、D1 は `getCloudflareContext()` ではなく
+ * `this.env.DB` を明示的に渡す
  */
 export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
   server = new McpServer({ name: "CANSHI MCP Server", version: "0.1.0" });
+
+  /**
+   * ツールを呼んだユーザーの ID。ユーザー ID を持たないトークンや、削除された
+   * ユーザーのトークンでは、ツールの結果として返すエラーメッセージを返す
+   */
+  private async resolveUserId(): Promise<
+    { userId: string } | { error: string }
+  > {
+    const userId = getUserIdFromProps(this.props);
+    if (!userId) {
+      return { error: MISSING_USER_ERROR_MESSAGE };
+    }
+    if (!(await getUserById(userId, this.env.DB))) {
+      return {
+        error: "ユーザーが見つかりません。MCP に接続し直してください",
+      };
+    }
+    return { userId };
+  }
 
   async init() {
     this.server.registerTool(
@@ -45,14 +69,12 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
           BIRTH_DATE_PRECISION_DESCRIPTION,
       },
       async () => {
-        const userId = getUserIdFromProps(this.props);
-        if (!userId) {
-          return errorResult(MISSING_USER_ERROR_MESSAGE);
+        const user = await this.resolveUserId();
+        if ("error" in user) {
+          return errorResult(user.error);
         }
-        const cats = await this.env.MAIN_APP.listCats(userId);
-        return {
-          content: [{ type: "text", text: JSON.stringify({ cats }) }],
-        };
+        const cats = await listCatsForUser(user.userId, this.env.DB);
+        return jsonResult({ cats: cats.map(toCatSummary) });
       },
     );
 
@@ -68,15 +90,15 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         },
       },
       async ({ catId }) => {
-        const userId = getUserIdFromProps(this.props);
-        if (!userId) {
-          return errorResult(MISSING_USER_ERROR_MESSAGE);
+        const user = await this.resolveUserId();
+        if ("error" in user) {
+          return errorResult(user.error);
         }
-        const cat = await this.env.MAIN_APP.getCatProfile(userId, catId);
+        const cat = await getCatForUser(user.userId, catId, this.env.DB);
         if (!cat) {
           return errorResult(`catId="${catId}" の猫が見つかりません`);
         }
-        return { content: [{ type: "text", text: JSON.stringify(cat) }] };
+        return jsonResult(toCatSummary(cat));
       },
     );
 
@@ -123,21 +145,25 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         },
       },
       async ({ catId, year, month, date, page }) => {
-        const userId = getUserIdFromProps(this.props);
-        if (!userId) {
-          return errorResult(MISSING_USER_ERROR_MESSAGE);
+        const user = await this.resolveUserId();
+        if ("error" in user) {
+          return errorResult(user.error);
         }
-        const result = await this.env.MAIN_APP.listTimeline(
-          userId,
+        // 別の家の猫・存在しない猫は区別しない
+        if (!(await getCatForUser(user.userId, catId, this.env.DB))) {
+          return errorResult(`catId="${catId}" の猫が見つかりません`);
+        }
+        const result = await listTimelineForMonth(
           catId,
           year,
           month,
           { date, page },
+          this.env.DB,
         );
-        if (!result) {
-          return errorResult(`catId="${catId}" の猫が見つかりません`);
-        }
-        return { content: [{ type: "text", text: JSON.stringify(result) }] };
+        return jsonResult({
+          entries: result.entries.map(toTimelineEntrySummary),
+          hasMore: result.hasMore,
+        });
       },
     );
   }

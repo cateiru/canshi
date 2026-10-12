@@ -3,8 +3,7 @@ import { sanitizeCallbackUrl } from "./callbackUrl";
 
 /**
  * Cloudflare Access の SaaS OIDC アプリでログインするための処理（認可コードフロー + PKCE）。
- * MCP 用 Worker（`packages/mcp-server/src/auth/`）と同じく、issuer・各エンドポイント・
- * JWKS は discovery ドキュメントから導出する。Access for SaaS のこれらの値は Team domain
+ * issuer・各エンドポイント・JWKS は discovery ドキュメントから導出する。Access for SaaS のこれらの値は Team domain
  * 全体で共通ではなく、アプリ（Client ID）ごとに異なる
  */
 

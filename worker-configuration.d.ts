@@ -5,11 +5,13 @@ interface __BaseEnv_Env {
 	MEDIA_BUCKET: R2Bucket;
 	DB: D1Database;
 	ASSETS: Fetcher;
+	MCP_OBJECT: DurableObjectNamespace /* CanshiMcp */;
 	NOTIFICATION_WORKFLOW: Workflow<Parameters<import("./src/worker").NotificationWorkflow['run']>[0]['payload']>;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {
 		mainModule: typeof import("./src/worker");
+		durableNamespaces: "CanshiMcp";
 	}
 	interface Env extends __BaseEnv_Env {}
 }
