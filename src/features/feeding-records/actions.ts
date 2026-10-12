@@ -10,6 +10,7 @@ import {
   feedingRecords,
   foodProducts,
   type NewFeedingRecordItem,
+  notifications,
 } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
@@ -288,6 +289,19 @@ export async function createFeedingRecordAction(
       householdId,
       built.values,
     ),
+    // ごはんを記録したら、その猫の未対応のごはんの時間の通知（時間のお知らせ・記録がないときの
+    // リマインダー）はもう対応する必要がないため完了にする
+    db
+      .update(notifications)
+      .set({ status: "done", updatedAt: new Date() })
+      .where(
+        and(
+          eq(notifications.catId, catId),
+          inArray(notifications.kind, ["feeding_time", "feeding_not_recorded"]),
+          inArray(notifications.status, ["pending", "snoozed"]),
+          catInHouseholdCondition(catId, householdId),
+        ),
+      ),
   ]);
   if (created.length === 0) {
     return { formError: HOUSEHOLD_CHANGED_ERROR };

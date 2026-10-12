@@ -10,6 +10,8 @@ import {
   feedingRecordItems,
   feedingRecords,
   foodProducts,
+  households,
+  notifications,
 } from "@/db/schema";
 
 // `src/features/symptoms/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
@@ -24,12 +26,17 @@ vi.mock("next/navigation", () => ({
     throw new Error(`REDIRECT:${url}`);
   },
 }));
-// 猫の家による認可はこのテストの対象外のため、常に許可する
+// 猫の家による認可はこのテストの対象外のため、常に許可して猫をそのまま返す
 vi.mock("@/features/auth/session", () => ({
-  requireCatAccess: async () => ({}),
+  requireCatAccess: async (catId: string) => {
+    const [cat] = await db.select().from(cats).where(eq(cats.id, catId));
+    return { cat };
+  },
 }));
 
-const { deleteFeedingRecordAction } = await import("./actions");
+const { createFeedingRecordAction, deleteFeedingRecordAction } = await import(
+  "./actions"
+);
 
 beforeEach(async () => {
   const SQL = await initSqlJs();
@@ -102,5 +109,74 @@ describe("deleteFeedingRecordAction", () => {
         .from(feedingRecords)
         .where(eq(feedingRecords.id, "kuro-meal")),
     ).toHaveLength(1);
+  });
+});
+
+describe("createFeedingRecordAction", () => {
+  beforeEach(async () => {
+    await db.insert(households).values({ id: "home", name: "おうち" });
+    await db.update(cats).set({ householdId: "home" });
+    await db.update(foodProducts).set({ householdId: "home" });
+  });
+
+  function strictForm() {
+    const formData = new FormData();
+    formData.set("occurredDate", "2026-09-21");
+    formData.set("occurredTime", "07:30");
+    formData.set("mode", "strict");
+    formData.set("items.0.foodProductId", "food");
+    formData.set("items.0.givenAmountG", "30");
+    formData.set("items.0.leftoverAmountG", "0");
+    return formData;
+  }
+
+  async function addNotification(
+    id: string,
+    catId: string,
+    kind: "feeding_time" | "feeding_not_recorded" | "weight_measurement",
+    status: "pending" | "snoozed" | "dismissed" = "pending",
+  ) {
+    await db.insert(notifications).values({
+      id,
+      catId,
+      kind,
+      dedupeKey: id,
+      title: "タイトル",
+      body: "本文",
+      url: "/",
+      dueAt: new Date("2026-09-21T07:00:00.000Z"),
+      status,
+    });
+  }
+
+  async function statusOf(id: string) {
+    const [row] = await db
+      .select({ status: notifications.status })
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return row.status;
+  }
+
+  it("記録した猫の未対応のごはんの通知だけを完了にする", async () => {
+    await addNotification("time", "tama", "feeding_time");
+    await addNotification(
+      "reminder",
+      "tama",
+      "feeding_not_recorded",
+      "snoozed",
+    );
+    await addNotification("dismissed", "tama", "feeding_time", "dismissed");
+    await addNotification("weight", "tama", "weight_measurement");
+    await addNotification("other-cat", "kuro", "feeding_time");
+
+    const result = await createFeedingRecordAction("tama", {}, strictForm());
+    expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
+
+    expect(await statusOf("time")).toBe("done");
+    expect(await statusOf("reminder")).toBe("done");
+    // 対応済みの通知・ほかの種類の通知・ほかの猫の通知はそのまま
+    expect(await statusOf("dismissed")).toBe("dismissed");
+    expect(await statusOf("weight")).toBe("pending");
+    expect(await statusOf("other-cat")).toBe("pending");
   });
 });

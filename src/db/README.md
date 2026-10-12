@@ -187,6 +187,16 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - `notifications`・`notification_settings` は `cat_id` を持つが、記録テーブルではない（猫自身の行動・状態の記録ではなく、アプリが生成した通知・その設定のため）。タイムライン機能（`14`）の集約対象からは除外する（「共通カラム規約」の代表の発生日時列の一覧にも含めない）
 - `notification_preferences` は猫に紐付かない、アプリ全体で 1 行だけの設定（通知時刻・タイムゾーン）だったが、通知時刻は 18:00（日本時間）固定になったため現在は未使用（後続で削除予定）
 - 掃除対象ごとの通知時刻は `cleaning_targets.notify_time`（`HH:MM`、15 分刻み、nullable）で持つ。NULL の場合は 18:00 に通知する
+- ごはんの時間は家ごとに `feeding_schedules`（`household_id`・`time`（`HH:MM`、15 分刻み、日本時間））で持ち、
+  同じ家に同じ時刻は 1 つだけ（`(household_id, time)` の一意インデックス）。家のメンバーなら誰でも追加・変更・削除でき、
+  メンバーかどうかの判定は INSERT ... SELECT・UPDATE・DELETE の WHERE に含める（`src/features/feeding-schedules/mutations.ts`）
+  - 通知は家ではなく、その家の猫ごとに生成する（`notifications.cat_id` を持つため。種類は `feeding_time`・
+    `feeding_not_recorded`、`reference_id` は `feeding_schedules.id`）。`notify_at_time`・`remind_if_not_recorded` で
+    時間ごとにそれぞれの通知を出すかを持つ
+  - 各時刻の前後の範囲は、前の時刻との中間から次の時刻との中間まで（時刻が 1 つなら前後 12 時間）。
+    範囲の判定はごはん記録の `occurred_at`（naive UTC）と比べる（`src/features/notifications/rules/feedingSchedule.ts`）
+  - ごはん記録を追加したときは、その猫の未対応のごはんの通知を同じ `db.batch` で完了にする
+  - 削除した時間の通知は `reference_id` に外部キーがないため残す
 - 詳細な判定ロジックは `src/features/notifications/` を参照
 
 ## MCP の OAuth（`oauth_kv_entries`）

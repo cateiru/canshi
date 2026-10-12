@@ -50,6 +50,8 @@ describe("evaluateNotificationRules", () => {
       latestWeightAt: null,
       cleaningTargets: [],
       openSymptoms: [],
+      feedingSchedules: [],
+      recentFeedingAts: [],
     });
 
     expect(candidates.map((c) => c.kind)).toEqual(["birthday_yearly"]);
@@ -68,6 +70,8 @@ describe("evaluateNotificationRules", () => {
       latestWeightAt: null,
       cleaningTargets: [],
       openSymptoms: [],
+      feedingSchedules: [],
+      recentFeedingAts: [],
     });
 
     expect(candidates).toEqual([]);
@@ -83,6 +87,8 @@ describe("evaluateNotificationRules", () => {
       latestWeightAt: new Date("2026-08-28T00:00:00.000Z"),
       cleaningTargets: [],
       openSymptoms: [],
+      feedingSchedules: [],
+      recentFeedingAts: [],
     });
 
     expect(candidates.map((c) => c.kind).sort()).toEqual(
@@ -100,6 +106,8 @@ describe("evaluateNotificationRules", () => {
       latestWeightAt: new Date("2026-08-28T00:00:00.000Z"),
       cleaningTargets: [],
       openSymptoms: [longOngoingSymptom],
+      feedingSchedules: [],
+      recentFeedingAts: [],
     });
 
     expect(candidates).toEqual([]);
@@ -133,6 +141,8 @@ describe("evaluateNotificationRules", () => {
         },
       ],
       openSymptoms: [longOngoingSymptom],
+      feedingSchedules: [],
+      recentFeedingAts: [],
     });
 
     expect(candidates.map((c) => c.kind)).toEqual(["cleaning_due"]);
@@ -148,6 +158,8 @@ describe("evaluateNotificationRules", () => {
       latestWeightAt: null,
       cleaningTargets: [],
       openSymptoms: [longOngoingSymptom],
+      feedingSchedules: [],
+      recentFeedingAts: [],
     });
 
     expect(candidates.map((c) => c.kind)).toEqual(["symptom_ongoing"]);
@@ -163,8 +175,36 @@ describe("evaluateNotificationRules", () => {
       latestWeightAt: null,
       cleaningTargets: [],
       openSymptoms: [longOngoingSymptom],
+      feedingSchedules: [],
+      recentFeedingAts: [],
     });
 
     expect(candidates).toEqual([]);
+  });
+});
+
+describe("evaluateNotificationRules（ごはんの時間）", () => {
+  it("全体の通知時刻（18:00）より前でも、ごはんの時間の通知を返す", () => {
+    const candidates = evaluateNotificationRules({
+      now: new Date("2026-09-11T07:00:00.000Z"),
+      timezone: "UTC",
+      cat: makeCat({ birthDate: null }),
+      settings: allEnabledSettings,
+      latestShampooAt: null,
+      latestWeightAt: null,
+      cleaningTargets: [],
+      openSymptoms: [],
+      feedingSchedules: [
+        {
+          id: "schedule-1",
+          time: "07:00",
+          notifyAtTime: true,
+          remindIfNotRecorded: true,
+        },
+      ],
+      recentFeedingAts: [],
+    });
+
+    expect(candidates.map((c) => c.kind)).toEqual(["feeding_time"]);
   });
 });

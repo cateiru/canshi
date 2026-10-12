@@ -1,0 +1,133 @@
+import {
+  addDays,
+  getLocalDateParts,
+  getNaiveLocalNow,
+  type LocalDate,
+  localDateKey,
+} from "./localDate";
+import type {
+  FeedingNotRecordedCandidate,
+  FeedingScheduleForRule,
+  FeedingTimeCandidate,
+} from "./types";
+
+const MS_PER_MINUTE = 60 * 1000;
+const MS_PER_DAY = 24 * 60 * MS_PER_MINUTE;
+
+/**
+ * 通知を出してよい、通知時刻からの猶予。スケジュール実行は 15 分ごとのため、それより長くする。
+ * 時刻を大きく過ぎてから通知を出さないよう（ごはんの時間を設定した直後に、その日の過ぎた時間の
+ * 通知が出るなど）、この猶予を過ぎたら出さない
+ */
+export const FEEDING_NOTIFY_GRACE_MS = 60 * MS_PER_MINUTE;
+
+/**
+ * ごはん記録を探す範囲として、判定に必要な期間。範囲の始まりは最も早くて前日のごはんの時刻の
+ * 12 時間前のため、それより長くとる（`generate.ts` がこの期間の記録を取得する）
+ */
+export const FEEDING_RECORD_LOOKBACK_MS = 2 * MS_PER_DAY;
+
+function toMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function atLocalDate(date: LocalDate, minutes: number): number {
+  return (
+    Date.UTC(date.year, date.month - 1, date.day) + minutes * MS_PER_MINUTE
+  );
+}
+
+/**
+ * ごはんの時間の通知と、記録がないときのリマインダーを判定する。
+ *
+ * 家のごはんの時間を時刻順に並べ、各時刻の「前後の範囲」を、前の時刻との中間から次の時刻との
+ * 中間までとする（時刻が 1 つだけなら前後 12 時間）。日付をまたいで、最後の時刻の次は翌日の
+ * 最初の時刻になる。
+ * - 時刻になったら「ごはんの時間です」を出す。すでに範囲内に記録があれば出さない
+ * - 次の時刻との中間になっても範囲内に記録がなければ「ごはんはあげましたか？」を出す
+ *
+ * ごはん記録の発生日時は naive UTC（`localDate.ts` のコメント参照）のため、`now` も
+ * ローカル時計の数字の naive UTC にして比べる。中間の時刻は日付をまたぐことがあるため、
+ * 今日と昨日の回をそれぞれ判定する。重複して生成しないよう、`dedupe_key` には通知を出した
+ * 日ではなく、その回のごはんの日付を含める
+ */
+export function evaluateFeedingSchedule(
+  catId: string,
+  now: Date,
+  timezone: string,
+  schedules: FeedingScheduleForRule[],
+  recentFeedingAts: Date[],
+): (FeedingTimeCandidate | FeedingNotRecordedCandidate)[] {
+  if (schedules.length === 0) {
+    return [];
+  }
+
+  const nowAt = getNaiveLocalNow(now, timezone).getTime();
+  const today = getLocalDateParts(now, timezone);
+  const sorted = [...schedules].sort(
+    (a, b) => toMinutes(a.time) - toMinutes(b.time),
+  );
+  const feedingTimes = recentFeedingAts.map((at) => at.getTime());
+  const candidates: (FeedingTimeCandidate | FeedingNotRecordedCandidate)[] = [];
+
+  for (const [index, schedule] of sorted.entries()) {
+    const minutes = toMinutes(schedule.time);
+    // 前後の時刻（その日の中での分）。範囲の外側になる場合は前日・翌日の時刻として 1 日ずらす
+    const prevMinutes =
+      index === 0
+        ? toMinutes(sorted[sorted.length - 1].time) - 24 * 60
+        : toMinutes(sorted[index - 1].time);
+    const nextMinutes =
+      index === sorted.length - 1
+        ? toMinutes(sorted[0].time) + 24 * 60
+        : toMinutes(sorted[index + 1].time);
+
+    for (const date of [today, addDays(today, -1)]) {
+      const slotAt = atLocalDate(date, minutes);
+      const windowStart = atLocalDate(date, (prevMinutes + minutes) / 2);
+      const reminderAt = atLocalDate(date, (minutes + nextMinutes) / 2);
+      const isRecorded = feedingTimes.some(
+        (at) => at >= windowStart && at <= nowAt,
+      );
+      if (isRecorded) {
+        continue;
+      }
+
+      const dateKey = localDateKey(date);
+      const base = {
+        catId,
+        referenceId: schedule.id,
+        dueAt: new Date(slotAt),
+        scheduleId: schedule.id,
+        time: schedule.time,
+      };
+
+      if (
+        schedule.notifyAtTime &&
+        nowAt >= slotAt &&
+        nowAt < slotAt + FEEDING_NOTIFY_GRACE_MS
+      ) {
+        candidates.push({
+          ...base,
+          kind: "feeding_time",
+          dedupeKey: `${catId}:feeding_time:${schedule.id}:${dateKey}`,
+        });
+      }
+
+      if (
+        schedule.remindIfNotRecorded &&
+        nowAt >= reminderAt &&
+        nowAt < reminderAt + FEEDING_NOTIFY_GRACE_MS
+      ) {
+        candidates.push({
+          ...base,
+          kind: "feeding_not_recorded",
+          dedupeKey: `${catId}:feeding_not_recorded:${schedule.id}:${dateKey}`,
+        });
+      }
+    }
+  }
+
+  return candidates;
+}

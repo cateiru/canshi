@@ -67,4 +67,34 @@ describe("buildNotificationMessage", () => {
       url: "/cats/cat-1/symptoms/symptom-1/edit",
     });
   });
+
+  it("feeding_time の文言を組み立てる", () => {
+    const candidate: NotificationCandidate = {
+      ...base,
+      kind: "feeding_time",
+      referenceId: "schedule-1",
+      scheduleId: "schedule-1",
+      time: "07:00",
+    };
+    expect(buildNotificationMessage("たま", candidate)).toEqual({
+      title: "たまのごはんの時間です",
+      body: "07:00のごはんの時間になりました。ごはんをあげたら記録しておきましょう",
+      url: "/cats/cat-1/feeding-records/new",
+    });
+  });
+
+  it("feeding_not_recorded の文言を組み立てる", () => {
+    const candidate: NotificationCandidate = {
+      ...base,
+      kind: "feeding_not_recorded",
+      referenceId: "schedule-1",
+      scheduleId: "schedule-1",
+      time: "19:00",
+    };
+    expect(buildNotificationMessage("たま", candidate)).toEqual({
+      title: "たまのごはんはあげましたか？",
+      body: "19:00のごはんの記録がありません。あげていたら記録しておきましょう",
+      url: "/cats/cat-1/feeding-records/new",
+    });
+  });
 });

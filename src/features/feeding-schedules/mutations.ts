@@ -1,0 +1,157 @@
+import { and, asc, eq, sql } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import { feedingSchedules, householdMembers } from "@/db/schema";
+import type {
+  FeedingScheduleFormInput,
+  FeedingScheduleNotifyFormInput,
+} from "./schema";
+
+export type FeedingScheduleMutationResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+const NOT_MEMBER_ERROR = "この家のメンバーではないため変更できませんでした";
+
+/**
+ * `userId` がその家のメンバーであるときだけ真になる条件。ページを開いてから保存するまでの間に
+ * 家から外された場合に操作が通らないよう、更新・削除の WHERE に含めて 1 文で判定する
+ */
+function isMemberCondition(householdId: string, userId: string) {
+  return sql`EXISTS (
+    SELECT 1 FROM ${householdMembers} AS member
+    WHERE member.household_id = ${householdId}
+      AND member.user_id = ${userId}
+  )`;
+}
+
+/** 家のごはんの時間の一覧。時刻順 */
+export async function listFeedingSchedules(
+  householdId: string,
+  d1?: D1Database,
+) {
+  const db = getDb(d1);
+  return db
+    .select()
+    .from(feedingSchedules)
+    .where(eq(feedingSchedules.householdId, householdId))
+    .orderBy(asc(feedingSchedules.time));
+}
+
+/**
+ * 家にごはんの時間を追加する。家のメンバーなら誰でも追加できる。同じ家に同じ時刻は
+ * 1 つだけ（`feeding_schedules_household_id_time_unique`）。
+ * メンバーかどうかの判定と追加を 1 文にするため、`household_members` からの INSERT ... SELECT にする。
+ * INSERT ... SELECT では列の既定値が使われないため、全カラムの値をテーブル定義の順に明示する
+ */
+export async function createFeedingSchedule(
+  householdId: string,
+  userId: string,
+  input: FeedingScheduleFormInput,
+  d1?: D1Database,
+): Promise<FeedingScheduleMutationResult> {
+  const db = getDb(d1);
+  const [existing] = await db
+    .select({ id: feedingSchedules.id })
+    .from(feedingSchedules)
+    .where(
+      and(
+        eq(feedingSchedules.householdId, householdId),
+        eq(feedingSchedules.time, input.time),
+      ),
+    )
+    .limit(1);
+  if (existing) {
+    return { ok: false, error: `${input.time}はすでに追加されています` };
+  }
+
+  const created = await db
+    .insert(feedingSchedules)
+    .select(
+      db
+        .select({
+          id: sql`${crypto.randomUUID()}`.as("id"),
+          householdId: householdMembers.householdId,
+          time: sql`${input.time}`.as("time"),
+          notifyAtTime: sql`${input.notifyAtTime ? 1 : 0}`.as("notify_at_time"),
+          remindIfNotRecorded: sql`${input.remindIfNotRecorded ? 1 : 0}`.as(
+            "remind_if_not_recorded",
+          ),
+          createdAt: sql`(unixepoch())`.as("created_at"),
+          updatedAt: sql`(unixepoch())`.as("updated_at"),
+        })
+        .from(householdMembers)
+        .where(
+          and(
+            eq(householdMembers.householdId, householdId),
+            eq(householdMembers.userId, userId),
+          ),
+        ),
+    )
+    // 上の確認と追加の間に、同じ時刻が別のリクエストで追加された場合は何もしない
+    .onConflictDoNothing()
+    .returning({ id: feedingSchedules.id });
+
+  if (created.length === 0) {
+    return { ok: false, error: `${input.time}を追加できませんでした` };
+  }
+  return { ok: true };
+}
+
+/** ごはんの時間の通知の設定を変える。家のメンバーなら誰でも変えられる */
+export async function updateFeedingScheduleNotify(
+  householdId: string,
+  userId: string,
+  scheduleId: string,
+  input: FeedingScheduleNotifyFormInput,
+  d1?: D1Database,
+): Promise<FeedingScheduleMutationResult> {
+  const db = getDb(d1);
+  const updated = await db
+    .update(feedingSchedules)
+    .set({
+      notifyAtTime: input.notifyAtTime,
+      remindIfNotRecorded: input.remindIfNotRecorded,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(feedingSchedules.id, scheduleId),
+        eq(feedingSchedules.householdId, householdId),
+        isMemberCondition(householdId, userId),
+      ),
+    )
+    .returning({ id: feedingSchedules.id });
+
+  if (updated.length === 0) {
+    return { ok: false, error: NOT_MEMBER_ERROR };
+  }
+  return { ok: true };
+}
+
+/**
+ * ごはんの時間を削除する。家のメンバーなら誰でも削除できる。すでに生成した通知
+ * （`notifications.reference_id`）には外部キーがないため、そのまま残す
+ */
+export async function deleteFeedingSchedule(
+  householdId: string,
+  userId: string,
+  scheduleId: string,
+  d1?: D1Database,
+): Promise<FeedingScheduleMutationResult> {
+  const db = getDb(d1);
+  const deleted = await db
+    .delete(feedingSchedules)
+    .where(
+      and(
+        eq(feedingSchedules.id, scheduleId),
+        eq(feedingSchedules.householdId, householdId),
+        isMemberCondition(householdId, userId),
+      ),
+    )
+    .returning({ id: feedingSchedules.id });
+
+  if (deleted.length === 0) {
+    return { ok: false, error: NOT_MEMBER_ERROR };
+  }
+  return { ok: true };
+}

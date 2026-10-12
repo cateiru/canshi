@@ -60,5 +60,17 @@ export function buildNotificationMessage(
         body: `「${candidate.symptomType}」の症状が「${SYMPTOM_STATUS_PHRASE[candidate.status]}」のまま${candidate.elapsedMonths}ヶ月が経過しました`,
         url: `/cats/${candidate.catId}/symptoms/${candidate.symptomId}/edit`,
       };
+    case "feeding_time":
+      return {
+        title: `${catName}のごはんの時間です`,
+        body: `${candidate.time}のごはんの時間になりました。ごはんをあげたら記録しておきましょう`,
+        url: `/cats/${candidate.catId}/feeding-records/new`,
+      };
+    case "feeding_not_recorded":
+      return {
+        title: `${catName}のごはんはあげましたか？`,
+        body: `${candidate.time}のごはんの記録がありません。あげていたら記録しておきましょう`,
+        url: `/cats/${candidate.catId}/feeding-records/new`,
+      };
   }
 }

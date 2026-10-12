@@ -1,4 +1,9 @@
-import type { Cat, NotificationKind, Symptom } from "@/db/schema";
+import type {
+  Cat,
+  FeedingSchedule,
+  NotificationKind,
+  Symptom,
+} from "@/db/schema";
 import type { CleaningTargetWithStatus } from "@/features/cleaning/targetQueries";
 
 export type { NotificationKind };
@@ -45,6 +50,20 @@ export type SymptomOngoingCandidate = BaseCandidate & {
   elapsedMonths: number;
 };
 
+export type FeedingTimeCandidate = BaseCandidate & {
+  kind: "feeding_time";
+  scheduleId: string;
+  /** ごはんの時刻（HH:MM） */
+  time: string;
+};
+
+export type FeedingNotRecordedCandidate = BaseCandidate & {
+  kind: "feeding_not_recorded";
+  scheduleId: string;
+  /** ごはんの時刻（HH:MM） */
+  time: string;
+};
+
 export type NotificationCandidate =
   | BirthdayYearlyCandidate
   | BirthdayHalfYearCandidate
@@ -52,7 +71,9 @@ export type NotificationCandidate =
   | ShampooElapsedCandidate
   | WeightMeasurementCandidate
   | CleaningDueCandidate
-  | SymptomOngoingCandidate;
+  | SymptomOngoingCandidate
+  | FeedingTimeCandidate
+  | FeedingNotRecordedCandidate;
 
 /** `notification_settings` を既定値とマージ済みの、猫ごとの通知設定 */
 export type ResolvedNotificationSettings = {
@@ -75,6 +96,12 @@ export type OpenSymptom = Pick<Symptom, "id" | "symptomType" | "onsetAt"> & {
   lastAnsweredAt: Date | null;
 };
 
+/** 通知判定に使う、猫の家のごはんの時間 */
+export type FeedingScheduleForRule = Pick<
+  FeedingSchedule,
+  "id" | "time" | "notifyAtTime" | "remindIfNotRecorded"
+>;
+
 export type EvaluateNotificationRulesInput = {
   now: Date;
   timezone: string;
@@ -84,4 +111,8 @@ export type EvaluateNotificationRulesInput = {
   latestWeightAt: Date | null;
   cleaningTargets: CleaningTargetWithStatus[];
   openSymptoms: OpenSymptom[];
+  /** 猫の家のごはんの時間 */
+  feedingSchedules: FeedingScheduleForRule[];
+  /** 直近のごはん記録の発生日時（naive UTC）。ごはんの時間の前後に記録があるかの判定に使う */
+  recentFeedingAts: Date[];
 };

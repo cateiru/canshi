@@ -1,6 +1,8 @@
-import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ne, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  feedingRecords,
+  feedingSchedules,
   notifications,
   shampooRecords,
   symptoms,
@@ -13,9 +15,62 @@ import { buildNotificationMessage, type NotificationMessage } from "./messages";
 import { getResolvedSettingsForCat } from "./queries";
 import {
   evaluateNotificationRules,
+  type FeedingScheduleForRule,
   type OpenSymptom,
   type SymptomOngoingCandidate,
 } from "./rules";
+import { FEEDING_RECORD_LOOKBACK_MS } from "./rules/feedingSchedule";
+import { getNaiveLocalNow } from "./rules/localDate";
+
+/** 家 id ごとの、ごはんの時間（`evaluateFeedingSchedule` の入力） */
+async function listFeedingSchedulesByHousehold(
+  db: ReturnType<typeof getDb>,
+): Promise<Map<string, FeedingScheduleForRule[]>> {
+  const rows = await db
+    .select({
+      id: feedingSchedules.id,
+      householdId: feedingSchedules.householdId,
+      time: feedingSchedules.time,
+      notifyAtTime: feedingSchedules.notifyAtTime,
+      remindIfNotRecorded: feedingSchedules.remindIfNotRecorded,
+    })
+    .from(feedingSchedules);
+  const byHousehold = new Map<string, FeedingScheduleForRule[]>();
+  for (const { householdId, ...schedule } of rows) {
+    const schedules = byHousehold.get(householdId) ?? [];
+    schedules.push(schedule);
+    byHousehold.set(householdId, schedules);
+  }
+  return byHousehold;
+}
+
+/**
+ * 猫 id ごとの、直近のごはん記録の発生日時（naive UTC）。ごはんの時間の前後に記録があるかの
+ * 判定に使う。猫ごとに問い合わせず、全猫分を 1 回のクエリで取得する
+ */
+async function listRecentFeedingAtsByCat(
+  db: ReturnType<typeof getDb>,
+  now: Date,
+): Promise<Map<string, Date[]>> {
+  const since = new Date(
+    getNaiveLocalNow(now, NOTIFY_TIMEZONE).getTime() -
+      FEEDING_RECORD_LOOKBACK_MS,
+  );
+  const rows = await db
+    .select({
+      catId: feedingRecords.catId,
+      occurredAt: feedingRecords.occurredAt,
+    })
+    .from(feedingRecords)
+    .where(gte(feedingRecords.occurredAt, since));
+  const byCat = new Map<string, Date[]>();
+  for (const { catId, occurredAt } of rows) {
+    const feedingAts = byCat.get(catId) ?? [];
+    feedingAts.push(occurredAt);
+    byCat.set(catId, feedingAts);
+  }
+  return byCat;
+}
 
 /**
  * 全猫の未解消（`ongoing`・`improving`）の症状記録を、その症状に対する `symptom_ongoing` 通知の
@@ -151,6 +206,8 @@ export async function generateNotifications(
   const db = getDb(d1);
   const cats = await listAllCats(d1);
   const openSymptomsByCat = await listOpenSymptomsByCat(db);
+  const feedingSchedulesByHousehold = await listFeedingSchedulesByHousehold(db);
+  const recentFeedingAtsByCat = await listRecentFeedingAtsByCat(db, now);
 
   for (const cat of cats) {
     const [latestShampoo] = await db
@@ -187,6 +244,11 @@ export async function generateNotifications(
       latestWeightAt: latestWeight?.occurredAt ?? null,
       cleaningTargets,
       openSymptoms: openSymptomsByCat.get(cat.id) ?? [],
+      feedingSchedules:
+        cat.householdId == null
+          ? []
+          : (feedingSchedulesByHousehold.get(cat.householdId) ?? []),
+      recentFeedingAts: recentFeedingAtsByCat.get(cat.id) ?? [],
     });
 
     for (const candidate of candidates) {

@@ -5,7 +5,14 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { cats, notifications, symptoms } from "@/db/schema";
+import {
+  cats,
+  feedingRecords,
+  feedingSchedules,
+  households,
+  notifications,
+  symptoms,
+} from "@/db/schema";
 
 // `queries.test.ts` と同様に、`generate.ts` などが呼ぶ `getDb` 自体をこのテスト用の db に差し替える
 let db: ReturnType<typeof getDb>;
@@ -189,5 +196,85 @@ describe("insertSymptomOngoingNotification", () => {
     await insertSymptomOngoingNotification(db, candidate, message);
 
     expect(await listByReference(symptom.id)).toHaveLength(0);
+  });
+});
+
+/**
+ * ごはんの時間の通知（`feeding_time`・`feeding_not_recorded`）について、家のごはんの時間と
+ * 猫ごとのごはん記録が判定に反映されることを検証する
+ */
+describe("generateNotifications（ごはんの時間）", () => {
+  async function listFeedingNotifications(catId: string) {
+    const rows = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.catId, catId));
+    return rows
+      .filter(
+        (row) =>
+          row.kind === "feeding_time" || row.kind === "feeding_not_recorded",
+      )
+      .map((row) => row.kind)
+      .sort();
+  }
+
+  it("家のごはんの時間に、その家の猫ごとに通知し、記録がない猫にだけリマインダーを出す", async () => {
+    const [household] = await db
+      .insert(households)
+      .values({ name: "ごはんの家" })
+      .returning();
+    const [fed, notFed] = await db
+      .insert(cats)
+      .values([
+        { name: "しろ", sex: "female", householdId: household.id },
+        { name: "ちゃい", sex: "male", householdId: household.id },
+      ])
+      .returning();
+    // 家に属さない猫には、どの家のごはんの時間の通知も出さない
+    const [homeless] = await db
+      .insert(cats)
+      .values({ name: "のら", sex: "male" })
+      .returning();
+    await db.insert(feedingSchedules).values([
+      { householdId: household.id, time: "07:00" },
+      { householdId: household.id, time: "19:00" },
+    ]);
+
+    // JST 2026-09-21 07:00
+    await generateNotifications(new Date("2026-09-20T22:00:00.000Z"));
+    expect(await listFeedingNotifications(fed.id)).toEqual(["feeding_time"]);
+    expect(await listFeedingNotifications(notFed.id)).toEqual(["feeding_time"]);
+    expect(await listFeedingNotifications(homeless.id)).toEqual([]);
+
+    // JST 07:30 に 1 匹だけ記録した（naive UTC）
+    await db.insert(feedingRecords).values({
+      catId: fed.id,
+      occurredAt: new Date("2026-09-21T07:30:00.000Z"),
+    });
+
+    // JST 13:00（07:00 と 19:00 の中間）
+    await generateNotifications(new Date("2026-09-21T04:00:00.000Z"));
+    expect(await listFeedingNotifications(fed.id)).toEqual(["feeding_time"]);
+    expect(await listFeedingNotifications(notFed.id)).toEqual([
+      "feeding_not_recorded",
+      "feeding_time",
+    ]);
+
+    const [reminder] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.kind, "feeding_not_recorded"));
+    expect(reminder).toMatchObject({
+      catId: notFed.id,
+      title: "ちゃいのごはんはあげましたか？",
+      url: `/cats/${notFed.id}/feeding-records/new`,
+    });
+
+    // 同じ時刻に何度呼んでも重複して生成しない
+    await generateNotifications(new Date("2026-09-21T04:00:00.000Z"));
+    expect(await listFeedingNotifications(notFed.id)).toEqual([
+      "feeding_not_recorded",
+      "feeding_time",
+    ]);
   });
 });
