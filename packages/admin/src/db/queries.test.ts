@@ -3,10 +3,12 @@ import { createMigratedDatabase, toAdminDb } from "../test/d1";
 import { BASE_TIME, seed } from "../test/fixtures";
 import {
   type AdminDb,
+  addHouseholdMember,
   deleteUserSessions,
   getOverview,
   listHouseholds,
   listUsers,
+  removeHouseholdMember,
 } from "./queries";
 
 const NOW = new Date(BASE_TIME * 1000);
@@ -116,5 +118,67 @@ describe("deleteUserSessions", () => {
 
   it("セッションが無いユーザーでは何も削除しない", async () => {
     expect(await deleteUserSessions(db, "user-2")).toBe(0);
+  });
+});
+
+async function memberIds(householdId: string) {
+  const households = await listHouseholds(db);
+  return households
+    .find((household) => household.id === householdId)
+    ?.members.map((member) => `${member.userId}:${member.role}`);
+}
+
+describe("addHouseholdMember", () => {
+  it("ユーザーを家のメンバー（member）として追加する", async () => {
+    expect(await addHouseholdMember(db, "household-2", "user-3")).toEqual({
+      ok: true,
+    });
+    expect(await memberIds("household-2")).toEqual([
+      "user-1:owner",
+      "user-3:member",
+    ]);
+  });
+
+  it("すでにメンバーのユーザーは追加せず、権限も変えない", async () => {
+    const result = await addHouseholdMember(db, "household-1", "user-1");
+    expect(result.ok).toBe(false);
+    expect(await memberIds("household-1")).toEqual([
+      "user-1:owner",
+      "user-2:member",
+    ]);
+  });
+
+  it("存在しない家・ユーザーには追加しない", async () => {
+    expect((await addHouseholdMember(db, "missing", "user-3")).ok).toBe(false);
+    expect((await addHouseholdMember(db, "household-2", "missing")).ok).toBe(
+      false,
+    );
+    expect(await memberIds("household-2")).toEqual(["user-1:owner"]);
+  });
+});
+
+describe("removeHouseholdMember", () => {
+  it("オーナー以外のメンバーを家から外す", async () => {
+    expect(await removeHouseholdMember(db, "household-1", "user-2")).toEqual({
+      ok: true,
+    });
+    expect(await memberIds("household-1")).toEqual(["user-1:owner"]);
+    // ほかの家の所属は変わらない
+    expect(await memberIds("household-2")).toEqual(["user-1:owner"]);
+  });
+
+  it("オーナーは外さない", async () => {
+    const result = await removeHouseholdMember(db, "household-1", "user-1");
+    expect(result.ok).toBe(false);
+    expect(await memberIds("household-1")).toEqual([
+      "user-1:owner",
+      "user-2:member",
+    ]);
+  });
+
+  it("メンバーでないユーザーでは何もしない", async () => {
+    expect((await removeHouseholdMember(db, "household-1", "user-3")).ok).toBe(
+      false,
+    );
   });
 });

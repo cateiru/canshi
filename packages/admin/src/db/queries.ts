@@ -9,7 +9,7 @@
  * 実行するため、列名の食い違いはテストで検出できる）。
  *
  * 管理画面は基本的に閲覧用で、書き込みはユーザーのセッションの削除（すべての端末から
- * ログアウトさせる）だけにする。
+ * ログアウトさせる）と、家へのメンバーの追加・削除だけにする。
  */
 
 /** このファイルのクエリが使う D1 の機能（テストで sql.js に差し替えるため最小限にする） */
@@ -223,4 +223,67 @@ export async function deleteUserSessions(
     .bind(userId)
     .run();
   return result.meta.changes;
+}
+
+export type HouseholdMemberChangeResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+/**
+ * ユーザーを家のメンバー（`member`）として追加する。家・ユーザーが存在し、まだその家の
+ * メンバーでないときだけ追加する（判定と追加を 1 文にまとめ、同時に操作されても重複させない）。
+ * オーナーにしたいときは、メインアプリの設定からオーナーを移譲する
+ */
+export async function addHouseholdMember(
+  db: AdminDb,
+  householdId: string,
+  userId: string,
+): Promise<HouseholdMemberChangeResult> {
+  const result = await db
+    .prepare(
+      `INSERT INTO household_members (household_id, user_id, role)
+      SELECT ?1, ?2, 'member'
+      WHERE EXISTS (SELECT 1 FROM households WHERE id = ?1)
+        AND EXISTS (SELECT 1 FROM users WHERE id = ?2)
+        AND NOT EXISTS (
+          SELECT 1 FROM household_members WHERE household_id = ?1 AND user_id = ?2
+        )`,
+    )
+    .bind(householdId, userId)
+    .run();
+  if (result.meta.changes === 0) {
+    return {
+      ok: false,
+      error:
+        "メンバーを追加できませんでした。家・ユーザーが存在し、まだその家のメンバーでないことを確かめてください",
+    };
+  }
+  return { ok: true };
+}
+
+/**
+ * ユーザーを家から外す。家にオーナーがいなくならないよう、オーナー（`role` が `owner`）は
+ * 外せない（メインアプリの `removeHouseholdMember` と同じ制約）。外したユーザーは、その家の
+ * 猫の参照と Push 通知の対象からすぐに外れる（どちらも `household_members` から都度引くため）
+ */
+export async function removeHouseholdMember(
+  db: AdminDb,
+  householdId: string,
+  userId: string,
+): Promise<HouseholdMemberChangeResult> {
+  const result = await db
+    .prepare(
+      `DELETE FROM household_members
+      WHERE household_id = ?1 AND user_id = ?2 AND role = 'member'`,
+    )
+    .bind(householdId, userId)
+    .run();
+  if (result.meta.changes === 0) {
+    return {
+      ok: false,
+      error:
+        "メンバーを外せませんでした。オーナーは外せないため、先にメインアプリでオーナーを移譲してください",
+    };
+  }
+  return { ok: true };
 }

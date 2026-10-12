@@ -2,13 +2,41 @@ import { Hono } from "hono";
 import { csrf } from "hono/csrf";
 import { secureHeaders } from "hono/secure-headers";
 import {
+  addHouseholdMember,
   deleteUserSessions,
   getOverview,
   listHouseholds,
   listUsers,
+  removeHouseholdMember,
 } from "./db/queries";
 import { Layout } from "./views/Layout";
-import { HouseholdsPage, OverviewPage, UsersPage } from "./views/pages";
+import {
+  type HouseholdMemberChange,
+  HouseholdsPage,
+  OverviewPage,
+  UsersPage,
+} from "./views/pages";
+
+const MEMBER_CHANGE_RESULTS = [
+  "added",
+  "removed",
+  "add-failed",
+  "remove-failed",
+] as const satisfies readonly HouseholdMemberChange["result"][];
+
+/** メンバーの追加・削除の結果を表示する `/households` の URL */
+function householdsResultUrl(
+  result: HouseholdMemberChange["result"],
+  householdId: string,
+  userId: string,
+) {
+  const params = new URLSearchParams({
+    memberChange: result,
+    household: householdId,
+    user: userId,
+  });
+  return `/households?${params}`;
+}
 
 /**
  * 管理画面のアプリ。アクセス制御は Cloudflare Access（管理者だけを許可する
@@ -57,11 +85,59 @@ export function createApp() {
   });
 
   app.get("/households", async (c) => {
-    const households = await listHouseholds(c.env.DB);
+    const [households, users] = await Promise.all([
+      listHouseholds(c.env.DB),
+      listUsers(c.env.DB),
+    ]);
+    // メンバーを追加・削除した直後は、その結果を表示する
+    const result = MEMBER_CHANGE_RESULTS.find(
+      (value) => value === c.req.query("memberChange"),
+    );
+    const household = households.find(
+      (item) => item.id === c.req.query("household"),
+    );
+    const user = users.find((item) => item.id === c.req.query("user"));
+    const memberChange =
+      result && household && user ? { result, household, user } : undefined;
     return c.html(
       <Layout title="家" currentPath="/households">
-        <HouseholdsPage households={households} />
+        <HouseholdsPage
+          households={households}
+          users={users}
+          memberChange={memberChange}
+        />
       </Layout>,
+    );
+  });
+
+  // ユーザーを家のメンバーとして追加する
+  app.post("/households/:householdId/members", async (c) => {
+    const householdId = c.req.param("householdId");
+    const body = await c.req.parseBody();
+    const userId = typeof body.userId === "string" ? body.userId : "";
+    const result = await addHouseholdMember(c.env.DB, householdId, userId);
+    return c.redirect(
+      householdsResultUrl(
+        result.ok ? "added" : "add-failed",
+        householdId,
+        userId,
+      ),
+      303,
+    );
+  });
+
+  // ユーザーを家から外す（オーナーは外せない）
+  app.post("/households/:householdId/members/:userId/delete", async (c) => {
+    const householdId = c.req.param("householdId");
+    const userId = c.req.param("userId");
+    const result = await removeHouseholdMember(c.env.DB, householdId, userId);
+    return c.redirect(
+      householdsResultUrl(
+        result.ok ? "removed" : "remove-failed",
+        householdId,
+        userId,
+      ),
+      303,
     );
   });
 

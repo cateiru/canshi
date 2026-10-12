@@ -4,14 +4,17 @@ CANSHI の運用者向けの管理画面。メインアプリ（`canshi`）・MC
 Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-admin.cateiru.dev` で公開する。
 [Hono](https://hono.dev/) の JSX でサーバーサイドレンダリングする。
 
-基本的には閲覧用で、書き込みはユーザーをすべての端末からログアウトさせる操作だけを持つ。
+基本的には閲覧用で、書き込みはユーザーをすべての端末からログアウトさせる操作と、家へのメンバーの
+追加・削除だけを持つ。
 
 | パス | 内容 |
 | --- | --- |
 | `/` | ユーザー・家・猫の件数と、家に所属していない猫の数（`pnpm household:link` の実行漏れの検知） |
 | `/users` | ユーザーの一覧（権限・所属する家・有効なログインセッションの数と期限）。有効なセッションがあるユーザーには「すべての端末からログアウト」ボタンを表示する |
-| `/households` | 家の一覧（メンバーとその権限・猫の数） |
+| `/households` | 家の一覧（メンバーとその権限・猫の数）。家ごとに、まだメンバーでないユーザーを追加するフォームと、オーナー以外のメンバーを外すボタンを表示する |
 | `POST /users/:userId/sessions/delete` | ユーザーのログインセッションをすべて削除する（すべての端末からログアウトさせる）。終わると `/users` に戻る |
+| `POST /households/:householdId/members` | フォームの `userId` のユーザーを家のメンバー（`member`）として追加する。すでにメンバーなら何もしない。終わると `/households` に戻る |
+| `POST /households/:householdId/members/:userId/delete` | ユーザーを家から外す。家にオーナーがいなくならないよう、オーナーは外せない（メインアプリでオーナーを移譲してから外す）。終わると `/households` に戻る |
 
 書き込みを伴う `POST` は、Hono の CSRF ミドルウェアで同じオリジンからの送信だけを受け付ける
 （Cloudflare Access の Cookie は、ほかのサイトからのフォーム送信にも付きうるため）。
@@ -50,7 +53,8 @@ Self-hosted アプリケーションはデプロイする前に作ること。�
 
 メインアプリと同じ D1（`canshi-db`）をバインディング `DB` で直接参照する。マイグレーションは
 メインアプリ（リポジトリルートの `drizzle/`）が管理し、このパッケージは SELECT と、
-ユーザーのセッションを削除する DELETE（`sessions` テーブル）だけを発行する。
+ユーザーのセッションを削除する DELETE（`sessions` テーブル）、家のメンバーを追加・削除する
+INSERT・DELETE（`household_members` テーブル）だけを発行する。
 
 メインアプリの Drizzle スキーマ（`src/db/schema`）は import せず、`src/db/queries.ts` に生の SQL で
 書いている（パッケージ境界をまたぐと Next.js 向けの tsconfig・パスエイリアスに連鎖的に依存して
