@@ -34,41 +34,77 @@
   gap: var(--space-3);
 }
 
+/* 狭い画面で列が収まらないときは、ページではなく表だけを横にスクロールさせる */
+.tableScroll {
+  overflow-x: auto;
+}
+
 .sessions {
-  display: flex;
-  flex-direction: column;
-  list-style: none;
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.session {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
+.sessions th,
+.sessions td {
+  padding: var(--space-3) var(--space-2);
+  text-align: left;
+  vertical-align: middle;
 }
 
-.session + .session {
+.sessions th:first-child,
+.sessions td:first-child {
+  padding-left: 0;
+}
+
+.sessions th:last-child,
+.sessions td:last-child {
+  padding-right: 0;
+}
+
+.sessions thead th {
+  padding-top: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
+  white-space: nowrap;
+}
+
+.sessions tbody tr {
   border-top: var(--border-width) solid var(--color-border);
 }
 
-.sessionInfo {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
+/* 端末名が単語の途中で折り返されないよう、最低限の幅を確保する（収まらなければ表を横にスクロールする） */
+.deviceName {
+  min-width: 8em;
+  font-weight: var(--font-weight-bold);
 }
 
-.deviceName {
+.deviceNameInner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  font-weight: var(--font-weight-bold);
 }
 
 /* VRT ではログイン日時をマスクする。数字の幅を揃え、日時によってマスクの幅が変わらないようにする */
 .loggedInAt {
   font-variant-numeric: tabular-nums;
+}
+
+/* `.sessions td` の左寄せより優先させる。狭い画面でもボタンの文言は折り返さず、端末名の列を狭める */
+.sessions .actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

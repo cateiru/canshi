@@ -152,15 +152,18 @@ test("ログイン中の端末の一覧から、ほかの端末をログアウ�
   await login(page);
 
   const sessions = page
-    .getByRole("region", { name: "ログイン中の端末" })
-    .getByRole("listitem");
+    .getByRole("table", { name: "ログイン中の端末" })
+    .getByRole("row");
   // 前回までの実行で残ったセッションも並ぶため、件数ではなく行の中身で確かめる
   await expect(sessions.filter({ hasText: "この端末" })).toHaveCount(1);
   await expect(
     sessions.filter({ hasText: "この端末" }).getByRole("button"),
   ).toHaveCount(0);
   const otherSession = sessions.filter({ hasText: "iPhone・Safari" }).first();
-  await expect(otherSession).toContainText("ログイン日時:");
+  // ログイン日時の列に日時を表示する
+  await expect(otherSession.getByRole("cell").first()).toHaveText(
+    /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/,
+  );
 
   const iphoneCount = await sessions
     .filter({ hasText: "iPhone・Safari" })

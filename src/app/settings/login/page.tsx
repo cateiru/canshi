@@ -59,36 +59,49 @@ export default async function LoginSettingsPage() {
         <p className={styles.sectionDescription}>
           このアカウントでログインしている端末です。心当たりのない端末や、使わなくなった端末はログアウトできます。
         </p>
-        <ul className={styles.sessions}>
-          {sessions.map((session) => {
-            const deviceName = formatDeviceName(session.userAgent);
-            const loggedInAt = formatDateTimeUtc(
-              getNaiveUtcNow(session.createdAt),
-            );
-            return (
-              <li key={session.id} className={styles.session}>
-                <div className={styles.sessionInfo}>
-                  <span className={styles.deviceName}>
-                    {deviceName}
-                    {session.isCurrent ? (
-                      <Badge color="accent">この端末</Badge>
-                    ) : null}
-                  </span>
-                  <span className={styles.loggedInAt}>
-                    ログイン日時: {loggedInAt}
-                  </span>
-                </div>
-                {session.isCurrent ? null : (
-                  <SessionLogoutButton
-                    sessionId={session.id}
-                    deviceName={deviceName}
-                    loggedInAt={loggedInAt}
-                  />
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <div className={styles.tableScroll}>
+          <table className={styles.sessions} aria-labelledby="login-sessions">
+            <thead>
+              <tr>
+                <th scope="col">端末</th>
+                <th scope="col">ログイン日時</th>
+                <th scope="col">
+                  <span className={styles.srOnly}>操作</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map((session) => {
+                const deviceName = formatDeviceName(session.userAgent);
+                const loggedInAt = formatDateTimeUtc(
+                  getNaiveUtcNow(session.createdAt),
+                );
+                return (
+                  <tr key={session.id}>
+                    <th scope="row" className={styles.deviceName}>
+                      <span className={styles.deviceNameInner}>
+                        {deviceName}
+                        {session.isCurrent ? (
+                          <Badge color="accent">この端末</Badge>
+                        ) : null}
+                      </span>
+                    </th>
+                    <td className={styles.loggedInAt}>{loggedInAt}</td>
+                    <td className={styles.actions}>
+                      {session.isCurrent ? null : (
+                        <SessionLogoutButton
+                          sessionId={session.id}
+                          deviceName={deviceName}
+                          loggedInAt={loggedInAt}
+                        />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </Surface>
 
       <Surface title="ログアウト" titleId="logout" gap="md">
