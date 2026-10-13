@@ -20,7 +20,17 @@ import {
 // 該当要素を塗りつぶしてから撮影することで、実行日時などに依存する領域を
 // 見た目の差分として検出されないようにしている。
 
-const ACTUAL_DIR = path.join(process.cwd(), "vrt-screenshots", "actual");
+// 既定の書き出し先。管理画面の VRT（playwright.admin-vrt.config.ts）は別の reg-suit の設定で
+// 比較するため、プロジェクトの `metadata.vrtActualDir` で書き出し先を変える
+const DEFAULT_ACTUAL_DIR = path.join("vrt-screenshots", "actual");
+
+function actualDir(testInfo: TestInfo): string {
+  const dir = testInfo.project.metadata?.vrtActualDir;
+  return path.join(
+    process.cwd(),
+    typeof dir === "string" ? dir : DEFAULT_ACTUAL_DIR,
+  );
+}
 
 // 全ページ共通で常にマスクする要素。`test.use({ ignoreSelectors })` は値を
 // 丸ごと置き換えてしまうため、ページ個別の要素と混ざって書き漏れないよう、
@@ -96,7 +106,7 @@ export async function takeSnapshot(
   });
 
   await page.screenshot({
-    path: path.join(ACTUAL_DIR, toFileName(testInfo)),
+    path: path.join(actualDir(testInfo), toFileName(testInfo)),
     fullPage,
     mask,
     // CSS transition の途中で撮影してしまうと、実行のたびに途中経過のフレームが写り込み

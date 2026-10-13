@@ -37,6 +37,26 @@ pnpm deploy      # wrangler deploy
 `pnpm dev` は `--persist-to ../../.wrangler/state` でメインアプリと同じローカル D1 を参照する。
 テーブルが無い場合は、先にリポジトリルートで `pnpm db:migrate:local` を実行しておく。
 
+### ビジュアルリグレッションテスト（VRT）
+
+管理画面の見た目は、メインアプリの VRT とは別に reg-suit で比較する。spec は
+リポジトリルートの `e2e-admin/vrt.spec.ts`、設定は `playwright.admin-vrt.config.ts` と
+`regconfig.admin.json` にある。データはメインアプリの VRT と同じ固定フィクスチャ
+（`e2e/fixtures/vrt-seed.sql`）を使う。
+
+CI の `vrt-admin` ジョブは、main への push では毎回、PR では管理画面に関わるファイル
+（このパッケージ・`e2e-admin/`・VRT の設定とフィクスチャ・マイグレーション・依存関係・
+ワークフロー）を変えたときだけ実行する。結果は PR に「管理画面の VRT (reg-suit) 結果」として
+コメントされる。
+
+ローカルではリポジトリルートで次のように実行する（`pnpm vrt:admin` が `pnpm dev` を起動する）。
+スクリーンショットは `vrt-screenshots/admin/actual` に書き出される。
+
+```bash
+pnpm db:migrate:local && pnpm vrt:seed  # 初回のみ
+pnpm vrt:admin
+```
+
 ## アクセス制御
 
 管理画面はアプリ内では認証せず、Cloudflare Access に任せる。家ごとの絞り込みをせず全ユーザー・
