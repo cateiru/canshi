@@ -67,6 +67,15 @@ VALUES
     'd50cba6528a3c95064f916588f74e203d382b13fb8392e0825ded3a1c03f0a11', 'vrt-inviter',
     strftime('%s', '2099-12-31 00:00:00'), strftime('%s', '2024-06-02 00:00:00'));
 
+-- 家のごはんの時間。通知を有効にすると、撮影する時刻によって通知センターなどの見た目が
+-- 変わってしまうため、どちらの通知も無効にしておく
+INSERT INTO feeding_schedules (id, household_id, time, notify_at_time, remind_if_not_recorded, created_at, updated_at)
+VALUES
+  ('vrt-feeding-morning', 'vrt-household', '07:00', 0, 0,
+    strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00')),
+  ('vrt-feeding-evening', 'vrt-household', '19:00', 0, 0,
+    strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
+
 INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, created_at, updated_at)
 VALUES ('vrt-cat-empty', 'VRT空猫', 'unknown', NULL, NULL, NULL,
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));

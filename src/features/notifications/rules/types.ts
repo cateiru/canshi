@@ -1,4 +1,9 @@
-import type { Cat, NotificationKind, Symptom } from "@/db/schema";
+import type {
+  Cat,
+  FeedingSchedule,
+  NotificationKind,
+  Symptom,
+} from "@/db/schema";
 import type { CleaningTargetWithStatus } from "@/features/cleaning/targetQueries";
 
 export type { NotificationKind };
@@ -85,3 +90,42 @@ export type EvaluateNotificationRulesInput = {
   cleaningTargets: CleaningTargetWithStatus[];
   openSymptoms: OpenSymptom[];
 };
+
+/**
+ * 家についての通知（`notifications.household_id` を持つもの）の候補。猫についての通知
+ * （`NotificationCandidate`）と違い、`cat_id` を持たない
+ */
+type BaseHouseholdCandidate = {
+  householdId: string;
+  /** ごはんの時間（`feeding_schedules.id`） */
+  referenceId: string;
+  /** `notifications.dedupe_key`。同じ判定結果からの二重生成を防ぐ */
+  dedupeKey: string;
+  dueAt: Date;
+  /** ごはんの時刻（HH:MM） */
+  time: string;
+  /**
+   * この回のごはんの記録を探す範囲（naive UTC、`start` を含み `end` を含まない）。
+   * 時刻の通知（`feeding_time`）では、判定した時刻より後の記録を数えないよう `end` を判定した
+   * 時刻までにする。判定した後に記録が追加された場合に通知を作らないよう、INSERT するときにも使う
+   */
+  recordWindow: { start: Date; end: Date };
+};
+
+export type FeedingTimeCandidate = BaseHouseholdCandidate & {
+  kind: "feeding_time";
+};
+
+export type FeedingNotRecordedCandidate = BaseHouseholdCandidate & {
+  kind: "feeding_not_recorded";
+};
+
+export type HouseholdNotificationCandidate =
+  | FeedingTimeCandidate
+  | FeedingNotRecordedCandidate;
+
+/** 通知判定に使う、家のごはんの時間 */
+export type FeedingScheduleForRule = Pick<
+  FeedingSchedule,
+  "id" | "time" | "notifyAtTime" | "remindIfNotRecorded"
+>;

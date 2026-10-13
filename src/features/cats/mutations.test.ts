@@ -13,6 +13,7 @@ import {
   hospitalVisits,
   householdMembers,
   households,
+  notifications,
   users,
 } from "@/db/schema";
 import {
@@ -246,6 +247,67 @@ describe("updateCatForUser", () => {
       expect(await listLinks()).toEqual({
         catIds: ["mike", "tama"],
         hospitalVisitIds: ["visit-tama"],
+      });
+    });
+  });
+
+  describe("ごはんの時間の通知", () => {
+    beforeEach(async () => {
+      await db.insert(notifications).values(
+        (["pending", "snoozed", "done"] as const).map((status) => ({
+          id: `home-${status}`,
+          householdId: "home",
+          kind: "feeding_time" as const,
+          referenceId: "home-morning",
+          dedupeKey: `home-${status}`,
+          title: "ごはんの時間です",
+          body: "本文",
+          url: "/cats",
+          dueAt: new Date("2026-09-21T07:00:00.000Z"),
+          status,
+        })),
+      );
+    });
+
+    async function statuses() {
+      const rows = await db
+        .select({ id: notifications.id, status: notifications.status })
+        .from(notifications)
+        .orderBy(notifications.id);
+      return Object.fromEntries(rows.map((row) => [row.id, row.status]));
+    }
+
+    it("最後の猫が引っ越すと、元の家の未対応のごはんの通知を無視にする", async () => {
+      await updateCatForUser("tama", "both", catValues("second"));
+      expect(await statuses()).toEqual({
+        "home-pending": "dismissed",
+        "home-snoozed": "dismissed",
+        // 対応済みの通知は履歴として残す
+        "home-done": "done",
+      });
+    });
+
+    it("元の家にまだ猫がいれば、通知はそのまま", async () => {
+      await db
+        .insert(cats)
+        .values({ id: "mike", name: "みけ", sex: "male", householdId: "home" });
+      await updateCatForUser("tama", "both", catValues("second"));
+      expect(await statuses()).toEqual({
+        "home-pending": "pending",
+        "home-snoozed": "snoozed",
+        "home-done": "done",
+      });
+    });
+
+    it("引っ越せなかったときは、通知もそのまま", async () => {
+      // 引っ越し先の家には所属しているが、今の家には所属していない
+      expect(
+        await updateCatForUser("tama", "stranger", catValues("other")),
+      ).toBe("not-found");
+      expect(await statuses()).toEqual({
+        "home-pending": "pending",
+        "home-snoozed": "snoozed",
+        "home-done": "done",
       });
     });
   });

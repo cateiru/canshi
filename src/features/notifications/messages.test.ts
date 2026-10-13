@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildNotificationMessage } from "./messages";
+import {
+  buildHouseholdNotificationMessage,
+  buildNotificationMessage,
+} from "./messages";
 import type { NotificationCandidate } from "./rules";
 
 const base = {
@@ -65,6 +68,44 @@ describe("buildNotificationMessage", () => {
       title: "たまの「くしゃみ」は解消しましたか？",
       body: "「くしゃみ」の症状が「改善中」のまま2ヶ月が経過しました",
       url: "/cats/cat-1/symptoms/symptom-1/edit",
+    });
+  });
+});
+
+describe("buildHouseholdNotificationMessage", () => {
+  const base = {
+    householdId: "household-1",
+    referenceId: "schedule-1",
+    dedupeKey: "dedupe",
+    dueAt: new Date("2026-09-11T07:00:00.000Z"),
+    time: "07:00",
+    recordWindow: {
+      start: new Date("2026-09-11T01:00:00.000Z"),
+      end: new Date("2026-09-11T13:00:00.000Z"),
+    },
+  };
+
+  it("feeding_time の文言を組み立て、家のごはん記録の画面へ遷移する", () => {
+    expect(
+      buildHouseholdNotificationMessage({ ...base, kind: "feeding_time" }),
+    ).toEqual({
+      title: "ごはんの時間です",
+      body: "07:00のごはんの時間になりました。ごはんをあげたら記録しておきましょう",
+      url: "/households/household-1/feeding-records/new",
+    });
+  });
+
+  it("feeding_not_recorded の文言を組み立て、家のごはん記録の画面へ遷移する", () => {
+    expect(
+      buildHouseholdNotificationMessage({
+        ...base,
+        kind: "feeding_not_recorded",
+        time: "19:00",
+      }),
+    ).toEqual({
+      title: "ごはんはあげましたか？",
+      body: "19:00のごはんの記録がありません。あげていたら記録しておきましょう",
+      url: "/households/household-1/feeding-records/new",
     });
   });
 });

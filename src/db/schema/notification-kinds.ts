@@ -7,4 +7,6 @@ export const NOTIFICATION_KINDS = [
   "weight_measurement",
   "cleaning_due",
   "symptom_ongoing",
+  "feeding_time",
+  "feeding_not_recorded",
 ] as const;

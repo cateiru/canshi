@@ -3,13 +3,15 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sql-js";
 import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import {
   cats,
   feedingRecordItems,
   feedingRecords,
   foodProducts,
+  households,
+  notifications,
 } from "@/db/schema";
 
 // `src/features/symptoms/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
@@ -24,12 +26,19 @@ vi.mock("next/navigation", () => ({
     throw new Error(`REDIRECT:${url}`);
   },
 }));
-// 猫の家による認可はこのテストの対象外のため、常に許可する
+// 猫の家による認可はこのテストの対象外のため、常に許可して猫をそのまま返す
 vi.mock("@/features/auth/session", () => ({
-  requireCatAccess: async () => ({}),
+  requireCatAccess: async (catId: string) => {
+    const [cat] = await db.select().from(cats).where(eq(cats.id, catId));
+    return { cat };
+  },
 }));
 
-const { deleteFeedingRecordAction } = await import("./actions");
+const {
+  createFeedingRecordAction,
+  deleteFeedingRecordAction,
+  updateFeedingRecordAction,
+} = await import("./actions");
 
 beforeEach(async () => {
   const SQL = await initSqlJs();
@@ -102,5 +111,136 @@ describe("deleteFeedingRecordAction", () => {
         .from(feedingRecords)
         .where(eq(feedingRecords.id, "kuro-meal")),
     ).toHaveLength(1);
+  });
+});
+
+describe("createFeedingRecordAction・updateFeedingRecordAction のごはんの通知", () => {
+  beforeEach(async () => {
+    // 日本時間 2026-09-21 07:30
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-20T22:30:00.000Z"));
+    await db.insert(households).values({ id: "home", name: "おうち" });
+    await db.update(cats).set({ householdId: "home" });
+    await db.update(foodProducts).set({ householdId: "home" });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function strictForm(occurredTime = "07:30") {
+    const formData = new FormData();
+    formData.set("occurredDate", "2026-09-21");
+    formData.set("occurredTime", occurredTime);
+    formData.set("mode", "strict");
+    formData.set("items.0.foodProductId", "food");
+    formData.set("items.0.givenAmountG", "30");
+    formData.set("items.0.leftoverAmountG", "0");
+    return formData;
+  }
+
+  async function addNotification(
+    id: string,
+    target: { catId: string } | { householdId: string },
+    kind: "feeding_time" | "feeding_not_recorded" | "weight_measurement",
+    status: "pending" | "snoozed" | "dismissed" = "pending",
+  ) {
+    await db.insert(notifications).values({
+      id,
+      ...target,
+      kind,
+      dedupeKey: id,
+      title: "タイトル",
+      body: "本文",
+      url: "/",
+      dueAt: new Date("2026-09-21T07:00:00.000Z"),
+      status,
+    });
+  }
+
+  async function statusOf(id: string) {
+    const [row] = await db
+      .select({ status: notifications.status })
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return row.status;
+  }
+
+  it("記録した猫の家の未対応のごはんの通知だけを完了にする", async () => {
+    await db.insert(households).values({ id: "next-door", name: "となり" });
+    const home = { householdId: "home" };
+    await addNotification("time", home, "feeding_time");
+    await addNotification("reminder", home, "feeding_not_recorded", "snoozed");
+    await addNotification("dismissed", home, "feeding_time", "dismissed");
+    await addNotification("weight", { catId: "tama" }, "weight_measurement");
+    await addNotification(
+      "other-household",
+      { householdId: "next-door" },
+      "feeding_time",
+    );
+
+    const result = await createFeedingRecordAction("tama", {}, strictForm());
+    expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
+
+    expect(await statusOf("time")).toBe("done");
+    expect(await statusOf("reminder")).toBe("done");
+    // 対応済みの通知・ほかの種類の通知・ほかの家の通知はそのまま
+    expect(await statusOf("dismissed")).toBe("dismissed");
+    expect(await statusOf("weight")).toBe("pending");
+    expect(await statusOf("other-household")).toBe("pending");
+  });
+
+  it("先の日時で入力した記録では、ごはんの通知を完了にしない", async () => {
+    await addNotification("time", { householdId: "home" }, "feeding_time");
+
+    // 日本時間 07:30 に、08:00 の記録を入力する
+    const result = await createFeedingRecordAction(
+      "tama",
+      {},
+      strictForm("08:00"),
+    );
+    expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
+
+    expect(await statusOf("time")).toBe("pending");
+  });
+
+  it("記録の日時を先の日時から今以前に直したら、ごはんの通知を完了にする", async () => {
+    // 日本時間 07:30 の時点で、先の日時（08:00）の記録がある
+    await db
+      .update(feedingRecords)
+      .set({ occurredAt: new Date("2026-09-21T08:00:00.000Z") })
+      .where(eq(feedingRecords.id, "tama-meal"));
+    await addNotification("time", { householdId: "home" }, "feeding_time");
+
+    const result = await updateFeedingRecordAction(
+      "tama",
+      "tama-meal",
+      {},
+      strictForm("07:30"),
+    );
+    expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
+
+    expect(await statusOf("time")).toBe("done");
+  });
+
+  it("記録の日時を変えずに量などだけを直しても、ごはんの通知は完了にしない", async () => {
+    // 前日の記録を直す
+    await db
+      .update(feedingRecords)
+      .set({ occurredAt: new Date("2026-09-20T19:00:00.000Z") })
+      .where(eq(feedingRecords.id, "tama-meal"));
+    await addNotification("time", { householdId: "home" }, "feeding_time");
+
+    const formData = strictForm("19:00");
+    formData.set("occurredDate", "2026-09-20");
+    const result = await updateFeedingRecordAction(
+      "tama",
+      "tama-meal",
+      {},
+      formData,
+    );
+    expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
+
+    expect(await statusOf("time")).toBe("pending");
   });
 });

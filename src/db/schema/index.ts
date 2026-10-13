@@ -8,6 +8,7 @@ export * from "./expense-records";
 export * from "./feeding-modes";
 export * from "./feeding-presets";
 export * from "./feeding-records";
+export * from "./feeding-schedules";
 export * from "./food-products";
 export * from "./hospital-visits";
 export * from "./household-invitations";

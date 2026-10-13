@@ -118,3 +118,16 @@ export function diffDays(a: LocalDate, b: LocalDate): number {
 export function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
+
+/**
+ * `now`（現在時刻の瞬間）を、指定したタイムゾーンのローカル時計の数字をそのまま UTC として
+ * 持つ「naive UTC」にする（分単位で切り捨てる）。`feedingRecords.occurredAt` などの
+ * naive UTC な発生日時と、時刻まで含めて比較するために使う
+ */
+export function getNaiveLocalNow(now: Date, timeZone: string): Date {
+  const { year, month, day } = getLocalDateParts(now, timeZone);
+  const [hours, minutes] = getLocalTimeString(now, timeZone)
+    .split(":")
+    .map(Number);
+  return new Date(Date.UTC(year, month - 1, day, hours, minutes));
+}

@@ -43,6 +43,9 @@ export default async function NotificationSettingsPage() {
             お知らせは毎日 <strong>18:00</strong>（日本時間）に届きます。
           </p>
           <p>掃除記録は、対象ごとに通知時刻を指定することもできます。</p>
+          <p>
+            ごはんのお知らせは、家の設定の「ごはんの時間」で登録した時間に届きます。
+          </p>
         </div>
       </Alert>
 

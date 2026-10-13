@@ -8,7 +8,7 @@ export const NOTIFY_TIME_NONE = "none";
  * 通知はスケジュール実行（`wrangler.toml` の `[triggers]`、15分ごと）のタイミングでしか
  * 生成・送信されないため、15分刻みの時刻だけを受け付ける
  */
-const QUARTER_HOUR_TIME_PATTERN = /^([01]\d|2[0-3]):(00|15|30|45)$/;
+export const QUARTER_HOUR_TIME_PATTERN = /^([01]\d|2[0-3]):(00|15|30|45)$/;
 
 /** 通知時刻の選択肢（00:00〜23:45 の15分刻み） */
 export const NOTIFY_TIME_OPTIONS: string[] = Array.from(

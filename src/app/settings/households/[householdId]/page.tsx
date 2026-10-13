@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Badge, Breadcrumb, NavCard } from "@/components/ui";
 import {
+  FeedingIcon,
   FeedingPresetIcon,
   FoodProductIcon,
   HouseholdIcon,
@@ -157,6 +158,15 @@ export default async function HouseholdSettingsPage({
                 title="ごはん商品一覧"
                 titleAs="h3"
                 description="この家のごはんの記録に使う商品を登録・編集します。"
+              />
+            </li>
+            <li>
+              <NavCard
+                href={`/settings/households/${household.id}/feeding-schedules`}
+                icon={FeedingIcon}
+                title="ごはんの時間"
+                titleAs="h3"
+                description="ごはんをあげる時間を登録し、時間のお知らせと記録の確認を設定します。"
               />
             </li>
             <li>

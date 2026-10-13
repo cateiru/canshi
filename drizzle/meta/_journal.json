@@ -316,6 +316,13 @@
       "when": 1791809621873,
       "tag": "0044_flimsy_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "6",
+      "when": 1791813143995,
+      "tag": "0045_early_namorita",
+      "breakpoints": true
     }
   ]
 }

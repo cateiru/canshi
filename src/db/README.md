@@ -187,6 +187,23 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - `notifications`・`notification_settings` は `cat_id` を持つが、記録テーブルではない（猫自身の行動・状態の記録ではなく、アプリが生成した通知・その設定のため）。タイムライン機能（`14`）の集約対象からは除外する（「共通カラム規約」の代表の発生日時列の一覧にも含めない）
 - `notification_preferences` は猫に紐付かない、アプリ全体で 1 行だけの設定（通知時刻・タイムゾーン）だったが、通知時刻は 18:00（日本時間）固定になったため現在は未使用（後続で削除予定）
 - 掃除対象ごとの通知時刻は `cleaning_targets.notify_time`（`HH:MM`、15 分刻み、nullable）で持つ。NULL の場合は 18:00 に通知する
+- ごはんの時間は家ごとに `feeding_schedules`（`household_id`・`time`（`HH:MM`、15 分刻み、日本時間））で持ち、
+  同じ家に同じ時刻は 1 つだけ（`(household_id, time)` の一意インデックス）。家のメンバーなら誰でも追加・変更・削除でき、
+  メンバーかどうかの判定は INSERT ... SELECT・UPDATE・DELETE の WHERE に含める（`src/features/feeding-schedules/mutations.ts`）
+  - 通知は猫ごとではなく、家についての通知（`notifications.household_id`）として家に 1 件生成する。種類は
+    `feeding_time`・`feeding_not_recorded`、`reference_id` は `feeding_schedules.id`。`notify_at_time`・
+    `remind_if_not_recorded` で時間ごとにそれぞれの通知を出すかを持つ。猫のいない家には出さない
+  - 各時刻の前後の範囲は、前の時刻との中間から次の時刻との中間まで（時刻が 1 つなら前後 12 時間）。
+    範囲は始まりを含み終わりを含まない半開区間で、1 件の記録が隣り合う 2 つの時刻の両方に数えられない。
+    家のどれかの猫のごはん記録の `occurred_at`（naive UTC）が範囲内にあれば記録があるとみなす
+    （`src/features/notifications/rules/feedingSchedule.ts`）
+  - 通知の INSERT は、ごはんの時間がまだ有効で範囲内に記録がないことを確かめる `INSERT ... SELECT` にし、
+    判定してから INSERT するまでに記録・削除・オフにされた場合は作らない（`src/features/notifications/generate.ts`）
+  - 直近の記録を猫ごとに期間で絞って読むため、`feeding_records` に `(cat_id, occurred_at)` のインデックスを設定する
+  - ごはん記録を追加したときは、猫の家の未対応のごはんの通知を同じ `db.batch` で完了にする
+  - ごはんの時間を削除したときは、その時間の未対応の通知を同じ `db.batch` で無視にする。通知をオフにしたときも、
+    オフにした種類の未対応の通知を同じ `db.batch` で無視にする。対応済みの通知は、`reference_id` に外部キーがないため
+    履歴として残す
 - 詳細な判定ロジックは `src/features/notifications/` を参照
 
 ## MCP の OAuth（`oauth_kv_entries`）

@@ -1,4 +1,9 @@
-import type { NotificationCandidate, SymptomOngoingCandidate } from "./rules";
+import { householdFeedingRecordPath } from "@/features/feeding-schedules/feedingRecordPath";
+import type {
+  HouseholdNotificationCandidate,
+  NotificationCandidate,
+  SymptomOngoingCandidate,
+} from "./rules";
 
 const SYMPTOM_STATUS_PHRASE: Record<SymptomOngoingCandidate["status"], string> =
   {
@@ -59,6 +64,30 @@ export function buildNotificationMessage(
         title: `${catName}の「${candidate.symptomType}」は解消しましたか？`,
         body: `「${candidate.symptomType}」の症状が「${SYMPTOM_STATUS_PHRASE[candidate.status]}」のまま${candidate.elapsedMonths}ヶ月が経過しました`,
         url: `/cats/${candidate.catId}/symptoms/${candidate.symptomId}/edit`,
+      };
+  }
+}
+
+/**
+ * 家についての通知の候補から、文言と遷移先 URL を組み立てる。遷移先は家の URL にし、開いたときの
+ * 家の猫から記録画面を決める（`householdFeedingRecordPath` を参照）
+ */
+export function buildHouseholdNotificationMessage(
+  candidate: HouseholdNotificationCandidate,
+): NotificationMessage {
+  const url = householdFeedingRecordPath(candidate.householdId);
+  switch (candidate.kind) {
+    case "feeding_time":
+      return {
+        title: "ごはんの時間です",
+        body: `${candidate.time}のごはんの時間になりました。ごはんをあげたら記録しておきましょう`,
+        url,
+      };
+    case "feeding_not_recorded":
+      return {
+        title: "ごはんはあげましたか？",
+        body: `${candidate.time}のごはんの記録がありません。あげていたら記録しておきましょう`,
+        url,
       };
   }
 }
