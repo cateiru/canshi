@@ -6,6 +6,10 @@ import {
   updateFoodProductAction,
 } from "@/features/food-products/actions";
 import { FoodProductForm } from "@/features/food-products/FoodProductForm";
+import {
+  findFilterHousehold,
+  householdSettingsBreadcrumbItems,
+} from "@/features/households/householdFilter";
 import { listHouseholdsForUser } from "@/features/households/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { Surface } from "@/features/shared/Surface";
@@ -14,7 +18,8 @@ import styles from "../page.module.css";
 export const dynamic = "force-dynamic";
 
 type NewFoodProductPageProps = {
-  // 商品一覧の家のまとまりや、ごはん記録の画面から来たときに、その家を最初から選んでおく
+  // 商品一覧の家のまとまりや、ごはん記録の画面から来たときに、その家を最初から選んでおく。
+  // このときパンくずと保存後の遷移先も、その家の商品一覧にする
   searchParams: Promise<{ householdId?: string | string[] }>;
 };
 
@@ -25,17 +30,23 @@ export default async function NewFoodProductPage({
   const user = await requireUser();
   const households = await listHouseholdsForUser(user.id);
   // 所属していない家の ID が指定された場合は、先頭の家を選んでおく
-  const defaultHouseholdId = households.find(
-    (household) => household.id === householdId,
-  )?.id;
+  const filterHousehold = findFilterHousehold(households, householdId);
 
   return (
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          { label: "トップ", href: "/home" },
-          { label: "設定", href: "/settings" },
-          { label: "ごはん商品一覧", href: "/food-products" },
+          ...(filterHousehold
+            ? householdSettingsBreadcrumbItems(
+                filterHousehold,
+                "ごはん商品一覧",
+                `/food-products?householdId=${encodeURIComponent(filterHousehold.id)}`,
+              )
+            : [
+                { label: "トップ", href: "/home" },
+                { label: "設定", href: "/settings" },
+                { label: "ごはん商品一覧", href: "/food-products" },
+              ]),
           { label: "登録する" },
         ]}
       />
@@ -54,7 +65,7 @@ export default async function NewFoodProductPage({
           action={createFoodProductAction}
           updateAction={updateFoodProductAction}
           households={households}
-          defaultHouseholdId={defaultHouseholdId}
+          defaultHouseholdId={filterHousehold?.id}
           mediaLimits={resolveMediaLimits()}
           submitLabel="登録する"
         />

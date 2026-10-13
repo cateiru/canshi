@@ -141,6 +141,20 @@ describe("NavigationTracker と useNavigateAfterSubmit", () => {
     expect(readTrackedEntry()?.current).toBe(href);
   });
 
+  it("絞り込んだ家と違う家の一覧へ遷移するときは、戻った先をその家の一覧に置き換える", () => {
+    const { rerender } = setup("/food-products?householdId=home");
+    moveTo(rerender, "/food-products/new?householdId=home");
+
+    // 登録画面で家を変えて保存し、変えた家の一覧を表示する
+    const href = "/food-products?householdId=other";
+    navigateAfterSubmit(href);
+    expect(router.back).toHaveBeenCalledTimes(1);
+
+    moveTo(rerender, "/food-products?householdId=home", { popped: true });
+    expect(router.refresh).not.toHaveBeenCalled();
+    expect(router.replace).toHaveBeenCalledWith(href);
+  });
+
   it("追加ページを直接開いた場合は置き換える", () => {
     setup("/cats/tama/weight-records/new");
 
