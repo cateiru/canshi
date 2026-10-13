@@ -10,7 +10,7 @@
       "bucketName": "cateiru-public-storage",
       "enableACL": false,
       "customDomain": "storage.cateiru.dev",
-      "pathPrefix": "canshi/vrt/admin"
+      "pathPrefix": "canshi/vrt-admin"
     }
   }
 }

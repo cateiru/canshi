@@ -279,8 +279,8 @@ jobs:
       TZ: Asia/Tokyo
       S3_BUCKET: cateiru-public-storage
       # regconfig.admin.json の pathPrefix と揃える。メインアプリの VRT（canshi/vrt）と
-      # 同じコミットのスナップショットを上書きし合わないよう、その下の別の場所にする
-      S3_PATH_PREFIX: canshi/vrt/admin
+      # 同じコミットのスナップショットを上書きし合わないよう、別の場所にする
+      S3_PATH_PREFIX: canshi/vrt-admin
       REPORT_DOMAIN: storage.cateiru.dev
     steps:
       - uses: actions/checkout@v7
