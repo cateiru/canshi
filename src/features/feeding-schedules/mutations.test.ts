@@ -7,6 +7,7 @@ import initSqlJs from "sql.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import {
+  cats,
   feedingSchedules,
   householdMembers,
   households,
@@ -16,6 +17,7 @@ import {
 import {
   createFeedingSchedule,
   deleteFeedingSchedule,
+  dismissFeedingNotificationsOfCatlessHouseholds,
   listFeedingSchedules,
   updateFeedingScheduleNotify,
 } from "./mutations";
@@ -265,5 +267,73 @@ describe("updateFeedingScheduleNotify・deleteFeedingSchedule", () => {
       await deleteFeedingSchedule("home", "outsider", "home-morning"),
     ).toMatchObject({ ok: false });
     expect(await statusOf("pending")).toBe("pending");
+  });
+});
+
+describe("dismissFeedingNotificationsOfCatlessHouseholds", () => {
+  beforeEach(async () => {
+    await db.insert(households).values({ id: "second", name: "実家" });
+    await db
+      .insert(householdMembers)
+      .values({ householdId: "second", userId: "member" });
+    // 猫がいるのは実家だけ。わが家と別の家には猫がいない
+    await db
+      .insert(cats)
+      .values({
+        id: "tama",
+        name: "たま",
+        sex: "female",
+        householdId: "second",
+      });
+  });
+
+  async function addNotification(
+    id: string,
+    householdId: string,
+    status: "pending" | "snoozed" | "done",
+    kind: "feeding_time" | "feeding_not_recorded" = "feeding_time",
+  ) {
+    await db.insert(notifications).values({
+      id,
+      householdId,
+      kind,
+      referenceId: `${householdId}-morning`,
+      dedupeKey: id,
+      title: "ごはんの時間です",
+      body: "本文",
+      url: "/cats",
+      dueAt: new Date("2026-09-21T07:00:00.000Z"),
+      status,
+    });
+  }
+
+  async function statusOf(id: string) {
+    const [row] = await db
+      .select({ status: notifications.status })
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return row.status;
+  }
+
+  it("所属する家のうち猫のいない家の、未対応のごはんの通知を無視にする", async () => {
+    await addNotification("home-time", "home", "pending");
+    await addNotification(
+      "home-reminder",
+      "home",
+      "snoozed",
+      "feeding_not_recorded",
+    );
+    await addNotification("home-done", "home", "done");
+    await addNotification("second-time", "second", "pending");
+    await addNotification("other-time", "other", "pending");
+
+    await dismissFeedingNotificationsOfCatlessHouseholds(db, "member");
+
+    expect(await statusOf("home-time")).toBe("dismissed");
+    expect(await statusOf("home-reminder")).toBe("dismissed");
+    // 対応済みの通知、猫のいる家の通知、所属していない家の通知はそのまま
+    expect(await statusOf("home-done")).toBe("done");
+    expect(await statusOf("second-time")).toBe("pending");
+    expect(await statusOf("other-time")).toBe("pending");
   });
 });

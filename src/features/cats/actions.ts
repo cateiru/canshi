@@ -22,6 +22,7 @@ import {
   weightRecords,
 } from "@/db/schema";
 import { requireCatAccess, requireUser } from "@/features/auth/session";
+import { dismissFeedingNotificationsOfCatlessHouseholds } from "@/features/feeding-schedules/mutations";
 import { deleteMediaAssetsByCat } from "@/features/media/storage";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { applyProfileImageChange } from "./applyProfileImage";
@@ -167,7 +168,7 @@ export async function updateCatAction(
 }
 
 export async function deleteCatAction(id: string): Promise<SubmitRedirect> {
-  await requireCatAccess(id);
+  const { user } = await requireCatAccess(id);
   const db = getDb();
   // media_assets.cat_id が cats.id を参照しているため、猫に紐付くメディア（R2 のオブジェクトと行）を
   // 先に削除する。R2 の削除に失敗した場合はここで例外になり、猫と記録は残る
@@ -226,6 +227,8 @@ export async function deleteCatAction(id: string): Promise<SubmitRedirect> {
     db.delete(notifications).where(eq(notifications.catId, id)),
     db.delete(notificationSettings).where(eq(notificationSettings.catId, id)),
     db.delete(cats).where(eq(cats.id, id)),
+    // 最後の猫を削除して猫のいなくなった家に、ごはんの時間の通知を残さない
+    dismissFeedingNotificationsOfCatlessHouseholds(db, user.id),
   ]);
   return { redirectTo: "/cats" };
 }

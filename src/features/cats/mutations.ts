@@ -9,6 +9,7 @@ import {
   householdMembers,
   type NewCat,
 } from "@/db/schema";
+import { dismissFeedingNotificationsOfCatlessHouseholds } from "@/features/feeding-schedules/mutations";
 import { getHouseholdForUser } from "@/features/households/queries";
 
 /** フォームから保存する猫の項目。`householdId` は猫を飼っている家（登録先・引っ越し先） */
@@ -143,6 +144,8 @@ export async function updateCatForUser(
           ),
         ),
       ),
+    // 最後の猫が引っ越して猫のいなくなった家に、ごはんの時間の通知を残さない
+    dismissFeedingNotificationsOfCatlessHouseholds(db, userId),
   ]);
   return updated.length === 0 ? "not-found" : "updated";
 }

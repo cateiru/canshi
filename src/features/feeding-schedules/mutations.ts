@@ -1,6 +1,11 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { feedingSchedules, householdMembers, notifications } from "@/db/schema";
+import {
+  cats,
+  feedingSchedules,
+  householdMembers,
+  notifications,
+} from "@/db/schema";
 import { isHouseholdMemberCondition } from "@/features/households/queries";
 import type {
   FeedingScheduleFormInput,
@@ -117,6 +122,36 @@ function dismissOpenNotificationsOf(
             AND ${feedingSchedules.householdId} = ${householdId}
         )`,
         isHouseholdMemberCondition(householdId, userId),
+      ),
+    );
+}
+
+/**
+ * 猫が 1 匹もいない家の、ごはんの時間の未対応（`pending`・`snoozed`）の通知を無視にする UPDATE 文。
+ * 通知の生成は猫のいない家を対象にしないが、生成済みの通知は家の最後の猫を削除・引っ越ししても
+ * 残り、記録できる猫がいないのに Push が送られてしまう。猫の削除・引っ越しと同じ batch の、
+ * 猫の行を変える文の後に並べる。どの家の猫がいなくなったかを先に読まずに済むよう、操作する
+ * ユーザーが所属する家のうち、その時点で猫のいない家をまとめて対象にする（猫のいない家に
+ * 未対応のごはんの通知が残っている必要はないため、削除・引っ越しが通らなかったときに実行しても
+ * 問題ない）
+ */
+export function dismissFeedingNotificationsOfCatlessHouseholds(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+) {
+  return db
+    .update(notifications)
+    .set({ status: "dismissed", updatedAt: new Date() })
+    .where(
+      and(
+        inArray(notifications.kind, ["feeding_time", "feeding_not_recorded"]),
+        inArray(notifications.status, ["pending", "snoozed"]),
+        isNotNull(notifications.householdId),
+        sql`NOT EXISTS (
+          SELECT 1 FROM ${cats}
+          WHERE ${cats.householdId} = ${notifications.householdId}
+        )`,
+        isHouseholdMemberCondition(notifications.householdId, userId),
       ),
     );
 }
