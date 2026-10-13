@@ -14,6 +14,8 @@ import {
 } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
+import { NOTIFY_TIMEZONE } from "@/features/notifications/defaults";
+import { getNaiveLocalNow } from "@/features/notifications/rules/localDate";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
 import {
   calculateEstimatedIntakeG,
@@ -263,6 +265,11 @@ export async function createFeedingRecordAction(
     parsed.data.occurredTime,
   );
   const { mode } = parsed.data;
+  // 発生日時は naive UTC のため、現在時刻もローカル時計の数字の naive UTC にして比べる
+  // （`evaluateFeedingSchedule` と同じ）
+  const isFutureRecord =
+    occurredAt.getTime() >
+    getNaiveLocalNow(new Date(), NOTIFY_TIMEZONE).getTime();
 
   // 記録も明細と同じく、猫が確認した時点の家にいるときだけ挿入する
   const [created] = await db.batch([
@@ -291,18 +298,28 @@ export async function createFeedingRecordAction(
     ),
     // ごはんを記録したら、猫の家の未対応のごはんの時間の通知（時間のお知らせ・記録がないときの
     // リマインダー）はもう対応する必要がないため完了にする。通知は猫ごとではなく家に 1 件のため、
-    // 家のどの猫を記録しても完了にする
-    db
-      .update(notifications)
-      .set({ status: "done", updatedAt: new Date() })
-      .where(
-        and(
-          eq(notifications.householdId, householdId),
-          inArray(notifications.kind, ["feeding_time", "feeding_not_recorded"]),
-          inArray(notifications.status, ["pending", "snoozed"]),
-          catInHouseholdCondition(catId, householdId),
-        ),
-      ),
+    // 家のどの猫を記録しても完了にする。
+    // 先の日時で入力した記録はまだあげていないため完了にしない（通知の判定でも数えない）。
+    // ごはんの時刻の前後の範囲では絞らない。リマインダーは次の時刻との中間に出るため、
+    // それを見てから記録すると次の時刻の範囲に入り、応えた通知が残ってしまうため
+    ...(isFutureRecord
+      ? []
+      : [
+          db
+            .update(notifications)
+            .set({ status: "done", updatedAt: new Date() })
+            .where(
+              and(
+                eq(notifications.householdId, householdId),
+                inArray(notifications.kind, [
+                  "feeding_time",
+                  "feeding_not_recorded",
+                ]),
+                inArray(notifications.status, ["pending", "snoozed"]),
+                catInHouseholdCondition(catId, householdId),
+              ),
+            ),
+        ]),
   ]);
   if (created.length === 0) {
     return { formError: HOUSEHOLD_CHANGED_ERROR };

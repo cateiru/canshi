@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sql-js";
 import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import {
   cats,
@@ -114,15 +114,22 @@ describe("deleteFeedingRecordAction", () => {
 
 describe("createFeedingRecordAction", () => {
   beforeEach(async () => {
+    // 日本時間 2026-09-21 07:30
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-20T22:30:00.000Z"));
     await db.insert(households).values({ id: "home", name: "おうち" });
     await db.update(cats).set({ householdId: "home" });
     await db.update(foodProducts).set({ householdId: "home" });
   });
 
-  function strictForm() {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function strictForm(occurredTime = "07:30") {
     const formData = new FormData();
     formData.set("occurredDate", "2026-09-21");
-    formData.set("occurredTime", "07:30");
+    formData.set("occurredTime", occurredTime);
     formData.set("mode", "strict");
     formData.set("items.0.foodProductId", "food");
     formData.set("items.0.givenAmountG", "30");
@@ -179,5 +186,19 @@ describe("createFeedingRecordAction", () => {
     expect(await statusOf("dismissed")).toBe("dismissed");
     expect(await statusOf("weight")).toBe("pending");
     expect(await statusOf("other-household")).toBe("pending");
+  });
+
+  it("先の日時で入力した記録では、ごはんの通知を完了にしない", async () => {
+    await addNotification("time", { householdId: "home" }, "feeding_time");
+
+    // 日本時間 07:30 に、08:00 の記録を入力する
+    const result = await createFeedingRecordAction(
+      "tama",
+      {},
+      strictForm("08:00"),
+    );
+    expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
+
+    expect(await statusOf("time")).toBe("pending");
   });
 });
