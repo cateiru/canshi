@@ -147,6 +147,51 @@ test("家の設定からその家のごはん商品・プリセットの一覧�
   }
 });
 
+test("家のごはん商品一覧から登録すると、その家の一覧へ戻る", async ({
+  page,
+}) => {
+  await page.goto("/settings/households");
+  await page
+    .getByRole("link")
+    .filter({ hasText: "あなたはオーナー" })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/settings\/households\/[^/]+$/);
+  const householdId = new URL(page.url()).pathname.split("/").at(-1) ?? "";
+  const householdName = await page
+    .getByRole("heading", { level: 1 })
+    .innerText();
+  const householdListUrl = `/food-products?householdId=${encodeURIComponent(householdId)}`;
+  const productName = `家の商品-${Date.now()}`;
+
+  await page.goto(householdListUrl);
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: "商品を登録する" })
+    .first()
+    .click();
+  await expect(page).toHaveURL(
+    `/food-products/new?householdId=${encodeURIComponent(householdId)}`,
+  );
+  // パンくずは家の設定を経由し、その家の商品一覧へ戻れる
+  const breadcrumb = page.getByRole("navigation", { name: "パンくずリスト" });
+  await expect(
+    breadcrumb.getByRole("link", { name: householdName, exact: true }),
+  ).toBeVisible();
+  await expect(
+    breadcrumb.getByRole("link", { name: "ごはん商品一覧" }),
+  ).toHaveAttribute("href", householdListUrl);
+
+  await page.getByLabel("商品名").fill(productName);
+  await page.getByLabel("カロリー（kcal/100g）").fill("380");
+  await page.getByLabel("内容量（g）").fill("1500");
+  await page.getByRole("button", { name: "登録する" }).click();
+  await expect(page).toHaveURL(householdListUrl);
+  await expect(
+    page.getByRole("heading", { name: productName, exact: true }),
+  ).toBeVisible();
+});
+
 /** オーナーとして家の設定を開き、招待 URL を発行してその URL を返す */
 async function issueInvitationUrl(page: Page) {
   await page.goto("/settings/households");

@@ -34,7 +34,10 @@ type FoodProductFormProps = {
    * 登録後は家を変えられない（ほかの家のプリセット・ごはん記録から参照されないようにするため）
    */
   households?: { id: string; name: string }[];
-  /** 新規登録で最初から選んでおく家 */
+  /**
+   * 新規登録で最初から選んでおく家。指定したときは、保存後に選んだ家の商品一覧へ戻る
+   * （家の商品一覧やごはん記録の画面から来たときに、その家の一覧へ戻すため）
+   */
   defaultHouseholdId?: string;
   mediaAssets?: MediaAssetView[];
   mediaLimits: MediaLimits;
@@ -79,7 +82,9 @@ export function FoodProductForm({
       : undefined,
     initialState,
     media,
-    redirectTo: "/food-products",
+    redirectTo: defaultHouseholdId
+      ? `/food-products?householdId=${encodeURIComponent(householdId)}`
+      : "/food-products",
   });
 
   return (

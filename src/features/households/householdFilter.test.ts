@@ -39,4 +39,17 @@ describe("householdSettingsBreadcrumbItems", () => {
       { label: "ごはん商品一覧" },
     ]);
   });
+
+  it("href を渡すと、最後の項目を一覧へのリンクにする", () => {
+    expect(
+      householdSettingsBreadcrumbItems(
+        { id: "home", name: "わが家" },
+        "ごはん商品一覧",
+        "/food-products?householdId=home",
+      ).at(-1),
+    ).toEqual({
+      label: "ごはん商品一覧",
+      href: "/food-products?householdId=home",
+    });
+  });
 });
