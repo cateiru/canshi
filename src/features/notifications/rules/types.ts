@@ -106,7 +106,8 @@ type BaseHouseholdCandidate = {
   time: string;
   /**
    * この回のごはんの記録を探す範囲（naive UTC、`start` を含み `end` を含まない）。
-   * 判定した後に記録が追加された場合に通知を作らないよう、INSERT するときにも使う
+   * 時刻の通知（`feeding_time`）では、判定した時刻より後の記録を数えないよう `end` を判定した
+   * 時刻までにする。判定した後に記録が追加された場合に通知を作らないよう、INSERT するときにも使う
    */
   recordWindow: { start: Date; end: Date };
 };

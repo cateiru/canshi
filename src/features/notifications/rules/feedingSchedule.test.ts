@@ -45,9 +45,10 @@ describe("evaluateFeedingSchedule", () => {
         dedupeKey: "household:home:feeding_time:morning:2026-09-11",
         dueAt: new Date("2026-09-11T07:00:00.000Z"),
         time: "07:00",
+        // 判定した時刻（07:00）までの記録だけを探す
         recordWindow: {
           start: new Date("2026-09-11T01:00:00.000Z"),
-          end: new Date("2026-09-11T13:00:00.000Z"),
+          end: new Date("2026-09-11T07:00:00.001Z"),
         },
       },
     ]);
@@ -80,6 +81,36 @@ describe("evaluateFeedingSchedule", () => {
         "2026-09-10T22:00:00.000Z",
         [morning, evening],
         ["2026-09-11T06:40:00.000Z"],
+      ),
+    ).toEqual([]);
+  });
+
+  it("判定する時刻ちょうどの記録があれば、ごはんの時間の通知は出さない", () => {
+    // 日本時間 07:00。07:00 に記録済み
+    expect(
+      evaluate(
+        "2026-09-10T22:00:00.000Z",
+        [morning, evening],
+        ["2026-09-11T07:00:00.000Z"],
+      ),
+    ).toEqual([]);
+  });
+
+  it("判定する時刻より後の記録は、ごはんの時間の通知を止めない（先の日時で入力された記録）", () => {
+    // 日本時間 07:00。範囲内だがまだ来ていない 08:00 の記録がある
+    expect(
+      evaluate(
+        "2026-09-10T22:00:00.000Z",
+        [morning, evening],
+        ["2026-09-11T08:00:00.000Z"],
+      ).map((c) => c.kind),
+    ).toEqual(["feeding_time"]);
+    // 日本時間 08:15 には記録の時刻を過ぎているため出さない
+    expect(
+      evaluate(
+        "2026-09-10T23:15:00.000Z",
+        [morning, evening],
+        ["2026-09-11T08:00:00.000Z"],
       ),
     ).toEqual([]);
   });
@@ -206,17 +237,34 @@ describe("evaluateFeedingSchedule", () => {
     const first = makeSchedule({ id: "first", time: "07:00" });
     const second = makeSchedule({ id: "second", time: "07:15" });
     // 07:00 と 07:15 の中間は 07:07:30。日本時間 07:15 の実行で出す
-    // （07:00 の時刻の通知は 07:00 の実行で生成済みで、`dedupe_key` で重複しない）
     expect(
       evaluate("2026-09-10T22:15:00.000Z", [first, second]).map((c) => [
         c.kind,
         c.referenceId,
       ]),
     ).toEqual([
-      ["feeding_time", "first"],
       ["feeding_not_recorded", "first"],
       ["feeding_time", "second"],
     ]);
+  });
+
+  it("次の時刻との中間を過ぎたら、猶予の途中でもごはんの時間の通知は出さない", () => {
+    const first = makeSchedule({ id: "first", time: "07:00" });
+    const second = makeSchedule({ id: "second", time: "07:15" });
+    // 07:00 の実行より後に時間を追加した場合、07:15 の実行では 07:00 の時刻の通知は 1 時間の
+    // 猶予内だが、中間（07:07:30）を過ぎているためリマインダーだけを出す
+    expect(
+      evaluate("2026-09-10T22:15:00.000Z", [first, second])
+        .filter((c) => c.referenceId === "first")
+        .map((c) => c.kind),
+    ).toEqual(["feeding_not_recorded"]);
+    // 中間より前（日本時間 07:05）は時刻の通知を出す
+    expect(
+      evaluate("2026-09-10T22:05:00.000Z", [first, second]).map((c) => [
+        c.kind,
+        c.referenceId,
+      ]),
+    ).toEqual([["feeding_time", "first"]]);
   });
 
   it("時刻の通知・リマインダーを無効にした時間は、それぞれ出さない", () => {

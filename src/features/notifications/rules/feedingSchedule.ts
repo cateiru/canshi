@@ -46,7 +46,9 @@ function atLocalDate(date: LocalDate, minutes: number): number {
  * 最初の時刻になる。範囲は始まりを含み終わりを含まない半開区間とし、1 件の記録が隣り合う
  * 2 つの時刻の両方に数えられないようにする。`recentFeedingAts` は家の猫すべてのごはん記録で、
  * どれかの猫の記録が範囲内にあれば「記録がある」とみなす。
- * - 時刻になったら「ごはんの時間です」を出す。すでに範囲内に記録があれば出さない
+ * - 時刻になったら「ごはんの時間です」を出す。すでに範囲内に記録があれば出さない。判定する
+ *   時刻より後の記録（先の日時で入力されたもの）は、まだあげていないため数えない。次の時刻との
+ *   中間を過ぎたらリマインダーに切り替わるため、猶予の途中でも出さない
  * - 次の時刻との中間になっても範囲内に記録がなければ「ごはんはあげましたか？」を出す
  *
  * ごはん記録の発生日時は naive UTC（`localDate.ts` のコメント参照）のため、`now` も
@@ -71,6 +73,10 @@ export function evaluateFeedingSchedule(
     (a, b) => toMinutes(a.time) - toMinutes(b.time),
   );
   const feedingTimes = recentFeedingAts.map((at) => at.getTime());
+  const isRecordedIn = (window: { start: Date; end: Date }) =>
+    feedingTimes.some(
+      (at) => at >= window.start.getTime() && at < window.end.getTime(),
+    );
   const candidates: HouseholdNotificationCandidate[] = [];
 
   for (const [index, schedule] of sorted.entries()) {
@@ -89,35 +95,34 @@ export function evaluateFeedingSchedule(
       const slotAt = atLocalDate(date, minutes);
       const windowStart = atLocalDate(date, (prevMinutes + minutes) / 2);
       const reminderAt = atLocalDate(date, (minutes + nextMinutes) / 2);
-      const isRecorded = feedingTimes.some(
-        (at) => at >= windowStart && at < reminderAt,
-      );
-      if (isRecorded) {
-        continue;
-      }
-
       const dateKey = localDateKey(date);
       const base = {
         householdId,
         referenceId: schedule.id,
         dueAt: new Date(slotAt),
         time: schedule.time,
-        recordWindow: {
-          start: new Date(windowStart),
-          end: new Date(reminderAt),
-        },
       };
 
+      // 時刻の通知は、猶予の間か次の時刻との中間までの早いほうまで出す（時刻が近いと猶予が
+      // 中間を越え、1 回の実行で時刻の通知とリマインダーの両方を出してしまうため）
       if (
         schedule.notifyAtTime &&
         nowAt >= slotAt &&
-        nowAt < slotAt + FEEDING_NOTIFY_GRACE_MS
+        nowAt < Math.min(slotAt + FEEDING_NOTIFY_GRACE_MS, reminderAt)
       ) {
-        candidates.push({
-          ...base,
-          kind: "feeding_time",
-          dedupeKey: `household:${householdId}:feeding_time:${schedule.id}:${dateKey}`,
-        });
+        // 判定する時刻ちょうどの記録も含めるため、半開区間の終わりを 1 ミリ秒後にする
+        const recordWindow = {
+          start: new Date(windowStart),
+          end: new Date(nowAt + 1),
+        };
+        if (!isRecordedIn(recordWindow)) {
+          candidates.push({
+            ...base,
+            kind: "feeding_time",
+            dedupeKey: `household:${householdId}:feeding_time:${schedule.id}:${dateKey}`,
+            recordWindow,
+          });
+        }
       }
 
       if (
@@ -125,11 +130,18 @@ export function evaluateFeedingSchedule(
         nowAt >= reminderAt &&
         nowAt < reminderAt + FEEDING_NOTIFY_GRACE_MS
       ) {
-        candidates.push({
-          ...base,
-          kind: "feeding_not_recorded",
-          dedupeKey: `household:${householdId}:feeding_not_recorded:${schedule.id}:${dateKey}`,
-        });
+        const recordWindow = {
+          start: new Date(windowStart),
+          end: new Date(reminderAt),
+        };
+        if (!isRecordedIn(recordWindow)) {
+          candidates.push({
+            ...base,
+            kind: "feeding_not_recorded",
+            dedupeKey: `household:${householdId}:feeding_not_recorded:${schedule.id}:${dateKey}`,
+            recordWindow,
+          });
+        }
       }
     }
   }
