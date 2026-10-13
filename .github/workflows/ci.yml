@@ -126,39 +126,8 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
-      # `--with-deps` は中国語フォント (fonts-wqy-*) と日本語フォント (fonts-ipafont-*) を
-      # 両方入れるため、fontconfig の既定の優先順位次第で日本語ページの漢字が中国語の字形で
-      # 描画されてしまうことがある。Noto Sans CJK JP を追加し、CJK文字は日本語フォントを
-      # 優先して使うよう fontconfig を上書きする
-      - name: Prefer Japanese fonts for CJK glyphs
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
-          sudo tee /etc/fonts/local.conf >/dev/null <<'EOF'
-          <?xml version="1.0"?>
-          <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-          <fontconfig>
-            <match target="pattern">
-              <test name="lang" compare="contains"><string>ja</string></test>
-              <edit name="family" mode="prepend" binding="strong">
-                <string>Noto Sans CJK JP</string>
-              </edit>
-            </match>
-            <alias>
-              <family>sans-serif</family>
-              <prefer>
-                <family>Noto Sans CJK JP</family>
-              </prefer>
-            </alias>
-            <alias>
-              <family>serif</family>
-              <prefer>
-                <family>Noto Serif CJK JP</family>
-              </prefer>
-            </alias>
-          </fontconfig>
-          EOF
-          sudo fc-cache -f
+      # 日本語の漢字が中国語の字形で描画されないようにする（詳細は action.yml）
+      - uses: ./.github/actions/prefer-japanese-fonts
 
       - name: Apply local D1 migrations
         run: pnpm db:migrate:local
@@ -260,4 +229,178 @@ jobs:
         if: ${{ steps.vrt-summary.outputs.failed != '0' }}
         run: |
           echo "::error::reg-suit detected ${{ steps.vrt-summary.outputs.failed }} visual difference(s). See the report URL in the PR comment or job summary posted above."
+          exit 1
+
+  # 管理画面の VRT（vrt-admin）を実行するかを決める。main への push では、reg-suit
+  # (reg-keygen-git-hash-plugin) が PR のマージベースのコミットのスナップショットと比較するため、
+  # どのコミットにもベースラインがあるよう毎回実行する。PR では管理画面の見た目に関わる
+  # ファイルを変えたときだけ実行する
+  admin-changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      admin: ${{ steps.filter.outputs.admin }}
+    steps:
+      - name: Detect changes that affect the admin screens
+        id: filter
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+            echo "admin=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # 管理画面のコード・VRT の設定とフィクスチャ・マイグレーション（管理画面の SQL が参照する）・
+          # 依存関係（Playwright・wrangler・Hono など）・このワークフロー
+          PATTERN='^(packages/admin/|e2e-admin/|e2e/vrt-snapshot\.ts$|e2e/fixtures/vrt-seed\.sql$|playwright\.admin-vrt\.config\.ts$|regconfig\.admin\.json$|drizzle/|package\.json$|pnpm-lock\.yaml$|\.github/workflows/ci\.yml$|\.github/actions/)'
+          if gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename' | grep -qE "$PATTERN"; then
+            echo "admin=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "admin=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # 管理画面（packages/admin）の VRT。メインアプリの VRT（vrt）とは別のランナーで実行する。
+  # メインアプリの VRT はログインのたびに実行時刻で期限が決まるセッションを D1 に作るため、
+  # 同じ D1 で続けて撮ると管理画面のユーザー一覧（セッションの数・期限）が毎回変わってしまう
+  vrt-admin:
+    needs: admin-changes
+    if: ${{ needs.admin-changes.outputs.admin == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    env:
+      # 管理画面は日時を Asia/Tokyo で表示するが、メインアプリの VRT と条件を揃える
+      TZ: Asia/Tokyo
+      S3_BUCKET: cateiru-public-storage
+      # regconfig.admin.json の pathPrefix と揃える。メインアプリの VRT（canshi/vrt）と
+      # 同じコミットのスナップショットを上書きし合わないよう、その下の別の場所にする
+      S3_PATH_PREFIX: canshi/vrt/admin
+      REPORT_DOMAIN: storage.cateiru.dev
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # reg-suit (reg-keygen-git-hash-plugin) がベースラインとの比較に
+          # git のブランチ履歴を使うため必要
+          fetch-depth: 0
+
+      # vrt ジョブと同じ、reg-suit の detached HEAD の回避策
+      - name: Attach HEAD to a branch (reg-suit workaround for detached HEAD)
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          git checkout "$BRANCH" || git checkout -b "$BRANCH"
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".node-version"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      # 日本語の漢字が中国語の字形で描画されないようにする（詳細は action.yml）
+      - uses: ./.github/actions/prefer-japanese-fonts
+
+      - name: Apply local D1 migrations
+        run: pnpm db:migrate:local
+
+      # メインアプリの VRT と同じ固定フィクスチャ (e2e/fixtures/vrt-seed.sql 参照)
+      - name: Seed VRT fixtures into local D1
+        run: pnpm vrt:seed
+
+      - name: Run Playwright tests for admin VRT
+        run: pnpm vrt:admin
+
+      - name: Configure AWS credentials (public-storage-cdk)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::211125784910:role/github-actions-public-storage
+          aws-region: us-east-1
+          role-skip-session-tagging: true
+
+      - name: Run reg-suit
+        run: pnpm vrt:admin:reg
+
+      # vrt ジョブと同じく、アップロード後に auto-expire タグを付ける
+      - name: Tag published snapshots as auto-expire
+        run: |
+          set -euo pipefail
+          KEY="$(git rev-parse HEAD)"
+          PREFIX="${S3_PATH_PREFIX}/${KEY}"
+          aws s3api list-objects-v2 --bucket "$S3_BUCKET" --prefix "$PREFIX" \
+            --query 'Contents[].Key' --output text \
+            | tr '\t' '\n' \
+            | grep -v '^$' \
+            | xargs -P 8 -I {} aws s3api put-object-tagging \
+                --bucket "$S3_BUCKET" --key "{}" \
+                --tagging 'TagSet=[{Key=auto-expire,Value=true}]'
+
+      # 比較結果は regconfig.admin.json の workingDir（.reg-admin）に出力される
+      - name: Build VRT summary comment
+        id: vrt-summary
+        run: |
+          set -euo pipefail
+          KEY="$(git rev-parse HEAD)"
+          REPORT_URL="https://${REPORT_DOMAIN}/${S3_PATH_PREFIX}/${KEY}/index.html"
+          FAILED=$(jq '.failedItems | length' .reg-admin/out.json)
+          NEW=$(jq '.newItems | length' .reg-admin/out.json)
+          DELETED=$(jq '.deletedItems | length' .reg-admin/out.json)
+          PASSED=$(jq '.passedItems | length' .reg-admin/out.json)
+
+          {
+            echo "## 管理画面の VRT (reg-suit) 結果"
+            echo ""
+            echo "| ステータス | 件数 |"
+            echo "| --- | --- |"
+            echo "| 差分あり | ${FAILED} |"
+            echo "| 新規 | ${NEW} |"
+            echo "| 削除 | ${DELETED} |"
+            echo "| 変化なし | ${PASSED} |"
+            echo ""
+            echo "[reg-suit レポートを見る](${REPORT_URL})"
+            if [ "$FAILED" -gt 0 ]; then
+              echo ""
+              echo "### 差分があったページ"
+              echo ""
+              jq -r '.failedItems[] | "- " + .' .reg-admin/out.json
+            fi
+          } > vrt-admin-comment.md
+
+          echo "failed=${FAILED}" >> "$GITHUB_OUTPUT"
+          {
+            echo "message<<VRT_COMMENT_EOF"
+            cat vrt-admin-comment.md
+            echo "VRT_COMMENT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # メインアプリの VRT のコメント（id: vrt-reg-suit）を recreate で消さないよう、別の id にする
+      - name: Post VRT result to the pull request
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: hasura/comment-progress@v2.3.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          number: ${{ github.event.pull_request.number }}
+          id: vrt-admin-reg-suit
+          recreate: true
+          message: ${{ steps.vrt-summary.outputs.message }}
+
+      - name: Post VRT result to the job summary
+        if: ${{ github.event_name == 'push' }}
+        run: cat vrt-admin-comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if reg-suit detected visual differences
+        if: ${{ steps.vrt-summary.outputs.failed != '0' }}
+        run: |
+          echo "::error::reg-suit detected ${{ steps.vrt-summary.outputs.failed }} visual difference(s) in the admin screens. See the report URL in the PR comment or job summary posted above."
           exit 1

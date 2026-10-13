@@ -20,6 +20,7 @@ packages/*/.wrangler/
 
 # VRT (reg-suit)
 /.reg/
+/.reg-admin/
 /vrt-screenshots/
 
 # env

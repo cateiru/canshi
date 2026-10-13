@@ -20,6 +20,8 @@
     "vrt": "playwright test --config=playwright.vrt.config.ts",
     "vrt:seed": "wrangler d1 execute DB --local --file=e2e/fixtures/vrt-seed.sql",
     "vrt:reg": "reg-suit run",
+    "vrt:admin": "playwright test --config=playwright.admin-vrt.config.ts",
+    "vrt:admin:reg": "reg-suit run --config regconfig.admin.json",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
