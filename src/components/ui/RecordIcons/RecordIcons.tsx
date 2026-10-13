@@ -133,6 +133,24 @@ export function FeedingIcon(props: RecordIconProps) {
   );
 }
 
+export function FeedingScheduleIcon(props: RecordIconProps) {
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <circle fill="#e99a70" cx="12" cy="12" r="10" />
+          <circle fill="#fff4df" cx="12" cy="12" r="7.5" />
+        </>
+      }
+    >
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="7.5" />
+      <path d="M12 6.5V12l3.5 2M12 3v1.5M21 12h-1.5M12 21v-1.5M3 12h1.5" />
+    </RecordIcon>
+  );
+}
+
 export function CalorieIcon(props: RecordIconProps) {
   const catTransform = "translate(0 7)";
   const flames =

@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
-import { Breadcrumb } from "@/components/ui";
-import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { TbClock, TbPlus } from "react-icons/tb";
+import {
+  Breadcrumb,
+  ButtonLink,
+  Heading,
+  RecordCard,
+  RecordEmptyState,
+} from "@/components/ui";
+import { FeedingScheduleIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireHouseholdAccess } from "@/features/auth/session";
 import {
   createFeedingScheduleAction,
@@ -46,58 +53,90 @@ export default async function FeedingSchedulesPage({
         ]}
       />
 
-      <RecordPageHeading icon={FeedingIcon}>ごはんの時間</RecordPageHeading>
+      <RecordPageHeading icon={FeedingScheduleIcon}>
+        ごはんの時間
+      </RecordPageHeading>
 
-      <p className={styles.note}>
-        ごはんをあげる時間を登録すると、その時間にこの家のメンバーへお知らせします（日本時間）。
-        時間の前後にどの猫のごはんの記録もないときは、次のごはんの時間との中間で「ごはんはあげましたか？」と確認します。
-        この家のどれかの猫のごはんを記録すると、未対応のお知らせは完了になります。
-      </p>
+      <div className={styles.description}>
+        <p>
+          ごはんをあげる時間を登録すると、その時間にこの家のメンバーへお知らせします（日本時間）。
+        </p>
+        <p className={styles.note}>
+          時間の前後にどの猫のごはんの記録もないときは、次のごはんの時間との中間で「ごはんはあげましたか？」と確認します。
+          この家のどれかの猫のごはんを記録すると、未対応のお知らせは完了になります。
+        </p>
+      </div>
 
-      <Surface
-        title="登録したごはんの時間"
-        titleId="feeding-schedules-heading"
-        gap="md"
+      <section
+        aria-labelledby="feeding-schedules-heading"
+        className={styles.section}
       >
+        <Heading level={2} size="md" id="feeding-schedules-heading">
+          登録したごはんの時間
+        </Heading>
         {schedules.length > 0 ? (
           <ul className={styles.schedules}>
             {schedules.map((schedule) => (
-              <li key={schedule.id} className={styles.schedule}>
-                <div className={styles.scheduleHeader}>
-                  <span className={styles.time}>{schedule.time}</span>
-                  <HouseholdMemberActionButton
-                    label="削除する"
-                    title="ごはんの時間の削除"
-                    description={`${schedule.time}のごはんの時間を削除しますか？この時間のお知らせは届かなくなります。`}
-                    variant="danger"
-                    successMessage={`${schedule.time}のごはんの時間を削除しました`}
-                    action={deleteFeedingScheduleAction.bind(
+              <li key={schedule.id}>
+                <RecordCard
+                  className={styles.schedule}
+                  aria-label={`${schedule.time}のごはんの時間`}
+                >
+                  <div className={styles.scheduleHeader}>
+                    <h3 className={styles.time}>
+                      <TbClock size={20} aria-hidden="true" />
+                      <time dateTime={schedule.time}>{schedule.time}</time>
+                    </h3>
+                    <HouseholdMemberActionButton
+                      iconOnly
+                      iconLabel={`${schedule.time}のごはんの時間を削除する`}
+                      label="削除する"
+                      title="ごはんの時間の削除"
+                      description={`${schedule.time}のごはんの時間を削除しますか？この時間のお知らせは届かなくなります。`}
+                      variant="danger"
+                      successMessage={`${schedule.time}のごはんの時間を削除しました`}
+                      action={deleteFeedingScheduleAction.bind(
+                        null,
+                        household.id,
+                        schedule.id,
+                      )}
+                    />
+                  </div>
+                  <FeedingScheduleForm
+                    action={updateFeedingScheduleNotifyAction.bind(
                       null,
                       household.id,
                       schedule.id,
                     )}
+                    schedule={schedule}
                   />
-                </div>
-                <FeedingScheduleForm
-                  action={updateFeedingScheduleNotifyAction.bind(
-                    null,
-                    household.id,
-                    schedule.id,
-                  )}
-                  schedule={schedule}
-                />
+                </RecordCard>
               </li>
             ))}
           </ul>
         ) : (
-          <p className={styles.note}>まだごはんの時間が登録されていません。</p>
+          <RecordEmptyState
+            icon={FeedingScheduleIcon}
+            actions={
+              <ButtonLink
+                href="#feeding-schedule-new-heading"
+                variant="primary"
+                leftIcon={TbPlus}
+              >
+                ごはんの時間を追加する
+              </ButtonLink>
+            }
+          >
+            まだごはんの時間が登録されていません。
+          </RecordEmptyState>
         )}
-      </Surface>
+      </section>
 
       <Surface
         title="ごはんの時間を追加"
         titleId="feeding-schedule-new-heading"
         gap="md"
+        icon={<TbPlus size={20} aria-hidden="true" />}
       >
         <FeedingScheduleForm
           action={createFeedingScheduleAction.bind(null, household.id)}
