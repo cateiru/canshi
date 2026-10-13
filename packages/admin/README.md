@@ -16,6 +16,12 @@ Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-ad
 | `POST /households/:householdId/members` | フォームの `userId` のユーザーを家のメンバー（`member`）として追加する。すでにメンバーなら何もしない。終わると `/households` に戻る |
 | `POST /households/:householdId/members/:userId/delete` | ユーザーを家から外す。家にオーナーがいなくならないよう、オーナーは外せない（メインアプリでオーナーを移譲してから外す）。終わると `/households` に戻る |
 
+見た目はメインアプリのデザインルール（[`docs/idea/design.md`](../../docs/idea/design.md)）に揃え、
+`src/views/styles.ts` にメインアプリの `src/styles/tokens.css` と同じトークンを写して使う。
+ダークテーマ・コントラスト・文字サイズの切り替えは持たず、ライトテーマに固定する。
+メインアプリでトークンの値を変えたときは `src/views/styles.ts` も合わせて更新すること
+（`src/views/styles.test.ts` が `tokens.css` と照合するため、食い違いはテストで検出できる）。
+
 書き込みを伴う `POST` は、Hono の CSRF ミドルウェアで同じオリジンからの送信だけを受け付ける
 （Cloudflare Access の Cookie は、ほかのサイトからのフォーム送信にも付きうるため）。
 

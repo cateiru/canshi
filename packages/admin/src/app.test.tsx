@@ -49,6 +49,13 @@ describe("画面", () => {
     expect(html).toContain("pnpm household:link --remote");
   });
 
+  it("ライトテーマに固定して表示する", async () => {
+    const html = await (await request("/")).text();
+    expect(html).toContain('<meta name="color-scheme" content="light"/>');
+    expect(html).toContain("color-scheme: light;");
+    expect(html).not.toContain("prefers-color-scheme");
+  });
+
   it("ユーザー一覧で、利用者の入力した名前をエスケープして表示する", async () => {
     const response = await request("/users");
     expect(response.status).toBe(200);
