@@ -65,8 +65,10 @@ async function listFeedingSchedulesByHousehold(
 
 /**
  * 猫 id ごとの、直近のごはん記録の発生日時（naive UTC）。ごはんの時間の前後に記録があるかの
- * 判定に使う。ごはんの時間を登録した家の猫の記録だけを、全猫分まとめて 1 回のクエリで取得する
- * （`feeding_records_cat_id_occurred_at_idx` で猫ごとに期間を絞って読む）
+ * 判定に使う。ごはんの時間を登録した家の猫の記録だけを、全猫分まとめて 1 回のクエリで取得する。
+ * `cats` との JOIN にすると、結合順によっては `feeding_records` 側が外側のループになり、
+ * インデックス全体を走査してから期間で絞ることがある。猫 id を `cat_id IN (...)` で直接
+ * 与え、`feeding_records_cat_id_occurred_at_idx` を猫ごとに期間で範囲検索させる
  */
 async function listRecentFeedingAtsByCat(
   db: ReturnType<typeof getDb>,
@@ -82,14 +84,21 @@ async function listRecentFeedingAtsByCat(
       occurredAt: feedingRecords.occurredAt,
     })
     .from(feedingRecords)
-    .innerJoin(cats, eq(cats.id, feedingRecords.catId))
     .where(
       and(
         inArray(
-          cats.householdId,
+          feedingRecords.catId,
           db
-            .selectDistinct({ householdId: feedingSchedules.householdId })
-            .from(feedingSchedules),
+            .select({ id: cats.id })
+            .from(cats)
+            .where(
+              inArray(
+                cats.householdId,
+                db
+                  .select({ householdId: feedingSchedules.householdId })
+                  .from(feedingSchedules),
+              ),
+            ),
         ),
         gte(feedingRecords.occurredAt, since),
       ),
@@ -153,12 +162,20 @@ export async function insertHouseholdNotification(
             eq(enabledColumn, true),
             notExists(
               db
-                .select({ id: feedingRecords.id })
+                // 存在だけを見るので、インデックスにない列を選ばずに索引だけで判定させる
+                .select({ exists: sql`1` })
                 .from(feedingRecords)
-                .innerJoin(cats, eq(cats.id, feedingRecords.catId))
                 .where(
                   and(
-                    eq(cats.householdId, candidate.householdId),
+                    // JOIN ではなく猫 id で絞り、インデックスを猫ごとに範囲検索させる
+                    // （`listRecentFeedingAtsByCat` と同じ理由）
+                    inArray(
+                      feedingRecords.catId,
+                      db
+                        .select({ id: cats.id })
+                        .from(cats)
+                        .where(eq(cats.householdId, candidate.householdId)),
+                    ),
                     gte(
                       feedingRecords.occurredAt,
                       candidate.recordWindow.start,
