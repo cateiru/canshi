@@ -277,14 +277,12 @@ describe("dismissFeedingNotificationsOfCatlessHouseholds", () => {
       .insert(householdMembers)
       .values({ householdId: "second", userId: "member" });
     // 猫がいるのは実家だけ。わが家と別の家には猫がいない
-    await db
-      .insert(cats)
-      .values({
-        id: "tama",
-        name: "たま",
-        sex: "female",
-        householdId: "second",
-      });
+    await db.insert(cats).values({
+      id: "tama",
+      name: "たま",
+      sex: "female",
+      householdId: "second",
+    });
   });
 
   async function addNotification(
