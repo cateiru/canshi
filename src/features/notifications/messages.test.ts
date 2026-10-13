@@ -85,28 +85,27 @@ describe("buildHouseholdNotificationMessage", () => {
     },
   };
 
-  it("feeding_time の文言を組み立て、猫が 1 匹ならその猫の記録画面へ遷移する", () => {
+  it("feeding_time の文言を組み立て、家のごはん記録の画面へ遷移する", () => {
     expect(
-      buildHouseholdNotificationMessage({ ...base, kind: "feeding_time" }, [
-        "cat-1",
-      ]),
+      buildHouseholdNotificationMessage({ ...base, kind: "feeding_time" }),
     ).toEqual({
       title: "ごはんの時間です",
       body: "07:00のごはんの時間になりました。ごはんをあげたら記録しておきましょう",
-      url: "/cats/cat-1/feeding-records/new",
+      url: "/households/household-1/feeding-records/new",
     });
   });
 
-  it("feeding_not_recorded の文言を組み立て、猫が複数なら猫一覧へ遷移する", () => {
+  it("feeding_not_recorded の文言を組み立て、家のごはん記録の画面へ遷移する", () => {
     expect(
-      buildHouseholdNotificationMessage(
-        { ...base, kind: "feeding_not_recorded", time: "19:00" },
-        ["cat-1", "cat-2"],
-      ),
+      buildHouseholdNotificationMessage({
+        ...base,
+        kind: "feeding_not_recorded",
+        time: "19:00",
+      }),
     ).toEqual({
       title: "ごはんはあげましたか？",
       body: "19:00のごはんの記録がありません。あげていたら記録しておきましょう",
-      url: "/cats",
+      url: "/households/household-1/feeding-records/new",
     });
   });
 });

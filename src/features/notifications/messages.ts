@@ -1,3 +1,4 @@
+import { householdFeedingRecordPath } from "@/features/feeding-schedules/feedingRecordPath";
 import type {
   HouseholdNotificationCandidate,
   NotificationCandidate,
@@ -68,15 +69,13 @@ export function buildNotificationMessage(
 }
 
 /**
- * 家についての通知の候補から、文言と遷移先 URL を組み立てる。遷移先は、家の猫が 1 匹だけなら
- * その猫のごはん記録の追加画面、複数いれば記録する猫を選べる猫一覧にする
+ * 家についての通知の候補から、文言と遷移先 URL を組み立てる。遷移先は家の URL にし、開いたときの
+ * 家の猫から記録画面を決める（`householdFeedingRecordPath` を参照）
  */
 export function buildHouseholdNotificationMessage(
   candidate: HouseholdNotificationCandidate,
-  catIds: readonly string[],
 ): NotificationMessage {
-  const url =
-    catIds.length === 1 ? `/cats/${catIds[0]}/feeding-records/new` : "/cats";
+  const url = householdFeedingRecordPath(candidate.householdId);
   switch (candidate.kind) {
     case "feeding_time":
       return {

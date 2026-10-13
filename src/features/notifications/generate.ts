@@ -427,7 +427,7 @@ async function generateHouseholdNotifications(
       catIds.flatMap((catId) => recentFeedingAtsByCat.get(catId) ?? []),
     );
     for (const candidate of candidates) {
-      const message = buildHouseholdNotificationMessage(candidate, catIds);
+      const message = buildHouseholdNotificationMessage(candidate);
       await insertHouseholdNotification(db, candidate, message);
     }
   }

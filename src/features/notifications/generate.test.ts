@@ -268,7 +268,7 @@ describe("generateNotifications（ごはんの時間）", () => {
       householdId: household.id,
       title: "ごはんはあげましたか？",
       body: "07:00のごはんの記録がありません。あげていたら記録しておきましょう",
-      url: "/cats",
+      url: `/households/${household.id}/feeding-records/new`,
     });
 
     // 同じ時刻に何度呼んでも重複して生成しない
@@ -279,7 +279,7 @@ describe("generateNotifications（ごはんの時間）", () => {
     ]);
   });
 
-  it("家のどれかの猫に記録があればリマインダーを出さない。猫が 1 匹なら、その猫の記録画面へ遷移する", async () => {
+  it("家のどれかの猫に記録があればリマインダーを出さない", async () => {
     const { household, householdCats } = await setupHousehold("1匹の家", [
       "みけ",
     ]);
@@ -294,7 +294,7 @@ describe("generateNotifications（ごはんの時間）", () => {
     expect(timeNotification).toMatchObject({
       kind: "feeding_time",
       title: "ごはんの時間です",
-      url: `/cats/${cat.id}/feeding-records/new`,
+      url: `/households/${household.id}/feeding-records/new`,
     });
 
     // JST 07:30 に記録した（naive UTC）
