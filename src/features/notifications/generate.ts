@@ -2,6 +2,7 @@ import {
   and,
   desc,
   eq,
+  exists,
   gte,
   inArray,
   lt,
@@ -116,7 +117,9 @@ async function listRecentFeedingAtsByCat(
  * 家についての通知（ごはんの時間）を、条件をもう一度確かめたうえで INSERT する。
  * 記録を読んでから INSERT するまでの間に、別のリクエストでごはんが記録されたり、ごはんの時間が
  * 削除・オフにされたりすることがある。そのまま INSERT すると、もう不要な通知が残って Push まで
- * 送られてしまう。ごはんの時間がまだ有効で、範囲内に家の猫のごはん記録がないことの確認と INSERT を
+ * 送られてしまう。家の最後の猫が削除・引っ越しされた場合も、その片付け（
+ * `dismissFeedingNotificationsOfCatlessHouseholds`）の後に INSERT されると通知が残ってしまう。
+ * ごはんの時間がまだ有効で、家に猫がいて、範囲内に家の猫のごはん記録がないことの確認と INSERT を
  * 1 つの `INSERT ... SELECT` にし、両者の間に更新が割り込まないようにする。
  * INSERT ... SELECT では `$defaultFn` や SQL の既定値が効かないため、全カラムの値をテーブル定義の
  * 順に明示する（`insertSymptomOngoingNotification` と同じ方式）
@@ -160,6 +163,12 @@ export async function insertHouseholdNotification(
             eq(feedingSchedules.id, candidate.referenceId),
             eq(feedingSchedules.householdId, candidate.householdId),
             eq(enabledColumn, true),
+            exists(
+              db
+                .select({ exists: sql`1` })
+                .from(cats)
+                .where(eq(cats.householdId, candidate.householdId)),
+            ),
             notExists(
               db
                 // 存在だけを見るので、インデックスにない列を選ばずに索引だけで判定させる

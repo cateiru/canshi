@@ -423,4 +423,20 @@ describe("insertHouseholdNotification", () => {
     await insertHouseholdNotification(db, disabled.candidate, disabled.message);
     expect(await listByHousehold(disabled.household.id)).toEqual([]);
   });
+
+  it("判定後に家の最後の猫が削除・引っ越しされていれば、通知を作らない", async () => {
+    const { household, cat, candidate, message } = await setup();
+    const [otherHousehold] = await db
+      .insert(households)
+      .values({ name: "引っ越し先の家" })
+      .returning();
+    await db
+      .update(cats)
+      .set({ householdId: otherHousehold.id })
+      .where(eq(cats.id, cat.id));
+
+    await insertHouseholdNotification(db, candidate, message);
+
+    expect(await listByHousehold(household.id)).toEqual([]);
+  });
 });
