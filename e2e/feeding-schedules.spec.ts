@@ -73,7 +73,9 @@ test("ごはんの時間を追加・変更・削除できる", async ({ page }) 
       item.getByRole("checkbox", { name: "時間になったら通知する" }),
     ).toBeChecked();
 
-    await item.getByRole("button", { name: "削除する" }).click();
+    await item
+      .getByRole("button", { name: `${TIME}のごはんの時間を削除する` })
+      .click();
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "削除する" })
@@ -83,7 +85,9 @@ test("ごはんの時間を追加・変更・削除できる", async ({ page }) 
     // 途中で失敗しても、次回の実行や同じローカル DB を使う他のテストに残さない
     await openFeedingSchedules(page);
     if ((await item.count()) > 0) {
-      await item.getByRole("button", { name: "削除する" }).click();
+      await item
+        .getByRole("button", { name: `${TIME}のごはんの時間を削除する` })
+        .click();
       await page
         .getByRole("dialog")
         .getByRole("button", { name: "削除する" })

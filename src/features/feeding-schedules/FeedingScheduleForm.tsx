@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { TbDeviceFloppy, TbPlus } from "react-icons/tb";
 import { Alert, Button, Checkbox, Select } from "@/components/ui";
 import type { FeedingSchedule } from "@/db/schema";
 import { NOTIFY_TIME_OPTIONS } from "@/features/cleaning/targetSchema";
@@ -43,14 +44,15 @@ export function FeedingScheduleForm({
       {isNew ? (
         <Select
           name="time"
-          label="時刻"
+          label="時刻（日本時間）"
           options={timeOptions}
           defaultSelectedKey="07:00"
           errorMessage={state.fieldErrors?.time?.[0]}
           isRequired
         />
       ) : null}
-      <div className={styles.checkboxes}>
+      <fieldset className={styles.checkboxes}>
+        <legend className={styles.legend}>お知らせの設定</legend>
         <Checkbox
           name="notifyAtTime"
           defaultSelected={schedule?.notifyAtTime ?? true}
@@ -63,12 +65,13 @@ export function FeedingScheduleForm({
         >
           記録がないときに確認の通知をする
         </Checkbox>
-      </div>
+      </fieldset>
       <div className={styles.footer}>
         <Button
           type="submit"
-          variant={isNew ? "primary" : "secondary"}
+          variant="primary"
           isDisabled={isPending}
+          leftIcon={isNew ? TbPlus : TbDeviceFloppy}
         >
           {isPending ? "保存中..." : isNew ? "追加する" : "保存する"}
         </Button>

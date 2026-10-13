@@ -2,7 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState, useTransition } from "react";
-import { addToast, Button, type ButtonVariant, Modal } from "@/components/ui";
+import { TbTrash } from "react-icons/tb";
+import {
+  addToast,
+  Button,
+  type ButtonVariant,
+  IconButton,
+  Modal,
+} from "@/components/ui";
 import type { HouseholdMemberActionResult } from "./actions";
 import styles from "./HouseholdMemberActionButton.module.css";
 
@@ -17,6 +24,10 @@ type HouseholdMemberActionButtonProps = {
   variant?: ButtonVariant;
   successMessage: string;
   action: () => Promise<HouseholdMemberActionResult>;
+  /** 削除操作のボタンをアイコンのみで表示する */
+  iconOnly?: boolean;
+  /** アイコンのみのボタンに付ける、対象を含めた操作名 */
+  iconLabel?: string;
 };
 
 /**
@@ -30,6 +41,8 @@ export function HouseholdMemberActionButton({
   variant = "primary",
   successMessage,
   action,
+  iconOnly = false,
+  iconLabel = label,
 }: HouseholdMemberActionButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -54,9 +67,19 @@ export function HouseholdMemberActionButton({
 
   return (
     <>
-      <Button aria-haspopup="dialog" onPress={() => setOpen(true)}>
-        {label}
-      </Button>
+      {iconOnly ? (
+        <IconButton
+          icon={TbTrash}
+          aria-label={iconLabel}
+          title={iconLabel}
+          aria-haspopup="dialog"
+          onPress={() => setOpen(true)}
+        />
+      ) : (
+        <Button aria-haspopup="dialog" onPress={() => setOpen(true)}>
+          {label}
+        </Button>
+      )}
       <Modal open={open} title={title} onClose={() => setOpen(false)}>
         <p>{description}</p>
         <div className={styles.actions}>
