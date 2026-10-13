@@ -34,9 +34,11 @@ vi.mock("@/features/auth/session", () => ({
   },
 }));
 
-const { createFeedingRecordAction, deleteFeedingRecordAction } = await import(
-  "./actions"
-);
+const {
+  createFeedingRecordAction,
+  deleteFeedingRecordAction,
+  updateFeedingRecordAction,
+} = await import("./actions");
 
 beforeEach(async () => {
   const SQL = await initSqlJs();
@@ -112,7 +114,7 @@ describe("deleteFeedingRecordAction", () => {
   });
 });
 
-describe("createFeedingRecordAction", () => {
+describe("createFeedingRecordAction・updateFeedingRecordAction のごはんの通知", () => {
   beforeEach(async () => {
     // 日本時間 2026-09-21 07:30
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -196,6 +198,46 @@ describe("createFeedingRecordAction", () => {
       "tama",
       {},
       strictForm("08:00"),
+    );
+    expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
+
+    expect(await statusOf("time")).toBe("pending");
+  });
+
+  it("記録の日時を先の日時から今以前に直したら、ごはんの通知を完了にする", async () => {
+    // 日本時間 07:30 の時点で、先の日時（08:00）の記録がある
+    await db
+      .update(feedingRecords)
+      .set({ occurredAt: new Date("2026-09-21T08:00:00.000Z") })
+      .where(eq(feedingRecords.id, "tama-meal"));
+    await addNotification("time", { householdId: "home" }, "feeding_time");
+
+    const result = await updateFeedingRecordAction(
+      "tama",
+      "tama-meal",
+      {},
+      strictForm("07:30"),
+    );
+    expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
+
+    expect(await statusOf("time")).toBe("done");
+  });
+
+  it("記録の日時を変えずに量などだけを直しても、ごはんの通知は完了にしない", async () => {
+    // 前日の記録を直す
+    await db
+      .update(feedingRecords)
+      .set({ occurredAt: new Date("2026-09-20T19:00:00.000Z") })
+      .where(eq(feedingRecords.id, "tama-meal"));
+    await addNotification("time", { householdId: "home" }, "feeding_time");
+
+    const formData = strictForm("19:00");
+    formData.set("occurredDate", "2026-09-20");
+    const result = await updateFeedingRecordAction(
+      "tama",
+      "tama-meal",
+      {},
+      formData,
     );
     expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
 

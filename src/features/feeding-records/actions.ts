@@ -231,6 +231,44 @@ function insertFeedingRecordItems(
   );
 }
 
+/**
+ * ごはんを記録したら、猫の家の未対応のごはんの時間の通知（時間のお知らせ・記録がないときの
+ * リマインダー）はもう対応する必要がないため完了にする文。通知は猫ごとではなく家に 1 件のため、
+ * 家のどの猫を記録しても完了にする。呼び出し側で記録の保存と同じ batch に並べる。
+ *
+ * 先の日時の記録はまだあげていないため完了にせず、空の配列を返す（通知の判定でも数えない）。
+ * 発生日時は naive UTC のため、現在時刻もローカル時計の数字の naive UTC にして比べる
+ * （`evaluateFeedingSchedule` と同じ）。
+ * ごはんの時刻の前後の範囲では絞らない。リマインダーは次の時刻との中間に出るため、それを見て
+ * から記録すると次の時刻の範囲に入り、応えた通知が残ってしまうため
+ */
+function completeFeedingNotifications(
+  db: ReturnType<typeof getDb>,
+  catId: string,
+  householdId: string,
+  occurredAt: Date,
+) {
+  if (
+    occurredAt.getTime() >
+    getNaiveLocalNow(new Date(), NOTIFY_TIMEZONE).getTime()
+  ) {
+    return [];
+  }
+  return [
+    db
+      .update(notifications)
+      .set({ status: "done", updatedAt: new Date() })
+      .where(
+        and(
+          eq(notifications.householdId, householdId),
+          inArray(notifications.kind, ["feeding_time", "feeding_not_recorded"]),
+          inArray(notifications.status, ["pending", "snoozed"]),
+          catInHouseholdCondition(catId, householdId),
+        ),
+      ),
+  ];
+}
+
 /** `timestamp` 列に INSERT ... SELECT で入れる値（UNIX 秒） */
 function toUnixSeconds(date: Date) {
   return Math.floor(date.getTime() / 1000);
@@ -265,11 +303,6 @@ export async function createFeedingRecordAction(
     parsed.data.occurredTime,
   );
   const { mode } = parsed.data;
-  // 発生日時は naive UTC のため、現在時刻もローカル時計の数字の naive UTC にして比べる
-  // （`evaluateFeedingSchedule` と同じ）
-  const isFutureRecord =
-    occurredAt.getTime() >
-    getNaiveLocalNow(new Date(), NOTIFY_TIMEZONE).getTime();
 
   // 記録も明細と同じく、猫が確認した時点の家にいるときだけ挿入する
   const [created] = await db.batch([
@@ -296,30 +329,7 @@ export async function createFeedingRecordAction(
       householdId,
       built.values,
     ),
-    // ごはんを記録したら、猫の家の未対応のごはんの時間の通知（時間のお知らせ・記録がないときの
-    // リマインダー）はもう対応する必要がないため完了にする。通知は猫ごとではなく家に 1 件のため、
-    // 家のどの猫を記録しても完了にする。
-    // 先の日時で入力した記録はまだあげていないため完了にしない（通知の判定でも数えない）。
-    // ごはんの時刻の前後の範囲では絞らない。リマインダーは次の時刻との中間に出るため、
-    // それを見てから記録すると次の時刻の範囲に入り、応えた通知が残ってしまうため
-    ...(isFutureRecord
-      ? []
-      : [
-          db
-            .update(notifications)
-            .set({ status: "done", updatedAt: new Date() })
-            .where(
-              and(
-                eq(notifications.householdId, householdId),
-                inArray(notifications.kind, [
-                  "feeding_time",
-                  "feeding_not_recorded",
-                ]),
-                inArray(notifications.status, ["pending", "snoozed"]),
-                catInHouseholdCondition(catId, householdId),
-              ),
-            ),
-        ]),
+    ...completeFeedingNotifications(db, catId, householdId, occurredAt),
   ]);
   if (created.length === 0) {
     return { formError: HOUSEHOLD_CHANGED_ERROR };
@@ -343,7 +353,7 @@ export async function updateFeedingRecordAction(
 
   const db = getDb();
   const [existing] = await db
-    .select({ id: feedingRecords.id })
+    .select({ id: feedingRecords.id, occurredAt: feedingRecords.occurredAt })
     .from(feedingRecords)
     .where(and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)))
     .limit(1);
@@ -396,6 +406,12 @@ export async function updateFeedingRecordAction(
         ),
       ),
     ...insertFeedingRecordItems(db, id, catId, householdId, built.values),
+    // 日時を変えたときは、その日時に記録したのと同じく通知を完了にする（先の日時から今以前に
+    // 直したときなど）。量などだけを直したときは、過去の記録の修正で今の通知を完了にしないよう
+    // 何もしない
+    ...(occurredAt.getTime() === existing.occurredAt.getTime()
+      ? []
+      : completeFeedingNotifications(db, catId, householdId, occurredAt)),
   ]);
   if (updated.length === 0) {
     return { formError: HOUSEHOLD_CHANGED_ERROR };
