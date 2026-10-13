@@ -197,8 +197,8 @@ importers:
         specifier: 2.4.0
         version: 2.4.0
       agents:
-        specifier: ^0.27.0
-        version: 0.27.0(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5))(@modelcontextprotocol/server@2.0.0)(react@19.3.0)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.5)
+        specifier: ^0.28.0
+        version: 0.28.0(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5))(@modelcontextprotocol/server@2.0.0)(react@19.3.0)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.5)
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.4(@types/sql.js@1.4.11)(sql.js@1.14.2)
@@ -2429,8 +2429,8 @@ packages:
     resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
     engines: {node: '>= 8.0.0'}
 
-  agents@0.27.0:
-    resolution: {integrity: sha512-izu3MQhfjxapiiGn80RLOGwMwf1S7xRFvGGFq/g+fW/14MU+emNXxHvEn5BY2/Wg4R9nPa/nSr4K3B/Kdx1Zrg==}
+  agents@0.28.0:
+    resolution: {integrity: sha512-5nYoykTqL6HWLwRyPP9XL4triRg+kkc6W1Ovt58lMz3oLbChRst6GWQVU3LvLgve8YIbo1SvQp0IR4TOrxAD6g==}
     hasBin: true
     peerDependencies:
       '@ai-sdk/provider': ^4.0.0
@@ -6950,7 +6950,7 @@ snapshots:
     dependencies:
       humanize-ms: 1.2.1
 
-  agents@0.27.0(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5))(@modelcontextprotocol/server@2.0.0)(react@19.3.0)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.5):
+  agents@0.28.0(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5))(@modelcontextprotocol/server@2.0.0)(react@19.3.0)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.5):
     dependencies:
       '@babel/plugin-proposal-decorators': 8.0.2(@babel/core@8.0.6)
       '@cfworker/json-schema': 4.1.1
