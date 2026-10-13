@@ -10,7 +10,8 @@ import type {
   HouseholdNotificationCandidate,
 } from "./types";
 
-const MS_PER_MINUTE = 60 * 1000;
+const MS_PER_SECOND = 1000;
+const MS_PER_MINUTE = 60 * MS_PER_SECOND;
 const MS_PER_DAY = 24 * 60 * MS_PER_MINUTE;
 
 /**
@@ -110,10 +111,14 @@ export function evaluateFeedingSchedule(
         nowAt >= slotAt &&
         nowAt < Math.min(slotAt + FEEDING_NOTIFY_GRACE_MS, reminderAt)
       ) {
-        // 判定する時刻ちょうどの記録も含めるため、半開区間の終わりを 1 ミリ秒後にする
+        // 判定する時刻ちょうどの記録も含めるため、半開区間の終わりを判定する時刻の次の秒ちょうどに
+        // する。日時は DB に秒単位で保存され、INSERT するときの確認でも秒未満は切り捨てられるため、
+        // ミリ秒だけ進めると現在の秒の記録が範囲から外れてしまう
         const recordWindow = {
           start: new Date(windowStart),
-          end: new Date(nowAt + 1),
+          end: new Date(
+            Math.floor(nowAt / MS_PER_SECOND) * MS_PER_SECOND + MS_PER_SECOND,
+          ),
         };
         if (!isRecordedIn(recordWindow)) {
           candidates.push({

@@ -45,10 +45,10 @@ describe("evaluateFeedingSchedule", () => {
         dedupeKey: "household:home:feeding_time:morning:2026-09-11",
         dueAt: new Date("2026-09-11T07:00:00.000Z"),
         time: "07:00",
-        // 判定した時刻（07:00）までの記録だけを探す
+        // 判定した時刻（07:00:00）の秒までの記録だけを探す
         recordWindow: {
           start: new Date("2026-09-11T01:00:00.000Z"),
-          end: new Date("2026-09-11T07:00:00.001Z"),
+          end: new Date("2026-09-11T07:00:01.000Z"),
         },
       },
     ]);
@@ -90,6 +90,25 @@ describe("evaluateFeedingSchedule", () => {
     expect(
       evaluate(
         "2026-09-10T22:00:00.000Z",
+        [morning, evening],
+        ["2026-09-11T07:00:00.000Z"],
+      ),
+    ).toEqual([]);
+  });
+
+  it("判定する時刻に秒未満があっても、その秒の記録を範囲に含める（DB の日時は秒単位）", () => {
+    // 日本時間 07:00:00.500。範囲の終わりを 07:00:00.501 にすると、INSERT するときの確認で
+    // 07:00:00 に切り捨てられ、07:00:00 の記録が範囲から外れてしまう
+    const [candidate] = evaluate("2026-09-10T22:00:00.500Z", [
+      morning,
+      evening,
+    ]);
+    expect(candidate.recordWindow.end).toEqual(
+      new Date("2026-09-11T07:00:01.000Z"),
+    );
+    expect(
+      evaluate(
+        "2026-09-10T22:00:00.500Z",
         [morning, evening],
         ["2026-09-11T07:00:00.000Z"],
       ),
