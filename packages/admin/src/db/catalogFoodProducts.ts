@@ -138,6 +138,18 @@ export async function getCatalogFoodProduct(
   return results[0] ? toCatalogFoodProduct(results[0]) : null;
 }
 
+/** 商品の今の画像の、元データとサムネイルを合わせた容量 */
+async function sumProductImageBytes(db: AdminDb, productId: string) {
+  const { results } = await db
+    .prepare(
+      `SELECT coalesce(sum(size_bytes), 0) + coalesce(sum(thumbnail_size_bytes), 0) AS total
+      FROM media_assets WHERE record_type = ?1 AND record_id = ?2`,
+    )
+    .bind(CATALOG_FOOD_PRODUCT_MEDIA_TYPE, productId)
+    .all<{ total: number }>();
+  return Number(results[0]?.total ?? 0);
+}
+
 async function listImageRows(db: AdminDb, productId: string) {
   const { results } = await db
     .prepare(
@@ -183,7 +195,9 @@ async function sumMediaStorageBytes(db: AdminDb): Promise<number> {
  * 画像を R2 に置き、`media_assets` に追加する文を返す。文を実行する前に失敗したときのため、
  * 置いたオブジェクトのキーも返す（呼び出し側が片付ける）。
  * メインアプリのアップロードと同じく、置く前に保存容量の上限を確かめ、超えるときは
- * `StorageLimitError` を投げる（管理画面の画像で上限を使い切り、利用者がアップロードできなくなるのを防ぐ）
+ * `StorageLimitError` を投げる（管理画面の画像で上限を使い切り、利用者がアップロードできなくなるのを防ぐ）。
+ * 差し替えでは、同じ batch で削除するこの商品の今の画像の分（`releasedBytes`）を差し引いた、
+ * 差し替え後の使用容量で確かめる
  */
 async function putImage(
   db: AdminDb,
@@ -191,9 +205,10 @@ async function putImage(
   productId: string,
   image: NewCatalogImage,
   storageLimitBytes: number,
+  releasedBytes = 0,
 ) {
   if (
-    (await sumMediaStorageBytes(db)) + image.bytes.byteLength >
+    (await sumMediaStorageBytes(db)) - releasedBytes + image.bytes.byteLength >
     storageLimitBytes
   ) {
     throw new StorageLimitError();
@@ -308,7 +323,14 @@ export async function updateCatalogFoodProduct(
   }
   const replacesImage = options.image != null || options.removeImage;
   const uploaded = options.image
-    ? await putImage(db, bucket, id, options.image, options.storageLimitBytes)
+    ? await putImage(
+        db,
+        bucket,
+        id,
+        options.image,
+        options.storageLimitBytes,
+        await sumProductImageBytes(db, id),
+      )
     : null;
 
   const statements = [

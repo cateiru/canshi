@@ -51,17 +51,19 @@ export default async function SearchFoodProductsPage({
   const household = filterHousehold ?? households[0] ?? null;
   const criteria = parseCatalogSearchParams(params);
 
+  const addHref = withHouseholdId("/food-products/add", filterHousehold);
   const breadcrumb = (
-    <Breadcrumb
-      items={[
-        ...foodProductsBreadcrumbItems(filterHousehold),
-        {
-          label: "登録する",
-          href: withHouseholdId("/food-products/add", filterHousehold),
-        },
-        { label: "共通のごはん商品から探す" },
-      ]}
-    />
+    // 登録方法を選び直すときは検索ページを履歴に残さない（追加・保存の後に戻ると、
+    // 登録を始めた画面に戻るようにする）
+    <ReplaceNavigation href={addHref}>
+      <Breadcrumb
+        items={[
+          ...foodProductsBreadcrumbItems(filterHousehold),
+          { label: "登録する", href: addHref, replace: true },
+          { label: "共通のごはん商品から探す" },
+        ]}
+      />
+    </ReplaceNavigation>
   );
 
   if (!household) {

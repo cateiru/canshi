@@ -443,6 +443,31 @@ describe("共通のごはん商品", () => {
     expect([...bucket.objects.keys()]).toEqual([images[0].object_key]);
   });
 
+  it("差し替えでは、削除する今の画像の分を差し引いて保存容量の上限を確かめる", async () => {
+    const id = await createWithImage();
+    // 今の使用容量ちょうどを上限にする（同じ大きさの画像なら差し替えられる）
+    env = {
+      ...env,
+      MEDIA_STORAGE_LIMIT_BYTES: String(JPEG_BYTES.length),
+    } as Env;
+    const sameSize = productForm();
+    sameSize.append("image", new File([JPEG_BYTES], "photo.jpg"));
+    expect((await postMultipart(`/food-products/${id}`, sameSize)).status).toBe(
+      303,
+    );
+
+    // 今の画像より大きい画像は、上限を超えるため差し替えない
+    const larger = productForm();
+    larger.append(
+      "image",
+      new File([createJpeg(800, 533, { padding: 100 })], "large.jpg"),
+    );
+    expect((await postMultipart(`/food-products/${id}`, larger)).status).toBe(
+      507,
+    );
+    expect(await listImages()).toHaveLength(1);
+  });
+
   it("保存容量の上限を超えるときは画像を保存せず、フォームに理由を表示する", async () => {
     env = { ...env, MEDIA_STORAGE_LIMIT_BYTES: "10" } as Env;
     const form = productForm();

@@ -90,7 +90,12 @@ test("登録方法の選択・検索のページは履歴に残らず、登録�
 }) => {
   const suffix = Date.now();
   const productName = `履歴の確認-${suffix}`;
+  const switchedProductName = `選び直しの確認-${suffix}`;
   await insertCatalogFoodProduct(`e2e-catalog-history-${suffix}`, productName);
+  await insertCatalogFoodProduct(
+    `e2e-catalog-switch-${suffix}`,
+    switchedProductName,
+  );
 
   await page.goto("/settings/households");
   await page
@@ -141,6 +146,26 @@ test("登録方法の選択・検索のページは履歴に残らず、登録�
     .click();
   await expect(page).toHaveURL(listUrl);
   await expect(page.getByRole("article", { name: productName })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(householdPage);
+
+  // 手動で入力するページからパンくずで登録方法を選び直しても、手動のページを履歴に残さない
+  await openRegistration(/手動で入力する/);
+  await expect(page).toHaveURL(/\/food-products\/new/);
+  await page
+    .getByRole("navigation", { name: "パンくずリスト" })
+    .getByRole("link", { name: "登録する" })
+    .click();
+  await expect(page).toHaveURL(/\/food-products\/add/);
+  await page.getByRole("link", { name: /共通のごはん商品から探す/ }).click();
+  await page.getByLabel("商品名・メーカー名").fill(switchedProductName);
+  await page.getByRole("button", { name: "検索する" }).click();
+  await expect(page).toHaveURL(/q=/);
+  await page
+    .getByRole("article", { name: switchedProductName })
+    .getByRole("button", { name: `${switchedProductName}を追加する` })
+    .click();
+  await expect(page).toHaveURL(listUrl);
   await page.goBack();
   await expect(page).toHaveURL(householdPage);
 });
