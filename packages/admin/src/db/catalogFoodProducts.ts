@@ -220,10 +220,12 @@ async function putImage(
   });
   const statement = db
     .prepare(
+      // 画像の行は商品を外部キーで参照しないため、同時に商品が削除されていたら追加しない
       `INSERT INTO media_assets
         (id, cat_id, uploaded_by_user_id, record_type, record_id, object_key,
          thumbnail_object_key, mime_type, size_bytes, sort_order)
-      VALUES (?1, NULL, NULL, ?2, ?3, ?4, NULL, ?5, ?6, 0)`,
+      SELECT ?1, NULL, NULL, ?2, ?3, ?4, NULL, ?5, ?6, 0
+      WHERE EXISTS (SELECT 1 FROM catalog_food_products WHERE id = ?3)`,
     )
     .bind(
       assetId,
@@ -340,7 +342,8 @@ export async function updateCatalogFoodProduct(
           name = ?2, manufacturer = ?3, kcal_per_100g = ?4, package_amount_g = ?5,
           package_unit = ?6, nutrition_type = ?7, texture_type = ?8, life_stages = ?9,
           target_breed = ?10, updated_at = unixepoch()
-        WHERE id = ?1`,
+        WHERE id = ?1
+        RETURNING id`,
       )
       .bind(id, ...valueParams(values)),
     ...(replacesImage
@@ -361,6 +364,20 @@ export async function updateCatalogFoodProduct(
     statements,
     uploaded?.objectKey ?? null,
   );
+  // 存在の確認から batch までの間に商品が削除されていたら、何も更新されていない
+  // （画像の行も追加されない）ため、置いた画像を片付けて見つからなかったことにする
+  if (results[0].results.length === 0) {
+    if (uploaded) {
+      await bucket.delete(uploaded.objectKey).catch((error: unknown) => {
+        console.error(
+          "使われない画像を R2 から削除できませんでした",
+          uploaded.objectKey,
+          error,
+        );
+      });
+    }
+    return false;
+  }
   const oldImages = replacesImage ? (results[1].results as ImageRow[]) : [];
 
   // 古い画像の行はもう無いため、R2 の削除に失敗しても参照先のない行は残らない。
@@ -379,6 +396,8 @@ export async function updateCatalogFoodProduct(
  * （`food_products.catalog_food_product_id`）だけが外部キーの ON DELETE SET NULL で NULL になる。
  * 画像は R2 のオブジェクトを先に削除し、失敗したときは行を残して投げる（メインアプリの
  * `deleteMediaAssetRows` と同じく、行だけが消えて R2 に孤立したオブジェクトが残るのを避ける）。
+ * 画像の行は商品の削除と同じ batch で RETURNING 付きで削除し、同時の差し替えで後から追加された
+ * 画像があれば、その R2 のオブジェクトも削除する。
  * 商品がなければ false
  */
 export async function deleteCatalogFoodProduct(
@@ -394,13 +413,24 @@ export async function deleteCatalogFoodProduct(
   if (keys.length > 0) {
     await bucket.delete(keys);
   }
-  await db.batch([
+  const [deletedImages] = await db.batch([
     db
       .prepare(
-        "DELETE FROM media_assets WHERE record_type = ?1 AND record_id = ?2",
+        `DELETE FROM media_assets WHERE record_type = ?1 AND record_id = ?2
+        RETURNING id, object_key, thumbnail_object_key, mime_type`,
       )
       .bind(CATALOG_FOOD_PRODUCT_MEDIA_TYPE, id),
     db.prepare("DELETE FROM catalog_food_products WHERE id = ?1").bind(id),
   ]);
+  // 上で読んでから batch までの間に、同時の差し替えで画像の行が追加されていたら、その画像も
+  // R2 から削除する。行はもう無いため、失敗しても参照先のない行は残らない（記録して続ける）
+  const addedKeys = objectKeysOf(deletedImages.results as ImageRow[]).filter(
+    (key) => !keys.includes(key),
+  );
+  if (addedKeys.length > 0) {
+    await bucket.delete(addedKeys).catch((error: unknown) => {
+      console.error("画像を R2 から削除できませんでした", addedKeys, error);
+    });
+  }
   return true;
 }
