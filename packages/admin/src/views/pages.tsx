@@ -71,7 +71,7 @@ export function UsersPage(props: {
                   <br />
                   <code>{user.id}</code>
                 </td>
-                <td>{userRoleLabel(user.role)}</td>
+                <td class="nowrap">{userRoleLabel(user.role)}</td>
                 <td>
                   {user.households.length === 0 ? (
                     <span class="empty">なし</span>
@@ -104,7 +104,9 @@ export function UsersPage(props: {
                       action={`/users/${encodeURIComponent(user.id)}/sessions/delete`}
                       onsubmit="return confirm('このユーザーをすべての端末からログアウトさせますか？')"
                     >
-                      <button type="submit">すべての端末からログアウト</button>
+                      <button type="submit" class="danger">
+                        すべての端末からログアウト
+                      </button>
                     </form>
                   ) : (
                     <span class="empty">-</span>
@@ -216,7 +218,9 @@ export function HouseholdsPage(props: {
                                 action={`${householdPath}/members/${encodeURIComponent(member.userId)}/delete`}
                                 onsubmit="return confirm('このユーザーを家から外しますか？')"
                               >
-                                <button type="submit">家から外す</button>
+                                <button type="submit" class="danger">
+                                  家から外す
+                                </button>
                               </form>
                             )}
                           </li>
