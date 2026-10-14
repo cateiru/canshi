@@ -422,6 +422,38 @@ describe("共通のごはん商品", () => {
     expect(bucket.objects.has(newImage.object_key as string)).toBe(true);
   });
 
+  it("差し替えでは、その時点の画像をすべて削除して 1 枚だけにする", async () => {
+    const id = await createWithImage();
+    // 同時に行われた別の差し替えで、先に画像の行が増えていた場合を再現する
+    await bucket.bucket.put(`catalog_food_product/${id}/other`, JPEG_BYTES);
+    await env.DB.prepare(
+      `INSERT INTO media_assets (id, record_type, record_id, object_key, mime_type, size_bytes)
+      VALUES ('other', 'catalog_food_product', ?1, ?2, 'image/jpeg', 1)`,
+    )
+      .bind(id, `catalog_food_product/${id}/other`)
+      .run();
+
+    const form = productForm();
+    form.append("image", new File([createJpeg(300, 300)], "photo.jpg"));
+    expect((await postMultipart(`/food-products/${id}`, form)).status).toBe(
+      303,
+    );
+    const images = await listImages();
+    expect(images).toHaveLength(1);
+    expect([...bucket.objects.keys()]).toEqual([images[0].object_key]);
+  });
+
+  it("保存容量の上限を超えるときは画像を保存せず、フォームに理由を表示する", async () => {
+    env = { ...env, MEDIA_STORAGE_LIMIT_BYTES: "10" } as Env;
+    const form = productForm();
+    form.append("image", new File([JPEG_BYTES], "photo.jpg"));
+    const response = await postMultipart("/food-products", form);
+    expect(response.status).toBe(507);
+    expect(await response.text()).toContain("保存容量の上限を超えるため");
+    expect(await listProducts()).toEqual([]);
+    expect(bucket.objects.size).toBe(0);
+  });
+
   it("編集で画像の削除を選ぶと、画像を削除する", async () => {
     const id = await createWithImage();
     const response = await postMultipart(

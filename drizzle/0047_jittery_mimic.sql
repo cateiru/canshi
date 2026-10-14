@@ -21,4 +21,5 @@ CREATE INDEX `catalog_food_products_manufacturer_name_idx` ON `catalog_food_prod
 -- drizzle-kit は ALTER TABLE ... ADD の外部キーに ON DELETE を出力しないため、スキーマ定義
 -- （onDelete: "set null"）に合わせて手で追記した。管理画面で共通のごはん商品を削除しても、
 -- 家に追加済みの商品は追加元が NULL になるだけで残る
-ALTER TABLE `food_products` ADD `catalog_food_product_id` text REFERENCES catalog_food_products(id) ON DELETE set null;
+ALTER TABLE `food_products` ADD `catalog_food_product_id` text REFERENCES catalog_food_products(id) ON DELETE set null;--> statement-breakpoint
+CREATE UNIQUE INDEX `food_products_household_id_catalog_food_product_id_unique` ON `food_products` (`household_id`,`catalog_food_product_id`);

@@ -248,6 +248,47 @@ describe("addCatalogFoodProductAction", () => {
     expect(storeMediaAsset).not.toHaveBeenCalled();
   });
 
+  it("同じ家にすでに追加した商品は重ねて追加せず、追加済みとして一覧へ移動する", async () => {
+    for (let index = 0; index < 2; index += 1) {
+      await expect(
+        addCatalogFoodProductAction(
+          "dry-adult",
+          {},
+          addForm({ householdId: "household-1", returnToHousehold: "1" }),
+        ),
+      ).rejects.toThrow("redirect:/food-products?householdId=household-1");
+    }
+    expect(await db.select().from(foodProducts)).toHaveLength(1);
+    // 一意インデックスで、同時に追加されても DB に 2 件目は入らない
+    expect(() =>
+      sqlite.run(
+        `INSERT INTO food_products (id, household_id, name, kcal_per_100g, package_amount_g, nutrition_type, texture_type, catalog_food_product_id)
+        VALUES ('dup', 'household-1', 'x', 1, 1, 'complete', 'dry', 'dry-adult')`,
+      ),
+    ).toThrow(/UNIQUE/);
+    // 手動で登録した商品（追加元なし）は同じ家にいくつあってもよい
+    await db.insert(foodProducts).values([
+      {
+        id: "manual-1",
+        householdId: "household-1",
+        name: "a",
+        kcalPer100g: 1,
+        packageAmountG: 1,
+        nutritionType: "complete",
+        textureType: "dry",
+      },
+      {
+        id: "manual-2",
+        householdId: "household-1",
+        name: "b",
+        kcalPer100g: 1,
+        packageAmountG: 1,
+        nutritionType: "complete",
+        textureType: "dry",
+      },
+    ]);
+  });
+
   it("画像を保存できなくても、商品は追加する", async () => {
     await db.insert(mediaAssets).values({
       id: "catalog-image",

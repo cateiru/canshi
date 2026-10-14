@@ -158,16 +158,46 @@ export async function getCatalogImage(
   return row ? { objectKey: row.object_key, mimeType: row.mime_type } : null;
 }
 
+/** メディアの保存容量の上限を超えるため、画像を保存しなかった */
+export class StorageLimitError extends Error {
+  constructor() {
+    super(
+      "保存容量の上限を超えるため、画像を保存できませんでした。画像を外すか、不要なメディアを削除してください",
+    );
+    this.name = "StorageLimitError";
+  }
+}
+
+/** 元データとサムネイルを合わせた、メディアの今の使用容量（メインアプリの `sumMediaStorageBytes` と同じ） */
+async function sumMediaStorageBytes(db: AdminDb): Promise<number> {
+  const { results } = await db
+    .prepare(
+      `SELECT coalesce(sum(size_bytes), 0) + coalesce(sum(thumbnail_size_bytes), 0) AS total
+      FROM media_assets`,
+    )
+    .all<{ total: number }>();
+  return Number(results[0]?.total ?? 0);
+}
+
 /**
  * 画像を R2 に置き、`media_assets` に追加する文を返す。文を実行する前に失敗したときのため、
- * 置いたオブジェクトのキーも返す（呼び出し側が片付ける）
+ * 置いたオブジェクトのキーも返す（呼び出し側が片付ける）。
+ * メインアプリのアップロードと同じく、置く前に保存容量の上限を確かめ、超えるときは
+ * `StorageLimitError` を投げる（管理画面の画像で上限を使い切り、利用者がアップロードできなくなるのを防ぐ）
  */
 async function putImage(
   db: AdminDb,
   bucket: AdminBucket,
   productId: string,
   image: NewCatalogImage,
+  storageLimitBytes: number,
 ) {
+  if (
+    (await sumMediaStorageBytes(db)) + image.bytes.byteLength >
+    storageLimitBytes
+  ) {
+    throw new StorageLimitError();
+  }
   const assetId = crypto.randomUUID();
   const objectKey = `${CATALOG_FOOD_PRODUCT_MEDIA_TYPE}/${productId}/${assetId}`;
   await bucket.put(objectKey, image.bytes, {
@@ -199,7 +229,7 @@ async function batchWithImage(
   uploadedKey: string | null,
 ) {
   try {
-    await db.batch(statements);
+    return await db.batch(statements);
   } catch (error) {
     if (uploadedKey) {
       await bucket.delete(uploadedKey).catch(() => {});
@@ -228,6 +258,7 @@ export async function createCatalogFoodProduct(
   bucket: AdminBucket,
   values: CatalogFoodProductValues,
   image: NewCatalogImage | null,
+  storageLimitBytes: number,
 ): Promise<string> {
   const id = crypto.randomUUID();
   const insert = db
@@ -238,7 +269,9 @@ export async function createCatalogFoodProduct(
       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
     )
     .bind(id, ...valueParams(values));
-  const uploaded = image ? await putImage(db, bucket, id, image) : null;
+  const uploaded = image
+    ? await putImage(db, bucket, id, image, storageLimitBytes)
+    : null;
   // 商品の行を先に作る（画像の行は商品を参照しないが、商品のない画像を残さないため同じ batch にする）
   await batchWithImage(
     db,
@@ -252,22 +285,30 @@ export async function createCatalogFoodProduct(
 /**
  * 共通のごはん商品を更新する。家に追加済みのごはん商品は内容を写したものなので、変更は
  * 反映されない。新しい画像を選んだとき・画像の削除を選んだときは、それまでの画像を削除する。
- * 商品がなければ false
+ * 商品がなければ false。
+ *
+ * 画像は 1 商品に 1 枚。差し替えでは、先に読んだ画像の行ではなく、更新と同じ batch（トランザクション）の
+ * 中でその時点の画像の行をすべて削除してから新しい行を追加する。同時に 2 つの差し替えが重なっても、
+ * 後から実行された batch が先の画像の行も削除するため、画像は 1 枚だけ残る。削除した行は RETURNING で
+ * 受け取り、その R2 のオブジェクトを削除する
  */
 export async function updateCatalogFoodProduct(
   db: AdminDb,
   bucket: AdminBucket,
   id: string,
   values: CatalogFoodProductValues,
-  options: { image: NewCatalogImage | null; removeImage: boolean },
+  options: {
+    image: NewCatalogImage | null;
+    removeImage: boolean;
+    storageLimitBytes: number;
+  },
 ): Promise<boolean> {
   if (!(await getCatalogFoodProduct(db, id))) {
     return false;
   }
   const replacesImage = options.image != null || options.removeImage;
-  const oldImages = replacesImage ? await listImageRows(db, id) : [];
   const uploaded = options.image
-    ? await putImage(db, bucket, id, options.image)
+    ? await putImage(db, bucket, id, options.image, options.storageLimitBytes)
     : null;
 
   const statements = [
@@ -280,12 +321,25 @@ export async function updateCatalogFoodProduct(
         WHERE id = ?1`,
       )
       .bind(id, ...valueParams(values)),
-    ...oldImages.map((row) =>
-      db.prepare("DELETE FROM media_assets WHERE id = ?1").bind(row.id),
-    ),
+    ...(replacesImage
+      ? [
+          db
+            .prepare(
+              `DELETE FROM media_assets WHERE record_type = ?1 AND record_id = ?2
+              RETURNING id, object_key, thumbnail_object_key, mime_type`,
+            )
+            .bind(CATALOG_FOOD_PRODUCT_MEDIA_TYPE, id),
+        ]
+      : []),
     ...(uploaded ? [uploaded.statement] : []),
   ];
-  await batchWithImage(db, bucket, statements, uploaded?.objectKey ?? null);
+  const results = await batchWithImage(
+    db,
+    bucket,
+    statements,
+    uploaded?.objectKey ?? null,
+  );
+  const oldImages = replacesImage ? (results[1].results as ImageRow[]) : [];
 
   // 古い画像の行はもう無いため、R2 の削除に失敗しても参照先のない行は残らない。
   // 失敗したときは R2 に使われないオブジェクトが残るだけなので、記録して続ける

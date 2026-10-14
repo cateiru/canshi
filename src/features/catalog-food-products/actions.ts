@@ -11,9 +11,11 @@ import {
 import { requireUser } from "@/features/auth/session";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "@/features/food-products/media";
 import { readFormHouseholdId } from "@/features/households/formHousehold";
+import { getHouseholdForUser } from "@/features/households/queries";
 import { listMediaAssetsByRecord } from "@/features/media/queries";
 import { readMediaObject, storeMediaAsset } from "@/features/media/storage";
 import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "./media";
+import { listAddedCatalogFoodProductIds } from "./queries";
 
 export type AddCatalogFoodProductState = { error?: string };
 
@@ -48,7 +50,8 @@ async function copyCatalogImage(
 /**
  * 共通のごはん商品を、フォームの `householdId` の家のごはん商品として追加する。内容を写して
  * 新しい商品を作るため、追加した後は手動で登録した商品と同じく自由に編集できる。
- * 追加できたら家のごはん商品一覧へ移動する（`returnToHousehold` があればその家の一覧）
+ * 同じ家にはすでに追加した商品を重ねて追加しない。
+ * 追加できたら（追加済みのときも）家のごはん商品一覧へ移動する（`returnToHousehold` があればその家の一覧）
  */
 export async function addCatalogFoodProductAction(
   catalogFoodProductId: string,
@@ -65,7 +68,9 @@ export async function addCatalogFoodProductAction(
   // 判定と追加の間に家から外された場合に追加が通らないよう、INSERT ... SELECT で
   // 追加先の家のメンバーの行と共通のごはん商品があるときだけ 1 文で挿入する
   // （`createFoodProductAction` と同じ）。INSERT ... SELECT では列の既定値が使われないため
-  // ID はここで作り、列はテーブル定義と同じ並びにする
+  // ID はここで作り、列はテーブル定義と同じ並びにする。
+  // 同じ家に同じ共通のごはん商品は 1 件だけにする（一意インデックス）。古い画面から送られたり、
+  // 同時に追加されたりしたときは挿入せず、下で追加済みとして扱う
   const [created] = await db
     .insert(foodProducts)
     .select((qb) =>
@@ -96,8 +101,21 @@ export async function addCatalogFoodProductAction(
         )
         .where(eq(catalogFoodProducts.id, catalogFoodProductId)),
     )
+    .onConflictDoNothing()
     .returning({ id: foodProducts.id });
+  const returnTo = formData.get("returnToHousehold")
+    ? `/food-products?householdId=${encodeURIComponent(householdId)}`
+    : "/food-products";
   if (!created) {
+    // すでに追加済みなら、追加できたときと同じく一覧へ移動する（画像も追加済みのものを使う）
+    if (
+      (await getHouseholdForUser(user.id, householdId)) &&
+      (await listAddedCatalogFoodProductIds(householdId)).has(
+        catalogFoodProductId,
+      )
+    ) {
+      redirect(returnTo);
+    }
     return {
       error:
         "追加できませんでした。商品が削除されたか、選んだ家に所属していない可能性があります",
@@ -112,9 +130,5 @@ export async function addCatalogFoodProductAction(
     console.error("共通のごはん商品の画像を保存できませんでした", error);
   }
 
-  redirect(
-    formData.get("returnToHousehold")
-      ? `/food-products?householdId=${encodeURIComponent(householdId)}`
-      : "/food-products",
-  );
+  redirect(returnTo);
 }

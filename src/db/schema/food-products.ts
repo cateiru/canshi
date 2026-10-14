@@ -5,6 +5,7 @@ import {
   real,
   sqliteTable,
   text,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { catalogFoodProducts } from "./catalog-food-products";
 import { households } from "./households";
@@ -75,6 +76,12 @@ export const foodProducts = sqliteTable(
     index("food_products_household_id_created_at_idx").on(
       table.householdId,
       table.createdAt,
+    ),
+    // 同じ共通のごはん商品を同じ家に 2 回追加しないため（同時に追加されても 1 件にする）。
+    // 手動で登録した商品は追加元が NULL で、NULL 同士は重複とみなされない
+    uniqueIndex("food_products_household_id_catalog_food_product_id_unique").on(
+      table.householdId,
+      table.catalogFoodProductId,
     ),
   ],
 );

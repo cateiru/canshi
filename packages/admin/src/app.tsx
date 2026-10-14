@@ -2,18 +2,21 @@ import { Hono } from "hono";
 import { csrf } from "hono/csrf";
 import { secureHeaders } from "hono/secure-headers";
 import {
+  type CatalogFoodProductErrors,
   EMPTY_INPUT,
   type FormBody,
   parseCatalogFoodProductForm,
   toInput,
 } from "./catalog/form";
 import { type CheckedImage, checkCatalogImage } from "./catalog/image";
+import { resolveStorageLimitBytes } from "./catalog/storage";
 import {
   createCatalogFoodProduct,
   deleteCatalogFoodProduct,
   getCatalogFoodProduct,
   getCatalogImage,
   listCatalogFoodProducts,
+  StorageLimitError,
   updateCatalogFoodProduct,
 } from "./db/catalogFoodProducts";
 import {
@@ -227,9 +230,8 @@ export function createApp() {
     const parsed = parseCatalogFoodProductForm(
       (await c.req.parseBody({ all: true })) as FormBody,
     );
-    const image = parsed.ok ? await checkImage(parsed.image) : null;
-    if (!parsed.ok || image?.ok === false) {
-      return c.html(
+    const renderForm = (errors: CatalogFoodProductErrors, status: 400 | 507) =>
+      c.html(
         <Layout
           title="共通のごはん商品を登録する"
           currentPath="/food-products"
@@ -237,23 +239,33 @@ export function createApp() {
         >
           <CatalogFoodProductFormPage
             input={parsed.ok ? toInput(parsed.values) : parsed.input}
-            errors={
-              parsed.ok
-                ? { image: image?.ok === false ? image.error : undefined }
-                : parsed.errors
-            }
+            errors={errors}
           />
         </Layout>,
-        400,
+        status,
       );
+    if (!parsed.ok) {
+      return renderForm(parsed.errors, 400);
     }
-    const id = await createCatalogFoodProduct(
-      c.env.DB,
-      c.env.MEDIA_BUCKET,
-      parsed.values,
-      image,
-    );
-    return c.redirect(catalogResultUrl("created", id), 303);
+    const image = await checkImage(parsed.image);
+    if (image?.ok === false) {
+      return renderForm({ image: image.error }, 400);
+    }
+    try {
+      const id = await createCatalogFoodProduct(
+        c.env.DB,
+        c.env.MEDIA_BUCKET,
+        parsed.values,
+        image,
+        resolveStorageLimitBytes(c.env),
+      );
+      return c.redirect(catalogResultUrl("created", id), 303);
+    } catch (error) {
+      if (error instanceof StorageLimitError) {
+        return renderForm({ image: error.message }, 507);
+      }
+      throw error;
+    }
   });
 
   app.get("/food-products/:productId/edit", async (c) => {
@@ -288,9 +300,8 @@ export function createApp() {
     const parsed = parseCatalogFoodProductForm(
       (await c.req.parseBody({ all: true })) as FormBody,
     );
-    const image = parsed.ok ? await checkImage(parsed.image) : null;
-    if (!parsed.ok || image?.ok === false) {
-      return c.html(
+    const renderForm = (errors: CatalogFoodProductErrors, status: 400 | 507) =>
+      c.html(
         <Layout
           title={`${product.name} を編集する`}
           currentPath="/food-products"
@@ -299,27 +310,40 @@ export function createApp() {
           <CatalogFoodProductFormPage
             product={product}
             input={parsed.ok ? toInput(parsed.values) : parsed.input}
-            errors={
-              parsed.ok
-                ? { image: image?.ok === false ? image.error : undefined }
-                : parsed.errors
-            }
+            errors={errors}
           />
         </Layout>,
-        400,
+        status,
       );
+    if (!parsed.ok) {
+      return renderForm(parsed.errors, 400);
     }
-    const updated = await updateCatalogFoodProduct(
-      c.env.DB,
-      c.env.MEDIA_BUCKET,
-      productId,
-      parsed.values,
-      { image, removeImage: parsed.removeImage },
-    );
-    if (!updated) {
-      return c.notFound();
+    const image = await checkImage(parsed.image);
+    if (image?.ok === false) {
+      return renderForm({ image: image.error }, 400);
     }
-    return c.redirect(catalogResultUrl("updated", productId), 303);
+    try {
+      const updated = await updateCatalogFoodProduct(
+        c.env.DB,
+        c.env.MEDIA_BUCKET,
+        productId,
+        parsed.values,
+        {
+          image,
+          removeImage: parsed.removeImage,
+          storageLimitBytes: resolveStorageLimitBytes(c.env),
+        },
+      );
+      if (!updated) {
+        return c.notFound();
+      }
+      return c.redirect(catalogResultUrl("updated", productId), 303);
+    } catch (error) {
+      if (error instanceof StorageLimitError) {
+        return renderForm({ image: error.message }, 507);
+      }
+      throw error;
+    }
   });
 
   // 共通のごはん商品を削除する（家に追加済みの商品は残る）

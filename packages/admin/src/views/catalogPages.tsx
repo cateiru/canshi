@@ -207,17 +207,26 @@ export function CatalogFoodProductsPage(props: {
 // 選んだ画像をブラウザで長辺 IMAGE_MAX_EDGE px の JPEG に縮小し、ファイル入力欄の中身を
 // 差し替える（EXIF の位置情報なども落ちる）。縮小できなかったときは選んだ画像を外して知らせる
 // （元のまま送られても、サーバーが縮小済みの形かを確かめて断る。catalog/image.ts）。
-// 縮小が終わるまでは送信ボタンを押せなくする。固定の文字列で、利用者の入力は含めない
+// 縮小が終わるまでは送信ボタンを押せなくする。縮小中に画像を選び直したときは、最後に選んだ画像の
+// 縮小だけを反映し、それより前の縮小の結果は捨てる。固定の文字列で、利用者の入力は含めない
 const RESIZE_SCRIPT = `
 document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function (input) {
+  // 何回目に選んだ画像か。縮小を待つ間に選び直されたら、古い縮小の結果を反映しない
+  var selection = 0;
   input.addEventListener("change", async function () {
+    var current = ++selection;
     var file = input.files && input.files[0];
     var field = input.closest(".field");
     var resizeError = field && field.querySelector("[data-resize-error]");
     var fileName = field && field.querySelector("[data-file-name]");
-    if (resizeError) resizeError.hidden = true;
-    if (!file) return;
     var submit = input.form && input.form.querySelector('button[type="submit"]');
+    if (resizeError) resizeError.hidden = true;
+    // 選び直しで選択を取り消したときは、縮小中だった前の画像の分も含めて元に戻す
+    if (!file) {
+      if (fileName) fileName.textContent = fileName.dataset.fileName;
+      if (submit) submit.disabled = false;
+      return;
+    }
     if (submit) submit.disabled = true;
     try {
       var maxEdge = Number(input.dataset.maxEdge);
@@ -235,6 +244,7 @@ document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function 
         canvas.toBlob(resolve, "image/jpeg", 0.85);
       });
       if (!blob) throw new Error("JPEG に書き出せませんでした");
+      if (current !== selection) return;
       var transfer = new DataTransfer();
       transfer.items.add(
         new File([blob], file.name.replace(/\\.[^.]*$/, "") + ".jpg", { type: "image/jpeg" })
@@ -242,12 +252,13 @@ document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function 
       input.files = transfer.files;
       if (fileName) fileName.textContent = file.name;
     } catch (error) {
+      if (current !== selection) return;
       console.error(error);
       input.value = "";
       if (resizeError) resizeError.hidden = false;
       if (fileName) fileName.textContent = fileName.dataset.fileName;
     } finally {
-      if (submit) submit.disabled = false;
+      if (current === selection && submit) submit.disabled = false;
     }
   });
 });

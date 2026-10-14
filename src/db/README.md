@@ -135,7 +135,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 追加は、共通のごはん商品と追加先の家のメンバーの行を結合した `INSERT ... SELECT` の 1 文で行い、
     判定と追加の間に家から外された場合や商品が削除された場合は追加しない
   - `food_products.catalog_food_product_id` に追加元を残し、検索結果で「追加済み」を表示する。手動で登録した
-    商品は NULL。管理画面で共通のごはん商品を削除したときは、外部キーの `ON DELETE SET NULL` で NULL になり、
+    商品は NULL。同じ家に同じ共通のごはん商品を 2 回追加しないよう `(household_id, catalog_food_product_id)` に
+    一意インデックスを設定し、追加の INSERT は衝突したら何もしない（古い画面や同時の追加は、追加済みとして扱う）。管理画面で共通のごはん商品を削除したときは、外部キーの `ON DELETE SET NULL` で NULL になり、
     家の商品は残る（drizzle-kit は `ALTER TABLE ... ADD` の `ON DELETE` を出力しないため、`0047` に手で追記した）
 - 検索は商品名・メーカー名のキーワード（空白で区切ったすべての語を含む）と、メーカー名・種類・区分・
   対象の猫（`json_each`）・対象の猫種で絞り込む。LIKE に渡す入力の `%`・`_` はエスケープする
