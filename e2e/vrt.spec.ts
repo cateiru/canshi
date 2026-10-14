@@ -136,6 +136,28 @@ test("ごはん商品登録ページの見た目", async ({ page }, testInfo) =>
   await takeSnapshot(page, testInfo);
 });
 
+test("ごはん商品の登録方法の選択ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/food-products/add?householdId=vrt-household");
+  await expect(
+    page.getByRole("link", { name: /共通のごはん商品から探す/ }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+// 「VRT」で検索し、家に追加済みの商品（追加済み）と未追加の商品（追加する）を並べる
+test("共通のごはん商品の検索ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/food-products/search?householdId=vrt-household&q=VRT");
+  await expect(
+    page.getByRole("article", { name: "VRTまぐろパウチ" }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("article", { name: "VRTテストフード" })
+      .getByText("追加済み"),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("ごはんプリセット一覧ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/feeding-presets");
   await expect(

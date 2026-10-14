@@ -5,7 +5,7 @@ Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-ad
 [Hono](https://hono.dev/) の JSX でサーバーサイドレンダリングする。
 
 基本的には閲覧用で、書き込みはユーザーをすべての端末からログアウトさせる操作と、家へのメンバーの
-追加・削除だけを持つ。
+追加・削除、共通のごはん商品の登録・編集・削除だけを持つ。
 
 | パス | 内容 |
 | --- | --- |
@@ -15,6 +15,13 @@ Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-ad
 | `POST /users/:userId/sessions/delete` | ユーザーのログインセッションをすべて削除する（すべての端末からログアウトさせる）。終わると `/users` に戻る |
 | `POST /households/:householdId/members` | フォームの `userId` のユーザーを家のメンバー（`member`）として追加する。すでにメンバーなら何もしない。終わると `/households` に戻る |
 | `POST /households/:householdId/members/:userId/delete` | ユーザーを家から外す。家にオーナーがいなくならないよう、オーナーは外せない（メインアプリでオーナーを移譲してから外す）。終わると `/households` に戻る |
+| `/food-products` | 共通のごはん商品の一覧（画像・区分・カロリー・内容量・対象・家に追加された数）。どの家のユーザーも、メインアプリでごはん商品を登録するときに検索して家に追加できる |
+| `/food-products/new` | 共通のごはん商品の登録フォーム |
+| `POST /food-products` | 共通のごはん商品を登録する。終わると `/food-products` に戻る |
+| `/food-products/:productId/edit` | 共通のごはん商品の編集フォーム |
+| `POST /food-products/:productId` | 共通のごはん商品を更新する。画像を選び直したとき・削除を選んだときは古い画像を削除する。家に追加済みの商品は内容を写したものなので変わらない。終わると `/food-products` に戻る |
+| `POST /food-products/:productId/delete` | 共通のごはん商品と画像を削除する。家に追加済みの商品は残り、追加元（`food_products.catalog_food_product_id`）だけが NULL になる。終わると `/food-products` に戻る |
+| `/food-products/:productId/image` | 共通のごはん商品の画像（一覧・編集フォームで表示する） |
 
 見た目はメインアプリのデザインルール（[`docs/idea/design.md`](../../docs/idea/design.md)）に揃え、
 `src/views/styles.ts` にメインアプリの `src/styles/tokens.css` と同じトークンを写して使う。
@@ -74,16 +81,30 @@ pnpm vrt:admin
 Self-hosted アプリケーションはデプロイする前に作ること。手順は
 [`docs/deploy.md`](../../docs/deploy.md) の「管理画面」節を参照。
 
-## D1 の参照
+## 共通のごはん商品の画像
 
-メインアプリと同じ D1（`canshi-db`）をバインディング `DB` で直接参照する。マイグレーションは
-メインアプリ（リポジトリルートの `drizzle/`）が管理し、このパッケージは SELECT と、
-ユーザーのセッションを削除する DELETE（`sessions` テーブル）、家のメンバーを追加・削除する
-INSERT・DELETE（`household_members` テーブル）だけを発行する。
+画像はブラウザで長辺 800px の JPEG に縮小してから送り（フォームのスクリプト。EXIF の位置情報なども
+落ちる）、サムネイルは作らずにそのまま R2 に保存する。スクリプトが動かずに縮小できなかった 1MB を
+超える画像と、JPEG・PNG・WebP 以外のファイルは受け付けない（`src/catalog/image.ts`）。
+
+保存先はメインアプリのメディアと同じく `media_assets`（`record_type = 'catalog_food_product'`）と
+R2 の `catalog_food_product/{商品の ID}/{asset ID}`。メインアプリでは、ログイン中のユーザーなら誰でも
+参照できるが削除はできない。家に追加するときは、メインアプリが通常のアップロードと同じ経路で家の
+商品の画像として保存し直す（R2 のオブジェクトは共有しない）。
+
+## D1・R2 の参照
+
+メインアプリと同じ D1（`canshi-db`）をバインディング `DB` で、同じ R2（`canshi-media`）を
+バインディング `MEDIA_BUCKET` で直接参照する。マイグレーションはメインアプリ（リポジトリルートの
+`drizzle/`）が管理し、このパッケージは SELECT と、ユーザーのセッションを削除する DELETE
+（`sessions` テーブル）、家のメンバーを追加・削除する INSERT・DELETE（`household_members` テーブル）、
+共通のごはん商品を登録・更新・削除する INSERT・UPDATE・DELETE（`catalog_food_products` テーブルと、
+その画像の `media_assets` の行）だけを発行する。R2 は共通のごはん商品の画像の保存・削除だけに使う。
 
 メインアプリの Drizzle スキーマ（`src/db/schema`）は import せず、`src/db/queries.ts` に生の SQL で
 書いている（パッケージ境界をまたぐと Next.js 向けの tsconfig・パスエイリアスに連鎖的に依存して
-しまうため）。メインアプリでテーブル・列を
-変更したときは `src/db/queries.ts` も合わせて更新すること。`src/db/queries.test.ts` はリポジトリ
+しまうため）。メインアプリでテーブル・列を変更したときは `src/db/queries.ts`・
+`src/db/catalogFoodProducts.ts` も、ごはん商品の入力の規則を変えたときは `src/catalog/form.ts` も
+合わせて更新すること。`src/db/queries.test.ts` はリポジトリ
 ルートの `drizzle/` のマイグレーションをすべて適用した DB（sql.js）で実行するため、列名の
 食い違いはテストで検出できる。

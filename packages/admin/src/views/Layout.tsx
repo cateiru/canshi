@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { href: "/", label: "概要" },
   { href: "/users", label: "ユーザー" },
   { href: "/households", label: "家" },
+  { href: "/food-products", label: "共通のごはん商品" },
 ] as const;
 
 export function Layout(props: {

@@ -7,9 +7,10 @@ import {
 } from "@/features/food-products/actions";
 import { FoodProductForm } from "@/features/food-products/FoodProductForm";
 import {
-  findFilterHousehold,
-  householdSettingsBreadcrumbItems,
-} from "@/features/households/householdFilter";
+  foodProductsBreadcrumbItems,
+  withHouseholdId,
+} from "@/features/food-products/paths";
+import { findFilterHousehold } from "@/features/households/householdFilter";
 import { listHouseholdsForUser } from "@/features/households/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
 import { Surface } from "@/features/shared/Surface";
@@ -36,18 +37,12 @@ export default async function NewFoodProductPage({
     <main className={styles.main}>
       <Breadcrumb
         items={[
-          ...(filterHousehold
-            ? householdSettingsBreadcrumbItems(
-                filterHousehold,
-                "ごはん商品一覧",
-                `/food-products?householdId=${encodeURIComponent(filterHousehold.id)}`,
-              )
-            : [
-                { label: "トップ", href: "/home" },
-                { label: "設定", href: "/settings" },
-                { label: "ごはん商品一覧", href: "/food-products" },
-              ]),
-          { label: "登録する" },
+          ...foodProductsBreadcrumbItems(filterHousehold),
+          {
+            label: "登録する",
+            href: withHouseholdId("/food-products/add", filterHousehold),
+          },
+          { label: "手動で入力する" },
         ]}
       />
 

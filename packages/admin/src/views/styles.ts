@@ -257,4 +257,74 @@ li.member {
 }
 form.add-member { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .empty { color: var(--color-ink-subtle); }
+
+/* 共通のごはん商品 */
+.lead { margin: 0; color: var(--color-ink-muted); }
+/* 画面を移動するリンクを、button と同じ見た目にする */
+a.button-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: 8px;
+  padding: var(--space-2) var(--space-4);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+a.button-link:hover { opacity: 0.85; }
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+img.product-image {
+  display: block;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+form.product-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 40rem;
+}
+form.product-form label:not(.checkbox), form.product-form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+form.product-form label > span, form.product-form legend {
+  font-weight: var(--font-weight-bold);
+}
+form.product-form fieldset { margin: 0; border: 0; padding: 0; }
+form.product-form small { color: var(--color-ink-muted); font-size: var(--text-xs); }
+form.product-form select { max-width: none; }
+/* メインアプリの入力欄と同じく、白い背景と入力欄の枠線で識別できるようにする */
+input[type="text"], input[type="number"], input[type="file"] {
+  min-height: 44px;
+  border: var(--border-width) solid var(--color-border-input);
+  border-radius: 8px;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-input);
+  color: var(--color-ink);
+  background-color: var(--color-bg);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition:
+    border-color var(--transition-base),
+    outline-color var(--transition-base);
+}
+input:focus-visible { outline-color: var(--color-focus-ring); }
+.checkboxes { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+label.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+}
+label.checkbox input { width: 20px; height: 20px; margin: 0; }
+.field-error { margin: 0; color: var(--color-error-strong); font-size: var(--text-sm); }
 `;

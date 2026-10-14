@@ -170,6 +170,11 @@ test("家のごはん商品一覧から登録すると、その家の一覧へ�
     .getByRole("link", { name: "商品を登録する" })
     .first()
     .click();
+  // 登録方法の選択を経由しても、家の指定を引き継ぐ
+  await expect(page).toHaveURL(
+    `/food-products/add?householdId=${encodeURIComponent(householdId)}`,
+  );
+  await page.getByRole("link", { name: /手動で入力する/ }).click();
   await expect(page).toHaveURL(
     `/food-products/new?householdId=${encodeURIComponent(householdId)}`,
   );

@@ -119,12 +119,35 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     （`pnpm household:link`）で家に紐付ける
   - 家ごとの一覧用に `(household_id, created_at)` のインデックスを設定する
 - ごはん商品はメーカー名（`manufacturer`）・種類（`texture_type`、`dry`・`wet`・`soup`）・対象の猫
-  （`life_stages`）・対象の猫種（`target_breed`）を持つ（`0046`）。共通のごはん商品から探して登録する検索
-  （#283）の前準備として、検索で絞り込める形で持つ
+  （`life_stages`）・対象の猫種（`target_breed`）を持つ（`0046`）。共通のごはん商品（次の節）を検索で
+  絞り込める形で持つ
   - `life_stages` は `kitten`・`adult`・`senior`・`care`（療養）の JSON 配列で、複数を選べる。空配列は未設定。
     `src/db/schema/food-products.ts` の `FOOD_PRODUCT_LIFE_STAGES` の順に並べて保存し、検索では `json_each` で絞り込む
   - `target_breed` は `cats.breed` と同じく猫種の候補（`src/features/cats/breeds.ts`）から選ぶか自由に入力し、
     NULL はすべての猫種向けを表す。`manufacturer` も NULL は未入力
+
+## 共通のごはん商品（`catalog_food_products`）
+
+- どの家のユーザーも、ごはん商品を登録するときに検索して家に追加できる商品（#283、`0047`）。家に属さず、
+  管理画面（`packages/admin`）だけが登録・編集・削除する。列は `food_products` から `household_id` を除いたもの
+- 家に追加するときは、内容を写した `food_products` の行を作る（`src/features/catalog-food-products/actions.ts`）。
+  追加した商品は手動で登録した商品と同じく家ごとに自由に編集でき、共通のごはん商品の変更・削除は反映しない
+  - 追加は、共通のごはん商品と追加先の家のメンバーの行を結合した `INSERT ... SELECT` の 1 文で行い、
+    判定と追加の間に家から外された場合や商品が削除された場合は追加しない
+  - `food_products.catalog_food_product_id` に追加元を残し、検索結果で「追加済み」を表示する。手動で登録した
+    商品は NULL。管理画面で共通のごはん商品を削除したときは、外部キーの `ON DELETE SET NULL` で NULL になり、
+    家の商品は残る（drizzle-kit は `ALTER TABLE ... ADD` の `ON DELETE` を出力しないため、`0047` に手で追記した）
+- 検索は商品名・メーカー名のキーワード（空白で区切ったすべての語を含む）と、メーカー名・種類・区分・
+  対象の猫（`json_each`）・対象の猫種で絞り込む。LIKE に渡す入力の `%`・`_` はエスケープする
+  （`src/features/catalog-food-products/queries.ts`）
+- 画像は `media_assets`（`record_type = "catalog_food_product"`・`cat_id` と `uploaded_by_user_id` は NULL）に
+  1 枚だけ持つ。管理画面はブラウザで縮小した画像だけを保存し、サムネイルは作らない（`thumbnail_object_key` は NULL）
+  - ログイン中のユーザーなら誰でも参照できるが、メインアプリからは削除できない（`src/features/media/access.ts`）。
+    メインアプリから添付先として選べないよう、`MEDIA_RECORD_TYPES` には含めない
+  - 家に追加するときは、R2 から元データを読み出して通常のアップロードと同じ経路（`storeMediaAsset`）で
+    家の商品の画像として保存し直す。家の商品の画像の差し替え・削除で共通のごはん商品の画像を消さないよう、
+    R2 のオブジェクトは共有しない。保存できなかったときも商品は追加する
+- 検索結果の並び順のため `(manufacturer, name)` のインデックスを設定する
 
 ## 支出記録（`expense_records`・`expense_record_cats`・`expense_record_hospital_visits`）
 

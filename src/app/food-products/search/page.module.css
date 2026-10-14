@@ -1,0 +1,50 @@
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.resultsHeading {
+  font-size: var(--text-md);
+}
+
+.note {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+}
+
+.card {
+  composes: surface from "../../../features/shared/Surface.module.css";
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 180px;
+}
+
+.name {
+  font-size: var(--text-md);
+}
+
+.meta {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.action {
+  margin-left: auto;
+}

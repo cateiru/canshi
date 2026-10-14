@@ -87,6 +87,8 @@ export async function createFoodProductAction(
             "life_stages",
           ),
           targetBreed: sql`${values.targetBreed}`.as("target_breed"),
+          // 手動で登録した商品は、共通のごはん商品の追加元を持たない
+          catalogFoodProductId: sql`NULL`.as("catalog_food_product_id"),
           createdAt: sql`(unixepoch())`.as("created_at"),
           updatedAt: sql`(unixepoch())`.as("updated_at"),
         })

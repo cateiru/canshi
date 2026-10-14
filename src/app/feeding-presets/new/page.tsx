@@ -56,8 +56,8 @@ export default async function NewFeedingPresetPage({
           <ButtonLink
             href={
               defaultHouseholdId
-                ? `/food-products/new?householdId=${encodeURIComponent(defaultHouseholdId)}`
-                : "/food-products/new"
+                ? `/food-products/add?householdId=${encodeURIComponent(defaultHouseholdId)}`
+                : "/food-products/add"
             }
             variant="primary"
           >

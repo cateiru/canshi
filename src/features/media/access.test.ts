@@ -110,6 +110,18 @@ describe("canAccessMediaAsset", () => {
 });
 
 describe("canDeleteMediaAsset", () => {
+  it("共通のごはん商品の画像は、どのユーザーも参照できるが削除はできない", async () => {
+    const asset = {
+      catId: null,
+      recordType: "catalog_food_product",
+      recordId: "catalog-1",
+      uploadedByUserId: null,
+    };
+    expect(await canAccessMediaAsset("user-1", asset)).toBe(true);
+    expect(await canAccessMediaAsset("user-2", asset)).toBe(true);
+    expect(await canDeleteMediaAsset("user-1", asset)).toBe(false);
+  });
+
   it("ユーザーのアイコン画像は、同じ家のメンバーでも本人以外は削除できない", async () => {
     const icon = {
       catId: null,

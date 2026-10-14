@@ -60,7 +60,7 @@ export default async function NewFeedingRecordPage({
         <RecordEmptyState
           actions={
             <ButtonLink
-              href={`/food-products/new?householdId=${encodeURIComponent(cat.householdId)}`}
+              href={`/food-products/add?householdId=${encodeURIComponent(cat.householdId)}`}
               variant="primary"
               className={styles.createButton}
             >

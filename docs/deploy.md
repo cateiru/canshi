@@ -354,9 +354,13 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
 運用者向けの管理画面を、メインアプリとは別の Cloudflare Workers（`packages/admin/`、Worker 名
 `canshi-admin`）として用意している。公開ホスト名は `canshi-admin.cateiru.dev`
 （`packages/admin/wrangler.jsonc` の `routes` で `custom_domain` として設定。`workers.dev`・
-プレビュー URL は作らない）。メインアプリと同じ D1（`canshi-db`）を直接参照し、ユーザー・家の
-一覧を閲覧できる。書き換えるデータは、ユーザーをすべての端末からログアウトさせる操作で削除する
-ログインセッション（`sessions` テーブル）だけ。
+プレビュー URL は作らない）。メインアプリと同じ D1（`canshi-db`）と R2（`canshi-media`）を直接参照し、
+ユーザー・家の一覧を閲覧できる。書き換えるデータは次のものだけ。
+
+- ユーザーをすべての端末からログアウトさせる操作で削除するログインセッション（`sessions` テーブル）
+- 家のメンバーの追加・削除（`household_members` テーブル）
+- 共通のごはん商品の登録・編集・削除（`catalog_food_products` テーブルと、その画像の `media_assets`
+  の行・R2 のオブジェクト）
 
 アクセス制御は Cloudflare Access に任せ、アプリ内では認証しない。管理画面は家ごとの絞り込みを
 せず全ユーザー・全家の情報を表示するため、メインアプリの利用者（家族など）を含む Workers 全体の
@@ -386,7 +390,12 @@ Workers 全体の Access だけには頼れない。Self-hosted アプリケー�
 - Access のポリシーやアプリケーションを変更したときは再確認する
 
 管理画面のコードはマイグレーションを持たない。メインアプリのマイグレーションで列名を変えたときは、
-管理画面も合わせて更新・デプロイする（`packages/admin/src/db/queries.ts`）。
+管理画面も合わせて更新・デプロイする（`packages/admin/src/db/queries.ts`・
+`packages/admin/src/db/catalogFoodProducts.ts`）。
+
+管理画面は `main` へのマージでは自動でデプロイされない。管理画面を変えた PR をマージしたときは、
+`pnpm --filter @canshi/admin deploy` で手動でデプロイする（`wrangler.jsonc` のバインディングを
+増やしたときも、このデプロイで反映される）。
 
 ## 監視・運用（TODO）
 

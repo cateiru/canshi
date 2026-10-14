@@ -66,8 +66,7 @@ test("ごはん商品の画像を登録・差し替え・削除できる", async
   // 差し替えると旧画像は削除される
   await page.goto("/food-products");
   await page
-    .getByRole("heading", { name: productName })
-    .locator("..")
+    .getByRole("article", { name: productName })
     .getByRole("link", { name: "編集する" })
     .click();
   await page.getByLabel("商品画像").setInputFiles({
@@ -89,8 +88,7 @@ test("ごはん商品の画像を登録・差し替え・削除できる", async
 
   // 商品を削除すると画像も削除される
   await page
-    .getByRole("heading", { name: productName })
-    .locator("..")
+    .getByRole("article", { name: productName })
     .getByRole("button", { name: "削除する" })
     .click();
   await page
