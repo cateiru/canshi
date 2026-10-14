@@ -26,6 +26,13 @@ const NUTRITION_TYPES = ["complete", "general"] as const;
 /** 1 つの条件に受け付ける文字数の上限（LIKE に渡す長さを抑える） */
 const MAX_TEXT_LENGTH = 100;
 
+/**
+ * キーワードの数の上限。キーワードは 1 語につき商品名・メーカー名の 2 個のパラメーターを使うため、
+ * 詳しい条件と件数の上限を足しても D1 のバインドパラメーターの上限（`src/db/batch.ts` の
+ * `D1_MAX_BOUND_PARAMETERS`）に十分収まる数にする。それより後ろの語は使わない
+ */
+export const MAX_KEYWORDS = 10;
+
 function readText(value: SearchParamValue): string | null {
   if (typeof value !== "string") {
     return null;
@@ -52,7 +59,10 @@ export function parseCatalogSearchParams(
   params: Record<string, SearchParamValue>,
 ): CatalogSearchCriteria {
   return {
-    keywords: (readText(params.q) ?? "").split(/\s+/).filter(Boolean),
+    // 同じ語は 1 回だけ使い、上限より後ろの語は使わない
+    keywords: [
+      ...new Set((readText(params.q) ?? "").split(/\s+/).filter(Boolean)),
+    ].slice(0, MAX_KEYWORDS),
     manufacturer: readText(params.manufacturer),
     textureType: readEnum(params.textureType, TEXTURE_TYPES),
     nutritionType: readEnum(params.nutritionType, NUTRITION_TYPES),

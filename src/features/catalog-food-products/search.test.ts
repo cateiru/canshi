@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { D1_MAX_BOUND_PARAMETERS } from "@/db/batch";
 import {
   hasAdvancedCriteria,
+  MAX_KEYWORDS,
   parseCatalogSearchParams,
   toContainsPattern,
 } from "./search";
@@ -43,6 +45,22 @@ describe("parseCatalogSearchParams", () => {
       targetBreed: null,
     });
     expect(hasAdvancedCriteria(criteria)).toBe(false);
+  });
+});
+
+describe("キーワードの数", () => {
+  it("同じ語は 1 回にし、D1 のバインドパラメーターの上限に収まるよう上限までに絞る", () => {
+    const q = Array.from({ length: 50 }, (_, index) => `語${index}`).join(" ");
+    const { keywords } = parseCatalogSearchParams({ q: `${q} 語0` });
+    expect(keywords).toHaveLength(MAX_KEYWORDS);
+    expect(keywords[0]).toBe("語0");
+    expect(parseCatalogSearchParams({ q: "まぐろ まぐろ" }).keywords).toEqual([
+      "まぐろ",
+    ]);
+    // キーワード（1 語 2 個）・詳しい条件（5 個）・件数の上限（1 個）を足しても上限に収まる
+    expect(MAX_KEYWORDS * 2 + 5 + 1).toBeLessThanOrEqual(
+      D1_MAX_BOUND_PARAMETERS,
+    );
   });
 });
 
