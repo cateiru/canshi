@@ -151,4 +151,77 @@ describe("foodProductFormSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("追加の項目を入力しない場合は未設定として扱う", () => {
+    const result = foodProductFormSchema.safeParse({
+      name: "モンプチ",
+      manufacturer: "",
+      kcalPer100g: "380",
+      packageAmountG: "1500",
+      nutritionType: "complete",
+      textureType: "dry",
+      targetBreed: "  ",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.manufacturer).toBeNull();
+      expect(result.data.lifeStages).toEqual([]);
+      expect(result.data.targetBreed).toBeNull();
+    }
+  });
+
+  it("メーカー名・対象の猫・猫種を入力でき、スープも選べる", () => {
+    const result = foodProductFormSchema.safeParse({
+      name: "とろけるスープ",
+      manufacturer: " いなば ",
+      kcalPer100g: "20",
+      packageAmountG: "40",
+      nutritionType: "general",
+      textureType: "soup",
+      // 重複や選択順に関わらず、定義の順に揃える
+      lifeStages: ["senior", "kitten", "senior"],
+      targetBreed: "ペルシャ",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.manufacturer).toBe("いなば");
+      expect(result.data.textureType).toBe("soup");
+      expect(result.data.lifeStages).toEqual(["kitten", "senior"]);
+      expect(result.data.targetBreed).toBe("ペルシャ");
+    }
+  });
+
+  it("対象の猫が不正な値の場合は失敗する", () => {
+    const result = foodProductFormSchema.safeParse({
+      name: "モンプチ",
+      kcalPer100g: "380",
+      packageAmountG: "1500",
+      nutritionType: "complete",
+      textureType: "dry",
+      lifeStages: ["invalid"],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("メーカー名・猫種が50文字を超える場合は失敗する", () => {
+    const result = foodProductFormSchema.safeParse({
+      name: "モンプチ",
+      manufacturer: "あ".repeat(51),
+      kcalPer100g: "380",
+      packageAmountG: "1500",
+      nutritionType: "complete",
+      textureType: "dry",
+      targetBreed: "あ".repeat(51),
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const { fieldErrors } = result.error.flatten();
+      expect(fieldErrors.manufacturer).toBeDefined();
+      expect(fieldErrors.targetBreed).toBeDefined();
+    }
+  });
 });

@@ -206,6 +206,44 @@ describe("ごはん商品", () => {
     expect(created.householdId).toBe("household-1");
   });
 
+  it("メーカー名・種類・対象の猫・猫種を登録・編集できる", async () => {
+    const data = productForm({
+      householdId: "household-1",
+      manufacturer: "いなば",
+      textureType: "soup",
+      targetBreed: "ペルシャ",
+    });
+    data.append("lifeStages", "senior");
+    data.append("lifeStages", "adult");
+    const result = await createFoodProductAction({}, data);
+    const id = result.savedRecordId as string;
+
+    const [created] = await db
+      .select()
+      .from(foodProducts)
+      .where(eq(foodProducts.id, id));
+    expect(created).toMatchObject({
+      householdId: "household-1",
+      manufacturer: "いなば",
+      textureType: "soup",
+      lifeStages: ["adult", "senior"],
+      targetBreed: "ペルシャ",
+    });
+
+    // 未入力にして保存すると、入れていた値を消せる
+    await updateFoodProductAction(id, {}, productForm());
+    const [updated] = await db
+      .select()
+      .from(foodProducts)
+      .where(eq(foodProducts.id, id));
+    expect(updated).toMatchObject({
+      manufacturer: null,
+      textureType: "dry",
+      lifeStages: [],
+      targetBreed: null,
+    });
+  });
+
   it("所属していない家・未選択の家には登録できない", async () => {
     const cases: Record<string, string>[] = [
       { householdId: "household-2" },

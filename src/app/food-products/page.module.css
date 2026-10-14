@@ -38,10 +38,18 @@
   height: 48px;
 }
 
-.productTitle {
+.productName {
   flex: 1;
   min-width: 120px;
+}
+
+.productTitle {
   font-size: var(--text-md);
+}
+
+.manufacturer {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
 }
 
 .cardActions {
@@ -50,6 +58,12 @@
 
 .category {
   margin: var(--space-3) 0;
+  color: var(--color-ink-muted);
+}
+
+.target {
+  margin: calc(-1 * var(--space-2)) 0 var(--space-3);
+  font-size: var(--text-sm);
   color: var(--color-ink-muted);
 }
 
