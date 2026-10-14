@@ -57,6 +57,17 @@ describe("FoodProductForm", () => {
     fireEvent.change(screen.getByLabelText("単位（任意）"), {
       target: { value: "袋" },
     });
+    fireEvent.change(screen.getByLabelText("メーカー名（任意）"), {
+      target: { value: "ネスレ" },
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: "成猫" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "シニア" }));
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "対象の猫種（任意）" }),
+      {
+        target: { value: "ペルシャ" },
+      },
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "登録する" }));
 
@@ -69,6 +80,9 @@ describe("FoodProductForm", () => {
     expect(formData.get("packageUnit")).toBe("袋");
     expect(formData.get("nutritionType")).toBe("complete");
     expect(formData.get("textureType")).toBe("dry");
+    expect(formData.get("manufacturer")).toBe("ネスレ");
+    expect(formData.getAll("lifeStages")).toEqual(["adult", "senior"]);
+    expect(formData.get("targetBreed")).toBe("ペルシャ");
   });
 
   it("最初から選んでおく家を指定したときは、保存後に選んだ家の商品一覧へ移動する", async () => {

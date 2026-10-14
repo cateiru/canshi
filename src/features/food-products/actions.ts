@@ -34,11 +34,14 @@ export type FoodProductFormState = MediaFormState & {
 function parseFormData(formData: FormData) {
   return foodProductFormSchema.safeParse({
     name: formData.get("name"),
+    manufacturer: formData.get("manufacturer"),
     kcalPer100g: formData.get("kcalPer100g"),
     packageAmountG: formData.get("packageAmountG"),
     packageUnit: formData.get("packageUnit"),
     nutritionType: formData.get("nutritionType"),
     textureType: formData.get("textureType"),
+    lifeStages: formData.getAll("lifeStages"),
+    targetBreed: formData.get("targetBreed"),
   });
 }
 
@@ -73,11 +76,17 @@ export async function createFoodProductAction(
           id: sql`${crypto.randomUUID()}`.as("id"),
           householdId: householdMembers.householdId,
           name: sql`${values.name}`.as("name"),
+          manufacturer: sql`${values.manufacturer}`.as("manufacturer"),
           kcalPer100g: sql`${values.kcalPer100g}`.as("kcal_per_100g"),
           packageAmountG: sql`${values.packageAmountG}`.as("package_amount_g"),
           packageUnit: sql`${values.packageUnit}`.as("package_unit"),
           nutritionType: sql`${values.nutritionType}`.as("nutrition_type"),
           textureType: sql`${values.textureType}`.as("texture_type"),
+          // sql`` には列の型変換がかからないため、JSON 列は文字列にして渡す
+          lifeStages: sql`${JSON.stringify(values.lifeStages)}`.as(
+            "life_stages",
+          ),
+          targetBreed: sql`${values.targetBreed}`.as("target_breed"),
           createdAt: sql`(unixepoch())`.as("created_at"),
           updatedAt: sql`(unixepoch())`.as("updated_at"),
         })

@@ -33,5 +33,29 @@ describe("food_products テーブル", () => {
     expect(rows[0].id).toEqual(expect.any(String));
     // 単位を指定しない既存の商品は、商品全体の内容量として NULL のまま
     expect(rows[0].packageUnit).toBeNull();
+    // 追加の項目を指定しない既存の商品は未設定のまま
+    expect(rows[0].manufacturer).toBeNull();
+    expect(rows[0].lifeStages).toEqual([]);
+    expect(rows[0].targetBreed).toBeNull();
+  });
+
+  it("対象の猫は JSON 配列として保存・取得できる", async () => {
+    const [created] = await db
+      .insert(foodProducts)
+      .values({
+        name: "スープ",
+        manufacturer: "いなば",
+        kcalPer100g: 20,
+        packageAmountG: 40,
+        nutritionType: "general",
+        textureType: "soup",
+        lifeStages: ["adult", "senior"],
+        targetBreed: "ペルシャ",
+      })
+      .returning();
+
+    expect(created.textureType).toBe("soup");
+    expect(created.lifeStages).toEqual(["adult", "senior"]);
+    expect(created.targetBreed).toBe("ペルシャ");
   });
 });

@@ -5,6 +5,16 @@
   max-width: 800px;
 }
 
+.checkboxList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.checkboxList > * {
+  min-height: 44px;
+}
+
 .errorMessage {
   font-size: var(--text-sm);
   color: var(--color-error-strong);

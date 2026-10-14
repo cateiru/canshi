@@ -6,6 +6,7 @@ import { deleteFoodProductAction } from "@/features/food-products/actions";
 import { DeleteFoodProductButton } from "@/features/food-products/DeleteFoodProductButton";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import {
+  formatFoodProductTarget,
   NUTRITION_TYPE_LABEL,
   TEXTURE_TYPE_LABEL,
 } from "@/features/food-products/labels";
@@ -120,64 +121,77 @@ export default async function FoodProductsPage({
               </Surface>
             ) : (
               <ul className={styles.list}>
-                {items.map((foodProduct) => (
-                  <li key={foodProduct.id}>
-                    <article
-                      className={styles.productCard}
-                      aria-label={foodProduct.name}
-                    >
-                      <div className={styles.productHeader}>
-                        <FoodProductImage
-                          name={foodProduct.name}
-                          thumbnailUrl={imageUrls[foodProduct.id]}
-                        />
-                        <h2 className={styles.productTitle}>
-                          {foodProduct.name}
-                        </h2>
-                        <div className={styles.cardActions}>
-                          <IconButtonLink
-                            href={`/food-products/${foodProduct.id}/edit`}
-                            icon={TbPencil}
-                            aria-label="編集する"
-                            title="編集する"
+                {items.map((foodProduct) => {
+                  const target = formatFoodProductTarget(foodProduct);
+                  return (
+                    <li key={foodProduct.id}>
+                      <article
+                        className={styles.productCard}
+                        aria-label={foodProduct.name}
+                      >
+                        <div className={styles.productHeader}>
+                          <FoodProductImage
+                            name={foodProduct.name}
+                            thumbnailUrl={imageUrls[foodProduct.id]}
                           />
-                          <DeleteFoodProductButton
-                            action={deleteFoodProductAction.bind(
-                              null,
-                              foodProduct.id,
-                            )}
-                            foodProductName={foodProduct.name}
-                          />
+                          <div className={styles.productName}>
+                            <h2 className={styles.productTitle}>
+                              {foodProduct.name}
+                            </h2>
+                            {foodProduct.manufacturer ? (
+                              <p className={styles.manufacturer}>
+                                {foodProduct.manufacturer}
+                              </p>
+                            ) : null}
+                          </div>
+                          <div className={styles.cardActions}>
+                            <IconButtonLink
+                              href={`/food-products/${foodProduct.id}/edit`}
+                              icon={TbPencil}
+                              aria-label="編集する"
+                              title="編集する"
+                            />
+                            <DeleteFoodProductButton
+                              action={deleteFoodProductAction.bind(
+                                null,
+                                foodProduct.id,
+                              )}
+                              foodProductName={foodProduct.name}
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <p className={styles.category}>
-                        {NUTRITION_TYPE_LABEL[foodProduct.nutritionType]} ・{" "}
-                        {TEXTURE_TYPE_LABEL[foodProduct.textureType]}
-                      </p>
-                      <dl className={styles.summary}>
-                        <div>
-                          <dt>カロリー</dt>
-                          <dd>
-                            {foodProduct.kcalPer100g}
-                            <span>kcal/100g</span>
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>内容量</dt>
-                          <dd>
-                            {foodProduct.packageAmountG}
-                            <span>
-                              g
-                              {foodProduct.packageUnit
-                                ? `/${foodProduct.packageUnit}`
-                                : null}
-                            </span>
-                          </dd>
-                        </div>
-                      </dl>
-                    </article>
-                  </li>
-                ))}
+                        <p className={styles.category}>
+                          {NUTRITION_TYPE_LABEL[foodProduct.nutritionType]} ・{" "}
+                          {TEXTURE_TYPE_LABEL[foodProduct.textureType]}
+                        </p>
+                        {target ? (
+                          <p className={styles.target}>対象：{target}</p>
+                        ) : null}
+                        <dl className={styles.summary}>
+                          <div>
+                            <dt>カロリー</dt>
+                            <dd>
+                              {foodProduct.kcalPer100g}
+                              <span>kcal/100g</span>
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>内容量</dt>
+                            <dd>
+                              {foodProduct.packageAmountG}
+                              <span>
+                                g
+                                {foodProduct.packageUnit
+                                  ? `/${foodProduct.packageUnit}`
+                                  : null}
+                              </span>
+                            </dd>
+                          </div>
+                        </dl>
+                      </article>
+                    </li>
+                  );
+                })}
               </ul>
             )
           }

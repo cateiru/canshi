@@ -118,6 +118,13 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     紐付けない）。NULL の商品・プリセットはどのユーザーからも見えないため、`scripts/link-household.mts`
     （`pnpm household:link`）で家に紐付ける
   - 家ごとの一覧用に `(household_id, created_at)` のインデックスを設定する
+- ごはん商品はメーカー名（`manufacturer`）・種類（`texture_type`、`dry`・`wet`・`soup`）・対象の猫
+  （`life_stages`）・対象の猫種（`target_breed`）を持つ（`0046`）。共通のごはん商品から探して登録する検索
+  （#283）の前準備として、検索で絞り込める形で持つ
+  - `life_stages` は `kitten`・`adult`・`senior`・`care`（療養）の JSON 配列で、複数を選べる。空配列は未設定。
+    `src/db/schema/food-products.ts` の `FOOD_PRODUCT_LIFE_STAGES` の順に並べて保存し、検索では `json_each` で絞り込む
+  - `target_breed` は `cats.breed` と同じく猫種の候補（`src/features/cats/breeds.ts`）から選ぶか自由に入力し、
+    NULL はすべての猫種向けを表す。`manufacturer` も NULL は未入力
 
 ## 支出記録（`expense_records`・`expense_record_cats`・`expense_record_hospital_visits`）
 

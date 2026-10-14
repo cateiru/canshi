@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Button, FormField, FormRow, Select } from "@/components/ui";
-import type { FoodProduct } from "@/db/schema";
+import {
+  Button,
+  Checkbox,
+  ComboBox,
+  FormField,
+  FormGroup,
+  FormRow,
+  Select,
+} from "@/components/ui";
+import type { FoodProduct, FoodProductLifeStage } from "@/db/schema";
+import { CAT_BREEDS, matchesBreed } from "@/features/cats/breeds";
 import { HouseholdField } from "@/features/households/HouseholdField";
 import type { MediaLimits } from "@/features/media/limits";
 import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
@@ -11,6 +20,7 @@ import { useMediaFormAction } from "@/features/media/useMediaFormAction";
 import type { MediaAssetView } from "@/features/media/view";
 import type { FoodProductFormState } from "./actions";
 import styles from "./FoodProductForm.module.css";
+import { LIFE_STAGE_LABEL, TEXTURE_TYPE_LABEL } from "./labels";
 
 type FormAction = (
   state: FoodProductFormState,
@@ -51,10 +61,19 @@ const NUTRITION_TYPE_OPTIONS = [
   { value: "general", label: "一般食" },
 ];
 
-const TEXTURE_TYPE_OPTIONS = [
-  { value: "dry", label: "ドライ" },
-  { value: "wet", label: "ウェット" },
-];
+const TEXTURE_TYPE_OPTIONS = Object.entries(TEXTURE_TYPE_LABEL).map(
+  ([value, label]) => ({ value, label }),
+);
+
+const LIFE_STAGE_OPTIONS = Object.entries(LIFE_STAGE_LABEL) as [
+  FoodProductLifeStage,
+  string,
+][];
+
+const BREED_OPTIONS = CAT_BREEDS.map((breed) => ({
+  value: breed.name,
+  label: breed.name,
+}));
 
 export function FoodProductForm({
   action,
@@ -108,6 +127,13 @@ export function FoodProductForm({
       />
 
       <FormField
+        name="manufacturer"
+        label="メーカー名（任意）"
+        defaultValue={foodProduct?.manufacturer ?? undefined}
+        errorMessage={state.fieldErrors?.manufacturer?.[0]}
+      />
+
+      <FormField
         name="kcalPer100g"
         label="カロリー（kcal/100g）"
         type="number"
@@ -147,10 +173,41 @@ export function FoodProductForm({
 
       <Select
         name="textureType"
-        label="ドライ／ウェット"
+        label="種類"
         options={TEXTURE_TYPE_OPTIONS}
         defaultSelectedKey={foodProduct?.textureType ?? "dry"}
         errorMessage={state.fieldErrors?.textureType?.[0]}
+      />
+
+      <FormGroup
+        legend="対象の猫（任意）"
+        description="複数選択できます。"
+        errorMessage={state.fieldErrors?.lifeStages?.[0]}
+        isDisabled={isPending}
+      >
+        <div className={styles.checkboxList}>
+          {LIFE_STAGE_OPTIONS.map(([value, label]) => (
+            <Checkbox
+              key={value}
+              name="lifeStages"
+              value={value}
+              defaultSelected={foodProduct?.lifeStages.includes(value)}
+            >
+              {label}
+            </Checkbox>
+          ))}
+        </div>
+      </FormGroup>
+
+      <ComboBox
+        name="targetBreed"
+        label="対象の猫種（任意）"
+        options={BREED_OPTIONS}
+        defaultInputValue={foodProduct?.targetBreed ?? ""}
+        defaultFilter={matchesBreed}
+        description="特定の猫種向けの商品の場合に入力。未入力はすべての猫種向け"
+        errorMessage={state.fieldErrors?.targetBreed?.[0]}
+        allowsCustomValue
       />
 
       <MediaAttachmentField
