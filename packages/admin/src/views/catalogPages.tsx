@@ -181,12 +181,15 @@ export function CatalogFoodProductsPage(props: {
 }
 
 // 選んだ画像をブラウザで長辺 IMAGE_MAX_EDGE px の JPEG に縮小し、ファイル入力欄の中身を
-// 差し替える（EXIF の位置情報なども落ちる）。縮小できなかったときはそのまま送り、サーバーの
-// 大きさの上限で確かめる。固定の文字列で、利用者の入力は含めない
+// 差し替える（EXIF の位置情報なども落ちる）。縮小できなかったときは選んだ画像を外して知らせる
+// （元のまま送られても、サーバーが縮小済みの形かを確かめて断る。catalog/image.ts）。
+// 縮小が終わるまでは送信ボタンを押せなくする。固定の文字列で、利用者の入力は含めない
 const RESIZE_SCRIPT = `
 document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function (input) {
   input.addEventListener("change", async function () {
     var file = input.files && input.files[0];
+    var resizeError = input.parentElement.querySelector("[data-resize-error]");
+    if (resizeError) resizeError.hidden = true;
     if (!file) return;
     var submit = input.form && input.form.querySelector('button[type="submit"]');
     if (submit) submit.disabled = true;
@@ -205,7 +208,7 @@ document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function 
       var blob = await new Promise(function (resolve) {
         canvas.toBlob(resolve, "image/jpeg", 0.85);
       });
-      if (!blob) return;
+      if (!blob) throw new Error("JPEG に書き出せませんでした");
       var transfer = new DataTransfer();
       transfer.items.add(
         new File([blob], file.name.replace(/\\.[^.]*$/, "") + ".jpg", { type: "image/jpeg" })
@@ -213,6 +216,8 @@ document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function 
       input.files = transfer.files;
     } catch (error) {
       console.error(error);
+      input.value = "";
+      if (resizeError) resizeError.hidden = false;
     } finally {
       if (submit) submit.disabled = false;
     }
@@ -386,6 +391,9 @@ export function CatalogFoodProductFormPage(props: {
             選んだ画像は長辺 {IMAGE_MAX_EDGE}px の JPEG に縮小して保存します。
             {product?.imageAssetId && "選ぶと今の画像と差し替えます。"}
           </small>
+          <p class="field-error" role="alert" data-resize-error hidden>
+            画像を縮小できませんでした。別の画像を選んでください。
+          </p>
           <FieldError message={errors.image} />
         </label>
         {product?.imageAssetId && (

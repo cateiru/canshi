@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app";
 import { createMigratedDatabase, toAdminDb } from "./test/d1";
 import { seed } from "./test/fixtures";
+import { createJpeg } from "./test/jpeg";
 import { createFakeBucket } from "./test/r2";
 
 let env: Env;
@@ -241,8 +242,8 @@ describe("家のメンバーの追加・削除", () => {
 });
 
 describe("共通のごはん商品", () => {
-  // JPEG の先頭のバイト列（形式の判定に使う部分だけ）
-  const JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+  // ブラウザで縮小した形の JPEG（長辺 800px 以下・メタデータなし）
+  const JPEG_BYTES = createJpeg(800, 533);
 
   function productForm(values: Record<string, string | string[]> = {}) {
     const form = new FormData();
@@ -369,14 +370,21 @@ describe("共通のごはん商品", () => {
     expect(await listProducts()).toEqual([]);
   });
 
-  it("画像ではないファイルは登録せず、R2 にも置かない", async () => {
-    const form = productForm();
-    form.append("image", new File(["not an image"], "note.txt"));
-    const response = await postMultipart("/food-products", form);
-    expect(response.status).toBe(400);
-    expect(await response.text()).toContain(
-      "画像は JPEG・PNG・WebP のいずれかにしてください",
-    );
+  it("ブラウザで縮小されずに届いた画像・画像ではないファイルは登録せず、R2 にも置かない", async () => {
+    const files = [
+      // スクリプトが動かず、位置情報などの Exif を持ったまま届いた写真
+      new File([createJpeg(4000, 3000, { exif: true })], "photo.jpg"),
+      new File(["not an image"], "note.txt"),
+    ];
+    for (const file of files) {
+      const form = productForm();
+      form.append("image", file);
+      const response = await postMultipart("/food-products", form);
+      expect(response.status).toBe(400);
+      expect(await response.text()).toContain(
+        "画像をブラウザで縮小できませんでした",
+      );
+    }
     expect(await listProducts()).toEqual([]);
     expect(bucket.objects.size).toBe(0);
   });
@@ -390,10 +398,8 @@ describe("共通のごはん商品", () => {
     expect(editHtml).toContain("今の画像を削除する");
 
     const form = productForm({ name: "かつお味 カリカリ", textureType: "wet" });
-    const png = new Uint8Array([
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-    ]);
-    form.append("image", new File([png], "photo.png"));
+    const replacement = createJpeg(600, 800);
+    form.append("image", new File([replacement], "photo2.jpg"));
     const response = await postMultipart(`/food-products/${id}`, form);
     expect(response.status).toBe(303);
     expect(response.headers.get("Location")).toBe(
@@ -407,7 +413,10 @@ describe("共通のごはん商品", () => {
       }),
     ]);
     const [newImage] = await listImages();
-    expect(newImage).toMatchObject({ mime_type: "image/png" });
+    expect(newImage).toMatchObject({
+      mime_type: "image/jpeg",
+      size_bytes: replacement.length,
+    });
     expect(newImage.id).not.toBe(oldImage.id);
     expect(bucket.objects.has(oldImage.object_key as string)).toBe(false);
     expect(bucket.objects.has(newImage.object_key as string)).toBe(true);

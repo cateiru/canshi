@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { createJpeg } from "../test/jpeg";
 import { parseCatalogFoodProductForm } from "./form";
-import { sniffImageType } from "./image";
+import { checkCatalogImage, inspectJpeg } from "./image";
 
 const VALID = {
   name: " まぐろ ",
@@ -75,19 +76,51 @@ describe("parseCatalogFoodProductForm", () => {
   });
 });
 
-describe("sniffImageType", () => {
-  it("先頭のバイト列から JPEG・PNG・WebP を判定し、それ以外は断る", () => {
-    expect(sniffImageType(new Uint8Array([0xff, 0xd8, 0xff, 0xdb]))).toBe(
-      "image/jpeg",
-    );
+describe("inspectJpeg", () => {
+  it("JPEG の寸法と、メタデータのセグメントの有無を読み取る", () => {
+    expect(inspectJpeg(createJpeg(800, 533))).toEqual({
+      width: 800,
+      height: 533,
+      hasMetadata: false,
+    });
+    expect(inspectJpeg(createJpeg(10, 20, { exif: true }))).toEqual({
+      width: 10,
+      height: 20,
+      hasMetadata: true,
+    });
+  });
+
+  it("JPEG でない・途中で切れているときは null", () => {
     expect(
-      sniffImageType(
+      inspectJpeg(
         new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
       ),
-    ).toBe("image/png");
-    expect(
-      sniffImageType(new TextEncoder().encode("RIFF\0\0\0\0WEBPVP8 ")),
-    ).toBe("image/webp");
-    expect(sniffImageType(new TextEncoder().encode("GIF89a"))).toBeNull();
+    ).toBeNull();
+    expect(inspectJpeg(createJpeg(800, 533).slice(0, 30))).toBeNull();
+  });
+});
+
+describe("checkCatalogImage", () => {
+  const file = (bytes: Uint8Array) => new File([bytes], "photo.jpg");
+
+  it("ブラウザで縮小した形（長辺 800px 以下・メタデータなしの JPEG）だけを受け付ける", async () => {
+    expect(await checkCatalogImage(file(createJpeg(800, 533)))).toMatchObject({
+      ok: true,
+      mimeType: "image/jpeg",
+    });
+  });
+
+  it("縮小されずに届いた画像は断る", async () => {
+    const rejected = [
+      // 長辺が 800px を超える
+      createJpeg(801, 600),
+      // 位置情報などを含みうる Exif を持つ
+      createJpeg(400, 300, { exif: true }),
+      // JPEG ではない（スクリプトが動かず PNG のまま届いた）
+      new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    ];
+    for (const bytes of rejected) {
+      expect(await checkCatalogImage(file(bytes))).toMatchObject({ ok: false });
+    }
   });
 });

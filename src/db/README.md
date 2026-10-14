@@ -141,7 +141,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   対象の猫（`json_each`）・対象の猫種で絞り込む。LIKE に渡す入力の `%`・`_` はエスケープする
   （`src/features/catalog-food-products/queries.ts`）
 - 画像は `media_assets`（`record_type = "catalog_food_product"`・`cat_id` と `uploaded_by_user_id` は NULL）に
-  1 枚だけ持つ。管理画面はブラウザで縮小した画像だけを保存し、サムネイルは作らない（`thumbnail_object_key` は NULL）
+  1 枚だけ持つ。管理画面はブラウザで縮小した画像（長辺 800px 以下・メタデータのない JPEG であることをサーバーでも
+  確かめる）だけを保存し、サムネイルは作らない（`thumbnail_object_key` は NULL）
   - ログイン中のユーザーなら誰でも参照できるが、メインアプリからは削除できない（`src/features/media/access.ts`）。
     メインアプリから添付先として選べないよう、`MEDIA_RECORD_TYPES` には含めない
   - 家に追加するときは、R2 から元データを読み出して通常のアップロードと同じ経路（`storeMediaAsset`）で
