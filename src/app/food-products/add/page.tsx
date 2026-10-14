@@ -8,6 +8,7 @@ import {
 } from "@/features/food-products/paths";
 import { findFilterHousehold } from "@/features/households/householdFilter";
 import { listHouseholdsForUser } from "@/features/households/queries";
+import { ReplaceNavigation } from "@/features/navigation/ReplaceNavigation";
 import { Surface } from "@/features/shared/Surface";
 import styles from "../page.module.css";
 
@@ -48,22 +49,33 @@ export default async function AddFoodProductPage({
       ) : (
         <ul className={styles.list}>
           <li>
-            <NavCard
+            {/* 選択ページを履歴に残さない（保存・追加の後に戻ると、登録を始めた画面に戻るようにする） */}
+            <ReplaceNavigation
               href={withHouseholdId("/food-products/search", filterHousehold)}
-              icon={TbSearch}
-              title="共通のごはん商品から探す"
-              titleAs="h2"
-              description="商品名やメーカー名で検索し、画像付きの候補から選ぶだけで登録できます。登録した後も自由に編集できます。"
-            />
+            >
+              <NavCard
+                replace
+                href={withHouseholdId("/food-products/search", filterHousehold)}
+                icon={TbSearch}
+                title="共通のごはん商品から探す"
+                titleAs="h2"
+                description="商品名やメーカー名で検索し、画像付きの候補から選ぶだけで登録できます。登録した後も自由に編集できます。"
+              />
+            </ReplaceNavigation>
           </li>
           <li>
-            <NavCard
+            <ReplaceNavigation
               href={withHouseholdId("/food-products/new", filterHousehold)}
-              icon={TbPencil}
-              title="手動で入力する"
-              titleAs="h2"
-              description="商品名・カロリー・内容量などを自分で入力して登録します。"
-            />
+            >
+              <NavCard
+                replace
+                href={withHouseholdId("/food-products/new", filterHousehold)}
+                icon={TbPencil}
+                title="手動で入力する"
+                titleAs="h2"
+                description="商品名・カロリー・内容量などを自分で入力して登録します。"
+              />
+            </ReplaceNavigation>
           </li>
         </ul>
       )}

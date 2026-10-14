@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
 import { TbPlus } from "react-icons/tb";
 import { Button } from "@/components/ui";
+import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import styles from "./AddCatalogFoodProductButton.module.css";
 import type { AddCatalogFoodProductState } from "./actions";
 
@@ -27,7 +27,12 @@ export function AddCatalogFoodProductButton({
   returnToHousehold,
   productName,
 }: AddCatalogFoodProductButtonProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  // 追加できたら家のごはん商品一覧へ移動する。検索ページを履歴に残さないよう、直前の履歴が
+  // 一覧なら戻る（ほかのフォームの保存後と同じ）
+  const [state, formAction, isPending] = useSubmitActionState(
+    action,
+    initialState,
+  );
 
   return (
     <form action={formAction} className={styles.form}>

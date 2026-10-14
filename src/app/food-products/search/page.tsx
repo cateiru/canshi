@@ -27,6 +27,7 @@ import {
 } from "@/features/food-products/paths";
 import { findFilterHousehold } from "@/features/households/householdFilter";
 import { listHouseholdsForUser } from "@/features/households/queries";
+import { ReplaceNavigation } from "@/features/navigation/ReplaceNavigation";
 import { Surface } from "@/features/shared/Surface";
 import listStyles from "../page.module.css";
 import styles from "./page.module.css";
@@ -134,12 +135,18 @@ export default async function SearchFoodProductsPage({
             <p>条件に合う共通のごはん商品はありませんでした。</p>
             <p>キーワードを変えるか、手動で入力して登録してください。</p>
             <div className={listStyles.emptyActions}>
-              <ButtonLink
+              {/* 検索ページを履歴に残さない（保存した後に戻ると、登録を始めた画面に戻るようにする） */}
+              <ReplaceNavigation
                 href={withHouseholdId("/food-products/new", filterHousehold)}
-                variant="primary"
               >
-                手動で入力する
-              </ButtonLink>
+                <ButtonLink
+                  href={withHouseholdId("/food-products/new", filterHousehold)}
+                  replace
+                  variant="primary"
+                >
+                  手動で入力する
+                </ButtonLink>
+              </ReplaceNavigation>
             </div>
           </Surface>
         ) : (

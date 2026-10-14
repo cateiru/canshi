@@ -84,3 +84,63 @@ test("共通のごはん商品を検索して家に追加し、追加した商�
     page.getByRole("heading", { name: editedName, exact: true }),
   ).toBeVisible();
 });
+
+test("登録方法の選択・検索のページは履歴に残らず、登録した後に戻ると登録を始めた画面に戻る", async ({
+  page,
+}) => {
+  const suffix = Date.now();
+  const productName = `履歴の確認-${suffix}`;
+  await insertCatalogFoodProduct(`e2e-catalog-history-${suffix}`, productName);
+
+  await page.goto("/settings/households");
+  await page
+    .getByRole("link")
+    .filter({ hasText: "あなたはオーナー" })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/settings\/households\/[^/]+$/);
+  const householdPage = new URL(page.url()).pathname;
+  const householdId = householdPage.split("/").at(-1) ?? "";
+  const listUrl = `/food-products?householdId=${encodeURIComponent(householdId)}`;
+
+  const openRegistration = async (option: RegExp) => {
+    await page
+      .getByRole("navigation", { name: "ごはんの設定" })
+      .getByRole("link", { name: /ごはん商品一覧/ })
+      .click();
+    await expect(page).toHaveURL(listUrl);
+    await page
+      .getByRole("main")
+      .getByRole("link", { name: "商品を登録する" })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/food-products\/add/);
+    await page.getByRole("link", { name: option }).click();
+  };
+
+  // 手動で入力して登録する
+  await openRegistration(/手動で入力する/);
+  await expect(page).toHaveURL(/\/food-products\/new/);
+  await page.getByLabel("商品名").fill(`手動の商品-${suffix}`);
+  await page.getByLabel("カロリー（kcal/100g）").fill("380");
+  await page.getByLabel("内容量（g）").fill("500");
+  await page.getByRole("button", { name: "登録する" }).click();
+  await expect(page).toHaveURL(listUrl);
+  await page.goBack();
+  await expect(page).toHaveURL(householdPage);
+
+  // 共通のごはん商品から探して追加する（検索し直しても履歴を積まない）
+  await openRegistration(/共通のごはん商品から探す/);
+  await expect(page).toHaveURL(/\/food-products\/search/);
+  await page.getByLabel("商品名・メーカー名").fill(productName);
+  await page.getByRole("button", { name: "検索する" }).click();
+  await expect(page).toHaveURL(/q=/);
+  await page
+    .getByRole("article", { name: productName })
+    .getByRole("button", { name: `${productName}を追加する` })
+    .click();
+  await expect(page).toHaveURL(listUrl);
+  await expect(page.getByRole("article", { name: productName })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(householdPage);
+});

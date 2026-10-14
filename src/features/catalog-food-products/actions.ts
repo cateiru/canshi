@@ -1,7 +1,6 @@
 "use server";
 
 import { and, eq, sql } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
   catalogFoodProducts,
@@ -14,10 +13,16 @@ import { readFormHouseholdId } from "@/features/households/formHousehold";
 import { getHouseholdForUser } from "@/features/households/queries";
 import { listMediaAssetsByRecord } from "@/features/media/queries";
 import { readMediaObject, storeMediaAsset } from "@/features/media/storage";
+import type { SubmitRedirect } from "@/features/navigation/types";
 import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "./media";
 import { listAddedCatalogFoodProductIds } from "./queries";
 
-export type AddCatalogFoodProductState = { error?: string };
+/**
+ * 追加できたら（追加済みのときも）`redirectTo` に家のごはん商品一覧を返し、クライアント
+ * （`useSubmitActionState`）が遷移する。サーバーでリダイレクトすると履歴が積み増され、
+ * 一覧から戻ると検索ページに戻ってしまうため、送信後の遷移はほかのフォームと揃える
+ */
+export type AddCatalogFoodProductState = SubmitRedirect & { error?: string };
 
 /**
  * 共通のごはん商品の画像を、家に追加した商品の画像として保存し直す。家の商品の画像は家ごとに
@@ -51,7 +56,8 @@ async function copyCatalogImage(
  * 共通のごはん商品を、フォームの `householdId` の家のごはん商品として追加する。内容を写して
  * 新しい商品を作るため、追加した後は手動で登録した商品と同じく自由に編集できる。
  * 同じ家にはすでに追加した商品を重ねて追加しない。
- * 追加できたら（追加済みのときも）家のごはん商品一覧へ移動する（`returnToHousehold` があればその家の一覧）
+ * 追加できたら（追加済みのときも）家のごはん商品一覧（`returnToHousehold` があればその家の一覧）を
+ * `redirectTo` で返す
  */
 export async function addCatalogFoodProductAction(
   catalogFoodProductId: string,
@@ -114,7 +120,7 @@ export async function addCatalogFoodProductAction(
         catalogFoodProductId,
       )
     ) {
-      redirect(returnTo);
+      return { redirectTo: returnTo };
     }
     return {
       error:
@@ -130,5 +136,5 @@ export async function addCatalogFoodProductAction(
     console.error("共通のごはん商品の画像を保存できませんでした", error);
   }
 
-  redirect(returnTo);
+  return { redirectTo: returnTo };
 }

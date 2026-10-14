@@ -16,6 +16,7 @@ import {
   NUTRITION_TYPE_LABEL,
   TEXTURE_TYPE_LABEL,
 } from "@/features/food-products/labels";
+import { markReplaceNavigation } from "@/features/navigation/history";
 import styles from "./CatalogSearchForm.module.css";
 
 /** 選択欄の「指定しない」の値。URL には含めない */
@@ -94,7 +95,10 @@ export function CatalogSearchForm({
       }
     }
     const query = params.toString();
-    router.push(`/food-products/search${query ? `?${query}` : ""}`);
+    // 条件を変えるたびに履歴を積まない（追加した後に戻ると、登録を始めた画面に戻るようにする）
+    const href = `/food-products/search${query ? `?${query}` : ""}`;
+    markReplaceNavigation(href);
+    router.replace(href);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {

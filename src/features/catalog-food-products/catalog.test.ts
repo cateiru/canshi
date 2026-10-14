@@ -32,11 +32,6 @@ vi.mock("@/db/client", () => ({ getDb: () => db }));
 vi.mock("@/features/auth/session", () => ({
   requireUser: async () => ({ id: "user-1" }),
 }));
-vi.mock("next/navigation", () => ({
-  redirect: (url: string) => {
-    throw new Error(`redirect:${url}`);
-  },
-}));
 vi.mock("@/features/media/storage", () => ({
   readMediaObject: vi.fn(async () => new Blob(["image"])),
   storeMediaAsset: vi.fn(async () => ({})),
@@ -194,13 +189,13 @@ describe("addCatalogFoodProductAction", () => {
       mimeType: "image/jpeg",
     });
 
-    await expect(
-      addCatalogFoodProductAction(
+    expect(
+      await addCatalogFoodProductAction(
         "wet-kitten",
         {},
         addForm({ householdId: "household-1", returnToHousehold: "1" }),
       ),
-    ).rejects.toThrow("redirect:/food-products?householdId=household-1");
+    ).toEqual({ redirectTo: "/food-products?householdId=household-1" });
 
     const [added] = await db
       .select()
@@ -238,25 +233,25 @@ describe("addCatalogFoodProductAction", () => {
   });
 
   it("家を指定せずに開いたときは、すべての家の一覧へ移動する。画像がなければ保存しない", async () => {
-    await expect(
-      addCatalogFoodProductAction(
+    expect(
+      await addCatalogFoodProductAction(
         "dry-adult",
         {},
         addForm({ householdId: "household-1" }),
       ),
-    ).rejects.toThrow(/^redirect:\/food-products$/);
+    ).toEqual({ redirectTo: "/food-products" });
     expect(storeMediaAsset).not.toHaveBeenCalled();
   });
 
   it("同じ家にすでに追加した商品は重ねて追加せず、追加済みとして一覧へ移動する", async () => {
     for (let index = 0; index < 2; index += 1) {
-      await expect(
-        addCatalogFoodProductAction(
+      expect(
+        await addCatalogFoodProductAction(
           "dry-adult",
           {},
           addForm({ householdId: "household-1", returnToHousehold: "1" }),
         ),
-      ).rejects.toThrow("redirect:/food-products?householdId=household-1");
+      ).toEqual({ redirectTo: "/food-products?householdId=household-1" });
     }
     expect(await db.select().from(foodProducts)).toHaveLength(1);
     // 一意インデックスで、同時に追加されても DB に 2 件目は入らない
@@ -300,13 +295,13 @@ describe("addCatalogFoodProductAction", () => {
     vi.mocked(storeMediaAsset).mockRejectedValueOnce(new Error("容量の上限"));
     vi.spyOn(console, "error").mockImplementation(() => {});
 
-    await expect(
-      addCatalogFoodProductAction(
+    expect(
+      await addCatalogFoodProductAction(
         "dry-adult",
         {},
         addForm({ householdId: "household-1" }),
       ),
-    ).rejects.toThrow("redirect:");
+    ).toEqual({ redirectTo: expect.any(String) });
     expect(await listAddedCatalogFoodProductIds("household-1")).toEqual(
       new Set(["dry-adult"]),
     );
@@ -334,13 +329,13 @@ describe("addCatalogFoodProductAction", () => {
   });
 
   it("共通のごはん商品を削除しても、家に追加した商品は追加元が空になって残る", async () => {
-    await expect(
-      addCatalogFoodProductAction(
+    expect(
+      await addCatalogFoodProductAction(
         "dry-adult",
         {},
         addForm({ householdId: "household-1" }),
       ),
-    ).rejects.toThrow("redirect:");
+    ).toEqual({ redirectTo: expect.any(String) });
     await db
       .delete(catalogFoodProducts)
       .where(eq(catalogFoodProducts.id, "dry-adult"));
