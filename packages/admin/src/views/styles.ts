@@ -12,6 +12,7 @@ export const TOKENS = {
   "--color-accent": "#ec995a",
   "--color-success-strong": "#26732e",
   "--color-warning-strong": "#806000",
+  "--color-error": "#f25c4b",
   "--color-error-strong": "#bd3528",
   "--color-info-strong": "#245da8",
   "--color-accent-strong": "#9a4b13",
@@ -113,8 +114,8 @@ a:hover { text-decoration: none; }
 a:focus-visible { outline-color: var(--color-focus-ring); }
 
 /* ページの切り替え。メインアプリの FilterTabs と同じ見た目にする */
-nav { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-nav a {
+header nav { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+header nav a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -123,8 +124,8 @@ nav a {
   background: var(--color-surface);
   text-decoration: none;
 }
-nav a:hover { background: var(--color-surface-hover); }
-nav a[aria-current="page"] {
+header nav a:hover { background: var(--color-surface-hover); }
+header nav a[aria-current="page"] {
   background: color-mix(in srgb, var(--color-accent) 18%, var(--color-bg));
   font-weight: var(--font-weight-bold);
   /* 背景の差だけに頼らず、枠でも現在のページを示す */
@@ -236,7 +237,10 @@ select {
   font-family: var(--font-sans);
   font-size: var(--text-input);
   color: var(--color-ink);
-  background-color: var(--color-bg);
+  /* メインアプリの Select と同じ矢印にする */
+  appearance: none;
+  padding-right: calc(var(--space-3) * 2 + 10px);
+  background: var(--color-bg) right var(--space-3) center / 10px 6px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpolyline points='1 1 5 5 9 1' fill='none' stroke='%232e3142' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   cursor: pointer;
   outline: var(--focus-ring-width) solid transparent;
   outline-offset: var(--focus-ring-offset);
@@ -258,52 +262,147 @@ li.member {
 form.add-member { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .empty { color: var(--color-ink-subtle); }
 
-/* 共通のごはん商品 */
+/* ページの見出しと、その右に置く操作（メインアプリの一覧ページの見出しと同じ並び） */
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+/* メインアプリの Breadcrumb と同じ見た目にする */
+.breadcrumb { font-size: var(--text-xs); }
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.breadcrumb li { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.breadcrumb .separator { opacity: 0.5; }
+.breadcrumb .current { opacity: 0.7; }
+/* 一覧の説明 */
 .lead { margin: 0; color: var(--color-ink-muted); }
-/* 画面を移動するリンクを、button と同じ見た目にする */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+svg.icon { flex-shrink: 0; }
+
+/* 画面を移動するリンクを、メインアプリの ButtonLink と同じ見た目にする */
 a.button-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   min-height: 44px;
   border: var(--border-width) solid var(--color-ink);
   border-radius: 8px;
   padding: var(--space-2) var(--space-4);
   font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
   text-decoration: none;
+  transition:
+    opacity var(--transition-base),
+    transform var(--transition-base),
+    outline-color var(--transition-base);
 }
 a.button-link:hover { opacity: 0.85; }
+a.button-link:active { transform: translateY(1px); }
+/* 主操作は --color-ink の背景と --color-bg の文字で強調する（メインアプリの Button の primary） */
+a.button-link.primary, button.primary {
+  color: var(--color-bg);
+  background-color: var(--color-ink);
+}
+button:disabled { cursor: not-allowed; opacity: 0.5; }
+button[type="submit"].primary { min-height: 48px; font-size: var(--text-md); }
+/* アイコンだけの操作（メインアプリの IconButton） */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--color-ink);
+  background: transparent;
+  transition:
+    background-color var(--transition-base),
+    outline-color var(--transition-base);
+}
+.icon-button:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
+}
 .actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-4);
+  gap: var(--space-1);
 }
-img.product-image {
+.actions form { margin: 0; }
+
+/* 商品画像（メインアプリの FoodProductImage）。画像がないときは淡い面にアイコンを置く */
+.product-image {
   display: block;
+  width: 64px;
+  height: 64px;
   object-fit: cover;
   border-radius: 8px;
   background: var(--color-bg);
 }
+.product-image.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-ink-subtle);
+}
+.product-name { display: block; font-weight: var(--font-weight-bold); }
+td .sub { display: block; color: var(--color-ink-muted); }
+td code { display: block; }
+
+/* 登録・編集フォーム。メインアプリのごはん商品のフォームと同じ幅・間隔にする */
 form.product-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  max-width: 40rem;
+  max-width: 800px;
 }
-form.product-form label:not(.checkbox), form.product-form fieldset {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-form.product-form label > span, form.product-form legend {
+.field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.field > label, .field-label {
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
 }
-form.product-form fieldset { margin: 0; border: 0; padding: 0; }
-form.product-form small { color: var(--color-ink-muted); font-size: var(--text-xs); }
-form.product-form select { max-width: none; }
-/* メインアプリの入力欄と同じく、白い背景と入力欄の枠線で識別できるようにする */
-input[type="text"], input[type="number"], input[type="file"] {
-  min-height: 44px;
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+@media (max-width: 480px) {
+  .form-row { grid-template-columns: minmax(0, 1fr); }
+}
+.field-description { margin: 0; font-size: var(--text-sm); color: var(--color-ink-subtle); }
+.field-error { margin: 0; font-size: var(--text-xs); color: var(--color-error-strong); }
+fieldset .field-error { font-size: var(--text-sm); }
+
+/* メインアプリの FormField と同じく、白い背景と入力欄の枠線で識別できるようにする */
+input[type="text"], input[type="number"] {
+  width: 100%;
+  min-height: 48px;
   border: var(--border-width) solid var(--color-border-input);
   border-radius: 8px;
   padding: var(--space-2) var(--space-3);
@@ -317,14 +416,115 @@ input[type="text"], input[type="number"], input[type="file"] {
     border-color var(--transition-base),
     outline-color var(--transition-base);
 }
+input[type="text"]:hover, input[type="number"]:hover { border-color: var(--color-accent-strong); }
+input:focus { outline-color: transparent; }
 input:focus-visible { outline-color: var(--color-focus-ring); }
+input[aria-invalid="true"], input[aria-invalid="true"]:hover,
+select[aria-invalid="true"], select[aria-invalid="true"]:hover {
+  border-color: var(--color-error);
+}
+form.product-form select { width: 100%; max-width: none; min-height: 48px; }
+@media (max-width: 480px) {
+  input[type="text"], input[type="number"] { padding-inline: var(--space-2); }
+}
+
+/* チェックボックスのまとまり（メインアプリの FormGroup） */
+fieldset.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  border: 0;
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+fieldset.group legend {
+  padding-inline: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
 .checkboxes { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+/* メインアプリの Checkbox と同じく、--color-ink の枠と塗りつぶしで選択を示す */
 label.checkbox {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   min-height: 44px;
+  font-size: var(--text-sm);
+  cursor: pointer;
 }
-label.checkbox input { width: 20px; height: 20px; margin: 0; }
-.field-error { margin: 0; color: var(--color-error-strong); font-size: var(--text-sm); }
+label.checkbox input {
+  appearance: none;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  background-color: var(--color-bg);
+  cursor: pointer;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition:
+    border-color var(--transition-base),
+    outline-color var(--transition-base);
+}
+label.checkbox input::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpolyline points='1.5 5.5 4 8 8.5 2' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+label.checkbox input:checked { background-color: var(--color-ink); }
+label.checkbox input:checked::before { opacity: 1; }
+label.checkbox:hover input { border-color: var(--color-accent-strong); }
+label.checkbox input:checked:hover { border-color: var(--color-ink); }
+
+/* 商品画像の選択欄（メインアプリの画像の選択欄）。透明なファイル入力欄を点線の枠に重ねる */
+.image-field { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }
+.product-image.current-image { width: 160px; height: 160px; }
+.file-chooser {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  width: 100%;
+  max-width: 320px;
+  min-height: 160px;
+  padding: var(--space-4);
+  border: var(--border-width) dashed var(--color-ink);
+  border-radius: var(--radius-base);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base);
+}
+.file-chooser:hover, .file-chooser:has(input:focus-visible) {
+  border-color: var(--color-accent);
+  background-color: color-mix(in srgb, var(--color-accent) 12%, var(--color-bg));
+}
+.file-chooser:has(input:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+.file-chooser input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.file-chooser svg.icon { width: 26px; height: 26px; }
+.file-chooser-title { font-size: var(--text-sm); font-weight: var(--font-weight-bold); }
+.file-chooser-note { font-size: var(--text-xs); overflow-wrap: anywhere; }
 `;

@@ -1,3 +1,4 @@
+import type { Child } from "hono/jsx";
 import {
   type CatalogFoodProductErrors,
   type CatalogFoodProductInput,
@@ -11,6 +12,13 @@ import {
 import { IMAGE_MAX_EDGE } from "../catalog/image";
 import type { CatalogFoodProduct } from "../db/catalogFoodProducts";
 import { formatDateTime } from "./format";
+import {
+  PencilIcon,
+  PhotoIcon,
+  PhotoPlusIcon,
+  PlusIcon,
+  TrashIcon,
+} from "./icons";
 
 // メインアプリの `src/features/food-products/labels.ts` と同じ表記にする
 const NUTRITION_TYPE_LABEL: Record<NutritionType, string> = {
@@ -72,6 +80,16 @@ function formatTarget(product: CatalogFoodProduct) {
   return parts.length > 0 ? parts.join(" ・ ") : null;
 }
 
+/** 一覧の見出しの右に置く登録ボタン（メインアプリのごはん商品一覧と同じ並び） */
+export function CatalogFoodProductsActions() {
+  return (
+    <a href="/food-products/new" class="button-link primary">
+      <PlusIcon />
+      共通のごはん商品を登録する
+    </a>
+  );
+}
+
 export function CatalogFoodProductsPage(props: {
   products: CatalogFoodProduct[];
   change?: CatalogChange;
@@ -88,11 +106,6 @@ export function CatalogFoodProductsPage(props: {
         </span>
       </p>
       {props.change && <CatalogChangeNotice change={props.change} />}
-      <p>
-        <a href="/food-products/new" class="button-link">
-          共通のごはん商品を登録する
-        </a>
-      </p>
       {props.products.length === 0 ? (
         <p class="empty">共通のごはん商品はまだありません。</p>
       ) : (
@@ -127,18 +140,17 @@ export function CatalogFoodProductsPage(props: {
                           loading="lazy"
                         />
                       ) : (
-                        <span class="empty">なし</span>
+                        <span class="product-image placeholder">
+                          <PhotoIcon />
+                          <span class="visually-hidden">画像なし</span>
+                        </span>
                       )}
                     </td>
                     <td>
-                      {product.name}
+                      <span class="product-name">{product.name}</span>
                       {product.manufacturer && (
-                        <>
-                          <br />
-                          {product.manufacturer}
-                        </>
+                        <span class="sub">{product.manufacturer}</span>
                       )}
-                      <br />
                       <code>{product.id}</code>
                     </td>
                     <td class="nowrap">
@@ -156,15 +168,27 @@ export function CatalogFoodProductsPage(props: {
                     <td>{formatDateTime(product.updatedAt)}</td>
                     <td>
                       <div class="actions">
-                        <a href={`${productPath(product.id)}/edit`}>編集</a>
+                        <a
+                          href={`${productPath(product.id)}/edit`}
+                          class="icon-button"
+                          aria-label={`${product.name}を編集する`}
+                          title="編集する"
+                        >
+                          <PencilIcon />
+                        </a>
                         {/* 確認文には商品名などの入力値を含めない（属性値の中の JS として実行されるため） */}
                         <form
                           method="post"
                           action={`${productPath(product.id)}/delete`}
                           onsubmit="return confirm('この共通のごはん商品を削除しますか？家に追加済みの商品は残ります。')"
                         >
-                          <button type="submit" class="danger">
-                            削除
+                          <button
+                            type="submit"
+                            class="icon-button"
+                            aria-label={`${product.name}を削除する`}
+                            title="削除する"
+                          >
+                            <TrashIcon />
                           </button>
                         </form>
                       </div>
@@ -188,7 +212,9 @@ const RESIZE_SCRIPT = `
 document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function (input) {
   input.addEventListener("change", async function () {
     var file = input.files && input.files[0];
-    var resizeError = input.parentElement.querySelector("[data-resize-error]");
+    var field = input.closest(".field");
+    var resizeError = field && field.querySelector("[data-resize-error]");
+    var fileName = field && field.querySelector("[data-file-name]");
     if (resizeError) resizeError.hidden = true;
     if (!file) return;
     var submit = input.form && input.form.querySelector('button[type="submit"]');
@@ -214,10 +240,12 @@ document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function 
         new File([blob], file.name.replace(/\\.[^.]*$/, "") + ".jpg", { type: "image/jpeg" })
       );
       input.files = transfer.files;
+      if (fileName) fileName.textContent = file.name;
     } catch (error) {
       console.error(error);
       input.value = "";
       if (resizeError) resizeError.hidden = false;
+      if (fileName) fileName.textContent = fileName.dataset.fileName;
     } finally {
       if (submit) submit.disabled = false;
     }
@@ -225,12 +253,108 @@ document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function 
 });
 `;
 
-function FieldError(props: { message?: string }) {
+function FieldError(props: { id: string; message?: string }) {
   return props.message ? (
-    <p class="field-error" role="alert">
+    <p class="field-error" id={props.id} role="alert">
       {props.message}
     </p>
   ) : null;
+}
+
+/** 入力欄の補足説明（メインアプリの FieldDescription） */
+function FieldDescription(props: { id: string; children: Child }) {
+  return (
+    <p class="field-description" id={props.id}>
+      {props.children}
+    </p>
+  );
+}
+
+type TextFieldName =
+  | "name"
+  | "manufacturer"
+  | "kcalPer100g"
+  | "packageAmountG"
+  | "packageUnit"
+  | "targetBreed";
+
+/** メインアプリの FormField と同じく、ラベル・入力欄・補足説明・エラーを縦に並べる */
+function TextField(props: {
+  name: TextFieldName;
+  label: string;
+  input: CatalogFoodProductInput;
+  errors: CatalogFoodProductErrors;
+  description?: string;
+  type?: "text" | "number";
+  required?: boolean;
+  maxlength?: number;
+  placeholder?: string;
+}) {
+  const { name, errors } = props;
+  const id = `field-${name}`;
+  const error = errors[name];
+  const describedBy = [
+    props.description ? `${id}-description` : "",
+    error ? `${id}-error` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <div class="field">
+      <label for={id}>{props.label}</label>
+      <input
+        id={id}
+        type={props.type ?? "text"}
+        name={name}
+        value={props.input[name]}
+        required={props.required}
+        maxlength={props.maxlength}
+        placeholder={props.placeholder}
+        {...(props.type === "number"
+          ? { min: "0", step: "any", inputmode: "decimal" }
+          : {})}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={describedBy || undefined}
+      />
+      {props.description && (
+        <FieldDescription id={`${id}-description`}>
+          {props.description}
+        </FieldDescription>
+      )}
+      <FieldError id={`${id}-error`} message={error} />
+    </div>
+  );
+}
+
+function SelectField<T extends string>(props: {
+  name: "nutritionType" | "textureType";
+  label: string;
+  options: readonly T[];
+  labels: Record<T, string>;
+  input: CatalogFoodProductInput;
+  errors: CatalogFoodProductErrors;
+}) {
+  const { name, errors } = props;
+  const id = `field-${name}`;
+  const error = errors[name];
+  return (
+    <div class="field">
+      <label for={id}>{props.label}</label>
+      <select
+        id={id}
+        name={name}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
+      >
+        {props.options.map((value) => (
+          <option value={value} selected={props.input[name] === value}>
+            {props.labels[value]}
+          </option>
+        ))}
+      </select>
+      <FieldError id={`${id}-error`} message={error} />
+    </div>
+  );
 }
 
 export function CatalogFoodProductFormPage(props: {
@@ -243,9 +367,6 @@ export function CatalogFoodProductFormPage(props: {
   const action = product ? productPath(product.id) : "/food-products";
   return (
     <>
-      <p>
-        <a href="/food-products">共通のごはん商品の一覧へ戻る</a>
-      </p>
       {Object.keys(errors).length > 0 && (
         <p class="warning" role="alert">
           入力内容を確かめてください。
@@ -257,91 +378,67 @@ export function CatalogFoodProductFormPage(props: {
         enctype="multipart/form-data"
         class="product-form"
       >
-        <label>
-          <span>商品名</span>
-          <input
-            type="text"
-            name="name"
-            value={input.name}
-            required
-            maxlength={100}
-          />
-          <FieldError message={errors.name} />
-        </label>
-        <label>
-          <span>メーカー名（任意）</span>
-          <input
-            type="text"
-            name="manufacturer"
-            value={input.manufacturer}
-            maxlength={50}
-          />
-          <FieldError message={errors.manufacturer} />
-        </label>
-        <label>
-          <span>カロリー（kcal/100g）</span>
-          <input
-            type="number"
-            name="kcalPer100g"
-            value={input.kcalPer100g}
-            required
-            min="0"
-            step="any"
-            inputmode="decimal"
-          />
-          <FieldError message={errors.kcalPer100g} />
-        </label>
-        <label>
-          <span>内容量（g）</span>
-          <input
-            type="number"
+        <TextField
+          name="name"
+          label="商品名"
+          input={input}
+          errors={errors}
+          required
+          maxlength={100}
+        />
+        <TextField
+          name="manufacturer"
+          label="メーカー名（任意）"
+          input={input}
+          errors={errors}
+          maxlength={50}
+        />
+        <TextField
+          name="kcalPer100g"
+          label="カロリー（kcal/100g）"
+          type="number"
+          input={input}
+          errors={errors}
+          required
+        />
+        <div class="form-row">
+          <TextField
             name="packageAmountG"
-            value={input.packageAmountG}
+            label="内容量（g）"
+            type="number"
+            input={input}
+            errors={errors}
             required
-            min="0"
-            step="any"
-            inputmode="decimal"
           />
-          <FieldError message={errors.packageAmountG} />
-        </label>
-        <label>
-          <span>単位（任意）</span>
-          <input
-            type="text"
+          <TextField
             name="packageUnit"
-            value={input.packageUnit}
+            label="単位（任意）"
             placeholder="本・袋・パック"
+            description="1本・1袋あたりで登録する場合に入力。未入力は商品全体の内容量"
+            input={input}
+            errors={errors}
             maxlength={10}
           />
-          <small>
-            1本・1袋あたりで登録する場合に入力。未入力は商品全体の内容量
-          </small>
-          <FieldError message={errors.packageUnit} />
-        </label>
-        <label>
-          <span>区分</span>
-          <select name="nutritionType">
-            {NUTRITION_TYPES.map((value) => (
-              <option value={value} selected={input.nutritionType === value}>
-                {NUTRITION_TYPE_LABEL[value]}
-              </option>
-            ))}
-          </select>
-          <FieldError message={errors.nutritionType} />
-        </label>
-        <label>
-          <span>種類</span>
-          <select name="textureType">
-            {TEXTURE_TYPES.map((value) => (
-              <option value={value} selected={input.textureType === value}>
-                {TEXTURE_TYPE_LABEL[value]}
-              </option>
-            ))}
-          </select>
-          <FieldError message={errors.textureType} />
-        </label>
-        <fieldset>
-          <legend>対象の猫（任意・複数選択可）</legend>
+        </div>
+        <SelectField
+          name="nutritionType"
+          label="区分"
+          options={NUTRITION_TYPES}
+          labels={NUTRITION_TYPE_LABEL}
+          input={input}
+          errors={errors}
+        />
+        <SelectField
+          name="textureType"
+          label="種類"
+          options={TEXTURE_TYPES}
+          labels={TEXTURE_TYPE_LABEL}
+          input={input}
+          errors={errors}
+        />
+        {/* メインアプリの FormGroup と同じく、淡い背景の面にチェックボックスをまとめる */}
+        <fieldset class="group">
+          <legend>対象の猫（任意）</legend>
           <div class="checkboxes">
             {LIFE_STAGES.map((value) => (
               <label class="checkbox">
@@ -355,56 +452,73 @@ export function CatalogFoodProductFormPage(props: {
               </label>
             ))}
           </div>
-          <FieldError message={errors.lifeStages} />
+          <FieldDescription id="field-lifeStages-description">
+            複数選択できます。
+          </FieldDescription>
+          <FieldError id="field-lifeStages-error" message={errors.lifeStages} />
         </fieldset>
-        <label>
-          <span>対象の猫種（任意）</span>
-          <input
-            type="text"
-            name="targetBreed"
-            value={input.targetBreed}
-            maxlength={50}
-          />
-          <small>
-            特定の猫種向けの商品の場合に、メインアプリの猫種と同じ表記で入力。未入力はすべての猫種向け
-          </small>
-          <FieldError message={errors.targetBreed} />
-        </label>
-        <label>
-          <span>商品画像（任意）</span>
-          {product?.imageAssetId && (
-            <img
-              class="product-image"
-              src={`${productPath(product.id)}/image?v=${encodeURIComponent(product.imageAssetId)}`}
-              alt="現在の商品画像"
-              width={96}
-              height={96}
-            />
-          )}
-          <input
-            type="file"
-            name="image"
-            accept="image/jpeg,image/png,image/webp"
-            data-max-edge={String(IMAGE_MAX_EDGE)}
-          />
-          <small>
+        <TextField
+          name="targetBreed"
+          label="対象の猫種（任意）"
+          description="特定の猫種向けの商品の場合に、メインアプリの猫種と同じ表記で入力。未入力はすべての猫種向け"
+          input={input}
+          errors={errors}
+          maxlength={50}
+        />
+        <div class="field">
+          <span class="field-label" id="field-image-label">
+            商品画像（任意）
+          </span>
+          <div class="image-field">
+            {product?.imageAssetId && (
+              <img
+                class="product-image current-image"
+                src={`${productPath(product.id)}/image?v=${encodeURIComponent(product.imageAssetId)}`}
+                alt="今の商品画像"
+                width={160}
+                height={160}
+              />
+            )}
+            {/* メインアプリの画像の選択欄と同じ見た目の点線の枠。ファイル入力欄を枠いっぱいに
+                重ねて透明にし、押す・ドラッグ＆ドロップのどちらでも選べるようにする */}
+            <label class="file-chooser">
+              <input
+                type="file"
+                name="image"
+                accept="image/jpeg,image/png,image/webp"
+                data-max-edge={String(IMAGE_MAX_EDGE)}
+                aria-labelledby="field-image-label"
+                aria-describedby="field-image-description"
+              />
+              <PhotoPlusIcon />
+              <span class="file-chooser-title">
+                {product?.imageAssetId ? "画像を差し替える" : "画像を選ぶ"}
+              </span>
+              <span
+                class="file-chooser-note"
+                data-file-name="またはここにドラッグ＆ドロップ"
+              >
+                またはここにドラッグ＆ドロップ
+              </span>
+            </label>
+          </div>
+          <FieldDescription id="field-image-description">
             選んだ画像は長辺 {IMAGE_MAX_EDGE}px の JPEG に縮小して保存します。
-            {product?.imageAssetId && "選ぶと今の画像と差し替えます。"}
-          </small>
+          </FieldDescription>
           <p class="field-error" role="alert" data-resize-error hidden>
             画像を縮小できませんでした。別の画像を選んでください。
           </p>
-          <FieldError message={errors.image} />
-        </label>
-        {product?.imageAssetId && (
-          <label class="checkbox">
-            <input type="checkbox" name="removeImage" value="1" />
-            今の画像を削除する
-          </label>
-        )}
-        <div>
-          <button type="submit">{product ? "更新する" : "登録する"}</button>
+          <FieldError id="field-image-error" message={errors.image} />
+          {product?.imageAssetId && (
+            <label class="checkbox">
+              <input type="checkbox" name="removeImage" value="1" />
+              今の画像を削除する
+            </label>
+          )}
         </div>
+        <button type="submit" class="primary">
+          {product ? "更新する" : "登録する"}
+        </button>
       </form>
       <script dangerouslySetInnerHTML={{ __html: RESIZE_SCRIPT }} />
     </>

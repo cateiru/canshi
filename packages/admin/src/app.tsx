@@ -27,6 +27,7 @@ import {
 import {
   type CatalogChange,
   CatalogFoodProductFormPage,
+  CatalogFoodProductsActions,
   CatalogFoodProductsPage,
 } from "./views/catalogPages";
 import { Layout } from "./views/Layout";
@@ -70,6 +71,11 @@ function catalogResultUrl(
     params.set("product", productId);
   }
   return `/food-products?${params}`;
+}
+
+/** 共通のごはん商品の登録・編集ページのパンくず（一覧へ戻れるようにする） */
+function catalogBreadcrumb(label: string) {
+  return [{ label: "共通のごはん商品", href: "/food-products" }, { label }];
 }
 
 /** 画像を選んでいれば検証する。選んでいなければ null */
@@ -194,7 +200,11 @@ export function createApp() {
           ? { result, product }
           : undefined;
     return c.html(
-      <Layout title="共通のごはん商品" currentPath="/food-products">
+      <Layout
+        title="共通のごはん商品"
+        currentPath="/food-products"
+        actions={<CatalogFoodProductsActions />}
+      >
         <CatalogFoodProductsPage products={products} change={change} />
       </Layout>,
     );
@@ -202,7 +212,11 @@ export function createApp() {
 
   app.get("/food-products/new", (c) =>
     c.html(
-      <Layout title="共通のごはん商品を登録する" currentPath="/food-products">
+      <Layout
+        title="共通のごはん商品を登録する"
+        currentPath="/food-products"
+        breadcrumb={catalogBreadcrumb("登録する")}
+      >
         <CatalogFoodProductFormPage input={EMPTY_INPUT} />
       </Layout>,
     ),
@@ -216,7 +230,11 @@ export function createApp() {
     const image = parsed.ok ? await checkImage(parsed.image) : null;
     if (!parsed.ok || image?.ok === false) {
       return c.html(
-        <Layout title="共通のごはん商品を登録する" currentPath="/food-products">
+        <Layout
+          title="共通のごはん商品を登録する"
+          currentPath="/food-products"
+          breadcrumb={catalogBreadcrumb("登録する")}
+        >
           <CatalogFoodProductFormPage
             input={parsed.ok ? toInput(parsed.values) : parsed.input}
             errors={
@@ -247,7 +265,11 @@ export function createApp() {
       return c.notFound();
     }
     return c.html(
-      <Layout title={`${product.name} を編集する`} currentPath="/food-products">
+      <Layout
+        title={`${product.name} を編集する`}
+        currentPath="/food-products"
+        breadcrumb={catalogBreadcrumb("編集する")}
+      >
         <CatalogFoodProductFormPage
           product={product}
           input={toInput(product)}
@@ -272,6 +294,7 @@ export function createApp() {
         <Layout
           title={`${product.name} を編集する`}
           currentPath="/food-products"
+          breadcrumb={catalogBreadcrumb("編集する")}
         >
           <CatalogFoodProductFormPage
             product={product}
