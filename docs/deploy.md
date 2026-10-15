@@ -378,7 +378,7 @@ Workers 全体の Access だけには頼れない。Self-hosted アプリケー�
    Workers 全体の Access に適用している、メインアプリの利用者全員を許可するポリシーは使わない。
 2. Access controls > Applications で **Self-hosted** アプリケーションを追加し、ドメインに
    `canshi-admin.cateiru.dev` を指定して、1. のポリシーだけを付ける。
-3. `pnpm --filter @canshi/admin deploy` でデプロイする（カスタムドメインも作成される）。
+3. `pnpm --filter @canshi/admin run deploy` でデプロイする（カスタムドメインも作成される）。
 4. すぐに次の動作確認を実施する。
 
 ### 動作確認
@@ -394,8 +394,9 @@ Workers 全体の Access だけには頼れない。Self-hosted アプリケー�
 `packages/admin/src/db/catalogFoodProducts.ts`）。
 
 管理画面は `main` へのマージでは自動でデプロイされない。管理画面を変えた PR をマージしたときは、
-`pnpm --filter @canshi/admin deploy` で手動でデプロイする（`wrangler.jsonc` のバインディングを
-増やしたときも、このデプロイで反映される）。
+`pnpm --filter @canshi/admin run deploy` で手動でデプロイする（`wrangler.jsonc` のバインディングを
+増やしたときも、このデプロイで反映される）。`run` を省くと pnpm 組み込みの `pnpm deploy` として
+扱われ、`ERR_PNPM_INVALID_DEPLOY_TARGET` で失敗する。
 
 ## 監視・運用（TODO）
 
