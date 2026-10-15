@@ -352,6 +352,15 @@ async function storeMediaFile(
   }
 }
 
+/**
+ * R2 に保存したメディアの元データを読み出す。オブジェクトがなければ null。
+ * 共通のごはん商品を家に追加するときに、その画像を家の商品の画像として保存し直すために使う
+ */
+export async function readMediaObject(objectKey: string): Promise<Blob | null> {
+  const object = await getBucket().get(objectKey);
+  return object ? object.blob() : null;
+}
+
 function objectKeysOf(
   assets: Pick<MediaAsset, "objectKey" | "thumbnailObjectKey">[],
 ) {

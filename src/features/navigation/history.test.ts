@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   decideSubmitNavigation,
+  markReplaceNavigation,
   nextTrackedEntry,
   readPendingNavigation,
   readTrackedEntry,
@@ -197,5 +198,16 @@ describe("sessionStorage への保存", () => {
   it("壊れた値は無視する", () => {
     window.sessionStorage.setItem("canshi:navigation:entry", "{");
     expect(readTrackedEntry()).toBeNull();
+  });
+});
+
+describe("markReplaceNavigation", () => {
+  it("置き換えの遷移として予約し、着いたエントリの直前を置き換え前から引き継がせる", () => {
+    markReplaceNavigation("/food-products/new?householdId=h1");
+    expect(readPendingNavigation()).toEqual({
+      type: "replace",
+      href: "/food-products/new?householdId=h1",
+    });
+    writePendingNavigation(null);
   });
 });

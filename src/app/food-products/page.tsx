@@ -79,8 +79,8 @@ export default async function FoodProductsPage({
         <ButtonLink
           href={
             filterHousehold
-              ? `/food-products/new?householdId=${encodeURIComponent(filterHousehold.id)}`
-              : "/food-products/new"
+              ? `/food-products/add?householdId=${encodeURIComponent(filterHousehold.id)}`
+              : "/food-products/add"
           }
           variant="primary"
           leftIcon={TbPlus}
@@ -112,7 +112,7 @@ export default async function FoodProductsPage({
                 <div className={styles.emptyActions}>
                   {/* 登録画面でこの家を最初から選んでおく */}
                   <ButtonLink
-                    href={`/food-products/new?householdId=${encodeURIComponent(household.id)}`}
+                    href={`/food-products/add?householdId=${encodeURIComponent(household.id)}`}
                     variant="primary"
                   >
                     最初の商品を登録する

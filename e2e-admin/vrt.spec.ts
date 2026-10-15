@@ -7,13 +7,15 @@ import { expect, takeSnapshot, test } from "../e2e/vrt-snapshot";
 // （CI の vrt-admin ジョブでは自動的に実行される）。ローカルの D1 に e2e などで作った
 // データが残っていると、その分も一覧に表示される。
 //
-// 書き込み（ログアウトさせる・メンバーの追加・削除）はデータを変えてしまうため実行せず、
+// 書き込み（ログアウトさせる・メンバーの追加・削除・共通のごはん商品の登録など）はデータを変えてしまうため実行せず、
 // 結果の表示はリダイレクト先の URL のクエリで再現する（packages/admin/src/app.tsx）
 
 const PAGES = [
   { title: "概要", path: "/" },
   { title: "ユーザー", path: "/users" },
   { title: "家", path: "/households" },
+  { title: "共通のごはん商品", path: "/food-products" },
+  { title: "共通のごはん商品を登録する", path: "/food-products/new" },
 ] as const;
 
 for (const viewport of [
@@ -66,6 +68,25 @@ test("家にメンバーを追加できなかった結果の見た目", async ({
   );
   await expect(page.getByRole("alert")).toContainText(
     "メンバーに追加できませんでした",
+  );
+  await takeSnapshot(page, testInfo);
+});
+
+test("共通のごはん商品の編集ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/food-products/vrt-catalog-1/edit");
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "VRTテストフード を編集する",
+    }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+test("共通のごはん商品を登録した結果の見た目", async ({ page }, testInfo) => {
+  await page.goto("/food-products?catalogChange=created&product=vrt-catalog-2");
+  await expect(page.getByRole("status")).toHaveText(
+    "VRTまぐろパウチ を登録しました。",
   );
   await takeSnapshot(page, testInfo);
 });

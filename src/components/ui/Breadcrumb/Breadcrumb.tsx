@@ -4,6 +4,8 @@ import styles from "./Breadcrumb.module.css";
 export type BreadcrumbItem = {
   label: string;
   href?: string;
+  /** 今の履歴エントリを置き換えて移動する（通過するだけのページへ戻るリンクなど） */
+  replace?: boolean;
 };
 
 export type BreadcrumbProps = {
@@ -23,7 +25,11 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
               className={styles.item}
             >
               {item.href && !isLast ? (
-                <Link href={item.href} className={styles.link}>
+                <Link
+                  href={item.href}
+                  replace={item.replace}
+                  className={styles.link}
+                >
                   {item.label}
                 </Link>
               ) : (

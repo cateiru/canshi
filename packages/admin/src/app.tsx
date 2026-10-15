@@ -2,6 +2,24 @@ import { Hono } from "hono";
 import { csrf } from "hono/csrf";
 import { secureHeaders } from "hono/secure-headers";
 import {
+  type CatalogFoodProductErrors,
+  EMPTY_INPUT,
+  type FormBody,
+  parseCatalogFoodProductForm,
+  toInput,
+} from "./catalog/form";
+import { type CheckedImage, checkCatalogImage } from "./catalog/image";
+import { resolveStorageLimitBytes } from "./catalog/storage";
+import {
+  createCatalogFoodProduct,
+  deleteCatalogFoodProduct,
+  getCatalogFoodProduct,
+  getCatalogImage,
+  listCatalogFoodProducts,
+  StorageLimitError,
+  updateCatalogFoodProduct,
+} from "./db/catalogFoodProducts";
+import {
   addHouseholdMember,
   deleteUserSessions,
   getOverview,
@@ -9,6 +27,12 @@ import {
   listUsers,
   removeHouseholdMember,
 } from "./db/queries";
+import {
+  type CatalogChange,
+  CatalogFoodProductFormPage,
+  CatalogFoodProductsActions,
+  CatalogFoodProductsPage,
+} from "./views/catalogPages";
 import { Layout } from "./views/Layout";
 import {
   type HouseholdMemberChange,
@@ -36,6 +60,30 @@ function householdsResultUrl(
     user: userId,
   });
   return `/households?${params}`;
+}
+
+const CATALOG_CHANGE_RESULTS = ["created", "updated", "deleted"] as const;
+
+/** 共通のごはん商品の登録・更新・削除の結果を表示する `/food-products` の URL */
+function catalogResultUrl(
+  result: (typeof CATALOG_CHANGE_RESULTS)[number],
+  productId?: string,
+) {
+  const params = new URLSearchParams({ catalogChange: result });
+  if (productId) {
+    params.set("product", productId);
+  }
+  return `/food-products?${params}`;
+}
+
+/** 共通のごはん商品の登録・編集ページのパンくず（一覧へ戻れるようにする） */
+function catalogBreadcrumb(label: string) {
+  return [{ label: "共通のごはん商品", href: "/food-products" }, { label }];
+}
+
+/** 画像を選んでいれば検証する。選んでいなければ null */
+async function checkImage(file: File | null): Promise<CheckedImage | null> {
+  return file ? checkCatalogImage(file) : null;
 }
 
 /**
@@ -139,6 +187,186 @@ export function createApp() {
       ),
       303,
     );
+  });
+
+  app.get("/food-products", async (c) => {
+    const products = await listCatalogFoodProducts(c.env.DB);
+    // 登録・更新・削除した直後は、その結果を表示する
+    const result = CATALOG_CHANGE_RESULTS.find(
+      (value) => value === c.req.query("catalogChange"),
+    );
+    const product = products.find((item) => item.id === c.req.query("product"));
+    const change: CatalogChange | undefined =
+      result === "deleted"
+        ? { result }
+        : result && product
+          ? { result, product }
+          : undefined;
+    return c.html(
+      <Layout
+        title="共通のごはん商品"
+        currentPath="/food-products"
+        actions={<CatalogFoodProductsActions />}
+      >
+        <CatalogFoodProductsPage products={products} change={change} />
+      </Layout>,
+    );
+  });
+
+  app.get("/food-products/new", (c) =>
+    c.html(
+      <Layout
+        title="共通のごはん商品を登録する"
+        currentPath="/food-products"
+        breadcrumb={catalogBreadcrumb("登録する")}
+      >
+        <CatalogFoodProductFormPage input={EMPTY_INPUT} />
+      </Layout>,
+    ),
+  );
+
+  // 共通のごはん商品を登録する
+  app.post("/food-products", async (c) => {
+    const parsed = parseCatalogFoodProductForm(
+      (await c.req.parseBody({ all: true })) as FormBody,
+    );
+    const renderForm = (errors: CatalogFoodProductErrors, status: 400 | 507) =>
+      c.html(
+        <Layout
+          title="共通のごはん商品を登録する"
+          currentPath="/food-products"
+          breadcrumb={catalogBreadcrumb("登録する")}
+        >
+          <CatalogFoodProductFormPage
+            input={parsed.ok ? toInput(parsed.values) : parsed.input}
+            errors={errors}
+          />
+        </Layout>,
+        status,
+      );
+    if (!parsed.ok) {
+      return renderForm(parsed.errors, 400);
+    }
+    const image = await checkImage(parsed.image);
+    if (image?.ok === false) {
+      return renderForm({ image: image.error }, 400);
+    }
+    try {
+      const id = await createCatalogFoodProduct(
+        c.env.DB,
+        c.env.MEDIA_BUCKET,
+        parsed.values,
+        image,
+        resolveStorageLimitBytes(c.env),
+      );
+      return c.redirect(catalogResultUrl("created", id), 303);
+    } catch (error) {
+      if (error instanceof StorageLimitError) {
+        return renderForm({ image: error.message }, 507);
+      }
+      throw error;
+    }
+  });
+
+  app.get("/food-products/:productId/edit", async (c) => {
+    const product = await getCatalogFoodProduct(
+      c.env.DB,
+      c.req.param("productId"),
+    );
+    if (!product) {
+      return c.notFound();
+    }
+    return c.html(
+      <Layout
+        title={`${product.name} を編集する`}
+        currentPath="/food-products"
+        breadcrumb={catalogBreadcrumb("編集する")}
+      >
+        <CatalogFoodProductFormPage
+          product={product}
+          input={toInput(product)}
+        />
+      </Layout>,
+    );
+  });
+
+  // 共通のごはん商品を更新する（家に追加済みの商品には反映しない）
+  app.post("/food-products/:productId", async (c) => {
+    const productId = c.req.param("productId");
+    const product = await getCatalogFoodProduct(c.env.DB, productId);
+    if (!product) {
+      return c.notFound();
+    }
+    const parsed = parseCatalogFoodProductForm(
+      (await c.req.parseBody({ all: true })) as FormBody,
+    );
+    const renderForm = (errors: CatalogFoodProductErrors, status: 400 | 507) =>
+      c.html(
+        <Layout
+          title={`${product.name} を編集する`}
+          currentPath="/food-products"
+          breadcrumb={catalogBreadcrumb("編集する")}
+        >
+          <CatalogFoodProductFormPage
+            product={product}
+            input={parsed.ok ? toInput(parsed.values) : parsed.input}
+            errors={errors}
+          />
+        </Layout>,
+        status,
+      );
+    if (!parsed.ok) {
+      return renderForm(parsed.errors, 400);
+    }
+    const image = await checkImage(parsed.image);
+    if (image?.ok === false) {
+      return renderForm({ image: image.error }, 400);
+    }
+    try {
+      const updated = await updateCatalogFoodProduct(
+        c.env.DB,
+        c.env.MEDIA_BUCKET,
+        productId,
+        parsed.values,
+        {
+          image,
+          removeImage: parsed.removeImage,
+          storageLimitBytes: resolveStorageLimitBytes(c.env),
+        },
+      );
+      if (!updated) {
+        return c.notFound();
+      }
+      return c.redirect(catalogResultUrl("updated", productId), 303);
+    } catch (error) {
+      if (error instanceof StorageLimitError) {
+        return renderForm({ image: error.message }, 507);
+      }
+      throw error;
+    }
+  });
+
+  // 共通のごはん商品を削除する（家に追加済みの商品は残る）
+  app.post("/food-products/:productId/delete", async (c) => {
+    const deleted = await deleteCatalogFoodProduct(
+      c.env.DB,
+      c.env.MEDIA_BUCKET,
+      c.req.param("productId"),
+    );
+    if (!deleted) {
+      return c.notFound();
+    }
+    return c.redirect(catalogResultUrl("deleted"), 303);
+  });
+
+  // 共通のごはん商品の画像。管理画面の一覧・編集フォームで表示する
+  app.get("/food-products/:productId/image", async (c) => {
+    const image = await getCatalogImage(c.env.DB, c.req.param("productId"));
+    const object = image ? await c.env.MEDIA_BUCKET.get(image.objectKey) : null;
+    if (!image || !object) {
+      return c.notFound();
+    }
+    return c.body(object.body, 200, { "Content-Type": image.mimeType });
   });
 
   return app;

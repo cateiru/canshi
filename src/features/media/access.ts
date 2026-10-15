@@ -1,4 +1,5 @@
 import type { MediaAsset } from "@/db/schema";
+import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "@/features/catalog-food-products/media";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "@/features/food-products/media";
 import {
@@ -41,6 +42,7 @@ export async function canAccessMediaRecordOwner(
  *
  * - 記録に紐付く前の下書きは、アップロードした本人だけに許可する
  * - ユーザーのアイコン画像は、本人と、同じ家に所属するメンバーに許可する
+ * - 共通のごはん商品の画像は、どの家のユーザーも検索で見るため、ログイン中のユーザーなら許可する
  * - 支出の添付・ごはん商品の画像は、支出・商品の家に所属していることを求める
  * - 猫に紐付くメディアは、その猫の家に所属していることを求める
  * - それ以外の猫に紐付かないメディア（開発確認用のアップロード）は、ログイン中のユーザーなら許可する
@@ -54,6 +56,9 @@ export async function canAccessMediaAsset(
   }
   if (asset.recordType === USER_ICON_MEDIA_TYPE) {
     return sharesHousehold(userId, asset.recordId);
+  }
+  if (asset.recordType === CATALOG_FOOD_PRODUCT_MEDIA_TYPE) {
+    return true;
   }
   if (
     asset.recordType === EXPENSE_MEDIA_TYPE ||
@@ -73,12 +78,16 @@ export async function canAccessMediaAsset(
 
 /**
  * ユーザーがメディアを削除してよいかを判定する。ユーザーのアイコン画像は、同じ家のメンバーでも
- * 本人以外には削除させない。それ以外は参照できるメディアなら削除できる
+ * 本人以外には削除させない。共通のごはん商品の画像は管理画面だけが削除し、メインアプリの
+ * ユーザーには削除させない。それ以外は参照できるメディアなら削除できる
  */
 export async function canDeleteMediaAsset(
   userId: string,
   asset: AccessCheckedAsset,
 ): Promise<boolean> {
+  if (asset.recordType === CATALOG_FOOD_PRODUCT_MEDIA_TYPE) {
+    return false;
+  }
   if (asset.recordType === USER_ICON_MEDIA_TYPE) {
     return asset.recordId === userId;
   }

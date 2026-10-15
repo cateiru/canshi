@@ -1,4 +1,5 @@
 export * from "./ai-evaluations";
+export * from "./catalog-food-products";
 export * from "./cats";
 export * from "./cleaning-records";
 export * from "./cleaning-targets";

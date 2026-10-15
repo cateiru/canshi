@@ -7,11 +7,13 @@ import {
 } from "@/features/food-products/actions";
 import { FoodProductForm } from "@/features/food-products/FoodProductForm";
 import {
-  findFilterHousehold,
-  householdSettingsBreadcrumbItems,
-} from "@/features/households/householdFilter";
+  foodProductsBreadcrumbItems,
+  withHouseholdId,
+} from "@/features/food-products/paths";
+import { findFilterHousehold } from "@/features/households/householdFilter";
 import { listHouseholdsForUser } from "@/features/households/queries";
 import { resolveMediaLimits } from "@/features/media/limits";
+import { ReplaceNavigation } from "@/features/navigation/ReplaceNavigation";
 import { Surface } from "@/features/shared/Surface";
 import styles from "../page.module.css";
 
@@ -31,25 +33,21 @@ export default async function NewFoodProductPage({
   const households = await listHouseholdsForUser(user.id);
   // 所属していない家の ID が指定された場合は、先頭の家を選んでおく
   const filterHousehold = findFilterHousehold(households, householdId);
+  const addHref = withHouseholdId("/food-products/add", filterHousehold);
 
   return (
     <main className={styles.main}>
-      <Breadcrumb
-        items={[
-          ...(filterHousehold
-            ? householdSettingsBreadcrumbItems(
-                filterHousehold,
-                "ごはん商品一覧",
-                `/food-products?householdId=${encodeURIComponent(filterHousehold.id)}`,
-              )
-            : [
-                { label: "トップ", href: "/home" },
-                { label: "設定", href: "/settings" },
-                { label: "ごはん商品一覧", href: "/food-products" },
-              ]),
-          { label: "登録する" },
-        ]}
-      />
+      {/* 登録方法を選び直すときは今のページを履歴に残さない（保存・追加の後に戻ると、
+          登録を始めた画面に戻るようにする） */}
+      <ReplaceNavigation href={addHref}>
+        <Breadcrumb
+          items={[
+            ...foodProductsBreadcrumbItems(filterHousehold),
+            { label: "登録する", href: addHref, replace: true },
+            { label: "手動で入力する" },
+          ]}
+        />
+      </ReplaceNavigation>
 
       <h1>ごはん商品を登録する</h1>
       {households.length === 0 ? (

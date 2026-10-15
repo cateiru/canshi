@@ -120,6 +120,16 @@ export function writePendingNavigation(pending: PendingNavigation | null) {
   writeJson(PENDING_KEY, pending);
 }
 
+/**
+ * リンクや `router.replace` で今のエントリを置き換えて `href` へ移動するときに呼ぶ。
+ * `NavigationTracker` は push と置き換えを区別できないため、送信後の置き換えと同じく予約しておき、
+ * 着いたエントリの直前を置き換え前のエントリの直前から引き継がせる。
+ * 登録方法の選択ページのように、通過するだけのページを送信後の判断（戻るか置き換えるか）から外すために使う
+ */
+export function markReplaceNavigation(href: string) {
+  writePendingNavigation({ type: "replace", href });
+}
+
 /** 今の位置を追跡状態と同じ形式（pathname + search）で返す */
 export function currentLocation(): string {
   return `${window.location.pathname}${window.location.search}`;

@@ -8,6 +8,8 @@ type FoodProductImageProps = {
   thumbnailUrl: string | null | undefined;
   /** sm: 選択肢・ボタン内（24px）。md: 一覧（64px） */
   size?: "sm" | "md";
+  /** 検索結果など、画面の外に多く並ぶときは lazy にする */
+  loading?: "eager" | "lazy";
 };
 
 /**
@@ -17,6 +19,7 @@ export function FoodProductImage({
   name,
   thumbnailUrl,
   size = "md",
+  loading = "eager",
 }: FoodProductImageProps) {
   return (
     <ImagePreview
@@ -31,8 +34,8 @@ export function FoodProductImage({
         .join(" ")}
       fallback={<FeedingIcon aria-hidden="true" />}
       fallbackLabel={`${name}の画像なし`}
-      // 小さな画像のため、これまでどおりすぐに読み込む
-      loading="eager"
+      // 小さな画像のため、既定ではこれまでどおりすぐに読み込む
+      loading={loading}
     />
   );
 }

@@ -5,11 +5,22 @@ const NAV_ITEMS = [
   { href: "/", label: "概要" },
   { href: "/users", label: "ユーザー" },
   { href: "/households", label: "家" },
+  { href: "/food-products", label: "共通のごはん商品" },
 ] as const;
+
+/** パンくずの項目。`href` のない項目は今のページ */
+export interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
 
 export function Layout(props: {
   title: string;
   currentPath: string;
+  /** メインアプリの Breadcrumb と同じく、見出しの上に一覧などへ戻るリンクを並べる */
+  breadcrumb?: BreadcrumbItem[];
+  /** 見出しの右に置く操作（登録ボタンなど） */
+  actions?: Child;
   children: Child;
 }) {
   return (
@@ -40,7 +51,32 @@ export function Layout(props: {
           </nav>
         </header>
         <main>
-          <h2>{props.title}</h2>
+          {props.breadcrumb && (
+            <nav aria-label="パンくずリスト" class="breadcrumb">
+              <ol>
+                {props.breadcrumb.map((item, index) => (
+                  <li>
+                    {index > 0 && (
+                      <span class="separator" aria-hidden="true">
+                        /
+                      </span>
+                    )}
+                    {item.href ? (
+                      <a href={item.href}>{item.label}</a>
+                    ) : (
+                      <span aria-current="page" class="current">
+                        {item.label}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+          <div class="page-header">
+            <h2>{props.title}</h2>
+            {props.actions}
+          </div>
           {props.children}
         </main>
       </body>

@@ -5,7 +5,9 @@ import {
   real,
   sqliteTable,
   text,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { catalogFoodProducts } from "./catalog-food-products";
 import { households } from "./households";
 
 /** ごはん商品の対象の猫（キトン・成猫・シニア・療養） */
@@ -56,6 +58,13 @@ export const foodProducts = sqliteTable(
       .default(sql`'[]'`),
     /** 対象の猫種（`cats.breed` と同じ表記）。NULL はすべての猫種を表す */
     targetBreed: text("target_breed"),
+    // 共通のごはん商品から追加したときの追加元。検索結果で「追加済み」を表示するためだけに使い、
+    // 追加した後の内容は共通のごはん商品と連動しない。手動で登録した商品と、追加元が
+    // 管理画面で削除された商品は NULL
+    catalogFoodProductId: text("catalog_food_product_id").references(
+      () => catalogFoodProducts.id,
+      { onDelete: "set null" },
+    ),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -67,6 +76,12 @@ export const foodProducts = sqliteTable(
     index("food_products_household_id_created_at_idx").on(
       table.householdId,
       table.createdAt,
+    ),
+    // 同じ共通のごはん商品を同じ家に 2 回追加しないため（同時に追加されても 1 件にする）。
+    // 手動で登録した商品は追加元が NULL で、NULL 同士は重複とみなされない
+    uniqueIndex("food_products_household_id_catalog_food_product_id_unique").on(
+      table.householdId,
+      table.catalogFoodProductId,
     ),
   ],
 );

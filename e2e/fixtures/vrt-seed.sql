@@ -95,9 +95,19 @@ INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, created_at, upda
 VALUES ('vrt-cat-busy', 'VRT記録多数猫', 'unknown', NULL, NULL, NULL,
   strftime('%s', '2024-05-31 00:00:00'), strftime('%s', '2024-05-31 00:00:00'));
 
+-- 共通のごはん商品（管理画面から登録し、ごはん商品の登録時に検索して家に追加する）。
+-- vrt-catalog-1 は VRT の家に追加済み（vrt-food-1 の追加元）、vrt-catalog-2 は未追加で、
+-- 検索結果の「追加済み」と「追加する」の両方を再現する。画像は R2 に置けないため持たない
+INSERT INTO catalog_food_products (id, name, manufacturer, kcal_per_100g, package_amount_g, package_unit, nutrition_type, texture_type, life_stages, target_breed, created_at, updated_at)
+VALUES
+  ('vrt-catalog-1', 'VRTテストフード', 'VRTフーズ', 350, 1000, NULL, 'complete', 'dry', '["adult","senior"]', 'ペルシャ',
+    strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00')),
+  ('vrt-catalog-2', 'VRTまぐろパウチ', 'VRTフーズ', 70, 40, '袋', 'general', 'wet', '["kitten"]', NULL,
+    strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
+
 -- メーカー名・対象の猫・猫種も入れ、商品一覧のカードで表示されるケースを再現する
-INSERT INTO food_products (id, name, manufacturer, kcal_per_100g, package_amount_g, nutrition_type, texture_type, life_stages, target_breed, created_at, updated_at)
-VALUES ('vrt-food-1', 'VRTテストフード', 'VRTフーズ', 350, 1000, 'complete', 'dry', '["adult","senior"]', 'ペルシャ',
+INSERT INTO food_products (id, name, manufacturer, kcal_per_100g, package_amount_g, nutrition_type, texture_type, life_stages, target_breed, catalog_food_product_id, created_at, updated_at)
+VALUES ('vrt-food-1', 'VRTテストフード', 'VRTフーズ', 350, 1000, 'complete', 'dry', '["adult","senior"]', 'ペルシャ', 'vrt-catalog-1',
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
 -- 掃除記録: target-1 は記録あり、target-2 は記録なし（ネストした一覧の両ケースに使う）。

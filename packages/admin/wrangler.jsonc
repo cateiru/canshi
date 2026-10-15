@@ -23,13 +23,23 @@
 
   // メインアプリと同じ D1 を参照する。マイグレーションはメインアプリ
   // （リポジトリルートの wrangler.toml・drizzle/）が管理するため、ここでは
-  // migrations_dir を持たない。書き込みはユーザーのセッションの削除（すべての端末から
-  // ログアウトさせる）だけにする（src/db/queries.ts）
+  // migrations_dir を持たない。書き込みはユーザーのセッションの削除・家のメンバーの
+  // 追加と削除（src/db/queries.ts）と、共通のごはん商品の登録・編集・削除
+  // （src/db/catalogFoodProducts.ts）だけにする
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "canshi-db",
       "database_id": "1f5e487e-f87e-4896-8190-1ae4f4347ca3"
+    }
+  ],
+
+  // メインアプリと同じ R2 バケット。共通のごはん商品の画像の保存・削除だけに使う
+  // （src/db/catalogFoodProducts.ts）
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "canshi-media"
     }
   ]
 }
