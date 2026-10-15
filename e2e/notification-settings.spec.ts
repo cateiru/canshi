@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openCatRegistration } from "./helpers";
 
 test("通知設定（全体・猫ごと）を確認・変更できる", async ({ page }) => {
   // 全体設定：通知時刻は 18:00 固定のため、案内の表示だけ確認する
@@ -11,11 +12,7 @@ test("通知設定（全体・猫ごと）を確認・変更できる", async ({
 
   // 猫ごとの通知設定
   const catName = `テスト猫-${Date.now()}`;
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();

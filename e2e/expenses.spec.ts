@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { fillAndKeep } from "./helpers";
+import { fillAndKeep, openCatRegistration } from "./helpers";
 
 const EXPENSE_DATE = "2026-09-08";
 
@@ -20,11 +20,7 @@ async function openRecordedMonth(page: Page) {
 test("支出記録の登録・編集・削除ができる", async ({ page }) => {
   const catName = `テスト猫-${Date.now()}`;
 
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();

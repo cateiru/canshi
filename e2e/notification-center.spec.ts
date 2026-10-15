@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { openCatRegistration } from "./helpers";
 
 /**
  * 掃除の通知を発生させるため、通知時刻 00:00・頻度1日の掃除対象を作り、3日前に実施した
@@ -37,11 +38,7 @@ test("掃除の通知を「掃除して完了にする」と対応済み一覧�
   page,
 }) => {
   const catName = `テスト猫-${Date.now()}`;
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();
@@ -85,11 +82,7 @@ test("通知を延期すると未対応一覧から消える", async ({ page }) 
   // 扱われることは、時刻を制御できる `src/features/notifications/queries.test.ts` の
   // 結合テストで確認している（PR #41 レビュー対応）
   const catName = `テスト猫-${Date.now()}`;
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();

@@ -10,6 +10,7 @@ import {
   Card,
   CatEarFrame,
   Checkbox,
+  DropdownMenu,
   FormField,
   Heading,
   Modal,
@@ -254,6 +255,22 @@ export default function ComponentsPreviewPage() {
             placeholder="選択してください"
           />
         </div>
+      </section>
+
+      <section>
+        <h2>DropdownMenu</h2>
+        <DropdownMenu
+          label="追加する"
+          variant="primary"
+          items={[
+            { id: "cat", label: "猫を登録する", href: "/cats/new" },
+            {
+              id: "household",
+              label: "家を作成する",
+              href: "/settings/households/new",
+            },
+          ]}
+        />
       </section>
 
       <section>

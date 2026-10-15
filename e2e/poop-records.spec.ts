@@ -1,13 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { openCatRegistration } from "./helpers";
 
 test("うんち記録の登録から一覧表示までできる", async ({ page }) => {
   const catName = `テスト猫-${Date.now()}`;
 
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
 
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();

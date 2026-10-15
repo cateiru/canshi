@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openCatRegistration } from "./helpers";
 
 test("複数商品のごはん記録とプリセットからの自動入力ができる", async ({
   page,
@@ -8,11 +9,7 @@ test("複数商品のごはん記録とプリセットからの自動入力が�
   const dryProductName = `カリカリNg-${Date.now()}`;
   const presetName = `朝ごはんセット-${Date.now()}`;
 
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();
@@ -104,11 +101,7 @@ test("あいまいモードのプリセットからごはんを段階で記録�
   const productName = `あいまい用カリカリ-${Date.now()}`;
   const presetName = `あいまいセット-${Date.now()}`;
 
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();

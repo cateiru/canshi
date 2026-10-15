@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { createPng } from "../src/features/media/testing/createPng";
+import { openCatRegistration } from "./helpers";
 
 // うんち記録に画像を添付し、一覧とタイムラインにサムネイルが表示され、モーダルで元画像を閲覧できるまでを検証する
 test("うんち記録に画像を添付すると一覧・タイムラインにサムネイルが表示される", async ({
@@ -7,11 +8,7 @@ test("うんち記録に画像を添付すると一覧・タイムラインに�
 }) => {
   const catName = `テスト猫-${Date.now()}`;
 
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();
