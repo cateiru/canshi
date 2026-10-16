@@ -198,7 +198,7 @@ importers:
         version: 2.4.0
       agents:
         specifier: ^0.28.0
-        version: 0.28.0(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.0.0)(react@19.3.0)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
+        version: 0.28.1(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.3.1)(react@19.3.0)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.4(@types/sql.js@1.4.11)(sql.js@1.14.2)
@@ -1687,12 +1687,12 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@modelcontextprotocol/client@2.0.0':
-    resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==}
+  '@modelcontextprotocol/client@2.3.1':
+    resolution: {integrity: sha512-mIGZXpHsjnZ6lD+gD/WCMpR5k8yVQQ8nNFH1N0Srf7AvnwTUMYD6pvTY8ng2+He5FfV7YMZLmrjL7cLa/cc3dQ==}
     engines: {node: '>=20'}
 
-  '@modelcontextprotocol/core@2.0.0':
-    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
+  '@modelcontextprotocol/core@2.3.1':
+    resolution: {integrity: sha512-laVmIhPGpWi7rG9q+0UigblRN0Hws/Yjlb6qLFtVqryXVLkc4h+yN8z731POD2LnAGQlFe7/tXhUm7Bi0YB91g==}
     engines: {node: '>=20'}
 
   '@modelcontextprotocol/sdk@1.32.1':
@@ -1705,8 +1705,8 @@ packages:
       '@cfworker/json-schema':
         optional: true
 
-  '@modelcontextprotocol/server@2.0.0':
-    resolution: {integrity: sha512-YhHWdHfpFMQfd0prsEnxKeS3Qz3ytIGmsS0sth4KDjnacIT7hxk6hXHkJ9KysxlkvTM+WZAtQbbcUhdoP4Hvtw==}
+  '@modelcontextprotocol/server@2.3.1':
+    resolution: {integrity: sha512-e59MfWuSssj6DoQ96JCTqdW1AXT5/XtnTl0WWd6MU1Ka434fFUGGosCLJbGNySDhHGvxQWoRWK137FXYFkYNWw==}
     engines: {node: '>=20'}
 
   '@next/env@16.3.8':
@@ -2429,8 +2429,8 @@ packages:
     resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
     engines: {node: '>= 8.0.0'}
 
-  agents@0.28.0:
-    resolution: {integrity: sha512-5nYoykTqL6HWLwRyPP9XL4triRg+kkc6W1Ovt58lMz3oLbChRst6GWQVU3LvLgve8YIbo1SvQp0IR4TOrxAD6g==}
+  agents@0.28.1:
+    resolution: {integrity: sha512-rhQax1hg0v4QWQhkIH3W2kywrj55fsHde3E+bSnsGkv2gH5nJUVyw6o6xeVnQrCbaLt8YXMhGw+hj4v82at/4g==}
     hasBin: true
     peerDependencies:
       '@ai-sdk/provider': ^4.0.0
@@ -2438,9 +2438,9 @@ packages:
       '@cloudflare/codemode': '>=0.5.0'
       '@earendil-works/pi-ai': ^1.0.0
       '@earendil-works/pi-durable': ^1.0.0
-      '@modelcontextprotocol/client': 2.0.0
-      '@modelcontextprotocol/sdk': 1.30.0
-      '@modelcontextprotocol/server': 2.0.0
+      '@modelcontextprotocol/client': 2.3.1
+      '@modelcontextprotocol/sdk': 1.32.1
+      '@modelcontextprotocol/server': 2.3.1
       '@opencode/plugin': ^2.0.24
       '@opencode/sdk': ^2.0.24
       '@tanstack/ai': '>=0.10.2 <1.0.0'
@@ -6106,9 +6106,9 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@modelcontextprotocol/client@2.0.0':
+  '@modelcontextprotocol/client@2.3.1':
     dependencies:
-      '@modelcontextprotocol/core': 2.0.0
+      '@modelcontextprotocol/core': 2.3.1
       cross-spawn: 7.0.6
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
@@ -6116,7 +6116,7 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.6.7
 
-  '@modelcontextprotocol/core@2.0.0':
+  '@modelcontextprotocol/core@2.3.1':
     dependencies:
       zod: 4.6.7
 
@@ -6144,9 +6144,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/server@2.0.0':
+  '@modelcontextprotocol/server@2.3.1':
     dependencies:
-      '@modelcontextprotocol/core': 2.0.0
+      '@modelcontextprotocol/core': 2.3.1
       zod: 4.6.7
 
   '@next/env@16.3.8': {}
@@ -6959,13 +6959,13 @@ snapshots:
     dependencies:
       humanize-ms: 1.2.1
 
-  agents@0.28.0(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.0.0)(react@19.3.0)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7):
+  agents@0.28.1(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.3.1)(react@19.3.0)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7):
     dependencies:
       '@babel/plugin-proposal-decorators': 8.0.2(@babel/core@8.0.6)
       '@cfworker/json-schema': 4.1.1
-      '@modelcontextprotocol/client': 2.0.0
+      '@modelcontextprotocol/client': 2.3.1
       '@modelcontextprotocol/sdk': 1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7)
-      '@modelcontextprotocol/server': 2.0.0
+      '@modelcontextprotocol/server': 2.3.1
       '@rolldown/plugin-babel': 0.2.4(@babel/core@8.0.6)(@babel/runtime@7.29.7)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))
       capnweb: 0.12.0
       cron-schedule: 6.0.0
