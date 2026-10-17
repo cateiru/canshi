@@ -39,7 +39,7 @@ export function McpPermissionsForm({ action, tree }: McpPermissionsFormProps) {
       <McpPermissionTreeField tree={tree} />
       {state.formError ? <Alert color="error">{state.formError}</Alert> : null}
       {tree.length > 0 ? (
-        <div>
+        <div className={styles.actions}>
           <Button
             type="submit"
             variant="primary"

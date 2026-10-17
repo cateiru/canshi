@@ -59,8 +59,8 @@ test("AIとの接続ごとに、読み取りを許可する記録の種類を外
   page,
 }) => {
   await page.goto("/settings/ai-connections");
-  const row = page.getByRole("row", { name: /E2Eのアプリ/ });
-  await row.getByRole("link", { name: "読み取る範囲" }).click();
+  const connection = page.getByRole("region", { name: "E2Eのアプリとの接続" });
+  await connection.getByRole("link", { name: "読み取る範囲" }).click();
   await expect(page).toHaveURL(`/settings/ai-connections/${GRANT_ID}`);
   await expect(
     page.getByRole("heading", { level: 1, name: "E2Eのアプリ" }),

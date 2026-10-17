@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { TbEye, TbPlugConnected } from "react-icons/tb";
-import { Breadcrumb } from "@/components/ui";
+import { Breadcrumb, ButtonLink, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
 import { listUserMcpConnections } from "@/features/mcp/connections";
 import { formatRedirectUri } from "@/features/mcp/consent";
+import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
 import { RevokeMcpConnectionButton } from "@/features/mcp/RevokeMcpConnectionButton";
-import {
-  formatDateTimeUtc,
-  getNaiveUtcNow,
-  splitDateTimeUtc,
-} from "@/features/shared/datetime";
+import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
@@ -48,87 +44,94 @@ export default async function AiConnectionsPage() {
           AIとの接続
         </RecordPageHeading>
         <p className={styles.description}>
-          ChatGPT などの AI
-          のアプリに、あなたのアカウントでの接続を許可すると、そのアプリから猫のプロフィールと記録を読み取れるようになります。許可した接続の確認と解除、接続ごとに読み取りを許可する範囲の設定ができます。
+          接続しているアプリの確認や解除、アプリごとに読み取れる情報の設定ができます。
         </p>
       </header>
 
-      <Surface
-        title="接続しているアプリ"
-        titleId="ai-connections"
-        titleSize="lg"
-        icon={<TbPlugConnected aria-hidden="true" size={20} />}
-        gap="sm"
-      >
+      <McpAccessNotice />
+
+      <section className={styles.section} aria-labelledby="ai-connections">
+        <div className={styles.sectionHeader}>
+          <Heading level={2} size="lg" id="ai-connections">
+            接続しているアプリ
+          </Heading>
+          <span className={styles.count}>{connections.length}件</span>
+        </div>
         {connections.length === 0 ? (
-          <p className={styles.sectionDescription}>
-            接続しているアプリはありません。
-          </p>
+          <Surface className={styles.empty}>
+            <span className={styles.appIcon}>
+              <TbPlugConnected size={28} aria-hidden="true" />
+            </span>
+            <Heading level={3} size="md">
+              接続しているアプリはありません
+            </Heading>
+            <p className={styles.description}>
+              ChatGPT など、接続したい AI のアプリから CANSHI
+              への接続を始めてください。
+            </p>
+          </Surface>
         ) : (
           <>
             <p className={styles.sectionDescription}>
-              心当たりのない接続や、使わなくなった接続は解除してください。アプリの名前は、接続したアプリ自身が名乗っているものです。
+              心当たりのない接続や、使わなくなった接続は解除してください。
             </p>
-            <div className={styles.tableScroll}>
-              <table
-                className={styles.connections}
-                aria-labelledby="ai-connections"
-              >
-                <thead>
-                  <tr>
-                    <th scope="col">アプリ</th>
-                    <th scope="col">接続日時</th>
-                    <th scope="col">
-                      <span className={styles.srOnly}>操作</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {connections.map((connection) => {
-                    const clientName = connection.clientName ?? UNNAMED_CLIENT;
-                    const connectedAtUtc = getNaiveUtcNow(connection.createdAt);
-                    const connectedAt = formatDateTimeUtc(connectedAtUtc);
-                    const { date, time } = splitDateTimeUtc(connectedAtUtc);
-                    return (
-                      <tr key={connection.id}>
-                        <th scope="row" className={styles.client}>
-                          <span className={styles.clientName}>
+            <ul className={styles.connections}>
+              {connections.map((connection) => {
+                const clientName = connection.clientName ?? UNNAMED_CLIENT;
+                const connectedAtUtc = getNaiveUtcNow(connection.createdAt);
+                const connectedAt = formatDateTimeUtc(connectedAtUtc);
+                return (
+                  <li key={connection.id}>
+                    <Surface
+                      className={styles.connection}
+                      aria-label={`${clientName}との接続`}
+                    >
+                      <div className={styles.app}>
+                        <span className={styles.appIcon}>
+                          <TbPlugConnected size={28} aria-hidden="true" />
+                        </span>
+                        <div className={styles.identity}>
+                          <Heading level={3} size="lg">
                             {clientName}
-                          </span>
-                          {connection.redirectUri ? (
-                            <span className={styles.redirect}>
-                              {formatRedirectUri(connection.redirectUri)}
-                            </span>
-                          ) : null}
-                          <Link
-                            href={`/settings/ai-connections/${connection.id}`}
-                            className={styles.permissionsLink}
-                          >
-                            <TbEye aria-hidden="true" />
-                            読み取る範囲
-                          </Link>
-                        </th>
-                        <td className={styles.connectedAt}>
-                          {/* 狭い画面では日付と時刻の間でだけ折り返す */}
-                          <span className={styles.nowrap}>{date}</span>{" "}
-                          <span className={styles.nowrap}>{time}</span>
-                        </td>
-                        <td className={styles.actions}>
-                          <RevokeMcpConnectionButton
-                            connectionId={connection.id}
-                            clientName={clientName}
-                            connectedAt={connectedAt}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          </Heading>
+                          <p className={styles.description}>
+                            アプリ自身が申告した名前です。
+                          </p>
+                        </div>
+                      </div>
+                      <dl className={styles.details}>
+                        {connection.redirectUri ? (
+                          <div>
+                            <dt>接続先</dt>
+                            <dd>{formatRedirectUri(connection.redirectUri)}</dd>
+                          </div>
+                        ) : null}
+                        <div>
+                          <dt>接続日時</dt>
+                          <dd>{connectedAt}</dd>
+                        </div>
+                      </dl>
+                      <div className={styles.actions}>
+                        <ButtonLink
+                          href={`/settings/ai-connections/${connection.id}`}
+                          leftIcon={TbEye}
+                        >
+                          読み取る範囲
+                        </ButtonLink>
+                        <RevokeMcpConnectionButton
+                          connectionId={connection.id}
+                          clientName={clientName}
+                          connectedAt={connectedAt}
+                        />
+                      </div>
+                    </Surface>
+                  </li>
+                );
+              })}
+            </ul>
           </>
         )}
-      </Surface>
+      </section>
     </main>
   );
 }

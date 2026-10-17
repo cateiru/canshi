@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import {
+  TbAlertTriangle,
+  TbEye,
+  TbPlugConnected,
+  TbUser,
+} from "react-icons/tb";
 import { Alert, Button, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
@@ -8,6 +14,7 @@ import {
   formatRedirectUri,
   MCP_CONSENT_HEADER,
 } from "@/features/mcp/consent";
+import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
 import { McpPermissionTreeField } from "@/features/mcp/McpPermissionTreeField";
 import { getMcpPermissionTree } from "@/features/mcp/permissions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -48,41 +55,75 @@ export default async function AuthorizePage({
 
   return (
     <main className={styles.main}>
-      <RecordPageHeading icon={AiConnectionIcon}>AIとの接続</RecordPageHeading>
+      <header className={styles.header}>
+        <RecordPageHeading icon={AiConnectionIcon}>
+          AIとの接続
+        </RecordPageHeading>
+        <p className={styles.description}>
+          接続するアプリと、読み取りを許可する範囲を確認してください。
+        </p>
+      </header>
 
       {consent ? (
-        <Surface className={styles.content}>
-          <p>
-            外部のアプリが、<strong>{user.name}</strong>
-            さんのアカウントで CANSHI
-            に接続しようとしています。許可すると、このアプリから、下で選んだ家の猫のプロフィールと記録を読み取れるようになります（記録の追加・変更はできません）。許可した接続は、設定の「AIとの接続」から解除できます。
-          </p>
-          <dl className={styles.details}>
-            <dt>アプリの名前</dt>
-            <dd>{consent.clientName ?? "（名前がありません）"}</dd>
-            <dt>接続先</dt>
-            <dd>{formatRedirectUri(consent.redirectUri)}</dd>
-          </dl>
-          <p className={styles.note}>
-            アプリの名前は接続するアプリ自身が名乗っているものです。自分で接続を始めたのでなければ、許可しないでください。
+        <>
+          <Surface
+            className={styles.connection}
+            aria-labelledby="connecting-app"
+          >
+            <div className={styles.app}>
+              <span className={styles.appIcon}>
+                <TbPlugConnected size={28} aria-hidden="true" />
+              </span>
+              <div className={styles.appIdentity}>
+                <p className={styles.note}>接続をリクエストしているアプリ</p>
+                <Heading level={2} size="lg" id="connecting-app">
+                  {consent.clientName ?? "（名前がありません）"}
+                </Heading>
+                <p className={styles.note}>アプリ自身が申告した名前です。</p>
+              </div>
+            </div>
+            <dl className={styles.details}>
+              <div>
+                <dt>接続先</dt>
+                <dd>{formatRedirectUri(consent.redirectUri)}</dd>
+              </div>
+              <div>
+                <dt>接続に使うアカウント</dt>
+                <dd className={styles.account}>
+                  <TbUser size={18} aria-hidden="true" />
+                  {user.name} さん
+                </dd>
+              </div>
+            </dl>
+            <McpAccessNotice />
+          </Surface>
+          <p className={styles.caution}>
+            <TbAlertTriangle size={20} aria-hidden="true" />
+            自分で接続を始めたのでなければ、許可しないでください。
           </p>
           <form
             method="post"
             action={`/oauth/authorize?${toQueryString(await searchParams)}`}
             className={styles.form}
           >
-            <section
-              className={styles.permissions}
-              aria-labelledby="ai-permissions"
+            <Surface
+              title="読み取りを許可する範囲"
+              titleId="ai-permissions"
+              titleSize="lg"
+              icon={<TbEye size={22} aria-hidden="true" />}
+              gap="sm"
             >
-              <Heading level={2} size="md" id="ai-permissions">
-                読み取りを許可する範囲
-              </Heading>
               <p className={styles.note}>
-                この範囲は、このアプリとの接続だけに使います。あとから設定の「AIとの接続」で変えることもできます。
+                このアプリに公開する家・猫・記録を選んでください。チェックを外した情報は読み取れません。
               </p>
               <McpPermissionTreeField tree={permissionTree} />
-            </section>
+              <p className={styles.note}>
+                あとから登録した猫や、新しく参加した家は、読み取れる状態になります。
+              </p>
+            </Surface>
+            <p className={styles.afterNote}>
+              許可したあとも、設定の「AIとの接続」で範囲の変更や接続の解除ができます。
+            </p>
             <div className={styles.actions}>
               <Button
                 type="submit"
@@ -97,7 +138,7 @@ export default async function AuthorizePage({
               </Button>
             </div>
           </form>
-        </Surface>
+        </>
       ) : (
         <Alert color="error">
           接続のリクエストが正しくありません。接続するアプリから、もう一度やり直してください。

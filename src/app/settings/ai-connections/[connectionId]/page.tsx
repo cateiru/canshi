@@ -7,6 +7,7 @@ import { requireUser } from "@/features/auth/session";
 import { updateMcpPermissionsAction } from "@/features/mcp/actions";
 import { getUserMcpConnection } from "@/features/mcp/connections";
 import { formatRedirectUri } from "@/features/mcp/consent";
+import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
 import { McpPermissionsForm } from "@/features/mcp/McpPermissionsForm";
 import { getMcpPermissionTree } from "@/features/mcp/permissions";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
@@ -62,6 +63,12 @@ export default async function AiConnectionPage({
         <RecordPageHeading icon={AiConnectionIcon}>
           {clientName}
         </RecordPageHeading>
+        <p className={styles.description}>
+          このアプリから読み取れる情報を設定します。
+        </p>
+      </header>
+
+      <Surface className={styles.summary} aria-label="接続の情報">
         <dl className={styles.details}>
           {connection.redirectUri ? (
             <>
@@ -72,7 +79,11 @@ export default async function AiConnectionPage({
           <dt>接続日時</dt>
           <dd>{formatDateTimeUtc(getNaiveUtcNow(connection.createdAt))}</dd>
         </dl>
-      </header>
+        <p className={styles.description}>
+          アプリの名前は、アプリ自身が申告したものです。
+        </p>
+        <McpAccessNotice />
+      </Surface>
 
       <Surface
         title="読み取りを許可する範囲"
@@ -82,7 +93,10 @@ export default async function AiConnectionPage({
         gap="sm"
       >
         <p className={styles.description}>
-          チェックを外した家・猫・記録は、このアプリから読み取れなくなります。この範囲は、このアプリとの接続だけに使います。あとから登録した猫や、新しく参加した家は、読み取れる状態になります。
+          チェックを外した家・猫・記録は、このアプリから読み取れなくなります。ほかのアプリとの接続には影響しません。
+        </p>
+        <p className={styles.description}>
+          あとから登録した猫や、新しく参加した家は、読み取れる状態になります。
         </p>
         <McpPermissionsForm
           action={updateMcpPermissionsAction.bind(null, connection.id)}
