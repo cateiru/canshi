@@ -147,6 +147,7 @@ describe("withMcpAuthorize", () => {
     expect(
       decodeMcpConsentRequest(request.headers.get(MCP_CONSENT_HEADER)),
     ).toEqual({
+      clientId: "client-1",
       clientName: "テストのアプリ",
       redirectUri: "https://client.example.test/cb",
     });
@@ -203,7 +204,8 @@ describe("withMcpAuthorize", () => {
       userId: "user-1",
       metadata: {},
       scope: [],
-      props: { userId: "user-1" },
+      // 接続ごとの読み取りの範囲を見分けられるよう、クライアントの ID も持たせる
+      props: { userId: "user-1", clientId: "client-1" },
     });
     expect(response.status).toBe(303);
     expect(response.headers.get("Location")).toBe(
@@ -211,7 +213,7 @@ describe("withMcpAuthorize", () => {
     );
   });
 
-  it("POST の「許可する」で、選んだ読み取りの範囲を保存してから認可を完了する", async () => {
+  it("POST の「許可する」で、選んだ読み取りの範囲をその接続の範囲として保存してから認可を完了する", async () => {
     const { helpers, fetch } = setup();
     vi.mocked(getSessionUser).mockResolvedValueOnce({
       id: "user-1",
@@ -222,9 +224,11 @@ describe("withMcpAuthorize", () => {
     );
 
     expect(saveMcpPermissionsFromForm).toHaveBeenCalledTimes(1);
-    const [userId, formData, d1] = vi.mocked(saveMcpPermissionsFromForm).mock
-      .calls[0];
+    const [userId, clientId, formData, d1] = vi.mocked(
+      saveMcpPermissionsFromForm,
+    ).mock.calls[0];
     expect(userId).toBe("user-1");
+    expect(clientId).toBe("client-1");
     expect(formData.get("mcpPermissions")).toBe(
       PERMISSIONS_FIELD.mcpPermissions,
     );

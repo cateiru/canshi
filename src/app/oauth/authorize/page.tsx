@@ -30,8 +30,8 @@ type AuthorizePageProps = {
 /**
  * ChatGPT などの MCP クライアントを接続するときの同意画面。認可リクエストの検証と、
  * 「許可する」「許可しない」の送信先（`POST /oauth/authorize`）の処理は Worker
- * （`src/features/mcp/authorize.ts`）が行い、このページは検証済みの内容と、読み取りを
- * 許可する範囲（設定の「AIとの接続」と共通）の選択を表示するだけ。
+ * （`src/features/mcp/authorize.ts`）が行い、このページは検証済みの内容と、この接続で
+ * 読み取りを許可する範囲の選択を表示するだけ。
  * 未ログインのときは middleware がログイン画面へ送り、ログイン後にこのページへ戻る
  */
 export default async function AuthorizePage({
@@ -41,7 +41,10 @@ export default async function AuthorizePage({
   const consent = decodeMcpConsentRequest(
     (await headers()).get(MCP_CONSENT_HEADER),
   );
-  const permissionTree = consent ? await getMcpPermissionTree(user.id) : [];
+  // 同じアプリに前回同意したときの範囲があれば、それを初期の状態にする
+  const permissionTree = consent
+    ? await getMcpPermissionTree(user.id, consent.clientId)
+    : [];
 
   return (
     <main className={styles.main}>
@@ -76,7 +79,7 @@ export default async function AuthorizePage({
                 読み取りを許可する範囲
               </Heading>
               <p className={styles.note}>
-                この範囲は、接続しているすべてのアプリで共通です。ここで変えると、すでに接続しているアプリにも反映されます。あとから設定の「AIとの接続」で変えることもできます。
+                この範囲は、このアプリとの接続だけに使います。あとから設定の「AIとの接続」で変えることもできます。
               </p>
               <McpPermissionTreeField tree={permissionTree} />
             </section>

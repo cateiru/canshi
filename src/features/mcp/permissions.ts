@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { mcpPermissions } from "@/db/schema";
 import {
@@ -16,19 +16,28 @@ import {
 } from "./permissionRules";
 
 /**
- * ユーザーの、AI との接続から読み取れる範囲。保存していなければすべて読み取れる。
- * MCP のツールはトークンに範囲を持たせず、呼ばれるたびにこれを読む。そのため設定の
- * 変更は、接続済みのアプリにもすぐに反映される
+ * ユーザーが許可した接続（OAuth のクライアント）の、AI から読み取れる範囲。保存して
+ * いなければすべて読み取れる。MCP のツールはトークンに範囲を持たせず、呼ばれるたびに
+ * これを読む。そのため設定の変更は、接続済みのアプリにもすぐに反映される。
+ *
+ * クライアントの ID が null（トークンにクライアントの ID が無い）のときも、すべて
+ * 読み取れる状態を返す。クライアントの ID は、範囲の設定を追加する前に発行された
+ * トークンには無く、次にトークンを更新したときに追加される（`./props.ts` の
+ * `addClientIdToProps`）。追加する前は範囲を設定できなかったため、それまでと同じ動きになる
  */
 export async function getMcpPermissions(
   userId: string,
+  clientId: string | null,
   d1?: D1Database,
 ): Promise<McpPermissions> {
+  if (clientId === null) {
+    return DEFAULT_MCP_PERMISSIONS;
+  }
   const db = getDb(d1);
   const [row] = await db
     .select()
     .from(mcpPermissions)
-    .where(eq(mcpPermissions.userId, userId))
+    .where(permissionsKey(userId, clientId))
     .limit(1);
   if (!row) {
     return DEFAULT_MCP_PERMISSIONS;
@@ -45,13 +54,14 @@ export async function getMcpPermissions(
   };
 }
 
-/** 設定画面・同意画面に表示する、ユーザーの家・猫・記録の種類のチェックの状態 */
+/** 設定画面・同意画面に表示する、接続の家・猫・記録の種類のチェックの状態 */
 export async function getMcpPermissionTree(
   userId: string,
+  clientId: string,
   d1?: D1Database,
 ): Promise<McpPermissionTreeHousehold[]> {
   const [permissions, households, cats] = await Promise.all([
-    getMcpPermissions(userId, d1),
+    getMcpPermissions(userId, clientId, d1),
     listHouseholdsForUser(userId, d1),
     listCatsForUser(userId, d1),
   ]);
@@ -60,12 +70,13 @@ export async function getMcpPermissionTree(
 }
 
 /**
- * フォーム（`McpPermissionTreeField`）で送られた範囲を保存する。設定画面と同意画面の
- * 両方から使う。ユーザーが所属する家・参照できる猫以外の ID は保存しない。
- * 送られた値の形が正しくなければ保存せずに false を返す
+ * フォーム（`McpPermissionTreeField`）で送られた範囲を、接続の範囲として保存する。
+ * 設定画面と同意画面の両方から使う。ユーザーが所属する家・参照できる猫以外の ID は
+ * 保存しない。送られた値の形が正しくなければ保存せずに false を返す
  */
 export async function saveMcpPermissionsFromForm(
   userId: string,
+  clientId: string,
   formData: FormData,
   d1?: D1Database,
 ): Promise<boolean> {
@@ -85,7 +96,28 @@ export async function saveMcpPermissionsFromForm(
   const values = { ...permissions, updatedAt: new Date() };
   await db
     .insert(mcpPermissions)
-    .values({ userId, ...values })
-    .onConflictDoUpdate({ target: mcpPermissions.userId, set: values });
+    .values({ userId, clientId, ...values })
+    .onConflictDoUpdate({
+      target: [mcpPermissions.userId, mcpPermissions.clientId],
+      set: values,
+    });
   return true;
+}
+
+/** 接続を解除したときに、その接続の範囲を消す */
+export async function deleteMcpPermissions(
+  userId: string,
+  clientId: string,
+  d1?: D1Database,
+): Promise<void> {
+  await getDb(d1)
+    .delete(mcpPermissions)
+    .where(permissionsKey(userId, clientId));
+}
+
+function permissionsKey(userId: string, clientId: string) {
+  return and(
+    eq(mcpPermissions.userId, userId),
+    eq(mcpPermissions.clientId, clientId),
+  );
 }

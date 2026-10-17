@@ -1,4 +1,5 @@
 import { D1KvStore, revokedGrantMarkerKey } from "./d1KvStore";
+import { deleteMcpPermissions } from "./permissions";
 
 /** 解除した grant の目印を残す秒数 */
 const REVOKED_GRANT_MARKER_TTL_SECONDS = 24 * 60 * 60;
@@ -7,8 +8,14 @@ const REVOKED_GRANT_MARKER_TTL_SECONDS = 24 * 60 * 60;
  * 設定の「AIとの接続」に表示する、ユーザーが同意画面で許可した接続（OAuth の grant）
  */
 export interface McpConnection {
-  /** grant の ID。解除するときに指定する */
+  /** grant の ID。解除するとき・読み取りの範囲を設定するときに指定する */
   id: string;
+  /**
+   * OAuth のクライアントの ID。読み取りの範囲（`./permissions.ts`）はこれで見分ける。
+   * 同じクライアントにもう一度同意すると古い grant は解除されるため、ユーザーの接続の
+   * 中でクライアントの ID は重ならない。URL などでクライアントに渡さないこと
+   */
+  clientId: string;
   /** クライアントが登録時に名乗った名前。自己申告のため、表示するときはそう書き添える */
   clientName: string | null;
   /** 同意したときの認可コードの渡し先。grant に記録されていない場合は null */
@@ -58,14 +65,25 @@ export async function listUserMcpConnections(
     .sort((a, b) => b.createdAt - a.createdAt)
     .map((grant) => ({
       id: grant.id,
+      clientId: grant.clientId,
       clientName: clientNames.get(grant.clientId) ?? null,
       redirectUri: grant.redirectUri ?? null,
       createdAt: new Date(grant.createdAt * 1000),
     }));
 }
 
+/** ユーザーの接続のうち、指定した grant の ID のもの。無い・別のユーザーの接続なら null */
+export async function getUserMcpConnection(
+  userId: string,
+  grantId: string,
+  d1?: D1Database,
+): Promise<McpConnection | null> {
+  const connections = await listUserMcpConnections(userId, d1);
+  return connections.find((connection) => connection.id === grantId) ?? null;
+}
+
 /**
- * 接続を 1 つ解除する。解除済みの目印を置いてから、ライブラリの `OAuthHelpers.revokeGrant()` と同じく、発行済みの
+ * 接続を 1 つ解除し、その接続の読み取りの範囲も消す。解除済みの目印を置いてから、ライブラリの `OAuthHelpers.revokeGrant()` と同じく、発行済みの
  * アクセストークン（`token:{userId}:{grantId}:{tokenId}`）を消してから grant を消す。
  * リフレッシュトークンは grant の中に保存されているため、grant を消すと使えなくなる。
  * 別のユーザーの接続は解除できない。解除したかどうかを返す
@@ -82,7 +100,8 @@ export async function revokeUserMcpConnection(
   }
   const store = new D1KvStore(d1);
   const grantKey = `${grantKeyPrefix(userId)}${grantId}`;
-  if ((await store.get(grantKey)) === null) {
+  const grant = await store.get(grantKey, "json");
+  if (grant === null) {
     return false;
   }
 
@@ -105,6 +124,12 @@ export async function revokeUserMcpConnection(
     cursor = page.list_complete ? undefined : page.cursor;
   } while (cursor);
   await store.delete(grantKey);
+
+  // 読み取りの範囲も消す。もう一度接続したときは、すべて読み取れる状態から選び直す
+  const clientId = parseStoredGrant(grant)?.clientId;
+  if (clientId) {
+    await deleteMcpPermissions(userId, clientId, d1);
+  }
   return true;
 }
 

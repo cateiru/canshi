@@ -15,6 +15,7 @@ import {
 } from "@/db/schema";
 import { DEFAULT_MCP_PERMISSIONS, isCatAllowedForMcp } from "./permissionRules";
 import {
+  deleteMcpPermissions,
   getMcpPermissions,
   getMcpPermissionTree,
   saveMcpPermissionsFromForm,
@@ -77,17 +78,32 @@ function form(value: unknown) {
 }
 
 describe("getMcpPermissions", () => {
-  it("保存していないユーザーは、何も外していない状態を返す", async () => {
-    expect(await getMcpPermissions("user-1")).toEqual(DEFAULT_MCP_PERMISSIONS);
+  it("保存していない接続は、何も外していない状態を返す", async () => {
+    expect(await getMcpPermissions("user-1", "client-1")).toEqual(
+      DEFAULT_MCP_PERMISSIONS,
+    );
+  });
+
+  it("クライアントの ID が無いトークンは、保存した範囲にかかわらず何も外していない状態を返す", async () => {
+    await db.insert(mcpPermissions).values({
+      userId: "user-1",
+      clientId: "client-1",
+      excludedCatIds: ["cat-1"],
+    });
+
+    expect(await getMcpPermissions("user-1", null)).toEqual(
+      DEFAULT_MCP_PERMISSIONS,
+    );
   });
 
   it("知らない記録の種類が保存されていても読み飛ばす", async () => {
     await db.insert(mcpPermissions).values({
       userId: "user-1",
+      clientId: "client-1",
       excludedRecordTypes: { "cat-1": ["poop", "removed-type"] },
     });
 
-    expect(await getMcpPermissions("user-1")).toEqual({
+    expect(await getMcpPermissions("user-1", "client-1")).toEqual({
       excludedHouseholdIds: [],
       excludedCatIds: [],
       excludedRecordTypes: { "cat-1": ["poop"] },
@@ -100,6 +116,7 @@ describe("saveMcpPermissionsFromForm", () => {
     expect(
       await saveMcpPermissionsFromForm(
         "user-1",
+        "client-1",
         form({
           excludedHouseholdIds: ["house-2"],
           excludedCatIds: ["cat-2", "cat-3"],
@@ -107,7 +124,7 @@ describe("saveMcpPermissionsFromForm", () => {
         }),
       ),
     ).toBe(true);
-    expect(await getMcpPermissions("user-1")).toEqual({
+    expect(await getMcpPermissions("user-1", "client-1")).toEqual({
       excludedHouseholdIds: [],
       excludedCatIds: ["cat-2"],
       excludedRecordTypes: { "cat-1": ["water"] },
@@ -116,6 +133,7 @@ describe("saveMcpPermissionsFromForm", () => {
     expect(
       await saveMcpPermissionsFromForm(
         "user-1",
+        "client-1",
         form({
           excludedHouseholdIds: ["house-1"],
           excludedCatIds: [],
@@ -123,13 +141,18 @@ describe("saveMcpPermissionsFromForm", () => {
         }),
       ),
     ).toBe(true);
-    expect(await getMcpPermissions("user-1")).toEqual({
+    expect(await getMcpPermissions("user-1", "client-1")).toEqual({
       excludedHouseholdIds: ["house-1"],
       excludedCatIds: [],
       excludedRecordTypes: {},
     });
-    // ほかのユーザーの範囲には影響しない
-    expect(await getMcpPermissions("user-2")).toEqual(DEFAULT_MCP_PERMISSIONS);
+    // ほかのユーザーの範囲・同じユーザーのほかの接続の範囲には影響しない
+    expect(await getMcpPermissions("user-2", "client-1")).toEqual(
+      DEFAULT_MCP_PERMISSIONS,
+    );
+    expect(await getMcpPermissions("user-1", "client-2")).toEqual(
+      DEFAULT_MCP_PERMISSIONS,
+    );
   });
 
   it("外した家の猫は、読み取りを許可した家へ引っ越しても読み取れないまま", async () => {
@@ -139,6 +162,7 @@ describe("saveMcpPermissionsFromForm", () => {
     // 画面で家1を外すと、家1の猫も外したものとして送られる
     await saveMcpPermissionsFromForm(
       "user-1",
+      "client-1",
       form({
         excludedHouseholdIds: ["house-1"],
         excludedCatIds: ["cat-1", "cat-2"],
@@ -151,7 +175,7 @@ describe("saveMcpPermissionsFromForm", () => {
       .set({ householdId: "house-2" })
       .where(eq(cats.id, "cat-1"));
 
-    const permissions = await getMcpPermissions("user-1");
+    const permissions = await getMcpPermissions("user-1", "client-1");
     expect(
       isCatAllowedForMcp(permissions, { id: "cat-1", householdId: "house-2" }),
     ).toBe(false);
@@ -164,8 +188,28 @@ describe("saveMcpPermissionsFromForm", () => {
     const formData = new FormData();
     formData.set("mcpPermissions", "{");
 
-    expect(await saveMcpPermissionsFromForm("user-1", formData)).toBe(false);
+    expect(
+      await saveMcpPermissionsFromForm("user-1", "client-1", formData),
+    ).toBe(false);
     expect(await db.select().from(mcpPermissions)).toEqual([]);
+  });
+});
+
+describe("deleteMcpPermissions", () => {
+  it("指定した接続の範囲だけを消す", async () => {
+    await db.insert(mcpPermissions).values([
+      { userId: "user-1", clientId: "client-1", excludedCatIds: ["cat-1"] },
+      { userId: "user-1", clientId: "client-2", excludedCatIds: ["cat-2"] },
+    ]);
+
+    await deleteMcpPermissions("user-1", "client-1");
+
+    expect(await getMcpPermissions("user-1", "client-1")).toEqual(
+      DEFAULT_MCP_PERMISSIONS,
+    );
+    expect(
+      (await getMcpPermissions("user-1", "client-2")).excludedCatIds,
+    ).toEqual(["cat-2"]);
   });
 });
 
@@ -173,6 +217,7 @@ describe("getMcpPermissionTree", () => {
   it("ユーザーの家ごとに、猫を登録した順に並べてチェックの状態を返す", async () => {
     await saveMcpPermissionsFromForm(
       "user-1",
+      "client-1",
       form({
         excludedHouseholdIds: [],
         excludedCatIds: ["cat-2"],
@@ -180,7 +225,7 @@ describe("getMcpPermissionTree", () => {
       }),
     );
 
-    const tree = await getMcpPermissionTree("user-1");
+    const tree = await getMcpPermissionTree("user-1", "client-1");
 
     expect(tree).toHaveLength(1);
     expect(tree[0]).toMatchObject({

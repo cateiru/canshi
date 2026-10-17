@@ -76,6 +76,19 @@
   font-weight: var(--font-weight-regular);
 }
 
+/* 接続ごとの読み取りの範囲のページへのリンク。狭い画面でも表の幅を広げないよう、
+   操作の列ではなくアプリの名前の下に置く */
+.permissionsLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* 数字の幅を揃え、日時によって列の幅が変わらないようにする */
 .connectedAt {
   font-variant-numeric: tabular-nums;

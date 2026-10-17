@@ -127,6 +127,7 @@ async function handleAuthorizeGet(
   headers.set(
     MCP_CONSENT_HEADER,
     encodeMcpConsentRequest({
+      clientId: authRequest.clientId,
       clientName: client?.clientName ?? null,
       redirectUri: authRequest.redirectUri,
     }),
@@ -173,12 +174,17 @@ async function handleAuthorizePost(
     return Response.redirect(accessDeniedUrl(authRequest), 303);
   }
 
-  // 読み取りを許可する範囲はトークンには持たせず、ユーザーごとに 1 つ保存して、
-  // すべての接続で共通に使う（`./permissions.ts`）。範囲の項目が無いフォーム
+  // 読み取りを許可する範囲はトークンには持たせず、接続（クライアント）ごとに保存して、
+  // ツールが呼ばれるたびに読む（`./permissions.ts`）。範囲の項目が無いフォーム
   // （範囲の選択を追加する前に開いた同意画面）からの送信では、今の範囲のままにする
   if (
     formData.has(MCP_PERMISSIONS_FIELD_NAME) &&
-    !(await saveMcpPermissionsFromForm(user.id, formData, env.DB))
+    !(await saveMcpPermissionsFromForm(
+      user.id,
+      authRequest.clientId,
+      formData,
+      env.DB,
+    ))
   ) {
     return new Response(
       "読み取りを許可する範囲が正しくありません。接続するアプリから、もう一度やり直してください。",
@@ -186,7 +192,7 @@ async function handleAuthorizePost(
     );
   }
 
-  const props: McpProps = { userId: user.id };
+  const props: McpProps = { userId: user.id, clientId: authRequest.clientId };
   const { redirectTo } = await helpers.completeAuthorization({
     request: authRequest,
     userId: user.id,

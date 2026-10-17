@@ -11,6 +11,7 @@ import {
   D1KvStore,
   purgeExpiredOAuthKvEntries,
 } from "@/features/mcp/d1KvStore";
+import { addClientIdToProps } from "@/features/mcp/props";
 
 // `.open-next/worker.js` は `opennextjs-cloudflare build`（`pnpm cf:build` 等）で
 // 生成される。ビルド前（`.open-next/` が無いクリーンな環境）は型解決できないため抑制する
@@ -34,6 +35,8 @@ const oauthProvider = new OAuthProvider({
   authorizeEndpoint: OAUTH_AUTHORIZE_PATH,
   tokenEndpoint: OAUTH_TOKEN_PATH,
   clientRegistrationEndpoint: OAUTH_REGISTER_PATH,
+  // 接続ごとの読み取りの範囲を見分けられるよう、トークンにクライアントの ID を持たせる
+  tokenExchangeCallback: addClientIdToProps,
 });
 
 export default {

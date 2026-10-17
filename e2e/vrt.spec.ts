@@ -263,6 +263,15 @@ test("AIとの接続ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+test("AIとの接続の読み取る範囲ページの見た目", async ({ page }, testInfo) => {
+  // e2e/fixtures/vrt-seed.sql の接続
+  await page.goto("/settings/ai-connections/vrtGrant");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "ChatGPT" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("プロフィールの編集ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/account/profile");
   await expect(

@@ -11,6 +11,7 @@ import {
 } from "./permissionRules";
 import { getMcpPermissions } from "./permissions";
 import {
+  getClientIdFromProps,
   getUserIdFromProps,
   type McpProps,
   MISSING_USER_ERROR_MESSAGE,
@@ -40,7 +41,8 @@ const BIRTH_DATE_PRECISION_DESCRIPTION =
  *
  * 各ツールはトークンに保存した CANSHI のユーザー ID（`this.props.userId`、
  * `/oauth/authorize` で同意したときにログインしていたユーザー）の家の猫のうち、
- * そのユーザーが読み取りを許可した家・猫・記録の種類（`./permissions.ts`）だけを参照する。
+ * そのユーザーがこの接続（`this.props.clientId`）に読み取りを許可した家・猫・記録の種類
+ * （`./permissions.ts`）だけを参照する。
  * 許可していない猫は、存在しない猫と区別しない。
  * Durable Object の中で動くため、D1 は `getCloudflareContext()` ではなく
  * `this.env.DB` を明示的に渡す
@@ -67,14 +69,19 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
     return { userId };
   }
 
+  /** この接続（OAuth のクライアント）の ID。読み取りの範囲は接続ごとに設定する */
+  private clientId() {
+    return getClientIdFromProps(this.props);
+  }
+
   /**
-   * ユーザーが参照でき、AI との接続からの読み取りも許可している猫と、その猫について
+   * ユーザーが参照でき、この接続からの読み取りも許可している猫と、その猫について
    * 読み取れる記録の種類を返す。どちらかを満たさなければ null
    */
   private async resolveAllowedCat(userId: string, catId: string) {
     const [cat, permissions] = await Promise.all([
       getCatForUser(userId, catId, this.env.DB),
-      getMcpPermissions(userId, this.env.DB),
+      getMcpPermissions(userId, this.clientId(), this.env.DB),
     ]);
     if (!cat || !isCatAllowedForMcp(permissions, cat)) {
       return null;
@@ -99,7 +106,7 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         }
         const [cats, permissions] = await Promise.all([
           listCatsForUser(user.userId, this.env.DB),
-          getMcpPermissions(user.userId, this.env.DB),
+          getMcpPermissions(user.userId, this.clientId(), this.env.DB),
         ]);
         return jsonResult({
           cats: cats

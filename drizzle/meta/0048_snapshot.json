@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "88942443-833d-47f1-9e2c-7601b3de9ed0",
+  "id": "c34d3260-1b14-4d20-8e6b-5d18e55e42aa",
   "prevId": "a6b82639-52bc-46ae-bdaa-8e2cdc8c9fee",
   "tables": {
     "ai_evaluations": {
@@ -1702,6 +1702,84 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "mcp_permissions": {
+      "name": "mcp_permissions",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "excluded_household_ids": {
+          "name": "excluded_household_ids",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "excluded_cat_ids": {
+          "name": "excluded_cat_ids",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "excluded_record_types": {
+          "name": "excluded_record_types",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "mcp_permissions_user_id_users_id_fk": {
+          "name": "mcp_permissions_user_id_users_id_fk",
+          "tableFrom": "mcp_permissions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "mcp_permissions_user_id_client_id_pk": {
+          "columns": [
+            "user_id",
+            "client_id"
+          ],
+          "name": "mcp_permissions_user_id_client_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "media_assets": {
       "name": "media_assets",
       "columns": {
@@ -1837,69 +1915,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "uploaded_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "mcp_permissions": {
-      "name": "mcp_permissions",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "excluded_household_ids": {
-          "name": "excluded_household_ids",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "excluded_cat_ids": {
-          "name": "excluded_cat_ids",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "excluded_record_types": {
-          "name": "excluded_record_types",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'{}'"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch())"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "mcp_permissions_user_id_users_id_fk": {
-          "name": "mcp_permissions_user_id_users_id_fk",
-          "tableFrom": "mcp_permissions",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
           ],
           "columnsTo": [
             "id"
