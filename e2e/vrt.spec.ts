@@ -1,3 +1,7 @@
+import {
+  encodeMcpConsentRequest,
+  MCP_CONSENT_HEADER,
+} from "../src/features/mcp/consent";
 import { createPng } from "../src/features/media/testing/createPng";
 import { fillAndKeep } from "./helpers";
 import { expect, takeSnapshot, test } from "./vrt-snapshot";
@@ -269,6 +273,25 @@ test("AIとの接続の読み取る範囲ページの見た目", async ({ page }
   await expect(
     page.getByRole("heading", { level: 1, name: "ChatGPT" }),
   ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+test("MCP の同意画面の見た目", async ({ page }, testInfo) => {
+  // 同意画面は、Worker（src/features/mcp/authorize.ts）が認可リクエストを検証して付ける
+  // ヘッダーが無いと表示できない。VRT は Worker を通らない `next dev` に対して実行するため、
+  // e2e/fixtures/vrt-seed.sql の接続と同じクライアントとしてヘッダーを付けて開く
+  // （本番では Worker が外部から付けられたこのヘッダーを取り除く）
+  await page.setExtraHTTPHeaders({
+    [MCP_CONSENT_HEADER]: encodeMcpConsentRequest({
+      clientId: "vrt-client",
+      clientName: "ChatGPT",
+      redirectUri: "https://chatgpt.com/connector/oauth/callback",
+    }),
+  });
+  await page.goto(
+    "/oauth/authorize?response_type=code&client_id=vrt-client&redirect_uri=https%3A%2F%2Fchatgpt.com%2Fconnector%2Foauth%2Fcallback&state=vrt",
+  );
+  await expect(page.getByRole("button", { name: "許可する" })).toBeVisible();
   await takeSnapshot(page, testInfo);
 });
 
