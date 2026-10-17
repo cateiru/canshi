@@ -193,6 +193,9 @@
   overflow-x: auto;
   padding: var(--space-1);
   overscroll-behavior-inline: contain;
+  /* 左右へのドラッグで月を送るため、マウスで動かしたときに日付の文字が選択されないようにする */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .day {

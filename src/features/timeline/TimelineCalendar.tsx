@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MonthNav } from "@/components/ui";
+import { CalendarSwipeArea } from "./CalendarSwipeArea";
 import { buildTimelineHref } from "./href";
 import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "./labels";
 import { TIMELINE_RECORD_TYPES, type TimelineRecordType } from "./queries";
@@ -81,11 +82,11 @@ export function TimelineCalendar({
         nextHref={nextHref}
       />
 
-      <section
+      <CalendarSwipeArea
         className={styles.scrollArea}
         aria-label="日付を選択"
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: 横スクロールするカレンダーをキーボードでも操作できるようにする
-        tabIndex={0}
+        prevHref={prevHref}
+        nextHref={nextHref}
       >
         <table className={styles.grid}>
           <caption className={styles.srOnly}>
@@ -122,7 +123,7 @@ export function TimelineCalendar({
             ))}
           </tbody>
         </table>
-      </section>
+      </CalendarSwipeArea>
 
       <ul className={styles.legend}>
         {TIMELINE_RECORD_TYPES.map((type) => {
