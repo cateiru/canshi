@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openCatRegistration } from "./helpers";
 
 // 猫ごとの通知設定を変更し、再訪問しても内容が保持されることを検証する
 test("猫の通知設定を変更すると保存され、再訪問しても保持される", async ({
@@ -6,11 +7,7 @@ test("猫の通知設定を変更すると保存され、再訪問しても保�
 }) => {
   const catName = `テスト猫-${Date.now()}`;
 
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();

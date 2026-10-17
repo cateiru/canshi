@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { fillAndKeep } from "./helpers";
 
 // 家の設定（名前の変更・招待 URL）と、猫一覧の家ごとのまとまりの開閉を検証する。
 // メンバーを外す・オーナーを移譲する・招待 URL で別のユーザーが参加する操作は、
@@ -335,6 +336,40 @@ test("家の名前を空にすると家を作成できない", async ({ page }) 
   await expect(page).toHaveURL(/\/settings\/households\/new$/);
 });
 
+test("家に所属しているユーザーも、猫一覧の追加メニューから家を作成できる", async ({
+  page,
+}) => {
+  await page.goto("/cats");
+  const menuItem = page.getByRole("menuitem", { name: "家を作成する" });
+  // ハイドレーション前に押すとメニューが開かないため、開くまで押し直す
+  await expect(async () => {
+    if (!(await menuItem.isVisible())) {
+      await page.getByRole("button", { name: "追加する" }).click();
+    }
+    await expect(menuItem).toBeVisible({ timeout: 1000 });
+  }).toPass();
+  await expect(
+    page.getByRole("menuitem", { name: "猫を登録する" }),
+  ).toBeVisible();
+  await menuItem.click();
+  await expect(page).toHaveURL(/\/settings\/households\/new\?from=cats$/);
+
+  const householdName = `追加メニューから作成した家-${Date.now()}`;
+  await fillAndKeep(
+    page.getByRole("textbox", { name: "家の名前" }),
+    householdName,
+  );
+  await page.getByRole("button", { name: "家を作成する" }).click();
+
+  // 作成後は猫一覧へ戻り、作成した家のまとまりが表示される
+  await expect(page).toHaveURL(/\/cats$/);
+  await expect(
+    page.getByRole("button", {
+      name: new RegExp(`^${householdName}\\s*0匹$`),
+    }),
+  ).toBeVisible();
+});
+
 test("家に所属していないユーザーは、猫一覧から家を作成できる", async ({
   browser,
 }) => {
@@ -353,10 +388,11 @@ test("家に所属していないユーザーは、猫一覧から家を作成�
     await expect(page).toHaveURL(/\/cats$/);
 
     await expect(page.getByText("所属している家がありません。")).toBeVisible();
-    // 家がないうちは猫を登録できないため、登録ボタンを出さない
+    // 家がないうちは猫を登録できないため、追加メニューを出さない
     await expect(page.getByRole("link", { name: "猫を登録する" })).toHaveCount(
       0,
     );
+    await expect(page.getByRole("button", { name: "追加する" })).toHaveCount(0);
 
     await page.getByRole("link", { name: "家を作成する" }).click();
     await expect(page).toHaveURL(/\/settings\/households\/new\?from=cats$/);

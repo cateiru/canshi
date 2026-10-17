@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { createPng } from "../src/features/media/testing/createPng";
+import { openCatRegistration } from "./helpers";
 
 function png(color: [number, number, number, number]) {
   return Buffer.from(createPng(320, 240, () => color));
@@ -8,11 +9,7 @@ function png(color: [number, number, number, number]) {
 test("猫の登録・一覧表示・詳細表示・編集・削除ができる", async ({ page }) => {
   const catName = `テスト猫-${Date.now()}`;
 
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
 
   await page.getByLabel("名前").fill(catName);
   await page.getByLabel("性別").click();

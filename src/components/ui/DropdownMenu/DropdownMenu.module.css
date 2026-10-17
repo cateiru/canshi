@@ -1,0 +1,43 @@
+.popover {
+  min-width: var(--trigger-width);
+  max-width: calc(100vw - var(--space-8));
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-bg);
+  box-shadow: 0 4px 12px var(--color-shadow);
+  overflow: hidden;
+}
+
+.menu {
+  padding: var(--space-1);
+  outline: none;
+}
+
+.item {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  overflow-wrap: anywhere;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  cursor: pointer;
+  outline: none;
+}
+
+.item > svg {
+  flex-shrink: 0;
+}
+
+.item[data-hovered],
+.item[data-focused] {
+  color: var(--color-accent-strong);
+}
+
+.item[data-focus-visible] {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}

@@ -13,6 +13,7 @@ import { BirthdayCelebration } from "@/features/cats/BirthdayCelebration";
 import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
 import { CatAvatar } from "@/features/cats/CatAvatar";
 import { CatIcon } from "@/features/cats/CatIcon";
+import { CatsAddMenu } from "@/features/cats/CatsAddMenu";
 import { SEX_LABEL } from "@/features/cats/labels";
 import { groupCatsByHousehold } from "@/features/households/groupCats";
 import {
@@ -87,12 +88,8 @@ export default async function CatsPage() {
 
       <div className={styles.header}>
         <RecordPageHeading icon={CatIcon}>猫一覧</RecordPageHeading>
-        {/* 家がないと猫を登録できないため、家を作成するまでは登録ボタンを出さない */}
-        {householdList.length > 0 ? (
-          <ButtonLink href="/cats/new" variant="primary" leftIcon={TbPlus}>
-            猫を登録する
-          </ButtonLink>
-        ) : null}
+        {/* 家がないと猫を登録できないため、家を作成するまでは下の案内から家を作成してもらう */}
+        {householdList.length > 0 ? <CatsAddMenu /> : null}
       </div>
 
       {groups.length === 0 ? (

@@ -1,14 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { openCatRegistration } from "./helpers";
 
 // 掃除対象(target)の登録・編集・削除と、対象ごとの実施記録(record)の登録・編集・削除を検証する
 test("掃除対象と実施記録の登録・編集・削除ができる", async ({ page }) => {
   const catName = `テスト猫-${Date.now()}`;
 
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();

@@ -1,14 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { openCatRegistration } from "./helpers";
 
 // 体重記録の登録・一覧表示・編集・削除ができることを検証する
 test("体重記録の登録・編集・削除ができる", async ({ page }) => {
   const catName = `テスト猫-${Date.now()}`;
 
-  await page.goto("/cats");
-  await page
-    .getByRole("link", { name: /猫を登録する/ })
-    .first()
-    .click();
+  await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
   await page.getByRole("button", { name: "登録する" }).click();
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();
