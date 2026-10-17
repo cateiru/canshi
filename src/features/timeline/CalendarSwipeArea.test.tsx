@@ -37,6 +37,15 @@ function renderArea(onDayClick = vi.fn()) {
   };
 }
 
+/** jsdom はレイアウトを計算しないため、横スクロールできる幅を与える */
+function setScrollableWidth(
+  area: HTMLElement,
+  { scrollWidth, clientWidth }: { scrollWidth: number; clientWidth: number },
+) {
+  Object.defineProperty(area, "scrollWidth", { value: scrollWidth });
+  Object.defineProperty(area, "clientWidth", { value: clientWidth });
+}
+
 /** マウスで from から to まで押したまま動かして離す */
 function dragWithMouse(
   target: HTMLElement,
@@ -156,6 +165,7 @@ describe("CalendarSwipeArea", () => {
 
   it("スワイプの大半がカレンダーの横スクロールに使われたときは移動しない", () => {
     const { area, day } = renderArea();
+    setScrollableWidth(area, { scrollWidth: 332, clientWidth: 252 });
     fireEvent.touchStart(day, { touches: [{ clientX: 200, clientY: 100 }] });
     // 狭い画面でカレンダー自体が横にスクロールし、端を越えて動かしたのは 20px だけ
     area.scrollLeft = 80;
@@ -168,9 +178,25 @@ describe("CalendarSwipeArea", () => {
 
   it("横スクロールが端に達してからさらに大きく動かしたときは移動する", () => {
     const { area, day } = renderArea();
+    setScrollableWidth(area, { scrollWidth: 332, clientWidth: 326 });
     fireEvent.touchStart(day, { touches: [{ clientX: 300, clientY: 100 }] });
     // わずかに残っていた横スクロールを使い切ってから、さらに 194px 動かした
     area.scrollLeft = 6;
+    fireEvent.touchEnd(day, {
+      touches: [],
+      changedTouches: [{ clientX: 100, clientY: 100 }],
+    });
+    expect(router.push).toHaveBeenCalledExactlyOnceWith(NEXT_HREF);
+  });
+
+  it("端で弾んで横スクロールの範囲を越えた分は、スクロールに使われた分として数えない", () => {
+    const { area, day } = renderArea();
+    // 横に 6px だけスクロールでき、すでに右端まで来ている
+    setScrollableWidth(area, { scrollWidth: 332, clientWidth: 326 });
+    area.scrollLeft = 6;
+    fireEvent.touchStart(day, { touches: [{ clientX: 200, clientY: 100 }] });
+    // iOS Safari では端で弾むあいだ scrollLeft が範囲を越える
+    area.scrollLeft = 60;
     fireEvent.touchEnd(day, {
       touches: [],
       changedTouches: [{ clientX: 100, clientY: 100 }],

@@ -14,6 +14,19 @@ export const SWIPE_THRESHOLD = 60;
 /** これを超えて動かしたら、指やマウスを離したあとのクリック（日付の選択）を打ち消す */
 const CLICK_SUPPRESS_DISTANCE = 8;
 
+/**
+ * 横スクロールの位置を、実際にスクロールできる範囲（0〜scrollWidth - clientWidth）に収めて返す。
+ * iOS Safari では端で弾むあいだ scrollLeft がこの範囲を越えるため、そのまま差を取ると
+ * 端を越えて動かした分までスクロールに使われたものとして数えてしまう
+ */
+function getScrollLeft(area: HTMLElement | null): number {
+  if (!area) {
+    return 0;
+  }
+  const max = Math.max(area.scrollWidth - area.clientWidth, 0);
+  return Math.min(Math.max(area.scrollLeft, 0), max);
+}
+
 type Gesture = {
   x: number;
   y: number;
@@ -54,7 +67,7 @@ export function CalendarSwipeArea({
     gestureRef.current = {
       x,
       y,
-      scrollLeft: areaRef.current?.scrollLeft ?? 0,
+      scrollLeft: getScrollLeft(areaRef.current),
       pointerId,
       moved: false,
     };
@@ -93,7 +106,7 @@ export function CalendarSwipeArea({
     // 狭い画面ではカレンダーが少しだけ横スクロールできることがあるため、スクロールしたら
     // 一律に無視するのではなく、端を越えて動かした分が閾値に届いたかで判断する
     const scrolled = Math.abs(
-      (areaRef.current?.scrollLeft ?? 0) - gesture.scrollLeft,
+      getScrollLeft(areaRef.current) - gesture.scrollLeft,
     );
     if (
       Math.abs(dx) - scrolled < SWIPE_THRESHOLD ||
