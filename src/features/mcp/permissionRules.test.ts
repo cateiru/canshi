@@ -124,7 +124,7 @@ describe("parseMcpPermissionsInput", () => {
     ],
   };
 
-  it("所属する家・参照できる猫だけに絞り込み、親を外した子は保存しない", () => {
+  it("所属する家・参照できる猫だけに絞り込み、外した家・猫の記録の種類は保存しない", () => {
     const value = JSON.stringify({
       excludedHouseholdIds: ["house-2", "house-2", "other-house"],
       excludedCatIds: ["cat-2", "cat-3", "other-cat"],
@@ -136,11 +136,17 @@ describe("parseMcpPermissionsInput", () => {
       },
     });
 
-    expect(parseMcpPermissionsInput(value, accessible)).toEqual({
+    const parsed = parseMcpPermissionsInput(value, accessible);
+    // 外した家の猫（cat-3）も、引っ越した後に読み取れないよう外したまま保存する
+    expect(parsed).toEqual({
       excludedHouseholdIds: ["house-2"],
-      excludedCatIds: ["cat-2"],
+      excludedCatIds: ["cat-2", "cat-3"],
       excludedRecordTypes: { "cat-1": ["poop", "expense"] },
     });
+    expect(
+      parsed &&
+        isCatAllowedForMcp(parsed, { id: "cat-3", householdId: "house-1" }),
+    ).toBe(false);
   });
 
   it("空の配列・空の記録の種類は、何も外していない状態になる", () => {

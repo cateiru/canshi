@@ -40,7 +40,7 @@ type CheckedState = {
  * - 親にチェックが付いていて、子の一部だけにチェックが付いているときは「一部」の表示にする
  *
  * 送るのはチェックを外したもの（表示した家・猫だけ）で、表示した後に登録された猫などは
- * 読み取れるままにする
+ * 読み取れるままにする（`toPermissions` 参照）
  */
 export function McpPermissionTreeField({ tree }: McpPermissionTreeFieldProps) {
   const [checked, setChecked] = useState(() => initialState(tree));
@@ -221,7 +221,9 @@ function toggle<T>(set: Set<T>, value: T, on: boolean) {
 }
 
 /**
- * チェックの状態から、送る値（外したもの）を作る。親を外したときは、子は親に含まれるため送らない
+ * チェックの状態から、送る値（外したもの）を作る。家を外したときは、その家の猫も外したものとして
+ * 送る。猫が外した家から別の家へ引っ越しても、画面で見えていたとおり読み取れないままにするため。
+ * 外した猫の記録の種類は、猫を外せば読み取れないため送らない
  */
 export function toPermissions(
   tree: McpPermissionTreeHousehold[],
@@ -235,6 +237,7 @@ export function toPermissions(
   for (const household of tree) {
     if (!state.households.has(household.id)) {
       permissions.excludedHouseholdIds.push(household.id);
+      permissions.excludedCatIds.push(...household.cats.map((cat) => cat.id));
       continue;
     }
     for (const cat of household.cats) {

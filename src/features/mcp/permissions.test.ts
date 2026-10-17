@@ -1,4 +1,6 @@
 // @vitest-environment node
+
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sql-js";
 import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
@@ -11,7 +13,7 @@ import {
   mcpPermissions,
   users,
 } from "@/db/schema";
-import { DEFAULT_MCP_PERMISSIONS } from "./permissionRules";
+import { DEFAULT_MCP_PERMISSIONS, isCatAllowedForMcp } from "./permissionRules";
 import {
   getMcpPermissions,
   getMcpPermissionTree,
@@ -128,6 +130,34 @@ describe("saveMcpPermissionsFromForm", () => {
     });
     // ほかのユーザーの範囲には影響しない
     expect(await getMcpPermissions("user-2")).toEqual(DEFAULT_MCP_PERMISSIONS);
+  });
+
+  it("外した家の猫は、読み取りを許可した家へ引っ越しても読み取れないまま", async () => {
+    await db
+      .insert(householdMembers)
+      .values({ householdId: "house-2", userId: "user-1", role: "member" });
+    // 画面で家1を外すと、家1の猫も外したものとして送られる
+    await saveMcpPermissionsFromForm(
+      "user-1",
+      form({
+        excludedHouseholdIds: ["house-1"],
+        excludedCatIds: ["cat-1", "cat-2"],
+        excludedRecordTypes: {},
+      }),
+    );
+
+    await db
+      .update(cats)
+      .set({ householdId: "house-2" })
+      .where(eq(cats.id, "cat-1"));
+
+    const permissions = await getMcpPermissions("user-1");
+    expect(
+      isCatAllowedForMcp(permissions, { id: "cat-1", householdId: "house-2" }),
+    ).toBe(false);
+    expect(
+      isCatAllowedForMcp(permissions, { id: "cat-3", householdId: "house-2" }),
+    ).toBe(true);
   });
 
   it("形が正しくなければ保存しない", async () => {

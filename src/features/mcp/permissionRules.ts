@@ -58,7 +58,8 @@ export function isMcpPermissionRecordType(
 
 /**
  * 猫のプロフィールと記録を読み取れるか。家は猫が今いる家で判定するため、外した家へ
- * 引っ越した猫は読み取れなくなり、外した家から引っ越した猫は猫の設定に従う
+ * 引っ越した猫は読み取れなくなる。家を外すと、そのときの家の猫も外したものとして
+ * 保存する（`parseMcpPermissionsInput` 参照）ため、外した家から引っ越した猫も読み取れないまま
  */
 export function isCatAllowedForMcp(
   permissions: McpPermissions,
@@ -157,8 +158,11 @@ const mcpPermissionsInputSchema = z.object({
 
 /**
  * フォームで送られた範囲を検証し、ユーザーが所属する家・参照できる猫だけに絞り込む。
- * 形が正しくなければ null。チェックを外した家の猫・外した猫の記録の種類は、親を外せば
- * 読み取れないため保存しない
+ * 形が正しくなければ null。
+ *
+ * 外した猫は、外した家の猫でも保存する。画面では家を外すと猫のチェックも外れるため、
+ * 猫が別の家へ引っ越しても、画面で見えていたとおり読み取れないままにする。
+ * 外した家の猫・外した猫の記録の種類は、親を外せば読み取れないため保存しない
  */
 export function parseMcpPermissionsInput(
   value: FormDataEntryValue | null,
@@ -193,7 +197,7 @@ export function parseMcpPermissionsInput(
   );
   const excludedCatIds = unique(
     parsed.data.excludedCatIds.filter((id) =>
-      catsInAllowedHouseholds.some((cat) => cat.id === id),
+      accessible.cats.some((cat) => cat.id === id),
     ),
   );
   const excludedRecordTypes: McpPermissions["excludedRecordTypes"] = {};

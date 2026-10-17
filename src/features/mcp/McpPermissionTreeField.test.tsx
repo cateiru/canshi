@@ -96,10 +96,11 @@ describe("McpPermissionTreeField", () => {
     expect(checkbox("たま")).not.toBeChecked();
     expect(checkbox("みけ")).not.toBeChecked();
     expect(recordCheckbox("たま", "ごはん")).not.toBeChecked();
-    // 親を外したときは、子は親に含まれるため送らない
+    // 家を外したときは、猫が別の家へ引っ越しても読み取れないよう猫も外したものとして送る。
+    // 記録の種類は猫に含まれるため送らない
     expect(value()).toEqual({
       excludedHouseholdIds: ["house-1"],
-      excludedCatIds: [],
+      excludedCatIds: ["cat-1", "cat-2"],
       excludedRecordTypes: {},
     });
 
@@ -108,7 +109,11 @@ describe("McpPermissionTreeField", () => {
     expect(checkbox("家1")).toBeChecked();
     expect(checkbox("みけ")).toBeChecked();
     expect(recordCheckbox("みけ", "支出")).toBeChecked();
-    expect(value().excludedHouseholdIds).toEqual([]);
+    expect(value()).toEqual({
+      excludedHouseholdIds: [],
+      excludedCatIds: [],
+      excludedRecordTypes: {},
+    });
   });
 
   it("子にチェックを付けると、親にもチェックが付く", () => {
