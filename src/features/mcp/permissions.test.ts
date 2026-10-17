@@ -84,18 +84,6 @@ describe("getMcpPermissions", () => {
     );
   });
 
-  it("クライアントの ID が無いトークンは、保存した範囲にかかわらず何も外していない状態を返す", async () => {
-    await db.insert(mcpPermissions).values({
-      userId: "user-1",
-      clientId: "client-1",
-      excludedCatIds: ["cat-1"],
-    });
-
-    expect(await getMcpPermissions("user-1", null)).toEqual(
-      DEFAULT_MCP_PERMISSIONS,
-    );
-  });
-
   it("知らない記録の種類が保存されていても読み飛ばす", async () => {
     await db.insert(mcpPermissions).values({
       userId: "user-1",

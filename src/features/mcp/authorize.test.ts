@@ -204,8 +204,7 @@ describe("withMcpAuthorize", () => {
       userId: "user-1",
       metadata: {},
       scope: [],
-      // 接続ごとの読み取りの範囲を見分けられるよう、クライアントの ID も持たせる
-      props: { userId: "user-1", clientId: "client-1" },
+      props: { userId: "user-1" },
     });
     expect(response.status).toBe(303);
     expect(response.headers.get("Location")).toBe(

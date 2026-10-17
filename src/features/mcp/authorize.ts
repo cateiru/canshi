@@ -192,7 +192,7 @@ async function handleAuthorizePost(
     );
   }
 
-  const props: McpProps = { userId: user.id, clientId: authRequest.clientId };
+  const props: McpProps = { userId: user.id };
   const { redirectTo } = await helpers.completeAuthorization({
     request: authRequest,
     userId: user.id,

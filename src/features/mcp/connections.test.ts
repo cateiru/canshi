@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import { mcpPermissions, users } from "@/db/schema";
 import {
+  getGrantClientId,
   getUserMcpConnection,
   listUserMcpConnections,
   revokeUserMcpConnection,
@@ -163,6 +164,20 @@ describe("getUserMcpConnection", () => {
     expect(await getUserMcpConnection("user-1", "grantExpired", d1)).toBeNull();
     expect(await getUserMcpConnection("user-1", "grantOther", d1)).toBeNull();
     expect(await getUserMcpConnection("user-1", "missing", d1)).toBeNull();
+  });
+});
+
+describe("getGrantClientId", () => {
+  it("ユーザーの grant のクライアントの ID を返し、無い・キーの区切りを含む ID なら null", async () => {
+    await seed();
+
+    expect(await getGrantClientId("user-1", "grant_old-1", d1)).toBe(
+      "client-chatgpt",
+    );
+    expect(await getGrantClientId("user-1", "grantOther", d1)).toBeNull();
+    expect(
+      await getGrantClientId("user-1", "grantNew2:token-c", d1),
+    ).toBeNull();
   });
 });
 

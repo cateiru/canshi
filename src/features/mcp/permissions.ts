@@ -18,21 +18,13 @@ import {
 /**
  * ユーザーが許可した接続（OAuth のクライアント）の、AI から読み取れる範囲。保存して
  * いなければすべて読み取れる。MCP のツールはトークンに範囲を持たせず、呼ばれるたびに
- * これを読む。そのため設定の変更は、接続済みのアプリにもすぐに反映される。
- *
- * クライアントの ID が null（トークンにクライアントの ID が無い）のときも、すべて
- * 読み取れる状態を返す。クライアントの ID は、範囲の設定を追加する前に発行された
- * トークンには無く、次にトークンを更新したときに追加される（`./props.ts` の
- * `addClientIdToProps`）。追加する前は範囲を設定できなかったため、それまでと同じ動きになる
+ * これを読む。そのため設定の変更は、接続済みのアプリにもすぐに反映される
  */
 export async function getMcpPermissions(
   userId: string,
-  clientId: string | null,
+  clientId: string,
   d1?: D1Database,
 ): Promise<McpPermissions> {
-  if (clientId === null) {
-    return DEFAULT_MCP_PERMISSIONS;
-  }
   const db = getDb(d1);
   const [row] = await db
     .select()

@@ -7,11 +7,11 @@ import {
   OAUTH_TOKEN_PATH,
   withMcpAuthorize,
 } from "@/features/mcp/authorize";
+import { withMcpClientId } from "@/features/mcp/clientId";
 import {
   D1KvStore,
   purgeExpiredOAuthKvEntries,
 } from "@/features/mcp/d1KvStore";
-import { addClientIdToProps } from "@/features/mcp/props";
 
 // `.open-next/worker.js` は `opennextjs-cloudflare build`（`pnpm cf:build` 等）で
 // 生成される。ビルド前（`.open-next/` が無いクリーンな環境）は型解決できないため抑制する
@@ -30,13 +30,12 @@ export { CanshiMcp };
 // Next.js のハンドラに渡す（`docs/plans/32_mcp_oidc_overview.md` 参照）
 const oauthProvider = new OAuthProvider({
   apiRoute: MCP_API_ROUTE,
-  apiHandler: CanshiMcp.serve(MCP_API_ROUTE),
+  // 接続ごとの読み取りの範囲を選べるよう、アクセストークンのクライアントの ID を props に入れる
+  apiHandler: withMcpClientId(CanshiMcp.serve(MCP_API_ROUTE)),
   defaultHandler: withMcpAuthorize(handler),
   authorizeEndpoint: OAUTH_AUTHORIZE_PATH,
   tokenEndpoint: OAUTH_TOKEN_PATH,
   clientRegistrationEndpoint: OAUTH_REGISTER_PATH,
-  // 接続ごとの読み取りの範囲を見分けられるよう、トークンにクライアントの ID を持たせる
-  tokenExchangeCallback: addClientIdToProps,
 });
 
 export default {

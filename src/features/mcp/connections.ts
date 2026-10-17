@@ -83,6 +83,27 @@ export async function getUserMcpConnection(
 }
 
 /**
+ * grant のクライアントの ID。MCP のリクエストで、アクセストークンがどの接続のものかを
+ * 求めるのに使う（`./clientId.ts`）。grant が無ければ null
+ */
+export async function getGrantClientId(
+  userId: string,
+  grantId: string,
+  d1?: D1Database,
+): Promise<string | null> {
+  // キーの区切り（`:`）を含む ID でほかの grant のキーを指せないよう、
+  // ライブラリが発行する形式（英数字と `-`・`_`）以外は受け付けない
+  if (!GRANT_ID_PATTERN.test(grantId)) {
+    return null;
+  }
+  const store = new D1KvStore(d1);
+  const grant = parseStoredGrant(
+    await store.get(`${grantKeyPrefix(userId)}${grantId}`, "json"),
+  );
+  return grant?.clientId ?? null;
+}
+
+/**
  * 接続を 1 つ解除し、その接続の読み取りの範囲も消す。解除済みの目印を置いてから、ライブラリの `OAuthHelpers.revokeGrant()` と同じく、発行済みの
  * アクセストークン（`token:{userId}:{grantId}:{tokenId}`）を消してから grant を消す。
  * リフレッシュトークンは grant の中に保存されているため、grant を消すと使えなくなる。
@@ -95,7 +116,7 @@ export async function revokeUserMcpConnection(
 ): Promise<boolean> {
   // キーの区切り（`:`）を含む ID でほかの grant のキーを指せないよう、
   // ライブラリが発行する形式（英数字と `-`・`_`）以外は受け付けない
-  if (!/^[A-Za-z0-9_-]+$/.test(grantId)) {
+  if (!GRANT_ID_PATTERN.test(grantId)) {
     return false;
   }
   const store = new D1KvStore(d1);
@@ -132,6 +153,9 @@ export async function revokeUserMcpConnection(
   }
   return true;
 }
+
+/** ライブラリが発行する grant の ID の形式 */
+const GRANT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 function grantKeyPrefix(userId: string) {
   return `grant:${userId}:`;

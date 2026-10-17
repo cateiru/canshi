@@ -14,6 +14,7 @@ import {
   getClientIdFromProps,
   getUserIdFromProps,
   type McpProps,
+  MISSING_CLIENT_ERROR_MESSAGE,
   MISSING_USER_ERROR_MESSAGE,
 } from "./props";
 import { toCatSummary, toTimelineEntrySummary } from "./summaries";
@@ -51,37 +52,42 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
   server = new McpServer({ name: "CANSHI MCP Server", version: "0.1.0" });
 
   /**
-   * ツールを呼んだユーザーの ID。ユーザー ID を持たないトークンや、削除された
-   * ユーザーのトークンでは、ツールの結果として返すエラーメッセージを返す
+   * ツールを呼んだユーザーの ID と、接続（OAuth のクライアント）の ID。読み取りの範囲は
+   * 接続ごとに設定する。ユーザー ID を持たないトークンや、削除されたユーザーのトークン、
+   * 接続を求められなかったリクエスト（`./clientId.ts`）では、ツールの結果として返す
+   * エラーメッセージを返す。接続が分からないまま範囲を決めると、制限した範囲を
+   * 読み取れてしまうため、読み取りを断る
    */
-  private async resolveUserId(): Promise<
-    { userId: string } | { error: string }
+  private async resolveConnection(): Promise<
+    { userId: string; clientId: string } | { error: string }
   > {
     const userId = getUserIdFromProps(this.props);
     if (!userId) {
       return { error: MISSING_USER_ERROR_MESSAGE };
+    }
+    const clientId = getClientIdFromProps(this.props);
+    if (!clientId) {
+      return { error: MISSING_CLIENT_ERROR_MESSAGE };
     }
     if (!(await getUserById(userId, this.env.DB))) {
       return {
         error: "ユーザーが見つかりません。MCP に接続し直してください",
       };
     }
-    return { userId };
-  }
-
-  /** この接続（OAuth のクライアント）の ID。読み取りの範囲は接続ごとに設定する */
-  private clientId() {
-    return getClientIdFromProps(this.props);
+    return { userId, clientId };
   }
 
   /**
    * ユーザーが参照でき、この接続からの読み取りも許可している猫と、その猫について
    * 読み取れる記録の種類を返す。どちらかを満たさなければ null
    */
-  private async resolveAllowedCat(userId: string, catId: string) {
+  private async resolveAllowedCat(
+    connection: { userId: string; clientId: string },
+    catId: string,
+  ) {
     const [cat, permissions] = await Promise.all([
-      getCatForUser(userId, catId, this.env.DB),
-      getMcpPermissions(userId, this.clientId(), this.env.DB),
+      getCatForUser(connection.userId, catId, this.env.DB),
+      getMcpPermissions(connection.userId, connection.clientId, this.env.DB),
     ]);
     if (!cat || !isCatAllowedForMcp(permissions, cat)) {
       return null;
@@ -100,13 +106,17 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
           BIRTH_DATE_PRECISION_DESCRIPTION,
       },
       async () => {
-        const user = await this.resolveUserId();
-        if ("error" in user) {
-          return errorResult(user.error);
+        const connection = await this.resolveConnection();
+        if ("error" in connection) {
+          return errorResult(connection.error);
         }
         const [cats, permissions] = await Promise.all([
-          listCatsForUser(user.userId, this.env.DB),
-          getMcpPermissions(user.userId, this.clientId(), this.env.DB),
+          listCatsForUser(connection.userId, this.env.DB),
+          getMcpPermissions(
+            connection.userId,
+            connection.clientId,
+            this.env.DB,
+          ),
         ]);
         return jsonResult({
           cats: cats
@@ -128,11 +138,11 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         },
       },
       async ({ catId }) => {
-        const user = await this.resolveUserId();
-        if ("error" in user) {
-          return errorResult(user.error);
+        const connection = await this.resolveConnection();
+        if ("error" in connection) {
+          return errorResult(connection.error);
         }
-        const allowed = await this.resolveAllowedCat(user.userId, catId);
+        const allowed = await this.resolveAllowedCat(connection, catId);
         if (!allowed) {
           return errorResult(`catId="${catId}" の猫が見つかりません`);
         }
@@ -184,12 +194,12 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         },
       },
       async ({ catId, year, month, date, page }) => {
-        const user = await this.resolveUserId();
-        if ("error" in user) {
-          return errorResult(user.error);
+        const connection = await this.resolveConnection();
+        if ("error" in connection) {
+          return errorResult(connection.error);
         }
         // 別の家の猫・読み取りを許可していない猫・存在しない猫は区別しない
-        const allowed = await this.resolveAllowedCat(user.userId, catId);
+        const allowed = await this.resolveAllowedCat(connection, catId);
         if (!allowed) {
           return errorResult(`catId="${catId}" の猫が見つかりません`);
         }

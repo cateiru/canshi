@@ -255,8 +255,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   （`/settings/ai-connections/[connectionId]`）と同意画面（`/oauth/authorize`）で変えられる
   - `client_id`: OAuth のクライアントの ID。クライアント・grant は `oauth_kv_entries` にあるため外部キーに
     しない。同じクライアントにもう一度同意すると古い grant は解除されるため、ユーザーの接続の中で
-    クライアントの ID は重ならない。ツールはトークンの `props.clientId` で行を選ぶ。範囲の設定を追加する前に
-    発行されたトークンは、次にトークンを更新したときに `clientId` を持つ（`src/features/mcp/props.ts`）
+    クライアントの ID は重ならない。ツールは、リクエストごとにアクセストークンの grant から求めた
+    クライアントの ID（`src/features/mcp/clientId.ts`）で行を選ぶ。求められないときは読み取りを断る
   - 接続を設定の「AIとの接続」から解除すると、その接続の行も消す
 - 後から作った家・登録した猫も既定で読み取れるよう、許可したものではなく外したもの（拒否）を持つ。
   行が無い接続は、すべて読み取れる
