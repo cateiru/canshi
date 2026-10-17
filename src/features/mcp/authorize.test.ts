@@ -34,10 +34,15 @@ vi.mock("@/features/auth/sessions", () => ({
   getSessionUser: vi.fn(),
 }));
 
+vi.mock("./permissions", () => ({
+  saveMcpPermissionsFromForm: vi.fn(async () => true),
+}));
+
 const { AuthorizationError } = await import(
   "@cloudflare/workers-oauth-provider"
 );
 const { getSessionUser } = await import("@/features/auth/sessions");
+const { saveMcpPermissionsFromForm } = await import("./permissions");
 const { decodeMcpConsentRequest, MCP_CONSENT_HEADER } = await import(
   "./consent"
 );
@@ -83,22 +88,34 @@ function setup() {
   return { helpers, next, fetch };
 }
 
+const DEFAULT_HEADERS = {
+  Origin: ORIGIN,
+  Cookie: "canshi-session=session-token",
+};
+
 function approvalRequest(
   decision: string,
-  headers: Record<string, string> = {
-    Origin: ORIGIN,
-    Cookie: "canshi-session=session-token",
-  },
+  headers: Record<string, string> = DEFAULT_HEADERS,
+  fields: Record<string, string> = {},
 ) {
   return new Request(AUTHORIZE_URL, {
     method: "POST",
     headers,
-    body: new URLSearchParams({ decision }),
+    body: new URLSearchParams({ decision, ...fields }),
   });
 }
 
+const PERMISSIONS_FIELD = {
+  mcpPermissions: JSON.stringify({
+    excludedHouseholdIds: [],
+    excludedCatIds: ["cat-1"],
+    excludedRecordTypes: {},
+  }),
+};
+
 beforeEach(() => {
   vi.mocked(getSessionUser).mockReset();
+  vi.mocked(saveMcpPermissionsFromForm).mockClear();
 });
 
 describe("withMcpAuthorize", () => {
@@ -194,15 +211,69 @@ describe("withMcpAuthorize", () => {
     );
   });
 
+  it("POST の「許可する」で、選んだ読み取りの範囲を保存してから認可を完了する", async () => {
+    const { helpers, fetch } = setup();
+    vi.mocked(getSessionUser).mockResolvedValueOnce({
+      id: "user-1",
+    } as Awaited<ReturnType<typeof getSessionUser>>);
+
+    const response = await fetch(
+      approvalRequest("approve", DEFAULT_HEADERS, PERMISSIONS_FIELD),
+    );
+
+    expect(saveMcpPermissionsFromForm).toHaveBeenCalledTimes(1);
+    const [userId, formData, d1] = vi.mocked(saveMcpPermissionsFromForm).mock
+      .calls[0];
+    expect(userId).toBe("user-1");
+    expect(formData.get("mcpPermissions")).toBe(
+      PERMISSIONS_FIELD.mcpPermissions,
+    );
+    expect(d1).toEqual({});
+    expect(helpers.completeAuthorization).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(303);
+  });
+
+  it("POST の「許可する」で読み取りの範囲が正しくなければ、認可せずに 400 にする", async () => {
+    const { helpers, fetch } = setup();
+    vi.mocked(getSessionUser).mockResolvedValueOnce({
+      id: "user-1",
+    } as Awaited<ReturnType<typeof getSessionUser>>);
+    vi.mocked(saveMcpPermissionsFromForm).mockResolvedValueOnce(false);
+
+    const response = await fetch(
+      approvalRequest("approve", DEFAULT_HEADERS, { mcpPermissions: "{" }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(helpers.completeAuthorization).not.toHaveBeenCalled();
+  });
+
+  it("POST の「許可する」で読み取りの範囲の項目が無ければ、範囲は変えずに認可を完了する", async () => {
+    const { helpers, fetch } = setup();
+    vi.mocked(getSessionUser).mockResolvedValueOnce({
+      id: "user-1",
+    } as Awaited<ReturnType<typeof getSessionUser>>);
+
+    const response = await fetch(approvalRequest("approve"));
+
+    expect(saveMcpPermissionsFromForm).not.toHaveBeenCalled();
+    expect(helpers.completeAuthorization).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(303);
+  });
+
   it("POST の「許可しない」では認可せず、access_denied を付けてクライアントへ戻す", async () => {
     const { helpers, fetch } = setup();
     vi.mocked(getSessionUser).mockResolvedValueOnce({
       id: "user-1",
     } as Awaited<ReturnType<typeof getSessionUser>>);
 
-    const response = await fetch(approvalRequest("deny"));
+    const response = await fetch(
+      approvalRequest("deny", DEFAULT_HEADERS, PERMISSIONS_FIELD),
+    );
 
     expect(helpers.completeAuthorization).not.toHaveBeenCalled();
+    // 許可しないときは、読み取りの範囲も変えない
+    expect(saveMcpPermissionsFromForm).not.toHaveBeenCalled();
     expect(response.status).toBe(303);
     const location = new URL(response.headers.get("Location") ?? "");
     expect(location.searchParams.get("error")).toBe("access_denied");

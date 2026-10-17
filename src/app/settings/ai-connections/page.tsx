@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
-import { TbPlugConnected } from "react-icons/tb";
+import { TbEye, TbPlugConnected } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
+import { updateMcpPermissionsAction } from "@/features/mcp/actions";
 import { listUserMcpConnections } from "@/features/mcp/connections";
 import { formatRedirectUri } from "@/features/mcp/consent";
+import { McpPermissionsForm } from "@/features/mcp/McpPermissionsForm";
+import { getMcpPermissionTree } from "@/features/mcp/permissions";
 import { RevokeMcpConnectionButton } from "@/features/mcp/RevokeMcpConnectionButton";
 import {
   formatDateTimeUtc,
@@ -26,11 +29,15 @@ const UNNAMED_CLIENT = "（名前がありません）";
 
 /**
  * ChatGPT などの AI のアプリ（MCP クライアント）に、同意画面（`/oauth/authorize`）で
- * 許可した接続の一覧。接続ごとに解除できる
+ * 許可した接続の一覧と、AI から読み取れる範囲の設定。接続ごとに解除できる。
+ * 範囲はすべての接続で共通
  */
 export default async function AiConnectionsPage() {
   const user = await requireUser();
-  const connections = await listUserMcpConnections(user.id);
+  const [connections, permissionTree] = await Promise.all([
+    listUserMcpConnections(user.id),
+    getMcpPermissionTree(user.id),
+  ]);
 
   return (
     <main className={styles.main}>
@@ -48,7 +55,7 @@ export default async function AiConnectionsPage() {
         </RecordPageHeading>
         <p className={styles.description}>
           ChatGPT などの AI
-          のアプリに、あなたのアカウントでの接続を許可すると、そのアプリから猫のプロフィールと記録を読み取れるようになります。許可した接続の確認と解除ができます。
+          のアプリに、あなたのアカウントでの接続を許可すると、そのアプリから猫のプロフィールと記録を読み取れるようになります。許可した接続の確認と解除、読み取りを許可する範囲の設定ができます。
         </p>
       </header>
 
@@ -120,6 +127,23 @@ export default async function AiConnectionsPage() {
             </div>
           </>
         )}
+      </Surface>
+
+      <Surface
+        title="読み取りを許可する範囲"
+        titleId="ai-permissions"
+        titleSize="lg"
+        icon={<TbEye aria-hidden="true" size={20} />}
+        gap="sm"
+      >
+        <p className={styles.sectionDescription}>
+          チェックを外した家・猫・記録は、AI
+          のアプリから読み取れなくなります。この範囲は、接続しているすべてのアプリで共通です。あとから登録した猫や、新しく参加した家は、読み取れる状態になります。
+        </p>
+        <McpPermissionsForm
+          action={updateMcpPermissionsAction}
+          tree={permissionTree}
+        />
       </Surface>
     </main>
   );

@@ -1,0 +1,63 @@
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.empty,
+.noCats {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.households,
+.cats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.households {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.household + .household {
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+/* 子の階層は、親のチェックボックスの左端から字下げし、縦線でつながりを示す */
+.cats,
+.noCats {
+  margin-left: 9px;
+  padding-left: calc(var(--space-4) - 1px);
+  border-left: var(--border-width) solid var(--color-border);
+}
+
+.cat + .cat {
+  margin-top: var(--space-2);
+}
+
+.householdCheckbox {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--text-md);
+}
+
+.catCheckbox {
+  font-weight: var(--font-weight-bold);
+}
+
+/* 記録の種類は数が多いため、折り返して並べる */
+.records {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5em, 1fr));
+  column-gap: var(--space-3);
+  margin-left: 9px;
+  padding-left: calc(var(--space-4) - 1px);
+  border-left: var(--border-width) solid var(--color-border);
+}
+
+.icon {
+  flex-shrink: 0;
+}

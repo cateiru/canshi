@@ -337,6 +337,13 @@
       "when": 1791941817718,
       "tag": "0047_jittery_mimic",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "6",
+      "when": 1792220048066,
+      "tag": "0048_opposite_gauntlet",
+      "breakpoints": true
     }
   ]
 }

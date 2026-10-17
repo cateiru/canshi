@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Alert, Button } from "@/components/ui";
+import { Alert, Button, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
 import {
@@ -8,6 +8,8 @@ import {
   formatRedirectUri,
   MCP_CONSENT_HEADER,
 } from "@/features/mcp/consent";
+import { McpPermissionTreeField } from "@/features/mcp/McpPermissionTreeField";
+import { getMcpPermissionTree } from "@/features/mcp/permissions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
@@ -28,7 +30,8 @@ type AuthorizePageProps = {
 /**
  * ChatGPT などの MCP クライアントを接続するときの同意画面。認可リクエストの検証と、
  * 「許可する」「許可しない」の送信先（`POST /oauth/authorize`）の処理は Worker
- * （`src/features/mcp/authorize.ts`）が行い、このページは検証済みの内容を表示するだけ。
+ * （`src/features/mcp/authorize.ts`）が行い、このページは検証済みの内容と、読み取りを
+ * 許可する範囲（設定の「AIとの接続」と共通）の選択を表示するだけ。
  * 未ログインのときは middleware がログイン画面へ送り、ログイン後にこのページへ戻る
  */
 export default async function AuthorizePage({
@@ -38,6 +41,7 @@ export default async function AuthorizePage({
   const consent = decodeMcpConsentRequest(
     (await headers()).get(MCP_CONSENT_HEADER),
   );
+  const permissionTree = consent ? await getMcpPermissionTree(user.id) : [];
 
   return (
     <main className={styles.main}>
@@ -48,7 +52,7 @@ export default async function AuthorizePage({
           <p>
             外部のアプリが、<strong>{user.name}</strong>
             さんのアカウントで CANSHI
-            に接続しようとしています。許可すると、このアプリから、あなたが所属する家の猫のプロフィールと記録を読み取れるようになります（記録の追加・変更はできません）。許可した接続は、設定の「AIとの接続」から解除できます。
+            に接続しようとしています。許可すると、このアプリから、下で選んだ家の猫のプロフィールと記録を読み取れるようになります（記録の追加・変更はできません）。許可した接続は、設定の「AIとの接続」から解除できます。
           </p>
           <dl className={styles.details}>
             <dt>アプリの名前</dt>
@@ -62,19 +66,33 @@ export default async function AuthorizePage({
           <form
             method="post"
             action={`/oauth/authorize?${toQueryString(await searchParams)}`}
-            className={styles.actions}
+            className={styles.form}
           >
-            <Button
-              type="submit"
-              variant="primary"
-              name="decision"
-              value="approve"
+            <section
+              className={styles.permissions}
+              aria-labelledby="ai-permissions"
             >
-              許可する
-            </Button>
-            <Button type="submit" name="decision" value="deny">
-              許可しない
-            </Button>
+              <Heading level={2} size="md" id="ai-permissions">
+                読み取りを許可する範囲
+              </Heading>
+              <p className={styles.note}>
+                この範囲は、接続しているすべてのアプリで共通です。ここで変えると、すでに接続しているアプリにも反映されます。あとから設定の「AIとの接続」で変えることもできます。
+              </p>
+              <McpPermissionTreeField tree={permissionTree} />
+            </section>
+            <div className={styles.actions}>
+              <Button
+                type="submit"
+                variant="primary"
+                name="decision"
+                value="approve"
+              >
+                許可する
+              </Button>
+              <Button type="submit" name="decision" value="deny">
+                許可しない
+              </Button>
+            </div>
           </form>
         </Surface>
       ) : (

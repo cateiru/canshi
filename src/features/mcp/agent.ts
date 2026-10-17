@@ -5,6 +5,12 @@ import { getUserById } from "@/features/auth/users";
 import { getCatForUser, listCatsForUser } from "@/features/households/queries";
 import { listTimelineForMonth } from "@/features/timeline/queries";
 import {
+  allowedMcpRecordTypes,
+  isCatAllowedForMcp,
+  MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
+} from "./permissionRules";
+import { getMcpPermissions } from "./permissions";
+import {
   getUserIdFromProps,
   type McpProps,
   MISSING_USER_ERROR_MESSAGE,
@@ -33,7 +39,9 @@ const BIRTH_DATE_PRECISION_DESCRIPTION =
  * （docs/plans/32_mcp_oidc_overview.md 参照）。
  *
  * 各ツールはトークンに保存した CANSHI のユーザー ID（`this.props.userId`、
- * `/oauth/authorize` で同意したときにログインしていたユーザー）の家の猫だけを参照する。
+ * `/oauth/authorize` で同意したときにログインしていたユーザー）の家の猫のうち、
+ * そのユーザーが読み取りを許可した家・猫・記録の種類（`./permissions.ts`）だけを参照する。
+ * 許可していない猫は、存在しない猫と区別しない。
  * Durable Object の中で動くため、D1 は `getCloudflareContext()` ではなく
  * `this.env.DB` を明示的に渡す
  */
@@ -59,6 +67,21 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
     return { userId };
   }
 
+  /**
+   * ユーザーが参照でき、AI との接続からの読み取りも許可している猫と、その猫について
+   * 読み取れる記録の種類を返す。どちらかを満たさなければ null
+   */
+  private async resolveAllowedCat(userId: string, catId: string) {
+    const [cat, permissions] = await Promise.all([
+      getCatForUser(userId, catId, this.env.DB),
+      getMcpPermissions(userId, this.env.DB),
+    ]);
+    if (!cat || !isCatAllowedForMcp(permissions, cat)) {
+      return null;
+    }
+    return { cat, recordTypes: allowedMcpRecordTypes(permissions, cat.id) };
+  }
+
   async init() {
     this.server.registerTool(
       "list_cats",
@@ -66,6 +89,7 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         title: "猫の一覧を取得",
         description:
           "登録されている猫のプロフィール一覧を取得する。" +
+          "ユーザーが読み取りを許可していない猫は含まれない。" +
           BIRTH_DATE_PRECISION_DESCRIPTION,
       },
       async () => {
@@ -73,8 +97,15 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         if ("error" in user) {
           return errorResult(user.error);
         }
-        const cats = await listCatsForUser(user.userId, this.env.DB);
-        return jsonResult({ cats: cats.map(toCatSummary) });
+        const [cats, permissions] = await Promise.all([
+          listCatsForUser(user.userId, this.env.DB),
+          getMcpPermissions(user.userId, this.env.DB),
+        ]);
+        return jsonResult({
+          cats: cats
+            .filter((cat) => isCatAllowedForMcp(permissions, cat))
+            .map(toCatSummary),
+        });
       },
     );
 
@@ -94,11 +125,11 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         if ("error" in user) {
           return errorResult(user.error);
         }
-        const cat = await getCatForUser(user.userId, catId, this.env.DB);
-        if (!cat) {
+        const allowed = await this.resolveAllowedCat(user.userId, catId);
+        if (!allowed) {
           return errorResult(`catId="${catId}" の猫が見つかりません`);
         }
-        return jsonResult(toCatSummary(cat));
+        return jsonResult(toCatSummary(allowed.cat));
       },
     );
 
@@ -125,7 +156,8 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
           'mode="approximate"（あいまいモード）はグラム単位の値と推定値がすべて null で、' +
           "代わりに与えた量 givenAmountLevel（less=少なめ、normal=普通、more=多め）と" +
           "残した量 leftoverLevel（none=完食、little=少し残し、most=ほとんど残し）を持つ。" +
-          "それぞれの日本語ラベルは modeLabel・givenAmountLevelLabel・leftoverLevelLabel に含まれる。",
+          "それぞれの日本語ラベルは modeLabel・givenAmountLevelLabel・leftoverLevelLabel に含まれる。" +
+          "ユーザーが読み取りを許可していない種類の記録は含まれない。",
         inputSchema: {
           catId: z.string().describe("猫の ID（list_cats で取得できる）"),
           year: z.number().int().describe("年（例: 2026）"),
@@ -149,15 +181,23 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         if ("error" in user) {
           return errorResult(user.error);
         }
-        // 別の家の猫・存在しない猫は区別しない
-        if (!(await getCatForUser(user.userId, catId, this.env.DB))) {
+        // 別の家の猫・読み取りを許可していない猫・存在しない猫は区別しない
+        const allowed = await this.resolveAllowedCat(user.userId, catId);
+        if (!allowed) {
           return errorResult(`catId="${catId}" の猫が見つかりません`);
         }
         const result = await listTimelineForMonth(
           catId,
           year,
           month,
-          { date, page },
+          {
+            date,
+            page,
+            types: [
+              ...MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
+              ...allowed.recordTypes,
+            ],
+          },
           this.env.DB,
         );
         return jsonResult({

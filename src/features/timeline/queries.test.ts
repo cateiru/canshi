@@ -188,6 +188,48 @@ describe("listTimelineForMonth", () => {
     expect(result.datesByDay.has("2026-07-11")).toBe(true);
   });
 
+  it("types で指定した種類だけを、ページ分けの前に絞り込む", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "しろ", sex: "unknown", birthDate: "2020-08-05" })
+      .returning();
+
+    for (const day of [10, 11, 12]) {
+      await db.insert(weightRecords).values({
+        catId: cat.id,
+        occurredAt: new Date(`2026-08-${day}T00:00:00.000Z`),
+        inputMethod: "direct",
+        catWeightKg: 4,
+      });
+    }
+    await db.insert(poopRecords).values({
+      catId: cat.id,
+      occurredAt: new Date("2026-08-13T00:00:00.000Z"),
+      consistency: "normal",
+    });
+
+    const result = await listTimelineForMonth(cat.id, 2026, 8, {
+      pageSize: 2,
+      types: ["birthday", "adoption", "poop"],
+    });
+
+    expect(result.entries.map((entry) => entry.type)).toEqual([
+      "poop",
+      "birthday",
+    ]);
+    expect(result.hasMore).toBe(false);
+    expect([...result.datesByDay.keys()]).toEqual(["2026-08-13", "2026-08-05"]);
+
+    const withoutAnniversaries = await listTimelineForMonth(cat.id, 2026, 8, {
+      types: ["weight"],
+    });
+    expect(withoutAnniversaries.entries.map((entry) => entry.type)).toEqual([
+      "weight",
+      "weight",
+      "weight",
+    ]);
+  });
+
   it("誕生日・お迎え記念日を、同じ日の記録より先頭に含める", async () => {
     const [cat] = await db
       .insert(cats)
