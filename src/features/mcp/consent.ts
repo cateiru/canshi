@@ -12,6 +12,8 @@ export const MCP_CONSENT_HEADER = "x-canshi-mcp-consent";
 
 /** 同意画面に表示する、接続しようとしているクライアントの情報 */
 export interface McpConsentRequest {
+  /** クライアントの ID。接続の読み取りの範囲（同じクライアントに前回同意したときのもの）を表示するのに使う */
+  clientId: string;
   /** クライアントが登録時に名乗った名前。自己申告のため、表示するときはそう書き添える */
   clientName: string | null;
   /** 認可コードを渡す先。クライアントに登録済みであることを確認している */
@@ -39,14 +41,19 @@ export function decodeMcpConsentRequest(
   if (typeof parsed !== "object" || parsed === null) {
     return null;
   }
-  const { clientName, redirectUri } = parsed as Record<string, unknown>;
+  const { clientId, clientName, redirectUri } = parsed as Record<
+    string,
+    unknown
+  >;
   if (
+    typeof clientId !== "string" ||
+    clientId === "" ||
     typeof redirectUri !== "string" ||
     (clientName !== null && typeof clientName !== "string")
   ) {
     return null;
   }
-  return { clientName: clientName || null, redirectUri };
+  return { clientId, clientName: clientName || null, redirectUri };
 }
 
 /**

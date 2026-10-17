@@ -2,103 +2,104 @@
   composes: page from "../../../features/shared/PageLayout.module.css";
 }
 
-.header {
+.header,
+.section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .description,
 .sectionDescription,
-.redirect,
-.connectedAt {
+.count {
   color: var(--color-ink-muted);
 }
 
-/* 狭い画面で列が収まらないときは、ページではなく表だけを横にスクロールさせる */
-.tableScroll {
-  overflow-x: auto;
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
-.connections {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.connections th,
-.connections td {
-  padding: var(--space-3) var(--space-2);
-  text-align: left;
-  vertical-align: middle;
-}
-
-.connections th:first-child,
-.connections td:first-child {
-  padding-left: 0;
-}
-
-.connections th:last-child,
-.connections td:last-child {
-  padding-right: 0;
-}
-
-.connections thead th {
-  padding-top: 0;
-  color: var(--color-ink-muted);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-regular);
-  white-space: nowrap;
-}
-
-.connections tbody tr {
-  border-top: var(--border-width) solid var(--color-border);
-}
-
-/* アプリの名前の下に接続先を小さく並べる。名前が単語の途中で折り返されないよう、
-   最低限の幅を確保する（収まらなければ表を横にスクロールする） */
-.client {
-  min-width: 10em;
-}
-
-.clientName,
-.redirect {
-  display: block;
-  overflow-wrap: anywhere;
-}
-
-.clientName {
-  font-weight: var(--font-weight-bold);
-}
-
-/* アプリのスキームの URI は長くなることがあるため、任意の位置で折り返す */
-.redirect {
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-regular);
-}
-
-/* 数字の幅を揃え、日時によって列の幅が変わらないようにする */
-.connectedAt {
+.count {
+  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.nowrap {
-  white-space: nowrap;
+.connections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  list-style: none;
 }
 
-/* `.connections td` の左寄せより優先させる。狭い画面でもボタンの文言は折り返さない */
-.connections .actions {
-  text-align: right;
-  white-space: nowrap;
+.connection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.app {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.appIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  color: var(--color-accent-strong);
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-bg));
+}
+
+.identity {
+  min-width: 0;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.details dt {
+  margin-bottom: var(--space-1);
+  color: var(--color-ink-muted);
+}
+
+.details dd {
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-8);
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .details {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .actions > a {
+    flex: 1;
+  }
 }

@@ -8,6 +8,7 @@ import {
 describe("encodeMcpConsentRequest / decodeMcpConsentRequest", () => {
   it("日本語のクライアント名も ASCII のヘッダー値にして戻せる", () => {
     const request = {
+      clientId: "client-1",
       clientName: "猫のアシスタント",
       redirectUri: "https://chatgpt.com/connector_platform_oauth_redirect",
     };
@@ -21,18 +22,27 @@ describe("encodeMcpConsentRequest / decodeMcpConsentRequest", () => {
     expect(
       decodeMcpConsentRequest(
         encodeMcpConsentRequest({
+          clientId: "client-1",
           clientName: null,
           redirectUri: "https://example.com/cb",
         }),
       ),
-    ).toEqual({ clientName: null, redirectUri: "https://example.com/cb" });
+    ).toEqual({
+      clientId: "client-1",
+      clientName: null,
+      redirectUri: "https://example.com/cb",
+    });
     expect(
       decodeMcpConsentRequest(
         encodeURIComponent(
-          JSON.stringify({ clientName: "", redirectUri: "x:/cb" }),
+          JSON.stringify({
+            clientId: "client-1",
+            clientName: "",
+            redirectUri: "x:/cb",
+          }),
         ),
       ),
-    ).toEqual({ clientName: null, redirectUri: "x:/cb" });
+    ).toEqual({ clientId: "client-1", clientName: null, redirectUri: "x:/cb" });
   });
 
   it("ヘッダーが無い・壊れている・形が違う場合は null", () => {
@@ -50,7 +60,17 @@ describe("encodeMcpConsentRequest / decodeMcpConsentRequest", () => {
     ).toBeNull();
     expect(
       decodeMcpConsentRequest(
-        encodeURIComponent(JSON.stringify({ clientName: 1, redirectUri: "a" })),
+        encodeURIComponent(
+          JSON.stringify({ clientId: "c", clientName: 1, redirectUri: "a" }),
+        ),
+      ),
+    ).toBeNull();
+    // クライアントの ID が無い
+    expect(
+      decodeMcpConsentRequest(
+        encodeURIComponent(
+          JSON.stringify({ clientName: "a", redirectUri: "a" }),
+        ),
       ),
     ).toBeNull();
   });

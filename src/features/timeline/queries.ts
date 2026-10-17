@@ -605,6 +605,8 @@ export type ListTimelineForMonthOptions = {
   /** 指定すると、一覧（entries・hasMore）を月内のこの日付（YYYY-MM-DD）だけに絞り込む。
    * カレンダー用の datesByDay は指定の有無にかかわらず月全体を対象にする */
   date?: string;
+  /** 指定すると、この種類の記録だけを返す（datesByDay も含む）。省略時はすべての種類 */
+  types?: readonly TimelineRecordType[];
 };
 
 export type ListTimelineForMonthResult = {
@@ -678,11 +680,22 @@ export async function listTimelineForMonth(
   const pageSize = normalizePositiveInt(options.pageSize ?? 20, MAX_PAGE_SIZE);
 
   const range = getMonthRangeUtc(year, month);
+  // 種類の絞り込みはページ分けの前に行い、1 ページの件数が減らないようにする
+  const isIncluded = (type: TimelineRecordType) =>
+    !options.types || options.types.includes(type);
+  const fetchers = Object.entries(FETCHERS).flatMap(([type, fetcher]) =>
+    isIncluded(type as TimelineRecordType) ? [fetcher] : [],
+  );
   const results = await Promise.all([
-    fetchAnniversaryEntries(catId, year, month, d1),
-    ...Object.values(FETCHERS).map((fetcher) => fetcher(catId, range, d1)),
+    TIMELINE_ANNIVERSARY_TYPES.some(isIncluded)
+      ? fetchAnniversaryEntries(catId, year, month, d1)
+      : [],
+    ...fetchers.map((fetcher) => fetcher(catId, range, d1)),
   ]);
-  const merged = results.flat().sort(compareTimelineEntries);
+  const merged = results
+    .flat()
+    .filter((entry) => isIncluded(entry.type))
+    .sort(compareTimelineEntries);
 
   const datesByDay = buildDatesByDay(merged);
 

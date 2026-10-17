@@ -42,7 +42,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - ユーザーは所属する家の猫だけを参照・編集できる。ページ・Server Action・Route Handler・MCP のツール
   （`src/features/mcp/agent.ts`）は、いずれも `src/features/households/queries.ts` の
   `getCatForUser`・`listCatsForUser`・`accessibleCatIdsQuery` で絞り込む（認可の入口は
-  `src/features/auth/session.ts` の `requireUser`・`requireCatAccess`）
+  `src/features/auth/session.ts` の `requireUser`・`requireCatAccess`）。MCP のツールはさらに、
+  ユーザーが接続ごとに許可した読み取り範囲（`mcp_permissions`）で絞り込む
   - 猫に紐付くテーブル（記録・通知など）は `cat_id` 経由で家に紐付くため、家の列は持たない
   - 支出記録は猫ではなく家に属するため `expense_records.household_id` を持つ（「支出記録」の節を参照）
   - ごはん商品・ごはんプリセットも猫ではなく家に属するため `food_products.household_id`・
@@ -245,6 +246,27 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   KV と同じ形のテーブルにし、`src/features/mcp/d1KvStore.ts` で KV の操作を実装している
 - キー・値の形式はライブラリが決めるため、アプリのコードから直接読み書きしない
 - `expires_at` を過ぎた行は無いものとして扱い、定期実行で削除する
+
+## AI との接続の読み取り範囲（`mcp_permissions`）
+
+- MCP のツールから読み取れる家・猫・記録の種類を、ユーザーが許可した接続ごとに 1 行で持つ
+  （`user_id` + `client_id` の複合主キー）。範囲はトークン（OAuth の `props`）には持たせず、ツールが
+  呼ばれるたびに読む（`src/features/mcp/permissions.ts`）。設定の「AIとの接続」の接続ごとのページ
+  （`/settings/ai-connections/[connectionId]`）と同意画面（`/oauth/authorize`）で変えられる
+  - `client_id`: OAuth のクライアントの ID。クライアント・grant は `oauth_kv_entries` にあるため外部キーに
+    しない。同じクライアントにもう一度同意すると古い grant は解除されるため、ユーザーの接続の中で
+    クライアントの ID は重ならない。ツールは、リクエストごとにアクセストークンの grant から求めた
+    クライアントの ID（`src/features/mcp/clientId.ts`）で行を選ぶ。求められないときは読み取りを断る
+  - 接続を設定の「AIとの接続」から解除すると、その接続の行も消す
+- 後から作った家・登録した猫も既定で読み取れるよう、許可したものではなく外したもの（拒否）を持つ。
+  行が無い接続は、すべて読み取れる
+  - `excluded_household_ids`: 外した家の ID（JSON の配列）。家は猫が今いる家で判定する
+  - `excluded_cat_ids`: 外した猫の ID（JSON の配列）。家を外したときは、その家の猫も含める。猫が外した家から
+    別の家へ引っ越しても、画面で見えていたとおり読み取れないままにするため
+  - `excluded_record_types`: 猫の ID ごとの、外した記録の種類（JSON のオブジェクト）。誕生日・お迎え日は
+    プロフィールから求めるため対象外で、猫を読み取れれば読み取れる
+- 家・猫は外部キーにせず ID で持つ。削除された家・猫の ID が残っても、どの猫にも当てはまらなくなるだけで
+  害はなく、次に保存したときに取り除かれる（保存時は、所属する家・参照できる猫の ID だけを残す）
 
 ## AI 評価結果（`ai_evaluations`）
 

@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Alert, Button } from "@/components/ui";
+import {
+  TbAlertTriangle,
+  TbEye,
+  TbPlugConnected,
+  TbUser,
+} from "react-icons/tb";
+import { Alert, Button, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
 import {
@@ -8,6 +14,9 @@ import {
   formatRedirectUri,
   MCP_CONSENT_HEADER,
 } from "@/features/mcp/consent";
+import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
+import { McpPermissionTreeField } from "@/features/mcp/McpPermissionTreeField";
+import { getMcpPermissionTree } from "@/features/mcp/permissions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
@@ -28,7 +37,8 @@ type AuthorizePageProps = {
 /**
  * ChatGPT などの MCP クライアントを接続するときの同意画面。認可リクエストの検証と、
  * 「許可する」「許可しない」の送信先（`POST /oauth/authorize`）の処理は Worker
- * （`src/features/mcp/authorize.ts`）が行い、このページは検証済みの内容を表示するだけ。
+ * （`src/features/mcp/authorize.ts`）が行い、このページは検証済みの内容と、この接続で
+ * 読み取りを許可する範囲の選択を表示するだけ。
  * 未ログインのときは middleware がログイン画面へ送り、ログイン後にこのページへ戻る
  */
 export default async function AuthorizePage({
@@ -38,45 +48,97 @@ export default async function AuthorizePage({
   const consent = decodeMcpConsentRequest(
     (await headers()).get(MCP_CONSENT_HEADER),
   );
+  // 同じアプリに前回同意したときの範囲があれば、それを初期の状態にする
+  const permissionTree = consent
+    ? await getMcpPermissionTree(user.id, consent.clientId)
+    : [];
 
   return (
     <main className={styles.main}>
-      <RecordPageHeading icon={AiConnectionIcon}>AIとの接続</RecordPageHeading>
+      <header className={styles.header}>
+        <RecordPageHeading icon={AiConnectionIcon}>
+          AIとの接続
+        </RecordPageHeading>
+        <p className={styles.description}>
+          接続するアプリと、読み取りを許可する範囲を確認してください。
+        </p>
+      </header>
 
       {consent ? (
-        <Surface className={styles.content}>
-          <p>
-            外部のアプリが、<strong>{user.name}</strong>
-            さんのアカウントで CANSHI
-            に接続しようとしています。許可すると、このアプリから、あなたが所属する家の猫のプロフィールと記録を読み取れるようになります（記録の追加・変更はできません）。許可した接続は、設定の「AIとの接続」から解除できます。
-          </p>
-          <dl className={styles.details}>
-            <dt>アプリの名前</dt>
-            <dd>{consent.clientName ?? "（名前がありません）"}</dd>
-            <dt>接続先</dt>
-            <dd>{formatRedirectUri(consent.redirectUri)}</dd>
-          </dl>
-          <p className={styles.note}>
-            アプリの名前は接続するアプリ自身が名乗っているものです。自分で接続を始めたのでなければ、許可しないでください。
+        <>
+          <Surface
+            className={styles.connection}
+            aria-labelledby="connecting-app"
+          >
+            <div className={styles.app}>
+              <span className={styles.appIcon}>
+                <TbPlugConnected size={28} aria-hidden="true" />
+              </span>
+              <div className={styles.appIdentity}>
+                <p className={styles.note}>接続をリクエストしているアプリ</p>
+                <Heading level={2} size="lg" id="connecting-app">
+                  {consent.clientName ?? "（名前がありません）"}
+                </Heading>
+                <p className={styles.note}>アプリ自身が申告した名前です。</p>
+              </div>
+            </div>
+            <dl className={styles.details}>
+              <div>
+                <dt>接続先</dt>
+                <dd>{formatRedirectUri(consent.redirectUri)}</dd>
+              </div>
+              <div>
+                <dt>接続に使うアカウント</dt>
+                <dd className={styles.account}>
+                  <TbUser size={18} aria-hidden="true" />
+                  {user.name} さん
+                </dd>
+              </div>
+            </dl>
+            <McpAccessNotice />
+          </Surface>
+          <p className={styles.caution}>
+            <TbAlertTriangle size={20} aria-hidden="true" />
+            自分で接続を始めたのでなければ、許可しないでください。
           </p>
           <form
             method="post"
             action={`/oauth/authorize?${toQueryString(await searchParams)}`}
-            className={styles.actions}
+            className={styles.form}
           >
-            <Button
-              type="submit"
-              variant="primary"
-              name="decision"
-              value="approve"
+            <Surface
+              title="読み取りを許可する範囲"
+              titleId="ai-permissions"
+              titleSize="lg"
+              icon={<TbEye size={22} aria-hidden="true" />}
+              gap="sm"
             >
-              許可する
-            </Button>
-            <Button type="submit" name="decision" value="deny">
-              許可しない
-            </Button>
+              <p className={styles.note}>
+                このアプリに公開する家・猫・記録を選んでください。チェックを外した情報は読み取れません。
+              </p>
+              <McpPermissionTreeField tree={permissionTree} />
+              <p className={styles.note}>
+                あとから登録した猫や、新しく参加した家は、読み取れる状態になります。
+              </p>
+            </Surface>
+            <p className={styles.afterNote}>
+              許可したあとも、設定の「AIとの接続」で範囲の変更や接続の解除ができます。
+            </p>
+            <div className={styles.actions}>
+              <Button
+                type="submit"
+                variant="primary"
+                name="decision"
+                value="approve"
+              >
+                許可する
+              </Button>
+              <Button type="submit" name="decision" value="deny">
+                許可しない
+              </Button>
+            </div>
           </form>
-        </Surface>
+        </>
       ) : (
         <Alert color="error">
           接続のリクエストが正しくありません。接続するアプリから、もう一度やり直してください。

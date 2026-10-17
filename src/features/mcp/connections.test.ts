@@ -4,7 +4,13 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { listUserMcpConnections, revokeUserMcpConnection } from "./connections";
+import { mcpPermissions, users } from "@/db/schema";
+import {
+  getGrantClientId,
+  getUserMcpConnection,
+  listUserMcpConnections,
+  revokeUserMcpConnection,
+} from "./connections";
 import { D1KvStore } from "./d1KvStore";
 
 // `src/features/auth/sessions.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
@@ -123,12 +129,14 @@ describe("listUserMcpConnections", () => {
     expect(await listUserMcpConnections("user-1", d1)).toEqual([
       {
         id: "grantNew2",
+        clientId: "client-noname",
         clientName: null,
         redirectUri: null,
         createdAt: new Date(NOW.getTime() - 60 * 1000),
       },
       {
         id: "grant_old-1",
+        clientId: "client-chatgpt",
         clientName: "ChatGPT",
         redirectUri: "https://chatgpt.com/connector/oauth/callback",
         createdAt: new Date(NOW.getTime() - 3600 * 1000),
@@ -140,6 +148,36 @@ describe("listUserMcpConnections", () => {
     await seed();
 
     expect(await listUserMcpConnections("user-3", d1)).toEqual([]);
+  });
+});
+
+describe("getUserMcpConnection", () => {
+  it("ユーザーの期限内の接続だけを返す", async () => {
+    await seed();
+
+    expect(await getUserMcpConnection("user-1", "grant_old-1", d1)).toEqual(
+      expect.objectContaining({
+        id: "grant_old-1",
+        clientId: "client-chatgpt",
+      }),
+    );
+    expect(await getUserMcpConnection("user-1", "grantExpired", d1)).toBeNull();
+    expect(await getUserMcpConnection("user-1", "grantOther", d1)).toBeNull();
+    expect(await getUserMcpConnection("user-1", "missing", d1)).toBeNull();
+  });
+});
+
+describe("getGrantClientId", () => {
+  it("ユーザーの grant のクライアントの ID を返し、無い・キーの区切りを含む ID なら null", async () => {
+    await seed();
+
+    expect(await getGrantClientId("user-1", "grant_old-1", d1)).toBe(
+      "client-chatgpt",
+    );
+    expect(await getGrantClientId("user-1", "grantOther", d1)).toBeNull();
+    expect(
+      await getGrantClientId("user-1", "grantNew2:token-c", d1),
+    ).toBeNull();
   });
 });
 
@@ -162,6 +200,31 @@ describe("revokeUserMcpConnection", () => {
     expect(
       (await listUserMcpConnections("user-1", d1)).map(({ id }) => id),
     ).toEqual(["grantNew2"]);
+  });
+
+  it("解除した接続の読み取りの範囲だけを削除する", async () => {
+    await seed();
+    await db.insert(users).values([
+      { id: "user-1", name: "ユーザー1" },
+      { id: "user-2", name: "ユーザー2" },
+    ]);
+    await db.insert(mcpPermissions).values([
+      { userId: "user-1", clientId: "client-chatgpt", excludedCatIds: ["c"] },
+      { userId: "user-1", clientId: "client-noname", excludedCatIds: ["c"] },
+      { userId: "user-2", clientId: "client-chatgpt", excludedCatIds: ["c"] },
+    ]);
+
+    await revokeUserMcpConnection("user-1", "grant_old-1", d1);
+
+    expect(
+      (await db.select().from(mcpPermissions)).map(({ userId, clientId }) => ({
+        userId,
+        clientId,
+      })),
+    ).toEqual([
+      { userId: "user-1", clientId: "client-noname" },
+      { userId: "user-2", clientId: "client-chatgpt" },
+    ]);
   });
 
   it("解除した後は、トークンの更新と重なっても grant・トークンが書き戻されない", async () => {
