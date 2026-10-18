@@ -52,7 +52,7 @@ test.afterEach(async () => {
   await executeSql(
     `DELETE FROM oauth_kv_entries WHERE key IN ('client:${CLIENT_ID}', 'grant:' || ${loginUserId} || ':${GRANT_ID}');
     DELETE FROM mcp_permissions WHERE client_id = '${CLIENT_ID}';
-    DELETE FROM mcp_connection_usages WHERE client_id = '${CLIENT_ID}';`,
+    DELETE FROM mcp_connection_usages WHERE grant_id = '${GRANT_ID}';`,
   );
 });
 
@@ -100,8 +100,8 @@ test("AIとの接続の一覧に、接続を最後に使った日時を表示す
   await expect(lastUsedAt).toHaveText("記録がありません");
 
   await executeSql(
-    `INSERT INTO mcp_connection_usages (user_id, client_id, last_used_at)
-    SELECT id, '${CLIENT_ID}', unixepoch() FROM users WHERE id = ${loginUserId};`,
+    `INSERT INTO mcp_connection_usages (user_id, grant_id, last_used_at)
+    SELECT id, '${GRANT_ID}', unixepoch() FROM users WHERE id = ${loginUserId};`,
   );
   await page.reload();
   await expect(lastUsedAt).toHaveText(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);

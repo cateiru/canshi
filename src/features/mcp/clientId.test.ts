@@ -132,7 +132,7 @@ describe("withMcpClientId", () => {
     await settled();
 
     expect(await db.select().from(mcpConnectionUsages)).toEqual([
-      { userId: "user-1", clientId: "client-1", lastUsedAt: expect.any(Date) },
+      { userId: "user-1", grantId: "grant-1", lastUsedAt: expect.any(Date) },
     ]);
   });
 

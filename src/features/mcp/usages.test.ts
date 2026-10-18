@@ -10,6 +10,7 @@ import {
   deleteMcpConnectionUsage,
   listMcpConnectionLastUsedAt,
   MCP_CONNECTION_USAGE_INTERVAL_SECONDS,
+  purgeOrphanedMcpConnectionUsages,
   recordMcpConnectionUsage,
 } from "./usages";
 
@@ -41,11 +42,11 @@ beforeEach(async () => {
   }
 });
 
-/** テストで使う grant（ユーザー ID・grant の ID・クライアントの ID） */
+/** テストで使う grant（ユーザー ID・grant の ID） */
 const GRANTS = [
-  { userId: "user-1", grantId: "grant-1", clientId: "client-1" },
-  { userId: "user-1", grantId: "grant-2", clientId: "client-2" },
-  { userId: "user-2", grantId: "grant-3", clientId: "client-1" },
+  { userId: "user-1", grantId: "grant-1" },
+  { userId: "user-1", grantId: "grant-2" },
+  { userId: "user-2", grantId: "grant-3" },
 ];
 
 /**
@@ -53,12 +54,12 @@ const GRANTS = [
  * 記録は grant が残っているかだけを見るため、値は必要な項目だけにする
  */
 async function putGrant(
-  grant: { userId: string; grantId: string; clientId: string },
+  grant: { userId: string; grantId: string },
   options?: { expiration?: number },
 ) {
   await new D1KvStore(d1).put(
     `grant:${grant.userId}:${grant.grantId}`,
-    JSON.stringify({ id: grant.grantId, clientId: grant.clientId }),
+    JSON.stringify({ id: grant.grantId, clientId: "client-1" }),
     options,
   );
 }
@@ -69,13 +70,7 @@ function record(grantId: string, now: Date) {
   if (!grant) {
     throw new Error(`unknown grant: ${grantId}`);
   }
-  return recordMcpConnectionUsage(
-    grant.userId,
-    grant.grantId,
-    grant.clientId,
-    d1,
-    now,
-  );
+  return recordMcpConnectionUsage(grant.userId, grant.grantId, d1, now);
 }
 
 describe("recordMcpConnectionUsage", () => {
@@ -83,25 +78,19 @@ describe("recordMcpConnectionUsage", () => {
     await record("grant-1", NOW);
 
     expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(
-      new Map([["client-1", NOW]]),
+      new Map([["grant-1", NOW]]),
     );
   });
 
   it("grant が無い・期限切れの場合は記録しない", async () => {
-    await recordMcpConnectionUsage("user-1", "missing", "client-1", d1, NOW);
+    await recordMcpConnectionUsage("user-1", "missing", d1, NOW);
     // 別のユーザーの grant では記録しない
-    await recordMcpConnectionUsage("user-1", "grant-3", "client-1", d1, NOW);
+    await recordMcpConnectionUsage("user-1", "grant-3", d1, NOW);
     await putGrant(
-      { userId: "user-1", grantId: "grant-expired", clientId: "client-1" },
+      { userId: "user-1", grantId: "grant-expired" },
       { expiration: NOW.getTime() / 1000 },
     );
-    await recordMcpConnectionUsage(
-      "user-1",
-      "grant-expired",
-      "client-1",
-      d1,
-      NOW,
-    );
+    await recordMcpConnectionUsage("user-1", "grant-expired", d1, NOW);
 
     expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(new Map());
   });
@@ -114,7 +103,7 @@ describe("recordMcpConnectionUsage", () => {
       secondsLater(MCP_CONNECTION_USAGE_INTERVAL_SECONDS),
     );
     expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(
-      new Map([["client-1", NOW]]),
+      new Map([["grant-1", NOW]]),
     );
 
     await record(
@@ -123,7 +112,7 @@ describe("recordMcpConnectionUsage", () => {
     );
     expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(
       new Map([
-        ["client-1", secondsLater(MCP_CONNECTION_USAGE_INTERVAL_SECONDS + 1)],
+        ["grant-1", secondsLater(MCP_CONNECTION_USAGE_INTERVAL_SECONDS + 1)],
       ]),
     );
   });
@@ -137,8 +126,8 @@ describe("listMcpConnectionLastUsedAt", () => {
 
     expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(
       new Map([
-        ["client-1", NOW],
-        ["client-2", secondsLater(10)],
+        ["grant-1", NOW],
+        ["grant-2", secondsLater(10)],
       ]),
     );
   });
@@ -150,13 +139,34 @@ describe("deleteMcpConnectionUsage", () => {
     await record("grant-2", NOW);
     await record("grant-3", NOW);
 
-    await deleteMcpConnectionUsage("user-1", "client-1", d1);
+    await deleteMcpConnectionUsage("user-1", "grant-1", d1);
+    // 別のユーザーの接続の記録は消さない
+    await deleteMcpConnectionUsage("user-1", "grant-3", d1);
 
     expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(
-      new Map([["client-2", NOW]]),
+      new Map([["grant-2", NOW]]),
     );
     expect(await listMcpConnectionLastUsedAt("user-2", d1)).toEqual(
-      new Map([["client-1", NOW]]),
+      new Map([["grant-3", NOW]]),
+    );
+  });
+});
+
+describe("purgeOrphanedMcpConnectionUsages", () => {
+  it("grant が無くなった接続の記録だけを消す", async () => {
+    await record("grant-1", NOW);
+    await record("grant-2", NOW);
+    await record("grant-3", NOW);
+    // ライブラリが grant だけを消した場合（同じクライアントにもう一度同意したときなど）
+    await new D1KvStore(d1).delete("grant:user-1:grant-1");
+
+    await purgeOrphanedMcpConnectionUsages(d1);
+
+    expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(
+      new Map([["grant-2", NOW]]),
+    );
+    expect(await listMcpConnectionLastUsedAt("user-2", d1)).toEqual(
+      new Map([["grant-3", NOW]]),
     );
   });
 });

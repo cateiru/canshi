@@ -37,7 +37,6 @@ export function withMcpClientId(apiHandler: {
           recordMcpConnectionUsage(
             props.userId,
             connection.grantId,
-            connection.clientId,
             env.DB,
           ).catch((error) => {
             console.error("AI との接続の利用日時の記録に失敗しました", error);

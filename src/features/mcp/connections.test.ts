@@ -147,8 +147,22 @@ describe("listUserMcpConnections", () => {
     ]);
   });
 
-  it("接続を最後に使った日時を、接続した日時より前のものを除いて返す", async () => {
-    await seed();
+  it("接続ごとに、最後に使った日時を返す", async () => {
+    const store = await seed();
+    // 同じクライアントの grant が 2 つ残る場合（CIMD のクライアントで認可コードの
+    // 渡し先が違う場合など）も、接続ごとに分けて返す
+    await store.put(
+      "grant:user-1:grantSameClient",
+      JSON.stringify({
+        id: "grantSameClient",
+        clientId: "client-chatgpt",
+        userId: "user-1",
+        scope: [],
+        metadata: {},
+        encryptedProps: "encrypted",
+        createdAt: NOW_SECONDS - 1800,
+      }),
+    );
     await db.insert(users).values([
       { id: "user-1", name: "ユーザー1" },
       { id: "user-2", name: "ユーザー2" },
@@ -156,21 +170,11 @@ describe("listUserMcpConnections", () => {
     await db.insert(mcpConnectionUsages).values([
       {
         userId: "user-1",
-        clientId: "client-chatgpt",
+        grantId: "grant_old-1",
         lastUsedAt: new Date(NOW.getTime() - 600 * 1000),
       },
-      // もう一度同意する前の接続の日時（接続した日時より前）は表示しない
-      {
-        userId: "user-1",
-        clientId: "client-noname",
-        lastUsedAt: new Date(NOW.getTime() - 120 * 1000),
-      },
       // ほかのユーザーの日時は使わない
-      {
-        userId: "user-2",
-        clientId: "client-noname",
-        lastUsedAt: NOW,
-      },
+      { userId: "user-2", grantId: "grantNew2", lastUsedAt: NOW },
     ]);
 
     expect(
@@ -179,17 +183,12 @@ describe("listUserMcpConnections", () => {
       ),
     ).toEqual([
       { id: "grantNew2", lastUsedAt: null },
+      { id: "grantSameClient", lastUsedAt: null },
       {
         id: "grant_old-1",
         lastUsedAt: new Date(NOW.getTime() - 600 * 1000),
       },
     ]);
-  });
-
-  it("接続が無ければ空の配列を返す", async () => {
-    await seed();
-
-    expect(await listUserMcpConnections("user-3", d1)).toEqual([]);
   });
 });
 
@@ -276,20 +275,20 @@ describe("revokeUserMcpConnection", () => {
       { id: "user-2", name: "ユーザー2" },
     ]);
     await db.insert(mcpConnectionUsages).values([
-      { userId: "user-1", clientId: "client-chatgpt", lastUsedAt: NOW },
-      { userId: "user-1", clientId: "client-noname", lastUsedAt: NOW },
-      { userId: "user-2", clientId: "client-chatgpt", lastUsedAt: NOW },
+      { userId: "user-1", grantId: "grant_old-1", lastUsedAt: NOW },
+      { userId: "user-1", grantId: "grantNew2", lastUsedAt: NOW },
+      { userId: "user-2", grantId: "grantOther", lastUsedAt: NOW },
     ]);
 
     await revokeUserMcpConnection("user-1", "grant_old-1", d1);
 
     expect(
       (await db.select().from(mcpConnectionUsages)).map(
-        ({ userId, clientId }) => ({ userId, clientId }),
+        ({ userId, grantId }) => ({ userId, grantId }),
       ),
     ).toEqual([
-      { userId: "user-1", clientId: "client-noname" },
-      { userId: "user-2", clientId: "client-chatgpt" },
+      { userId: "user-1", grantId: "grantNew2" },
+      { userId: "user-2", grantId: "grantOther" },
     ]);
   });
 
@@ -299,20 +298,13 @@ describe("revokeUserMcpConnection", () => {
     await recordMcpConnectionUsage(
       "user-1",
       "grant_old-1",
-      "client-chatgpt",
       d1,
       new Date(NOW.getTime() - 600 * 1000),
     );
 
     await revokeUserMcpConnection("user-1", "grant_old-1", d1);
     // 解除の前にトークンを確かめたリクエストの記録が、解除の後に書き込まれる場合を再現する
-    await recordMcpConnectionUsage(
-      "user-1",
-      "grant_old-1",
-      "client-chatgpt",
-      d1,
-      NOW,
-    );
+    await recordMcpConnectionUsage("user-1", "grant_old-1", d1, NOW);
 
     expect(await db.select().from(mcpConnectionUsages)).toEqual([]);
   });

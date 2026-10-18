@@ -74,22 +74,14 @@ export async function listUserMcpConnections(
 
   return grants
     .sort((a, b) => b.createdAt - a.createdAt)
-    .map((grant) => {
-      const createdAt = new Date(grant.createdAt * 1000);
-      const lastUsedAt = lastUsedAts.get(grant.clientId) ?? null;
-      return {
-        id: grant.id,
-        clientId: grant.clientId,
-        clientName: clientNames.get(grant.clientId) ?? null,
-        redirectUri: grant.redirectUri ?? null,
-        createdAt,
-        // 同じクライアントにもう一度同意したときは、前の接続の日時が残っているため表示しない
-        lastUsedAt:
-          lastUsedAt && lastUsedAt.getTime() >= createdAt.getTime()
-            ? lastUsedAt
-            : null,
-      };
-    });
+    .map((grant) => ({
+      id: grant.id,
+      clientId: grant.clientId,
+      clientName: clientNames.get(grant.clientId) ?? null,
+      redirectUri: grant.redirectUri ?? null,
+      createdAt: new Date(grant.createdAt * 1000),
+      lastUsedAt: lastUsedAts.get(grant.id) ?? null,
+    }));
 }
 
 /** ユーザーの接続のうち、指定した grant の ID のもの。無い・別のユーザーの接続なら null */
@@ -165,12 +157,14 @@ export async function revokeUserMcpConnection(
     cursor = page.list_complete ? undefined : page.cursor;
   } while (cursor);
   await store.delete(grantKey);
+  // 使った日時の記録は grant を消した後に消す。解除の前に始まったリクエストの記録は、
+  // grant が無いと書き込まれない（`./usages.ts` の `recordMcpConnectionUsage`）
+  await deleteMcpConnectionUsage(userId, grantId, d1);
 
   // 読み取りの範囲も消す。もう一度接続したときは、すべて読み取れる状態から選び直す
   const clientId = parseStoredGrant(grant)?.clientId;
   if (clientId) {
     await deleteMcpPermissions(userId, clientId, d1);
-    await deleteMcpConnectionUsage(userId, clientId, d1);
   }
   return true;
 }

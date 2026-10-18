@@ -252,8 +252,8 @@ VALUES ('client:vrt-client', '{"clientId":"vrt-client","clientName":"ChatGPT","r
 
 -- 上の接続を最後に使った日時（src/features/mcp/usages.ts 参照）。unix 秒の固定値
 -- （2024-06-02 01:00:00 UTC）
-INSERT INTO mcp_connection_usages (user_id, client_id, last_used_at)
-VALUES ('vrt-user', 'vrt-client', 1717290000);
+INSERT INTO mcp_connection_usages (user_id, grant_id, last_used_at)
+VALUES ('vrt-user', 'vrtGrant', 1717290000);
 
 -- ここまでに登録した猫をすべて VRT 用の家に所属させる
 UPDATE cats SET household_id = 'vrt-household' WHERE id LIKE 'vrt-cat-%';

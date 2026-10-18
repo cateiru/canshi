@@ -270,20 +270,22 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 ## AI との接続を最後に使った日時（`mcp_connection_usages`）
 
-- 設定の「AIとの接続」に表示する「最終接続日時」を、ユーザーが許可した接続ごとに 1 行で持つ
-  （`user_id` + `client_id` の複合主キー、`0049`）。`/mcp` へのリクエストのうち、アクセストークンから
-  接続（クライアントの ID）を求められたものごとに更新する（`src/features/mcp/clientId.ts`・
-  `src/features/mcp/usages.ts`）
+- 設定の「AIとの接続」に表示する「最終接続日時」を、ユーザーが同意した接続（OAuth の grant）ごとに 1 行で持つ
+  （`user_id` + `grant_id` の複合主キー、`0049`）。`/mcp` へのリクエストのうち、アクセストークンから
+  grant を求められたものごとに更新する（`src/features/mcp/clientId.ts`・`src/features/mcp/usages.ts`）
   - D1 への書き込みを減らすため、前回の記録から 60 秒以内のリクエストでは更新しない。判定は UPSERT の
     `ON CONFLICT DO UPDATE ... WHERE` に含め、1 文で行う。記録は `ctx.waitUntil` で行い、失敗しても MCP の
     応答には影響させない
-  - リクエストの grant（`oauth_kv_entries` の `grant:{userId}:{grantId}`）が期限内で残っているときだけ書き込む。
+  - grant（`oauth_kv_entries` の `grant:{userId}:{grantId}`）が期限内で残っているときだけ書き込む。
     grant の確認と書き込みを 1 文で行い、記録と並んで接続を解除されても、解除で消した行を作り直さない
     （解除は grant を消してからこの行を消す）
-  - `mcp_permissions` と同じく、grant ではなくクライアントの ID で持つ。同じクライアントにもう一度同意すると、
-    前の接続の日時が残るため、接続した日時（grant の `createdAt`）より前の値は表示しない
-  - 導入前から使っている接続や、接続してからまだ使っていない接続には行が無く、「記録がありません」と表示する
-  - 接続を設定の「AIとの接続」から解除すると、その接続の行も消す
+- `mcp_permissions` と違い、クライアントの ID ではなく grant の ID で持つ。ライブラリは CIMD のクライアントで
+  認可コードの渡し先が違う場合などに、同じクライアントの grant を複数残すため、クライアントの ID では一覧の
+  別の接続の日時が混ざる
+- grant は `oauth_kv_entries` にあるため外部キーにしない。接続を設定の「AIとの接続」から解除すると、その接続の
+  行も消す。同じクライアントにもう一度同意したときや grant の期限が切れたときは、ライブラリや定期実行が grant
+  だけを消すため、grant が無くなった行は定期実行で消す（`purgeOrphanedMcpConnectionUsages`）
+- 導入前から使っている接続や、接続してからまだ使っていない接続には行が無く、「記録がありません」と表示する
 
 ## AI 評価結果（`ai_evaluations`）
 
