@@ -12,6 +12,7 @@ import {
   D1KvStore,
   purgeExpiredOAuthKvEntries,
 } from "@/features/mcp/d1KvStore";
+import { purgeOrphanedMcpConnectionUsages } from "@/features/mcp/usages";
 
 // `.open-next/worker.js` は `opennextjs-cloudflare build`（`pnpm cf:build` 等）で
 // 生成される。ビルド前（`.open-next/` が無いクリーンな環境）は型解決できないため抑制する
@@ -50,9 +51,18 @@ export default {
   },
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(
-      purgeExpiredOAuthKvEntries(env.DB).catch((error) => {
-        console.error("期限切れの OAuth のデータの削除に失敗しました", error);
-      }),
+      purgeExpiredOAuthKvEntries(env.DB)
+        .catch((error) => {
+          console.error("期限切れの OAuth のデータの削除に失敗しました", error);
+        })
+        // 期限切れの grant を消した後に、grant が無くなった接続の記録を消す
+        .then(() => purgeOrphanedMcpConnectionUsages(env.DB))
+        .catch((error) => {
+          console.error(
+            "AI との接続の利用日時の古い記録の削除に失敗しました",
+            error,
+          );
+        }),
     );
     // 同じ scheduledTime での重複実行（cron の at-least-once 配信）は
     // 同じ id での2回目の create() が失敗することで自然に防がれる

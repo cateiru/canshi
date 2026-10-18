@@ -51,7 +51,8 @@ test.beforeEach(async () => {
 test.afterEach(async () => {
   await executeSql(
     `DELETE FROM oauth_kv_entries WHERE key IN ('client:${CLIENT_ID}', 'grant:' || ${loginUserId} || ':${GRANT_ID}');
-    DELETE FROM mcp_permissions WHERE client_id = '${CLIENT_ID}';`,
+    DELETE FROM mcp_permissions WHERE client_id = '${CLIENT_ID}';
+    DELETE FROM mcp_connection_usages WHERE grant_id = '${GRANT_ID}';`,
   );
 });
 
@@ -86,6 +87,24 @@ test("AIとの接続ごとに、読み取りを許可する記録の種類を外
   await page.reload();
   await expect(poop).not.toBeChecked();
   await expect(records.getByRole("checkbox", { name: "ごはん" })).toBeChecked();
+});
+
+test("AIとの接続の一覧に、接続を最後に使った日時を表示する", async ({
+  page,
+}) => {
+  await page.goto("/settings/ai-connections");
+  const connection = page.getByRole("region", { name: "E2Eのアプリとの接続" });
+  const lastUsedAt = connection
+    .getByText("最終接続日時", { exact: true })
+    .locator("xpath=following-sibling::dd");
+  await expect(lastUsedAt).toHaveText("記録がありません");
+
+  await executeSql(
+    `INSERT INTO mcp_connection_usages (user_id, grant_id, last_used_at)
+    SELECT id, '${GRANT_ID}', unixepoch() FROM users WHERE id = ${loginUserId};`,
+  );
+  await page.reload();
+  await expect(lastUsedAt).toHaveText(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
 });
 
 test("解除した接続や、存在しない接続の範囲のページは表示しない", async ({

@@ -4,7 +4,7 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { mcpPermissions, users } from "@/db/schema";
+import { mcpConnectionUsages, mcpPermissions, users } from "@/db/schema";
 import {
   getGrantClientId,
   getUserMcpConnection,
@@ -12,6 +12,7 @@ import {
   revokeUserMcpConnection,
 } from "./connections";
 import { D1KvStore } from "./d1KvStore";
+import { recordMcpConnectionUsage } from "./usages";
 
 // `src/features/auth/sessions.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;
@@ -133,6 +134,7 @@ describe("listUserMcpConnections", () => {
         clientName: null,
         redirectUri: null,
         createdAt: new Date(NOW.getTime() - 60 * 1000),
+        lastUsedAt: null,
       },
       {
         id: "grant_old-1",
@@ -140,14 +142,53 @@ describe("listUserMcpConnections", () => {
         clientName: "ChatGPT",
         redirectUri: "https://chatgpt.com/connector/oauth/callback",
         createdAt: new Date(NOW.getTime() - 3600 * 1000),
+        lastUsedAt: null,
       },
     ]);
   });
 
-  it("接続が無ければ空の配列を返す", async () => {
-    await seed();
+  it("接続ごとに、最後に使った日時を返す", async () => {
+    const store = await seed();
+    // 同じクライアントの grant が 2 つ残る場合（CIMD のクライアントで認可コードの
+    // 渡し先が違う場合など）も、接続ごとに分けて返す
+    await store.put(
+      "grant:user-1:grantSameClient",
+      JSON.stringify({
+        id: "grantSameClient",
+        clientId: "client-chatgpt",
+        userId: "user-1",
+        scope: [],
+        metadata: {},
+        encryptedProps: "encrypted",
+        createdAt: NOW_SECONDS - 1800,
+      }),
+    );
+    await db.insert(users).values([
+      { id: "user-1", name: "ユーザー1" },
+      { id: "user-2", name: "ユーザー2" },
+    ]);
+    await db.insert(mcpConnectionUsages).values([
+      {
+        userId: "user-1",
+        grantId: "grant_old-1",
+        lastUsedAt: new Date(NOW.getTime() - 600 * 1000),
+      },
+      // ほかのユーザーの日時は使わない
+      { userId: "user-2", grantId: "grantNew2", lastUsedAt: NOW },
+    ]);
 
-    expect(await listUserMcpConnections("user-3", d1)).toEqual([]);
+    expect(
+      (await listUserMcpConnections("user-1", d1)).map(
+        ({ id, lastUsedAt }) => ({ id, lastUsedAt }),
+      ),
+    ).toEqual([
+      { id: "grantNew2", lastUsedAt: null },
+      { id: "grantSameClient", lastUsedAt: null },
+      {
+        id: "grant_old-1",
+        lastUsedAt: new Date(NOW.getTime() - 600 * 1000),
+      },
+    ]);
   });
 });
 
@@ -225,6 +266,47 @@ describe("revokeUserMcpConnection", () => {
       { userId: "user-1", clientId: "client-noname" },
       { userId: "user-2", clientId: "client-chatgpt" },
     ]);
+  });
+
+  it("解除した接続を最後に使った日時の記録だけを削除する", async () => {
+    await seed();
+    await db.insert(users).values([
+      { id: "user-1", name: "ユーザー1" },
+      { id: "user-2", name: "ユーザー2" },
+    ]);
+    await db.insert(mcpConnectionUsages).values([
+      { userId: "user-1", grantId: "grant_old-1", lastUsedAt: NOW },
+      { userId: "user-1", grantId: "grantNew2", lastUsedAt: NOW },
+      { userId: "user-2", grantId: "grantOther", lastUsedAt: NOW },
+    ]);
+
+    await revokeUserMcpConnection("user-1", "grant_old-1", d1);
+
+    expect(
+      (await db.select().from(mcpConnectionUsages)).map(
+        ({ userId, grantId }) => ({ userId, grantId }),
+      ),
+    ).toEqual([
+      { userId: "user-1", grantId: "grantNew2" },
+      { userId: "user-2", grantId: "grantOther" },
+    ]);
+  });
+
+  it("解除した後は、解除の前に始まったリクエストの記録と重なっても、使った日時の記録を作り直さない", async () => {
+    await seed();
+    await db.insert(users).values({ id: "user-1", name: "ユーザー1" });
+    await recordMcpConnectionUsage(
+      "user-1",
+      "grant_old-1",
+      d1,
+      new Date(NOW.getTime() - 600 * 1000),
+    );
+
+    await revokeUserMcpConnection("user-1", "grant_old-1", d1);
+    // 解除の前にトークンを確かめたリクエストの記録が、解除の後に書き込まれる場合を再現する
+    await recordMcpConnectionUsage("user-1", "grant_old-1", d1, NOW);
+
+    expect(await db.select().from(mcpConnectionUsages)).toEqual([]);
   });
 
   it("解除した後は、トークンの更新と重なっても grant・トークンが書き戻されない", async () => {

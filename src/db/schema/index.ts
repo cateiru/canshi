@@ -15,6 +15,7 @@ export * from "./hospital-visits";
 export * from "./household-invitations";
 export * from "./household-members";
 export * from "./households";
+export * from "./mcp-connection-usages";
 export * from "./mcp-permissions";
 export * from "./media-assets";
 export * from "./medication-doses";

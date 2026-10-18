@@ -1,5 +1,9 @@
 import { D1KvStore, revokedGrantMarkerKey } from "./d1KvStore";
 import { deleteMcpPermissions } from "./permissions";
+import {
+  deleteMcpConnectionUsage,
+  listMcpConnectionLastUsedAt,
+} from "./usages";
 
 /** 解除した grant の目印を残す秒数 */
 const REVOKED_GRANT_MARKER_TTL_SECONDS = 24 * 60 * 60;
@@ -22,6 +26,11 @@ export interface McpConnection {
   redirectUri: string | null;
   /** 同意した日時 */
   createdAt: Date;
+  /**
+   * AI のアプリがこの接続を最後に使った日時（`./usages.ts`）。記録が無い場合は null。
+   * 記録は 1 分ごとのため、それより短い間の利用は反映されない
+   */
+  lastUsedAt: Date | null;
 }
 
 /**
@@ -61,6 +70,8 @@ export async function listUserMcpConnections(
     }
   }
 
+  const lastUsedAts = await listMcpConnectionLastUsedAt(userId, d1);
+
   return grants
     .sort((a, b) => b.createdAt - a.createdAt)
     .map((grant) => ({
@@ -69,6 +80,7 @@ export async function listUserMcpConnections(
       clientName: clientNames.get(grant.clientId) ?? null,
       redirectUri: grant.redirectUri ?? null,
       createdAt: new Date(grant.createdAt * 1000),
+      lastUsedAt: lastUsedAts.get(grant.id) ?? null,
     }));
 }
 
@@ -104,7 +116,7 @@ export async function getGrantClientId(
 }
 
 /**
- * 接続を 1 つ解除し、その接続の読み取りの範囲も消す。解除済みの目印を置いてから、ライブラリの `OAuthHelpers.revokeGrant()` と同じく、発行済みの
+ * 接続を 1 つ解除し、その接続の読み取りの範囲と、最後に使った日時の記録も消す。解除済みの目印を置いてから、ライブラリの `OAuthHelpers.revokeGrant()` と同じく、発行済みの
  * アクセストークン（`token:{userId}:{grantId}:{tokenId}`）を消してから grant を消す。
  * リフレッシュトークンは grant の中に保存されているため、grant を消すと使えなくなる。
  * 別のユーザーの接続は解除できない。解除したかどうかを返す
@@ -145,6 +157,9 @@ export async function revokeUserMcpConnection(
     cursor = page.list_complete ? undefined : page.cursor;
   } while (cursor);
   await store.delete(grantKey);
+  // 使った日時の記録は grant を消した後に消す。解除の前に始まったリクエストの記録は、
+  // grant が無いと書き込まれない（`./usages.ts` の `recordMcpConnectionUsage`）
+  await deleteMcpConnectionUsage(userId, grantId, d1);
 
   // 読み取りの範囲も消す。もう一度接続したときは、すべて読み取れる状態から選び直す
   const clientId = parseStoredGrant(grant)?.clientId;

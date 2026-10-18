@@ -4,7 +4,8 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { resolveClientId, withMcpClientId } from "./clientId";
+import { mcpConnectionUsages, users } from "@/db/schema";
+import { resolveConnection, withMcpClientId } from "./clientId";
 import { D1KvStore } from "./d1KvStore";
 
 // `src/features/auth/sessions.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
@@ -22,6 +23,7 @@ beforeEach(async () => {
   await migrate(db as unknown as ReturnType<typeof drizzle>, {
     migrationsFolder: "./drizzle",
   });
+  await db.insert(users).values({ id: "user-1", name: "ユーザー1" });
   // `@cloudflare/workers-oauth-provider`（0.10.4）が保存するのと同じキー・形式の grant
   await new D1KvStore(d1).put(
     "grant:user-1:grant-1",
@@ -44,15 +46,15 @@ function request(authorization?: string) {
   });
 }
 
-describe("resolveClientId", () => {
-  it("アクセストークンの grant のクライアントの ID を返す", async () => {
+describe("resolveConnection", () => {
+  it("アクセストークンの grant の ID と、そのクライアントの ID を返す", async () => {
     expect(
-      await resolveClientId(
+      await resolveConnection(
         request("Bearer user-1:grant-1:secret"),
         "user-1",
         d1,
       ),
-    ).toBe("client-1");
+    ).toEqual({ grantId: "grant-1", clientId: "client-1" });
   });
 
   it("トークンが無い・形式が違う・別のユーザーのもの・grant が無い場合は null", async () => {
@@ -64,9 +66,9 @@ describe("resolveClientId", () => {
       "Bearer user-1:missing:secret",
       "Bearer user-1:grant-1:secret:extra",
     ]) {
-      expect(await resolveClientId(request(authorization), "user-1", d1)).toBe(
-        null,
-      );
+      expect(
+        await resolveConnection(request(authorization), "user-1", d1),
+      ).toBe(null);
     }
   });
 });
@@ -80,8 +82,12 @@ describe("withMcpClientId", () => {
       ),
     };
     const handler = withMcpClientId(apiHandler);
+    const waitUntil: Promise<unknown>[] = [];
     const fetch = (req: Request, props: Record<string, unknown>) => {
-      const ctx = { props } as unknown as ExecutionContext;
+      const ctx = {
+        props,
+        waitUntil: (promise: Promise<unknown>) => waitUntil.push(promise),
+      } as unknown as ExecutionContext;
       return (
         handler.fetch as unknown as (
           request: Request,
@@ -93,7 +99,8 @@ describe("withMcpClientId", () => {
     const propsPassed = () =>
       (apiHandler.fetch.mock.calls[0][2] as unknown as { props: unknown })
         .props;
-    return { fetch, propsPassed };
+    const settled = () => Promise.all(waitUntil);
+    return { fetch, propsPassed, settled };
   }
 
   it("アクセストークンのクライアントの ID を props に入れて渡す", async () => {
@@ -116,5 +123,25 @@ describe("withMcpClientId", () => {
     });
 
     expect(propsPassed()).toEqual({ userId: "user-1" });
+  });
+
+  it("接続を使った日時を記録する", async () => {
+    const { fetch, settled } = setup();
+
+    await fetch(request("Bearer user-1:grant-1:secret"), { userId: "user-1" });
+    await settled();
+
+    expect(await db.select().from(mcpConnectionUsages)).toEqual([
+      { userId: "user-1", grantId: "grant-1", lastUsedAt: expect.any(Date) },
+    ]);
+  });
+
+  it("接続を求められなければ、使った日時を記録しない", async () => {
+    const { fetch, settled } = setup();
+
+    await fetch(request("Bearer user-1:missing:secret"), { userId: "user-1" });
+    await settled();
+
+    expect(await db.select().from(mcpConnectionUsages)).toEqual([]);
   });
 });

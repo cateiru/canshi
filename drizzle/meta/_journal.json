@@ -344,6 +344,13 @@
       "when": 1792243987017,
       "tag": "0048_colorful_cerise",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "6",
+      "when": 1792299068707,
+      "tag": "0049_third_ricochet",
+      "breakpoints": true
     }
   ]
 }
