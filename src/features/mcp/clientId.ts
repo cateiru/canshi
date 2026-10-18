@@ -1,5 +1,6 @@
 import { getGrantClientId } from "./connections";
 import type { McpProps } from "./props";
+import { recordMcpConnectionUsage } from "./usages";
 
 /**
  * `OAuthProvider` の `apiHandler`（`/mcp`）に渡す前に、リクエストのアクセストークンが
@@ -10,7 +11,11 @@ import type { McpProps } from "./props";
  * `props` に入れると、範囲の設定を追加する前に発行されたトークンには無く、トークンを
  * 更新するまで範囲が効かないため。MCP のセッション（Durable Object）は起動したときの
  * `props` を使い続けるが、デプロイで起動し直すため、デプロイの直後から効く。
- * 求められなければ `clientId` を入れず、ツールは読み取りを断る（`./agent.ts`）
+ * 求められなければ `clientId` を入れず、ツールは読み取りを断る（`./agent.ts`）。
+ *
+ * 求められたときは、設定の「AIとの接続」に表示するため、接続を使った日時も記録する
+ * （`./usages.ts`）。記録は応答を待たせないよう `ctx.waitUntil` で行い、失敗しても
+ * MCP の応答には影響させない
  */
 export function withMcpClientId(apiHandler: {
   fetch(
@@ -26,8 +31,15 @@ export function withMcpClientId(apiHandler: {
       const clientId = props.userId
         ? await resolveClientId(request, props.userId, env.DB)
         : null;
-      if (clientId) {
+      if (clientId && props.userId) {
         props.clientId = clientId;
+        ctx.waitUntil(
+          recordMcpConnectionUsage(props.userId, clientId, env.DB).catch(
+            (error) => {
+              console.error("AI との接続の利用日時の記録に失敗しました", error);
+            },
+          ),
+        );
       }
       // `OAuthProvider` も同じく `ctx.props` に代入して `apiHandler` へ渡している
       (ctx as { props: unknown }).props = props;

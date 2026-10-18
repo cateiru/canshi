@@ -250,6 +250,11 @@ INSERT INTO oauth_kv_entries (key, value)
 VALUES ('client:vrt-client', '{"clientId":"vrt-client","clientName":"ChatGPT","redirectUris":["https://chatgpt.com/connector/oauth/callback"]}'),
   ('grant:vrt-user:vrtGrant', '{"id":"vrtGrant","clientId":"vrt-client","userId":"vrt-user","scope":[],"metadata":{},"encryptedProps":"","createdAt":1717200000,"redirectUri":"https://chatgpt.com/connector/oauth/callback"}');
 
+-- 上の接続を最後に使った日時（src/features/mcp/usages.ts 参照）。unix 秒の固定値
+-- （2024-06-02 01:00:00 UTC）
+INSERT INTO mcp_connection_usages (user_id, client_id, last_used_at)
+VALUES ('vrt-user', 'vrt-client', 1717290000);
+
 -- ここまでに登録した猫をすべて VRT 用の家に所属させる
 UPDATE cats SET household_id = 'vrt-household' WHERE id LIKE 'vrt-cat-%';
 

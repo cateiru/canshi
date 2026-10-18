@@ -4,7 +4,7 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { mcpPermissions, users } from "@/db/schema";
+import { mcpConnectionUsages, mcpPermissions, users } from "@/db/schema";
 import {
   getGrantClientId,
   getUserMcpConnection,
@@ -133,6 +133,7 @@ describe("listUserMcpConnections", () => {
         clientName: null,
         redirectUri: null,
         createdAt: new Date(NOW.getTime() - 60 * 1000),
+        lastUsedAt: null,
       },
       {
         id: "grant_old-1",
@@ -140,6 +141,46 @@ describe("listUserMcpConnections", () => {
         clientName: "ChatGPT",
         redirectUri: "https://chatgpt.com/connector/oauth/callback",
         createdAt: new Date(NOW.getTime() - 3600 * 1000),
+        lastUsedAt: null,
+      },
+    ]);
+  });
+
+  it("接続を最後に使った日時を、接続した日時より前のものを除いて返す", async () => {
+    await seed();
+    await db.insert(users).values([
+      { id: "user-1", name: "ユーザー1" },
+      { id: "user-2", name: "ユーザー2" },
+    ]);
+    await db.insert(mcpConnectionUsages).values([
+      {
+        userId: "user-1",
+        clientId: "client-chatgpt",
+        lastUsedAt: new Date(NOW.getTime() - 600 * 1000),
+      },
+      // もう一度同意する前の接続の日時（接続した日時より前）は表示しない
+      {
+        userId: "user-1",
+        clientId: "client-noname",
+        lastUsedAt: new Date(NOW.getTime() - 120 * 1000),
+      },
+      // ほかのユーザーの日時は使わない
+      {
+        userId: "user-2",
+        clientId: "client-noname",
+        lastUsedAt: NOW,
+      },
+    ]);
+
+    expect(
+      (await listUserMcpConnections("user-1", d1)).map(
+        ({ id, lastUsedAt }) => ({ id, lastUsedAt }),
+      ),
+    ).toEqual([
+      { id: "grantNew2", lastUsedAt: null },
+      {
+        id: "grant_old-1",
+        lastUsedAt: new Date(NOW.getTime() - 600 * 1000),
       },
     ]);
   });
@@ -221,6 +262,30 @@ describe("revokeUserMcpConnection", () => {
         userId,
         clientId,
       })),
+    ).toEqual([
+      { userId: "user-1", clientId: "client-noname" },
+      { userId: "user-2", clientId: "client-chatgpt" },
+    ]);
+  });
+
+  it("解除した接続を最後に使った日時の記録だけを削除する", async () => {
+    await seed();
+    await db.insert(users).values([
+      { id: "user-1", name: "ユーザー1" },
+      { id: "user-2", name: "ユーザー2" },
+    ]);
+    await db.insert(mcpConnectionUsages).values([
+      { userId: "user-1", clientId: "client-chatgpt", lastUsedAt: NOW },
+      { userId: "user-1", clientId: "client-noname", lastUsedAt: NOW },
+      { userId: "user-2", clientId: "client-chatgpt", lastUsedAt: NOW },
+    ]);
+
+    await revokeUserMcpConnection("user-1", "grant_old-1", d1);
+
+    expect(
+      (await db.select().from(mcpConnectionUsages)).map(
+        ({ userId, clientId }) => ({ userId, clientId }),
+      ),
     ).toEqual([
       { userId: "user-1", clientId: "client-noname" },
       { userId: "user-2", clientId: "client-chatgpt" },

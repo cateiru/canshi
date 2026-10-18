@@ -1,5 +1,9 @@
 import { D1KvStore, revokedGrantMarkerKey } from "./d1KvStore";
 import { deleteMcpPermissions } from "./permissions";
+import {
+  deleteMcpConnectionUsage,
+  listMcpConnectionLastUsedAt,
+} from "./usages";
 
 /** 解除した grant の目印を残す秒数 */
 const REVOKED_GRANT_MARKER_TTL_SECONDS = 24 * 60 * 60;
@@ -22,6 +26,11 @@ export interface McpConnection {
   redirectUri: string | null;
   /** 同意した日時 */
   createdAt: Date;
+  /**
+   * AI のアプリがこの接続を最後に使った日時（`./usages.ts`）。記録が無い場合は null。
+   * 記録は 1 分ごとのため、それより短い間の利用は反映されない
+   */
+  lastUsedAt: Date | null;
 }
 
 /**
@@ -61,15 +70,26 @@ export async function listUserMcpConnections(
     }
   }
 
+  const lastUsedAts = await listMcpConnectionLastUsedAt(userId, d1);
+
   return grants
     .sort((a, b) => b.createdAt - a.createdAt)
-    .map((grant) => ({
-      id: grant.id,
-      clientId: grant.clientId,
-      clientName: clientNames.get(grant.clientId) ?? null,
-      redirectUri: grant.redirectUri ?? null,
-      createdAt: new Date(grant.createdAt * 1000),
-    }));
+    .map((grant) => {
+      const createdAt = new Date(grant.createdAt * 1000);
+      const lastUsedAt = lastUsedAts.get(grant.clientId) ?? null;
+      return {
+        id: grant.id,
+        clientId: grant.clientId,
+        clientName: clientNames.get(grant.clientId) ?? null,
+        redirectUri: grant.redirectUri ?? null,
+        createdAt,
+        // 同じクライアントにもう一度同意したときは、前の接続の日時が残っているため表示しない
+        lastUsedAt:
+          lastUsedAt && lastUsedAt.getTime() >= createdAt.getTime()
+            ? lastUsedAt
+            : null,
+      };
+    });
 }
 
 /** ユーザーの接続のうち、指定した grant の ID のもの。無い・別のユーザーの接続なら null */
@@ -104,7 +124,7 @@ export async function getGrantClientId(
 }
 
 /**
- * 接続を 1 つ解除し、その接続の読み取りの範囲も消す。解除済みの目印を置いてから、ライブラリの `OAuthHelpers.revokeGrant()` と同じく、発行済みの
+ * 接続を 1 つ解除し、その接続の読み取りの範囲と、最後に使った日時の記録も消す。解除済みの目印を置いてから、ライブラリの `OAuthHelpers.revokeGrant()` と同じく、発行済みの
  * アクセストークン（`token:{userId}:{grantId}:{tokenId}`）を消してから grant を消す。
  * リフレッシュトークンは grant の中に保存されているため、grant を消すと使えなくなる。
  * 別のユーザーの接続は解除できない。解除したかどうかを返す
@@ -150,6 +170,7 @@ export async function revokeUserMcpConnection(
   const clientId = parseStoredGrant(grant)?.clientId;
   if (clientId) {
     await deleteMcpPermissions(userId, clientId, d1);
+    await deleteMcpConnectionUsage(userId, clientId, d1);
   }
   return true;
 }

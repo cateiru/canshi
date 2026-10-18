@@ -24,6 +24,12 @@ export const dynamic = "force-dynamic";
 /** アプリが名前を名乗っていないときの表示 */
 const UNNAMED_CLIENT = "（名前がありません）";
 
+/**
+ * 最後に使った日時の記録が無いときの表示。記録を始める前から使っている接続も
+ * 含まれるため、まだ使っていないとは書かない
+ */
+const NO_LAST_USED_AT = "記録がありません";
+
 type AiConnectionPageProps = {
   params: Promise<{ connectionId: string }>;
 };
@@ -78,6 +84,12 @@ export default async function AiConnectionPage({
           ) : null}
           <dt>接続日時</dt>
           <dd>{formatDateTimeUtc(getNaiveUtcNow(connection.createdAt))}</dd>
+          <dt>最終接続日時</dt>
+          <dd>
+            {connection.lastUsedAt
+              ? formatDateTimeUtc(getNaiveUtcNow(connection.lastUsedAt))
+              : NO_LAST_USED_AT}
+          </dd>
         </dl>
         <p className={styles.description}>
           アプリの名前は、アプリ自身が申告したものです。

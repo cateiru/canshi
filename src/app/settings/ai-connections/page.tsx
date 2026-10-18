@@ -22,6 +22,12 @@ export const dynamic = "force-dynamic";
 const UNNAMED_CLIENT = "（名前がありません）";
 
 /**
+ * 最後に使った日時の記録が無いときの表示。記録を始める前から使っている接続も
+ * 含まれるため、まだ使っていないとは書かない
+ */
+const NO_LAST_USED_AT = "記録がありません";
+
+/**
  * ChatGPT などの AI のアプリ（MCP クライアント）に、同意画面（`/oauth/authorize`）で
  * 許可した接続の一覧。接続ごとに、読み取れる範囲の設定（`./[connectionId]`）と解除ができる
  */
@@ -80,6 +86,9 @@ export default async function AiConnectionsPage() {
                 const clientName = connection.clientName ?? UNNAMED_CLIENT;
                 const connectedAtUtc = getNaiveUtcNow(connection.createdAt);
                 const connectedAt = formatDateTimeUtc(connectedAtUtc);
+                const lastUsedAt = connection.lastUsedAt
+                  ? formatDateTimeUtc(getNaiveUtcNow(connection.lastUsedAt))
+                  : NO_LAST_USED_AT;
                 return (
                   <li key={connection.id}>
                     <Surface
@@ -109,6 +118,10 @@ export default async function AiConnectionsPage() {
                         <div>
                           <dt>接続日時</dt>
                           <dd>{connectedAt}</dd>
+                        </div>
+                        <div>
+                          <dt>最終接続日時</dt>
+                          <dd>{lastUsedAt}</dd>
                         </div>
                       </dl>
                       <div className={styles.actions}>
