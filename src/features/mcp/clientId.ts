@@ -28,17 +28,20 @@ export function withMcpClientId(apiHandler: {
     async fetch(request, env, ctx) {
       const props = { ...(ctx.props as McpProps | undefined) };
       delete props.clientId;
-      const clientId = props.userId
-        ? await resolveClientId(request, props.userId, env.DB)
+      const connection = props.userId
+        ? await resolveConnection(request, props.userId, env.DB)
         : null;
-      if (clientId && props.userId) {
-        props.clientId = clientId;
+      if (connection && props.userId) {
+        props.clientId = connection.clientId;
         ctx.waitUntil(
-          recordMcpConnectionUsage(props.userId, clientId, env.DB).catch(
-            (error) => {
-              console.error("AI との接続の利用日時の記録に失敗しました", error);
-            },
-          ),
+          recordMcpConnectionUsage(
+            props.userId,
+            connection.grantId,
+            connection.clientId,
+            env.DB,
+          ).catch((error) => {
+            console.error("AI との接続の利用日時の記録に失敗しました", error);
+          }),
         );
       }
       // `OAuthProvider` も同じく `ctx.props` に代入して `apiHandler` へ渡している
@@ -49,23 +52,25 @@ export function withMcpClientId(apiHandler: {
 }
 
 /**
- * アクセストークンの grant のクライアントの ID。`OAuthProvider` は `apiHandler` を呼ぶ前に
+ * アクセストークンの grant の ID と、そのクライアントの ID。`OAuthProvider` は `apiHandler` を呼ぶ前に
  * トークンを検証済みのため、ここではトークンから grant の ID を取り出すだけでよい。
  *
  * アクセストークンは `@cloudflare/workers-oauth-provider`（0.10.4 時点）が
  * `{userId}:{grantId}:{secret}` の形式で発行する。ライブラリを更新したときは、形式が
  * 変わっていないか確かめること（変わると、ツールが読み取りを断るようになる）
  */
-export async function resolveClientId(
+export async function resolveConnection(
   request: Request,
   userId: string,
   d1: D1Database,
-): Promise<string | null> {
+): Promise<{ grantId: string; clientId: string } | null> {
   const authorization = request.headers.get("Authorization");
   const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
   const parts = token?.split(":");
   if (parts?.length !== 3 || parts[0] !== userId) {
     return null;
   }
-  return getGrantClientId(userId, parts[1], d1);
+  const grantId = parts[1];
+  const clientId = await getGrantClientId(userId, grantId, d1);
+  return clientId ? { grantId, clientId } : null;
 }

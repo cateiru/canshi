@@ -5,7 +5,7 @@ import initSqlJs from "sql.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import { mcpConnectionUsages, users } from "@/db/schema";
-import { resolveClientId, withMcpClientId } from "./clientId";
+import { resolveConnection, withMcpClientId } from "./clientId";
 import { D1KvStore } from "./d1KvStore";
 
 // `src/features/auth/sessions.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
@@ -46,15 +46,15 @@ function request(authorization?: string) {
   });
 }
 
-describe("resolveClientId", () => {
-  it("アクセストークンの grant のクライアントの ID を返す", async () => {
+describe("resolveConnection", () => {
+  it("アクセストークンの grant の ID と、そのクライアントの ID を返す", async () => {
     expect(
-      await resolveClientId(
+      await resolveConnection(
         request("Bearer user-1:grant-1:secret"),
         "user-1",
         d1,
       ),
-    ).toBe("client-1");
+    ).toEqual({ grantId: "grant-1", clientId: "client-1" });
   });
 
   it("トークンが無い・形式が違う・別のユーザーのもの・grant が無い場合は null", async () => {
@@ -66,9 +66,9 @@ describe("resolveClientId", () => {
       "Bearer user-1:missing:secret",
       "Bearer user-1:grant-1:secret:extra",
     ]) {
-      expect(await resolveClientId(request(authorization), "user-1", d1)).toBe(
-        null,
-      );
+      expect(
+        await resolveConnection(request(authorization), "user-1", d1),
+      ).toBe(null);
     }
   });
 });

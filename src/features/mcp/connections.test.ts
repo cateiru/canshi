@@ -12,6 +12,7 @@ import {
   revokeUserMcpConnection,
 } from "./connections";
 import { D1KvStore } from "./d1KvStore";
+import { recordMcpConnectionUsage } from "./usages";
 
 // `src/features/auth/sessions.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;
@@ -290,6 +291,30 @@ describe("revokeUserMcpConnection", () => {
       { userId: "user-1", clientId: "client-noname" },
       { userId: "user-2", clientId: "client-chatgpt" },
     ]);
+  });
+
+  it("解除した後は、解除の前に始まったリクエストの記録と重なっても、使った日時の記録を作り直さない", async () => {
+    await seed();
+    await db.insert(users).values({ id: "user-1", name: "ユーザー1" });
+    await recordMcpConnectionUsage(
+      "user-1",
+      "grant_old-1",
+      "client-chatgpt",
+      d1,
+      new Date(NOW.getTime() - 600 * 1000),
+    );
+
+    await revokeUserMcpConnection("user-1", "grant_old-1", d1);
+    // 解除の前にトークンを確かめたリクエストの記録が、解除の後に書き込まれる場合を再現する
+    await recordMcpConnectionUsage(
+      "user-1",
+      "grant_old-1",
+      "client-chatgpt",
+      d1,
+      NOW,
+    );
+
+    expect(await db.select().from(mcpConnectionUsages)).toEqual([]);
   });
 
   it("解除した後は、トークンの更新と重なっても grant・トークンが書き戻されない", async () => {

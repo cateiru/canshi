@@ -5,6 +5,7 @@ import initSqlJs from "sql.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import { users } from "@/db/schema";
+import { D1KvStore } from "./d1KvStore";
 import {
   deleteMcpConnectionUsage,
   listMcpConnectionLastUsedAt,
@@ -35,34 +36,89 @@ beforeEach(async () => {
     { id: "user-1", name: "ユーザー1" },
     { id: "user-2", name: "ユーザー2" },
   ]);
+  for (const grant of GRANTS) {
+    await putGrant(grant);
+  }
 });
+
+/** テストで使う grant（ユーザー ID・grant の ID・クライアントの ID） */
+const GRANTS = [
+  { userId: "user-1", grantId: "grant-1", clientId: "client-1" },
+  { userId: "user-1", grantId: "grant-2", clientId: "client-2" },
+  { userId: "user-2", grantId: "grant-3", clientId: "client-1" },
+];
+
+/**
+ * `@cloudflare/workers-oauth-provider`（0.10.4）が保存するのと同じキーで grant を保存する。
+ * 記録は grant が残っているかだけを見るため、値は必要な項目だけにする
+ */
+async function putGrant(
+  grant: { userId: string; grantId: string; clientId: string },
+  options?: { expiration?: number },
+) {
+  await new D1KvStore(d1).put(
+    `grant:${grant.userId}:${grant.grantId}`,
+    JSON.stringify({ id: grant.grantId, clientId: grant.clientId }),
+    options,
+  );
+}
+
+/** `GRANTS` の grant で、使った日時を記録する */
+function record(grantId: string, now: Date) {
+  const grant = GRANTS.find((g) => g.grantId === grantId);
+  if (!grant) {
+    throw new Error(`unknown grant: ${grantId}`);
+  }
+  return recordMcpConnectionUsage(
+    grant.userId,
+    grant.grantId,
+    grant.clientId,
+    d1,
+    now,
+  );
+}
 
 describe("recordMcpConnectionUsage", () => {
   it("初めて使った日時を記録する", async () => {
-    await recordMcpConnectionUsage("user-1", "client-1", d1, NOW);
+    await record("grant-1", NOW);
 
     expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(
       new Map([["client-1", NOW]]),
     );
   });
 
-  it("前回の記録から間隔より短い間は更新せず、過ぎたら更新する", async () => {
-    await recordMcpConnectionUsage("user-1", "client-1", d1, NOW);
-
+  it("grant が無い・期限切れの場合は記録しない", async () => {
+    await recordMcpConnectionUsage("user-1", "missing", "client-1", d1, NOW);
+    // 別のユーザーの grant では記録しない
+    await recordMcpConnectionUsage("user-1", "grant-3", "client-1", d1, NOW);
+    await putGrant(
+      { userId: "user-1", grantId: "grant-expired", clientId: "client-1" },
+      { expiration: NOW.getTime() / 1000 },
+    );
     await recordMcpConnectionUsage(
       "user-1",
+      "grant-expired",
       "client-1",
       d1,
+      NOW,
+    );
+
+    expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(new Map());
+  });
+
+  it("前回の記録から間隔より短い間は更新せず、過ぎたら更新する", async () => {
+    await record("grant-1", NOW);
+
+    await record(
+      "grant-1",
       secondsLater(MCP_CONNECTION_USAGE_INTERVAL_SECONDS),
     );
     expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(
       new Map([["client-1", NOW]]),
     );
 
-    await recordMcpConnectionUsage(
-      "user-1",
-      "client-1",
-      d1,
+    await record(
+      "grant-1",
       secondsLater(MCP_CONNECTION_USAGE_INTERVAL_SECONDS + 1),
     );
     expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(
@@ -75,9 +131,9 @@ describe("recordMcpConnectionUsage", () => {
 
 describe("listMcpConnectionLastUsedAt", () => {
   it("ユーザーの接続の日時だけを返す", async () => {
-    await recordMcpConnectionUsage("user-1", "client-1", d1, NOW);
-    await recordMcpConnectionUsage("user-1", "client-2", d1, secondsLater(10));
-    await recordMcpConnectionUsage("user-2", "client-1", d1, secondsLater(20));
+    await record("grant-1", NOW);
+    await record("grant-2", secondsLater(10));
+    await record("grant-3", secondsLater(20));
 
     expect(await listMcpConnectionLastUsedAt("user-1", d1)).toEqual(
       new Map([
@@ -90,9 +146,9 @@ describe("listMcpConnectionLastUsedAt", () => {
 
 describe("deleteMcpConnectionUsage", () => {
   it("ユーザーの指定した接続の記録だけを消す", async () => {
-    await recordMcpConnectionUsage("user-1", "client-1", d1, NOW);
-    await recordMcpConnectionUsage("user-1", "client-2", d1, NOW);
-    await recordMcpConnectionUsage("user-2", "client-1", d1, NOW);
+    await record("grant-1", NOW);
+    await record("grant-2", NOW);
+    await record("grant-3", NOW);
 
     await deleteMcpConnectionUsage("user-1", "client-1", d1);
 
