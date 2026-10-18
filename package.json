@@ -44,7 +44,7 @@
     "agents": "^0.28.0",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.12",
-    "next": "16.3.8",
+    "next": "16.4.1",
     "react": "19.3.1",
     "react-aria-components": "^1.21.1",
     "react-dom": "19.3.1",
