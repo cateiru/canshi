@@ -239,8 +239,8 @@ function insertFeedingRecordItems(
  * 先の日時の記録はまだあげていないため完了にせず、空の配列を返す（通知の判定でも数えない）。
  * 発生日時は naive UTC のため、現在時刻もローカル時計の数字の naive UTC にして比べる
  * （`evaluateFeedingSchedule` と同じ）。
- * ごはんの時刻の前後の範囲では絞らない。リマインダーは次の時刻との中間に出るため、それを見て
- * から記録すると次の時刻の範囲に入り、応えた通知が残ってしまうため
+ * ごはんの時刻の前後の範囲では絞らない。リマインダーは次の時刻との中間に出ることもあるため、
+ * それを見てから記録すると次の時刻の範囲に入り、応えた通知が残ってしまうため
  */
 function completeFeedingNotifications(
   db: ReturnType<typeof getDb>,

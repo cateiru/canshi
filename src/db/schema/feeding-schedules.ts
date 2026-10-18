@@ -26,7 +26,7 @@ export const feedingSchedules = sqliteTable(
     notifyAtTime: integer("notify_at_time", { mode: "boolean" })
       .notNull()
       .default(true),
-    // 時間の前後にごはん記録がないとき、次のごはんの時間との中間で確認の通知を出すか
+    // 時間の前後にごはん記録がないとき、時間の 1 時間後か次のごはんの時間との中間の早いほうで確認の通知を出すか
     remindIfNotRecorded: integer("remind_if_not_recorded", { mode: "boolean" })
       .notNull()
       .default(true),

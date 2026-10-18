@@ -39,6 +39,7 @@ import {
 import {
   evaluateFeedingSchedule,
   FEEDING_RECORD_LOOKBACK_MS,
+  feedingRecordedUntil,
 } from "./rules/feedingSchedule";
 import { getNaiveLocalNow } from "./rules/localDate";
 
@@ -121,6 +122,9 @@ async function listRecentFeedingAtsByCat(
  * `dismissFeedingNotificationsOfCatlessHouseholds`）の後に INSERT されると通知が残ってしまう。
  * ごはんの時間がまだ有効で、家に猫がいて、範囲内に家の猫のごはん記録がないことの確認と INSERT を
  * 1 つの `INSERT ... SELECT` にし、両者の間に更新が割り込まないようにする。
+ * 記録は判定した時刻（スケジュール実行の予定時刻）ではなく、INSERT する時点（`now`）までのものを
+ * 数える。ステップが遅れたり再試行されたりして判定した時刻より後に記録された場合も、その記録の
+ * 保存時にはまだ通知がなく完了にできないため、ここで作らないようにする。
  * INSERT ... SELECT では `$defaultFn` や SQL の既定値が効かないため、全カラムの値をテーブル定義の
  * 順に明示する（`insertSymptomOngoingNotification` と同じ方式）
  */
@@ -128,7 +132,14 @@ export async function insertHouseholdNotification(
   db: ReturnType<typeof getDb>,
   candidate: HouseholdNotificationCandidate,
   message: NotificationMessage,
+  now: Date = new Date(),
 ) {
+  const recordedUntil = new Date(
+    Math.min(
+      candidate.recordWindow.end.getTime(),
+      feedingRecordedUntil(getNaiveLocalNow(now, NOTIFY_TIMEZONE)).getTime(),
+    ),
+  );
   const enabledColumn =
     candidate.kind === "feeding_time"
       ? feedingSchedules.notifyAtTime
@@ -189,7 +200,7 @@ export async function insertHouseholdNotification(
                       feedingRecords.occurredAt,
                       candidate.recordWindow.start,
                     ),
-                    lt(feedingRecords.occurredAt, candidate.recordWindow.end),
+                    lt(feedingRecords.occurredAt, recordedUntil),
                   ),
                 ),
             ),
