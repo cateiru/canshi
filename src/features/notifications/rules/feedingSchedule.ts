@@ -38,6 +38,20 @@ function toMinutes(time: string): number {
   return hours * 60 + minutes;
 }
 
+/**
+ * ある時点（naive UTC）までに記録されたとみなす記録の範囲の終わり（その時点を含めない半開区間の
+ * 終わり）。判定する時刻より後の記録（先の日時で入力されたもの）は、まだあげていないため数えない。
+ * 判定する時刻ちょうどの記録も含めるため、次の秒ちょうどにする。日時は DB に秒単位で保存され、
+ * INSERT するときの確認でも秒未満は切り捨てられるため、ミリ秒だけ進めると現在の秒の記録が
+ * 範囲から外れてしまう
+ */
+export function feedingRecordedUntil(naiveNow: Date): Date {
+  return new Date(
+    Math.floor(naiveNow.getTime() / MS_PER_SECOND) * MS_PER_SECOND +
+      MS_PER_SECOND,
+  );
+}
+
 function atLocalDate(date: LocalDate, minutes: number): number {
   return (
     Date.UTC(date.year, date.month - 1, date.day) + minutes * MS_PER_MINUTE
@@ -59,6 +73,11 @@ function atLocalDate(date: LocalDate, minutes: number): number {
  * - 時刻の 1 時間後か次の時刻との中間の早いほうになっても、範囲内のそれまでの記録がなければ
  *   「ごはんはあげましたか？」を出す。時刻の通知と同じく、判定する時刻より後の記録は数えない
  *
+ * 候補の `recordWindow` は、判定する時刻で切らずに範囲そのものを持つ。判定する時刻より後の記録を
+ * 数えないのは判定のときだけで、INSERT するときは、その時点までの記録で確かめ直す
+ * （`insertHouseholdNotification`）。スケジュール実行のステップが遅れたり再試行されたりして、
+ * 判定する時刻より後に記録されても、通知を作らないようにするため
+ *
  * ごはん記録の発生日時は naive UTC（`localDate.ts` のコメント参照）のため、`now` も
  * ローカル時計の数字の naive UTC にして比べる。中間の時刻は日付をまたぐことがあるため、
  * 今日と昨日の回をそれぞれ判定する。重複して生成しないよう、`dedupe_key` には通知を出した
@@ -75,7 +94,9 @@ export function evaluateFeedingSchedule(
     return [];
   }
 
-  const nowAt = getNaiveLocalNow(now, timezone).getTime();
+  const naiveNow = getNaiveLocalNow(now, timezone);
+  const nowAt = naiveNow.getTime();
+  const recordedUntil = feedingRecordedUntil(naiveNow).getTime();
   const today = getLocalDateParts(now, timezone);
   const sorted = [...schedules].sort(
     (a, b) => toMinutes(a.time) - toMinutes(b.time),
@@ -83,7 +104,9 @@ export function evaluateFeedingSchedule(
   const feedingTimes = recentFeedingAts.map((at) => at.getTime());
   const isRecordedIn = (window: { start: Date; end: Date }) =>
     feedingTimes.some(
-      (at) => at >= window.start.getTime() && at < window.end.getTime(),
+      (at) =>
+        at >= window.start.getTime() &&
+        at < Math.min(window.end.getTime(), recordedUntil),
     );
   const candidates: HouseholdNotificationCandidate[] = [];
 
@@ -107,11 +130,10 @@ export function evaluateFeedingSchedule(
         slotAt + FEEDING_REMINDER_DELAY_MS,
         windowEnd,
       );
-      // 判定する時刻ちょうどの記録も含めるため、半開区間の終わりを判定する時刻の次の秒ちょうどに
-      // する。日時は DB に秒単位で保存され、INSERT するときの確認でも秒未満は切り捨てられるため、
-      // ミリ秒だけ進めると現在の秒の記録が範囲から外れてしまう
-      const recordedUntil =
-        Math.floor(nowAt / MS_PER_SECOND) * MS_PER_SECOND + MS_PER_SECOND;
+      const recordWindow = {
+        start: new Date(windowStart),
+        end: new Date(windowEnd),
+      };
       const dateKey = localDateKey(date);
       const base = {
         householdId,
@@ -127,10 +149,6 @@ export function evaluateFeedingSchedule(
         nowAt >= slotAt &&
         nowAt < Math.min(slotAt + FEEDING_NOTIFY_GRACE_MS, reminderAt)
       ) {
-        const recordWindow = {
-          start: new Date(windowStart),
-          end: new Date(recordedUntil),
-        };
         if (!isRecordedIn(recordWindow)) {
           candidates.push({
             ...base,
@@ -148,10 +166,6 @@ export function evaluateFeedingSchedule(
       ) {
         // リマインダーの時刻は範囲の終わりより前になりうるため、そこから判定する時刻までの記録も
         // 数える。範囲の終わり（次の時刻との中間）以降の記録は次の時刻の記録のため数えない
-        const recordWindow = {
-          start: new Date(windowStart),
-          end: new Date(Math.min(recordedUntil, windowEnd)),
-        };
         if (!isRecordedIn(recordWindow)) {
           candidates.push({
             ...base,

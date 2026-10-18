@@ -310,6 +310,22 @@ describe("generateNotifications（ごはんの時間）", () => {
     ]);
   });
 
+  it("スケジュール実行の予定時刻より後に記録されていれば、遅れて実行してもリマインダーを出さない", async () => {
+    const { household, householdCats } = await setupHousehold("遅れの家", [
+      "くろ",
+    ]);
+    const [cat] = householdCats;
+    // JST 2026-09-26 08:05 に記録した。08:00 の実行のステップが遅れ・再試行で、その後に進む
+    await db.insert(feedingRecords).values({
+      catId: cat.id,
+      occurredAt: new Date("2026-09-26T08:05:00.000Z"),
+    });
+
+    // JST 08:00 の予定時刻で判定する（判定では 08:05 の記録はまだ先の記録として数えない）
+    await generateNotifications(new Date("2026-09-25T23:00:00.000Z"));
+    expect(await listFeedingNotifications(household.id)).toEqual([]);
+  });
+
   it("猫のいない家には通知しない", async () => {
     const { household } = await setupHousehold("猫のいない家", []);
 
@@ -405,6 +421,42 @@ describe("insertHouseholdNotification", () => {
     await insertHouseholdNotification(db, candidate, message);
 
     expect(await listByHousehold(household.id)).toEqual([]);
+  });
+
+  it("判定した時刻より後でも、INSERT するまでに記録されていれば通知を作らない", async () => {
+    // JST 08:00 に判定したリマインダーを、ステップの遅れ・再試行で JST 08:10 に INSERT する
+    const { household, cat, candidate, message } = await setup();
+    await db.insert(feedingRecords).values({
+      catId: cat.id,
+      occurredAt: new Date("2026-09-25T08:05:00.000Z"),
+    });
+
+    await insertHouseholdNotification(
+      db,
+      candidate,
+      message,
+      new Date("2026-09-24T23:10:00.000Z"),
+    );
+
+    expect(await listByHousehold(household.id)).toEqual([]);
+  });
+
+  it("INSERT する時点より後の記録（先の日時で入力されたもの）では、通知を止めない", async () => {
+    const { household, cat, candidate, message } = await setup();
+    await db.insert(feedingRecords).values({
+      catId: cat.id,
+      occurredAt: new Date("2026-09-25T09:00:00.000Z"),
+    });
+
+    // JST 08:10 に INSERT する。09:00 の記録はまだあげていない
+    await insertHouseholdNotification(
+      db,
+      candidate,
+      message,
+      new Date("2026-09-24T23:10:00.000Z"),
+    );
+
+    expect(await listByHousehold(household.id)).toHaveLength(1);
   });
 
   it("判定後にごはんの時間が削除・オフにされていれば、通知を作らない", async () => {

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { evaluateFeedingSchedule } from "./feedingSchedule";
+import {
+  evaluateFeedingSchedule,
+  feedingRecordedUntil,
+} from "./feedingSchedule";
 import type { FeedingScheduleForRule } from "./types";
 
 function makeSchedule(
@@ -45,10 +48,10 @@ describe("evaluateFeedingSchedule", () => {
         dedupeKey: "household:home:feeding_time:morning:2026-09-11",
         dueAt: new Date("2026-09-11T07:00:00.000Z"),
         time: "07:00",
-        // 判定した時刻（07:00:00）の秒までの記録だけを探す
+        // 範囲は前の時刻との中間から次の時刻との中間まで（判定した時刻では切らない）
         recordWindow: {
           start: new Date("2026-09-11T01:00:00.000Z"),
-          end: new Date("2026-09-11T07:00:01.000Z"),
+          end: new Date("2026-09-11T13:00:00.000Z"),
         },
       },
     ]);
@@ -105,11 +108,7 @@ describe("evaluateFeedingSchedule", () => {
   it("判定する時刻に秒未満があっても、その秒の記録を範囲に含める（DB の日時は秒単位）", () => {
     // 日本時間 07:00:00.500。範囲の終わりを 07:00:00.501 にすると、INSERT するときの確認で
     // 07:00:00 に切り捨てられ、07:00:00 の記録が範囲から外れてしまう
-    const [candidate] = evaluate("2026-09-10T22:00:00.500Z", [
-      morning,
-      evening,
-    ]);
-    expect(candidate.recordWindow.end).toEqual(
+    expect(feedingRecordedUntil(new Date("2026-09-11T07:00:00.500Z"))).toEqual(
       new Date("2026-09-11T07:00:01.000Z"),
     );
     expect(
@@ -161,10 +160,9 @@ describe("evaluateFeedingSchedule", () => {
         dedupeKey: "household:home:feeding_not_recorded:morning:2026-09-11",
         dueAt: new Date("2026-09-11T07:00:00.000Z"),
         time: "07:00",
-        // 判定した時刻（08:00:00）の秒までの記録だけを探す
         recordWindow: {
           start: new Date("2026-09-11T01:00:00.000Z"),
-          end: new Date("2026-09-11T08:00:01.000Z"),
+          end: new Date("2026-09-11T13:00:00.000Z"),
         },
       },
     ]);
@@ -287,10 +285,10 @@ describe("evaluateFeedingSchedule", () => {
         dedupeKey: "household:home:feeding_not_recorded:late:2026-09-11",
         dueAt: new Date("2026-09-11T23:30:00.000Z"),
         time: "23:30",
-        // 範囲の始まりは 07:00 と 23:30 の中間の 15:15
+        // 範囲は 07:00 と 23:30 の中間の 15:15 から、23:30 と翌日 07:00 の中間の 03:15 まで
         recordWindow: {
           start: new Date("2026-09-11T15:15:00.000Z"),
-          end: new Date("2026-09-12T00:30:01.000Z"),
+          end: new Date("2026-09-12T03:15:00.000Z"),
         },
       },
     ]);
