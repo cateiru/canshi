@@ -23,8 +23,8 @@
 }
 
 .warning {
-  border-color: var(--color-warning-strong);
-  background-color: var(--color-warning-strong);
+  border-color: var(--color-warning-fill);
+  background-color: var(--color-warning-fill);
 }
 
 .error {
