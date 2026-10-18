@@ -3,9 +3,10 @@
   align-items: flex-start;
   gap: var(--space-2);
   border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-base);
+  border-radius: 12px;
   padding: var(--space-3) var(--space-4);
-  color: var(--color-bg);
+  /* ダークテーマでも --color-bg（暗い色）にせず、白で固定する */
+  color: #fff;
   background-color: var(--color-bg);
   font-size: var(--text-sm);
   line-height: var(--line-height-body);
@@ -22,8 +23,8 @@
 }
 
 .warning {
-  border-color: var(--color-warning-strong);
-  background-color: var(--color-warning-strong);
+  border-color: var(--color-warning-fill);
+  background-color: var(--color-warning-fill);
 }
 
 .error {

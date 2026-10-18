@@ -27,6 +27,11 @@
   --color-error-strong: #bd3528;
   --color-info-strong: #245da8;
   --color-accent-strong: #9a4b13;
+  /*
+   * 白文字を載せる warning の面（Alert の背景）。ダークテーマの --color-warning-strong は
+   * 明るく白文字が読めないため、ダークテーマでは白文字と 4.5:1 以上の差がある色にする
+   */
+  --color-warning-fill: var(--color-warning-strong);
   /* アクセント色の面に載せる文字。ライト・ダークとも濃い色にする */
   --color-on-accent: #2e3142;
   /* フォーカスリング */
@@ -172,6 +177,7 @@
   --color-error-strong: #f25c4b;
   --color-info-strong: #4f87db;
   --color-accent-strong: #ec995a;
+  --color-warning-fill: #8f7200;
 
   --color-illustration-line: #a6a9b8;
 
@@ -205,6 +211,7 @@
     --color-error-strong: #f25c4b;
     --color-info-strong: #4f87db;
     --color-accent-strong: #ec995a;
+    --color-warning-fill: #8f7200;
 
     --color-illustration-line: #a6a9b8;
 

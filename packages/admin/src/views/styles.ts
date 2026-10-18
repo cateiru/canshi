@@ -185,7 +185,7 @@ ul.plain { list-style: none; margin: 0; padding: 0; }
 /* メインアプリの Alert と同じく、状態色で塗りつぶして文字を背景色にする */
 .notice, .warning {
   margin: 0;
-  border-radius: var(--radius-base);
+  border-radius: 12px;
   padding: var(--space-3) var(--space-4);
   color: var(--color-bg);
 }
