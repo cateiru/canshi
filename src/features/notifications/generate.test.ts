@@ -252,8 +252,8 @@ describe("generateNotifications（ごはんの時間）", () => {
       "feeding_time",
     ]);
 
-    // JST 13:00（07:00 と 19:00 の中間）
-    await generateNotifications(new Date("2026-09-21T04:00:00.000Z"));
+    // JST 08:00（07:00 の 1 時間後）
+    await generateNotifications(new Date("2026-09-20T23:00:00.000Z"));
     expect(await listFeedingNotifications(household.id)).toEqual([
       "feeding_not_recorded",
       "feeding_time",
@@ -272,7 +272,7 @@ describe("generateNotifications（ごはんの時間）", () => {
     });
 
     // 同じ時刻に何度呼んでも重複して生成しない
-    await generateNotifications(new Date("2026-09-21T04:00:00.000Z"));
+    await generateNotifications(new Date("2026-09-20T23:00:00.000Z"));
     expect(await listFeedingNotifications(household.id)).toEqual([
       "feeding_not_recorded",
       "feeding_time",
@@ -303,8 +303,8 @@ describe("generateNotifications（ごはんの時間）", () => {
       occurredAt: new Date("2026-09-22T07:30:00.000Z"),
     });
 
-    // JST 13:00
-    await generateNotifications(new Date("2026-09-22T04:00:00.000Z"));
+    // JST 08:00
+    await generateNotifications(new Date("2026-09-21T23:00:00.000Z"));
     expect(await listFeedingNotifications(household.id)).toEqual([
       "feeding_time",
     ]);
