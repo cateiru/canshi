@@ -5,7 +5,8 @@
   border: var(--border-width) solid var(--color-ink);
   border-radius: 12px;
   padding: var(--space-3) var(--space-4);
-  color: var(--color-bg);
+  /* ダークテーマでも --color-bg（暗い色）にせず、白で固定する */
+  color: #fff;
   background-color: var(--color-bg);
   font-size: var(--text-sm);
   line-height: var(--line-height-body);
