@@ -17,6 +17,8 @@ import {
   householdMembers,
   households,
   mcpPermissions,
+  medicationDoses,
+  medications,
   poopRecords,
   users,
   weightRecords,
@@ -227,6 +229,29 @@ describe("記録の追加", () => {
     expect(await db.select().from(poopRecords)).toEqual([]);
   });
 
+  it("投薬の記録は、省略すると画面と同じく投薬できたものとして記録する", async () => {
+    await allow(["record:create"]);
+    await db.insert(medications).values({
+      id: "medication-1",
+      catId: "cat-1",
+      name: "くすり",
+      doseAmount: "1錠",
+      dosesPerDay: 1,
+      startDate: "2026-10-01",
+    });
+
+    await call("create_medication_dose", {
+      catId: "cat-1",
+      medicationId: "medication-1",
+    });
+
+    const [dose] = await db.select().from(medicationDoses);
+    expect(dose).toMatchObject({
+      medicationId: "medication-1",
+      wasAdministered: true,
+    });
+  });
+
   it("体重は猫の体重だけを指定すると、そのまま猫の体重として記録する", async () => {
     await allow(["record:create"]);
 
@@ -238,6 +263,35 @@ describe("記録の追加", () => {
 });
 
 describe("記録の編集", () => {
+  it("体重を猫の体重だけで直すと、人間を含んだ体重などは空にする", async () => {
+    await allow(["record:update"]);
+    const [record] = await db
+      .insert(weightRecords)
+      .values({
+        catId: "cat-1",
+        occurredAt: new Date("2026-10-01T08:00:00.000Z"),
+        inputMethod: "auto",
+        combinedWeightKg: 64,
+        humanWeightKg: 60,
+        catWeightKg: 4,
+      })
+      .returning();
+
+    await call("update_weight_record", {
+      catId: "cat-1",
+      id: record.id,
+      catWeightKg: 4.3,
+    });
+
+    const [updated] = await db.select().from(weightRecords);
+    expect(updated).toMatchObject({
+      inputMethod: "direct",
+      combinedWeightKg: null,
+      humanWeightKg: null,
+      catWeightKg: 4.3,
+    });
+  });
+
   async function createPoop() {
     const [record] = await db
       .insert(poopRecords)

@@ -395,9 +395,17 @@ const weightRecordTool = defineRecordTool({
     };
   },
   adjust(values, args) {
-    // 猫の体重だけを指定したときは、そのまま猫の体重として記録する
+    // 猫の体重だけを指定したときは、そのまま猫の体重として記録する。人間を含んだ体重などは
+    // 猫の体重と合わなくなるため、指定されていなければ空にする
     if (args.catWeightKg !== undefined && args.inputMethod === undefined) {
-      return { ...values, inputMethod: "direct" };
+      return {
+        ...values,
+        inputMethod: "direct",
+        combinedWeightKg:
+          args.combinedWeightKg === undefined ? "" : values.combinedWeightKg,
+        humanWeightKg:
+          args.humanWeightKg === undefined ? "" : values.humanWeightKg,
+      };
     }
     return values;
   },
@@ -515,7 +523,8 @@ const medicationDoseTool = defineRecordTool({
   label: "投薬の記録",
   description:
     "追加では medicationId（服薬予定の ID。list_medications で取得できる）が必須。" +
-    "服薬予定は編集では変えられない。wasAdministered は投薬できたか（省略すると false）。",
+    "服薬予定は編集では変えられない。wasAdministered は投薬できたか" +
+    "（追加で省略すると、画面と同じく true）。",
   fields: {
     medicationId: z
       .string()
@@ -528,7 +537,11 @@ const medicationDoseTool = defineRecordTool({
   },
   nonFormKeys: ["medicationId"],
   schema: medicationDoseFormSchema,
-  defaults: () => nowDateTimeValues("occurredDate", "occurredTime"),
+  defaults: () => ({
+    ...nowDateTimeValues("occurredDate", "occurredTime"),
+    // 画面のフォームと同じく、投薬できた状態から始める
+    wasAdministered: "on",
+  }),
   async load(db, catId, id) {
     const [row] = await db
       .select()
