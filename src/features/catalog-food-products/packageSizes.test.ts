@@ -56,7 +56,7 @@ describe("catalogPackageSizes", () => {
 
 describe("formatPackageSize", () => {
   it("家のごはん商品と同じ表記にする", () => {
-    expect(formatPackageSize({ amountG: 1500, unit: null })).toBe("1500g");
+    expect(formatPackageSize({ amountG: 1500, unit: null })).toBe("1.5kg");
     expect(formatPackageSize({ amountG: 14, unit: "本" })).toBe("14g/本");
   });
 });
