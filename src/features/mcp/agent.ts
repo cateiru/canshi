@@ -2,11 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpAgent } from "agents/mcp";
 import { z } from "zod";
 import { getUserById } from "@/features/auth/users";
-import { getCatForUser, listCatsForUser } from "@/features/households/queries";
+import {
+  getCatForUser,
+  listCatsForUser,
+  listHouseholdsForUser,
+} from "@/features/households/queries";
 import { listTimelineForMonth } from "@/features/timeline/queries";
 import {
   allowedMcpRecordTypes,
   isCatAllowedForMcp,
+  isHouseholdAllowedForMcp,
   MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
 } from "./permissionRules";
 import { getMcpPermissions } from "./permissions";
@@ -18,17 +23,10 @@ import {
   MISSING_USER_ERROR_MESSAGE,
 } from "./props";
 import { toCatSummary, toTimelineEntrySummary } from "./summaries";
-
-function errorResult(text: string) {
-  return {
-    content: [{ type: "text" as const, text }],
-    isError: true,
-  };
-}
-
-function jsonResult(value: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(value) }] };
-}
+import { errorResult, jsonResult, type McpToolContext } from "./tools/context";
+import { registerFeedingPresetTools } from "./tools/feedingPresets";
+import { registerFoodProductTools } from "./tools/foodProducts";
+import { registerRecordTools } from "./tools/records";
 
 /** 猫のプロフィールを返すツールの説明に添える、生年月日の精度の補足 */
 const BIRTH_DATE_PRECISION_DESCRIPTION =
@@ -36,15 +34,16 @@ const BIRTH_DATE_PRECISION_DESCRIPTION =
   "day=年月日すべて）で、year・month の場合 birthDate の不明な月・日は 1月・1日で補完されている。";
 
 /**
- * CANSHI の MCP サーバー本体（`/mcp`）。読み取り専用ツール（猫のプロフィール参照・
- * タイムライン参照）を公開する。書き込み系ツールは対象外
+ * CANSHI の MCP サーバー本体（`/mcp`）。猫のプロフィール・タイムラインを読み取るツールと、
+ * 記録の追加・編集、ごはん商品・プリセットを扱うツール（`./tools/`）を公開する
  * （docs/plans/32_mcp_oidc_overview.md 参照）。
  *
  * 各ツールはトークンに保存した CANSHI のユーザー ID（`this.props.userId`、
  * `/oauth/authorize` で同意したときにログインしていたユーザー）の家の猫のうち、
  * そのユーザーがこの接続（`this.props.clientId`）に読み取りを許可した家・猫・記録の種類
  * （`./permissions.ts`）だけを参照する。
- * 許可していない猫は、存在しない猫と区別しない。
+ * 許可していない猫は、存在しない猫と区別しない。記録の書き込みやごはん商品・プリセットの
+ * 操作は、接続に許可した操作だけを、読み取りを許可した範囲の中で行える。
  * Durable Object の中で動くため、D1 は `getCloudflareContext()` ではなく
  * `this.env.DB` を明示的に渡す
  */
@@ -96,6 +95,43 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
   }
 
   async init() {
+    const ctx: McpToolContext = {
+      env: this.env,
+      resolveConnection: () => this.resolveConnection(),
+    };
+
+    this.server.registerTool(
+      "list_households",
+      {
+        title: "家の一覧を取得",
+        description:
+          "ユーザーが所属している家の一覧を取得する。ごはん商品・プリセットは家ごとに登録する。" +
+          "ユーザーが読み取りを許可していない家は含まれない。",
+        annotations: { readOnlyHint: true },
+      },
+      async () => {
+        const connection = await this.resolveConnection();
+        if ("error" in connection) {
+          return errorResult(connection.error);
+        }
+        const [households, permissions] = await Promise.all([
+          listHouseholdsForUser(connection.userId, this.env.DB),
+          getMcpPermissions(
+            connection.userId,
+            connection.clientId,
+            this.env.DB,
+          ),
+        ]);
+        return jsonResult({
+          households: households
+            .filter((household) =>
+              isHouseholdAllowedForMcp(permissions, household.id),
+            )
+            .map((household) => ({ id: household.id, name: household.name })),
+        });
+      },
+    );
+
     this.server.registerTool(
       "list_cats",
       {
@@ -223,5 +259,9 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         });
       },
     );
+
+    registerRecordTools(this.server, ctx);
+    registerFoodProductTools(this.server, ctx);
+    registerFeedingPresetTools(this.server, ctx);
   }
 }

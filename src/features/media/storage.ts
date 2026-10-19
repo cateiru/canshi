@@ -67,9 +67,15 @@ export type StoreMediaAssetInput = StoreMediaFileInput & {
   catId: string | null;
 };
 
-function getBucket(): R2Bucket {
-  const { env } = getCloudflareContext();
-  return env.MEDIA_BUCKET;
+/**
+ * R2 と D1 のバインディング。省略すると `getCloudflareContext()` から取る。
+ * Durable Object の中で動く AI との接続（MCP）からは、`getCloudflareContext()` を
+ * 使えないため明示的に渡す
+ */
+export type MediaEnv = Pick<Env, "DB" | "MEDIA_BUCKET">;
+
+function getBucket(env?: MediaEnv): R2Bucket {
+  return (env ?? getCloudflareContext().env).MEDIA_BUCKET;
 }
 
 async function readHead(blob: Blob): Promise<Uint8Array> {
@@ -219,17 +225,26 @@ type MediaAssetPlacement = {
  */
 export async function storeMediaAsset(
   input: StoreMediaAssetInput,
+  env?: MediaEnv,
 ): Promise<MediaAsset> {
   const { recordType, recordId, catId } = input;
   const assetId = crypto.randomUUID();
-  return storeMediaFile(input, {
-    assetId,
-    recordType,
-    recordId,
-    catId,
-    objectKey: buildObjectKey(recordType, recordId, assetId),
-    thumbnailObjectKey: buildThumbnailObjectKey(recordType, recordId, assetId),
-  });
+  return storeMediaFile(
+    input,
+    {
+      assetId,
+      recordType,
+      recordId,
+      catId,
+      objectKey: buildObjectKey(recordType, recordId, assetId),
+      thumbnailObjectKey: buildThumbnailObjectKey(
+        recordType,
+        recordId,
+        assetId,
+      ),
+    },
+    env,
+  );
 }
 
 /**
@@ -257,6 +272,7 @@ export async function storePendingMediaAsset(
 async function storeMediaFile(
   input: StoreMediaFileInput,
   placement: MediaAssetPlacement,
+  env?: MediaEnv,
 ): Promise<MediaAsset> {
   const { file } = input;
   const {
@@ -294,7 +310,7 @@ async function storeMediaFile(
       ? await prepareImage(file, sniffed.mimeType, input.thumbnail)
       : await prepareVideo(file, input.thumbnail);
 
-  const usedBytes = await sumMediaStorageBytes();
+  const usedBytes = await sumMediaStorageBytes(env?.DB);
   const additionalBytes = prepared.sizeBytes + prepared.thumbnail.byteLength;
   if (!hasStorageCapacity(usedBytes, additionalBytes, limits)) {
     throw new MediaUploadError(
@@ -303,7 +319,7 @@ async function storeMediaFile(
     );
   }
 
-  const bucket = getBucket();
+  const bucket = getBucket(env);
 
   try {
     // 片方の put だけ成功した場合も catch で両方のキーを片付けるため、両方が完了するまで待つ
@@ -322,9 +338,10 @@ async function storeMediaFile(
       }
     }
 
-    const db = getDb();
+    const db = getDb(env?.DB);
     const sortOrder =
-      placement.sortOrder ?? (await nextMediaSortOrder(recordType, recordId));
+      placement.sortOrder ??
+      (await nextMediaSortOrder(recordType, recordId, env?.DB));
     const [created] = await db
       .insert(mediaAssets)
       .values({
@@ -380,19 +397,20 @@ function objectKeysOf(
  */
 export async function deleteMediaAssetRows(
   assets: MediaAsset[],
+  env?: MediaEnv,
 ): Promise<void> {
   if (assets.length === 0) {
     return;
   }
-  const bucket = getBucket();
+  const bucket = getBucket(env);
   for (const keys of chunk(objectKeysOf(assets), R2_MAX_DELETE_KEYS)) {
     await bucket.delete(keys);
   }
-  const db = getDb();
+  const db = getDb(env?.DB);
   const assetIds = assets.map((asset) => asset.id);
   // cats.profile_media_asset_id・users.icon_media_asset_id から参照されている行は先に参照を外す（外部キー制約）
-  await detachProfileImages(assetIds);
-  await detachUserIcons(assetIds);
+  await detachProfileImages(assetIds, env?.DB);
+  await detachUserIcons(assetIds, env?.DB);
   // D1 のバインドパラメーター上限を超えないよう分割して削除する
   for (const ids of chunkForBoundParameters(assetIds)) {
     await db.delete(mediaAssets).where(inArray(mediaAssets.id, ids));
@@ -429,8 +447,9 @@ export async function deleteMediaAssetsByCat(catId: string): Promise<void> {
 export async function deleteMediaAssetsByRecord(
   recordType: string,
   recordId: string,
+  env?: MediaEnv,
 ): Promise<void> {
-  const db = getDb();
+  const db = getDb(env?.DB);
   const rows = await db
     .select()
     .from(mediaAssets)
@@ -440,7 +459,7 @@ export async function deleteMediaAssetsByRecord(
         eq(mediaAssets.recordId, recordId),
       ),
     );
-  await deleteMediaAssetRows(rows);
+  await deleteMediaAssetRows(rows, env);
 }
 
 /**
