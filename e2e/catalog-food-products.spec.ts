@@ -3,8 +3,13 @@ import { expect, test } from "@playwright/test";
 
 // 共通のごはん商品は管理画面（packages/admin）からしか登録できないため、ローカルの D1 に
 // 直接追加する。dev サーバーと書き込みが重なると SQLITE_BUSY で失敗することがあるため、
-// 少し待ってやり直す（e2e/auth.setup.ts と同じ）
-async function insertCatalogFoodProduct(id: string, name: string) {
+// 少し待ってやり直す（e2e/auth.setup.ts と同じ）。内容量の候補は `packageSizes`（JSON）で渡し、
+// 省略すると候補を追加する前に登録された商品と同じく空にする（14g/本 が唯一の候補になる）
+async function insertCatalogFoodProduct(
+  id: string,
+  name: string,
+  packageSizes = "[]",
+) {
   await expect(async () => {
     execFileSync(
       "node_modules/.bin/wrangler",
@@ -16,8 +21,8 @@ async function insertCatalogFoodProduct(id: string, name: string) {
         "--persist-to",
         ".wrangler/state",
         "--command",
-        `INSERT INTO catalog_food_products (id, name, manufacturer, kcal_per_100g, package_amount_g, package_unit, nutrition_type, texture_type, life_stages)
-        VALUES ('${id}', '${name}', 'E2Eフーズ', 40, 14, '本', 'general', 'wet', '["senior"]')`,
+        `INSERT INTO catalog_food_products (id, name, manufacturer, kcal_per_100g, package_amount_g, package_unit, nutrition_type, texture_type, life_stages, package_sizes)
+        VALUES ('${id}', '${name}', 'E2Eフーズ', 40, 14, '本', 'general', 'wet', '["senior"]', '${packageSizes}')`,
       ],
       { stdio: "inherit" },
     );
@@ -29,7 +34,11 @@ test("共通のごはん商品を検索して家に追加し、追加した商�
 }) => {
   const suffix = Date.now();
   const productName = `共通のちゅーる-${suffix}`;
-  await insertCatalogFoodProduct(`e2e-catalog-${suffix}`, productName);
+  await insertCatalogFoodProduct(
+    `e2e-catalog-${suffix}`,
+    productName,
+    '[{"amountG":14,"unit":"本"},{"amountG":70,"unit":null}]',
+  );
 
   await page.goto("/food-products");
   await page
@@ -52,6 +61,10 @@ test("共通のごはん商品を検索して家に追加し、追加した商�
   await expect(candidate).toBeVisible();
   await expect(candidate).toContainText("一般食 ・ ウェット ・ 40kcal/100g");
   await expect(candidate).toContainText("対象：シニア");
+  // 内容量の候補から、追加する内容量を選ぶ
+  await expect(candidate).toContainText("14g/本 / 70g");
+  await candidate.getByRole("button", { name: /内容量/ }).click();
+  await page.getByRole("option", { name: "70g" }).click();
   await candidate
     .getByRole("button", { name: `${productName}を追加する` })
     .click();
@@ -61,6 +74,7 @@ test("共通のごはん商品を検索して家に追加し、追加した商�
   const added = page.getByRole("article", { name: productName });
   await expect(added).toBeVisible();
   await expect(added).toContainText("E2Eフーズ");
+  await expect(added.locator("dd").filter({ hasText: "70" })).toHaveText("70g");
 
   // 同じ家ではもう一度追加しないよう「追加済み」と表示する
   await page.goto(

@@ -5,6 +5,11 @@ import { AddCatalogFoodProductButton } from "@/features/catalog-food-products/Ad
 import { addCatalogFoodProductAction } from "@/features/catalog-food-products/actions";
 import { CatalogSearchForm } from "@/features/catalog-food-products/CatalogSearchForm";
 import {
+  catalogPackageSizes,
+  formatPackageSize,
+  toPackageSizeValue,
+} from "@/features/catalog-food-products/packageSizes";
+import {
   CATALOG_SEARCH_LIMIT,
   listAddedCatalogFoodProductIds,
   listCatalogFoodProductImageUrls,
@@ -17,7 +22,6 @@ import {
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import {
   formatFoodProductTarget,
-  formatPackageAmount,
   NUTRITION_TYPE_LABEL,
   TEXTURE_TYPE_LABEL,
 } from "@/features/food-products/labels";
@@ -155,6 +159,7 @@ export default async function SearchFoodProductsPage({
           <ul className={styles.list}>
             {items.map((item) => {
               const target = formatFoodProductTarget(item);
+              const packageSizes = catalogPackageSizes(item);
               return (
                 <li key={item.id}>
                   <article className={styles.card} aria-label={item.name}>
@@ -172,7 +177,7 @@ export default async function SearchFoodProductsPage({
                         {NUTRITION_TYPE_LABEL[item.nutritionType]} ・{" "}
                         {TEXTURE_TYPE_LABEL[item.textureType]} ・{" "}
                         {item.kcalPer100g}kcal/100g ・{" "}
-                        {formatPackageAmount(item)}
+                        {packageSizes.map(formatPackageSize).join(" / ")}
                       </p>
                       {target ? (
                         <p className={styles.meta}>対象：{target}</p>
@@ -190,6 +195,10 @@ export default async function SearchFoodProductsPage({
                           householdId={household.id}
                           returnToHousehold={filterHousehold != null}
                           productName={item.name}
+                          packageSizes={packageSizes.map((size) => ({
+                            value: toPackageSizeValue(size),
+                            label: formatPackageSize(size),
+                          }))}
                         />
                       )}
                     </div>

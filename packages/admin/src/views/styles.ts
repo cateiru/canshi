@@ -371,6 +371,7 @@ button[type="submit"].primary { min-height: 48px; font-size: var(--text-md); }
   color: var(--color-ink-subtle);
 }
 .product-name { display: block; font-weight: var(--font-weight-bold); }
+.package-size { display: block; }
 td .sub { display: block; color: var(--color-ink-muted); }
 td code { display: block; }
 
@@ -445,6 +446,15 @@ fieldset.group legend {
   font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
 }
+/* 内容量の候補の行（g・単位・削除ボタン） */
+.package-size-rows { display: flex; flex-direction: column; gap: var(--space-3); }
+.package-size-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: start;
+}
+button.with-icon { gap: var(--space-2); }
 .checkboxes { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
 /* メインアプリの Checkbox と同じく、--color-ink の枠と塗りつぶしで選択を示す */
 label.checkbox {

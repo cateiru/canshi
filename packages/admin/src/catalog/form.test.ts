@@ -28,9 +28,8 @@ describe("parseCatalogFoodProductForm", () => {
         name: "まぐろ",
         manufacturer: null,
         kcalPer100g: 40.5,
-        packageAmountG: 14,
-        // 先頭の「1」は取り除く
-        packageUnit: "本",
+        // 単位の先頭の「1」は取り除く
+        packageSizes: [{ amountG: 14, unit: "本" }],
         nutritionType: "general",
         textureType: "wet",
         lifeStages: ["kitten", "care"],
@@ -48,6 +47,52 @@ describe("parseCatalogFoodProductForm", () => {
       lifeStages: "adult",
     });
     expect(parsed.ok && parsed.values.lifeStages).toEqual(["adult"]);
+  });
+
+  it("内容量の候補は g と単位を添字で対にし、空の行を捨てる", () => {
+    const parsed = parseCatalogFoodProductForm({
+      ...VALID,
+      packageAmountG: ["70", "", " ", "12.3"],
+      packageUnit: ["", "", "", "１ 本"],
+    });
+    expect(parsed.ok && parsed.values.packageSizes).toEqual([
+      { amountG: 70, unit: null },
+      { amountG: 12.3, unit: "本" },
+    ]);
+  });
+
+  it("内容量の候補の誤りは行ごとに返す", () => {
+    const parsed = parseCatalogFoodProductForm({
+      ...VALID,
+      packageAmountG: ["70", "abc", "70"],
+      packageUnit: ["袋", "", "1袋"],
+    });
+    expect(!parsed.ok && parsed.errors.packageSizeRows).toEqual([
+      {},
+      { amountG: expect.any(String) },
+      { amountG: "同じ内容量がすでにあります" },
+    ]);
+    // 入力値は送られたまま表示し直す
+    expect(!parsed.ok && parsed.input.packageSizes).toEqual([
+      { amountG: "70", unit: "袋" },
+      { amountG: "abc", unit: "" },
+      { amountG: "70", unit: "1袋" },
+    ]);
+  });
+
+  it("内容量の候補がないときは、空の行を 1 つ置いてエラーを返す", () => {
+    const parsed = parseCatalogFoodProductForm({
+      ...VALID,
+      packageAmountG: "",
+      packageUnit: "",
+    });
+    expect(!parsed.ok && parsed.input.packageSizes).toEqual([
+      { amountG: "", unit: "" },
+    ]);
+    expect(!parsed.ok && Object.keys(parsed.errors).sort()).toEqual([
+      "packageSizeRows",
+      "packageSizes",
+    ]);
   });
 
   it("誤りのある項目ごとにエラーを返す", () => {
@@ -68,8 +113,8 @@ describe("parseCatalogFoodProductForm", () => {
         "lifeStages",
         "name",
         "nutritionType",
-        "packageAmountG",
-        "packageUnit",
+        "packageSizeRows",
+        "packageSizes",
         "textureType",
       ].sort(),
     );

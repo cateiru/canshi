@@ -14,12 +14,24 @@ export type NutritionType = (typeof NUTRITION_TYPES)[number];
 export const TEXTURE_TYPES = ["dry", "wet", "soup"] as const;
 export type TextureType = (typeof TEXTURE_TYPES)[number];
 
+/** 内容量の候補の上限 */
+export const MAX_PACKAGE_SIZES = 10;
+
+/**
+ * 内容量の候補（メインアプリの `CatalogPackageSize`）。`unit` があるときは 1 単位あたり、
+ * ないときは商品全体の内容量
+ */
+export interface PackageSize {
+  amountG: number;
+  unit: string | null;
+}
+
 export interface CatalogFoodProductValues {
   name: string;
   manufacturer: string | null;
   kcalPer100g: number;
-  packageAmountG: number;
-  packageUnit: string | null;
+  /** 内容量の候補。1 件以上で、並べた順にメインアプリで表示する */
+  packageSizes: PackageSize[];
   nutritionType: NutritionType;
   textureType: TextureType;
   lifeStages: LifeStage[];
@@ -31,17 +43,25 @@ export interface CatalogFoodProductInput {
   name: string;
   manufacturer: string;
   kcalPer100g: string;
-  packageAmountG: string;
-  packageUnit: string;
+  /** 内容量の候補の行。空の行は除き、1 行もなければ空の行を 1 つ置く */
+  packageSizes: PackageSizeInput[];
   nutritionType: string;
   textureType: string;
   lifeStages: string[];
   targetBreed: string;
 }
 
+export interface PackageSizeInput {
+  amountG: string;
+  unit: string;
+}
+
 export type CatalogFoodProductErrors = Partial<
   Record<keyof CatalogFoodProductInput | "image", string>
->;
+> & {
+  /** 内容量の候補の行ごとのエラー（`input.packageSizes` と同じ並び） */
+  packageSizeRows?: Partial<Record<keyof PackageSizeInput, string>>[];
+};
 
 /** Hono の `parseBody({ all: true })` の結果 */
 export type FormBody = Record<string, string | File | (string | File)[]>;
@@ -91,6 +111,65 @@ function positiveNumber(value: string): number | null {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+/** 内容量の候補の単位。「1本」のように数量ごと入力されても「14g/1本」とならないよう、先頭の「1」は取り除く */
+function normalizeUnit(value: string): string {
+  return value.trim().replace(/^[1１]\s*(?=\D)/, "");
+}
+
+/**
+ * 内容量の候補の行を読む。g と単位は同じ名前の入力欄を並べて送られるため、添字で対にする
+ * （単位が空でも空文字列が届くため、添字はずれない）。どちらも空の行は捨てる
+ */
+function packageSizeInputs(body: FormBody): PackageSizeInput[] {
+  const amounts = texts(body, "packageAmountG");
+  const units = texts(body, "packageUnit");
+  const rows = Array.from(
+    { length: Math.max(amounts.length, units.length) },
+    (_, index) => ({ amountG: amounts[index] ?? "", unit: units[index] ?? "" }),
+  ).filter((row) => row.amountG.trim() !== "" || row.unit.trim() !== "");
+  return rows.length > 0 ? rows : [{ amountG: "", unit: "" }];
+}
+
+/** 内容量の候補を検証する。誤りがあれば `errors` に書き込み、null を返す */
+function parsePackageSizes(
+  rows: PackageSizeInput[],
+  errors: CatalogFoodProductErrors,
+): PackageSize[] | null {
+  const sizes: PackageSize[] = [];
+  const rowErrors = rows.map((row) => {
+    const rowError: Partial<Record<keyof PackageSizeInput, string>> = {};
+    const amountG = positiveNumber(row.amountG);
+    if (amountG === null) {
+      rowError.amountG = "内容量（g）は0より大きい値を入力してください";
+    }
+    const unit = normalizeUnit(row.unit);
+    if (unit.length > 10) {
+      rowError.unit = "単位は10文字以内で入力してください";
+    }
+    if (amountG !== null && !rowError.unit) {
+      if (
+        sizes.some(
+          (size) => size.amountG === amountG && size.unit === (unit || null),
+        )
+      ) {
+        rowError.amountG = "同じ内容量がすでにあります";
+      }
+      sizes.push({ amountG, unit: unit || null });
+    }
+    return rowError;
+  });
+  if (rowErrors.some((rowError) => Object.keys(rowError).length > 0)) {
+    errors.packageSizes = "内容量を確かめてください";
+    errors.packageSizeRows = rowErrors;
+    return null;
+  }
+  if (sizes.length > MAX_PACKAGE_SIZES) {
+    errors.packageSizes = `内容量の候補は${MAX_PACKAGE_SIZES}件までです`;
+    return null;
+  }
+  return sizes;
+}
+
 export function parseCatalogFoodProductForm(
   body: FormBody,
 ): ParsedCatalogFoodProductForm {
@@ -98,8 +177,7 @@ export function parseCatalogFoodProductForm(
     name: text(body, "name"),
     manufacturer: text(body, "manufacturer"),
     kcalPer100g: text(body, "kcalPer100g"),
-    packageAmountG: text(body, "packageAmountG"),
-    packageUnit: text(body, "packageUnit"),
+    packageSizes: packageSizeInputs(body),
     nutritionType: text(body, "nutritionType"),
     textureType: text(body, "textureType"),
     lifeStages: texts(body, "lifeStages"),
@@ -122,15 +200,7 @@ export function parseCatalogFoodProductForm(
     errors.kcalPer100g =
       "カロリー（kcal/100g）は0より大きい値を入力してください";
   }
-  const packageAmountG = positiveNumber(input.packageAmountG);
-  if (packageAmountG === null) {
-    errors.packageAmountG = "内容量（g）は0より大きい値を入力してください";
-  }
-  // 「1本」のように数量ごと入力されても「14g/1本」とならないよう、先頭の「1」は取り除く
-  const packageUnit = input.packageUnit.trim().replace(/^[1１]\s*(?=\D)/, "");
-  if (packageUnit.length > 10) {
-    errors.packageUnit = "単位は10文字以内で入力してください";
-  }
+  const packageSizes = parsePackageSizes(input.packageSizes, errors);
   const { nutritionType, textureType } = input;
   if (!includes(NUTRITION_TYPES, nutritionType)) {
     errors.nutritionType = "総合栄養食／一般食の区分を選択してください";
@@ -149,7 +219,7 @@ export function parseCatalogFoodProductForm(
   if (
     Object.keys(errors).length > 0 ||
     kcalPer100g === null ||
-    packageAmountG === null ||
+    packageSizes === null ||
     !includes(NUTRITION_TYPES, nutritionType) ||
     !includes(TEXTURE_TYPES, textureType)
   ) {
@@ -163,8 +233,7 @@ export function parseCatalogFoodProductForm(
       name,
       manufacturer: manufacturer || null,
       kcalPer100g,
-      packageAmountG,
-      packageUnit: packageUnit || null,
+      packageSizes,
       nutritionType,
       textureType,
       // メインアプリと同じく、選んだ順ではなく決まった順で保存する
@@ -187,8 +256,10 @@ export function toInput(
     name: values.name,
     manufacturer: values.manufacturer ?? "",
     kcalPer100g: String(values.kcalPer100g),
-    packageAmountG: String(values.packageAmountG),
-    packageUnit: values.packageUnit ?? "",
+    packageSizes: values.packageSizes.map((size) => ({
+      amountG: String(size.amountG),
+      unit: size.unit ?? "",
+    })),
     nutritionType: values.nutritionType,
     textureType: values.textureType,
     lifeStages: values.lifeStages,
@@ -200,8 +271,7 @@ export const EMPTY_INPUT: CatalogFoodProductInput = {
   name: "",
   manufacturer: "",
   kcalPer100g: "",
-  packageAmountG: "",
-  packageUnit: "",
+  packageSizes: [{ amountG: "", unit: "" }],
   nutritionType: "complete",
   textureType: "dry",
   lifeStages: [],

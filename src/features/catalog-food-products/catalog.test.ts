@@ -22,6 +22,7 @@ import {
   type NewCatalogFoodProduct,
   users,
 } from "@/db/schema";
+import { toPackageSizeValue } from "./packageSizes";
 import { parseCatalogSearchParams } from "./search";
 
 // 共通のごはん商品の検索と、家への追加を、実際のマイグレーションを適用した DB で確かめる
@@ -193,7 +194,11 @@ describe("addCatalogFoodProductAction", () => {
       await addCatalogFoodProductAction(
         "wet-kitten",
         {},
-        addForm({ householdId: "household-1", returnToHousehold: "1" }),
+        addForm({
+          packageSize: '[40,"袋"]',
+          householdId: "household-1",
+          returnToHousehold: "1",
+        }),
       ),
     ).toEqual({ redirectTo: "/food-products?householdId=household-1" });
 
@@ -237,7 +242,10 @@ describe("addCatalogFoodProductAction", () => {
       await addCatalogFoodProductAction(
         "dry-adult",
         {},
-        addForm({ householdId: "household-1" }),
+        addForm({
+          packageSize: "[500,null]",
+          householdId: "household-1",
+        }),
       ),
     ).toEqual({ redirectTo: "/food-products" });
     expect(storeMediaAsset).not.toHaveBeenCalled();
@@ -249,7 +257,11 @@ describe("addCatalogFoodProductAction", () => {
         await addCatalogFoodProductAction(
           "dry-adult",
           {},
-          addForm({ householdId: "household-1", returnToHousehold: "1" }),
+          addForm({
+            packageSize: "[500,null]",
+            householdId: "household-1",
+            returnToHousehold: "1",
+          }),
         ),
       ).toEqual({ redirectTo: "/food-products?householdId=household-1" });
     }
@@ -299,7 +311,10 @@ describe("addCatalogFoodProductAction", () => {
       await addCatalogFoodProductAction(
         "dry-adult",
         {},
-        addForm({ householdId: "household-1" }),
+        addForm({
+          packageSize: "[500,null]",
+          householdId: "household-1",
+        }),
       ),
     ).toEqual({ redirectTo: expect.any(String) });
     expect(await listAddedCatalogFoodProductIds("household-1")).toEqual(
@@ -312,14 +327,20 @@ describe("addCatalogFoodProductAction", () => {
       await addCatalogFoodProductAction(
         "dry-adult",
         {},
-        addForm({ householdId: "household-2" }),
+        addForm({
+          packageSize: "[500,null]",
+          householdId: "household-2",
+        }),
       ),
     ).toEqual({ error: expect.any(String) });
     expect(
       await addCatalogFoodProductAction(
         "missing",
         {},
-        addForm({ householdId: "household-1" }),
+        addForm({
+          packageSize: "[500,null]",
+          householdId: "household-1",
+        }),
       ),
     ).toEqual({ error: expect.any(String) });
     expect(
@@ -328,12 +349,86 @@ describe("addCatalogFoodProductAction", () => {
     expect(await db.select().from(foodProducts)).toEqual([]);
   });
 
+  it("内容量の候補から選んだ内容量で追加する", async () => {
+    await addCatalog({
+      id: "multi-size",
+      name: "ささみ スティック",
+      packageAmountG: 70,
+      packageSizes: [
+        { amountG: 70, unit: null },
+        { amountG: 12.3, unit: "本" },
+      ],
+    });
+    expect(
+      await addCatalogFoodProductAction(
+        "multi-size",
+        {},
+        addForm({
+          householdId: "household-1",
+          packageSize: toPackageSizeValue({ amountG: 12.3, unit: "本" }),
+        }),
+      ),
+    ).toEqual({ redirectTo: "/food-products" });
+    const [added] = await db.select().from(foodProducts);
+    expect(added).toMatchObject({
+      name: "ささみ スティック",
+      packageAmountG: 12.3,
+      packageUnit: "本",
+      catalogFoodProductId: "multi-size",
+    });
+  });
+
+  it("候補にない内容量・内容量の指定がないときは追加しない", async () => {
+    await addCatalog({
+      id: "multi-size",
+      name: "ささみ スティック",
+      packageSizes: [
+        { amountG: 70, unit: null },
+        { amountG: 12.3, unit: "本" },
+      ],
+    });
+    for (const packageSize of [
+      // 単位だけが違う
+      toPackageSizeValue({ amountG: 12.3, unit: null }),
+      toPackageSizeValue({ amountG: 500, unit: null }),
+      "[0,null]",
+      "70",
+    ]) {
+      expect(
+        await addCatalogFoodProductAction(
+          "multi-size",
+          {},
+          addForm({ householdId: "household-1", packageSize }),
+        ),
+      ).toEqual({ error: expect.stringContaining("内容量") });
+    }
+    expect(
+      await addCatalogFoodProductAction(
+        "multi-size",
+        {},
+        addForm({ householdId: "household-1" }),
+      ),
+    ).toEqual({ error: expect.stringContaining("内容量") });
+    // 候補が空の商品（候補を追加する前に登録された商品）は、元の内容量だけを候補とする
+    expect(
+      await addCatalogFoodProductAction(
+        "dry-adult",
+        {},
+        addForm({ householdId: "household-1", packageSize: "[40,null]" }),
+      ),
+    ).toEqual({ error: expect.stringContaining("内容量") });
+    expect(await db.select().from(foodProducts)).toEqual([]);
+  });
+
   it("共通のごはん商品を削除しても、家に追加した商品は追加元が空になって残る", async () => {
     expect(
       await addCatalogFoodProductAction(
         "dry-adult",
         {},
-        addForm({ householdId: "household-1" }),
+        addForm({
+          packageSize: "[500,null]",
+          householdId: "household-1",
+        }),
       ),
     ).toEqual({ redirectTo: expect.any(String) });
     await db
