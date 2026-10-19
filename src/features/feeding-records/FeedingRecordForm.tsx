@@ -5,8 +5,8 @@ import { useState } from "react";
 import {
   TbCalendar,
   TbCheck,
+  TbHelpCircle,
   TbPlus,
-  TbSettings,
   TbStack2,
   TbX,
 } from "react-icons/tb";
@@ -27,6 +27,7 @@ import {
   LEFTOVER_LEVELS,
   type LeftoverLevel,
 } from "@/db/schema/feeding-modes";
+import { feedingPresetHelpHref } from "@/features/feeding-presets/labels";
 import type { FeedingPresetWithItems } from "@/features/feeding-presets/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { formatPackageAmount } from "@/features/food-products/labels";
@@ -60,8 +61,9 @@ type FeedingRecordFormProps = {
   recentlyUsedFoodProductIds: string[];
   presets: FeedingPresetWithItems[];
   /**
-   * プリセットの設定への導線を出すときの家の ID。指定するとプリセットの見出しに
-   * 設定へのリンクを出し、プリセットがなくても登録への導線を表示する
+   * プリセットのヘルプへの導線を出すときの家の ID。指定するとプリセットの見出しに
+   * ヘルプページ（そこからこの家のプリセットの登録・一覧へ進める）へのリンクを出し、
+   * プリセットがなくても見出しを表示する
    */
   presetHouseholdId?: string;
   feedingRecord?: FeedingRecordWithItems;
@@ -202,17 +204,11 @@ export function FeedingRecordForm({
             </h2>
             {presetHouseholdId ? (
               <Link
-                href={
-                  presets.length > 0
-                    ? `/feeding-presets?householdId=${encodeURIComponent(presetHouseholdId)}`
-                    : `/feeding-presets/new?householdId=${encodeURIComponent(presetHouseholdId)}`
-                }
+                href={feedingPresetHelpHref(presetHouseholdId)}
                 className={styles.sectionLink}
               >
-                <TbSettings aria-hidden="true" size={16} />
-                {presets.length > 0
-                  ? "プリセットを設定する"
-                  : "プリセットを登録する"}
+                <TbHelpCircle aria-hidden="true" size={16} />
+                「プリセット」とは？
               </Link>
             ) : null}
           </div>

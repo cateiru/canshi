@@ -238,6 +238,14 @@ test("記録方法のヘルプページの見た目", async ({ page }, testInfo)
   await takeSnapshot(page, testInfo);
 });
 
+test("ごはんプリセットのヘルプページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/help/feeding-presets");
+  await expect(
+    page.getByRole("heading", { name: "「ごはんプリセット」とは？" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("設定ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings");
   await expect(
