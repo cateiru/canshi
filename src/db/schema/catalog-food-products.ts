@@ -37,15 +37,17 @@ export const catalogFoodProducts = sqliteTable(
     kcalPer100g: real("kcal_per_100g").notNull(),
     /**
      * 先頭の内容量の候補の内容量（g）。`packageSizes` を追加する前のコードのために残し、
-     * 管理画面は先頭の候補の値を書き続ける。読むときは `packageSizes` を使う
+     * 管理画面は先頭の候補の値を書き続ける。古い管理画面がこの列だけを更新した場合も反映するため、
+     * 先頭の候補はこの列から読む（`catalogPackageSizes`）
      */
     packageAmountG: real("package_amount_g").notNull(),
     /** 先頭の内容量の候補の単位（`packageAmountG` と同じく、追加する前のコードのために残す） */
     packageUnit: text("package_unit"),
     /**
      * 内容量の候補の JSON 配列（#346）。家に追加するときに 1 つ選び、管理画面で並べた順に表示する。
-     * 空配列は、候補を追加する前の管理画面で登録された商品で、`packageAmountG`・`packageUnit` を
-     * 唯一の候補として扱う（`src/features/catalog-food-products/packageSizes.ts`）
+     * 先頭の候補は `packageAmountG`・`packageUnit` から読み、この列からは 2 件目以降だけを使う。
+     * 候補を追加する前の管理画面で登録された商品は空配列になる
+     * （`src/features/catalog-food-products/packageSizes.ts`）
      */
     packageSizes: text("package_sizes", { mode: "json" })
       .$type<CatalogPackageSize[]>()

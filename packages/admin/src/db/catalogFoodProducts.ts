@@ -90,19 +90,27 @@ function parseLifeStages(value: string): LifeStage[] {
 }
 
 /**
- * 内容量の候補。候補を追加する前の管理画面で登録された商品は候補が空のため、
- * `package_amount_g`・`package_unit` を唯一の候補とする（メインアプリの `catalogPackageSizes` と同じ）
+ * 内容量の候補。先頭の候補は `package_amount_g`・`package_unit` から取り、`package_sizes` からは
+ * 2 件目以降だけを使う（メインアプリの `catalogPackageSizes` と同じ）。候補を知らない古い管理画面が
+ * `package_amount_g`・`package_unit` だけを登録・更新した場合も、その値を反映するため
  */
 function parsePackageSizes(row: CatalogFoodProductRow): PackageSize[] {
+  const first = { amountG: row.package_amount_g, unit: row.package_unit };
+  let rest: PackageSize[] = [];
   try {
     const parsed: unknown = JSON.parse(row.package_sizes);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed as PackageSize[];
+    if (Array.isArray(parsed)) {
+      rest = (parsed as PackageSize[]).slice(1);
     }
   } catch {
-    // 下で元の内容量を返す
+    // 先頭の候補だけにする
   }
-  return [{ amountG: row.package_amount_g, unit: row.package_unit }];
+  return [
+    first,
+    ...rest.filter(
+      (size) => size.amountG !== first.amountG || size.unit !== first.unit,
+    ),
+  ];
 }
 
 function toCatalogFoodProduct(row: CatalogFoodProductRow): CatalogFoodProduct {

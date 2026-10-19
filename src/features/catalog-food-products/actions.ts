@@ -116,15 +116,16 @@ export async function addCatalogFoodProductAction(
         .where(
           and(
             eq(catalogFoodProducts.id, catalogFoodProductId),
-            // 候補が空の商品は、候補を追加する前の内容量を唯一の候補とする（`catalogPackageSizes`）
-            sql`(EXISTS (
-              SELECT 1 FROM json_each(${catalogFoodProducts.packageSizes})
-              WHERE json_extract(json_each.value, '$.amountG') = ${packageSize.amountG}
-                AND json_extract(json_each.value, '$.unit') IS ${packageSize.unit}
-            ) OR (
-              json_array_length(${catalogFoodProducts.packageSizes}) = 0
-              AND ${catalogFoodProducts.packageAmountG} = ${packageSize.amountG}
+            // 先頭の候補は package_amount_g・package_unit、2 件目以降は package_sizes から取る
+            // （`catalogPackageSizes` と同じ）
+            sql`((
+              ${catalogFoodProducts.packageAmountG} = ${packageSize.amountG}
               AND ${catalogFoodProducts.packageUnit} IS ${packageSize.unit}
+            ) OR EXISTS (
+              SELECT 1 FROM json_each(${catalogFoodProducts.packageSizes})
+              WHERE json_each.key > 0
+                AND json_extract(json_each.value, '$.amountG') = ${packageSize.amountG}
+                AND json_extract(json_each.value, '$.unit') IS ${packageSize.unit}
             ))`,
           ),
         ),

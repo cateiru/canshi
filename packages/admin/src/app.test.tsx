@@ -391,6 +391,19 @@ describe("共通のごはん商品", () => {
     expect(await (await request("/food-products")).text()).toContain("40 g/袋");
   });
 
+  it("古い管理画面が元の内容量の列だけを更新していたら、その値を先頭の候補として表示する", async () => {
+    await env.DB.prepare(
+      `INSERT INTO catalog_food_products
+        (id, name, kcal_per_100g, package_amount_g, package_unit, nutrition_type, texture_type, package_sizes)
+      VALUES ('edited', '古い管理画面で編集した商品', 380, 50, NULL, 'complete', 'wet',
+        '[{"amountG":40,"unit":"袋"},{"amountG":160,"unit":null}]')`,
+    ).run();
+    const html = await (await request("/food-products/edited/edit")).text();
+    expect(html).toContain('value="50"');
+    expect(html).not.toContain('value="40"');
+    expect(html).toContain('value="160"');
+  });
+
   it("内容量の候補が空・誤り・重複のときは登録しない", async () => {
     const cases = [
       [

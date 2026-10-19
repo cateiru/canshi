@@ -158,9 +158,10 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     追加しない（画面を開いてから候補が編集されたときに、候補にない内容量を追加しない）
   - 同じ家には、別の内容量を選んでも同じ共通のごはん商品を 1 件だけ追加する（上の一意インデックスのまま）
   - `package_amount_g`・`package_unit` は、`package_sizes` を追加する前のコードのために残し、管理画面は先頭の
-    候補を書き続ける（後で削除する）。`0050` で今の内容量を 1 件目の候補として埋めたが、デプロイまでに古い
-    管理画面で登録された商品は `package_sizes` が空のため、読む側は空なら `package_amount_g`・`package_unit` を
-    唯一の候補として扱う（`src/features/catalog-food-products/packageSizes.ts`）
+    候補を書き続ける（後で削除する）。`0050` を適用してから管理画面をデプロイするまでの間は、古い管理画面が
+    `package_amount_g`・`package_unit` だけを登録・更新する（`package_sizes` は空か、`0050` で埋めた値のまま残る）。
+    その更新も反映するため、読む側は先頭の候補を `package_amount_g`・`package_unit` から取り、`package_sizes` からは
+    2 件目以降だけを使う（`src/features/catalog-food-products/packageSizes.ts`）
 - 検索結果の並び順のため `(manufacturer, name)` のインデックスを設定する
 
 ## 支出記録（`expense_records`・`expense_record_cats`・`expense_record_hospital_visits`）

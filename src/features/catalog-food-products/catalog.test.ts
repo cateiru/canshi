@@ -378,10 +378,37 @@ describe("addCatalogFoodProductAction", () => {
     });
   });
 
+  it("古い管理画面が元の内容量の列だけを更新していたら、その内容量で追加する", async () => {
+    await addCatalog({
+      id: "edited-by-old-admin",
+      name: "古い管理画面で編集した商品",
+      packageAmountG: 50,
+      // 0050 で埋めたときの値のまま残っている
+      packageSizes: [{ amountG: 40, unit: null }],
+    });
+    expect(
+      await addCatalogFoodProductAction(
+        "edited-by-old-admin",
+        {},
+        addForm({ householdId: "household-1", packageSize: "[40,null]" }),
+      ),
+    ).toEqual({ error: expect.stringContaining("内容量") });
+    expect(
+      await addCatalogFoodProductAction(
+        "edited-by-old-admin",
+        {},
+        addForm({ householdId: "household-1", packageSize: "[50,null]" }),
+      ),
+    ).toEqual({ redirectTo: "/food-products" });
+    const [added] = await db.select().from(foodProducts);
+    expect(added).toMatchObject({ packageAmountG: 50, packageUnit: null });
+  });
+
   it("候補にない内容量・内容量の指定がないときは追加しない", async () => {
     await addCatalog({
       id: "multi-size",
       name: "ささみ スティック",
+      packageAmountG: 70,
       packageSizes: [
         { amountG: 70, unit: null },
         { amountG: 12.3, unit: "本" },

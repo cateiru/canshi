@@ -2,8 +2,11 @@ import type { CatalogFoodProduct, CatalogPackageSize } from "@/db/schema";
 import { formatPackageAmount } from "@/features/food-products/labels";
 
 /**
- * 共通のごはん商品の内容量の候補。候補を追加する前の管理画面で登録された商品は
- * `packageSizes` が空のため、`packageAmountG`・`packageUnit` を唯一の候補として扱う
+ * 共通のごはん商品の内容量の候補。先頭の候補は `packageAmountG`・`packageUnit` から取り、
+ * `packageSizes` からは 2 件目以降だけを使う。
+ * 今の管理画面は先頭の候補を両方に同じ値で書くが、`0050` を適用してから管理画面を
+ * デプロイするまでの間は、候補を知らない古い管理画面が `packageAmountG`・`packageUnit` だけを
+ * 登録・更新する（`packageSizes` は空か、埋めたときの値のまま残る）。その更新も反映するため
  */
 export function catalogPackageSizes(
   product: Pick<
@@ -11,9 +14,15 @@ export function catalogPackageSizes(
     "packageSizes" | "packageAmountG" | "packageUnit"
   >,
 ): CatalogPackageSize[] {
-  return product.packageSizes.length > 0
-    ? product.packageSizes
-    : [{ amountG: product.packageAmountG, unit: product.packageUnit }];
+  const first = { amountG: product.packageAmountG, unit: product.packageUnit };
+  return [
+    first,
+    ...product.packageSizes
+      .slice(1)
+      .filter(
+        (size) => size.amountG !== first.amountG || size.unit !== first.unit,
+      ),
+  ];
 }
 
 /** 内容量の候補の表示用文字列（家のごはん商品と同じく「14g/本」「1500g」） */
