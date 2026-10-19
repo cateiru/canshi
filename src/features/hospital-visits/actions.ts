@@ -5,21 +5,16 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
   expenseRecordHospitalVisits,
-  expenseRecords,
   hospitalVisits,
   medications,
   symptoms,
 } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
-import { saveHospitalVisitWithExpense } from "@/features/expenses/hospitalVisitExpense";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
-import {
-  combineDateTimeUtc,
-  splitDateTimeUtc,
-} from "@/features/shared/datetime";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "./media";
+import { createHospitalVisit, updateHospitalVisit } from "./mutations";
 import {
   type HospitalVisitFormFieldErrors,
   hospitalVisitFormSchema,
@@ -51,129 +46,33 @@ function parseFormData(formData: FormData) {
   });
 }
 
-async function verifySymptomBelongsToCat(
-  db: ReturnType<typeof getDb>,
-  symptomId: string | undefined,
-  catId: string,
-): Promise<boolean> {
-  if (symptomId == null) {
-    return true;
-  }
-  const [row] = await db
-    .select({ id: symptoms.id })
-    .from(symptoms)
-    .where(and(eq(symptoms.id, symptomId), eq(symptoms.catId, catId)))
-    .limit(1);
-  return row != null;
-}
-
-/**
- * 通院記録の作成時に紐付ける既存の支出記録が、通院する猫の家の、受診日と同じ日の
- * カテゴリ「病院」の支出記録であることを確かめる
- */
-async function verifyLinkableExpense(
-  db: ReturnType<typeof getDb>,
-  householdId: string,
-  expenseRecordId: string | undefined,
-  visitedDate: string,
-): Promise<boolean> {
-  if (expenseRecordId == null) {
-    return true;
-  }
-  const [row] = await db
-    .select({
-      category: expenseRecords.category,
-      spentAt: expenseRecords.spentAt,
-    })
-    .from(expenseRecords)
-    .where(
-      and(
-        eq(expenseRecords.id, expenseRecordId),
-        eq(expenseRecords.householdId, householdId),
-      ),
-    )
-    .limit(1);
-  return (
-    row != null &&
-    row.category === "hospital" &&
-    splitDateTimeUtc(row.spentAt).date === visitedDate
-  );
-}
-
-function buildValues(data: ReturnType<typeof hospitalVisitFormSchema.parse>) {
-  return {
-    symptomId: data.symptomId ?? null,
-    visitedAt: combineDateTimeUtc(data.visitedDate, data.visitedTime),
-    reason: data.reason,
-    diagnosis: data.diagnosis ?? null,
-    examinationResults: data.examinationResults ?? null,
-    treatment: data.treatment ?? null,
-    nextVisitAt:
-      data.nextVisitDate != null && data.nextVisitTime != null
-        ? combineDateTimeUtc(data.nextVisitDate, data.nextVisitTime)
-        : null,
-    memo: data.memo ?? null,
-  };
-}
-
 export async function createHospitalVisitAction(
   catId: string,
   _prevState: HospitalVisitFormState,
   formData: FormData,
 ): Promise<HospitalVisitFormState> {
   const { cat } = await requireCatAccess(catId);
-  // ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照）
-  const householdId = cat.householdId as string;
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  if (!(await verifySymptomBelongsToCat(db, parsed.data.symptomId, catId))) {
-    return { formError: "関連する症状が見つかりませんでした" };
-  }
-  // 病院代を入力した場合は新しい支出記録を作るため、既存の支出記録には紐付けない
-  const linkExpenseRecordId =
-    parsed.data.expenseAmountYen == null
-      ? parsed.data.linkExpenseRecordId
-      : undefined;
-  if (
-    !(await verifyLinkableExpense(
-      db,
-      householdId,
-      linkExpenseRecordId,
-      parsed.data.visitedDate,
-    ))
-  ) {
-    return {
-      formError:
-        "紐付ける支出記録が見つかりませんでした。もう一度保存してください",
-    };
-  }
-
-  const values = buildValues(parsed.data);
-  const id = crypto.randomUUID();
-  await saveHospitalVisitWithExpense(
-    db,
-    db.insert(hospitalVisits).values({ id, catId, ...values }),
-    {
-      hospitalVisitId: id,
-      catId,
-      householdId,
-      visitedAt: values.visitedAt,
-      amountYen: parsed.data.expenseAmountYen ?? null,
-      linkExpenseRecordId,
-    },
+  // ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照）
+  const saved = await createHospitalVisit(
+    { id: catId, householdId: cat.householdId as string },
+    parsed.data,
   );
+  if ("error" in saved) {
+    return { formError: saved.error };
+  }
 
   const mediaError = await syncRecordMediaFromForm(
     HOSPITAL_VISIT_MEDIA_TYPE,
-    id,
+    saved.id,
     formData,
   );
-  return { savedRecordId: id, formError: mediaError };
+  return { savedRecordId: saved.id, formError: mediaError };
 }
 
 export async function updateHospitalVisitAction(
@@ -183,46 +82,21 @@ export async function updateHospitalVisitAction(
   formData: FormData,
 ): Promise<HospitalVisitFormState> {
   const { cat } = await requireCatAccess(catId);
-  // ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照）
-  const householdId = cat.householdId as string;
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  if (!(await verifySymptomBelongsToCat(db, parsed.data.symptomId, catId))) {
-    return { formError: "関連する症状が見つかりませんでした" };
-  }
-
-  const [existing] = await db
-    .select({ id: hospitalVisits.id })
-    .from(hospitalVisits)
-    .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
-    .limit(1);
-
-  if (!existing) {
-    return { formError: "通院記録が見つかりませんでした" };
-  }
-
-  const values = buildValues(parsed.data);
-  await saveHospitalVisitWithExpense(
-    db,
-    db
-      .update(hospitalVisits)
-      .set({ ...values, updatedAt: new Date() })
-      .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),
-    {
-      hospitalVisitId: id,
-      catId,
-      householdId,
-      visitedAt: values.visitedAt,
-      amountYen: parsed.data.expenseAmountYen ?? null,
-      // 既存の支出記録へ紐付けて作成した後の再送信では、紐付けた支出記録を削除せずに残す
-      keepLinkedExpenseRecordId: parsed.data.linkExpenseRecordId,
-    },
+  // ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照）
+  const saved = await updateHospitalVisit(
+    { id: catId, householdId: cat.householdId as string },
+    id,
+    parsed.data,
   );
+  if ("error" in saved) {
+    return { formError: saved.error };
+  }
 
   const mediaError = await syncRecordMediaFromForm(
     HOSPITAL_VISIT_MEDIA_TYPE,

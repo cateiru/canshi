@@ -8,8 +8,8 @@ import { requireCatAccess } from "@/features/auth/session";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
-import { combineDateTimeUtc } from "@/features/shared/datetime";
 import { POOP_RECORD_MEDIA_TYPE } from "./media";
+import { createPoopRecord, updatePoopRecord } from "./mutations";
 import { type PoopRecordFormFieldErrors, poopRecordFormSchema } from "./schema";
 
 /**
@@ -48,32 +48,14 @@ export async function createPoopRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  const [created] = await db
-    .insert(poopRecords)
-    .values({
-      catId,
-      occurredAt: combineDateTimeUtc(
-        parsed.data.occurredDate,
-        parsed.data.occurredTime,
-      ),
-      amount: parsed.data.amount ?? null,
-      color: parsed.data.color ?? null,
-      consistency: parsed.data.consistency,
-      hasBlood: parsed.data.hasBlood,
-      hasForeignObject: parsed.data.hasForeignObject,
-      appetiteNote: parsed.data.appetiteNote ?? null,
-      energyNote: parsed.data.energyNote ?? null,
-      memo: parsed.data.memo ?? null,
-    })
-    .returning({ id: poopRecords.id });
+  const id = await createPoopRecord(catId, parsed.data);
 
   const mediaError = await syncRecordMediaFromForm(
     POOP_RECORD_MEDIA_TYPE,
-    created.id,
+    id,
     formData,
   );
-  return { savedRecordId: created.id, formError: mediaError };
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export async function updatePoopRecordAction(
@@ -89,28 +71,7 @@ export async function updatePoopRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  const result = await db
-    .update(poopRecords)
-    .set({
-      occurredAt: combineDateTimeUtc(
-        parsed.data.occurredDate,
-        parsed.data.occurredTime,
-      ),
-      amount: parsed.data.amount ?? null,
-      color: parsed.data.color ?? null,
-      consistency: parsed.data.consistency,
-      hasBlood: parsed.data.hasBlood,
-      hasForeignObject: parsed.data.hasForeignObject,
-      appetiteNote: parsed.data.appetiteNote ?? null,
-      energyNote: parsed.data.energyNote ?? null,
-      memo: parsed.data.memo ?? null,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(poopRecords.id, id), eq(poopRecords.catId, catId)))
-    .returning({ id: poopRecords.id });
-
-  if (result.length === 0) {
+  if (!(await updatePoopRecord(catId, id, parsed.data))) {
     return { formError: "記録が見つかりませんでした" };
   }
 

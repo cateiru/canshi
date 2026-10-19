@@ -1,12 +1,11 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   feedingPresetItems,
   feedingRecordItems,
   foodProducts,
-  householdMembers,
 } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
 import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "@/features/cats/mutations";
@@ -16,6 +15,7 @@ import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "./media";
+import { createFoodProduct, updateFoodProduct } from "./mutations";
 import { getFoodProductForUser } from "./queries";
 import {
   type FoodProductFormFieldErrors,
@@ -63,54 +63,17 @@ export async function createFoodProductAction(
     return { fieldErrors: { householdId: [HOUSEHOLD_NOT_ALLOWED_ERROR] } };
   }
 
-  const db = getDb();
-  const values = parsed.data;
-  // 判定と登録の間に家から外された場合に登録が通らないよう、INSERT ... SELECT で
-  // 登録先の家のメンバーの行があるときだけ 1 文で挿入する（`createCatForUser` と同じ）。
-  // INSERT ... SELECT では列の既定値が使われないため ID はここで作り、列はテーブル定義と同じ並びにする
-  const [created] = await db
-    .insert(foodProducts)
-    .select((qb) =>
-      qb
-        .select({
-          id: sql`${crypto.randomUUID()}`.as("id"),
-          householdId: householdMembers.householdId,
-          name: sql`${values.name}`.as("name"),
-          manufacturer: sql`${values.manufacturer}`.as("manufacturer"),
-          kcalPer100g: sql`${values.kcalPer100g}`.as("kcal_per_100g"),
-          packageAmountG: sql`${values.packageAmountG}`.as("package_amount_g"),
-          packageUnit: sql`${values.packageUnit}`.as("package_unit"),
-          nutritionType: sql`${values.nutritionType}`.as("nutrition_type"),
-          textureType: sql`${values.textureType}`.as("texture_type"),
-          // sql`` には列の型変換がかからないため、JSON 列は文字列にして渡す
-          lifeStages: sql`${JSON.stringify(values.lifeStages)}`.as(
-            "life_stages",
-          ),
-          targetBreed: sql`${values.targetBreed}`.as("target_breed"),
-          // 手動で登録した商品は、共通のごはん商品の追加元を持たない
-          catalogFoodProductId: sql`NULL`.as("catalog_food_product_id"),
-          createdAt: sql`(unixepoch())`.as("created_at"),
-          updatedAt: sql`(unixepoch())`.as("updated_at"),
-        })
-        .from(householdMembers)
-        .where(
-          and(
-            eq(householdMembers.householdId, householdId),
-            eq(householdMembers.userId, user.id),
-          ),
-        ),
-    )
-    .returning({ id: foodProducts.id });
-  if (!created) {
+  const id = await createFoodProduct(user.id, householdId, parsed.data);
+  if (!id) {
     return { fieldErrors: { householdId: [HOUSEHOLD_NOT_ALLOWED_ERROR] } };
   }
 
   const mediaError = await syncRecordMediaFromForm(
     FOOD_PRODUCT_MEDIA_TYPE,
-    created.id,
+    id,
     formData,
   );
-  return { savedRecordId: created.id, formError: mediaError };
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export async function updateFoodProductAction(
@@ -125,20 +88,7 @@ export async function updateFoodProductAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  // 別の家の商品は、存在しない商品と区別せずに扱う。判定と更新の間に家から外された場合に
-  // 更新が通らないよう、所属の確認は UPDATE の WHERE に含める
-  const db = getDb();
-  const updated = await db
-    .update(foodProducts)
-    .set({ ...parsed.data, updatedAt: new Date() })
-    .where(
-      and(
-        eq(foodProducts.id, id),
-        isHouseholdMemberCondition(foodProducts.householdId, user.id),
-      ),
-    )
-    .returning({ id: foodProducts.id });
-  if (updated.length === 0) {
+  if (!(await updateFoodProduct(user.id, id, parsed.data))) {
     return { formError: "商品が見つかりませんでした" };
   }
 

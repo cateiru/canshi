@@ -6,8 +6,7 @@ import { getDb } from "@/db/client";
 import { waterRecords } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
-import { combineDateTimeUtc } from "@/features/shared/datetime";
-import { calculateEstimatedIntakeMl } from "./calculations";
+import { createWaterRecord, updateWaterRecord } from "./mutations";
 import {
   type WaterRecordFormFieldErrors,
   waterRecordFormSchema,
@@ -44,25 +43,7 @@ export async function createWaterRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  await db.insert(waterRecords).values({
-    catId,
-    occurredAt: combineDateTimeUtc(
-      parsed.data.occurredDate,
-      parsed.data.occurredTime,
-    ),
-    measurementMethod: parsed.data.measurementMethod,
-    suppliedAmountMl: parsed.data.suppliedAmountMl,
-    remainingAmountMl: parsed.data.remainingAmountMl ?? null,
-    estimatedIntakeMl: calculateEstimatedIntakeMl(
-      parsed.data.suppliedAmountMl,
-      parsed.data.remainingAmountMl,
-    ),
-    hasSpill: parsed.data.hasSpill,
-    wasWaterChanged: parsed.data.wasWaterChanged,
-    subjectiveAmount: parsed.data.subjectiveAmount ?? null,
-    memo: parsed.data.memo ?? null,
-  });
+  await createWaterRecord(catId, parsed.data);
 
   return { redirectTo: `/cats/${catId}/water-records` };
 }
@@ -80,31 +61,7 @@ export async function updateWaterRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  const result = await db
-    .update(waterRecords)
-    .set({
-      occurredAt: combineDateTimeUtc(
-        parsed.data.occurredDate,
-        parsed.data.occurredTime,
-      ),
-      measurementMethod: parsed.data.measurementMethod,
-      suppliedAmountMl: parsed.data.suppliedAmountMl,
-      remainingAmountMl: parsed.data.remainingAmountMl ?? null,
-      estimatedIntakeMl: calculateEstimatedIntakeMl(
-        parsed.data.suppliedAmountMl,
-        parsed.data.remainingAmountMl,
-      ),
-      hasSpill: parsed.data.hasSpill,
-      wasWaterChanged: parsed.data.wasWaterChanged,
-      subjectiveAmount: parsed.data.subjectiveAmount ?? null,
-      memo: parsed.data.memo ?? null,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(waterRecords.id, id), eq(waterRecords.catId, catId)))
-    .returning({ id: waterRecords.id });
-
-  if (result.length === 0) {
+  if (!(await updateWaterRecord(catId, id, parsed.data))) {
     return { formError: "記録が見つかりませんでした" };
   }
 
