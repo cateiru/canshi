@@ -27,7 +27,7 @@ export type McpPermissionsFormState = {
 };
 
 /**
- * ログイン中のユーザーの接続の 1 つについて、AI から読み取れる範囲を保存する。
+ * ログイン中のユーザーの接続の 1 つについて、AI から読み取れる範囲と許可する操作を保存する。
  * 接続済みのアプリには、次のツールの呼び出しから反映される。
  * 接続は grant の ID で指定し、範囲を見分けるクライアントの ID はサーバーで求める
  */
@@ -53,7 +53,7 @@ export async function updateMcpPermissionsAction(
   ) {
     return {
       formError:
-        "読み取りを許可する範囲を保存できませんでした。ページを読み込み直して、もう一度お試しください。",
+        "許可する範囲を保存できませんでした。ページを読み込み直して、もう一度お試しください。",
     };
   }
   revalidatePath(`/settings/ai-connections/${connection.id}`);

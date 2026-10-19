@@ -13,8 +13,8 @@ import {
   MCP_PERMISSION_RECORD_TYPES,
   MCP_PERMISSIONS_FIELD_NAME,
   type McpPermissionRecordType,
-  type McpPermissions,
   type McpPermissionTreeHousehold,
+  type McpReadScope,
 } from "./permissionRules";
 
 type McpPermissionTreeFieldProps = {
@@ -228,8 +228,8 @@ function toggle<T>(set: Set<T>, value: T, on: boolean) {
 export function toPermissions(
   tree: McpPermissionTreeHousehold[],
   state: CheckedState,
-): McpPermissions {
-  const permissions: McpPermissions = {
+): McpReadScope {
+  const permissions: McpReadScope = {
     excludedHouseholdIds: [],
     excludedCatIds: [],
     excludedRecordTypes: {},

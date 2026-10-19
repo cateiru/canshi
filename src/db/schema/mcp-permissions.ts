@@ -18,7 +18,11 @@ import { users } from "./users";
  *
  * 後から作った家・登録した猫・追加した記録の種類も既定で読み取れるよう、許可した
  * ものではなく外したもの（拒否）を持つ。家・猫は ID で持ち、外部キーにはしない。
- * 削除された家・猫の ID が残っても、どの猫にも当てはまらなくなるだけで害はない
+ * 削除された家・猫の ID が残っても、どの猫にも当てはまらなくなるだけで害はない。
+ *
+ * 記録の書き込みや、ごはん商品・プリセットの操作は、読み取りとは逆に許可したもの
+ * （`allowed_operations`）だけを持つ。行が無い接続や、列を追加する前に保存した接続は
+ * どれも行えない
  */
 export const mcpPermissions = sqliteTable(
   "mcp_permissions",
@@ -43,6 +47,11 @@ export const mcpPermissions = sqliteTable(
       .$type<Record<string, string[]>>()
       .notNull()
       .default(sql`'{}'`),
+    // 許可した操作（`MCP_OPERATIONS`）。記録の追加・編集、ごはん商品・プリセットの操作
+    allowedOperations: text("allowed_operations", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

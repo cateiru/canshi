@@ -48,7 +48,7 @@ export function RevokeMcpConnectionButton({
       >
         <p>
           {connectedAt} に接続した「{clientName}
-          」との接続を解除します。解除すると、このアプリからは猫のプロフィールや記録を読み取れなくなります。もう一度使うには、アプリから接続し直してください。
+          」との接続を解除します。解除すると、このアプリからは猫のプロフィールや記録の読み取り・書き込みができなくなります。もう一度使うには、アプリから接続し直してください。
         </p>
         <div className={styles.actions}>
           <Button

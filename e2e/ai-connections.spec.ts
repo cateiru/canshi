@@ -65,12 +65,12 @@ test.afterEach(async () => {
   );
 });
 
-test("AIとの接続ごとに、読み取りを許可する記録の種類を外して保存すると、再読み込み後も保たれる", async ({
+test("AIとの接続ごとに、読み取りを許可する記録の種類と許可する操作を保存すると、再読み込み後も保たれる", async ({
   page,
 }) => {
   await page.goto("/settings/ai-connections");
   const connection = page.getByRole("region", { name: "E2Eのアプリとの接続" });
-  await connection.getByRole("link", { name: "読み取る範囲" }).click();
+  await connection.getByRole("link", { name: "許可する範囲" }).click();
   await expect(page).toHaveURL(`/settings/ai-connections/${GRANT_ID}`);
   await expect(
     page.getByRole("heading", { level: 1, name: "E2Eのアプリ" }),
@@ -88,14 +88,27 @@ test("AIとの接続ごとに、読み取りを許可する記録の種類を外
 
   await records.getByText("うんち", { exact: true }).click();
   await expect(poop).not.toBeChecked();
-  await permissions.getByRole("button", { name: "保存する" }).click();
-  await expect(
-    page.getByText("読み取りを許可する範囲を保存しました"),
-  ).toBeVisible();
+  // 操作は既定ではどれも許可していない
+  const recordOperations = page
+    .getByRole("region", { name: "許可する操作" })
+    .getByRole("group", { name: "記録" });
+  const createRecord = recordOperations.getByRole("checkbox", {
+    name: "追加",
+  });
+  await expect(createRecord).not.toBeChecked();
+  await recordOperations.getByText("追加", { exact: true }).click();
+  await expect(createRecord).toBeChecked();
+
+  await page.getByRole("button", { name: "保存する" }).click();
+  await expect(page.getByText("許可する範囲を保存しました")).toBeVisible();
 
   await page.reload();
   await expect(poop).not.toBeChecked();
   await expect(records.getByRole("checkbox", { name: "ごはん" })).toBeChecked();
+  await expect(createRecord).toBeChecked();
+  await expect(
+    recordOperations.getByRole("checkbox", { name: "編集" }),
+  ).not.toBeChecked();
 });
 
 test("AIとの接続の一覧に、接続を最後に使った日時を表示する", async ({

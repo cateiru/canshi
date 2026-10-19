@@ -11,11 +11,12 @@ import {
   isCatAllowedForMcp,
   MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
   MCP_PERMISSION_RECORD_TYPES,
-  type McpPermissions,
+  type McpReadScope,
+  parseMcpOperationsInput,
   parseMcpPermissionsInput,
 } from "./permissionRules";
 
-const permissions: McpPermissions = {
+const permissions: McpReadScope = {
   excludedHouseholdIds: ["house-2"],
   excludedCatIds: ["cat-2"],
   excludedRecordTypes: { "cat-1": ["poop", "expense"] },
@@ -156,9 +157,11 @@ describe("parseMcpPermissionsInput", () => {
       excludedRecordTypes: { "cat-1": [] },
     });
 
-    expect(parseMcpPermissionsInput(value, accessible)).toEqual(
-      DEFAULT_MCP_PERMISSIONS,
-    );
+    expect(parseMcpPermissionsInput(value, accessible)).toEqual({
+      excludedHouseholdIds: [],
+      excludedCatIds: [],
+      excludedRecordTypes: {},
+    });
   });
 
   it("値が無い・JSON でない・形が違う・知らない記録の種類を含む場合は null", () => {
@@ -174,6 +177,33 @@ describe("parseMcpPermissionsInput", () => {
       }),
     ]) {
       expect(parseMcpPermissionsInput(value, accessible)).toBeNull();
+    }
+  });
+});
+
+describe("parseMcpOperationsInput", () => {
+  it("チェックした操作だけを、決まった並び順で重複を除いて返す", () => {
+    expect(
+      parseMcpOperationsInput(
+        JSON.stringify([
+          "feedingPreset:delete",
+          "record:create",
+          "record:create",
+        ]),
+      ),
+    ).toEqual(["record:create", "feedingPreset:delete"]);
+    expect(parseMcpOperationsInput("[]")).toEqual([]);
+  });
+
+  it("値が無い・JSON でない・知らない操作を含む場合は null", () => {
+    for (const value of [
+      null,
+      "",
+      "{",
+      JSON.stringify({}),
+      JSON.stringify(["record:delete"]),
+    ]) {
+      expect(parseMcpOperationsInput(value)).toBeNull();
     }
   });
 });

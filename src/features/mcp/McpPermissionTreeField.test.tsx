@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { McpPermissionTreeField } from "./McpPermissionTreeField";
 import {
   MCP_PERMISSION_RECORD_TYPES,
-  type McpPermissions,
   type McpPermissionTreeHousehold,
+  type McpReadScope,
 } from "./permissionRules";
 
 const allTypes = [...MCP_PERMISSION_RECORD_TYPES];
@@ -47,7 +47,7 @@ function renderField(initial = tree) {
     'input[name="mcpPermissions"]',
   );
   return {
-    value: () => JSON.parse(input?.value ?? "null") as McpPermissions,
+    value: () => JSON.parse(input?.value ?? "null") as McpReadScope,
   };
 }
 

@@ -6,7 +6,10 @@ import {
 import { getSessionUser } from "@/features/auth/sessions";
 import { SESSION_COOKIE_NAME } from "@/features/auth/sessionToken";
 import { encodeMcpConsentRequest, MCP_CONSENT_HEADER } from "./consent";
-import { MCP_PERMISSIONS_FIELD_NAME } from "./permissionRules";
+import {
+  MCP_OPERATIONS_FIELD_NAME,
+  MCP_PERMISSIONS_FIELD_NAME,
+} from "./permissionRules";
 import { saveMcpPermissionsFromForm } from "./permissions";
 import type { McpProps } from "./props";
 
@@ -34,7 +37,7 @@ type EnvWithOAuth = Env & { OAUTH_PROVIDER: OAuthHelpers };
  * - `GET /oauth/authorize`: 認可リクエストを検証し、同意画面（Next.js のページ）を表示する。
  *   未ログインなら、ページの middleware がログイン画面へリダイレクトする
  * - `POST /oauth/authorize`: 同意画面のボタンの送信先。ログイン中のユーザーで、同意画面で
- *   選んだ読み取りを許可する範囲を保存してから認可を完了する
+ *   選んだ読み取りを許可する範囲と、許可する操作を保存してから認可を完了する
  */
 export function withMcpAuthorize(nextHandler: {
   fetch(
@@ -174,11 +177,12 @@ async function handleAuthorizePost(
     return Response.redirect(accessDeniedUrl(authRequest), 303);
   }
 
-  // 読み取りを許可する範囲はトークンには持たせず、接続（クライアント）ごとに保存して、
-  // ツールが呼ばれるたびに読む（`./permissions.ts`）。範囲の項目が無いフォーム
-  // （範囲の選択を追加する前に開いた同意画面）からの送信では、今の範囲のままにする
+  // 読み取りを許可する範囲・許可する操作はトークンには持たせず、接続（クライアント）ごとに保存して、
+  // ツールが呼ばれるたびに読む（`./permissions.ts`）。範囲・操作の項目が無いフォーム
+  // （選択を追加する前に開いた同意画面など）からの送信では、項目が無いものは今の値のままにする
   if (
-    formData.has(MCP_PERMISSIONS_FIELD_NAME) &&
+    (formData.has(MCP_PERMISSIONS_FIELD_NAME) ||
+      formData.has(MCP_OPERATIONS_FIELD_NAME)) &&
     !(await saveMcpPermissionsFromForm(
       user.id,
       authRequest.clientId,
@@ -187,7 +191,7 @@ async function handleAuthorizePost(
     ))
   ) {
     return new Response(
-      "読み取りを許可する範囲が正しくありません。接続するアプリから、もう一度やり直してください。",
+      "許可する範囲が正しくありません。接続するアプリから、もう一度やり直してください。",
       { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } },
     );
   }

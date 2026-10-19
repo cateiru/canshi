@@ -29,7 +29,7 @@ const NO_LAST_USED_AT = "記録がありません";
 
 /**
  * ChatGPT などの AI のアプリ（MCP クライアント）に、同意画面（`/oauth/authorize`）で
- * 許可した接続の一覧。接続ごとに、読み取れる範囲の設定（`./[connectionId]`）と解除ができる
+ * 許可した接続の一覧。接続ごとに、読み取れる範囲・許可する操作の設定（`./[connectionId]`）と解除ができる
  */
 export default async function AiConnectionsPage() {
   const user = await requireUser();
@@ -50,7 +50,7 @@ export default async function AiConnectionsPage() {
           AIとの接続
         </RecordPageHeading>
         <p className={styles.description}>
-          接続しているアプリの確認や解除、アプリごとに読み取れる情報の設定ができます。
+          接続しているアプリの確認や解除、アプリごとに読み取れる情報と許可する操作の設定ができます。
         </p>
       </header>
 
@@ -129,7 +129,7 @@ export default async function AiConnectionsPage() {
                           href={`/settings/ai-connections/${connection.id}`}
                           leftIcon={TbEye}
                         >
-                          読み取る範囲
+                          許可する範囲
                         </ButtonLink>
                         <RevokeMcpConnectionButton
                           connectionId={connection.id}
