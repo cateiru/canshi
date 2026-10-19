@@ -8,13 +8,6 @@ import { FEEDING_MODES, type FeedingMode } from "@/db/schema/feeding-modes";
 import styles from "./FeedingModeField.module.css";
 import { FEEDING_MODE_HELP_HREF, FEEDING_MODE_LABEL } from "./labels";
 
-const FEEDING_MODE_DESCRIPTION: Record<FeedingMode, string> = {
-  strict:
-    "与えた量・残した量をグラム単位で記録し、食べた量とカロリーを計算します。",
-  approximate:
-    "与えた量・残した量をおおまかな段階で記録します。グラフやカロリーの計算には含まれません。",
-};
-
 type FeedingModeFieldProps = {
   value: FeedingMode;
   onChange: (mode: FeedingMode) => void;
@@ -23,7 +16,8 @@ type FeedingModeFieldProps = {
 
 /**
  * ごはん記録・プリセットのフォームで「厳格モード」「あいまいモード」を選ぶ切り替え。
- * モードは記録（プリセット）単位で選び、すべての商品に同じモードが適用される
+ * モードは記録（プリセット）単位で選び、すべての商品に同じモードが適用される。
+ * 各モードの説明はフォームに並べず、ヘルプページへのリンクに任せる
  */
 export function FeedingModeField({
   value,
@@ -31,7 +25,6 @@ export function FeedingModeField({
   errorMessage,
 }: FeedingModeFieldProps) {
   const headingId = useId();
-  const descriptionId = useId();
 
   return (
     <section className={styles.section} aria-labelledby={headingId}>
@@ -53,11 +46,7 @@ export function FeedingModeField({
         value={value}
         onChange={onChange}
         aria-label="記録方法"
-        aria-describedby={descriptionId}
       />
-      <p id={descriptionId} className={styles.description}>
-        {FEEDING_MODE_DESCRIPTION[value]}
-      </p>
       {errorMessage ? (
         <p className={styles.errorMessage}>{errorMessage}</p>
       ) : null}

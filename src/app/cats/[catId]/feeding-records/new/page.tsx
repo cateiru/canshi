@@ -87,6 +87,7 @@ export default async function NewFeedingRecordPage({
         foodProductImageUrls={foodProductImageUrls}
         recentlyUsedFoodProductIds={recentlyUsedFoodProductIds}
         presets={presets}
+        presetHouseholdId={cat.householdId}
         submitLabel="記録する"
       />
     </main>
