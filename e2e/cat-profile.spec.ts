@@ -15,9 +15,18 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
   await page.getByLabel("性別").click();
   await page.getByRole("option", { name: "メス" }).click();
   await page.getByLabel("生年月日", { exact: true }).fill("2020-04-01");
-  // ひらがなで途中まで入力すると、カタカナの猫種が候補に出る
-  await page.getByRole("combobox", { name: "猫種" }).fill("まんち");
-  await page.getByRole("option", { name: "マンチカン", exact: true }).click();
+  // ひらがなで途中まで入力すると、カタカナの猫種が候補に出る。
+  // 入力欄を画面に入れるためのスクロールが候補の表示より後に起きると、react-aria が候補を
+  // 閉じるため、選べるまで入力し直す（同じ値を入れ直しても候補は開かないため、先に消す）
+  const breed = page.getByRole("combobox", { name: "猫種" });
+  await expect(async () => {
+    await breed.clear();
+    await breed.fill("まんち");
+    await page
+      .getByRole("option", { name: "マンチカン", exact: true })
+      .click({ timeout: 2_000 });
+  }).toPass();
+  await expect(breed).toHaveValue("マンチカン");
   await page.getByLabel("お迎え日").fill("2020-06-01");
   await page.getByRole("button", { name: "登録する" }).click();
 
