@@ -18,8 +18,8 @@ import styles from "./DropdownMenu.module.css";
 export type DropdownMenuItem = {
   id: string;
   label: string;
-  /** 選んだときに移動するページ */
-  href: string;
+  /** 選んだときに移動するページ。無い項目は選ぶと `onAction` を呼ぶ */
+  href?: string;
   icon?: ButtonIcon;
 };
 
@@ -27,15 +27,23 @@ export type DropdownMenuProps = {
   /** メニューを開くボタンの文字 */
   label: string;
   items: DropdownMenuItem[];
+  /** `href` の無い項目を選んだときに、その項目の `id` で呼ぶ */
+  onAction?: (id: string) => void;
+  isDisabled?: boolean;
+  /** ボタンの文字だけでは何のメニューか分からないときの、ボタンの名前 */
+  "aria-label"?: string;
   variant?: ButtonVariant;
   leftIcon?: ButtonIcon;
   className?: string;
 };
 
-/** ボタンを押すと、移動先の候補をメニューで開く */
+/** ボタンを押すと、移動先や操作の候補をメニューで開く */
 export function DropdownMenu({
   label,
   items,
+  onAction,
+  isDisabled,
+  "aria-label": ariaLabel,
   variant = "secondary",
   leftIcon,
   className,
@@ -46,13 +54,21 @@ export function DropdownMenu({
     // メニュー項目の href を全体の読み込みではなく Next.js のページ遷移で開く
     <RouterProvider navigate={router.push}>
       <MenuTrigger>
-        <AriaButton className={getButtonClassName(variant, className)}>
+        <AriaButton
+          isDisabled={isDisabled}
+          aria-label={ariaLabel}
+          className={getButtonClassName(variant, className)}
+        >
           <ButtonContent leftIcon={leftIcon} rightIcon={TbChevronDown}>
             {label}
           </ButtonContent>
         </AriaButton>
         <Popover placement="bottom end" className={styles.popover}>
-          <Menu items={items} className={styles.menu}>
+          <Menu
+            items={items}
+            onAction={(key) => onAction?.(String(key))}
+            className={styles.menu}
+          >
             {(item) => (
               <MenuItem
                 id={item.id}

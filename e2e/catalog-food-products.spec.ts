@@ -61,13 +61,12 @@ test("共通のごはん商品を検索して家に追加し、追加した商�
   await expect(candidate).toBeVisible();
   await expect(candidate).toContainText("一般食 ・ ウェット ・ 40kcal/100g");
   await expect(candidate).toContainText("対象：シニア");
-  // 内容量の候補から、追加する内容量を選ぶ
+  // 追加するボタンのメニューで、内容量の候補から追加する内容量を選ぶ
   await expect(candidate).toContainText("14g/本 / 70g");
-  await candidate.getByRole("button", { name: /内容量/ }).click();
-  await page.getByRole("option", { name: "70g" }).click();
   await candidate
     .getByRole("button", { name: `${productName}を追加する` })
     .click();
+  await page.getByRole("menuitem", { name: "70g" }).click();
 
   // 家のごはん商品一覧に、内容を写した商品が追加される
   await expect(page).toHaveURL(/\/food-products$/);

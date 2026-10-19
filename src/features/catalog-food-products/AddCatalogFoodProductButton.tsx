@@ -1,7 +1,8 @@
 "use client";
 
+import { startTransition, useRef } from "react";
 import { TbPlus } from "react-icons/tb";
-import { Button, Select, type SelectOption } from "@/components/ui";
+import { Button, DropdownMenu } from "@/components/ui";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import styles from "./AddCatalogFoodProductButton.module.css";
 import type { AddCatalogFoodProductState } from "./actions";
@@ -17,17 +18,17 @@ type AddCatalogFoodProductButtonProps = {
   returnToHousehold: boolean;
   productName: string;
   /**
-   * 内容量の候補（値は `toPackageSizeValue`）。2 つ以上あるときは選択欄で選ばせ、
-   * 1 つだけのときはその内容量で追加する
+   * 内容量の候補（`value` は `toPackageSizeValue`）。2 つ以上あるときは追加するボタンの
+   * メニューで選ばせ、1 つだけのときはその内容量で追加する
    */
-  packageSizes: SelectOption[];
+  packageSizes: { value: string; label: string }[];
 };
 
 const initialState: AddCatalogFoodProductState = {};
 
 /**
- * 共通のごはん商品を家に追加するボタン。内容量の候補が複数あるときは、追加する内容量も選ぶ。
- * 追加できると家のごはん商品一覧へ移動する
+ * 共通のごはん商品を家に追加するボタン。内容量の候補が複数あるときはメニューを開き、
+ * 選んだ内容量で追加する。追加できると家のごはん商品一覧へ移動する
  */
 export function AddCatalogFoodProductButton({
   action,
@@ -42,37 +43,51 @@ export function AddCatalogFoodProductButton({
     action,
     initialState,
   );
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const addWithPackageSize = (packageSize: string) => {
+    const formData = new FormData(formRef.current ?? undefined);
+    formData.set("packageSize", packageSize);
+    startTransition(() => formAction(formData));
+  };
 
   return (
-    <form action={formAction} className={styles.form}>
+    <form ref={formRef} action={formAction} className={styles.form}>
       <input type="hidden" name="householdId" value={householdId} />
       {returnToHousehold ? (
         <input type="hidden" name="returnToHousehold" value="1" />
       ) : null}
       {packageSizes.length > 1 ? (
-        <Select
-          name="packageSize"
-          label="内容量"
-          options={packageSizes}
-          defaultSelectedKey={packageSizes[0].value}
-          className={styles.packageSize}
+        <DropdownMenu
+          label={isPending ? "追加中..." : "追加する"}
+          aria-label={`${productName}を追加する`}
+          variant="primary"
+          leftIcon={TbPlus}
+          isDisabled={isPending}
+          items={packageSizes.map((size) => ({
+            id: size.value,
+            label: size.label,
+          }))}
+          onAction={addWithPackageSize}
         />
       ) : (
-        <input
-          type="hidden"
-          name="packageSize"
-          value={packageSizes[0]?.value ?? ""}
-        />
+        <>
+          <input
+            type="hidden"
+            name="packageSize"
+            value={packageSizes[0]?.value ?? ""}
+          />
+          <Button
+            type="submit"
+            variant="primary"
+            leftIcon={TbPlus}
+            isDisabled={isPending}
+            aria-label={`${productName}を追加する`}
+          >
+            {isPending ? "追加中..." : "追加する"}
+          </Button>
+        </>
       )}
-      <Button
-        type="submit"
-        variant="primary"
-        leftIcon={TbPlus}
-        isDisabled={isPending}
-        aria-label={`${productName}を追加する`}
-      >
-        {isPending ? "追加中..." : "追加する"}
-      </Button>
       {state.error ? (
         <p className={styles.errorMessage} role="alert">
           {state.error}
