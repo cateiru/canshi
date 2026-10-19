@@ -25,6 +25,9 @@ export const medications = sqliteTable("medications", {
   hospitalVisitId: text("hospital_visit_id").references(
     () => hospitalVisits.id,
   ),
+  // 「服薬歴に移す」で手動で服薬歴へ移した日時。null なら手動では移していない。
+  // 終了予定日を過ぎた服薬予定は、この列に関わらず服薬歴に表示する（src/features/medications/history.ts）
+  archivedAt: integer("archived_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

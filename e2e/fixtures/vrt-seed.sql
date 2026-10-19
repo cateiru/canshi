@@ -181,6 +181,11 @@ INSERT INTO medications (id, cat_id, name, dose_amount, doses_per_day, start_dat
 VALUES ('vrt-med-2', 'vrt-cat-populated', 'VRT整腸剤', '0.5錠', 1, '2024-06-01',
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
+-- 服薬歴: 終了予定日を過ぎた服薬予定（折りたたんだ「服薬歴」に表示される）
+INSERT INTO medications (id, cat_id, name, dose_amount, doses_per_day, start_date, end_date, created_at, updated_at)
+VALUES ('vrt-med-3', 'vrt-cat-populated', 'VRT点眼薬', '1滴', 3, '2024-05-01', '2024-05-14',
+  strftime('%s', '2024-05-01 00:00:00'), strftime('%s', '2024-05-01 00:00:00'));
+
 INSERT INTO medication_doses (id, cat_id, medication_id, occurred_at, was_administered, created_at, updated_at)
 VALUES ('vrt-dose-1', 'vrt-cat-populated', 'vrt-med-1', strftime('%s', '2024-06-02 08:00:00'), 1,
   strftime('%s', '2024-06-02 08:00:00'), strftime('%s', '2024-06-02 08:00:00'));

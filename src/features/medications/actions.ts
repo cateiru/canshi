@@ -13,6 +13,7 @@ import { requireCatAccess } from "@/features/auth/session";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
+import { getNaiveUtcNow } from "@/features/shared/datetime";
 import { MEDICATION_MEDIA_TYPE } from "./media";
 import { type MedicationFormFieldErrors, medicationFormSchema } from "./schema";
 
@@ -203,5 +204,41 @@ export async function deleteMedicationAction(
       .delete(medications)
       .where(and(eq(medications.id, id), eq(medications.catId, catId))),
   ]);
+  redirect(`/cats/${catId}/medications`, "replace");
+}
+
+/**
+ * 服薬予定を手動で服薬歴に移す。終了予定日を過ぎたものは何もしなくても服薬歴に
+ * 表示されるため、ここでは飲み終わった（やめた）ものを終了予定日より前に移す
+ */
+export async function archiveMedicationAction(
+  catId: string,
+  id: string,
+): Promise<void> {
+  await requireCatAccess(catId);
+  const db = getDb();
+  // 発生日時と同じく、JST の見た目の数字を UTC として保存する（src/features/shared/datetime.ts）
+  const now = getNaiveUtcNow();
+  await db
+    .update(medications)
+    .set({ archivedAt: now, updatedAt: new Date() })
+    .where(and(eq(medications.id, id), eq(medications.catId, catId)));
+  redirect(`/cats/${catId}/medications`, "replace");
+}
+
+/**
+ * 手動で服薬歴に移した服薬予定を、服薬予定に戻す。終了予定日を過ぎたものは
+ * 戻しても服薬歴に表示されたままになるため、終了予定日を編集してもらう
+ */
+export async function unarchiveMedicationAction(
+  catId: string,
+  id: string,
+): Promise<void> {
+  await requireCatAccess(catId);
+  const db = getDb();
+  await db
+    .update(medications)
+    .set({ archivedAt: null, updatedAt: new Date() })
+    .where(and(eq(medications.id, id), eq(medications.catId, catId)));
   redirect(`/cats/${catId}/medications`, "replace");
 }

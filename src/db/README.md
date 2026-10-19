@@ -197,6 +197,14 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     紐付けだけを外し、受診日を変えても支出日を変えない（`src/features/expenses/hospitalVisitExpense.ts`）
 - 家ごとの月別検索用に `(household_id, spent_at)` のインデックスを設定する
 
+## 服薬予定と服薬歴（`medications`）
+
+- 服薬予定の一覧は、服用中のものと、折りたたんで表示する「服薬歴」に分ける（`src/features/medications/history.ts`）
+- 次のどちらかに当てはまるものを服薬歴にする
+  - 終了予定日（`end_date`）を過ぎたもの（自動）。終了予定日の当日はまだ服用中として扱い、「今日」は JST で判定する
+  - 「服薬歴に移す」で手動で移したもの。移した日時を `archived_at`（`0051`）に持ち、「服薬予定に戻す」で null に戻す
+- 終了予定日を過ぎたものは `archived_at` を null にしても服薬歴のままになるため、服薬予定に戻すには終了予定日を変更する
+
 ## 画像・動画（`media_assets`）
 
 - 画像・動画は個別の記録テーブルにカラムを持たせず、`media_assets` テーブルで一元管理する
