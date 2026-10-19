@@ -23,6 +23,11 @@
   padding: 0;
 }
 
+/* 服薬歴の折りたたみと同じ面の色にならないよう、中のカードはページの背景色にする */
+.main .historyCard {
+  background: var(--color-bg);
+}
+
 .recordHeader {
   display: flex;
   align-items: flex-start;
@@ -70,7 +75,16 @@
   margin-top: var(--space-3);
 }
 
+.historyNote {
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
 .primaryAction {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   margin-top: var(--space-4);
 }
 

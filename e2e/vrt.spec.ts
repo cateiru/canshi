@@ -785,6 +785,17 @@ test.describe("掃除の実施記録（対象ごと・データがあるケー�
   });
 });
 
+test("服薬予定一覧（服薬歴を開いたケース）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${CAT}/medications`);
+  await page.getByRole("button", { name: /^服薬歴 \d+件$/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "VRT点眼薬", level: 3 }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("投薬実績一覧（データがあるケース）の見た目", async ({
   page,
 }, testInfo) => {
