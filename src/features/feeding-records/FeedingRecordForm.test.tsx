@@ -148,4 +148,64 @@ describe("FeedingRecordForm", () => {
     const given = screen.getByRole("radiogroup", { name: "与えた量" });
     expect(within(given).getByRole("radio", { name: "多め" })).toBeChecked();
   });
+
+  it("家の ID を渡すと、プリセットの設定へのリンクを表示する", () => {
+    const preset: FeedingPresetWithItems = {
+      id: "preset-1",
+      householdId: "household-1",
+      name: "朝ごはん",
+      mode: "strict",
+      items: [],
+    };
+    render(
+      <FeedingRecordForm
+        action={action}
+        foodProducts={[createFoodProduct({})]}
+        foodProductImageUrls={{}}
+        recentlyUsedFoodProductIds={[]}
+        presets={[preset]}
+        presetHouseholdId="household-1"
+        submitLabel="記録する"
+      />,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "プリセットを設定する" }),
+    ).toHaveAttribute("href", "/feeding-presets?householdId=household-1");
+  });
+
+  it("プリセットがなくても家の ID を渡すと、プリセットの登録へのリンクを表示する", () => {
+    render(
+      <FeedingRecordForm
+        action={action}
+        foodProducts={[createFoodProduct({})]}
+        foodProductImageUrls={{}}
+        recentlyUsedFoodProductIds={[]}
+        presets={[]}
+        presetHouseholdId="household-1"
+        submitLabel="記録する"
+      />,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "プリセットを登録する" }),
+    ).toHaveAttribute("href", "/feeding-presets/new?householdId=household-1");
+  });
+
+  it("家の ID を渡さずプリセットもないときは、プリセットの欄を表示しない", () => {
+    render(
+      <FeedingRecordForm
+        action={action}
+        foodProducts={[createFoodProduct({})]}
+        foodProductImageUrls={{}}
+        recentlyUsedFoodProductIds={[]}
+        presets={[]}
+        submitLabel="記録する"
+      />,
+    );
+
+    expect(
+      screen.queryByRole("heading", { name: "プリセット" }),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -30,10 +30,6 @@
   text-underline-offset: 2px;
 }
 
-.description {
-  font-size: var(--text-sm);
-}
-
 .errorMessage {
   font-size: var(--text-sm);
   color: var(--color-error-strong);
