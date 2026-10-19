@@ -43,4 +43,31 @@ describe("DropdownMenu", () => {
       undefined,
     );
   });
+
+  it("href の無い項目を選ぶと、ページを移動せずに onAction をその項目の id で呼ぶ", () => {
+    const onAction = vi.fn();
+    render(
+      <DropdownMenu
+        label="追加する"
+        aria-label="カリカリを追加する"
+        items={[
+          { id: "small", label: "14g/本" },
+          { id: "large", label: "70g" },
+        ]}
+        onAction={onAction}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "カリカリを追加する" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "70g" }));
+
+    expect(onAction).toHaveBeenCalledWith("large");
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("無効にするとボタンを押せない", () => {
+    render(<DropdownMenu label="追加中..." items={ITEMS} isDisabled />);
+
+    expect(screen.getByRole("button", { name: "追加中..." })).toBeDisabled();
+  });
 });

@@ -351,6 +351,13 @@
       "when": 1792299068707,
       "tag": "0049_third_ricochet",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "6",
+      "when": 1792375775959,
+      "tag": "0050_big_solo",
+      "breakpoints": true
     }
   ]
 }

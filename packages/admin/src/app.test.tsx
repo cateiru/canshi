@@ -319,6 +319,7 @@ describe("共通のごはん商品", () => {
         // 選んだ順ではなく決まった順で保存する
         life_stages: '["adult","senior"]',
         target_breed: null,
+        package_sizes: '[{"amountG":500,"unit":null}]',
       }),
     ]);
     const [image] = await listImages();
@@ -348,6 +349,97 @@ describe("共通のごはん商品", () => {
     expect(new Uint8Array(await imageResponse.arrayBuffer())).toEqual(
       JPEG_BYTES,
     );
+  });
+
+  it("内容量の候補を並べた順に登録し、先頭の候補を元の内容量の列にも書く", async () => {
+    const response = await postMultipart(
+      "/food-products",
+      productForm({
+        // 空の行は捨て、単位の先頭の「1」は取り除く
+        packageAmountG: ["70", "", "12.3"],
+        packageUnit: ["", "", "1本"],
+      }),
+    );
+    expect(response.status).toBe(303);
+    const [product] = await listProducts();
+    expect(product).toMatchObject({
+      package_amount_g: 70,
+      package_unit: null,
+      package_sizes:
+        '[{"amountG":70,"unit":null},{"amountG":12.3,"unit":"本"}]',
+    });
+
+    const listHtml = await (await request("/food-products")).text();
+    expect(listHtml).toContain("70 g");
+    expect(listHtml).toContain("12.3 g/本");
+    const editHtml = await (
+      await request(`/food-products/${product.id}/edit`)
+    ).text();
+    expect(editHtml).toContain('value="12.3"');
+    expect(editHtml).toContain('value="本"');
+  });
+
+  it("候補を追加する前に登録された商品は、元の内容量を候補として表示する", async () => {
+    await env.DB.prepare(
+      `INSERT INTO catalog_food_products
+        (id, name, kcal_per_100g, package_amount_g, package_unit, nutrition_type, texture_type)
+      VALUES ('legacy', 'むかしの商品', 380, 40, '袋', 'complete', 'wet')`,
+    ).run();
+    expect(
+      await (await request("/food-products/legacy/edit")).text(),
+    ).toContain('value="40"');
+    expect(await (await request("/food-products")).text()).toContain("40 g/袋");
+  });
+
+  it("古い管理画面が元の内容量の列だけを更新していたら、その値を先頭の候補として表示する", async () => {
+    await env.DB.prepare(
+      `INSERT INTO catalog_food_products
+        (id, name, kcal_per_100g, package_amount_g, package_unit, nutrition_type, texture_type, package_sizes)
+      VALUES ('edited', '古い管理画面で編集した商品', 380, 50, NULL, 'complete', 'wet',
+        '[{"amountG":40,"unit":"袋"},{"amountG":160,"unit":null}]')`,
+    ).run();
+    const html = await (await request("/food-products/edited/edit")).text();
+    expect(html).toContain('value="50"');
+    expect(html).not.toContain('value="40"');
+    expect(html).toContain('value="160"');
+  });
+
+  it("内容量の候補が空・誤り・重複のときは登録しない", async () => {
+    const cases = [
+      [
+        { packageAmountG: "", packageUnit: "" },
+        "内容量（g）は0より大きい値を入力してください",
+      ],
+      [
+        { packageAmountG: ["70", "abc"], packageUnit: ["", ""] },
+        "内容量（g）は0より大きい値を入力してください",
+      ],
+      [
+        { packageAmountG: ["70", "70"], packageUnit: ["袋", "1袋"] },
+        "同じ内容量がすでにあります",
+      ],
+      [
+        {
+          packageAmountG: Array.from({ length: 11 }, (_, index) =>
+            String(index + 1),
+          ),
+          packageUnit: Array.from({ length: 11 }, () => ""),
+        },
+        "内容量の候補は10件までです",
+      ],
+    ] as const;
+    for (const [values, message] of cases) {
+      const response = await postMultipart(
+        "/food-products",
+        productForm({
+          packageAmountG: [...values.packageAmountG],
+          packageUnit: [...values.packageUnit],
+        }),
+      );
+      expect(response.status).toBe(400);
+      expect(await response.text()).toContain(message);
+    }
+    expect(await listProducts()).toEqual([]);
   });
 
   it("入力に誤りがあるときは登録せず、入力値とエラーを表示し直す", async () => {

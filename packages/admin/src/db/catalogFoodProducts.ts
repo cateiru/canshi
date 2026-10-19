@@ -11,6 +11,7 @@ import type {
   CatalogFoodProductValues,
   LifeStage,
   NutritionType,
+  PackageSize,
   TextureType,
 } from "../catalog/form";
 import type { CatalogImageMimeType } from "../catalog/image";
@@ -49,6 +50,7 @@ type CatalogFoodProductRow = {
   kcal_per_100g: number;
   package_amount_g: number;
   package_unit: string | null;
+  package_sizes: string;
   nutrition_type: NutritionType;
   texture_type: TextureType;
   life_stages: string;
@@ -87,14 +89,37 @@ function parseLifeStages(value: string): LifeStage[] {
   }
 }
 
+/**
+ * 内容量の候補。先頭の候補は `package_amount_g`・`package_unit` から取り、`package_sizes` からは
+ * 2 件目以降だけを使う（メインアプリの `catalogPackageSizes` と同じ）。候補を知らない古い管理画面が
+ * `package_amount_g`・`package_unit` だけを登録・更新した場合も、その値を反映するため
+ */
+function parsePackageSizes(row: CatalogFoodProductRow): PackageSize[] {
+  const first = { amountG: row.package_amount_g, unit: row.package_unit };
+  let rest: PackageSize[] = [];
+  try {
+    const parsed: unknown = JSON.parse(row.package_sizes);
+    if (Array.isArray(parsed)) {
+      rest = (parsed as PackageSize[]).slice(1);
+    }
+  } catch {
+    // 先頭の候補だけにする
+  }
+  return [
+    first,
+    ...rest.filter(
+      (size) => size.amountG !== first.amountG || size.unit !== first.unit,
+    ),
+  ];
+}
+
 function toCatalogFoodProduct(row: CatalogFoodProductRow): CatalogFoodProduct {
   return {
     id: row.id,
     name: row.name,
     manufacturer: row.manufacturer,
     kcalPer100g: row.kcal_per_100g,
-    packageAmountG: row.package_amount_g,
-    packageUnit: row.package_unit,
+    packageSizes: parsePackageSizes(row),
     nutritionType: row.nutrition_type,
     textureType: row.texture_type,
     lifeStages: parseLifeStages(row.life_stages),
@@ -255,17 +280,23 @@ async function batchWithImage(
   }
 }
 
+/**
+ * 文に渡す値。`package_amount_g`・`package_unit` には、内容量の候補を追加する前のコード
+ * （デプロイ前のメインアプリなど）のために先頭の候補を書く
+ */
 function valueParams(values: CatalogFoodProductValues) {
+  const [first] = values.packageSizes;
   return [
     values.name,
     values.manufacturer,
     values.kcalPer100g,
-    values.packageAmountG,
-    values.packageUnit,
+    first.amountG,
+    first.unit,
     values.nutritionType,
     values.textureType,
     JSON.stringify(values.lifeStages),
     values.targetBreed,
+    JSON.stringify(values.packageSizes),
   ];
 }
 
@@ -282,8 +313,8 @@ export async function createCatalogFoodProduct(
     .prepare(
       `INSERT INTO catalog_food_products
         (id, name, manufacturer, kcal_per_100g, package_amount_g, package_unit,
-         nutrition_type, texture_type, life_stages, target_breed)
-      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
+         nutrition_type, texture_type, life_stages, target_breed, package_sizes)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`,
     )
     .bind(id, ...valueParams(values));
   const uploaded = image
@@ -341,7 +372,7 @@ export async function updateCatalogFoodProduct(
         `UPDATE catalog_food_products SET
           name = ?2, manufacturer = ?3, kcal_per_100g = ?4, package_amount_g = ?5,
           package_unit = ?6, nutrition_type = ?7, texture_type = ?8, life_stages = ?9,
-          target_breed = ?10, updated_at = unixepoch()
+          target_breed = ?10, package_sizes = ?11, updated_at = unixepoch()
         WHERE id = ?1
         RETURNING id`,
       )

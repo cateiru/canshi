@@ -97,12 +97,15 @@ VALUES ('vrt-cat-busy', 'VRT記録多数猫', 'unknown', NULL, NULL, NULL,
 
 -- 共通のごはん商品（管理画面から登録し、ごはん商品の登録時に検索して家に追加する）。
 -- vrt-catalog-1 は VRT の家に追加済み（vrt-food-1 の追加元）、vrt-catalog-2 は未追加で、
--- 検索結果の「追加済み」と「追加する」の両方を再現する。画像は R2 に置けないため持たない
-INSERT INTO catalog_food_products (id, name, manufacturer, kcal_per_100g, package_amount_g, package_unit, nutrition_type, texture_type, life_stages, target_breed, created_at, updated_at)
+-- 検索結果の「追加済み」と「追加する」の両方を再現する。vrt-catalog-2 は内容量の候補を 2 つ持ち、
+-- 追加するボタンの内容量のメニューを再現する。画像は R2 に置けないため持たない
+INSERT INTO catalog_food_products (id, name, manufacturer, kcal_per_100g, package_amount_g, package_unit, nutrition_type, texture_type, life_stages, target_breed, package_sizes, created_at, updated_at)
 VALUES
   ('vrt-catalog-1', 'VRTテストフード', 'VRTフーズ', 350, 1000, NULL, 'complete', 'dry', '["adult","senior"]', 'ペルシャ',
+    '[{"amountG":1000,"unit":null}]',
     strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00')),
   ('vrt-catalog-2', 'VRTまぐろパウチ', 'VRTフーズ', 70, 40, '袋', 'general', 'wet', '["kitten"]', NULL,
+    '[{"amountG":40,"unit":"袋"},{"amountG":160,"unit":null}]',
     strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
 -- メーカー名・対象の猫・猫種も入れ、商品一覧のカードで表示されるケースを再現する

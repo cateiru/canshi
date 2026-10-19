@@ -130,7 +130,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 ## 共通のごはん商品（`catalog_food_products`）
 
 - どの家のユーザーも、ごはん商品を登録するときに検索して家に追加できる商品（#283、`0047`）。家に属さず、
-  管理画面（`packages/admin`）だけが登録・編集・削除する。列は `food_products` から `household_id` を除いたもの
+  管理画面（`packages/admin`）だけが登録・編集・削除する。列は `food_products` から `household_id` を除き、
+  内容量の候補（`package_sizes`）を足したもの
 - 家に追加するときは、内容を写した `food_products` の行を作る（`src/features/catalog-food-products/actions.ts`）。
   追加した商品は手動で登録した商品と同じく家ごとに自由に編集でき、共通のごはん商品の変更・削除は反映しない
   - 追加は、共通のごはん商品と追加先の家のメンバーの行を結合した `INSERT ... SELECT` の 1 文で行い、
@@ -150,6 +151,17 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 家に追加するときは、R2 から元データを読み出して通常のアップロードと同じ経路（`storeMediaAsset`）で
     家の商品の画像として保存し直す。家の商品の画像の差し替え・削除で共通のごはん商品の画像を消さないよう、
     R2 のオブジェクトは共有しない。保存できなかったときも商品は追加する
+- 内容量は、容量違いの商品を 1 つにまとめるため複数の候補を持てる（#346、`0050`）。`package_sizes` に
+  `{ amountG, unit }` の JSON 配列で、管理画面で並べた順に保存する（1〜10 件・同じ g と単位の組み合わせは重複させない）
+  - 家に追加するときに候補から 1 つ選び、`food_products.package_amount_g`・`package_unit` に写す。追加の
+    `INSERT ... SELECT` の中で、選んだ値（g と単位）がその時点の候補にあるかを `json_each` で確かめ、なければ
+    追加しない（画面を開いてから候補が編集されたときに、候補にない内容量を追加しない）
+  - 同じ家には、別の内容量を選んでも同じ共通のごはん商品を 1 件だけ追加する（上の一意インデックスのまま）
+  - `package_amount_g`・`package_unit` は、`package_sizes` を追加する前のコードのために残し、管理画面は先頭の
+    候補を書き続ける（後で削除する）。`0050` を適用してから管理画面をデプロイするまでの間は、古い管理画面が
+    `package_amount_g`・`package_unit` だけを登録・更新する（`package_sizes` は空か、`0050` で埋めた値のまま残る）。
+    その更新も反映するため、読む側は先頭の候補を `package_amount_g`・`package_unit` から取り、`package_sizes` からは
+    2 件目以降だけを使う（`src/features/catalog-food-products/packageSizes.ts`）
 - 検索結果の並び順のため `(manufacturer, name)` のインデックスを設定する
 
 ## 支出記録（`expense_records`・`expense_record_cats`・`expense_record_hospital_visits`）

@@ -4,8 +4,11 @@ import {
   type CatalogFoodProductInput,
   LIFE_STAGES,
   type LifeStage,
+  MAX_PACKAGE_SIZES,
   NUTRITION_TYPES,
   type NutritionType,
+  type PackageSize,
+  type PackageSizeInput,
   TEXTURE_TYPES,
   type TextureType,
 } from "../catalog/form";
@@ -70,6 +73,11 @@ function CatalogChangeNotice(props: { change: CatalogChange }) {
 
 function productPath(id: string) {
   return `/food-products/${encodeURIComponent(id)}`;
+}
+
+/** メインアプリの `formatPackageAmount` と同じく「14 g/本」「1500 g」 */
+function formatPackageSize(size: PackageSize) {
+  return `${size.amountG} g${size.unit ? `/${size.unit}` : ""}`;
 }
 
 function formatTarget(product: CatalogFoodProduct) {
@@ -160,8 +168,11 @@ export function CatalogFoodProductsPage(props: {
                     </td>
                     <td class="num">{product.kcalPer100g} kcal/100g</td>
                     <td class="num">
-                      {product.packageAmountG} g
-                      {product.packageUnit ? `/${product.packageUnit}` : ""}
+                      {product.packageSizes.map((size) => (
+                        <span class="package-size">
+                          {formatPackageSize(size)}
+                        </span>
+                      ))}
                     </td>
                     <td>{target ?? <span class="empty">-</span>}</td>
                     <td class="num">{product.addedCount}</td>
@@ -281,13 +292,7 @@ function FieldDescription(props: { id: string; children: Child }) {
   );
 }
 
-type TextFieldName =
-  | "name"
-  | "manufacturer"
-  | "kcalPer100g"
-  | "packageAmountG"
-  | "packageUnit"
-  | "targetBreed";
+type TextFieldName = "name" | "manufacturer" | "kcalPer100g" | "targetBreed";
 
 /** メインアプリの FormField と同じく、ラベル・入力欄・補足説明・エラーを縦に並べる */
 function TextField(props: {
@@ -368,6 +373,149 @@ function SelectField<T extends string>(props: {
   );
 }
 
+// 内容量の候補の行を追加・削除する。追加は <template> の空の行を複製し、入力欄の ID が重ならないよう
+// 行の番号（__INDEX__）を振り直す。削除は行が 1 つだけのときは入力を消すだけにする。
+// 上限まで並んだら追加ボタンを押せなくする。固定の文字列で、利用者の入力は含めない
+const PACKAGE_SIZES_SCRIPT = `
+document.querySelectorAll("[data-package-sizes]").forEach(function (field) {
+  var list = field.querySelector("[data-package-size-rows]");
+  var template = field.querySelector("template");
+  var add = field.querySelector("[data-add-package-size]");
+  var max = Number(field.dataset.max);
+  var next = list.children.length;
+  function update() {
+    add.disabled = list.children.length >= max;
+  }
+  add.addEventListener("click", function () {
+    var holder = document.createElement("div");
+    holder.innerHTML = template.innerHTML.replace(/__INDEX__/g, String(next++));
+    var row = holder.firstElementChild;
+    list.appendChild(row);
+    row.querySelector("input").focus();
+    update();
+  });
+  list.addEventListener("click", function (event) {
+    var button = event.target.closest("[data-remove-package-size]");
+    if (!button) return;
+    var row = button.closest("[data-package-size-row]");
+    if (list.children.length > 1) {
+      row.remove();
+      add.focus();
+    } else {
+      row.querySelectorAll("input").forEach(function (input) {
+        input.value = "";
+      });
+    }
+    update();
+  });
+  update();
+});
+`;
+
+/** 内容量の候補の 1 行（g・単位・削除ボタン） */
+function PackageSizeRow(props: {
+  index: number | "__INDEX__";
+  row: PackageSizeInput;
+  errors?: Partial<Record<keyof PackageSizeInput, string>>;
+}) {
+  const { index, row, errors = {} } = props;
+  const amountId = `field-packageAmountG-${index}`;
+  const unitId = `field-packageUnit-${index}`;
+  return (
+    <div class="package-size-row" data-package-size-row>
+      <div class="field">
+        <label for={amountId}>内容量（g）</label>
+        <input
+          id={amountId}
+          type="number"
+          name="packageAmountG"
+          value={row.amountG}
+          min="0"
+          step="any"
+          inputmode="decimal"
+          aria-invalid={errors.amountG ? "true" : undefined}
+          aria-describedby={errors.amountG ? `${amountId}-error` : undefined}
+        />
+        <FieldError id={`${amountId}-error`} message={errors.amountG} />
+      </div>
+      <div class="field">
+        <label for={unitId}>単位（任意）</label>
+        <input
+          id={unitId}
+          type="text"
+          name="packageUnit"
+          value={row.unit}
+          maxlength={10}
+          placeholder="本・袋・パック"
+          aria-invalid={errors.unit ? "true" : undefined}
+          aria-describedby={errors.unit ? `${unitId}-error` : undefined}
+        />
+        <FieldError id={`${unitId}-error`} message={errors.unit} />
+      </div>
+      {/* 削除ボタンを入力欄と同じ高さに揃えるため、ラベルと同じ高さの空きを置く */}
+      <div class="field">
+        <span class="field-label" aria-hidden="true">
+          &nbsp;
+        </span>
+        <button
+          type="button"
+          class="icon-button"
+          data-remove-package-size
+          aria-label="この内容量を削除する"
+          title="削除する"
+        >
+          <TrashIcon />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 内容量の候補の入力欄。g と単位の行を並べ、メインアプリで家に追加するときにこの中から 1 つ選ぶ。
+ * 空の行は保存しない
+ */
+function PackageSizesField(props: {
+  rows: PackageSizeInput[];
+  error?: string;
+  rowErrors?: Partial<Record<keyof PackageSizeInput, string>>[];
+}) {
+  return (
+    <fieldset
+      class="group"
+      data-package-sizes
+      data-max={String(MAX_PACKAGE_SIZES)}
+      aria-describedby="field-packageSizes-description"
+    >
+      <legend>内容量</legend>
+      <div class="package-size-rows" data-package-size-rows>
+        {props.rows.map((row, index) => (
+          <PackageSizeRow
+            index={index}
+            row={row}
+            errors={props.rowErrors?.[index]}
+          />
+        ))}
+      </div>
+      <template>
+        <PackageSizeRow index="__INDEX__" row={{ amountG: "", unit: "" }} />
+      </template>
+      <div>
+        <button type="button" class="with-icon" data-add-package-size>
+          <PlusIcon />
+          内容量を追加する
+        </button>
+      </div>
+      <FieldDescription id="field-packageSizes-description">
+        容量違いの商品は、内容量を追加して1つの商品にまとめます（
+        {MAX_PACKAGE_SIZES}
+        件まで）。家に追加するときにこの中から選び、先頭の内容量が最初に選ばれます。単位は1本・1袋あたりで登録する場合に入力し、未入力は商品全体の内容量です。
+      </FieldDescription>
+      <FieldError id="field-packageSizes-error" message={props.error} />
+    </fieldset>
+  );
+}
+
 export function CatalogFoodProductFormPage(props: {
   /** 編集するときの商品。登録では省略する */
   product?: CatalogFoodProduct;
@@ -412,25 +560,11 @@ export function CatalogFoodProductFormPage(props: {
           errors={errors}
           required
         />
-        <div class="form-row">
-          <TextField
-            name="packageAmountG"
-            label="内容量（g）"
-            type="number"
-            input={input}
-            errors={errors}
-            required
-          />
-          <TextField
-            name="packageUnit"
-            label="単位（任意）"
-            placeholder="本・袋・パック"
-            description="1本・1袋あたりで登録する場合に入力。未入力は商品全体の内容量"
-            input={input}
-            errors={errors}
-            maxlength={10}
-          />
-        </div>
+        <PackageSizesField
+          rows={input.packageSizes}
+          error={errors.packageSizes}
+          rowErrors={errors.packageSizeRows}
+        />
         <SelectField
           name="nutritionType"
           label="区分"
@@ -532,6 +666,7 @@ export function CatalogFoodProductFormPage(props: {
         </button>
       </form>
       <script dangerouslySetInnerHTML={{ __html: RESIZE_SCRIPT }} />
+      <script dangerouslySetInnerHTML={{ __html: PACKAGE_SIZES_SCRIPT }} />
     </>
   );
 }
