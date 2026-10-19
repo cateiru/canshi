@@ -1,7 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { TbCalendar, TbCheck, TbPlus, TbStack2, TbX } from "react-icons/tb";
+import {
+  TbCalendar,
+  TbCheck,
+  TbHelpCircle,
+  TbPlus,
+  TbStack2,
+  TbX,
+} from "react-icons/tb";
 import {
   Button,
   FormField,
@@ -19,6 +27,7 @@ import {
   LEFTOVER_LEVELS,
   type LeftoverLevel,
 } from "@/db/schema/feeding-modes";
+import { feedingPresetHelpHref } from "@/features/feeding-presets/labels";
 import type { FeedingPresetWithItems } from "@/features/feeding-presets/queries";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import { formatPackageAmount } from "@/features/food-products/labels";
@@ -51,6 +60,12 @@ type FeedingRecordFormProps = {
   /** 直近使用した商品の ID（新しい順）。先頭の商品を新規記録の初期選択にする */
   recentlyUsedFoodProductIds: string[];
   presets: FeedingPresetWithItems[];
+  /**
+   * プリセットのヘルプへの導線を出すときの家の ID。指定するとプリセットの見出しに
+   * ヘルプページ（そこからこの家のプリセットの登録・一覧へ進める）へのリンクを出し、
+   * プリセットがなくても見出しを表示する
+   */
+  presetHouseholdId?: string;
   feedingRecord?: FeedingRecordWithItems;
   submitLabel: string;
 };
@@ -74,6 +89,7 @@ export function FeedingRecordForm({
   foodProductImageUrls,
   recentlyUsedFoodProductIds,
   presets,
+  presetHouseholdId,
   feedingRecord,
   submitLabel,
 }: FeedingRecordFormProps) {
@@ -179,25 +195,38 @@ export function FeedingRecordForm({
         errorMessage={state.fieldErrors?.mode?.[0]}
       />
 
-      {presets.length > 0 ? (
+      {presets.length > 0 || presetHouseholdId ? (
         <div className={styles.quickSelect}>
-          <h2 className={styles.sectionHeading}>
-            <TbStack2 aria-hidden="true" size={18} />
-            プリセット
-          </h2>
-          <div className={styles.quickSelectOptions}>
-            {presets.map((preset) => (
-              <Button
-                key={preset.id}
-                type="button"
-                variant="secondary"
-                className={styles.quickSelectButton}
-                onPress={() => applyPreset(preset)}
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionHeading}>
+              <TbStack2 aria-hidden="true" size={18} />
+              プリセット
+            </h2>
+            {presetHouseholdId ? (
+              <Link
+                href={feedingPresetHelpHref(presetHouseholdId)}
+                className={styles.sectionLink}
               >
-                <span className={styles.quickSelectName}>{preset.name}</span>
-              </Button>
-            ))}
+                <TbHelpCircle aria-hidden="true" size={16} />
+                「プリセット」とは？
+              </Link>
+            ) : null}
           </div>
+          {presets.length > 0 ? (
+            <div className={styles.quickSelectOptions}>
+              {presets.map((preset) => (
+                <Button
+                  key={preset.id}
+                  type="button"
+                  variant="secondary"
+                  className={styles.quickSelectButton}
+                  onPress={() => applyPreset(preset)}
+                >
+                  <span className={styles.quickSelectName}>{preset.name}</span>
+                </Button>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

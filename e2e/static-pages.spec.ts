@@ -33,3 +33,18 @@ test("ごはん記録の記録方法のヘルプページに両モードの説�
     page.getByRole("heading", { name: "あいまいモード", exact: true }),
   ).toBeVisible();
 });
+
+test("ごはんプリセットのヘルプページから、家のプリセットの登録・一覧へ進める", async ({
+  page,
+}) => {
+  await page.goto("/help/feeding-presets?householdId=household-1");
+  await expect(
+    page.getByRole("heading", { name: "「ごはんプリセット」とは？" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "プリセットを登録する" }),
+  ).toHaveAttribute("href", "/feeding-presets/new?householdId=household-1");
+  await expect(
+    page.getByRole("link", { name: "プリセット一覧を見る" }),
+  ).toHaveAttribute("href", "/feeding-presets?householdId=household-1");
+});

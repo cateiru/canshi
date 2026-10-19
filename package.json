@@ -44,7 +44,7 @@
     "agents": "^0.28.0",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.12",
-    "next": "16.3.8",
+    "next": "16.4.2",
     "react": "19.3.1",
     "react-aria-components": "^1.21.1",
     "react-dom": "19.3.1",
@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
-    "@opennextjs/cloudflare": "1.20.9",
+    "@opennextjs/cloudflare": "1.20.12",
     "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -75,5 +75,5 @@
     "vitest": "^5.0.0",
     "wrangler": "^4.129.0"
   },
-  "packageManager": "pnpm@12.13.0"
+  "packageManager": "pnpm@12.14.0"
 }
