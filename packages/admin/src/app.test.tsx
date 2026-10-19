@@ -356,8 +356,8 @@ describe("共通のごはん商品", () => {
       "/food-products",
       productForm({
         // 空の行は捨て、単位の先頭の「1」は取り除く
-        packageAmountG: ["70", "", "12.3"],
-        packageUnit: ["", "", "1本"],
+        packageAmountG: ["70", "", "12.3", "1500"],
+        packageUnit: ["", "", "1本", ""],
       }),
     );
     expect(response.status).toBe(303);
@@ -366,12 +366,14 @@ describe("共通のごはん商品", () => {
       package_amount_g: 70,
       package_unit: null,
       package_sizes:
-        '[{"amountG":70,"unit":null},{"amountG":12.3,"unit":"本"}]',
+        '[{"amountG":70,"unit":null},{"amountG":12.3,"unit":"本"},{"amountG":1500,"unit":null}]',
     });
 
     const listHtml = await (await request("/food-products")).text();
     expect(listHtml).toContain("70 g");
     expect(listHtml).toContain("12.3 g/本");
+    // 1000g 以上は kg で表示する
+    expect(listHtml).toContain("1.5 kg");
     const editHtml = await (
       await request(`/food-products/${product.id}/edit`)
     ).text();

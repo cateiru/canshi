@@ -75,9 +75,15 @@ function productPath(id: string) {
   return `/food-products/${encodeURIComponent(id)}`;
 }
 
-/** メインアプリの `formatPackageAmount` と同じく「14 g/本」「1500 g」 */
+/**
+ * メインアプリの `formatPackageAmount` と同じく「14 g/本」「1.5 kg」（1000g 以上は kg）
+ */
 function formatPackageSize(size: PackageSize) {
-  return `${size.amountG} g${size.unit ? `/${size.unit}` : ""}`;
+  const amount =
+    size.amountG >= 1000
+      ? `${Number((size.amountG / 1000).toPrecision(12))} kg`
+      : `${size.amountG} g`;
+  return `${amount}${size.unit ? `/${size.unit}` : ""}`;
 }
 
 function formatTarget(product: CatalogFoodProduct) {

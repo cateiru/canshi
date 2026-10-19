@@ -66,7 +66,7 @@ describe("FeedingRecordForm", () => {
       />,
     );
 
-    expect(screen.getByText("内容量: 1500g")).toBeInTheDocument();
+    expect(screen.getByText("内容量: 1.5kg")).toBeInTheDocument();
   });
 
   it("既定は厳格モードで、グラム単位の入力欄を表示する", () => {

@@ -8,6 +8,7 @@ import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import {
   formatFoodProductTarget,
   NUTRITION_TYPE_LABEL,
+  packageAmountParts,
   TEXTURE_TYPE_LABEL,
 } from "@/features/food-products/labels";
 import {
@@ -123,6 +124,9 @@ export default async function FoodProductsPage({
               <ul className={styles.list}>
                 {items.map((foodProduct) => {
                   const target = formatFoodProductTarget(foodProduct);
+                  const packageAmount = packageAmountParts(
+                    foodProduct.packageAmountG,
+                  );
                   return (
                     <li key={foodProduct.id}>
                       <article
@@ -178,9 +182,9 @@ export default async function FoodProductsPage({
                           <div>
                             <dt>内容量</dt>
                             <dd>
-                              {foodProduct.packageAmountG}
+                              {packageAmount.value}
                               <span>
-                                g
+                                {packageAmount.unit}
                                 {foodProduct.packageUnit
                                   ? `/${foodProduct.packageUnit}`
                                   : null}

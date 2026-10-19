@@ -22,12 +22,30 @@ export const LIFE_STAGE_LABEL: Record<FoodProductLifeStage, string> = {
 };
 
 /**
- * 内容量の表示用文字列。単位があれば「14g/本」、なければ商品全体として「1500g」
+ * 内容量の数値と単位。1000g 以上は kg にする（1500 → 「1.5」「kg」）。
+ * 割り算で出る誤差（1100.1 / 1000 = 1.1001000000000001 など）は丸めて消す
+ */
+export function packageAmountParts(packageAmountG: number): {
+  value: string;
+  unit: "g" | "kg";
+} {
+  if (packageAmountG >= 1000) {
+    return {
+      value: String(Number((packageAmountG / 1000).toPrecision(12))),
+      unit: "kg",
+    };
+  }
+  return { value: String(packageAmountG), unit: "g" };
+}
+
+/**
+ * 内容量の表示用文字列。単位があれば「14g/本」、なければ商品全体として「1.5kg」
  */
 export function formatPackageAmount(
   foodProduct: Pick<FoodProduct, "packageAmountG" | "packageUnit">,
 ): string {
-  const amount = `${foodProduct.packageAmountG}g`;
+  const { value, unit } = packageAmountParts(foodProduct.packageAmountG);
+  const amount = `${value}${unit}`;
   return foodProduct.packageUnit
     ? `${amount}/${foodProduct.packageUnit}`
     : amount;
