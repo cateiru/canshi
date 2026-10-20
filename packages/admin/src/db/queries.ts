@@ -8,9 +8,9 @@
  * （`queries.test.ts` はリポジトリルートの `drizzle/` のマイグレーションを適用した DB で
  * 実行するため、列名の食い違いはテストで検出できる）。
  *
- * 管理画面は基本的に閲覧用で、書き込みはユーザーのセッションの削除（すべての端末から
- * ログアウトさせる）と、家へのメンバーの追加・削除、共通のごはん商品の登録・編集・削除
- * （`catalogFoodProducts.ts`）だけにする。
+ * 管理画面は基本的に閲覧用で、書き込みはユーザーの権限の変更と、ユーザーのセッションの削除
+ * （すべての端末からログアウトさせる）、家へのメンバーの追加・削除、共通のごはん商品の
+ * 登録・編集・削除（`catalogFoodProducts.ts`）だけにする。
  */
 
 /** このファイルのクエリが使う D1 の機能（テストで sql.js に差し替えるため最小限にする） */
@@ -22,6 +22,19 @@ export interface Overview {
   catCount: number;
   /** 家に所属していない猫の数。0 でなければ `household:link` の実行漏れの可能性がある */
   unassignedCatCount: number;
+}
+
+/**
+ * ユーザーのアプリ全体の権限（`users.role`）として選べる値。メインアプリのスキーマ
+ * （`src/db/schema/users.ts`）の enum と揃える。Drizzle の enum は D1 に CHECK 制約を
+ * 作らないため、ここに無い値は書き込む前に断る
+ */
+export const USER_ROLES = ["admin", "member"] as const;
+
+export type UserRole = (typeof USER_ROLES)[number];
+
+export function isUserRole(value: unknown): value is UserRole {
+  return USER_ROLES.some((role) => role === value);
 }
 
 export interface UserMembership {
@@ -224,6 +237,33 @@ export async function deleteUserSessions(
     .bind(userId)
     .run();
   return result.meta.changes;
+}
+
+export type UserRoleChangeResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * ユーザーのアプリ全体の権限（`users.role`）を変える。家の中での権限
+ * （`household_members.role`）とは別で、管理者（`admin`）にしても管理画面に入れるように
+ * なるわけではない（管理画面へのアクセスは Cloudflare Access のポリシーで決まる）
+ */
+export async function updateUserRole(
+  db: AdminDb,
+  userId: string,
+  role: string,
+): Promise<UserRoleChangeResult> {
+  if (!isUserRole(role)) {
+    return { ok: false, error: `権限 ${role} は選べません` };
+  }
+  const result = await db
+    .prepare(
+      "UPDATE users SET role = ?2, updated_at = unixepoch() WHERE id = ?1",
+    )
+    .bind(userId, role)
+    .run();
+  if (result.meta.changes === 0) {
+    return { ok: false, error: "権限を変えるユーザーが見つかりませんでした" };
+  }
+  return { ok: true };
 }
 
 export type HouseholdMemberChangeResult =

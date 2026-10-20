@@ -260,6 +260,8 @@ li.member {
   margin-bottom: var(--space-2);
 }
 form.add-member { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+/* 権限の選択と変更ボタンは横に並べたままにし、行が縦に伸びないようにする */
+form.role-form { display: flex; gap: var(--space-2); }
 .empty { color: var(--color-ink-subtle); }
 
 /* ページの見出しと、その右に置く操作（メインアプリの一覧ページの見出しと同じ並び） */

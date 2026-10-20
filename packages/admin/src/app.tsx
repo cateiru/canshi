@@ -26,6 +26,7 @@ import {
   listHouseholds,
   listUsers,
   removeHouseholdMember,
+  updateUserRole,
 } from "./db/queries";
 import {
   type CatalogChange,
@@ -38,8 +39,20 @@ import {
   type HouseholdMemberChange,
   HouseholdsPage,
   OverviewPage,
+  type UserRoleChange,
   UsersPage,
 } from "./views/pages";
+
+const ROLE_CHANGE_RESULTS = [
+  "updated",
+  "update-failed",
+] as const satisfies readonly UserRoleChange["result"][];
+
+/** 権限の変更の結果を表示する `/users` の URL */
+function usersRoleResultUrl(result: UserRoleChange["result"], userId: string) {
+  const params = new URLSearchParams({ roleChange: result, user: userId });
+  return `/users?${params}`;
+}
 
 const MEMBER_CHANGE_RESULTS = [
   "added",
@@ -118,10 +131,37 @@ export function createApp() {
     // すべての端末からログアウトさせた直後は、対象のユーザーを結果として表示する
     const loggedOutUserId = c.req.query("loggedOut");
     const loggedOutUser = users.find((user) => user.id === loggedOutUserId);
+    // 権限を変えた直後は、その結果を表示する
+    const roleChangeResult = ROLE_CHANGE_RESULTS.find(
+      (value) => value === c.req.query("roleChange"),
+    );
+    const roleChangeUser = users.find(
+      (user) => user.id === c.req.query("user"),
+    );
+    const roleChange =
+      roleChangeResult && roleChangeUser
+        ? { result: roleChangeResult, user: roleChangeUser }
+        : undefined;
     return c.html(
       <Layout title="ユーザー" currentPath="/users">
-        <UsersPage users={users} loggedOutUser={loggedOutUser} />
+        <UsersPage
+          users={users}
+          loggedOutUser={loggedOutUser}
+          roleChange={roleChange}
+        />
       </Layout>,
+    );
+  });
+
+  // ユーザーのアプリ全体の権限を変える
+  app.post("/users/:userId/role", async (c) => {
+    const userId = c.req.param("userId");
+    const body = await c.req.parseBody();
+    const role = typeof body.role === "string" ? body.role : "";
+    const result = await updateUserRole(c.env.DB, userId, role);
+    return c.redirect(
+      usersRoleResultUrl(result.ok ? "updated" : "update-failed", userId),
+      303,
     );
   });
 

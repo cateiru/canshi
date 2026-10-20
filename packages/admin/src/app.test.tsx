@@ -127,6 +127,69 @@ describe("すべての端末からログアウトさせる", () => {
   });
 });
 
+async function userRole(userId: string) {
+  const { results } = await env.DB.prepare(
+    "SELECT role FROM users WHERE id = ?1",
+  )
+    .bind(userId)
+    .all<{ role: string }>();
+  return results[0].role;
+}
+
+describe("ユーザーの権限の変更", () => {
+  it("ユーザーごとに、今の権限を選んだ状態のフォームを表示する", async () => {
+    const html = await (await request("/users")).text();
+    expect(html).toContain('action="/users/user-1/role"');
+    expect(html).toContain('action="/users/user-3/role"');
+    expect(html).toContain('aria-label="はなこ の権限"');
+    expect(html).toMatch(
+      /action="\/users\/user-1\/role"[\s\S]*?<option value="admin" selected="">管理者<\/option><option value="member">一般<\/option>/,
+    );
+    expect(html).toMatch(
+      /action="\/users\/user-3\/role"[\s\S]*?<option value="admin">管理者<\/option><option value="member" selected="">一般<\/option>/,
+    );
+    // 管理者にしても管理画面に入れるわけではないことを示す
+    expect(html).toContain("この管理画面に入れるようにはなりません");
+  });
+
+  it("権限を変え、結果をユーザー一覧に表示する", async () => {
+    const response = await postForm("/users/user-3/role", ORIGIN, "role=admin");
+    expect(response.status).toBe(303);
+    expect(response.headers.get("Location")).toBe(
+      "/users?roleChange=updated&user=user-3",
+    );
+    expect(await userRole("user-3")).toBe("admin");
+
+    const html = await (
+      await request(response.headers.get("Location") ?? "")
+    ).text();
+    expect(html).toContain("はなこ の権限を管理者にしました。");
+  });
+
+  it("選べない権限には変えず、失敗を表示する", async () => {
+    const response = await postForm("/users/user-3/role", ORIGIN, "role=owner");
+    expect(response.headers.get("Location")).toBe(
+      "/users?roleChange=update-failed&user=user-3",
+    );
+    expect(await userRole("user-3")).toBe("member");
+
+    const html = await (
+      await request(response.headers.get("Location") ?? "")
+    ).text();
+    expect(html).toContain("はなこ の権限を変えられませんでした。");
+  });
+
+  it("ほかのオリジンからの送信は拒否し、権限を変えない", async () => {
+    const response = await postForm(
+      "/users/user-3/role",
+      "https://evil.example.com",
+      "role=admin",
+    );
+    expect(response.status).toBe(403);
+    expect(await userRole("user-3")).toBe("member");
+  });
+});
+
 async function householdRoles(householdId: string) {
   const { results } = await env.DB.prepare(
     "SELECT user_id, role FROM household_members WHERE household_id = ?1 ORDER BY user_id",
