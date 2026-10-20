@@ -4,14 +4,15 @@ CANSHI の運用者向けの管理画面。メインアプリ（`canshi`）と�
 Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-admin.cateiru.dev` で公開する。
 [Hono](https://hono.dev/) の JSX でサーバーサイドレンダリングする。
 
-基本的には閲覧用で、書き込みはユーザーをすべての端末からログアウトさせる操作と、家へのメンバーの
-追加・削除、共通のごはん商品の登録・編集・削除だけを持つ。
+基本的には閲覧用で、書き込みはユーザーの権限の変更と、ユーザーをすべての端末からログアウトさせる
+操作、家へのメンバーの追加・削除、共通のごはん商品の登録・編集・削除だけを持つ。
 
 | パス | 内容 |
 | --- | --- |
 | `/` | ユーザー・家・猫の件数と、家に所属していない猫の数（`pnpm household:link` の実行漏れの検知） |
-| `/users` | ユーザーの一覧（権限・所属する家・有効なログインセッションの数と期限）。有効なセッションがあるユーザーには「すべての端末からログアウト」ボタンを表示する |
+| `/users` | ユーザーの一覧（権限・所属する家・有効なログインセッションの数と期限）。ユーザーごとに権限を変えるフォームを、有効なセッションがあるユーザーには「すべての端末からログアウト」ボタンを表示する |
 | `/households` | 家の一覧（メンバーとその権限・猫の数）。家ごとに、まだメンバーでないユーザーを追加するフォームと、オーナー以外のメンバーを外すボタンを表示する |
+| `POST /users/:userId/role` | フォームの `role`（`admin` または `member`）にユーザーのアプリ全体の権限（`users.role`）を変える。終わると `/users` に戻る |
 | `POST /users/:userId/sessions/delete` | ユーザーのログインセッションをすべて削除する（すべての端末からログアウトさせる）。終わると `/users` に戻る |
 | `POST /households/:householdId/members` | フォームの `userId` のユーザーを家のメンバー（`member`）として追加する。すでにメンバーなら何もしない。終わると `/households` に戻る |
 | `POST /households/:householdId/members/:userId/delete` | ユーザーを家から外す。家にオーナーがいなくならないよう、オーナーは外せない（メインアプリでオーナーを移譲してから外す）。終わると `/households` に戻る |
@@ -78,6 +79,10 @@ pnpm vrt:admin
 許可するポリシーを付けて保護する。Self-hosted アプリケーションは Workers 全体の Access より
 優先され、Workers 全体の Access が適用されないカスタムドメインも確実に保護できる。
 
+ユーザーの権限（`users.role`）の「管理者」（`admin`）は、MCP から管理画面の一部の操作を行えるように
+するなど、アプリの中での権限を表すもので、管理画面に入れるかどうかとは関係しない。管理者にしたユーザーを管理画面に入れたいときは、
+Access のポリシーにも別途追加すること。
+
 Self-hosted アプリケーションはデプロイする前に作ること。手順は
 [`docs/deploy.md`](../../docs/deploy.md) の「管理画面」節を参照。
 
@@ -104,8 +109,9 @@ R2 の `catalog_food_product/{商品の ID}/{asset ID}`。メインアプリで�
 
 メインアプリと同じ D1（`canshi-db`）をバインディング `DB` で、同じ R2（`canshi-media`）を
 バインディング `MEDIA_BUCKET` で直接参照する。マイグレーションはメインアプリ（リポジトリルートの
-`drizzle/`）が管理し、このパッケージは SELECT と、ユーザーのセッションを削除する DELETE
-（`sessions` テーブル）、家のメンバーを追加・削除する INSERT・DELETE（`household_members` テーブル）、
+`drizzle/`）が管理し、このパッケージは SELECT と、ユーザーの権限を変える UPDATE（`users` テーブルの
+`role` 列）、ユーザーのセッションを削除する DELETE（`sessions` テーブル）、家のメンバーを追加・削除する
+INSERT・DELETE（`household_members` テーブル）、
 共通のごはん商品を登録・更新・削除する INSERT・UPDATE・DELETE（`catalog_food_products` テーブルと、
 その画像の `media_assets` の行）だけを発行する。R2 は共通のごはん商品の画像の保存・削除だけに使う。
 

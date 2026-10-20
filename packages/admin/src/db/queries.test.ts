@@ -9,6 +9,7 @@ import {
   listHouseholds,
   listUsers,
   removeHouseholdMember,
+  updateUserRole,
 } from "./queries";
 
 const NOW = new Date(BASE_TIME * 1000);
@@ -118,6 +119,39 @@ describe("deleteUserSessions", () => {
 
   it("セッションが無いユーザーでは何も削除しない", async () => {
     expect(await deleteUserSessions(db, "user-2")).toBe(0);
+  });
+});
+
+describe("updateUserRole", () => {
+  it("ユーザーの権限を変え、ほかのユーザーの権限は変えない", async () => {
+    expect(await updateUserRole(db, "user-3", "admin")).toEqual({ ok: true });
+    expect(await updateUserRole(db, "user-1", "member")).toEqual({ ok: true });
+
+    const users = await listUsers(db, NOW);
+    expect(users.map((user) => `${user.id}:${user.role}`)).toEqual([
+      "user-1:member",
+      "user-2:member",
+      "user-3:admin",
+    ]);
+  });
+
+  it("家の中での権限は変えない", async () => {
+    await updateUserRole(db, "user-1", "member");
+    expect(await memberIds("household-1")).toEqual([
+      "user-1:owner",
+      "user-2:member",
+    ]);
+  });
+
+  it("選べない権限には変えない", async () => {
+    const result = await updateUserRole(db, "user-3", "owner");
+    expect(result.ok).toBe(false);
+    const users = await listUsers(db, NOW);
+    expect(users[2].role).toBe("member");
+  });
+
+  it("存在しないユーザーでは失敗を返す", async () => {
+    expect((await updateUserRole(db, "missing", "admin")).ok).toBe(false);
   });
 });
 

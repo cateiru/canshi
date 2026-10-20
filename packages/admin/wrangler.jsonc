@@ -23,8 +23,8 @@
 
   // メインアプリと同じ D1 を参照する。マイグレーションはメインアプリ
   // （リポジトリルートの wrangler.toml・drizzle/）が管理するため、ここでは
-  // migrations_dir を持たない。書き込みはユーザーのセッションの削除・家のメンバーの
-  // 追加と削除（src/db/queries.ts）と、共通のごはん商品の登録・編集・削除
+  // migrations_dir を持たない。書き込みはユーザーの権限の変更・セッションの削除・
+  // 家のメンバーの追加と削除（src/db/queries.ts）と、共通のごはん商品の登録・編集・削除
   // （src/db/catalogFoodProducts.ts）だけにする
   "d1_databases": [
     {

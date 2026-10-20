@@ -1,4 +1,9 @@
-import type { AdminHousehold, AdminUser, Overview } from "../db/queries";
+import {
+  type AdminHousehold,
+  type AdminUser,
+  type Overview,
+  USER_ROLES,
+} from "../db/queries";
 import { formatDateTime, householdRoleLabel, userRoleLabel } from "./format";
 
 export function OverviewPage(props: { overview: Overview }) {
@@ -35,10 +40,36 @@ export function OverviewPage(props: { overview: Overview }) {
   );
 }
 
+/** 直前に行ったユーザーの権限の変更とその結果 */
+export interface UserRoleChange {
+  result: "updated" | "update-failed";
+  user: AdminUser;
+}
+
+function RoleChangeNotice(props: { change: UserRoleChange }) {
+  const { result, user } = props.change;
+  switch (result) {
+    case "updated":
+      return (
+        <p class="notice" role="status">
+          {user.name} の権限を{userRoleLabel(user.role)}にしました。
+        </p>
+      );
+    case "update-failed":
+      return (
+        <p class="warning" role="alert">
+          {user.name}{" "}
+          の権限を変えられませんでした。選べる権限を選び直してください。
+        </p>
+      );
+  }
+}
+
 export function UsersPage(props: {
   users: AdminUser[];
   /** 直前にすべての端末からログアウトさせたユーザー */
   loggedOutUser?: AdminUser;
+  roleChange?: UserRoleChange;
 }) {
   if (props.users.length === 0) {
     return <p class="empty">ユーザーはまだいません。</p>;
@@ -50,6 +81,13 @@ export function UsersPage(props: {
           {props.loggedOutUser.name} をすべての端末からログアウトさせました。
         </p>
       )}
+      {props.roleChange && <RoleChangeNotice change={props.roleChange} />}
+      <p class="lead">
+        権限はアプリ全体の権限で、家の中での権限（オーナー・メンバー）とは別です。
+        {userRoleLabel("admin")}
+        にしても、この管理画面に入れるようにはなりません（管理画面に入れるユーザーは
+        Cloudflare Access のポリシーで決まります）。
+      </p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -71,7 +109,26 @@ export function UsersPage(props: {
                   <br />
                   <code>{user.id}</code>
                 </td>
-                <td class="nowrap">{userRoleLabel(user.role)}</td>
+                <td>
+                  <form
+                    method="post"
+                    action={`/users/${encodeURIComponent(user.id)}/role`}
+                    class="role-form"
+                  >
+                    <select
+                      name="role"
+                      required
+                      aria-label={`${user.name} の権限`}
+                    >
+                      {USER_ROLES.map((role) => (
+                        <option value={role} selected={role === user.role}>
+                          {userRoleLabel(role)}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="submit">変更</button>
+                  </form>
+                </td>
                 <td>
                   {user.households.length === 0 ? (
                     <span class="empty">なし</span>
