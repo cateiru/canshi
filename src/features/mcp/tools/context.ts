@@ -7,6 +7,7 @@ import {
   isCatAllowedForMcp,
   isHouseholdAllowedForMcp,
   isHouseholdOperationAllowedForMcp,
+  type McpCatalogOperation,
   type McpHouseholdOperation,
   type McpPermissionRecordType,
   type McpPermissions,
@@ -39,7 +40,10 @@ export function jsonResult(value: unknown) {
 }
 
 /** 許可していない操作をしようとしたときのエラーに使う、操作の名前 */
-const OPERATION_LABEL: Record<McpHouseholdOperation, string> = {
+const OPERATION_LABEL: Record<
+  McpHouseholdOperation | McpCatalogOperation,
+  string
+> = {
   "foodProduct:read": "ごはん商品の読み取り",
   "foodProduct:create": "ごはん商品の追加",
   "foodProduct:update": "ごはん商品の編集",
@@ -47,13 +51,16 @@ const OPERATION_LABEL: Record<McpHouseholdOperation, string> = {
   "feedingPreset:create": "ごはんのプリセットの追加",
   "feedingPreset:update": "ごはんのプリセットの編集",
   "feedingPreset:delete": "ごはんのプリセットの削除",
+  "catalogFoodProduct:read": "共通のごはん商品の読み取り",
+  "catalogFoodProduct:create": "共通のごはん商品の追加",
+  "catalogFoodProduct:update": "共通のごはん商品の編集",
 };
 
 const ASK_USER_TO_ALLOW =
   "CANSHI の設定の「AIとの接続」で、ユーザーに許可してもらってください";
 
 export function operationNotAllowedMessage(
-  operation: McpHouseholdOperation,
+  operation: McpHouseholdOperation | McpCatalogOperation,
   householdName?: string,
 ) {
   const target = householdName ? `家「${householdName}」での` : "";

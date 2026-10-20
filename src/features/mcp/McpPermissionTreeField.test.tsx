@@ -84,7 +84,11 @@ function operationCheckbox(
   ).getByRole("checkbox", { name: `${group}を${label}` });
 }
 
-const NOTHING_WRITABLE = { writableRecordTypes: {}, householdOperations: {} };
+const NOTHING_WRITABLE = {
+  writableRecordTypes: {},
+  householdOperations: {},
+  catalogOperations: [],
+};
 
 describe("McpPermissionTreeField", () => {
   it("最初は読み取りにすべてチェックが付き、何も外さず、何も書き込めない値を送る", () => {
@@ -237,5 +241,63 @@ describe("McpPermissionTreeField", () => {
 
     expect(screen.getByText(/所属している家がありません/)).toBeInTheDocument();
     expect(container.querySelector('input[name="mcpPermissions"]')).toBeNull();
+  });
+
+  it("admin でなければ、共通のごはん商品の操作を表示しない", () => {
+    renderField();
+
+    expect(
+      screen.queryByRole("group", { name: "共通のごはん商品" }),
+    ).toBeNull();
+  });
+
+  it("共通のごはん商品の操作は、家とは別に、チェックしたものを許可したものとして送る", () => {
+    const { container } = render(
+      <McpPermissionTreeField
+        tree={tree}
+        catalogOperations={["catalogFoodProduct:read"]}
+      />,
+    );
+    const value = () =>
+      JSON.parse(
+        container.querySelector<HTMLInputElement>(
+          'input[name="mcpPermissions"]',
+        )?.value ?? "null",
+      ) as McpPermissions;
+    const catalog = within(
+      screen.getByRole("group", { name: "共通のごはん商品" }),
+    );
+
+    expect(
+      catalog.getByRole("checkbox", { name: "共通のごはん商品を読む" }),
+    ).toBeChecked();
+    fireEvent.click(
+      catalog.getByRole("checkbox", { name: "共通のごはん商品を編集" }),
+    );
+    // 家を外しても、共通のごはん商品の操作は外れない
+    fireEvent.click(checkbox("家1"));
+
+    expect(value().catalogOperations).toEqual([
+      "catalogFoodProduct:read",
+      "catalogFoodProduct:update",
+    ]);
+  });
+
+  it("家が無くても admin なら、共通のごはん商品の操作を選べる", () => {
+    const { container } = render(
+      <McpPermissionTreeField tree={[]} catalogOperations={[]} />,
+    );
+
+    expect(screen.getByText(/所属している家がありません/)).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "共通のごはん商品を追加" }),
+    );
+    expect(
+      JSON.parse(
+        container.querySelector<HTMLInputElement>(
+          'input[name="mcpPermissions"]',
+        )?.value ?? "null",
+      ),
+    ).toMatchObject({ catalogOperations: ["catalogFoodProduct:create"] });
   });
 });

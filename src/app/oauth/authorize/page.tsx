@@ -51,7 +51,7 @@ export default async function AuthorizePage({
   // 同じアプリに前回同意したときの範囲があれば、それを初期の状態にする
   const permissionTree = consent
     ? await getMcpPermissionTree(user.id, consent.clientId)
-    : [];
+    : null;
 
   return (
     <main className={styles.main}>
@@ -64,7 +64,7 @@ export default async function AuthorizePage({
         </p>
       </header>
 
-      {consent ? (
+      {consent && permissionTree ? (
         <>
           <Surface
             className={styles.connection}
@@ -116,7 +116,10 @@ export default async function AuthorizePage({
               <p className={styles.note}>
                 このアプリに公開する家・猫・記録を「読む」で選んでください。チェックを外した情報は読み取れません。記録の追加・編集を許可するときは「書く」に、ごはん商品・プリセットの操作を許可するときは家ごとの操作にチェックしてください。
               </p>
-              <McpPermissionTreeField tree={permissionTree} />
+              <McpPermissionTreeField
+                tree={permissionTree.households}
+                catalogOperations={permissionTree.catalogOperations}
+              />
               <p className={styles.note}>
                 あとから登録した猫や、新しく参加した家は、読み取れますが書き込めません。
               </p>

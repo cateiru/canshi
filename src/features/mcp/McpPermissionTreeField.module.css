@@ -129,6 +129,39 @@
   margin-bottom: var(--space-6);
 }
 
+/* 共通のごはん商品の操作は家に属さないため、家の一覧の後ろに別の枠で並べる */
+.catalog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  border: 0;
+  border-radius: 16px;
+  background: var(--color-bg);
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
+}
+
+.catalogLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--text-md);
+}
+
+.catalogNote {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+/* 広い画面では、家ごとの操作と同じ幅の選択肢を左に寄せて並べる */
+.catalogChoices {
+  align-self: flex-start;
+}
+
 .operationLabel {
   font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
@@ -147,5 +180,9 @@
 
   .operationChoices {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .catalogChoices {
+    align-self: stretch;
   }
 }

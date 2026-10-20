@@ -6,14 +6,14 @@ import { Alert, addToast, Button } from "@/components/ui";
 import type { McpPermissionsFormState } from "./actions";
 import styles from "./McpPermissionsForm.module.css";
 import { McpPermissionTreeField } from "./McpPermissionTreeField";
-import type { McpPermissionTreeHousehold } from "./permissionRules";
+import type { McpPermissionTree } from "./permissionRules";
 
 type McpPermissionsFormProps = {
   action: (
     state: McpPermissionsFormState,
     formData: FormData,
   ) => Promise<McpPermissionsFormState>;
-  tree: McpPermissionTreeHousehold[];
+  tree: McpPermissionTree;
 };
 
 const initialState: McpPermissionsFormState = {};
@@ -36,9 +36,12 @@ export function McpPermissionsForm({ action, tree }: McpPermissionsFormProps) {
 
   return (
     <form action={formAction} className={styles.form}>
-      <McpPermissionTreeField tree={tree} />
+      <McpPermissionTreeField
+        tree={tree.households}
+        catalogOperations={tree.catalogOperations}
+      />
       {state.formError ? <Alert color="error">{state.formError}</Alert> : null}
-      {tree.length > 0 ? (
+      {tree.households.length > 0 || tree.catalogOperations !== null ? (
         <div className={styles.actions}>
           <Button
             type="submit"

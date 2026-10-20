@@ -104,6 +104,7 @@ describe("getMcpPermissions", () => {
       householdOperations: {
         "house-1": ["foodProduct:read", "removed-operation"],
       },
+      catalogOperations: ["catalogFoodProduct:read", "removed-operation"],
     });
 
     expect(await getMcpPermissions("user-1", "client-1")).toEqual({
@@ -112,6 +113,7 @@ describe("getMcpPermissions", () => {
       excludedRecordTypes: { "cat-1": ["poop"] },
       writableRecordTypes: { "cat-1": ["feeding"] },
       householdOperations: { "house-1": ["foodProduct:read"] },
+      catalogOperations: ["catalogFoodProduct:read"],
     });
   });
 });
@@ -140,6 +142,7 @@ describe("saveMcpPermissionsFromForm", () => {
       excludedRecordTypes: { "cat-1": ["water"] },
       writableRecordTypes: { "cat-1": ["feeding"] },
       householdOperations: { "house-1": ["foodProduct:read"] },
+      catalogOperations: [],
     });
 
     expect(
@@ -195,6 +198,25 @@ describe("saveMcpPermissionsFromForm", () => {
     ).toBe(true);
   });
 
+  it("共通のごはん商品の操作は、admin のユーザーのときだけ保存する", async () => {
+    const value = {
+      excludedHouseholdIds: [],
+      excludedCatIds: [],
+      excludedRecordTypes: {},
+      catalogOperations: ["catalogFoodProduct:read"],
+    };
+    await saveMcpPermissionsFromForm("user-1", "client-1", form(value));
+    expect(
+      (await getMcpPermissions("user-1", "client-1")).catalogOperations,
+    ).toEqual([]);
+
+    await db.update(users).set({ role: "admin" }).where(eq(users.id, "user-1"));
+    await saveMcpPermissionsFromForm("user-1", "client-1", form(value));
+    expect(
+      (await getMcpPermissions("user-1", "client-1")).catalogOperations,
+    ).toEqual(["catalogFoodProduct:read"]);
+  });
+
   it("形が正しくなければ保存しない", async () => {
     const formData = new FormData();
     formData.set("mcpPermissions", "{");
@@ -236,17 +258,36 @@ describe("getMcpPermissionTree", () => {
       }),
     );
 
-    const tree = await getMcpPermissionTree("user-1", "client-1");
+    const { households } = await getMcpPermissionTree("user-1", "client-1");
 
-    expect(tree).toHaveLength(1);
-    expect(tree[0]).toMatchObject({
+    expect(households).toHaveLength(1);
+    expect(households[0]).toMatchObject({
       id: "house-1",
       name: "家1",
       checked: true,
     });
-    expect(tree[0].cats.map(({ id, checked }) => ({ id, checked }))).toEqual([
+    expect(
+      households[0].cats.map(({ id, checked }) => ({ id, checked })),
+    ).toEqual([
       { id: "cat-1", checked: true },
       { id: "cat-2", checked: false },
     ]);
+  });
+
+  it("共通のごはん商品の操作は、admin のユーザーのときだけ返す", async () => {
+    await db.insert(mcpPermissions).values({
+      userId: "user-1",
+      clientId: "client-1",
+      catalogOperations: ["catalogFoodProduct:create"],
+    });
+
+    expect(
+      (await getMcpPermissionTree("user-1", "client-1")).catalogOperations,
+    ).toBeNull();
+
+    await db.update(users).set({ role: "admin" }).where(eq(users.id, "user-1"));
+    expect(
+      (await getMcpPermissionTree("user-1", "client-1")).catalogOperations,
+    ).toEqual(["catalogFoodProduct:create"]);
   });
 });

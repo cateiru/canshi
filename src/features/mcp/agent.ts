@@ -23,6 +23,7 @@ import {
   MISSING_USER_ERROR_MESSAGE,
 } from "./props";
 import { toCatSummary, toTimelineEntrySummary } from "./summaries";
+import { registerCatalogFoodProductTools } from "./tools/catalogFoodProducts";
 import { errorResult, jsonResult, type McpToolContext } from "./tools/context";
 import { registerFeedingPresetTools } from "./tools/feedingPresets";
 import { registerFoodProductTools } from "./tools/foodProducts";
@@ -35,7 +36,7 @@ const BIRTH_DATE_PRECISION_DESCRIPTION =
 
 /**
  * CANSHI の MCP サーバー本体（`/mcp`）。猫のプロフィール・タイムラインを読み取るツールと、
- * 記録の追加・編集、ごはん商品・プリセットを扱うツール（`./tools/`）を公開する
+ * 記録の追加・編集、ごはん商品・プリセット・共通のごはん商品を扱うツール（`./tools/`）を公開する
  * （docs/plans/32_mcp_oidc_overview.md 参照）。
  *
  * 各ツールはトークンに保存した CANSHI のユーザー ID（`this.props.userId`、
@@ -43,7 +44,8 @@ const BIRTH_DATE_PRECISION_DESCRIPTION =
  * そのユーザーがこの接続（`this.props.clientId`）に読み取りを許可した家・猫・記録の種類
  * （`./permissions.ts`）だけを参照する。
  * 許可していない猫は、存在しない猫と区別しない。記録の書き込みやごはん商品・プリセットの
- * 操作は、接続に許可した操作だけを、読み取りを許可した範囲の中で行える。
+ * 操作は、接続に許可した操作だけを、読み取りを許可した範囲の中で行える。共通のごはん商品は、
+ * admin のユーザーが接続に許可した操作だけを行える。
  * Durable Object の中で動くため、D1 は `getCloudflareContext()` ではなく
  * `this.env.DB` を明示的に渡す
  */
@@ -270,5 +272,6 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
     registerRecordTools(this.server, ctx);
     registerFoodProductTools(this.server, ctx);
     registerFeedingPresetTools(this.server, ctx);
+    registerCatalogFoodProductTools(this.server, ctx);
   }
 }
