@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { TbEye } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
@@ -8,7 +9,7 @@ import { getUserMcpConnection } from "@/features/mcp/connections";
 import { formatRedirectUri } from "@/features/mcp/consent";
 import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
 import { McpPermissionsForm } from "@/features/mcp/McpPermissionsForm";
-import { getMcpPermissionSettings } from "@/features/mcp/permissions";
+import { getMcpPermissionTree } from "@/features/mcp/permissions";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -34,7 +35,7 @@ type AiConnectionPageProps = {
 };
 
 /**
- * AI との接続の 1 つについて、そのアプリから読み取れる範囲と、許可する操作を設定するページ。
+ * AI との接続の 1 つについて、そのアプリから読み取れる範囲と書き込める範囲を設定するページ。
  * 範囲は接続（OAuth のクライアント）ごとで、同意画面（`/oauth/authorize`）で選んだものを
  * 変えられる。ほかのユーザーの接続・解除した接続は表示しない
  */
@@ -47,7 +48,7 @@ export default async function AiConnectionPage({
   if (!connection) {
     notFound();
   }
-  const { tree, allowedOperations } = await getMcpPermissionSettings(
+  const permissionTree = await getMcpPermissionTree(
     user.id,
     connection.clientId,
   );
@@ -69,7 +70,7 @@ export default async function AiConnectionPage({
           {clientName}
         </RecordPageHeading>
         <p className={styles.description}>
-          このアプリから読み取れる情報と、許可する操作を設定します。
+          このアプリから読み取れる情報と、書き込める情報を設定します。
         </p>
       </header>
 
@@ -96,11 +97,24 @@ export default async function AiConnectionPage({
         <McpAccessNotice />
       </Surface>
 
-      <McpPermissionsForm
-        action={updateMcpPermissionsAction.bind(null, connection.id)}
-        tree={tree}
-        allowedOperations={allowedOperations}
-      />
+      <Surface
+        title="許可する範囲"
+        titleId="ai-permissions"
+        titleSize="lg"
+        icon={<TbEye aria-hidden="true" size={20} />}
+        gap="sm"
+      >
+        <p className={styles.description}>
+          「読む」のチェックを外した家・猫・記録は、このアプリから読み取れなくなります。「書く」にチェックした記録は、このアプリから追加・編集できます。ごはん商品・プリセットは、家ごとに許可する操作を選べます。ほかのアプリとの接続には影響しません。
+        </p>
+        <p className={styles.description}>
+          あとから登録した猫や、新しく参加した家は、読み取れますが書き込めません。
+        </p>
+        <McpPermissionsForm
+          action={updateMcpPermissionsAction.bind(null, connection.id)}
+          tree={permissionTree}
+        />
+      </Surface>
     </main>
   );
 }

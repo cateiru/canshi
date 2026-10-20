@@ -32,12 +32,14 @@ import {
 } from "../formValues";
 import { isHouseholdAllowedForMcp } from "../permissionRules";
 import {
+  checkHouseholdOperation,
   errorResult,
   householdNotFoundMessage,
   jsonResult,
-  listAllowedHouseholds,
   type McpToolContext,
-  resolveOperation,
+  resolveHouseholdIdsForOperation,
+  resolveHouseholdOperation,
+  resolvePermissions,
 } from "./context";
 
 const PRODUCT_DESCRIPTION =
@@ -191,8 +193,8 @@ async function replaceFoodProductImage(
 }
 
 /**
- * ごはん商品の読み取り・追加・編集のツールを登録する。扱えるのは、接続に操作を許可していて、
- * 読み取りも許可している家の商品に限る
+ * ごはん商品の読み取り・追加・編集のツールを登録する。扱えるのは、読み取りを許可している家で、
+ * その操作を許可している家の商品に限る
  */
 export function registerFoodProductTools(
   server: McpServer,
@@ -205,7 +207,7 @@ export function registerFoodProductTools(
       description:
         "家に登録されているごはん商品の一覧を新しい順に取得する。" +
         "ごはんの記録・プリセットの foodProductId に使う。householdId を指定するとその家の商品に絞り込む。" +
-        "ユーザーが読み取りを許可していない家の商品は含まれない。",
+        "ユーザーがごはん商品の読み取りを許可している家の商品だけを含む。",
       inputSchema: {
         householdId: z
           .string()
@@ -215,24 +217,15 @@ export function registerFoodProductTools(
       annotations: { readOnlyHint: true },
     },
     async ({ householdId }) => {
-      const resolved = await resolveOperation(ctx, "foodProduct:read");
+      const resolved = await resolveHouseholdIdsForOperation(
+        ctx,
+        "foodProduct:read",
+        householdId,
+      );
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
-      const households = await listAllowedHouseholds(
-        ctx,
-        resolved.connection.userId,
-        resolved.permissions,
-      );
-      const householdIds = households
-        .map((household) => household.id)
-        .filter((id) => householdId === undefined || id === householdId);
-      if (householdId !== undefined && householdIds.length === 0) {
-        return errorResult(householdNotFoundMessage(householdId));
-      }
-      if (householdIds.length === 0) {
-        return jsonResult({ foodProducts: [] });
-      }
+      const { householdIds } = resolved;
       const db = getDb(ctx.env.DB);
       const products = await db
         .select()
@@ -284,12 +277,13 @@ export function registerFoodProductTools(
       annotations: { readOnlyHint: false, destructiveHint: false },
     },
     async (args) => {
-      const resolved = await resolveOperation(ctx, "foodProduct:create");
+      const resolved = await resolveHouseholdOperation(
+        ctx,
+        args.householdId,
+        "foodProduct:create",
+      );
       if ("error" in resolved) {
         return errorResult(resolved.error);
-      }
-      if (!isHouseholdAllowedForMcp(resolved.permissions, args.householdId)) {
-        return errorResult(householdNotFoundMessage(args.householdId));
       }
       const parsed = parseFormValues(
         foodProductFormSchema,
@@ -338,7 +332,7 @@ export function registerFoodProductTools(
       },
     },
     async (args) => {
-      const resolved = await resolveOperation(ctx, "foodProduct:update");
+      const resolved = await resolvePermissions(ctx);
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
@@ -363,6 +357,15 @@ export function registerFoodProductTools(
         !isHouseholdAllowedForMcp(resolved.permissions, product.householdId)
       ) {
         return errorResult(notFound);
+      }
+      const operationError = await checkHouseholdOperation(
+        ctx,
+        resolved,
+        product.householdId,
+        "foodProduct:update",
+      );
+      if (operationError) {
+        return errorResult(operationError);
       }
       const parsed = parseFormValues(
         foodProductFormSchema,

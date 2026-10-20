@@ -9,17 +9,23 @@ import {
   buildMcpPermissionTree,
   DEFAULT_MCP_PERMISSIONS,
   isCatAllowedForMcp,
+  isHouseholdOperationAllowedForMcp,
   MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
   MCP_PERMISSION_RECORD_TYPES,
-  type McpReadScope,
-  parseMcpOperationsInput,
+  type McpPermissions,
   parseMcpPermissionsInput,
+  writableMcpRecordTypes,
 } from "./permissionRules";
 
-const permissions: McpReadScope = {
+const permissions: McpPermissions = {
   excludedHouseholdIds: ["house-2"],
   excludedCatIds: ["cat-2"],
   excludedRecordTypes: { "cat-1": ["poop", "expense"] },
+  writableRecordTypes: { "cat-1": ["feeding", "poop"] },
+  householdOperations: {
+    "house-1": ["foodProduct:read"],
+    "house-2": ["foodProduct:read"],
+  },
 };
 
 describe("MCP_PERMISSION_RECORD_TYPES", () => {
@@ -66,6 +72,39 @@ describe("allowedMcpRecordTypes", () => {
   });
 });
 
+describe("writableMcpRecordTypes", () => {
+  it("書き込みを許可していて、読み取りも許可している種類だけを返す", () => {
+    expect(writableMcpRecordTypes(permissions, "cat-1")).toEqual(["feeding"]);
+    expect(writableMcpRecordTypes(permissions, "cat-3")).toEqual([]);
+  });
+});
+
+describe("isHouseholdOperationAllowedForMcp", () => {
+  it("操作を許可していて、読み取りも許可している家だけで行える", () => {
+    expect(
+      isHouseholdOperationAllowedForMcp(
+        permissions,
+        "house-1",
+        "foodProduct:read",
+      ),
+    ).toBe(true);
+    expect(
+      isHouseholdOperationAllowedForMcp(
+        permissions,
+        "house-1",
+        "foodProduct:create",
+      ),
+    ).toBe(false);
+    expect(
+      isHouseholdOperationAllowedForMcp(
+        permissions,
+        "house-2",
+        "foodProduct:read",
+      ),
+    ).toBe(false);
+  });
+});
+
 describe("buildMcpPermissionTree", () => {
   it("家ごとに猫をまとめ、親のチェックが外れていれば子のチェックも外す", () => {
     const tree = buildMcpPermissionTree(
@@ -74,6 +113,16 @@ describe("buildMcpPermissionTree", () => {
         excludedCatIds: ["cat-2"],
         // 外した家の猫の記録の種類は、親を外しているため使わない
         excludedRecordTypes: { "cat-1": ["poop"], "cat-3": ["water"] },
+        // 読み取りを外した種類・猫・家の書き込みや操作は、チェックを外した状態にする
+        writableRecordTypes: {
+          "cat-1": ["feeding", "poop"],
+          "cat-2": ["feeding"],
+          "cat-3": ["feeding"],
+        },
+        householdOperations: {
+          "house-1": ["feedingPreset:read"],
+          "house-2": ["feedingPreset:read"],
+        },
       },
       [
         { id: "house-1", name: "家1" },
@@ -91,6 +140,7 @@ describe("buildMcpPermissionTree", () => {
         id: "house-1",
         name: "家1",
         checked: true,
+        operations: ["feedingPreset:read"],
         cats: [
           {
             id: "cat-1",
@@ -99,16 +149,30 @@ describe("buildMcpPermissionTree", () => {
             checkedRecordTypes: MCP_PERMISSION_RECORD_TYPES.filter(
               (type) => type !== "poop",
             ),
+            writableRecordTypes: ["feeding"],
           },
-          { id: "cat-2", name: "みけ", checked: false, checkedRecordTypes: [] },
+          {
+            id: "cat-2",
+            name: "みけ",
+            checked: false,
+            checkedRecordTypes: [],
+            writableRecordTypes: [],
+          },
         ],
       },
       {
         id: "house-2",
         name: "家2",
         checked: false,
+        operations: [],
         cats: [
-          { id: "cat-3", name: "くろ", checked: false, checkedRecordTypes: [] },
+          {
+            id: "cat-3",
+            name: "くろ",
+            checked: false,
+            checkedRecordTypes: [],
+            writableRecordTypes: [],
+          },
         ],
       },
     ]);
@@ -143,6 +207,8 @@ describe("parseMcpPermissionsInput", () => {
       excludedHouseholdIds: ["house-2"],
       excludedCatIds: ["cat-2", "cat-3"],
       excludedRecordTypes: { "cat-1": ["poop", "expense"] },
+      writableRecordTypes: {},
+      householdOperations: {},
     });
     expect(
       parsed &&
@@ -157,10 +223,36 @@ describe("parseMcpPermissionsInput", () => {
       excludedRecordTypes: { "cat-1": [] },
     });
 
-    expect(parseMcpPermissionsInput(value, accessible)).toEqual({
-      excludedHouseholdIds: [],
-      excludedCatIds: [],
-      excludedRecordTypes: {},
+    expect(parseMcpPermissionsInput(value, accessible)).toEqual(
+      DEFAULT_MCP_PERMISSIONS,
+    );
+  });
+
+  it("書き込み・家の操作は、読み取りを許可しているものだけを、決まった並び順で保存する", () => {
+    const value = JSON.stringify({
+      excludedHouseholdIds: ["house-2"],
+      excludedCatIds: ["cat-2"],
+      excludedRecordTypes: { "cat-1": ["water"] },
+      writableRecordTypes: {
+        // 読み取りを外した種類（water）は書き込めない
+        "cat-1": ["poop", "water", "feeding"],
+        // 外した猫・外した家の猫・参照できない猫は保存しない
+        "cat-2": ["feeding"],
+        "cat-3": ["feeding"],
+        "other-cat": ["feeding"],
+      },
+      householdOperations: {
+        "house-1": ["feedingPreset:delete", "foodProduct:read"],
+        "house-2": ["foodProduct:read"],
+        "other-house": ["foodProduct:read"],
+      },
+    });
+
+    expect(parseMcpPermissionsInput(value, accessible)).toMatchObject({
+      writableRecordTypes: { "cat-1": ["feeding", "poop"] },
+      householdOperations: {
+        "house-1": ["foodProduct:read", "feedingPreset:delete"],
+      },
     });
   });
 
@@ -175,35 +267,14 @@ describe("parseMcpPermissionsInput", () => {
         excludedCatIds: [],
         excludedRecordTypes: { "cat-1": ["birthday"] },
       }),
+      JSON.stringify({
+        excludedHouseholdIds: [],
+        excludedCatIds: [],
+        excludedRecordTypes: {},
+        householdOperations: { "house-1": ["record:delete"] },
+      }),
     ]) {
       expect(parseMcpPermissionsInput(value, accessible)).toBeNull();
-    }
-  });
-});
-
-describe("parseMcpOperationsInput", () => {
-  it("チェックした操作だけを、決まった並び順で重複を除いて返す", () => {
-    expect(
-      parseMcpOperationsInput(
-        JSON.stringify([
-          "feedingPreset:delete",
-          "record:create",
-          "record:create",
-        ]),
-      ),
-    ).toEqual(["record:create", "feedingPreset:delete"]);
-    expect(parseMcpOperationsInput("[]")).toEqual([]);
-  });
-
-  it("値が無い・JSON でない・知らない操作を含む場合は null", () => {
-    for (const value of [
-      null,
-      "",
-      "{",
-      JSON.stringify({}),
-      JSON.stringify(["record:delete"]),
-    ]) {
-      expect(parseMcpOperationsInput(value)).toBeNull();
     }
   });
 });

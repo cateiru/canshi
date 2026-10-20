@@ -88,6 +88,7 @@ import {
   isCatAllowedForMcp,
   type McpPermissionRecordType,
   type McpPermissions,
+  writableMcpRecordTypes,
 } from "../permissionRules";
 import { getMcpPermissions } from "../permissions";
 import {
@@ -729,7 +730,7 @@ async function listExpenseWritableCatIds(
       (cat) =>
         cat.householdId === householdId &&
         isCatAllowedForMcp(permissions, cat) &&
-        allowedMcpRecordTypes(permissions, cat.id).includes("expense"),
+        writableMcpRecordTypes(permissions, cat.id).includes("expense"),
     )
     .map((cat) => cat.id);
 }
@@ -869,7 +870,7 @@ const expenseTool = defineRecordTool({
         connection.userId,
       );
       if ("error" in resolved) return resolved;
-      // この接続から書き込めない猫の紐付けは、AI から見えないため外さずに残す
+      // この接続から支出を書き込めない猫の紐付けは、外す権限が無いため残す
       const hidden = existing.catIds.filter(
         (catId) => !resolved.writable.includes(catId),
       );
@@ -1010,13 +1011,7 @@ function registerRecordTool<TData, TExisting>(
     },
     async (args: Record<string, unknown>) => {
       const catId = args.catId as string;
-      const resolved = await resolveWritableCat(
-        ctx,
-        catId,
-        recordType,
-        "record:create",
-        label,
-      );
+      const resolved = await resolveWritableCat(ctx, catId, recordType, label);
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
@@ -1068,13 +1063,7 @@ function registerRecordTool<TData, TExisting>(
     async (args: Record<string, unknown>) => {
       const catId = args.catId as string;
       const id = args.id as string;
-      const resolved = await resolveWritableCat(
-        ctx,
-        catId,
-        recordType,
-        "record:update",
-        label,
-      );
+      const resolved = await resolveWritableCat(ctx, catId, recordType, label);
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
@@ -1113,7 +1102,7 @@ function registerRecordTool<TData, TExisting>(
 
 /**
  * 記録の追加・編集のツールと、記録に必要な ID を調べるツール（掃除対象・服薬予定の一覧）を
- * 登録する。書き込めるのは、接続に記録の追加・編集を許可していて、読み取りも許可している
+ * 登録する。書き込めるのは、接続に書き込みを許可していて、読み取りも許可している
  * 猫・記録の種類に限る（`./context.ts` の `resolveWritableCat`）
  */
 export function registerRecordTools(server: McpServer, ctx: McpToolContext) {

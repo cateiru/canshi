@@ -24,16 +24,18 @@ import {
 } from "../formValues";
 import {
   isHouseholdAllowedForMcp,
-  type McpOperation,
+  type McpHouseholdOperation,
 } from "../permissionRules";
 import {
+  checkHouseholdOperation,
   errorResult,
   householdNotFoundMessage,
   jsonResult,
-  listAllowedHouseholds,
   type McpConnection,
   type McpToolContext,
-  resolveOperation,
+  resolveHouseholdIdsForOperation,
+  resolveHouseholdOperation,
+  resolvePermissions,
 } from "./context";
 
 const PRESET_DESCRIPTION =
@@ -100,18 +102,18 @@ async function listPresetItems(
 }
 
 /**
- * 接続に操作が許可されていて、ユーザーが所属し、読み取りも許可している家のプリセットを読む。
- * 見つからなければ AI に返すエラーメッセージ
+ * ユーザーが所属し、読み取りを許可している家のプリセットで、その家で操作も許可しているときに
+ * プリセットを読む。行えなければ AI に返すエラーメッセージ
  */
 async function resolvePreset(
   ctx: McpToolContext,
-  operation: McpOperation,
+  operation: McpHouseholdOperation,
   id: string,
 ): Promise<
   | { connection: McpConnection; preset: FeedingPreset; householdId: string }
   | { error: string }
 > {
-  const resolved = await resolveOperation(ctx, operation);
+  const resolved = await resolvePermissions(ctx);
   if ("error" in resolved) {
     return resolved;
   }
@@ -136,6 +138,15 @@ async function resolvePreset(
   ) {
     return { error: `id="${id}" のプリセットが見つかりません` };
   }
+  const operationError = await checkHouseholdOperation(
+    ctx,
+    resolved,
+    householdId,
+    operation,
+  );
+  if (operationError) {
+    return { error: operationError };
+  }
   return { connection: resolved.connection, preset: row.preset, householdId };
 }
 
@@ -146,8 +157,8 @@ function formArgs(args: Record<string, unknown>) {
 }
 
 /**
- * ごはんのプリセットの読み取り・追加・編集・削除のツールを登録する。扱えるのは、接続に操作を
- * 許可していて、読み取りも許可している家のプリセットに限る
+ * ごはんのプリセットの読み取り・追加・編集・削除のツールを登録する。扱えるのは、読み取りを
+ * 許可している家で、その操作を許可している家のプリセットに限る
  */
 export function registerFeedingPresetTools(
   server: McpServer,
@@ -160,7 +171,7 @@ export function registerFeedingPresetTools(
       description:
         "家のごはんのプリセット（商品と量の組み合わせ）の一覧を新しい順に取得する。" +
         "householdId を指定するとその家のプリセットに絞り込む。" +
-        "ユーザーが読み取りを許可していない家のプリセットは含まれない。",
+        "ユーザーがプリセットの読み取りを許可している家のプリセットだけを含む。",
       inputSchema: {
         householdId: z
           .string()
@@ -170,24 +181,15 @@ export function registerFeedingPresetTools(
       annotations: { readOnlyHint: true },
     },
     async ({ householdId }) => {
-      const resolved = await resolveOperation(ctx, "feedingPreset:read");
+      const resolved = await resolveHouseholdIdsForOperation(
+        ctx,
+        "feedingPreset:read",
+        householdId,
+      );
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
-      const households = await listAllowedHouseholds(
-        ctx,
-        resolved.connection.userId,
-        resolved.permissions,
-      );
-      const householdIds = households
-        .map((household) => household.id)
-        .filter((id) => householdId === undefined || id === householdId);
-      if (householdId !== undefined && householdIds.length === 0) {
-        return errorResult(householdNotFoundMessage(householdId));
-      }
-      if (householdIds.length === 0) {
-        return jsonResult({ feedingPresets: [] });
-      }
+      const { householdIds } = resolved;
       const db = getDb(ctx.env.DB);
       const presets = await db
         .select()
@@ -231,12 +233,13 @@ export function registerFeedingPresetTools(
       annotations: { readOnlyHint: false, destructiveHint: false },
     },
     async (args) => {
-      const resolved = await resolveOperation(ctx, "feedingPreset:create");
+      const resolved = await resolveHouseholdOperation(
+        ctx,
+        args.householdId,
+        "feedingPreset:create",
+      );
       if ("error" in resolved) {
         return errorResult(resolved.error);
-      }
-      if (!isHouseholdAllowedForMcp(resolved.permissions, args.householdId)) {
-        return errorResult(householdNotFoundMessage(args.householdId));
       }
       const parsed = parseFormValues(
         feedingPresetFormSchema,

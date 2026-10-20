@@ -15,9 +15,9 @@ export function McpAccessNotice() {
       <li>
         <TbPencil size={22} aria-hidden="true" />
         <div>
-          <strong>許可した操作だけを行えます</strong>
+          <strong>許可した範囲だけに書き込めます</strong>
           <p>
-            記録の追加・編集などは、許可したものだけを行えます。記録の削除はできません。
+            「書く」を許可した記録だけを追加・編集できます。記録の削除はできません。
           </p>
         </div>
       </li>

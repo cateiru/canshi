@@ -23,7 +23,10 @@ import {
   users,
   weightRecords,
 } from "@/db/schema";
-import type { McpOperation } from "../permissionRules";
+import {
+  MCP_PERMISSION_RECORD_TYPES,
+  type McpHouseholdOperation,
+} from "../permissionRules";
 import type { McpToolContext } from "./context";
 
 // `src/features/symptoms/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
@@ -68,22 +71,32 @@ async function call(name: string, args: Record<string, unknown> = {}) {
     : { value: JSON.parse(text) as Record<string, unknown> };
 }
 
-async function allow(
-  operations: McpOperation[],
-  scope: Partial<typeof mcpPermissions.$inferInsert> = {},
-) {
+/** 接続の範囲を保存する。書き込み・操作は指定したものだけを許可する */
+async function allow(scope: Partial<typeof mcpPermissions.$inferInsert>) {
   await db
     .insert(mcpPermissions)
-    .values({
-      userId: "user-1",
-      clientId: "client-1",
-      allowedOperations: operations,
-      ...scope,
-    })
+    .values({ userId: "user-1", clientId: "client-1", ...scope })
     .onConflictDoUpdate({
       target: [mcpPermissions.userId, mcpPermissions.clientId],
-      set: { allowedOperations: operations, ...scope },
+      set: scope,
     });
+}
+
+/** ユーザー1 の猫すべてに、すべての記録の種類の書き込みを許可する範囲 */
+const WRITE_ALL_RECORDS = {
+  writableRecordTypes: Object.fromEntries(
+    ["cat-1", "cat-2", "cat-3"].map((catId) => [
+      catId,
+      [...MCP_PERMISSION_RECORD_TYPES],
+    ]),
+  ),
+};
+
+/** ユーザー1 の家すべてで、指定した操作を許可する範囲 */
+function operations(...allowed: McpHouseholdOperation[]) {
+  return {
+    householdOperations: { "house-1": allowed, "house-2": allowed },
+  };
 }
 
 beforeEach(async () => {
@@ -151,21 +164,40 @@ afterEach(() => {
 });
 
 describe("記録の追加", () => {
-  it("操作を許可していない接続は、記録を追加できない", async () => {
+  it("範囲を保存していない接続は、読み取れる猫にも記録を追加できない", async () => {
     const result = await call("create_poop_record", {
       catId: "cat-1",
       consistency: "normal",
     });
 
-    expect(result.error).toContain("「記録の追加」が許可されていません");
+    expect(result.error).toContain(
+      "この猫のうんちの記録の書き込みが許可されていません",
+    );
     expect(await db.select().from(poopRecords)).toEqual([]);
+  });
+
+  it("書き込みを許可していない猫・記録の種類には追加できない", async () => {
+    await allow({ writableRecordTypes: { "cat-1": ["feeding"] } });
+
+    for (const [catId, tool] of [
+      ["cat-1", "create_poop_record"],
+      ["cat-2", "create_feeding_record"],
+    ]) {
+      const result = await call(tool, {
+        catId,
+        consistency: "normal",
+        mode: "strict",
+        items: [],
+      });
+      expect(result.error).toContain("の書き込みが許可されていません");
+    }
   });
 
   it("日時を省略すると、日本時間の今の日時で記録する", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     // 日本時間では 2026-10-20 00:30
     vi.setSystemTime(new Date("2026-10-19T15:30:00.000Z"));
-    await allow(["record:create"]);
+    await allow(WRITE_ALL_RECORDS);
 
     const result = await call("create_poop_record", {
       catId: "cat-1",
@@ -187,7 +219,7 @@ describe("記録の追加", () => {
   });
 
   it("フォームと同じ検証を通らなければ追加しない", async () => {
-    await allow(["record:create"]);
+    await allow(WRITE_ALL_RECORDS);
 
     const result = await call("create_poop_record", {
       catId: "cat-1",
@@ -200,7 +232,8 @@ describe("記録の追加", () => {
   });
 
   it("読み取りを許可していない家・猫、ほかの人の猫は、存在しない猫と区別しない", async () => {
-    await allow(["record:create"], {
+    await allow({
+      ...WRITE_ALL_RECORDS,
       excludedHouseholdIds: ["house-2"],
       excludedCatIds: ["cat-2"],
     });
@@ -216,7 +249,8 @@ describe("記録の追加", () => {
   });
 
   it("読み取りを許可していない記録の種類は追加できない", async () => {
-    await allow(["record:create"], {
+    await allow({
+      ...WRITE_ALL_RECORDS,
       excludedRecordTypes: { "cat-1": ["poop"] },
     });
 
@@ -225,12 +259,14 @@ describe("記録の追加", () => {
       consistency: "normal",
     });
 
-    expect(result.error).toContain("読み取りが許可されていません");
+    expect(result.error).toContain(
+      "この猫のうんちの記録の書き込みが許可されていません",
+    );
     expect(await db.select().from(poopRecords)).toEqual([]);
   });
 
   it("投薬の記録は、省略すると画面と同じく投薬できたものとして記録する", async () => {
-    await allow(["record:create"]);
+    await allow(WRITE_ALL_RECORDS);
     await db.insert(medications).values({
       id: "medication-1",
       catId: "cat-1",
@@ -253,7 +289,7 @@ describe("記録の追加", () => {
   });
 
   it("体重は猫の体重だけを指定すると、そのまま猫の体重として記録する", async () => {
-    await allow(["record:create"]);
+    await allow(WRITE_ALL_RECORDS);
 
     await call("create_weight_record", { catId: "cat-1", catWeightKg: 4.2 });
 
@@ -264,7 +300,7 @@ describe("記録の追加", () => {
 
 describe("記録の編集", () => {
   it("体重を猫の体重だけで直すと、人間を含んだ体重などは空にする", async () => {
-    await allow(["record:update"]);
+    await allow(WRITE_ALL_RECORDS);
     const [record] = await db
       .insert(weightRecords)
       .values({
@@ -306,9 +342,9 @@ describe("記録の編集", () => {
     return record;
   }
 
-  it("追加だけを許可した接続は、記録を編集できない", async () => {
+  it("書き込みを許可していない記録の種類は編集できない", async () => {
     const record = await createPoop();
-    await allow(["record:create"]);
+    await allow({ writableRecordTypes: { "cat-1": ["feeding"] } });
 
     const result = await call("update_poop_record", {
       catId: "cat-1",
@@ -316,12 +352,16 @@ describe("記録の編集", () => {
       consistency: "hard",
     });
 
-    expect(result.error).toContain("「記録の編集」が許可されていません");
+    expect(result.error).toContain(
+      "この猫のうんちの記録の書き込みが許可されていません",
+    );
+    const [unchanged] = await db.select().from(poopRecords);
+    expect(unchanged.consistency).toBe("normal");
   });
 
   it("指定した項目だけを変え、省略した項目は今の値のまま", async () => {
     const record = await createPoop();
-    await allow(["record:update"]);
+    await allow(WRITE_ALL_RECORDS);
 
     const result = await call("update_poop_record", {
       catId: "cat-1",
@@ -341,7 +381,7 @@ describe("記録の編集", () => {
 
   it("null を指定した任意の項目は空にし、false の真偽値は外す", async () => {
     const record = await createPoop();
-    await allow(["record:update"]);
+    await allow(WRITE_ALL_RECORDS);
 
     await call("update_poop_record", {
       catId: "cat-1",
@@ -356,7 +396,7 @@ describe("記録の編集", () => {
 
   it("ほかの猫の記録は、猫の ID を変えても編集できない", async () => {
     const record = await createPoop();
-    await allow(["record:update"]);
+    await allow(WRITE_ALL_RECORDS);
 
     const result = await call("update_poop_record", {
       catId: "cat-2",
@@ -372,7 +412,7 @@ describe("記録の編集", () => {
 
 describe("ごはんの記録", () => {
   it("猫の家の商品で追加し、編集で明細を省略すると今の明細のまま", async () => {
-    await allow(["record:create", "record:update"]);
+    await allow(WRITE_ALL_RECORDS);
     await db.insert(foodProducts).values([
       { id: "product-1", householdId: "house-1", ...PRODUCT },
       { id: "product-2", householdId: "house-2", ...PRODUCT },
@@ -421,7 +461,8 @@ describe("ごはんの記録", () => {
 
 describe("支出の記録", () => {
   it("関連する猫に、書き込めない猫は指定できない", async () => {
-    await allow(["record:create"], {
+    await allow({
+      ...WRITE_ALL_RECORDS,
       excludedRecordTypes: { "cat-2": ["expense"] },
     });
 
@@ -437,7 +478,8 @@ describe("支出の記録", () => {
   });
 
   it("関連する猫を置き換えても、この接続から見えない猫の紐付けは残す", async () => {
-    await allow(["record:update"], {
+    await allow({
+      ...WRITE_ALL_RECORDS,
       excludedRecordTypes: { "cat-2": ["expense"] },
     });
     const [expense] = await db
@@ -493,8 +535,30 @@ describe("ごはん商品", () => {
     );
   });
 
+  it("読み取りを許可していない家の商品は、指定した家でも読めない", async () => {
+    await allow({ householdOperations: { "house-1": ["foodProduct:read"] } });
+
+    expect(
+      (await call("list_food_products", { householdId: "house-2" })).error,
+    ).toBe(
+      "この接続には家「家2」での「ごはん商品の読み取り」が許可されていません。" +
+        "CANSHI の設定の「AIとの接続」で、ユーザーに許可してもらってください",
+    );
+    expect(
+      (
+        await call("create_food_product", {
+          householdId: "house-1",
+          ...PRODUCT,
+        })
+      ).error,
+    ).toContain("家「家1」での「ごはん商品の追加」が許可されていません");
+  });
+
   it("読み取りを許可していない家・ほかの人の家の商品は一覧に含めない", async () => {
-    await allow(["foodProduct:read"], { excludedHouseholdIds: ["house-2"] });
+    await allow({
+      ...operations("foodProduct:read"),
+      excludedHouseholdIds: ["house-2"],
+    });
     await db.insert(foodProducts).values([
       { id: "product-1", householdId: "house-1", ...PRODUCT },
       { id: "product-2", householdId: "house-2", ...PRODUCT },
@@ -514,7 +578,10 @@ describe("ごはん商品", () => {
   });
 
   it("読み取りを許可した家に商品と画像を追加する", async () => {
-    await allow(["foodProduct:create"], { excludedHouseholdIds: ["house-2"] });
+    await allow({
+      ...operations("foodProduct:create"),
+      excludedHouseholdIds: ["house-2"],
+    });
 
     const denied = await call("create_food_product", {
       householdId: "house-2",
@@ -546,7 +613,7 @@ describe("ごはん商品", () => {
   });
 
   it("画像でないデータは、商品を追加する前に断る", async () => {
-    await allow(["foodProduct:create"]);
+    await allow(operations("foodProduct:create"));
 
     const result = await call("create_food_product", {
       householdId: "house-1",
@@ -559,7 +626,7 @@ describe("ごはん商品", () => {
   });
 
   it("編集では指定した項目だけを変える", async () => {
-    await allow(["foodProduct:update"]);
+    await allow(operations("foodProduct:update"));
     await db.insert(foodProducts).values({
       id: "product-1",
       householdId: "house-1",
@@ -587,7 +654,7 @@ describe("ごはんのプリセット", () => {
   });
 
   it("追加・編集・削除はそれぞれ許可した操作だけを行える", async () => {
-    await allow(["feedingPreset:create"]);
+    await allow(operations("feedingPreset:create"));
     const created = await call("create_feeding_preset", {
       householdId: "house-1",
       name: "朝ごはん",
@@ -601,7 +668,7 @@ describe("ごはんのプリセット", () => {
       "「ごはんのプリセットの削除」が許可されていません",
     );
 
-    await allow(["feedingPreset:update", "feedingPreset:delete"]);
+    await allow(operations("feedingPreset:update", "feedingPreset:delete"));
     expect(
       (await call("update_feeding_preset", { id, name: "夜ごはん" })).value,
     ).toEqual({ id });
@@ -616,7 +683,7 @@ describe("ごはんのプリセット", () => {
   });
 
   it("ほかの家の商品は明細に使えない", async () => {
-    await allow(["feedingPreset:create"]);
+    await allow(operations("feedingPreset:create"));
 
     const result = await call("create_feeding_preset", {
       householdId: "house-1",
@@ -635,7 +702,8 @@ describe("ごはんのプリセット", () => {
       name: "家2のプリセット",
       mode: "strict",
     });
-    await allow(["feedingPreset:read", "feedingPreset:delete"], {
+    await allow({
+      ...operations("feedingPreset:read", "feedingPreset:delete"),
       excludedHouseholdIds: ["house-2"],
     });
 

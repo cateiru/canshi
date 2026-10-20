@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { McpPermissionTreeField } from "./McpPermissionTreeField";
 import {
   MCP_PERMISSION_RECORD_TYPES,
+  type McpPermissions,
   type McpPermissionTreeHousehold,
-  type McpReadScope,
 } from "./permissionRules";
 
 const allTypes = [...MCP_PERMISSION_RECORD_TYPES];
@@ -14,18 +14,21 @@ const tree: McpPermissionTreeHousehold[] = [
     id: "house-1",
     name: "家1",
     checked: true,
+    operations: [],
     cats: [
       {
         id: "cat-1",
         name: "たま",
         checked: true,
         checkedRecordTypes: allTypes,
+        writableRecordTypes: [],
       },
       {
         id: "cat-2",
         name: "みけ",
         checked: true,
         checkedRecordTypes: allTypes,
+        writableRecordTypes: [],
       },
     ],
   },
@@ -33,6 +36,7 @@ const tree: McpPermissionTreeHousehold[] = [
     id: "house-2",
     name: "家2",
     checked: true,
+    operations: [],
     cats: [],
   },
 ];
@@ -47,7 +51,7 @@ function renderField(initial = tree) {
     'input[name="mcpPermissions"]',
   );
   return {
-    value: () => JSON.parse(input?.value ?? "null") as McpReadScope,
+    value: () => JSON.parse(input?.value ?? "null") as McpPermissions,
   };
 }
 
@@ -55,24 +59,90 @@ function checkbox(name: string) {
   return screen.getByRole("checkbox", { name });
 }
 
+/** 猫の記録の種類の「読む」のチェックボックス */
 function recordCheckbox(catName: string, label: string) {
   return within(
     screen.getByRole("group", { name: `${catName}の記録` }),
-  ).getByRole("checkbox", { name: label });
+  ).getByRole("checkbox", { name: `${label}を読む` });
 }
 
+/** 猫の記録の種類の「書く」のチェックボックス */
+function writeCheckbox(catName: string, label: string) {
+  return within(
+    screen.getByRole("group", { name: `${catName}の記録` }),
+  ).getByRole("checkbox", { name: `${label}を書く` });
+}
+
+/** 家のごはん商品・プリセットの操作のチェックボックス */
+function operationCheckbox(
+  householdName: string,
+  group: string,
+  label: string,
+) {
+  return within(
+    screen.getByRole("group", { name: `${householdName}の${group}` }),
+  ).getByRole("checkbox", { name: `${group}を${label}` });
+}
+
+const NOTHING_WRITABLE = { writableRecordTypes: {}, householdOperations: {} };
+
 describe("McpPermissionTreeField", () => {
-  it("最初はすべてにチェックが付き、何も外していない値を送る", () => {
+  it("最初は読み取りにすべてチェックが付き、何も外さず、何も書き込めない値を送る", () => {
     const { value } = renderField();
 
     expect(checkbox("家1")).toBeChecked();
     expect(checkbox("たま")).toBeChecked();
     expect(recordCheckbox("たま", "ごはん")).toBeChecked();
+    expect(writeCheckbox("たま", "ごはん")).not.toBeChecked();
+    expect(operationCheckbox("家1", "ごはん商品", "読む")).not.toBeChecked();
     expect(screen.getByText("この家には猫がいません。")).toBeInTheDocument();
     expect(value()).toEqual({
       excludedHouseholdIds: [],
       excludedCatIds: [],
       excludedRecordTypes: {},
+      ...NOTHING_WRITABLE,
+    });
+  });
+
+  it("「書く」にチェックすると読み取りにも付き、「読む」を外すと書き込みも外れる", () => {
+    const { value } = renderField();
+
+    fireEvent.click(recordCheckbox("たま", "うんち"));
+    fireEvent.click(writeCheckbox("たま", "うんち"));
+    fireEvent.click(writeCheckbox("たま", "ごはん"));
+
+    expect(recordCheckbox("たま", "うんち")).toBeChecked();
+    expect(value().writableRecordTypes).toEqual({
+      "cat-1": ["feeding", "poop"],
+    });
+
+    fireEvent.click(recordCheckbox("たま", "ごはん"));
+
+    expect(writeCheckbox("たま", "ごはん")).not.toBeChecked();
+    expect(value().writableRecordTypes).toEqual({ "cat-1": ["poop"] });
+  });
+
+  it("猫・家のチェックを外すと、書き込み・操作も外れ、付け直しても書き込みには付かない", () => {
+    const { value } = renderField();
+
+    fireEvent.click(writeCheckbox("たま", "ごはん"));
+    fireEvent.click(operationCheckbox("家1", "ごはん商品", "追加"));
+    fireEvent.click(checkbox("家1"));
+    fireEvent.click(checkbox("家1"));
+
+    expect(writeCheckbox("たま", "ごはん")).not.toBeChecked();
+    expect(operationCheckbox("家1", "ごはん商品", "追加")).not.toBeChecked();
+    expect(value()).toMatchObject(NOTHING_WRITABLE);
+  });
+
+  it("家の操作にチェックすると、その家の操作として送る", () => {
+    const { value } = renderField();
+
+    fireEvent.click(operationCheckbox("家1", "ごはんのプリセット", "削除"));
+    fireEvent.click(operationCheckbox("家1", "ごはん商品", "読む"));
+
+    expect(value().householdOperations).toEqual({
+      "house-1": ["foodProduct:read", "feedingPreset:delete"],
     });
   });
 
@@ -102,6 +172,7 @@ describe("McpPermissionTreeField", () => {
       excludedHouseholdIds: ["house-1"],
       excludedCatIds: ["cat-1", "cat-2"],
       excludedRecordTypes: {},
+      ...NOTHING_WRITABLE,
     });
 
     fireEvent.click(checkbox("家1"));
@@ -113,6 +184,7 @@ describe("McpPermissionTreeField", () => {
       excludedHouseholdIds: [],
       excludedCatIds: [],
       excludedRecordTypes: {},
+      ...NOTHING_WRITABLE,
     });
   });
 
@@ -133,6 +205,7 @@ describe("McpPermissionTreeField", () => {
           (type) => type !== "weight",
         ),
       },
+      ...NOTHING_WRITABLE,
     });
   });
 
@@ -141,7 +214,13 @@ describe("McpPermissionTreeField", () => {
       {
         ...tree[0],
         cats: [
-          { id: "cat-1", name: "たま", checked: true, checkedRecordTypes: [] },
+          {
+            id: "cat-1",
+            name: "たま",
+            checked: true,
+            checkedRecordTypes: [],
+            writableRecordTypes: [],
+          },
         ],
       },
     ]);

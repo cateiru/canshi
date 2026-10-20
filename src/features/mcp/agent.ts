@@ -106,6 +106,9 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
         title: "家の一覧を取得",
         description:
           "ユーザーが所属している家の一覧を取得する。ごはん商品・プリセットは家ごとに登録する。" +
+          "operations は、その家でこの接続に許可されているごはん商品・プリセットの操作" +
+          "（foodProduct:read・foodProduct:create・foodProduct:update・feedingPreset:read・" +
+          "feedingPreset:create・feedingPreset:update・feedingPreset:delete）。" +
           "ユーザーが読み取りを許可していない家は含まれない。",
         annotations: { readOnlyHint: true },
       },
@@ -127,7 +130,11 @@ export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
             .filter((household) =>
               isHouseholdAllowedForMcp(permissions, household.id),
             )
-            .map((household) => ({ id: household.id, name: household.name })),
+            .map((household) => ({
+              id: household.id,
+              name: household.name,
+              operations: permissions.householdOperations[household.id] ?? [],
+            })),
         });
       },
     );

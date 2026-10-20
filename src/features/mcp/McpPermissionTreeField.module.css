@@ -32,7 +32,8 @@
 
 /* 子の階層は、親のチェックボックスの左端から字下げし、縦線でつながりを示す */
 .cats,
-.noCats {
+.noCats,
+.operations {
   margin-left: 9px;
   padding-left: calc(var(--space-4) - 1px);
   border-left: var(--border-width) solid var(--color-border);
@@ -51,14 +52,49 @@
   font-weight: var(--font-weight-bold);
 }
 
-/* 記録の種類は数が多いため、折り返して並べる */
+/* 記録の種類は数が多いため、広い画面では 2 列に並べる */
 .records {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5em), 1fr));
-  column-gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17em), 1fr));
+  column-gap: var(--space-6);
   margin-left: 9px;
   padding-left: calc(var(--space-4) - 1px);
   border-left: var(--border-width) solid var(--color-border);
+}
+
+/* 記録の種類・操作の名前と、「読む」「書く」などのチェックを 1 行に並べる */
+.record,
+.operationGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: var(--space-3);
+}
+
+.recordLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-3);
+}
+
+.operations {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.operationLabel {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
 }
 
 .icon {

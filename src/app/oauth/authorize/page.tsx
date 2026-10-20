@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import {
   TbAlertTriangle,
   TbEye,
-  TbPencil,
   TbPlugConnected,
   TbUser,
 } from "react-icons/tb";
@@ -16,9 +15,8 @@ import {
   MCP_CONSENT_HEADER,
 } from "@/features/mcp/consent";
 import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
-import { McpOperationsField } from "@/features/mcp/McpOperationsField";
 import { McpPermissionTreeField } from "@/features/mcp/McpPermissionTreeField";
-import { getMcpPermissionSettings } from "@/features/mcp/permissions";
+import { getMcpPermissionTree } from "@/features/mcp/permissions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
@@ -40,7 +38,7 @@ type AuthorizePageProps = {
  * ChatGPT などの MCP クライアントを接続するときの同意画面。認可リクエストの検証と、
  * 「許可する」「許可しない」の送信先（`POST /oauth/authorize`）の処理は Worker
  * （`src/features/mcp/authorize.ts`）が行い、このページは検証済みの内容と、この接続で
- * 読み取りを許可する範囲・許可する操作の選択を表示するだけ。
+ * 読み取り・書き込みを許可する範囲の選択を表示するだけ。
  * 未ログインのときは middleware がログイン画面へ送り、ログイン後にこのページへ戻る
  */
 export default async function AuthorizePage({
@@ -50,10 +48,10 @@ export default async function AuthorizePage({
   const consent = decodeMcpConsentRequest(
     (await headers()).get(MCP_CONSENT_HEADER),
   );
-  // 同じアプリに前回同意したときの範囲・操作があれば、それを初期の状態にする
-  const { tree: permissionTree, allowedOperations } = consent
-    ? await getMcpPermissionSettings(user.id, consent.clientId)
-    : { tree: [], allowedOperations: [] };
+  // 同じアプリに前回同意したときの範囲があれば、それを初期の状態にする
+  const permissionTree = consent
+    ? await getMcpPermissionTree(user.id, consent.clientId)
+    : [];
 
   return (
     <main className={styles.main}>
@@ -109,31 +107,19 @@ export default async function AuthorizePage({
             className={styles.form}
           >
             <Surface
-              title="読み取りを許可する範囲"
+              title="許可する範囲"
               titleId="ai-permissions"
               titleSize="lg"
               icon={<TbEye size={22} aria-hidden="true" />}
               gap="sm"
             >
               <p className={styles.note}>
-                このアプリに公開する家・猫・記録を選んでください。チェックを外した情報は読み取れません。
+                このアプリに公開する家・猫・記録を「読む」で選んでください。チェックを外した情報は読み取れません。記録の追加・編集を許可するときは「書く」に、ごはん商品・プリセットの操作を許可するときは家ごとの操作にチェックしてください。
               </p>
               <McpPermissionTreeField tree={permissionTree} />
               <p className={styles.note}>
-                あとから登録した猫や、新しく参加した家は、読み取れる状態になります。
+                あとから登録した猫や、新しく参加した家は、読み取れますが書き込めません。
               </p>
-            </Surface>
-            <Surface
-              title="許可する操作"
-              titleId="ai-operations"
-              titleSize="lg"
-              icon={<TbPencil size={22} aria-hidden="true" />}
-              gap="sm"
-            >
-              <p className={styles.note}>
-                記録の追加・編集など、このアプリに許可する操作を選んでください。チェックしなければ、読み取りだけを許可します。
-              </p>
-              <McpOperationsField allowedOperations={allowedOperations} />
             </Surface>
             <p className={styles.afterNote}>
               許可したあとも、設定の「AIとの接続」で範囲の変更や接続の解除ができます。

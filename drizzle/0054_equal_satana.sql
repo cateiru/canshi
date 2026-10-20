@@ -1,0 +1,1 @@
+ALTER TABLE `mcp_permissions` DROP COLUMN `allowed_operations`;
