@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { and, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { z } from "zod";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
@@ -227,11 +227,17 @@ export function registerFoodProductTools(
       }
       const { householdIds } = resolved;
       const db = getDb(ctx.env.DB);
-      const products = await db
-        .select()
-        .from(foodProducts)
-        .where(inArray(foodProducts.householdId, householdIds))
-        .orderBy(desc(foodProducts.createdAt));
+      const products: FoodProduct[] = [];
+      // 家の ID は D1 のバインド上限に収まるよう分割し、まとめてから新しい順に並べる
+      for (const ids of chunkForBoundParameters(householdIds)) {
+        products.push(
+          ...(await db
+            .select()
+            .from(foodProducts)
+            .where(inArray(foodProducts.householdId, ids))),
+        );
+      }
+      products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       const withImage = new Set<string>();
       // recordType の分を 1 個予約し、ID は D1 のバインド上限に収まるよう分割する
       for (const ids of chunkForBoundParameters(

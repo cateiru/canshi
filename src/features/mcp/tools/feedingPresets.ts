@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
@@ -191,11 +191,17 @@ export function registerFeedingPresetTools(
       }
       const { householdIds } = resolved;
       const db = getDb(ctx.env.DB);
-      const presets = await db
-        .select()
-        .from(feedingPresets)
-        .where(inArray(feedingPresets.householdId, householdIds))
-        .orderBy(desc(feedingPresets.createdAt));
+      const presets: FeedingPreset[] = [];
+      // 家の ID は D1 のバインド上限に収まるよう分割し、まとめてから新しい順に並べる
+      for (const ids of chunkForBoundParameters(householdIds)) {
+        presets.push(
+          ...(await db
+            .select()
+            .from(feedingPresets)
+            .where(inArray(feedingPresets.householdId, ids))),
+        );
+      }
+      presets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       const items = await listPresetItems(
         db,
         presets.map((preset) => preset.id),

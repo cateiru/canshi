@@ -554,6 +554,38 @@ describe("ごはん商品", () => {
     ).toContain("家「家1」での「ごはん商品の追加」が許可されていません");
   });
 
+  it("複数の家の商品を、まとめて新しく登録した順に返す", async () => {
+    await allow(operations("foodProduct:read"));
+    await db.insert(foodProducts).values([
+      {
+        id: "product-old",
+        householdId: "house-1",
+        ...PRODUCT,
+        createdAt: new Date("2026-10-01T00:00:00Z"),
+      },
+      {
+        id: "product-new",
+        householdId: "house-2",
+        ...PRODUCT,
+        createdAt: new Date("2026-10-03T00:00:00Z"),
+      },
+      {
+        id: "product-middle",
+        householdId: "house-1",
+        ...PRODUCT,
+        createdAt: new Date("2026-10-02T00:00:00Z"),
+      },
+    ] as (typeof foodProducts.$inferInsert)[]);
+
+    const result = await call("list_food_products");
+
+    expect(
+      (result.value as { foodProducts: { id: string }[] }).foodProducts.map(
+        ({ id }) => id,
+      ),
+    ).toEqual(["product-new", "product-middle", "product-old"]);
+  });
+
   it("読み取りを許可していない家・ほかの人の家の商品は一覧に含めない", async () => {
     await allow({
       ...operations("foodProduct:read"),
