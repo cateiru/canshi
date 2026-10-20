@@ -58,8 +58,9 @@ export async function getFoodProductForUser(userId: string, id: string) {
 export async function listFoodProductsByIds(
   householdId: string,
   ids: string[],
+  d1?: D1Database,
 ) {
-  const db = getDb();
+  const db = getDb(d1);
   const rows: FoodProduct[] = [];
   // 家の比較値の分を 1 個予約し、ID は D1 のバインド上限に収まるよう分割する
   for (const chunk of chunkForBoundParameters(ids, 1)) {

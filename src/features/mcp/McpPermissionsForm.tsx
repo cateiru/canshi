@@ -18,14 +18,14 @@ type McpPermissionsFormProps = {
 
 const initialState: McpPermissionsFormState = {};
 
-/** 設定の「AIとの接続」で、AI から読み取れる範囲を選んで保存するフォーム */
+/** 設定の「AIとの接続」で、AI から読み取れる範囲と書き込める範囲を選んで保存するフォーム */
 export function McpPermissionsForm({ action, tree }: McpPermissionsFormProps) {
   const [state, formAction, isPending] = useActionState(
     async (prevState: McpPermissionsFormState, formData: FormData) => {
       const result = await action(prevState, formData);
       if (!result.formError) {
         addToast({
-          title: "読み取りを許可する範囲を保存しました",
+          title: "許可する範囲を保存しました",
           color: "success",
         });
       }

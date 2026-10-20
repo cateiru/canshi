@@ -2,8 +2,8 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { type Medication, medications } from "@/db/schema";
 
-export async function listMedications(catId: string) {
-  const db = getDb();
+export async function listMedications(catId: string, d1?: D1Database) {
+  const db = getDb(d1);
   return db
     .select()
     .from(medications)

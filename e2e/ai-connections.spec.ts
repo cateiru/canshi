@@ -65,37 +65,50 @@ test.afterEach(async () => {
   );
 });
 
-test("AIとの接続ごとに、読み取りを許可する記録の種類を外して保存すると、再読み込み後も保たれる", async ({
+test("AIとの接続ごとに、読み取り・書き込みを許可する範囲を保存すると、再読み込み後も保たれる", async ({
   page,
 }) => {
   await page.goto("/settings/ai-connections");
   const connection = page.getByRole("region", { name: "E2Eのアプリとの接続" });
-  await connection.getByRole("link", { name: "読み取る範囲" }).click();
+  await connection.getByRole("link", { name: "許可する範囲" }).click();
   await expect(page).toHaveURL(`/settings/ai-connections/${GRANT_ID}`);
   await expect(
     page.getByRole("heading", { level: 1, name: "E2Eのアプリ" }),
   ).toBeVisible();
 
-  const permissions = page.getByRole("region", {
-    name: "読み取りを許可する範囲",
-  });
+  const permissions = page.getByRole("region", { name: "許可する範囲" });
   // ほかのテストで残った猫に影響されないよう、beforeEach で追加した猫の記録を操作する
   const records = permissions.getByRole("group", { name: `${CAT_NAME}の記録` });
   // Checkbox の実体（input）は視覚的に隠れておりクリック不可のため、
-  // クリックは表示テキスト、状態確認は checkbox ロールに対して行う
-  const poop = records.getByRole("checkbox", { name: "うんち" });
-  await expect(poop).toBeChecked();
+  // クリックは input を含む label、状態確認は checkbox ロールに対して行う
+  const checkboxIn = (name: string) =>
+    records.getByRole("checkbox", { name, exact: true });
+  const click = (name: string) =>
+    records
+      .locator("label", {
+        has: page.getByRole("checkbox", { name, exact: true }),
+      })
+      .click();
 
-  await records.getByText("うんち", { exact: true }).click();
-  await expect(poop).not.toBeChecked();
+  const readPoop = checkboxIn("うんちを読む");
+  const writeFeeding = checkboxIn("ごはんを書く");
+  await expect(readPoop).toBeChecked();
+  // 書き込みは既定ではどれも許可していない
+  await expect(writeFeeding).not.toBeChecked();
+
+  await click("うんちを読む");
+  await click("ごはんを書く");
+  await expect(readPoop).not.toBeChecked();
+  await expect(writeFeeding).toBeChecked();
+
   await permissions.getByRole("button", { name: "保存する" }).click();
-  await expect(
-    page.getByText("読み取りを許可する範囲を保存しました"),
-  ).toBeVisible();
+  await expect(page.getByText("許可する範囲を保存しました")).toBeVisible();
 
   await page.reload();
-  await expect(poop).not.toBeChecked();
-  await expect(records.getByRole("checkbox", { name: "ごはん" })).toBeChecked();
+  await expect(readPoop).not.toBeChecked();
+  await expect(checkboxIn("ごはんを読む")).toBeChecked();
+  await expect(writeFeeding).toBeChecked();
+  await expect(checkboxIn("うんちを書く")).not.toBeChecked();
 });
 
 test("AIとの接続の一覧に、接続を最後に使った日時を表示する", async ({

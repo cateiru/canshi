@@ -70,8 +70,8 @@ export async function listMediaAssetsByRecords(
 }
 
 /** 元データとサムネイルを合わせた現在の使用容量（バイト） */
-export async function sumMediaStorageBytes(): Promise<number> {
-  const db = getDb();
+export async function sumMediaStorageBytes(d1?: D1Database): Promise<number> {
+  const db = getDb(d1);
   const [row] = await db
     .select({
       total: sql<number>`coalesce(sum(${mediaAssets.sizeBytes}), 0) + coalesce(sum(${mediaAssets.thumbnailSizeBytes}), 0)`,
@@ -84,8 +84,9 @@ export async function sumMediaStorageBytes(): Promise<number> {
 export async function nextMediaSortOrder(
   recordType: string,
   recordId: string,
+  d1?: D1Database,
 ): Promise<number> {
-  const db = getDb();
+  const db = getDb(d1);
   const [row] = await db
     .select({
       max: sql<number | null>`max(${mediaAssets.sortOrder})`,

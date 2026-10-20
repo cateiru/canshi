@@ -19,27 +19,34 @@
 .households {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-6);
 }
 
 .household {
   min-width: 0;
   padding: var(--space-4);
-  border-radius: 12px;
+  border-radius: 16px;
   background: var(--color-bg);
   box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
 }
 
-/* 子の階層は、親のチェックボックスの左端から字下げし、縦線でつながりを示す */
-.cats,
-.noCats {
-  margin-left: 9px;
-  padding-left: calc(var(--space-4) - 1px);
-  border-left: var(--border-width) solid var(--color-border);
+.cats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
 }
 
-.cat + .cat {
-  margin-top: var(--space-2);
+.cat {
+  min-width: 0;
+}
+
+.householdCheckbox,
+.catCheckbox {
+  width: 100%;
+}
+
+.name {
+  min-width: 0;
 }
 
 .householdCheckbox {
@@ -51,16 +58,94 @@
   font-weight: var(--font-weight-bold);
 }
 
-/* 記録の種類は数が多いため、折り返して並べる */
+/* 記録の種類は数が多いため、広い画面では 2 列に並べる */
 .records {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5em), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17em), 1fr));
+  column-gap: var(--space-6);
+  margin-top: var(--space-2);
+}
+
+/* fieldset の既定の枠・余白をなくし、名前を読み上げられるまとまりにする */
+.records,
+.record,
+.operationGroup {
+  min-width: 0;
+  margin-inline: 0;
+  margin-bottom: 0;
+  padding: 0;
+  border: 0;
+}
+
+.record {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-2);
+}
+
+.operationGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   column-gap: var(--space-3);
-  margin-left: 9px;
-  padding-left: calc(var(--space-4) - 1px);
-  border-left: var(--border-width) solid var(--color-border);
+  margin-top: 0;
+}
+
+.recordLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+
+.choices {
+  display: flex;
+  column-gap: var(--space-2);
+}
+
+.choices > label,
+.operationChoices > label {
+  min-width: 44px;
+}
+
+.choices > label {
+  gap: var(--space-1);
+}
+
+.operationChoices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 var(--space-3);
+}
+
+.operations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.operationLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
 }
 
 .icon {
   flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .operationGroup {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+  }
+
+  .operationChoices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

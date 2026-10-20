@@ -8,8 +8,8 @@ import { requireCatAccess } from "@/features/auth/session";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
-import { combineDateTimeUtc } from "@/features/shared/datetime";
 import { VOMIT_RECORD_MEDIA_TYPE } from "./media";
+import { createVomitRecord, updateVomitRecord } from "./mutations";
 import {
   type VomitRecordFormFieldErrors,
   vomitRecordFormSchema,
@@ -50,31 +50,14 @@ export async function createVomitRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  const [created] = await db
-    .insert(vomitRecords)
-    .values({
-      catId,
-      occurredAt: combineDateTimeUtc(
-        parsed.data.occurredDate,
-        parsed.data.occurredTime,
-      ),
-      amount: parsed.data.amount ?? null,
-      color: parsed.data.color ?? null,
-      hasBlood: parsed.data.hasBlood,
-      hasForeignObject: parsed.data.hasForeignObject,
-      appetiteNote: parsed.data.appetiteNote ?? null,
-      energyNote: parsed.data.energyNote ?? null,
-      memo: parsed.data.memo ?? null,
-    })
-    .returning({ id: vomitRecords.id });
+  const id = await createVomitRecord(catId, parsed.data);
 
   const mediaError = await syncRecordMediaFromForm(
     VOMIT_RECORD_MEDIA_TYPE,
-    created.id,
+    id,
     formData,
   );
-  return { savedRecordId: created.id, formError: mediaError };
+  return { savedRecordId: id, formError: mediaError };
 }
 
 export async function updateVomitRecordAction(
@@ -90,27 +73,7 @@ export async function updateVomitRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  const result = await db
-    .update(vomitRecords)
-    .set({
-      occurredAt: combineDateTimeUtc(
-        parsed.data.occurredDate,
-        parsed.data.occurredTime,
-      ),
-      amount: parsed.data.amount ?? null,
-      color: parsed.data.color ?? null,
-      hasBlood: parsed.data.hasBlood,
-      hasForeignObject: parsed.data.hasForeignObject,
-      appetiteNote: parsed.data.appetiteNote ?? null,
-      energyNote: parsed.data.energyNote ?? null,
-      memo: parsed.data.memo ?? null,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(vomitRecords.id, id), eq(vomitRecords.catId, catId)))
-    .returning({ id: vomitRecords.id });
-
-  if (result.length === 0) {
+  if (!(await updateVomitRecord(catId, id, parsed.data))) {
     return { formError: "記録が見つかりませんでした" };
   }
 

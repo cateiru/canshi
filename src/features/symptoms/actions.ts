@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
 import {
@@ -13,8 +13,8 @@ import { requireCatAccess } from "@/features/auth/session";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
-import { combineDateTimeUtc } from "@/features/shared/datetime";
 import { SYMPTOM_MEDIA_TYPE } from "./media";
+import { createSymptom, updateSymptom } from "./mutations";
 import { type SymptomFormFieldErrors, symptomFormSchema } from "./schema";
 
 /**
@@ -25,27 +25,6 @@ import { type SymptomFormFieldErrors, symptomFormSchema } from "./schema";
 export type SymptomFormState = MediaFormState & {
   fieldErrors?: SymptomFormFieldErrors;
 };
-
-async function verifyHospitalVisitBelongsToCat(
-  db: ReturnType<typeof getDb>,
-  hospitalVisitId: string | undefined,
-  catId: string,
-): Promise<boolean> {
-  if (hospitalVisitId == null) {
-    return true;
-  }
-  const [row] = await db
-    .select({ id: hospitalVisits.id })
-    .from(hospitalVisits)
-    .where(
-      and(
-        eq(hospitalVisits.id, hospitalVisitId),
-        eq(hospitalVisits.catId, catId),
-      ),
-    )
-    .limit(1);
-  return row != null;
-}
 
 function parseFormData(formData: FormData) {
   return symptomFormSchema.safeParse({
@@ -73,38 +52,17 @@ export async function createSymptomAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  if (
-    !(await verifyHospitalVisitBelongsToCat(
-      db,
-      parsed.data.hospitalVisitId,
-      catId,
-    ))
-  ) {
-    return { formError: "関連する通院記録が見つかりませんでした" };
+  const saved = await createSymptom(catId, parsed.data);
+  if ("error" in saved) {
+    return { formError: saved.error };
   }
-
-  const [created] = await db
-    .insert(symptoms)
-    .values({
-      catId,
-      symptomType: parsed.data.symptomType,
-      onsetAt: combineDateTimeUtc(parsed.data.onsetDate, parsed.data.onsetTime),
-      frequencyOrSeverity: parsed.data.frequencyOrSeverity ?? null,
-      appetiteNote: parsed.data.appetiteNote ?? null,
-      energyNote: parsed.data.energyNote ?? null,
-      status: parsed.data.status,
-      hospitalVisitId: parsed.data.hospitalVisitId ?? null,
-      memo: parsed.data.memo ?? null,
-    })
-    .returning({ id: symptoms.id });
 
   const mediaError = await syncRecordMediaFromForm(
     SYMPTOM_MEDIA_TYPE,
-    created.id,
+    saved.id,
     formData,
   );
-  return { savedRecordId: created.id, formError: mediaError };
+  return { savedRecordId: saved.id, formError: mediaError };
 }
 
 export async function updateSymptomAction(
@@ -120,51 +78,9 @@ export async function updateSymptomAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  if (
-    !(await verifyHospitalVisitBelongsToCat(
-      db,
-      parsed.data.hospitalVisitId,
-      catId,
-    ))
-  ) {
-    return { formError: "関連する通院記録が見つかりませんでした" };
-  }
-
-  const result = await db
-    .update(symptoms)
-    .set({
-      symptomType: parsed.data.symptomType,
-      onsetAt: combineDateTimeUtc(parsed.data.onsetDate, parsed.data.onsetTime),
-      frequencyOrSeverity: parsed.data.frequencyOrSeverity ?? null,
-      appetiteNote: parsed.data.appetiteNote ?? null,
-      energyNote: parsed.data.energyNote ?? null,
-      status: parsed.data.status,
-      hospitalVisitId: parsed.data.hospitalVisitId ?? null,
-      memo: parsed.data.memo ?? null,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(symptoms.id, id), eq(symptoms.catId, catId)))
-    .returning({ id: symptoms.id });
-
-  if (result.length === 0) {
-    return { formError: "記録が見つかりませんでした" };
-  }
-
-  // 解消にした症状について、未対応のまま残っている確認通知（`symptom_ongoing`）は
-  // もう答える必要がないため完了にする
-  if (parsed.data.status === "resolved") {
-    await db
-      .update(notifications)
-      .set({ status: "done", updatedAt: new Date() })
-      .where(
-        and(
-          eq(notifications.kind, "symptom_ongoing"),
-          eq(notifications.referenceId, id),
-          eq(notifications.catId, catId),
-          inArray(notifications.status, ["pending", "snoozed"]),
-        ),
-      );
+  const saved = await updateSymptom(catId, id, parsed.data);
+  if ("error" in saved) {
+    return { formError: saved.error };
   }
 
   const mediaError = await syncRecordMediaFromForm(

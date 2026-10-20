@@ -78,23 +78,40 @@ function form(value: unknown) {
 }
 
 describe("getMcpPermissions", () => {
-  it("保存していない接続は、何も外していない状態を返す", async () => {
+  it("保存していない接続は、何も外していないが、書き込みはどれも許可していない状態を返す", async () => {
     expect(await getMcpPermissions("user-1", "client-1")).toEqual(
       DEFAULT_MCP_PERMISSIONS,
     );
   });
 
-  it("知らない記録の種類が保存されていても読み飛ばす", async () => {
+  it("書き込みの列を指定せずに保存した接続は、書き込みをどれも許可していない", async () => {
+    await db
+      .insert(mcpPermissions)
+      .values({ userId: "user-1", clientId: "client-1" });
+
+    expect(await getMcpPermissions("user-1", "client-1")).toMatchObject({
+      writableRecordTypes: {},
+      householdOperations: {},
+    });
+  });
+
+  it("知らない記録の種類・操作が保存されていても読み飛ばす", async () => {
     await db.insert(mcpPermissions).values({
       userId: "user-1",
       clientId: "client-1",
       excludedRecordTypes: { "cat-1": ["poop", "removed-type"] },
+      writableRecordTypes: { "cat-1": ["feeding", "removed-type"] },
+      householdOperations: {
+        "house-1": ["foodProduct:read", "removed-operation"],
+      },
     });
 
     expect(await getMcpPermissions("user-1", "client-1")).toEqual({
       excludedHouseholdIds: [],
       excludedCatIds: [],
       excludedRecordTypes: { "cat-1": ["poop"] },
+      writableRecordTypes: { "cat-1": ["feeding"] },
+      householdOperations: { "house-1": ["foodProduct:read"] },
     });
   });
 });
@@ -109,6 +126,11 @@ describe("saveMcpPermissionsFromForm", () => {
           excludedHouseholdIds: ["house-2"],
           excludedCatIds: ["cat-2", "cat-3"],
           excludedRecordTypes: { "cat-1": ["water"], "cat-3": ["water"] },
+          writableRecordTypes: { "cat-1": ["feeding"], "cat-3": ["feeding"] },
+          householdOperations: {
+            "house-1": ["foodProduct:read"],
+            "house-2": ["foodProduct:read"],
+          },
         }),
       ),
     ).toBe(true);
@@ -116,6 +138,8 @@ describe("saveMcpPermissionsFromForm", () => {
       excludedHouseholdIds: [],
       excludedCatIds: ["cat-2"],
       excludedRecordTypes: { "cat-1": ["water"] },
+      writableRecordTypes: { "cat-1": ["feeding"] },
+      householdOperations: { "house-1": ["foodProduct:read"] },
     });
 
     expect(
@@ -130,9 +154,8 @@ describe("saveMcpPermissionsFromForm", () => {
       ),
     ).toBe(true);
     expect(await getMcpPermissions("user-1", "client-1")).toEqual({
+      ...DEFAULT_MCP_PERMISSIONS,
       excludedHouseholdIds: ["house-1"],
-      excludedCatIds: [],
-      excludedRecordTypes: {},
     });
     // ほかのユーザーの範囲・同じユーザーのほかの接続の範囲には影響しない
     expect(await getMcpPermissions("user-2", "client-1")).toEqual(

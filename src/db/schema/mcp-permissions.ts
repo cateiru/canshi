@@ -18,7 +18,11 @@ import { users } from "./users";
  *
  * 後から作った家・登録した猫・追加した記録の種類も既定で読み取れるよう、許可した
  * ものではなく外したもの（拒否）を持つ。家・猫は ID で持ち、外部キーにはしない。
- * 削除された家・猫の ID が残っても、どの猫にも当てはまらなくなるだけで害はない
+ * 削除された家・猫の ID が残っても、どの猫にも当てはまらなくなるだけで害はない。
+ *
+ * 記録の書き込み（追加・編集）と、家のごはん商品・プリセットの操作は、読み取りとは逆に
+ * 許可したもの（`writable_record_types`・`household_operations`）だけを持つ。
+ * 後から登録した猫・参加した家には書き込めず、行が無い接続はどれも行えない
  */
 export const mcpPermissions = sqliteTable(
   "mcp_permissions",
@@ -40,6 +44,17 @@ export const mcpPermissions = sqliteTable(
       .default(sql`'[]'`),
     // 猫の ID ごとに、外した記録の種類（`MCP_PERMISSION_RECORD_TYPES`）
     excludedRecordTypes: text("excluded_record_types", { mode: "json" })
+      .$type<Record<string, string[]>>()
+      .notNull()
+      .default(sql`'{}'`),
+    // 猫の ID ごとに、書き込み（追加・編集）を許可した記録の種類。読み取りも許可している
+    // 種類だけが書き込める
+    writableRecordTypes: text("writable_record_types", { mode: "json" })
+      .$type<Record<string, string[]>>()
+      .notNull()
+      .default(sql`'{}'`),
+    // 家の ID ごとに、許可したごはん商品・プリセットの操作（`MCP_HOUSEHOLD_OPERATIONS`）
+    householdOperations: text("household_operations", { mode: "json" })
       .$type<Record<string, string[]>>()
       .notNull()
       .default(sql`'{}'`),

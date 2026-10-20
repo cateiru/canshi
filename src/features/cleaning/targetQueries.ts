@@ -10,8 +10,8 @@ export type CleaningTargetWithStatus = {
   isOverdue: boolean;
 };
 
-export async function listCleaningTargets(catId: string) {
-  const db = getDb();
+export async function listCleaningTargets(catId: string, d1?: D1Database) {
+  const db = getDb(d1);
   return db
     .select()
     .from(cleaningTargets)

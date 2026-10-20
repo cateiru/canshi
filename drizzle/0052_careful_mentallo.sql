@@ -1,0 +1,1 @@
+ALTER TABLE `mcp_permissions` ADD `allowed_operations` text DEFAULT '[]' NOT NULL;

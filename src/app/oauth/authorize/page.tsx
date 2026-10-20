@@ -38,7 +38,7 @@ type AuthorizePageProps = {
  * ChatGPT などの MCP クライアントを接続するときの同意画面。認可リクエストの検証と、
  * 「許可する」「許可しない」の送信先（`POST /oauth/authorize`）の処理は Worker
  * （`src/features/mcp/authorize.ts`）が行い、このページは検証済みの内容と、この接続で
- * 読み取りを許可する範囲の選択を表示するだけ。
+ * 読み取り・書き込みを許可する範囲の選択を表示するだけ。
  * 未ログインのときは middleware がログイン画面へ送り、ログイン後にこのページへ戻る
  */
 export default async function AuthorizePage({
@@ -60,7 +60,7 @@ export default async function AuthorizePage({
           AIとの接続
         </RecordPageHeading>
         <p className={styles.description}>
-          接続するアプリと、読み取りを許可する範囲を確認してください。
+          接続するアプリと、許可する範囲を確認してください。
         </p>
       </header>
 
@@ -107,18 +107,18 @@ export default async function AuthorizePage({
             className={styles.form}
           >
             <Surface
-              title="読み取りを許可する範囲"
+              title="許可する範囲"
               titleId="ai-permissions"
               titleSize="lg"
               icon={<TbEye size={22} aria-hidden="true" />}
               gap="sm"
             >
               <p className={styles.note}>
-                このアプリに公開する家・猫・記録を選んでください。チェックを外した情報は読み取れません。
+                このアプリに公開する家・猫・記録を「読む」で選んでください。チェックを外した情報は読み取れません。記録の追加・編集を許可するときは「書く」に、ごはん商品・プリセットの操作を許可するときは家ごとの操作にチェックしてください。
               </p>
               <McpPermissionTreeField tree={permissionTree} />
               <p className={styles.note}>
-                あとから登録した猫や、新しく参加した家は、読み取れる状態になります。
+                あとから登録した猫や、新しく参加した家は、読み取れますが書き込めません。
               </p>
             </Surface>
             <p className={styles.afterNote}>

@@ -6,7 +6,8 @@ import { getDb } from "@/db/client";
 import { cleaningRecords, cleaningTargets } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
-import { combineDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
+import { getNaiveUtcNow } from "@/features/shared/datetime";
+import { createCleaningRecord, updateCleaningRecord } from "./recordMutations";
 import {
   type CleaningRecordFormFieldErrors,
   cleaningRecordFormSchema,
@@ -38,35 +39,9 @@ export async function createCleaningRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  // cleaningTargetId が catId に属し、かつ有効であることを確認してから登録する
-  // （URL の cleaningTargetId が改ざんされ、他猫や無効化済みの掃除対象に記録が
-  // 紐付いてしまうのを防ぐ。無効対象は編集・記録閲覧のみが仕様のため新規登録は拒否する）
-  const [target] = await db
-    .select({ id: cleaningTargets.id })
-    .from(cleaningTargets)
-    .where(
-      and(
-        eq(cleaningTargets.id, cleaningTargetId),
-        eq(cleaningTargets.catId, catId),
-        eq(cleaningTargets.isActive, true),
-      ),
-    )
-    .limit(1);
-
-  if (!target) {
+  if (!(await createCleaningRecord(catId, cleaningTargetId, parsed.data))) {
     return { formError: "掃除対象が見つかりませんでした" };
   }
-
-  await db.insert(cleaningRecords).values({
-    catId,
-    cleaningTargetId,
-    performedAt: combineDateTimeUtc(
-      parsed.data.performedDate,
-      parsed.data.performedTime,
-    ),
-    memo: parsed.data.memo ?? null,
-  });
 
   return {
     redirectTo: `/cats/${catId}/cleaning/targets/${cleaningTargetId}/records`,
@@ -87,27 +62,7 @@ export async function updateCleaningRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  const result = await db
-    .update(cleaningRecords)
-    .set({
-      performedAt: combineDateTimeUtc(
-        parsed.data.performedDate,
-        parsed.data.performedTime,
-      ),
-      memo: parsed.data.memo ?? null,
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(cleaningRecords.id, id),
-        eq(cleaningRecords.catId, catId),
-        eq(cleaningRecords.cleaningTargetId, cleaningTargetId),
-      ),
-    )
-    .returning({ id: cleaningRecords.id });
-
-  if (result.length === 0) {
+  if (!(await updateCleaningRecord(catId, cleaningTargetId, id, parsed.data))) {
     return { formError: "記録が見つかりませんでした" };
   }
 

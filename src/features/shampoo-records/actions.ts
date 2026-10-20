@@ -6,7 +6,7 @@ import { getDb } from "@/db/client";
 import { shampooRecords } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
-import { combineDateTimeUtc } from "@/features/shared/datetime";
+import { createShampooRecord, updateShampooRecord } from "./mutations";
 import {
   type ShampooRecordFormFieldErrors,
   shampooRecordFormSchema,
@@ -37,15 +37,7 @@ export async function createShampooRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  await db.insert(shampooRecords).values({
-    catId,
-    performedAt: combineDateTimeUtc(
-      parsed.data.performedDate,
-      parsed.data.performedTime,
-    ),
-    memo: parsed.data.memo ?? null,
-  });
+  await createShampooRecord(catId, parsed.data);
 
   return { redirectTo: `/cats/${catId}/shampoo-records` };
 }
@@ -63,21 +55,7 @@ export async function updateShampooRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  const result = await db
-    .update(shampooRecords)
-    .set({
-      performedAt: combineDateTimeUtc(
-        parsed.data.performedDate,
-        parsed.data.performedTime,
-      ),
-      memo: parsed.data.memo ?? null,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(shampooRecords.id, id), eq(shampooRecords.catId, catId)))
-    .returning({ id: shampooRecords.id });
-
-  if (result.length === 0) {
+  if (!(await updateShampooRecord(catId, id, parsed.data))) {
     return { formError: "記録が見つかりませんでした" };
   }
 

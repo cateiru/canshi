@@ -8,6 +8,7 @@ import {
 import {
   buildMcpPermissionTree,
   DEFAULT_MCP_PERMISSIONS,
+  isMcpHouseholdOperation,
   isMcpPermissionRecordType,
   MCP_PERMISSIONS_FIELD_NAME,
   type McpPermissions,
@@ -16,9 +17,10 @@ import {
 } from "./permissionRules";
 
 /**
- * ユーザーが許可した接続（OAuth のクライアント）の、AI から読み取れる範囲。保存して
- * いなければすべて読み取れる。MCP のツールはトークンに範囲を持たせず、呼ばれるたびに
- * これを読む。そのため設定の変更は、接続済みのアプリにもすぐに反映される
+ * ユーザーが許可した接続（OAuth のクライアント）の、AI から読み取れる範囲と書き込める範囲。
+ * 保存していなければすべて読み取れるが、書き込みや操作はどれも行えない。MCP のツールは
+ * トークンに範囲を持たせず、呼ばれるたびにこれを読む。そのため設定の変更は、接続済みの
+ * アプリにもすぐに反映される
  */
 export async function getMcpPermissions(
   userId: string,
@@ -34,19 +36,37 @@ export async function getMcpPermissions(
   if (!row) {
     return DEFAULT_MCP_PERMISSIONS;
   }
-  // 保存後に記録の種類が無くなった場合に備えて、知らない種類は読み飛ばす
-  const excludedRecordTypes: McpPermissions["excludedRecordTypes"] = {};
-  for (const [catId, types] of Object.entries(row.excludedRecordTypes)) {
-    excludedRecordTypes[catId] = types.filter(isMcpPermissionRecordType);
-  }
+  // 保存後に記録の種類・操作が無くなった場合に備えて、知らないものは読み飛ばす
   return {
     excludedHouseholdIds: row.excludedHouseholdIds,
     excludedCatIds: row.excludedCatIds,
-    excludedRecordTypes,
+    excludedRecordTypes: filterValues(
+      row.excludedRecordTypes,
+      isMcpPermissionRecordType,
+    ),
+    writableRecordTypes: filterValues(
+      row.writableRecordTypes,
+      isMcpPermissionRecordType,
+    ),
+    householdOperations: filterValues(
+      row.householdOperations,
+      isMcpHouseholdOperation,
+    ),
   };
 }
 
-/** 設定画面・同意画面に表示する、接続の家・猫・記録の種類のチェックの状態 */
+function filterValues<T extends string>(
+  record: Record<string, string[]>,
+  isKnown: (value: unknown) => value is T,
+): Record<string, T[]> {
+  const filtered: Record<string, T[]> = {};
+  for (const [key, values] of Object.entries(record)) {
+    filtered[key] = values.filter(isKnown);
+  }
+  return filtered;
+}
+
+/** 設定画面・同意画面に表示する、接続の家・猫・記録の種類と操作のチェックの状態 */
 export async function getMcpPermissionTree(
   userId: string,
   clientId: string,

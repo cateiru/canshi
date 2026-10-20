@@ -34,7 +34,7 @@ type EnvWithOAuth = Env & { OAUTH_PROVIDER: OAuthHelpers };
  * - `GET /oauth/authorize`: 認可リクエストを検証し、同意画面（Next.js のページ）を表示する。
  *   未ログインなら、ページの middleware がログイン画面へリダイレクトする
  * - `POST /oauth/authorize`: 同意画面のボタンの送信先。ログイン中のユーザーで、同意画面で
- *   選んだ読み取りを許可する範囲を保存してから認可を完了する
+ *   選んだ読み取り・書き込みを許可する範囲を保存してから認可を完了する
  */
 export function withMcpAuthorize(nextHandler: {
   fetch(
@@ -174,7 +174,7 @@ async function handleAuthorizePost(
     return Response.redirect(accessDeniedUrl(authRequest), 303);
   }
 
-  // 読み取りを許可する範囲はトークンには持たせず、接続（クライアント）ごとに保存して、
+  // 読み取り・書き込みを許可する範囲はトークンには持たせず、接続（クライアント）ごとに保存して、
   // ツールが呼ばれるたびに読む（`./permissions.ts`）。範囲の項目が無いフォーム
   // （範囲の選択を追加する前に開いた同意画面）からの送信では、今の範囲のままにする
   if (
@@ -187,7 +187,7 @@ async function handleAuthorizePost(
     ))
   ) {
     return new Response(
-      "読み取りを許可する範囲が正しくありません。接続するアプリから、もう一度やり直してください。",
+      "許可する範囲が正しくありません。接続するアプリから、もう一度やり直してください。",
       { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } },
     );
   }
