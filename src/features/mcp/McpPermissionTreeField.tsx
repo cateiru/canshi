@@ -125,19 +125,17 @@ export function McpPermissionTreeField({ tree }: McpPermissionTreeFieldProps) {
                   size={20}
                   aria-hidden="true"
                 />
-                {household.name}
+                <span className={styles.name}>{household.name}</span>
               </Checkbox>
               <div className={styles.operations}>
                 {MCP_HOUSEHOLD_OPERATION_GROUPS.map((group) => (
-                  // biome-ignore lint/a11y/useSemanticElements: fieldset は既定のスタイルの打ち消しが多くなるため使わない
-                  <div
+                  <fieldset
                     key={group.label}
-                    role="group"
                     aria-label={`${household.name}の${group.label}`}
                     className={styles.operationGroup}
                   >
                     <span className={styles.operationLabel}>{group.label}</span>
-                    <span className={styles.choices}>
+                    <span className={styles.operationChoices}>
                       {group.operations.map(({ operation, label }) => (
                         <Checkbox
                           key={operation}
@@ -159,7 +157,7 @@ export function McpPermissionTreeField({ tree }: McpPermissionTreeFieldProps) {
                         </Checkbox>
                       ))}
                     </span>
-                  </div>
+                  </fieldset>
                 ))}
               </div>
               {household.cats.length === 0 ? (
@@ -191,11 +189,9 @@ export function McpPermissionTreeField({ tree }: McpPermissionTreeFieldProps) {
                             size={20}
                             aria-hidden="true"
                           />
-                          {cat.name}
+                          <span className={styles.name}>{cat.name}</span>
                         </Checkbox>
-                        {/* biome-ignore lint/a11y/useSemanticElements: fieldset は既定のスタイルの打ち消しが多くなるため使わない */}
-                        <div
-                          role="group"
+                        <fieldset
                           aria-label={`${cat.name}の記録`}
                           className={styles.records}
                         >
@@ -203,7 +199,11 @@ export function McpPermissionTreeField({ tree }: McpPermissionTreeFieldProps) {
                             const Icon = TIMELINE_TYPE_ICON[type];
                             const label = TIMELINE_TYPE_LABEL[type];
                             return (
-                              <div key={type} className={styles.record}>
+                              <fieldset
+                                key={type}
+                                className={styles.record}
+                                aria-label={`${cat.name}の${label}`}
+                              >
                                 <span className={styles.recordLabel}>
                                   <Icon
                                     className={styles.icon}
@@ -249,10 +249,10 @@ export function McpPermissionTreeField({ tree }: McpPermissionTreeFieldProps) {
                                     書く
                                   </Checkbox>
                                 </span>
-                              </div>
+                              </fieldset>
                             );
                           })}
-                        </div>
+                        </fieldset>
                       </li>
                     );
                   })}
