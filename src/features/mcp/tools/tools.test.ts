@@ -7,6 +7,7 @@ import initSqlJs from "sql.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import {
+  catalogFoodProducts,
   cats,
   expenseRecordCats,
   expenseRecords,
@@ -49,6 +50,9 @@ vi.mock("@/features/media/storage", () => ({
 const { registerRecordTools } = await import("./records");
 const { registerFoodProductTools } = await import("./foodProducts");
 const { registerFeedingPresetTools } = await import("./feedingPresets");
+const { registerCatalogFoodProductTools } = await import(
+  "./catalogFoodProducts"
+);
 
 type ToolResult = {
   content: { type: "text"; text: string }[];
@@ -154,6 +158,7 @@ beforeEach(async () => {
   registerRecordTools(server, ctx);
   registerFoodProductTools(server, ctx);
   registerFeedingPresetTools(server, ctx);
+  registerCatalogFoodProductTools(server, ctx);
 
   storeMediaAsset.mockClear();
   deleteMediaAssetRows.mockClear();
@@ -746,5 +751,202 @@ describe("ごはんのプリセット", () => {
       (await call("delete_feeding_preset", { id: "preset-1" })).error,
     ).toBe('id="preset-1" のプリセットが見つかりません');
     expect(await db.select().from(feedingPresets)).toHaveLength(1);
+  });
+});
+
+describe("共通のごはん商品", () => {
+  const product = {
+    name: "まぐろ",
+    manufacturer: "ねこフード",
+    kcalPer100g: 80,
+    packageSizes: [
+      { amountG: 14, unit: "1本" },
+      { amountG: 400, unit: null },
+    ],
+    nutritionType: "general",
+    textureType: "wet",
+    lifeStages: ["senior", "kitten"],
+  };
+
+  async function makeAdmin(role: "admin" | "member" = "admin") {
+    await db.update(users).set({ role }).where(eq(users.id, "user-1"));
+  }
+
+  it("admin でないユーザーは、接続に許可していても扱えない", async () => {
+    await allow({
+      catalogOperations: [
+        "catalogFoodProduct:read",
+        "catalogFoodProduct:create",
+      ],
+    });
+
+    expect((await call("list_catalog_food_products")).error).toContain(
+      "管理者のユーザーだけが扱えます",
+    );
+    expect(
+      (await call("create_catalog_food_product", product)).error,
+    ).toContain("管理者のユーザーだけが扱えます");
+    expect(await db.select().from(catalogFoodProducts)).toEqual([]);
+  });
+
+  it("admin でも、接続に許可していない操作は行えない", async () => {
+    await makeAdmin();
+    await allow({ catalogOperations: ["catalogFoodProduct:read"] });
+
+    expect(
+      (await call("create_catalog_food_product", product)).error,
+    ).toContain("「共通のごはん商品の追加」が許可されていません");
+    expect(await db.select().from(catalogFoodProducts)).toEqual([]);
+  });
+
+  it("追加すると、先頭の内容量の候補を内容量の列にも書く", async () => {
+    await makeAdmin();
+    await allow({
+      catalogOperations: [
+        "catalogFoodProduct:read",
+        "catalogFoodProduct:create",
+      ],
+    });
+
+    const created = await call("create_catalog_food_product", product);
+    const [row] = await db.select().from(catalogFoodProducts);
+
+    expect(created.value).toEqual({ id: row.id });
+    expect(row).toMatchObject({
+      name: "まぐろ",
+      manufacturer: "ねこフード",
+      kcalPer100g: 80,
+      // 単位の先頭の「1」は家のごはん商品と同じく取り除く
+      packageAmountG: 14,
+      packageUnit: "本",
+      packageSizes: [
+        { amountG: 14, unit: "本" },
+        { amountG: 400, unit: null },
+      ],
+      lifeStages: ["kitten", "senior"],
+      targetBreed: null,
+    });
+    expect(
+      (await call("list_catalog_food_products", { keyword: "ねこ まぐろ" }))
+        .value,
+    ).toEqual({
+      catalogFoodProducts: [
+        {
+          id: row.id,
+          name: "まぐろ",
+          manufacturer: "ねこフード",
+          kcalPer100g: 80,
+          packageSizes: [
+            { amountG: 14, unit: "本" },
+            { amountG: 400, unit: null },
+          ],
+          nutritionType: "general",
+          textureType: "wet",
+          lifeStages: ["kitten", "senior"],
+          targetBreed: null,
+          hasImage: false,
+        },
+      ],
+      hasMore: false,
+    });
+  });
+
+  it("内容量の候補が無い・同じ内容量がある場合は追加しない", async () => {
+    await makeAdmin();
+    await allow({ catalogOperations: ["catalogFoodProduct:create"] });
+
+    for (const packageSizes of [
+      [],
+      [
+        { amountG: 14, unit: "本" },
+        { amountG: 14, unit: "1本" },
+      ],
+    ]) {
+      expect(
+        (
+          await call("create_catalog_food_product", {
+            ...product,
+            packageSizes,
+          })
+        ).error,
+      ).toContain("入力が正しくありません");
+    }
+    expect(await db.select().from(catalogFoodProducts)).toEqual([]);
+  });
+
+  it("編集では指定した項目だけを変え、内容量の候補は指定すると置き換える", async () => {
+    await makeAdmin();
+    await allow({
+      catalogOperations: [
+        "catalogFoodProduct:create",
+        "catalogFoodProduct:update",
+      ],
+    });
+    const created = await call("create_catalog_food_product", product);
+    const id = created.value?.id;
+
+    expect(
+      (
+        await call("update_catalog_food_product", {
+          id,
+          name: "まぐろ（新）",
+          manufacturer: null,
+        })
+      ).value,
+    ).toEqual({ id });
+    const [renamed] = await db.select().from(catalogFoodProducts);
+    expect(renamed).toMatchObject({
+      name: "まぐろ（新）",
+      manufacturer: null,
+      kcalPer100g: 80,
+      packageAmountG: 14,
+      packageUnit: "本",
+      packageSizes: [
+        { amountG: 14, unit: "本" },
+        { amountG: 400, unit: null },
+      ],
+      lifeStages: ["kitten", "senior"],
+    });
+
+    await call("update_catalog_food_product", {
+      id,
+      packageSizes: [{ amountG: 70, unit: "袋" }],
+    });
+    const [resized] = await db.select().from(catalogFoodProducts);
+    expect(resized).toMatchObject({
+      name: "まぐろ（新）",
+      packageAmountG: 70,
+      packageUnit: "袋",
+      packageSizes: [{ amountG: 70, unit: "袋" }],
+    });
+
+    expect(
+      (await call("update_catalog_food_product", { id: "missing", name: "x" }))
+        .error,
+    ).toContain("共通のごはん商品が見つかりません");
+  });
+
+  it("許可した後に admin でなくなると、編集できなくなる", async () => {
+    await makeAdmin();
+    await allow({
+      catalogOperations: [
+        "catalogFoodProduct:create",
+        "catalogFoodProduct:update",
+      ],
+    });
+    const created = await call("create_catalog_food_product", product);
+
+    await makeAdmin("member");
+
+    expect(
+      (
+        await call("update_catalog_food_product", {
+          id: created.value?.id,
+          name: "書き換え",
+        })
+      ).error,
+    ).toContain("管理者のユーザーだけが扱えます");
+    const [row] = await db.select().from(catalogFoodProducts);
+    expect(row.name).toBe("まぐろ");
   });
 });

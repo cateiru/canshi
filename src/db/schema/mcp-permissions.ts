@@ -20,9 +20,10 @@ import { users } from "./users";
  * ものではなく外したもの（拒否）を持つ。家・猫は ID で持ち、外部キーにはしない。
  * 削除された家・猫の ID が残っても、どの猫にも当てはまらなくなるだけで害はない。
  *
- * 記録の書き込み（追加・編集）と、家のごはん商品・プリセットの操作は、読み取りとは逆に
- * 許可したもの（`writable_record_types`・`household_operations`）だけを持つ。
- * 後から登録した猫・参加した家には書き込めず、行が無い接続はどれも行えない
+ * 記録の書き込み（追加・編集）と、家のごはん商品・プリセットの操作、共通のごはん商品の操作は、
+ * 読み取りとは逆に許可したもの（`writable_record_types`・`household_operations`・
+ * `catalog_operations`）だけを持つ。後から登録した猫・参加した家には書き込めず、
+ * 行が無い接続はどれも行えない
  */
 export const mcpPermissions = sqliteTable(
   "mcp_permissions",
@@ -58,6 +59,12 @@ export const mcpPermissions = sqliteTable(
       .$type<Record<string, string[]>>()
       .notNull()
       .default(sql`'{}'`),
+    // 許可した共通のごはん商品の操作（`MCP_CATALOG_OPERATIONS`）。アプリ全体の権限が admin の
+    // ユーザーだけが許可でき、admin でなくなったユーザーの接続では、許可していても行えない
+    catalogOperations: text("catalog_operations", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

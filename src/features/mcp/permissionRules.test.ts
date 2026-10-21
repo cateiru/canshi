@@ -9,6 +9,7 @@ import {
   buildMcpPermissionTree,
   DEFAULT_MCP_PERMISSIONS,
   isCatAllowedForMcp,
+  isCatalogOperationAllowedForMcp,
   isHouseholdOperationAllowedForMcp,
   MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
   MCP_PERMISSION_RECORD_TYPES,
@@ -26,6 +27,7 @@ const permissions: McpPermissions = {
     "house-1": ["foodProduct:read"],
     "house-2": ["foodProduct:read"],
   },
+  catalogOperations: ["catalogFoodProduct:read"],
 };
 
 describe("MCP_PERMISSION_RECORD_TYPES", () => {
@@ -105,6 +107,33 @@ describe("isHouseholdOperationAllowedForMcp", () => {
   });
 });
 
+describe("isCatalogOperationAllowedForMcp", () => {
+  it("操作を許可していて、ユーザーが admin のときだけ行える", () => {
+    expect(
+      isCatalogOperationAllowedForMcp(
+        permissions,
+        "admin",
+        "catalogFoodProduct:read",
+      ),
+    ).toBe(true);
+    expect(
+      isCatalogOperationAllowedForMcp(
+        permissions,
+        "admin",
+        "catalogFoodProduct:create",
+      ),
+    ).toBe(false);
+    // 許可した後に admin でなくなったユーザーは行えない
+    expect(
+      isCatalogOperationAllowedForMcp(
+        permissions,
+        "member",
+        "catalogFoodProduct:read",
+      ),
+    ).toBe(false);
+  });
+});
+
 describe("buildMcpPermissionTree", () => {
   it("家ごとに猫をまとめ、親のチェックが外れていれば子のチェックも外す", () => {
     const tree = buildMcpPermissionTree(
@@ -123,6 +152,7 @@ describe("buildMcpPermissionTree", () => {
           "house-1": ["feedingPreset:read"],
           "house-2": ["feedingPreset:read"],
         },
+        catalogOperations: [],
       },
       [
         { id: "house-1", name: "家1" },
@@ -187,6 +217,7 @@ describe("parseMcpPermissionsInput", () => {
       { id: "cat-2", householdId: "house-1" },
       { id: "cat-3", householdId: "house-2" },
     ],
+    canUseCatalog: false,
   };
 
   it("所属する家・参照できる猫だけに絞り込み、外した家・猫の記録の種類は保存しない", () => {
@@ -209,6 +240,7 @@ describe("parseMcpPermissionsInput", () => {
       excludedRecordTypes: { "cat-1": ["poop", "expense"] },
       writableRecordTypes: {},
       householdOperations: {},
+      catalogOperations: [],
     });
     expect(
       parsed &&
@@ -256,6 +288,30 @@ describe("parseMcpPermissionsInput", () => {
     });
   });
 
+  it("共通のごはん商品の操作は、admin のユーザーのときだけ決まった並び順で保存する", () => {
+    const value = JSON.stringify({
+      excludedHouseholdIds: [],
+      excludedCatIds: [],
+      excludedRecordTypes: {},
+      catalogOperations: [
+        "catalogFoodProduct:update",
+        "catalogFoodProduct:read",
+      ],
+    });
+
+    expect(
+      parseMcpPermissionsInput(value, { ...accessible, canUseCatalog: true }),
+    ).toMatchObject({
+      catalogOperations: [
+        "catalogFoodProduct:read",
+        "catalogFoodProduct:update",
+      ],
+    });
+    expect(parseMcpPermissionsInput(value, accessible)).toMatchObject({
+      catalogOperations: [],
+    });
+  });
+
   it("値が無い・JSON でない・形が違う・知らない記録の種類を含む場合は null", () => {
     for (const value of [
       null,
@@ -272,6 +328,12 @@ describe("parseMcpPermissionsInput", () => {
         excludedCatIds: [],
         excludedRecordTypes: {},
         householdOperations: { "house-1": ["record:delete"] },
+      }),
+      JSON.stringify({
+        excludedHouseholdIds: [],
+        excludedCatIds: [],
+        excludedRecordTypes: {},
+        catalogOperations: ["catalogFoodProduct:delete"],
       }),
     ]) {
       expect(parseMcpPermissionsInput(value, accessible)).toBeNull();

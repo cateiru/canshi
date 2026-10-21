@@ -130,8 +130,14 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 ## 共通のごはん商品（`catalog_food_products`）
 
 - どの家のユーザーも、ごはん商品を登録するときに検索して家に追加できる商品（#283、`0047`）。家に属さず、
-  管理画面（`packages/admin`）だけが登録・編集・削除する。列は `food_products` から `household_id` を除き、
+  管理画面（`packages/admin`）が登録・編集・削除する。列は `food_products` から `household_id` を除き、
   内容量の候補（`package_sizes`）を足したもの
+  - `users.role` が `admin` のユーザーは、AI との接続（MCP）からも検索・登録・編集できる（#363、
+    `src/features/mcp/tools/catalogFoodProducts.ts`）。接続に許可した操作（`mcp_permissions.catalog_operations`）
+    だけを行え、権限はツールが呼ばれるたびに DB で確かめる。画像の登録と削除は管理画面だけで行う
+  - 内容量は管理画面と同じく、`package_amount_g`・`package_unit` に先頭の候補を、`package_sizes` に先頭を含む
+    すべての候補を書く（`src/features/catalog-food-products/mutations.ts`）。入力の規則は管理画面の
+    `packages/admin/src/catalog/form.ts` と `src/features/catalog-food-products/schema.ts` で揃える
 - 家に追加するときは、内容を写した `food_products` の行を作る（`src/features/catalog-food-products/actions.ts`）。
   追加した商品は手動で登録した商品と同じく家ごとに自由に編集でき、共通のごはん商品の変更・削除は反映しない
   - 追加は、共通のごはん商品と追加先の家のメンバーの行を結合した `INSERT ... SELECT` の 1 文で行い、
@@ -290,6 +296,9 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     プロフィールから求めるため対象外で、猫を読み取れれば読み取れる
 - 家・猫は外部キーにせず ID で持つ。削除された家・猫の ID が残っても、どの猫にも当てはまらなくなるだけで
   害はなく、次に保存したときに取り除かれる（保存時は、所属する家・参照できる猫の ID だけを残す）
+- `catalog_operations`: 許可した共通のごはん商品の操作（JSON の配列、`0055`）。読み取りとは逆に許可したもの
+  だけを持ち、行が無い接続・列を追加する前の行はどれも行えない。`users.role` が `admin` のユーザーだけが
+  保存でき、許可した後に `admin` でなくなったユーザーの接続では、許可していても行えない
 
 ## AI との接続を最後に使った日時（`mcp_connection_usages`）
 

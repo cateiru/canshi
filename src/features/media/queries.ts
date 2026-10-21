@@ -41,12 +41,13 @@ export async function listMediaAssetsByRecord(
 export async function listMediaAssetsByRecords(
   recordType: string,
   recordIds: string[],
+  d1?: D1Database,
 ): Promise<Map<string, MediaAsset[]>> {
   const grouped = new Map<string, MediaAsset[]>();
   if (recordIds.length === 0) {
     return grouped;
   }
-  const db = getDb();
+  const db = getDb(d1);
   // D1 のバインドパラメーター上限を超えないよう、recordType の 1 個分を差し引いて分割する。
   // レコード単位で分割するので、同じレコードのメディアが複数のチャンクにまたがることはない
   for (const ids of chunkForBoundParameters(recordIds, 1)) {

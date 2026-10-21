@@ -73,11 +73,38 @@ export const MCP_HOUSEHOLD_OPERATION_GROUPS: {
 ];
 
 /**
+ * AI との接続に許可するかを選べる、共通のごはん商品（`catalog_food_products`）の操作。
+ * 共通のごはん商品はすべての家のユーザーが検索・追加に使うため、アプリ全体の権限が admin の
+ * ユーザーだけが許可できる。家ごとの操作と同じく、許可したものだけを行える
+ */
+export const MCP_CATALOG_OPERATIONS = [
+  "catalogFoodProduct:read",
+  "catalogFoodProduct:create",
+  "catalogFoodProduct:update",
+] as const;
+
+export type McpCatalogOperation = (typeof MCP_CATALOG_OPERATIONS)[number];
+
+/** 設定画面・同意画面に表示する、共通のごはん商品の操作 */
+export const MCP_CATALOG_OPERATION_GROUP: {
+  label: string;
+  operations: { operation: McpCatalogOperation; label: string }[];
+} = {
+  label: "共通のごはん商品",
+  operations: [
+    { operation: "catalogFoodProduct:read", label: "読む" },
+    { operation: "catalogFoodProduct:create", label: "追加" },
+    { operation: "catalogFoodProduct:update", label: "編集" },
+  ],
+};
+
+/**
  * AI との接続から読み取れる範囲と、書き込める範囲（`src/db/schema/mcp-permissions.ts` 参照）。
  *
  * - 読み取りは、家・猫・記録の種類のうち外したもの（拒否）だけを持ち、ここに無いものは
  *   すべて読み取れる
- * - 記録の書き込み（追加・編集）と、家のごはん商品・プリセットの操作は、許可したものだけを持つ
+ * - 記録の書き込み（追加・編集）と、家のごはん商品・プリセットの操作、共通のごはん商品の操作は、
+ *   許可したものだけを持つ
  */
 export interface McpPermissions {
   excludedHouseholdIds: string[];
@@ -88,6 +115,8 @@ export interface McpPermissions {
   writableRecordTypes: Record<string, McpPermissionRecordType[]>;
   /** 家の ID ごとに、許可したごはん商品・プリセットの操作 */
   householdOperations: Record<string, McpHouseholdOperation[]>;
+  /** 許可した共通のごはん商品の操作。admin のユーザーだけが行える */
+  catalogOperations: McpCatalogOperation[];
 }
 
 /**
@@ -100,12 +129,31 @@ export const DEFAULT_MCP_PERMISSIONS: McpPermissions = {
   excludedRecordTypes: {},
   writableRecordTypes: {},
   householdOperations: {},
+  catalogOperations: [],
 };
 
 export function isMcpHouseholdOperation(
   value: unknown,
 ): value is McpHouseholdOperation {
   return (MCP_HOUSEHOLD_OPERATIONS as readonly unknown[]).includes(value);
+}
+
+export function isMcpCatalogOperation(
+  value: unknown,
+): value is McpCatalogOperation {
+  return (MCP_CATALOG_OPERATIONS as readonly unknown[]).includes(value);
+}
+
+/**
+ * 共通のごはん商品の操作を行えるか。接続に許可していて、今のユーザーが admin のときに限る。
+ * 許可した後に admin でなくなったユーザーの接続では行えない
+ */
+export function isCatalogOperationAllowedForMcp(
+  permissions: Pick<McpPermissions, "catalogOperations">,
+  role: "admin" | "member",
+  operation: McpCatalogOperation,
+) {
+  return role === "admin" && permissions.catalogOperations.includes(operation);
 }
 
 /** 家を読み取れるか。猫と同じく、外した家は読み取れない */
@@ -176,6 +224,16 @@ export function writableMcpRecordTypes(
   return allowedMcpRecordTypes(permissions, catId).filter((type) =>
     writable.includes(type),
   );
+}
+
+/** 設定画面・同意画面に表示する、許可する範囲のチェックの状態 */
+export interface McpPermissionTree {
+  households: McpPermissionTreeHousehold[];
+  /**
+   * 許可している共通のごはん商品の操作。admin でないユーザーは選べないため null
+   * （画面にも表示しない）
+   */
+  catalogOperations: McpCatalogOperation[] | null;
 }
 
 /** 設定画面・同意画面に表示する、家ごとの猫と記録の種類のチェックの状態 */
@@ -274,6 +332,10 @@ const mcpPermissionsInputSchema = z.object({
     )
     .refine((value) => Object.keys(value).length <= MAX_IDS)
     .default({}),
+  catalogOperations: z
+    .array(z.enum(MCP_CATALOG_OPERATIONS))
+    .max(MCP_CATALOG_OPERATIONS.length)
+    .default([]),
 });
 
 /**
@@ -283,13 +345,15 @@ const mcpPermissionsInputSchema = z.object({
  * 外した猫は、外した家の猫でも保存する。画面では家を外すと猫のチェックも外れるため、
  * 猫が別の家へ引っ越しても、画面で見えていたとおり読み取れないままにする。
  * 外した家の猫・外した猫の記録の種類は、親を外せば読み取れないため保存しない。
- * 書き込みの範囲・家の操作は、読み取りを許可しているものだけを保存する
+ * 書き込みの範囲・家の操作は、読み取りを許可しているものだけを保存する。
+ * 共通のごはん商品の操作は、admin のユーザー（`accessible.canUseCatalog`）のときだけ保存する
  */
 export function parseMcpPermissionsInput(
   value: FormDataEntryValue | null,
   accessible: {
     householdIds: string[];
     cats: { id: string; householdId: string | null }[];
+    canUseCatalog: boolean;
   },
 ): McpPermissions | null {
   if (typeof value !== "string") {
@@ -355,12 +419,18 @@ export function parseMcpPermissionsInput(
       householdOperations[householdId] = operations;
     }
   }
+  const catalogOperations = accessible.canUseCatalog
+    ? MCP_CATALOG_OPERATIONS.filter((operation) =>
+        parsed.data.catalogOperations.includes(operation),
+      )
+    : [];
   return {
     excludedHouseholdIds,
     excludedCatIds,
     excludedRecordTypes,
     writableRecordTypes,
     householdOperations,
+    catalogOperations,
   };
 }
 

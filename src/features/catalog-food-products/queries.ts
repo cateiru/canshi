@@ -53,12 +53,14 @@ function searchConditions(criteria: CatalogSearchCriteria): SQL[] {
 
 /**
  * 共通のごはん商品を検索する。メーカー名・商品名の順に `CATALOG_SEARCH_LIMIT` 件まで返し、
- * それより多く見つかったときは `hasMore` を true にする。条件を指定しないときはすべてが対象
+ * それより多く見つかったときは `hasMore` を true にする。条件を指定しないときはすべてが対象。
+ * AI との接続（MCP）は Durable Object の中で動くため、D1 は引数で受け取る
  */
 export async function searchCatalogFoodProducts(
   criteria: CatalogSearchCriteria,
+  d1?: D1Database,
 ) {
-  const db = getDb();
+  const db = getDb(d1);
   const rows = await db
     .select()
     .from(catalogFoodProducts)

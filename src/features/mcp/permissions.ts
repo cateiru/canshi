@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { mcpPermissions } from "@/db/schema";
+import { getUserById } from "@/features/auth/users";
 import {
   listCatsForUser,
   listHouseholdsForUser,
@@ -8,11 +9,12 @@ import {
 import {
   buildMcpPermissionTree,
   DEFAULT_MCP_PERMISSIONS,
+  isMcpCatalogOperation,
   isMcpHouseholdOperation,
   isMcpPermissionRecordType,
   MCP_PERMISSIONS_FIELD_NAME,
   type McpPermissions,
-  type McpPermissionTreeHousehold,
+  type McpPermissionTree,
   parseMcpPermissionsInput,
 } from "./permissionRules";
 
@@ -52,6 +54,7 @@ export async function getMcpPermissions(
       row.householdOperations,
       isMcpHouseholdOperation,
     ),
+    catalogOperations: row.catalogOperations.filter(isMcpCatalogOperation),
   };
 }
 
@@ -66,25 +69,38 @@ function filterValues<T extends string>(
   return filtered;
 }
 
-/** 設定画面・同意画面に表示する、接続の家・猫・記録の種類と操作のチェックの状態 */
+/**
+ * 設定画面・同意画面に表示する、接続の家・猫・記録の種類と操作のチェックの状態。
+ * 共通のごはん商品の操作は、ユーザーが admin のときだけ含める
+ */
 export async function getMcpPermissionTree(
   userId: string,
   clientId: string,
   d1?: D1Database,
-): Promise<McpPermissionTreeHousehold[]> {
-  const [permissions, households, cats] = await Promise.all([
+): Promise<McpPermissionTree> {
+  const [permissions, households, cats, user] = await Promise.all([
     getMcpPermissions(userId, clientId, d1),
     listHouseholdsForUser(userId, d1),
     listCatsForUser(userId, d1),
+    getUserById(userId, d1),
   ]);
-  // 猫は登録した順に並べる（`listCatsForUser` は新しい順）
-  return buildMcpPermissionTree(permissions, households, [...cats].reverse());
+  return {
+    // 猫は登録した順に並べる（`listCatsForUser` は新しい順）
+    households: buildMcpPermissionTree(
+      permissions,
+      households,
+      [...cats].reverse(),
+    ),
+    catalogOperations:
+      user?.role === "admin" ? permissions.catalogOperations : null,
+  };
 }
 
 /**
  * フォーム（`McpPermissionTreeField`）で送られた範囲を、接続の範囲として保存する。
  * 設定画面と同意画面の両方から使う。ユーザーが所属する家・参照できる猫以外の ID は
- * 保存しない。送られた値の形が正しくなければ保存せずに false を返す
+ * 保存しない。共通のごはん商品の操作は、ユーザーが admin のときだけ保存する。
+ * 送られた値の形が正しくなければ保存せずに false を返す
  */
 export async function saveMcpPermissionsFromForm(
   userId: string,
@@ -92,13 +108,18 @@ export async function saveMcpPermissionsFromForm(
   formData: FormData,
   d1?: D1Database,
 ): Promise<boolean> {
-  const [households, cats] = await Promise.all([
+  const [households, cats, user] = await Promise.all([
     listHouseholdsForUser(userId, d1),
     listCatsForUser(userId, d1),
+    getUserById(userId, d1),
   ]);
   const permissions = parseMcpPermissionsInput(
     formData.get(MCP_PERMISSIONS_FIELD_NAME),
-    { householdIds: households.map((household) => household.id), cats },
+    {
+      householdIds: households.map((household) => household.id),
+      cats,
+      canUseCatalog: user?.role === "admin",
+    },
   );
   if (!permissions) {
     return false;
