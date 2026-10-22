@@ -201,7 +201,7 @@ importers:
         version: 0.28.1(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.3.1)(react@19.3.1)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.36.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
       drizzle-orm:
         specifier: ^0.45.2
-        version: 0.45.4(@types/sql.js@1.4.11)(sql.js@1.15.0)
+        version: 0.45.4(@types/sql.js@1.4.11)(sql.js@1.15.1)
       jose:
         specifier: ^6.2.12
         version: 6.2.12
@@ -280,7 +280,7 @@ importers:
         version: 0.14.5
       sql.js:
         specifier: ^1.14.2
-        version: 1.15.0
+        version: 1.15.1
       typescript:
         specifier: ^5
         version: 5.9.3
@@ -305,7 +305,7 @@ importers:
         version: 1.4.11
       sql.js:
         specifier: ^1.14.2
-        version: 1.15.0
+        version: 1.15.1
       typescript:
         specifier: ^5
         version: 5.9.3
@@ -4066,8 +4066,8 @@ packages:
   spdx-license-ids@3.0.24:
     resolution: {integrity: sha512-cLS9TtWkIQFyLkJ3/5aFQAOHOSKTlOs/7WDut/XPSdjom1fJhUdkepeJAKXa9Y05+FabHd0sti+Et559vDtkpQ==}
 
-  sql.js@1.15.0:
-    resolution: {integrity: sha512-54VT5h9/VGlLaQan5pX/Zx8k6Vbykwl5hRUtl4h4+VYnaZCTraUs4P1i2WLz21O6oPVp6Gvg+d1OyPo01ZG5ig==}
+  sql.js@1.15.1:
+    resolution: {integrity: sha512-i0M/6s+lcl67Flm/1m8/AeVU5caDramlILXU/udUwpTQym2qKMSe2sJiXB5d5WXFB272aj4B2v1JbtQ93ID3Pg==}
 
   statuses@2.0.2:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
@@ -7081,10 +7081,10 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.4(@types/sql.js@1.4.11)(sql.js@1.15.0):
+  drizzle-orm@0.45.4(@types/sql.js@1.4.11)(sql.js@1.15.1):
     optionalDependencies:
       '@types/sql.js': 1.4.11
-      sql.js: 1.15.0
+      sql.js: 1.15.1
 
   dunder-proto@1.0.1:
     dependencies:
@@ -8429,7 +8429,7 @@ snapshots:
 
   spdx-license-ids@3.0.24: {}
 
-  sql.js@1.15.0: {}
+  sql.js@1.15.1: {}
 
   statuses@2.0.2: {}
 
