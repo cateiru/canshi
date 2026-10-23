@@ -5,6 +5,8 @@ import {
   LIFE_STAGES,
   type LifeStage,
   MAX_PACKAGE_SIZES,
+  MAX_SEARCH_KEYWORD_LENGTH,
+  MAX_SEARCH_KEYWORDS,
   NUTRITION_TYPES,
   type NutritionType,
   type PackageSize,
@@ -164,6 +166,11 @@ export function CatalogFoodProductsPage(props: {
                       <span class="product-name">{product.name}</span>
                       {product.manufacturer && (
                         <span class="sub">{product.manufacturer}</span>
+                      )}
+                      {product.searchKeywords.length > 0 && (
+                        <span class="sub">
+                          検索キーワード：{product.searchKeywords.join("、")}
+                        </span>
                       )}
                       <code>{product.id}</code>
                     </td>
@@ -343,6 +350,39 @@ function TextField(props: {
           {props.description}
         </FieldDescription>
       )}
+      <FieldError id={`${id}-error`} message={error} />
+    </div>
+  );
+}
+
+/** 検索キーワードの入力欄。1 行に 1 語を入力する */
+function SearchKeywordsField(props: {
+  input: CatalogFoodProductInput;
+  errors: CatalogFoodProductErrors;
+}) {
+  const id = "field-searchKeywords";
+  const error = props.errors.searchKeywords;
+  return (
+    <div class="field">
+      <label for={id}>検索キーワード（任意）</label>
+      <textarea
+        id={id}
+        name="searchKeywords"
+        rows={3}
+        placeholder={"ちゅーる\nちゃおちゅーる"}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={[`${id}-description`, error ? `${id}-error` : ""]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        {props.input.searchKeywords}
+      </textarea>
+      <FieldDescription id={`${id}-description`}>
+        商品名・メーカー名とは別の呼び方を、1行に1語ずつ入力（
+        {MAX_SEARCH_KEYWORDS}
+        件・1語{MAX_SEARCH_KEYWORD_LENGTH}
+        文字まで）。キーワードの一部で検索しても見つかります。
+      </FieldDescription>
       <FieldError id={`${id}-error`} message={error} />
     </div>
   );
@@ -616,6 +656,7 @@ export function CatalogFoodProductFormPage(props: {
           errors={errors}
           maxlength={50}
         />
+        <SearchKeywordsField input={input} errors={errors} />
         <div class="field">
           <span class="field-label" id="field-image-label">
             商品画像（任意）

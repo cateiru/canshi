@@ -55,6 +55,7 @@ type CatalogFoodProductRow = {
   texture_type: TextureType;
   life_stages: string;
   target_breed: string | null;
+  search_keywords: string;
   image_asset_id: string | null;
   added_count: number;
   created_at: number;
@@ -84,6 +85,17 @@ function parseLifeStages(value: string): LifeStage[] {
   try {
     const parsed: unknown = JSON.parse(value);
     return Array.isArray(parsed) ? (parsed as LifeStage[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseSearchKeywords(value: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
   } catch {
     return [];
   }
@@ -124,6 +136,7 @@ function toCatalogFoodProduct(row: CatalogFoodProductRow): CatalogFoodProduct {
     textureType: row.texture_type,
     lifeStages: parseLifeStages(row.life_stages),
     targetBreed: row.target_breed,
+    searchKeywords: parseSearchKeywords(row.search_keywords),
     imageAssetId: row.image_asset_id,
     addedCount: row.added_count,
     createdAt: new Date(row.created_at * 1000),
@@ -297,6 +310,7 @@ function valueParams(values: CatalogFoodProductValues) {
     JSON.stringify(values.lifeStages),
     values.targetBreed,
     JSON.stringify(values.packageSizes),
+    JSON.stringify(values.searchKeywords),
   ];
 }
 
@@ -313,8 +327,9 @@ export async function createCatalogFoodProduct(
     .prepare(
       `INSERT INTO catalog_food_products
         (id, name, manufacturer, kcal_per_100g, package_amount_g, package_unit,
-         nutrition_type, texture_type, life_stages, target_breed, package_sizes)
-      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`,
+         nutrition_type, texture_type, life_stages, target_breed, package_sizes,
+         search_keywords)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
     )
     .bind(id, ...valueParams(values));
   const uploaded = image
@@ -372,7 +387,8 @@ export async function updateCatalogFoodProduct(
         `UPDATE catalog_food_products SET
           name = ?2, manufacturer = ?3, kcal_per_100g = ?4, package_amount_g = ?5,
           package_unit = ?6, nutrition_type = ?7, texture_type = ?8, life_stages = ?9,
-          target_breed = ?10, package_sizes = ?11, updated_at = unixepoch()
+          target_breed = ?10, package_sizes = ?11, search_keywords = ?12,
+          updated_at = unixepoch()
         WHERE id = ?1
         RETURNING id`,
       )

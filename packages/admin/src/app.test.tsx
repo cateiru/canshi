@@ -444,6 +444,31 @@ describe("共通のごはん商品", () => {
     expect(editHtml).toContain('value="本"');
   });
 
+  it("検索キーワードを登録し、一覧と編集フォームに表示する", async () => {
+    const response = await postMultipart(
+      "/food-products",
+      productForm({ searchKeywords: "ちゅーる\nちゃおちゅーる" }),
+    );
+    expect(response.status).toBe(303);
+    const [product] = await listProducts();
+    expect(product.search_keywords).toBe('["ちゅーる","ちゃおちゅーる"]');
+
+    const listHtml = await (await request("/food-products")).text();
+    expect(listHtml).toContain("検索キーワード：ちゅーる、ちゃおちゅーる");
+    const editHtml = await (
+      await request(`/food-products/${product.id}/edit`)
+    ).text();
+    expect(editHtml).toContain("ちゅーる\nちゃおちゅーる</textarea>");
+
+    // 空にすると未設定に戻す
+    const cleared = await postMultipart(
+      `/food-products/${product.id}`,
+      productForm({ searchKeywords: "" }),
+    );
+    expect(cleared.status).toBe(303);
+    expect((await listProducts())[0].search_keywords).toBe("[]");
+  });
+
   it("候補を追加する前に登録された商品は、元の内容量を候補として表示する", async () => {
     await env.DB.prepare(
       `INSERT INTO catalog_food_products

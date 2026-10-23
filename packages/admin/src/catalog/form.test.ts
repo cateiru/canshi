@@ -34,6 +34,7 @@ describe("parseCatalogFoodProductForm", () => {
         textureType: "wet",
         lifeStages: ["kitten", "care"],
         targetBreed: null,
+        searchKeywords: [],
       },
       // ファイルを選ばずに送られた空のファイルは、画像なしとして扱う
       image: null,
@@ -93,6 +94,39 @@ describe("parseCatalogFoodProductForm", () => {
       "packageSizeRows",
       "packageSizes",
     ]);
+  });
+
+  it("検索キーワードは 1 行 1 語で読み、空の行と重複した語を捨てる", () => {
+    const parsed = parseCatalogFoodProductForm({
+      ...VALID,
+      searchKeywords: " ちゅーる \r\n\n ちゃおちゅーる\nちゅーる\n ",
+    });
+    expect(parsed.ok && parsed.values.searchKeywords).toEqual([
+      "ちゅーる",
+      "ちゃおちゅーる",
+    ]);
+  });
+
+  it("検索キーワードが多すぎる・長すぎるときはエラーを返す", () => {
+    const tooMany = parseCatalogFoodProductForm({
+      ...VALID,
+      searchKeywords: Array.from(
+        { length: 21 },
+        (_, index) => `語${index}`,
+      ).join("\n"),
+    });
+    expect(!tooMany.ok && tooMany.errors.searchKeywords).toBe(
+      "検索キーワードは20件までです",
+    );
+    const tooLong = parseCatalogFoodProductForm({
+      ...VALID,
+      searchKeywords: "あ".repeat(51),
+    });
+    expect(!tooLong.ok && tooLong.errors.searchKeywords).toBe(
+      "検索キーワードは1語50文字以内で入力してください",
+    );
+    // 入力値は送られたまま表示し直す
+    expect(!tooLong.ok && tooLong.input.searchKeywords).toBe("あ".repeat(51));
   });
 
   it("誤りのある項目ごとにエラーを返す", () => {

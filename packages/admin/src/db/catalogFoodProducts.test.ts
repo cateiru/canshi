@@ -21,6 +21,7 @@ const VALUES = {
   textureType: "dry" as const,
   lifeStages: [],
   targetBreed: null,
+  searchKeywords: [],
 };
 const IMAGE = { bytes: createJpeg(100, 100), mimeType: "image/jpeg" as const };
 const LIMIT = 1024 * 1024;

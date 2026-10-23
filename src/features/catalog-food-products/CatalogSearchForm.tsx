@@ -133,7 +133,7 @@ export function CatalogSearchForm({
           <FormField
             name="q"
             type="search"
-            label="商品名・メーカー名"
+            label="商品名・メーカー名など"
             placeholder="例：まぐろ　カリカリ"
             defaultValue={defaultValues.q}
             className={styles.keyword}

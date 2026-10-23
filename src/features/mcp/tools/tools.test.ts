@@ -844,6 +844,7 @@ describe("共通のごはん商品", () => {
           textureType: "wet",
           lifeStages: ["kitten", "senior"],
           targetBreed: null,
+          searchKeywords: [],
           hasImage: false,
         },
       ],
@@ -924,6 +925,56 @@ describe("共通のごはん商品", () => {
       (await call("update_catalog_food_product", { id: "missing", name: "x" }))
         .error,
     ).toContain("共通のごはん商品が見つかりません");
+  });
+
+  it("検索キーワードを登録・編集し、キーワードの一部で検索できる", async () => {
+    await makeAdmin();
+    await allow({
+      catalogOperations: [
+        "catalogFoodProduct:read",
+        "catalogFoodProduct:create",
+        "catalogFoodProduct:update",
+      ],
+    });
+    const created = await call("create_catalog_food_product", {
+      ...product,
+      // 前後の空白を除き、空の語と重複した語は保存しない
+      searchKeywords: [" ちゅーる ", "", "ちゅーる", "ちゃおちゅーる"],
+    });
+    const id = created.value?.id;
+    const [row] = await db.select().from(catalogFoodProducts);
+    expect(row.searchKeywords).toEqual(["ちゅーる", "ちゃおちゅーる"]);
+    const listed = await call("list_catalog_food_products", {
+      keyword: "ちゃお",
+    });
+    expect(listed.value?.catalogFoodProducts).toEqual([
+      expect.objectContaining({
+        id,
+        searchKeywords: ["ちゅーる", "ちゃおちゅーる"],
+      }),
+    ]);
+
+    // 省略した編集では今のキーワードのまま、指定すると置き換える
+    await call("update_catalog_food_product", { id, name: "まぐろ（新）" });
+    expect(
+      (await db.select().from(catalogFoodProducts))[0].searchKeywords,
+    ).toEqual(["ちゅーる", "ちゃおちゅーる"]);
+    await call("update_catalog_food_product", { id, searchKeywords: [] });
+    expect(
+      (await db.select().from(catalogFoodProducts))[0].searchKeywords,
+    ).toEqual([]);
+
+    expect(
+      (
+        await call("update_catalog_food_product", {
+          id,
+          searchKeywords: Array.from(
+            { length: 21 },
+            (_, index) => `語${index}`,
+          ),
+        })
+      ).error,
+    ).toContain("検索キーワードは20件までです");
   });
 
   it("許可した後に admin でなくなると、編集できなくなる", async () => {

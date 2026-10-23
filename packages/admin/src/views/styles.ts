@@ -403,7 +403,7 @@ form.product-form {
 fieldset .field-error { font-size: var(--text-sm); }
 
 /* メインアプリの FormField と同じく、白い背景と入力欄の枠線で識別できるようにする */
-input[type="text"], input[type="number"] {
+input[type="text"], input[type="number"], textarea {
   width: 100%;
   min-height: 48px;
   border: var(--border-width) solid var(--color-border-input);
@@ -419,16 +419,18 @@ input[type="text"], input[type="number"] {
     border-color var(--transition-base),
     outline-color var(--transition-base);
 }
-input[type="text"]:hover, input[type="number"]:hover { border-color: var(--color-accent-strong); }
-input:focus { outline-color: transparent; }
-input:focus-visible { outline-color: var(--color-focus-ring); }
+input[type="text"]:hover, input[type="number"]:hover, textarea:hover { border-color: var(--color-accent-strong); }
+input:focus, textarea:focus { outline-color: transparent; }
+input:focus-visible, textarea:focus-visible { outline-color: var(--color-focus-ring); }
+textarea { resize: vertical; line-height: var(--line-height-body); }
 input[aria-invalid="true"], input[aria-invalid="true"]:hover,
+textarea[aria-invalid="true"], textarea[aria-invalid="true"]:hover,
 select[aria-invalid="true"], select[aria-invalid="true"]:hover {
   border-color: var(--color-error);
 }
 form.product-form select { width: 100%; max-width: none; min-height: 48px; }
 @media (max-width: 480px) {
-  input[type="text"], input[type="number"] { padding-inline: var(--space-2); }
+  input[type="text"], input[type="number"], textarea { padding-inline: var(--space-2); }
 }
 
 /* チェックボックスのまとまり（メインアプリの FormGroup） */

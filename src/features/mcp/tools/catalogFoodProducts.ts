@@ -21,6 +21,8 @@ import {
 import {
   catalogFoodProductSchema,
   MAX_CATALOG_PACKAGE_SIZES,
+  MAX_CATALOG_SEARCH_KEYWORD_LENGTH,
+  MAX_CATALOG_SEARCH_KEYWORDS,
 } from "@/features/catalog-food-products/schema";
 import { parseCatalogSearchParams } from "@/features/catalog-food-products/search";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
@@ -58,6 +60,9 @@ const PRODUCT_DESCRIPTION =
   `lifeStages は対象の猫（${FOOD_PRODUCT_LIFE_STAGES.join("・")}。kitten=子猫、adult=成猫、` +
   "senior=シニア、care=療法食などのケア）で、複数を指定できる。" +
   "targetBreed は対象の猫種（未指定ならすべての猫種向け）。" +
+  `searchKeywords は検索キーワード（${MAX_CATALOG_SEARCH_KEYWORDS} 件まで、1 語 ${MAX_CATALOG_SEARCH_KEYWORD_LENGTH} 文字以内）で、` +
+  "商品名・メーカー名とは別の呼び方（「CIAO ちゅ〜る」に対する「ちゅーる」「ちゃおちゅーる」など）を登録すると、" +
+  "その呼び方の一部でも検索で見つかる。" +
   "家に追加済みのごはん商品は内容を写したものなので、共通のごはん商品を編集しても変わらない。" +
   "画像は CANSHI の管理画面から登録する。";
 
@@ -92,6 +97,12 @@ const productFields = {
     .describe(
       "対象の猫種（50文字以内）。null を指定するとすべての猫種向けにする",
     ),
+  searchKeywords: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "検索キーワード。編集で指定すると、キーワードをすべて置き換える（空配列で未設定にする）",
+    ),
 };
 
 function toCatalogFoodProductSummary(
@@ -108,6 +119,7 @@ function toCatalogFoodProductSummary(
     textureType: product.textureType,
     lifeStages: product.lifeStages,
     targetBreed: product.targetBreed,
+    searchKeywords: product.searchKeywords,
     hasImage,
   };
 }
@@ -122,6 +134,7 @@ function toFormValues(product: CatalogFoodProduct): FormValues {
     textureType: product.textureType,
     lifeStages: product.lifeStages,
     targetBreed: toOptionalValue(product.targetBreed),
+    searchKeywords: product.searchKeywords,
   };
 }
 
@@ -179,7 +192,7 @@ export function registerCatalogFoodProductTools(
           .string()
           .optional()
           .describe(
-            "商品名・メーカー名のキーワード。空白で区切ったすべての語を含む商品に絞り込む",
+            "商品名・メーカー名・検索キーワードのキーワード。空白で区切ったすべての語を含む商品に絞り込む",
           ),
         manufacturer: z.string().optional().describe("メーカー名（部分一致）"),
         nutritionType: z.enum(["complete", "general"]).optional(),
