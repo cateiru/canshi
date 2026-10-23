@@ -1,4 +1,8 @@
-import type { TableHTMLAttributes, TdHTMLAttributes } from "react";
+import type {
+  TableHTMLAttributes,
+  TdHTMLAttributes,
+  ThHTMLAttributes,
+} from "react";
 import styles from "./Table.module.css";
 
 export type TableProps = TableHTMLAttributes<HTMLTableElement>;
@@ -14,6 +18,22 @@ export function Table({ className, ...props }: TableProps) {
     <div className={styles.scroll}>
       <table className={classes} {...props} />
     </div>
+  );
+}
+
+export type TableActionHeaderProps = ThHTMLAttributes<HTMLTableCellElement>;
+
+/**
+ * `TableActionCell` の列の見出し。見た目には表示せず、スクリーンリーダーにだけ列名（既定は「操作」）を読み上げさせる
+ */
+export function TableActionHeader({
+  children = "操作",
+  ...props
+}: TableActionHeaderProps) {
+  return (
+    <th scope="col" {...props}>
+      <span className={styles.srOnly}>{children}</span>
+    </th>
   );
 }
 

@@ -348,8 +348,9 @@ test.describe("家の詳細設定", () => {
     // フィクスチャの未使用の招待（vrt-invitation-member）が一覧に並ぶ
     await expect(
       page
-        .getByRole("list", { name: "まだ使われていない招待" })
-        .getByRole("listitem"),
+        .getByRole("table", { name: "まだ使われていない招待" })
+        .locator("tbody")
+        .getByRole("row"),
     ).toHaveCount(1);
     await takeSnapshot(page, testInfo);
   });
@@ -375,8 +376,9 @@ test.describe("家の詳細設定", () => {
       // 閉じると一覧を取り直す。取り直す前の一覧で押さないよう、フィクスチャ
       // （2024-06-01 に発行）以外の招待が並ぶのを待ってから、それを無効化する
       const issued = page
-        .getByRole("list", { name: "まだ使われていない招待" })
-        .getByRole("listitem")
+        .getByRole("table", { name: "まだ使われていない招待" })
+        .locator("tbody")
+        .getByRole("row")
         .filter({ hasNotText: "2024-06-01" });
       await expect(issued).toHaveCount(1);
       await issued.getByRole("button", { name: "無効化する" }).click();
@@ -793,6 +795,8 @@ test("服薬予定一覧（服薬歴を開いたケース）の見た目", async
   await expect(
     page.getByRole("heading", { name: "VRT点眼薬", level: 3 }),
   ).toBeVisible();
+  // クリックしたままだと見出しにホバーの背景が付くかどうかが実行ごとに変わるため、マウスを外す
+  await page.mouse.move(0, 0);
   await takeSnapshot(page, testInfo);
 });
 
