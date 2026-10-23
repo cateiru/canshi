@@ -27,6 +27,7 @@ export * from "./RecordCard/RecordCard";
 export * from "./SegmentedControl/SegmentedControl";
 export * from "./Select/Select";
 export * from "./Slider/Slider";
+export * from "./Table/Table";
 export * from "./Tabs/Tabs";
 export * from "./Textarea/Textarea";
 export * from "./Toast/Toast";
