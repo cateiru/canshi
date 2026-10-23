@@ -795,6 +795,8 @@ test("服薬予定一覧（服薬歴を開いたケース）の見た目", async
   await expect(
     page.getByRole("heading", { name: "VRT点眼薬", level: 3 }),
   ).toBeVisible();
+  // クリックしたままだと見出しにホバーの背景が付くかどうかが実行ごとに変わるため、マウスを外す
+  await page.mouse.move(0, 0);
   await takeSnapshot(page, testInfo);
 });
 
