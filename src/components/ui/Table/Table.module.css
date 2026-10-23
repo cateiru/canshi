@@ -1,0 +1,53 @@
+/* 狭い画面で列が収まらないときは、ページではなく表だけを横にスクロールさせる */
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: var(--space-3) var(--space-2);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: 0;
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: 0;
+}
+
+.table thead th {
+  padding-top: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+/* `.table td` の左寄せより優先させる。狭い画面でもボタンの文言は折り返さず、ほかの列を狭める */
+.table .actionCell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* 操作がない行もボタン（Button の min-height）と同じ高さにし、行の高さを揃える */
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  min-height: 44px;
+}
