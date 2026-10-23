@@ -131,7 +131,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - どの家のユーザーも、ごはん商品を登録するときに検索して家に追加できる商品（#283、`0047`）。家に属さず、
   管理画面（`packages/admin`）が登録・編集・削除する。列は `food_products` から `household_id` を除き、
-  内容量の候補（`package_sizes`）を足したもの
+  内容量の候補（`package_sizes`）と検索キーワード（`search_keywords`）を足したもの
   - `users.role` が `admin` のユーザーは、AI との接続（MCP）からも検索・登録・編集できる（#363、
     `src/features/mcp/tools/catalogFoodProducts.ts`）。接続に許可した操作（`mcp_permissions.catalog_operations`）
     だけを行え、権限はツールが呼ばれるたびに DB で確かめる。画像の登録と削除は管理画面だけで行う
@@ -146,9 +146,16 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     商品は NULL。同じ家に同じ共通のごはん商品を 2 回追加しないよう `(household_id, catalog_food_product_id)` に
     一意インデックスを設定し、追加の INSERT は衝突したら何もしない（古い画面や同時の追加は、追加済みとして扱う）。管理画面で共通のごはん商品を削除したときは、外部キーの `ON DELETE SET NULL` で NULL になり、
     家の商品は残る（drizzle-kit は `ALTER TABLE ... ADD` の `ON DELETE` を出力しないため、`0047` に手で追記した）
-- 検索は商品名・メーカー名のキーワード（空白で区切ったすべての語を含む）と、メーカー名・種類・区分・
-  対象の猫（`json_each`）・対象の猫種で絞り込む。LIKE に渡す入力の `%`・`_` はエスケープする
-  （`src/features/catalog-food-products/queries.ts`）
+- 検索は商品名・メーカー名・検索キーワードのキーワード（空白で区切ったすべての語を、どれかの項目に含む）と、
+  メーカー名・種類・区分・対象の猫（`json_each`）・対象の猫種で絞り込む。LIKE に渡す入力の `%`・`_` は
+  エスケープする（`src/features/catalog-food-products/queries.ts`）
+  - 検索キーワード（`search_keywords`、#366・`0056`）は、商品名・メーカー名とは別の呼び方（「CIAO ちゅ〜る」に
+    対する「ちゅーる」など）を持つ文字列の JSON 配列。空配列は未設定。どれかのキーワードに語が部分一致すれば
+    よく、`json_each` の各要素に LIKE をかける（JSON の文字列そのものに LIKE をかけると、区切りの `","` にも
+    一致するため）
+  - 管理画面では 1 行 1 語で入力する。前後の空白を除き、空の語と重複した語は保存しない（20 件・1 語 50 文字まで）。
+    規則は `packages/admin/src/catalog/form.ts` と `src/features/catalog-food-products/schema.ts` で揃える
+  - 家に追加するときには写さない（`food_products` は検索の対象ではないため）
 - 画像は `media_assets`（`record_type = "catalog_food_product"`・`cat_id` と `uploaded_by_user_id` は NULL）に
   1 枚だけ持つ。管理画面はブラウザで縮小した画像（長辺 800px 以下・メタデータのない JPEG であることをサーバーでも
   確かめる）だけを保存し、サムネイルは作らない（`thumbnail_object_key` は NULL）

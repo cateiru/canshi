@@ -19,6 +19,12 @@ export type TextureType = (typeof TEXTURE_TYPES)[number];
 /** 内容量の候補の上限 */
 export const MAX_PACKAGE_SIZES = 10;
 
+/** 検索キーワードの上限（メインアプリの `MAX_CATALOG_SEARCH_KEYWORDS` と同じ） */
+export const MAX_SEARCH_KEYWORDS = 20;
+
+/** 検索キーワード 1 語の文字数の上限（メインアプリの `MAX_CATALOG_SEARCH_KEYWORD_LENGTH` と同じ） */
+export const MAX_SEARCH_KEYWORD_LENGTH = 50;
+
 /**
  * 内容量の候補（メインアプリの `CatalogPackageSize`）。`unit` があるときは 1 単位あたり、
  * ないときは商品全体の内容量
@@ -38,6 +44,8 @@ export interface CatalogFoodProductValues {
   textureType: TextureType;
   lifeStages: LifeStage[];
   targetBreed: string | null;
+  /** 検索キーワード。商品名・メーカー名とは別の呼び方でも検索で見つかるようにする */
+  searchKeywords: string[];
 }
 
 /** フォームを表示し直すときの入力値（送られたままの文字列） */
@@ -51,6 +59,8 @@ export interface CatalogFoodProductInput {
   textureType: string;
   lifeStages: string[];
   targetBreed: string;
+  /** 検索キーワード（1 行に 1 語） */
+  searchKeywords: string;
 }
 
 export interface PackageSizeInput {
@@ -172,6 +182,33 @@ function parsePackageSizes(
   return sizes;
 }
 
+/**
+ * 検索キーワードを 1 行 1 語で読む。前後の空白を除き、空の行と重複した語は捨てる。
+ * 誤りがあれば `errors` に書き込み、null を返す
+ */
+function parseSearchKeywords(
+  value: string,
+  errors: CatalogFoodProductErrors,
+): string[] | null {
+  const keywords = [
+    ...new Set(
+      value
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean),
+    ),
+  ];
+  if (keywords.some((keyword) => keyword.length > MAX_SEARCH_KEYWORD_LENGTH)) {
+    errors.searchKeywords = `検索キーワードは1語${MAX_SEARCH_KEYWORD_LENGTH}文字以内で入力してください`;
+    return null;
+  }
+  if (keywords.length > MAX_SEARCH_KEYWORDS) {
+    errors.searchKeywords = `検索キーワードは${MAX_SEARCH_KEYWORDS}件までです`;
+    return null;
+  }
+  return keywords;
+}
+
 export function parseCatalogFoodProductForm(
   body: FormBody,
 ): ParsedCatalogFoodProductForm {
@@ -184,6 +221,7 @@ export function parseCatalogFoodProductForm(
     textureType: text(body, "textureType"),
     lifeStages: texts(body, "lifeStages"),
     targetBreed: text(body, "targetBreed"),
+    searchKeywords: text(body, "searchKeywords"),
   };
   const errors: CatalogFoodProductErrors = {};
 
@@ -217,11 +255,13 @@ export function parseCatalogFoodProductForm(
   if (targetBreed.length > 50) {
     errors.targetBreed = "対象の猫種は50文字以内で入力してください";
   }
+  const searchKeywords = parseSearchKeywords(input.searchKeywords, errors);
 
   if (
     Object.keys(errors).length > 0 ||
     kcalPer100g === null ||
     packageSizes === null ||
+    searchKeywords === null ||
     !includes(NUTRITION_TYPES, nutritionType) ||
     !includes(TEXTURE_TYPES, textureType)
   ) {
@@ -243,6 +283,7 @@ export function parseCatalogFoodProductForm(
         input.lifeStages.includes(stage),
       ),
       targetBreed: targetBreed || null,
+      searchKeywords,
     },
     // ファイルを選ばずに送ると、空のファイルが届く
     image: image instanceof File && image.size > 0 ? image : null,
@@ -266,6 +307,7 @@ export function toInput(
     textureType: values.textureType,
     lifeStages: values.lifeStages,
     targetBreed: values.targetBreed ?? "",
+    searchKeywords: values.searchKeywords.join("\n"),
   };
 }
 
@@ -278,4 +320,5 @@ export const EMPTY_INPUT: CatalogFoodProductInput = {
   textureType: "dry",
   lifeStages: [],
   targetBreed: "",
+  searchKeywords: "",
 };

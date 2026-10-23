@@ -139,6 +139,28 @@ describe("searchCatalogFoodProducts", () => {
     expect(await search({ q: "_" })).toEqual([]);
   });
 
+  it("キーワードは検索キーワードの一部に含まれる商品にも絞り、語ごとに別の項目に含まれていてもよい", async () => {
+    await addCatalog({
+      id: "churu",
+      name: "CIAO ちゅ〜る まぐろ",
+      manufacturer: "いなば",
+      textureType: "wet",
+      searchKeywords: ["ちゅーる", "ちゃおちゅーる", "50%_off"],
+    });
+    expect(await search({ q: "ちゅーる" })).toEqual(["churu"]);
+    expect(await search({ q: "ちゃお" })).toEqual(["churu"]);
+    // 商品名の一部でも見つかる
+    expect(await search({ q: "ちゅ〜る" })).toEqual(["churu"]);
+    // 1 語目はメーカー名、2 語目は検索キーワード、3 語目は商品名に含まれる
+    expect(await search({ q: "いなば ちゃおちゅーる まぐろ" })).toEqual([
+      "churu",
+    ]);
+    expect(await search({ q: "ちゅーる かつお" })).toEqual([]);
+    // 検索キーワードの % と _ もワイルドカードとして扱わない
+    expect(await search({ q: "50%_" })).toEqual(["churu"]);
+    expect(await search({ q: "ちゅ_る" })).toEqual([]);
+  });
+
   it("メーカー名・種類・区分・対象の猫・猫種で絞り込む", async () => {
     expect(await search({ manufacturer: "いな" })).toEqual(["wet-kitten"]);
     expect(await search({ textureType: "soup" })).toEqual(["no-maker"]);

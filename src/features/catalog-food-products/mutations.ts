@@ -26,6 +26,7 @@ function toColumns(values: CatalogFoodProductInput) {
     textureType: values.textureType,
     lifeStages: values.lifeStages,
     targetBreed: values.targetBreed,
+    searchKeywords: values.searchKeywords,
   };
 }
 

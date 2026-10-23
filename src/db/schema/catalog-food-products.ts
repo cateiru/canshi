@@ -23,7 +23,8 @@ export type CatalogPackageSize = {
  * 共通のごはん商品。管理画面（`packages/admin`）から登録し、どの家のユーザーからも
  * 検索できる。家に追加するときは `food_products` へ内容を写し、追加した後は家ごとに
  * 自由に編集できる（共通のごはん商品やほかの家の商品には影響しない）。
- * 列は `food_products` から家（`household_id`）を除き、内容量の候補（`package_sizes`）を足したもの
+ * 列は `food_products` から家（`household_id`）を除き、内容量の候補（`package_sizes`）と
+ * 検索キーワード（`search_keywords`）を足したもの
  */
 export const catalogFoodProducts = sqliteTable(
   "catalog_food_products",
@@ -66,6 +67,14 @@ export const catalogFoodProducts = sqliteTable(
       .default(sql`'[]'`),
     /** 対象の猫種（`cats.breed` と同じ表記）。NULL はすべての猫種を表す */
     targetBreed: text("target_breed"),
+    /**
+     * 検索キーワードの JSON 配列（#366）。商品名・メーカー名とは別の呼び方（「ちゅーる」など）でも
+     * 検索で見つかるようにする。空配列は未設定。家に追加するときには写さない
+     */
+    searchKeywords: text("search_keywords", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

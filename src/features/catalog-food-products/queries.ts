@@ -15,13 +15,19 @@ function contains(column: SQLiteColumn, value: string): SQL {
   return sql`${column} LIKE ${toContainsPattern(value)} ESCAPE '\\'`;
 }
 
+/** 検索キーワードのどれかに部分一致する */
+function keywordContains(value: string): SQL {
+  return sql`EXISTS (SELECT 1 FROM json_each(${catalogFoodProducts.searchKeywords}) WHERE json_each.value LIKE ${toContainsPattern(value)} ESCAPE '\\')`;
+}
+
 function searchConditions(criteria: CatalogSearchCriteria): SQL[] {
   const conditions: SQL[] = [];
-  // キーワードは語ごとに、商品名かメーカー名のどちらかに含まれていればよい
+  // キーワードは語ごとに、商品名・メーカー名・検索キーワードのどれかに含まれていればよい
   for (const keyword of criteria.keywords) {
     const condition = or(
       contains(catalogFoodProducts.name, keyword),
       contains(catalogFoodProducts.manufacturer, keyword),
+      keywordContains(keyword),
     );
     if (condition) {
       conditions.push(condition);

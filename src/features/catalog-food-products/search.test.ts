@@ -57,8 +57,8 @@ describe("キーワードの数", () => {
     expect(parseCatalogSearchParams({ q: "まぐろ まぐろ" }).keywords).toEqual([
       "まぐろ",
     ]);
-    // キーワード（1 語 2 個）・詳しい条件（5 個）・件数の上限（1 個）を足しても上限に収まる
-    expect(MAX_KEYWORDS * 2 + 5 + 1).toBeLessThanOrEqual(
+    // キーワード（1 語 3 個）・詳しい条件（5 個）・件数の上限（1 個）を足しても上限に収まる
+    expect(MAX_KEYWORDS * 3 + 5 + 1).toBeLessThanOrEqual(
       D1_MAX_BOUND_PARAMETERS,
     );
   });

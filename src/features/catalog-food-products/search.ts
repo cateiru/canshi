@@ -6,7 +6,7 @@ import {
 
 /** 共通のごはん商品の検索条件。未指定の条件では絞り込まない */
 export type CatalogSearchCriteria = {
-  /** 商品名・メーカー名のキーワード。空白で区切ったすべての語を含む商品に絞る */
+  /** 商品名・メーカー名・検索キーワードのキーワード。空白で区切ったすべての語を含む商品に絞る */
   keywords: string[];
   /** メーカー名（部分一致） */
   manufacturer: string | null;
@@ -27,7 +27,7 @@ const NUTRITION_TYPES = ["complete", "general"] as const;
 const MAX_TEXT_LENGTH = 100;
 
 /**
- * キーワードの数の上限。キーワードは 1 語につき商品名・メーカー名の 2 個のパラメーターを使うため、
+ * キーワードの数の上限。キーワードは 1 語につき商品名・メーカー名・検索キーワードの 3 個のパラメーターを使うため、
  * 詳しい条件と件数の上限を足しても D1 のバインドパラメーターの上限（`src/db/batch.ts` の
  * `D1_MAX_BOUND_PARAMETERS`）に十分収まる数にする。それより後ろの語は使わない
  */
