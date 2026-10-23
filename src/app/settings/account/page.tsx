@@ -8,6 +8,7 @@ import {
   ButtonLink,
   Table,
   TableActionCell,
+  TableActionHeader,
 } from "@/components/ui";
 import { AccountSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { logoutAction } from "@/features/auth/actions";
@@ -93,9 +94,7 @@ export default async function AccountSettingsPage() {
             <tr>
               <th scope="col">端末</th>
               <th scope="col">ログイン日時</th>
-              <th scope="col">
-                <span className={styles.srOnly}>操作</span>
-              </th>
+              <TableActionHeader />
             </tr>
           </thead>
           <tbody>

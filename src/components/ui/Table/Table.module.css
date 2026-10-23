@@ -43,11 +43,27 @@
   white-space: nowrap;
 }
 
-/* 操作がない行もボタン（Button の min-height）と同じ高さにし、行の高さを揃える */
+/*
+ * 操作がない行もボタン（Button の min-height）と同じ高さにし、行の高さを揃える。
+ * ボタンが複数あって収まらないときは、表を横にスクロールさせる前にボタンを縦に積む
+ */
 .actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-2);
   min-height: 44px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

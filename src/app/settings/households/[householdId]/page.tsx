@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { Badge, Breadcrumb, NavCard } from "@/components/ui";
+import {
+  Badge,
+  Breadcrumb,
+  NavCard,
+  Table,
+  TableActionCell,
+  TableActionHeader,
+} from "@/components/ui";
 import {
   FeedingPresetIcon,
   FeedingScheduleIcon,
@@ -24,7 +31,7 @@ import {
 } from "@/features/households/invitations";
 import { HOUSEHOLD_ROLE_LABEL } from "@/features/households/labels";
 import { listHouseholdMembers } from "@/features/households/queries";
-import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
+import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import { UserAvatar } from "@/features/users/UserAvatar";
@@ -80,67 +87,81 @@ export default async function HouseholdSettingsPage({
       </Surface>
 
       <Surface title="メンバー" titleId="household-members-heading" gap="md">
-        <ul className={styles.members}>
-          {members.map((member) => {
-            const isSelf = member.userId === user.id;
-            return (
-              <li key={member.userId} className={styles.member}>
-                <div className={styles.memberInfo}>
-                  <UserAvatar
-                    name={member.name}
-                    iconMediaAssetId={member.iconMediaAssetId}
-                  />
-                  <span className={styles.memberName}>
-                    {member.name}
-                    {isSelf ? "（あなた）" : null}
-                  </span>
-                  <Badge color={member.role === "owner" ? "accent" : "info"}>
-                    {HOUSEHOLD_ROLE_LABEL[member.role]}
-                  </Badge>
-                </div>
-                <div className={styles.memberActions}>
-                  {isOwner && member.role === "member" ? (
-                    <>
-                      <HouseholdMemberActionButton
-                        label="オーナーにする"
-                        title="オーナーの移譲"
-                        description={`「${member.name}」を家のオーナーにしますか？あなたはオーナーではなくなり、家の名前やメンバーを管理できなくなります。`}
-                        successMessage={`「${member.name}」を家のオーナーにしました`}
-                        action={transferHouseholdOwnershipAction.bind(
-                          null,
-                          household.id,
-                          member.userId,
-                        )}
+        <Table aria-labelledby="household-members-heading">
+          <thead>
+            <tr>
+              <th scope="col">名前</th>
+              <TableActionHeader />
+            </tr>
+          </thead>
+          <tbody>
+            {members.map((member) => {
+              const isSelf = member.userId === user.id;
+              return (
+                <tr key={member.userId}>
+                  <th scope="row" className={styles.memberName}>
+                    <span className={styles.memberNameInner}>
+                      <UserAvatar
+                        name={member.name}
+                        iconMediaAssetId={member.iconMediaAssetId}
                       />
+                      <span className={styles.memberLabel}>
+                        <span>
+                          {member.name}
+                          {isSelf ? "（あなた）" : null}
+                        </span>
+                        <Badge
+                          color={member.role === "owner" ? "accent" : "info"}
+                        >
+                          {HOUSEHOLD_ROLE_LABEL[member.role]}
+                        </Badge>
+                      </span>
+                    </span>
+                  </th>
+                  <TableActionCell>
+                    {isOwner && member.role === "member" ? (
+                      <>
+                        <HouseholdMemberActionButton
+                          label="オーナーにする"
+                          title="オーナーの移譲"
+                          description={`「${member.name}」を家のオーナーにしますか？あなたはオーナーではなくなり、家の名前やメンバーを管理できなくなります。`}
+                          successMessage={`「${member.name}」を家のオーナーにしました`}
+                          action={transferHouseholdOwnershipAction.bind(
+                            null,
+                            household.id,
+                            member.userId,
+                          )}
+                        />
+                        <HouseholdMemberActionButton
+                          label="家から外す"
+                          title="メンバーを外す"
+                          description={`「${member.name}」を家から外しますか？外したメンバーは、この家の猫を見られなくなり、通知も届かなくなります。`}
+                          variant="danger"
+                          successMessage={`「${member.name}」を家から外しました`}
+                          action={removeHouseholdMemberAction.bind(
+                            null,
+                            household.id,
+                            member.userId,
+                          )}
+                        />
+                      </>
+                    ) : null}
+                    {isSelf && member.role === "member" ? (
                       <HouseholdMemberActionButton
-                        label="家から外す"
-                        title="メンバーを外す"
-                        description={`「${member.name}」を家から外しますか？外したメンバーは、この家の猫を見られなくなり、通知も届かなくなります。`}
+                        label="家から抜ける"
+                        title="家から抜ける"
+                        description={`「${household.name}」から抜けますか？この家の猫を見られなくなり、通知も届かなくなります。`}
                         variant="danger"
-                        successMessage={`「${member.name}」を家から外しました`}
-                        action={removeHouseholdMemberAction.bind(
-                          null,
-                          household.id,
-                          member.userId,
-                        )}
+                        successMessage={`「${household.name}」から抜けました`}
+                        action={leaveHouseholdAction.bind(null, household.id)}
                       />
-                    </>
-                  ) : null}
-                  {isSelf && member.role === "member" ? (
-                    <HouseholdMemberActionButton
-                      label="家から抜ける"
-                      title="家から抜ける"
-                      description={`「${household.name}」から抜けますか？この家の猫を見られなくなり、通知も届かなくなります。`}
-                      variant="danger"
-                      successMessage={`「${household.name}」から抜けました`}
-                      action={leaveHouseholdAction.bind(null, household.id)}
-                    />
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                    ) : null}
+                  </TableActionCell>
+                </tr>
+              );
+            })}
+          </tbody>
+        </Table>
         {isOwner ? (
           <p className={styles.note}>
             オーナーは家から抜けられません。抜けるときは、先にほかのメンバーをオーナーにしてください。
@@ -197,39 +218,62 @@ export default async function HouseholdSettingsPage({
             />
           </div>
           {invitations.length > 0 ? (
-            <ul className={styles.members} aria-label="まだ使われていない招待">
-              {invitations.map((invitation) => (
-                <li key={invitation.id} className={styles.member}>
-                  <div className={styles.invitationInfo}>
-                    <span>
-                      有効期限:{" "}
-                      {formatDateTimeUtc(getNaiveUtcNow(invitation.expiresAt))}
-                    </span>
-                    <span className={styles.note}>
-                      {formatDateTimeUtc(getNaiveUtcNow(invitation.createdAt))}{" "}
-                      に{invitation.createdByName}が発行
-                    </span>
-                  </div>
-                  <HouseholdMemberActionButton
-                    label="無効化する"
-                    title="招待の無効化"
-                    description="この招待を無効化しますか？無効化した招待 URL を開いても、家には参加できなくなります。"
-                    variant="danger"
-                    successMessage="招待を無効化しました"
-                    action={revokeHouseholdInvitationAction.bind(
-                      null,
-                      household.id,
-                      invitation.id,
-                    )}
-                  />
-                </li>
-              ))}
-            </ul>
+            <Table aria-label="まだ使われていない招待">
+              <thead>
+                <tr>
+                  <th scope="col">有効期限</th>
+                  <th scope="col">発行</th>
+                  <TableActionHeader />
+                </tr>
+              </thead>
+              <tbody>
+                {invitations.map((invitation) => (
+                  <tr key={invitation.id}>
+                    <td className={styles.dateTime}>
+                      <DateTimeText date={invitation.expiresAt} />
+                    </td>
+                    <td>
+                      <span className={styles.issued}>
+                        {invitation.createdByName}
+                        <span className={styles.issuedAt}>
+                          <DateTimeText date={invitation.createdAt} />
+                        </span>
+                      </span>
+                    </td>
+                    <TableActionCell>
+                      <HouseholdMemberActionButton
+                        label="無効化する"
+                        title="招待の無効化"
+                        description="この招待を無効化しますか？無効化した招待 URL を開いても、家には参加できなくなります。"
+                        variant="danger"
+                        successMessage="招待を無効化しました"
+                        action={revokeHouseholdInvitationAction.bind(
+                          null,
+                          household.id,
+                          invitation.id,
+                        )}
+                      />
+                    </TableActionCell>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           ) : (
             <p className={styles.note}>まだ使われていない招待はありません。</p>
           )}
         </Surface>
       ) : null}
     </main>
+  );
+}
+
+/** 狭い画面でも日付の途中（「-」の後ろ）では折り返さず、日付と時刻の間でだけ折り返す */
+function DateTimeText({ date }: { date: Date }) {
+  const { date: day, time } = splitDateTimeUtc(getNaiveUtcNow(date));
+  return (
+    <>
+      <span className={styles.noWrap}>{day}</span>{" "}
+      <span className={styles.noWrap}>{time}</span>
+    </>
   );
 }

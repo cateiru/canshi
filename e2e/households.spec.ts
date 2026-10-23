@@ -223,13 +223,15 @@ async function issueInvitationUrl(page: Page) {
 test("招待 URL を発行し、無効化すると使えなくなる", async ({ page }) => {
   const url = await issueInvitationUrl(page);
   const householdPage = page.url();
-  const invitations = page.getByRole("list", {
+  const invitations = page.getByRole("table", {
     name: "まだ使われていない招待",
   });
+  // 見出しの行を除いた、招待ごとの行
+  const invitationRows = invitations.locator("tbody").getByRole("row");
   await expect(
     invitations.getByRole("button", { name: "無効化する" }).first(),
   ).toBeVisible();
-  const countBefore = await invitations.getByRole("listitem").count();
+  const countBefore = await invitationRows.count();
 
   // オーナー自身が開いても参加済みとして案内され、招待は使用済みにならない
   await page.goto(url);
@@ -239,7 +241,7 @@ test("招待 URL を発行し、無効化すると使えなくなる", async ({ 
   await expect(page.getByRole("button", { name: "参加する" })).toHaveCount(0);
 
   await page.goto(householdPage);
-  await expect(invitations.getByRole("listitem")).toHaveCount(countBefore);
+  await expect(invitationRows).toHaveCount(countBefore);
 
   // 一覧は新しい順のため、先頭が今発行した招待
   await invitations.getByRole("button", { name: "無効化する" }).first().click();
@@ -247,9 +249,7 @@ test("招待 URL を発行し、無効化すると使えなくなる", async ({ 
   await dialog.getByRole("button", { name: "無効化する" }).click();
   await expect(page.getByText("招待を無効化しました")).toBeVisible();
   if (countBefore > 1) {
-    await expect(invitations.getByRole("listitem")).toHaveCount(
-      countBefore - 1,
-    );
+    await expect(invitationRows).toHaveCount(countBefore - 1);
   } else {
     await expect(
       page.getByText("まだ使われていない招待はありません。"),
@@ -284,7 +284,7 @@ test("ログインしていない状態で招待 URL を開くと、ログイン
     // 後片付け: 発行した招待を無効化する
     await page.reload();
     await page
-      .getByRole("list", { name: "まだ使われていない招待" })
+      .getByRole("table", { name: "まだ使われていない招待" })
       .getByRole("button", { name: "無効化する" })
       .first()
       .click();

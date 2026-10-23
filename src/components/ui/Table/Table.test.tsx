@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Table, TableActionCell } from "./Table";
+import { Table, TableActionCell, TableActionHeader } from "./Table";
 
 describe("Table", () => {
   it("aria-labelledby などの属性を table 要素に渡す", () => {
@@ -17,6 +17,23 @@ describe("Table", () => {
       </>,
     );
     expect(screen.getByRole("table", { name: "一覧" })).toBeInTheDocument();
+  });
+});
+
+describe("TableActionHeader", () => {
+  it("既定では「操作」という名前の列見出しになる", () => {
+    render(
+      <table>
+        <thead>
+          <tr>
+            <TableActionHeader />
+          </tr>
+        </thead>
+      </table>,
+    );
+    expect(
+      screen.getByRole("columnheader", { name: "操作" }),
+    ).toBeInTheDocument();
   });
 });
 
