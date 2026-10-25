@@ -3,11 +3,15 @@ import { drizzle } from "drizzle-orm/sql-js";
 import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { D1_MAX_BOUND_PARAMETERS } from "@/db/batch";
 import type { getDb } from "@/db/client";
 import {
   cats,
   expenseRecordCats,
   expenseRecords,
+  feedingRecordItems,
+  feedingRecords,
+  foodProducts,
   households,
   mediaAssets,
   poopRecords,
@@ -27,6 +31,7 @@ function expectWeightRecord(entry: TimelineEntry) {
 // 経由の呼び出しに対応するため）。既存の Server Component からの呼び出し
 // （`d1` を渡さない）を壊していないことを、この回帰テストで確認する
 let db: ReturnType<typeof getDb>;
+let sqlite: InstanceType<Awaited<ReturnType<typeof initSqlJs>>["Database"]>;
 vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
@@ -34,7 +39,8 @@ vi.mock("@/db/client", () => ({
 describe("listTimelineForMonth", () => {
   beforeAll(async () => {
     const SQL = await initSqlJs();
-    db = drizzle(new SQL.Database()) as unknown as ReturnType<typeof getDb>;
+    sqlite = new SQL.Database();
+    db = drizzle(sqlite) as unknown as ReturnType<typeof getDb>;
     await migrate(db as unknown as ReturnType<typeof drizzle>, {
       migrationsFolder: "./drizzle",
     });
@@ -323,5 +329,77 @@ describe("listTimelineForMonth", () => {
       "2026-01-31": ["weight"],
       "2026-01-03": ["birthday"],
     });
+  });
+
+  it("ごはんの記録が多くても、明細を D1 のバインドパラメーターの上限内で取得する", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "くろ", sex: "male" })
+      .returning();
+    const [food] = await db
+      .insert(foodProducts)
+      .values({
+        name: "カリカリ",
+        kcalPer100g: 380,
+        packageAmountG: 500,
+        nutritionType: "complete",
+        textureType: "dry",
+      })
+      .returning();
+    // 前後の月を含めた 3 か月に、1 日 2 回ずつ記録する
+    const meals = Array.from({ length: 90 * 2 }, (_, index) => ({
+      id: `meal-${index}`,
+      catId: cat.id,
+      occurredAt: new Date(
+        Date.UTC(2026, 0, 1 + Math.floor(index / 2), index % 2 === 0 ? 8 : 20),
+      ),
+    }));
+    for (const rows of [
+      meals.slice(0, 30),
+      meals.slice(30, 60),
+      meals.slice(60, 90),
+      meals.slice(90, 120),
+      meals.slice(120, 150),
+      meals.slice(150),
+    ]) {
+      await db.insert(feedingRecords).values(rows);
+      await db.insert(feedingRecordItems).values(
+        rows.map((meal) => ({
+          feedingRecordId: meal.id,
+          foodProductId: food.id,
+          givenAmountG: 20,
+        })),
+      );
+    }
+
+    // D1 と同じく、1 クエリのバインドパラメーターが上限を超えたら失敗させる
+    const original = db;
+    db = drizzle(sqlite, {
+      logger: {
+        logQuery: (_query, params) => {
+          expect(params.length).toBeLessThanOrEqual(D1_MAX_BOUND_PARAMETERS);
+        },
+      },
+    }) as unknown as ReturnType<typeof getDb>;
+    try {
+      const result = await listTimelineForMonth(cat.id, 2026, 2, {
+        pageSize: 100,
+        includeAdjacentMonths: true,
+      });
+      const feedings = result.entries.filter(
+        (entry) => entry.type === "feeding",
+      );
+      // 2 月の 28 日分だけが一覧に載り、どの記録にも明細が付く
+      expect(feedings).toHaveLength(56);
+      for (const entry of feedings) {
+        expect(entry.record.items.map((item) => item.foodProductName)).toEqual([
+          "カリカリ",
+        ]);
+      }
+      expect(result.datesByDay.get("2026-01-01")).toEqual(["feeding"]);
+      expect(result.datesByDay.get("2026-03-31")).toEqual(["feeding"]);
+    } finally {
+      db = original;
+    }
   });
 });

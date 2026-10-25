@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   type CleaningRecord,
@@ -189,14 +189,21 @@ async function fetchFeedingEntries(
       leftoverLevel: feedingRecordItems.leftoverLevel,
     })
     .from(feedingRecordItems)
+    // 記録の ID を列挙して inArray に渡すと、記録が多い月（カレンダー用に前後の月も含めるときは
+    // 3 か月分）で D1 のバインドパラメーターの上限を超えるため、ヘッダーと同じ条件で結合して絞り込む
+    .innerJoin(
+      feedingRecords,
+      eq(feedingRecordItems.feedingRecordId, feedingRecords.id),
+    )
     .innerJoin(
       foodProducts,
       eq(feedingRecordItems.foodProductId, foodProducts.id),
     )
     .where(
-      inArray(
-        feedingRecordItems.feedingRecordId,
-        headers.map((header) => header.id),
+      and(
+        eq(feedingRecords.catId, catId),
+        gte(feedingRecords.occurredAt, range.start),
+        lt(feedingRecords.occurredAt, range.end),
       ),
     )
     .orderBy(feedingRecordItems.sortOrder);
