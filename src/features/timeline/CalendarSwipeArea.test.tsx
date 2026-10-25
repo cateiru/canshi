@@ -11,6 +11,9 @@ vi.mock("next/navigation", () => ({
 
 const PREV_HREF = "/cats/cat-1/timeline?ym=2026-09";
 const NEXT_HREF = "/cats/cat-1/timeline?ym=2026-11";
+/** 前後の月へ移動するときに router.push へ渡す引数 */
+const TO_PREV = [PREV_HREF, { transitionTypes: ["calendar-prev"] }] as const;
+const TO_NEXT = [NEXT_HREF, { transitionTypes: ["calendar-next"] }] as const;
 
 function renderArea(onDayClick = vi.fn()) {
   render(
@@ -84,13 +87,13 @@ describe("CalendarSwipeArea", () => {
   it("マウスで左へドラッグすると次の月へ移動する", () => {
     const { day } = renderArea();
     dragWithMouse(day, { x: 200, y: 100 }, { x: 100, y: 110 });
-    expect(router.push).toHaveBeenCalledExactlyOnceWith(NEXT_HREF);
+    expect(router.push).toHaveBeenCalledExactlyOnceWith(...TO_NEXT);
   });
 
   it("マウスで右へドラッグすると前の月へ移動する", () => {
     const { day } = renderArea();
     dragWithMouse(day, { x: 100, y: 100 }, { x: 200, y: 90 });
-    expect(router.push).toHaveBeenCalledExactlyOnceWith(PREV_HREF);
+    expect(router.push).toHaveBeenCalledExactlyOnceWith(...TO_PREV);
   });
 
   it("ドラッグした量が少ないときは移動しない", () => {
@@ -135,10 +138,10 @@ describe("CalendarSwipeArea", () => {
   it("指で左右へスワイプすると前後の月へ移動する", () => {
     const { day } = renderArea();
     swipeWithTouch(day, { x: 200, y: 100 }, { x: 100, y: 100 });
-    expect(router.push).toHaveBeenLastCalledWith(NEXT_HREF);
+    expect(router.push).toHaveBeenLastCalledWith(...TO_NEXT);
 
     swipeWithTouch(day, { x: 100, y: 100 }, { x: 200, y: 100 });
-    expect(router.push).toHaveBeenLastCalledWith(PREV_HREF);
+    expect(router.push).toHaveBeenLastCalledWith(...TO_PREV);
   });
 
   it("スワイプの途中でブラウザから pointercancel が届いても移動する", () => {
@@ -151,7 +154,7 @@ describe("CalendarSwipeArea", () => {
       touches: [],
       changedTouches: [{ clientX: 100, clientY: 100 }],
     });
-    expect(router.push).toHaveBeenCalledExactlyOnceWith(NEXT_HREF);
+    expect(router.push).toHaveBeenCalledExactlyOnceWith(...TO_NEXT);
   });
 
   it("マウスのドラッグが pointercancel で打ち切られたときは移動しない", () => {
@@ -186,7 +189,7 @@ describe("CalendarSwipeArea", () => {
       touches: [],
       changedTouches: [{ clientX: 100, clientY: 100 }],
     });
-    expect(router.push).toHaveBeenCalledExactlyOnceWith(NEXT_HREF);
+    expect(router.push).toHaveBeenCalledExactlyOnceWith(...TO_NEXT);
   });
 
   it("端で弾んで横スクロールの範囲を越えた分は、スクロールに使われた分として数えない", () => {
@@ -201,7 +204,7 @@ describe("CalendarSwipeArea", () => {
       touches: [],
       changedTouches: [{ clientX: 100, clientY: 100 }],
     });
-    expect(router.push).toHaveBeenCalledExactlyOnceWith(NEXT_HREF);
+    expect(router.push).toHaveBeenCalledExactlyOnceWith(...TO_NEXT);
   });
 
   it("2 本指で操作したときは移動しない", () => {
@@ -217,5 +220,82 @@ describe("CalendarSwipeArea", () => {
       changedTouches: [{ clientX: 100, clientY: 100 }],
     });
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("ドラッグしているあいだはカレンダーが追従する", () => {
+    const { area, day } = renderArea();
+    const base = { pointerId: 1, pointerType: "mouse", button: 0 };
+    fireEvent.pointerDown(day, { ...base, clientX: 200, clientY: 100 });
+    fireEvent.pointerMove(day, { ...base, clientX: 150, clientY: 104 });
+    expect(area.style.translate).toBe("-50px");
+
+    fireEvent.pointerMove(day, { ...base, clientX: 230, clientY: 104 });
+    expect(area.style.translate).toBe("30px");
+  });
+
+  it("閾値に届かずに離したときは元の位置へ戻る", () => {
+    const { area, day } = renderArea();
+    dragWithMouse(day, { x: 100, y: 100 }, { x: 140, y: 100 });
+    expect(area.style.translate).toBe("");
+    expect(area.dataset.settling).toBe("true");
+  });
+
+  it("月を送るときは動かした位置のまま遷移し、月が切り替わったら元の位置へ戻る", () => {
+    const { rerender } = render(
+      <CalendarSwipeArea
+        aria-label="日付を選択"
+        prevHref={PREV_HREF}
+        nextHref={NEXT_HREF}
+      >
+        10月
+      </CalendarSwipeArea>,
+    );
+    const area = screen.getByRole("region", { name: "日付を選択" });
+    dragWithMouse(area, { x: 200, y: 100 }, { x: 100, y: 100 });
+    expect(router.push).toHaveBeenCalledExactlyOnceWith(...TO_NEXT);
+    expect(area.style.translate).toBe("-100px");
+
+    rerender(
+      <CalendarSwipeArea
+        aria-label="日付を選択"
+        prevHref="/cats/cat-1/timeline?ym=2026-10"
+        nextHref="/cats/cat-1/timeline?ym=2026-12"
+      >
+        11月
+      </CalendarSwipeArea>,
+    );
+    expect(area.style.translate).toBe("");
+  });
+
+  it("指で動かしたときは、カレンダーの横スクロールに使われた分を除いて追従する", () => {
+    const { area, day } = renderArea();
+    setScrollableWidth(area, { scrollWidth: 332, clientWidth: 312 });
+    fireEvent.touchStart(day, { touches: [{ clientX: 200, clientY: 100 }] });
+    // 指を 50px 動かしたうち 20px はカレンダーの横スクロールに使われた
+    area.scrollLeft = 20;
+    fireEvent.touchMove(day, { touches: [{ clientX: 150, clientY: 100 }] });
+    expect(area.style.translate).toBe("-30px");
+  });
+
+  it("縦に動かし始めたときは追従せず、途中で横へ動かしても月を送らない", () => {
+    const { area, day } = renderArea();
+    fireEvent.touchStart(day, { touches: [{ clientX: 200, clientY: 100 }] });
+    fireEvent.touchMove(day, { touches: [{ clientX: 198, clientY: 120 }] });
+    fireEvent.touchMove(day, { touches: [{ clientX: 60, clientY: 130 }] });
+    expect(area.style.translate).toBe("");
+    fireEvent.touchEnd(day, {
+      touches: [],
+      changedTouches: [{ clientX: 60, clientY: 130 }],
+    });
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("カレンダーの幅より大きく動かしても、追従するのは幅の分まで", () => {
+    const { area, day } = renderArea();
+    setScrollableWidth(area, { scrollWidth: 320, clientWidth: 320 });
+    const base = { pointerId: 1, pointerType: "mouse", button: 0 };
+    fireEvent.pointerDown(day, { ...base, clientX: 380, clientY: 100 });
+    fireEvent.pointerMove(day, { ...base, clientX: 10, clientY: 100 });
+    expect(area.style.translate).toBe("-320px");
   });
 });
