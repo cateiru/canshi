@@ -1,0 +1,12 @@
+/* 左右だけを切り取る。フォーカスリングまで切れないよう、その分だけ外側へ広げておく */
+.viewport {
+  --viewport-bleed: calc(var(--focus-ring-width) + var(--focus-ring-offset));
+  overflow-x: clip;
+  padding-inline: var(--viewport-bleed);
+  margin-inline: calc(var(--viewport-bleed) * -1);
+}
+
+/* 閾値に届かずに離したときは、元の位置へなめらかに戻す */
+.area[data-settling="true"] {
+  transition: translate var(--transition-base);
+}

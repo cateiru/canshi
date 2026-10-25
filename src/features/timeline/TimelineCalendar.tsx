@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MonthNav } from "@/components/ui";
 import { CalendarSwipeArea } from "./CalendarSwipeArea";
+import { CALENDAR_TRANSITION_TYPE } from "./calendarTransition";
 import { buildTimelineHref } from "./href";
 import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "./labels";
 import { TIMELINE_RECORD_TYPES, type TimelineRecordType } from "./queries";
@@ -8,6 +9,11 @@ import styles from "./TimelineCalendar.module.css";
 
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 const MAX_VISIBLE_ICONS = 4;
+/** 「前の月」「次の月」で移動したときも、ドラッグしたときと同じ向きにカレンダーをスライドさせる */
+const MONTH_NAV_TRANSITION_TYPES = {
+  prev: [CALENDAR_TRANSITION_TYPE.prev],
+  next: [CALENDAR_TRANSITION_TYPE.next],
+};
 
 type CalendarCell = {
   day: number;
@@ -80,6 +86,7 @@ export function TimelineCalendar({
         month={month}
         prevHref={prevHref}
         nextHref={nextHref}
+        transitionTypes={MONTH_NAV_TRANSITION_TYPES}
       />
 
       <CalendarSwipeArea

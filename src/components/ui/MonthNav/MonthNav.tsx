@@ -7,14 +7,23 @@ export type MonthNavProps = {
   month: number; // 1-12
   prevHref: string;
   nextHref: string;
+  /** 移動するときに付ける遷移の種類（ViewTransition で前後の向きに合わせて動かすときに使う） */
+  transitionTypes?: { prev: string[]; next: string[] };
 };
 
 /** 「前の月」「次の月」への移動リンクと表示中の年月を並べる月切り替えナビ */
-export function MonthNav({ year, month, prevHref, nextHref }: MonthNavProps) {
+export function MonthNav({
+  year,
+  month,
+  prevHref,
+  nextHref,
+  transitionTypes,
+}: MonthNavProps) {
   return (
     <nav className={styles.monthNav} aria-label="表示する月">
       <ButtonLink
         href={prevHref}
+        transitionTypes={transitionTypes?.prev}
         variant="ghost"
         leftIcon={TbChevronLeft}
         className={styles.link}
@@ -26,6 +35,7 @@ export function MonthNav({ year, month, prevHref, nextHref }: MonthNavProps) {
       </span>
       <ButtonLink
         href={nextHref}
+        transitionTypes={transitionTypes?.next}
         variant="ghost"
         rightIcon={TbChevronRight}
         className={styles.link}
