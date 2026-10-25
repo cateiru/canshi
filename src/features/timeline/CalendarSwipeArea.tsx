@@ -6,8 +6,10 @@ import {
   type PointerEvent,
   type ReactNode,
   type TouchEvent,
+  useEffect,
   useLayoutEffect,
   useRef,
+  useTransition,
   ViewTransition,
 } from "react";
 import styles from "./CalendarSwipeArea.module.css";
@@ -38,21 +40,6 @@ function getScrollLeft(area: HTMLElement | null): number {
   return Math.min(Math.max(area.scrollLeft, 0), max);
 }
 
-/**
- * ドラッグして月を送ったときに、カレンダーをどれだけ動かした位置から遷移したか。
- * スライドの擬似要素は html から値を受け継ぐため、html に置く（src/styles/globals.css で使う）
- */
-const DRAG_DISTANCE_PROPERTY = "--calendar-drag-distance";
-
-function setDragDistance(distance: number) {
-  const root = document.documentElement;
-  if (distance === 0) {
-    root.style.removeProperty(DRAG_DISTANCE_PROPERTY);
-  } else {
-    root.style.setProperty(DRAG_DISTANCE_PROPERTY, `${distance}px`);
-  }
-}
-
 function prefersReducedMotion(): boolean {
   return (
     typeof window.matchMedia === "function" &&
@@ -70,12 +57,39 @@ type Gesture = {
   axis: "x" | "y" | null;
 };
 
+type Direction = "prev" | "next";
+type Motion = "settle" | "slide";
+
+/**
+ * 前後の月と並べたカレンダーの位置を変える。動かすたびに再描画しないよう、state にせず
+ * 要素のスタイルを直接書き換える。motion を指定すると、その位置まで CSS の transition で動かす
+ */
+function applyOffset(
+  track: HTMLElement | null,
+  offset: number,
+  motion?: Motion,
+) {
+  if (!track) {
+    return;
+  }
+  if (motion) {
+    track.dataset.motion = motion;
+  } else {
+    delete track.dataset.motion;
+  }
+  track.style.translate = offset === 0 ? "" : `${offset}px`;
+}
+
 type CalendarSwipeAreaProps = {
   className?: string;
   /** スクリーンリーダー向けのラベル */
   "aria-label": string;
   prevHref: string;
   nextHref: string;
+  /** スワイプしているあいだに左側に見せる前の月 */
+  prevPanel: ReactNode;
+  /** スワイプしているあいだに右側に見せる次の月 */
+  nextPanel: ReactNode;
   children: ReactNode;
 };
 
@@ -86,37 +100,64 @@ type CalendarSwipeAreaProps = {
  * カレンダー自体の横スクロールに使われた分を除いた残り（端に達してからさらに動かした分）で
  * 月を送るかを決める。マウス・ペンはポインターイベントで受ける。
  *
- * 動かしているあいだはその残りの分だけカレンダーを追従させ、月を送るときは
- * ViewTransition で今の位置から隣の月へスライドさせる。
+ * 動かしているあいだはその残りの分だけ、前後の月と並べたカレンダーを追従させる。月を送るときは
+ * 隣の月が収まる位置までスライドさせながら遷移し、遷移した先では同じ見た目の月がその位置から
+ * 引き継ぐ。「前の月」「次の月」のボタンで移動したときは ViewTransition でスライドさせる。
  */
 export function CalendarSwipeArea({
   className,
   "aria-label": ariaLabel,
   prevHref,
   nextHref,
+  prevPanel,
+  nextPanel,
   children,
 }: CalendarSwipeAreaProps) {
   const router = useRouter();
+  const [isNavigating, startNavigation] = useTransition();
   const areaRef = useRef<HTMLElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
   const gestureRef = useRef<Gesture | null>(null);
   const suppressClickRef = useRef(false);
+  /** スワイプで送った先の月がまだ表示されていないあいだ、その向きを持つ */
+  const pendingRef = useRef<Direction | null>(null);
 
-  // 位置は動かすたびに再描画しないよう、state にせず要素のスタイルを直接書き換える
-  function setOffset(offset: number, { settle = false } = {}) {
-    const area = areaRef.current;
-    if (!area) {
-      return;
-    }
-    area.dataset.settling = settle ? "true" : "false";
-    area.style.translate = offset === 0 ? "" : `${offset}px`;
+  function setOffset(offset: number, motion?: Motion) {
+    applyOffset(trackRef.current, offset, motion);
   }
 
-  // 月が切り替わったら、ドラッグした位置から元の位置へ戻す。描画前に戻すことで、
+  // 月が切り替わったら、カレンダーを元の位置へ戻す。描画前に戻すことで、
   // ViewTransition が撮る新しい月の画像は元の位置に写る
   // biome-ignore lint/correctness/useExhaustiveDependencies: prevHref と nextHref は月が切り替わったことを検知するためだけに使う
   useLayoutEffect(() => {
-    setOffset(0);
+    const track = trackRef.current;
+    const pending = pendingRef.current;
+    pendingRef.current = null;
+    // 横スクロールの位置は前の月のまま残るが、隣に見せていた月はスクロールしていない状態で描いている
+    if (areaRef.current) {
+      areaRef.current.scrollLeft = 0;
+    }
+    if (!track || !pending) {
+      setOffset(0);
+      return;
+    }
+    // スワイプで送ったときは、隣に見せていた月と同じ見た目の新しい月が、今まさにスライドしている
+    // 位置から続けて元の位置まで動くようにする（スライドし終えていればそのまま止まる）
+    const current = Number.parseFloat(getComputedStyle(track).translate) || 0;
+    const width = track.offsetWidth;
+    setOffset(current + (pending === "next" ? width : -width));
+    // 位置を確定させてから transition を付け、元の位置まで動かす
+    track.getBoundingClientRect();
+    setOffset(0, "slide");
   }, [prevHref, nextHref]);
+
+  // 遷移が終わったのに月が切り替わらなかったとき（失敗したときなど）は、元の位置へ戻す
+  useEffect(() => {
+    if (!isNavigating && pendingRef.current) {
+      pendingRef.current = null;
+      applyOffset(trackRef.current, 0, "settle");
+    }
+  }, [isNavigating]);
 
   /** 横スクロールを使い切ってから、さらに横へ動かした分（カレンダーを追従させる量） */
   function getOverflowDx(gesture: Gesture, dx: number): number {
@@ -133,9 +174,12 @@ export function CalendarSwipeArea({
   }
 
   function start(x: number, y: number, pointerId?: number) {
-    // 前の月送りがまだ終わっていないなどで位置がずれたままでも、新しい操作は元の位置から始める
+    // 送った先の月を読み込んでいるあいだは、カレンダーが隣の月の位置にあるため受け付けない
+    if (pendingRef.current) {
+      gestureRef.current = null;
+      return;
+    }
     setOffset(0);
-    setDragDistance(0);
     gestureRef.current = {
       x,
       y,
@@ -193,24 +237,26 @@ export function CalendarSwipeArea({
       Math.abs(dx) - scrolled < SWIPE_THRESHOLD ||
       Math.abs(dx) <= Math.abs(dy)
     ) {
-      setOffset(0, { settle: true });
+      setOffset(0, "settle");
       return;
     }
-    // 右へ動かすと前の月、左へ動かすと次の月。動かした位置のまま遷移し、そこからスライドさせる
-    const direction = dx > 0 ? "prev" : "next";
-    setDragDistance(
-      gesture.axis === "x" && !prefersReducedMotion()
-        ? Math.abs(getOverflowDx(gesture, dx))
-        : 0,
-    );
-    router.push(direction === "prev" ? prevHref : nextHref, {
-      transitionTypes: [CALENDAR_TRANSITION_TYPE[direction]],
+    // 右へ動かすと前の月、左へ動かすと次の月。隣の月が収まる位置までスライドさせながら遷移する
+    const direction: Direction = dx > 0 ? "prev" : "next";
+    if (!prefersReducedMotion()) {
+      const width = trackRef.current?.offsetWidth ?? 0;
+      pendingRef.current = direction;
+      setOffset(direction === "prev" ? width : -width, "slide");
+    }
+    startNavigation(() => {
+      router.push(direction === "prev" ? prevHref : nextHref);
     });
   }
 
   function cancel() {
     gestureRef.current = null;
-    setOffset(0, { settle: true });
+    if (!pendingRef.current) {
+      setOffset(0, "settle");
+    }
   }
 
   // タッチでスワイプしたあとはクリックが発生しないことがあるため、打ち消しの印が残ったまま
@@ -282,35 +328,52 @@ export function CalendarSwipeArea({
   }
 
   return (
-    <ViewTransition
-      update={MONTH_SLIDE}
-      default="none"
-      // スライドし終えたら、「前の月」「次の月」のボタンで移動したときに残らないよう消す
-      onUpdate={() => () => setDragDistance(0)}
-    >
+    <ViewTransition update={MONTH_SLIDE} default="none">
       {/* ドラッグで動かしたカレンダーや、スライドする月の画像がカードの外へはみ出さないよう切り取る */}
       <div className={styles.viewport}>
-        <section
-          ref={areaRef}
-          className={className ? `${styles.area} ${className}` : styles.area}
-          aria-label={ariaLabel}
-          // biome-ignore lint/a11y/noNoninteractiveTabindex: 横スクロールするカレンダーをキーボードでも操作できるようにする
-          tabIndex={0}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={cancel}
-          onClickCapture={handleClickCapture}
-          onKeyDownCapture={handleKeyDownCapture}
-          // マウスで日付のリンクをドラッグしたときに、ブラウザ標準のリンクのドラッグが始まらないようにする
-          onDragStart={(event) => event.preventDefault()}
-        >
-          {children}
-        </section>
+        <div ref={trackRef} className={styles.track}>
+          <div
+            className={
+              className ? `${styles.panel} ${className}` : styles.panel
+            }
+            data-side="prev"
+            aria-hidden="true"
+            inert
+          >
+            {prevPanel}
+          </div>
+          <section
+            ref={areaRef}
+            className={className}
+            aria-label={ariaLabel}
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: 横スクロールするカレンダーをキーボードでも操作できるようにする
+            tabIndex={0}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={cancel}
+            onClickCapture={handleClickCapture}
+            onKeyDownCapture={handleKeyDownCapture}
+            // マウスで日付のリンクをドラッグしたときに、ブラウザ標準のリンクのドラッグが始まらないようにする
+            onDragStart={(event) => event.preventDefault()}
+          >
+            {children}
+          </section>
+          <div
+            className={
+              className ? `${styles.panel} ${className}` : styles.panel
+            }
+            data-side="next"
+            aria-hidden="true"
+            inert
+          >
+            {nextPanel}
+          </div>
+        </div>
       </div>
     </ViewTransition>
   );

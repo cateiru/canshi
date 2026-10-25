@@ -95,6 +95,8 @@ export default async function TimelinePage({
       page,
       pageSize: PAGE_SIZE,
       date: selectedDate ?? undefined,
+      // カレンダーをスワイプしているあいだに、前後の月の記録のアイコンも見せる
+      includeAdjacentMonths: true,
     },
   );
 

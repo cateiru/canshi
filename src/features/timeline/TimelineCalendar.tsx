@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MonthNav } from "@/components/ui";
+import { shiftYm } from "@/features/shared/yearMonth";
 import { CalendarSwipeArea } from "./CalendarSwipeArea";
 import { CALENDAR_TRANSITION_TYPE } from "./calendarTransition";
 import { buildTimelineHref } from "./href";
@@ -77,7 +78,8 @@ export function TimelineCalendar({
   prevHref,
   nextHref,
 }: TimelineCalendarProps) {
-  const weeks = buildWeeks(year, month, datesByDay);
+  const prevMonth = shiftYm({ year, month }, -1);
+  const nextMonth = shiftYm({ year, month }, 1);
 
   return (
     <div className={styles.calendar}>
@@ -94,42 +96,36 @@ export function TimelineCalendar({
         aria-label="日付を選択"
         prevHref={prevHref}
         nextHref={nextHref}
+        // スワイプしているあいだに見せる前後の月。移動した先のページと同じ見た目になるよう、
+        // 日付は選択していない状態で描く
+        prevPanel={
+          <CalendarGrid
+            catId={catId}
+            {...prevMonth}
+            datesByDay={datesByDay}
+            todayKey={todayKey}
+            selectedDate={null}
+          />
+        }
+        nextPanel={
+          <CalendarGrid
+            catId={catId}
+            {...nextMonth}
+            datesByDay={datesByDay}
+            todayKey={todayKey}
+            selectedDate={null}
+          />
+        }
       >
-        <table className={styles.grid}>
-          <caption className={styles.srOnly}>
-            {year}年{month}月のタイムラインカレンダー
-          </caption>
-          <thead>
-            <tr>
-              {WEEKDAY_LABELS.map((label) => (
-                <th key={label} scope="col" className={styles.weekday}>
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {weeks.map((week) => (
-              <tr key={week.find((cell) => cell != null)?.dateKey ?? "blank"}>
-                {week.map((cell, cellIndex) =>
-                  cell ? (
-                    <DayCell
-                      key={cell.dateKey}
-                      catId={catId}
-                      ym={ym}
-                      cell={cell}
-                      isToday={cell.dateKey === todayKey}
-                      isSelected={cell.dateKey === selectedDate}
-                    />
-                  ) : (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: 月末・月初の空白セルは値を持たず順序も変わらない
-                    <td key={cellIndex} className={styles.dayBlank} />
-                  ),
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <CalendarGrid
+          catId={catId}
+          year={year}
+          month={month}
+          ym={ym}
+          datesByDay={datesByDay}
+          todayKey={todayKey}
+          selectedDate={selectedDate}
+        />
       </CalendarSwipeArea>
 
       <ul className={styles.legend}>
@@ -152,6 +148,67 @@ export function TimelineCalendar({
   );
 }
 
+type CalendarGridProps = {
+  catId: string;
+  year: number;
+  month: number;
+  /** 指定すると日付を選べるリンクにする。省略すると、スワイプ中に見せるだけの前後の月として描く */
+  ym?: string;
+  datesByDay: Map<string, TimelineRecordType[]>;
+  todayKey: string;
+  selectedDate: string | null;
+};
+
+function CalendarGrid({
+  catId,
+  year,
+  month,
+  ym,
+  datesByDay,
+  todayKey,
+  selectedDate,
+}: CalendarGridProps) {
+  const weeks = buildWeeks(year, month, datesByDay);
+
+  return (
+    <table className={styles.grid}>
+      <caption className={styles.srOnly}>
+        {year}年{month}月のタイムラインカレンダー
+      </caption>
+      <thead>
+        <tr>
+          {WEEKDAY_LABELS.map((label) => (
+            <th key={label} scope="col" className={styles.weekday}>
+              {label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {weeks.map((week) => (
+          <tr key={week.find((cell) => cell != null)?.dateKey ?? "blank"}>
+            {week.map((cell, cellIndex) =>
+              cell ? (
+                <DayCell
+                  key={cell.dateKey}
+                  catId={catId}
+                  ym={ym}
+                  cell={cell}
+                  isToday={cell.dateKey === todayKey}
+                  isSelected={cell.dateKey === selectedDate}
+                />
+              ) : (
+                // biome-ignore lint/suspicious/noArrayIndexKey: 月末・月初の空白セルは値を持たず順序も変わらない
+                <td key={cellIndex} className={styles.dayBlank} />
+              ),
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 function DayCell({
   catId,
   ym,
@@ -160,7 +217,7 @@ function DayCell({
   isSelected,
 }: {
   catId: string;
-  ym: string;
+  ym?: string;
   cell: CalendarCell;
   isToday: boolean;
   isSelected: boolean;
@@ -172,13 +229,29 @@ function DayCell({
     : cell.types.length > 0
       ? `${cell.day}日: ${cell.types.map((type) => TIMELINE_TYPE_LABEL[type]).join("・")}`
       : `${cell.day}日`;
-  // 同じ日をもう一度クリックすると絞り込みが解除されるトグル動作にするため、
-  // 選択中の日と同じ場合は date を付けずに月全体のリンクを作る
-  const href = buildTimelineHref(catId, {
-    page: 1,
-    ym,
-    date: isSelected ? undefined : cell.dateKey,
-  });
+  const content = (
+    <>
+      <span className={styles.dayNumber}>{cell.day}</span>
+      {cell.types.length > 0 ? (
+        <span className={styles.icons} aria-hidden="true">
+          {visibleTypes.map((type) => {
+            const Icon = TIMELINE_TYPE_ICON[type];
+            return (
+              <Icon
+                key={type}
+                monochrome
+                className={styles.icon}
+                data-record-type={type}
+              />
+            );
+          })}
+          {hiddenCount > 0 ? (
+            <span className={styles.moreCount}>+{hiddenCount}</span>
+          ) : null}
+        </span>
+      ) : null}
+    </>
+  );
 
   return (
     <td
@@ -186,27 +259,24 @@ function DayCell({
       data-today={isToday ? "true" : undefined}
       data-selected={isSelected ? "true" : undefined}
     >
-      <Link href={href} aria-label={label} className={styles.dayLink}>
-        <span className={styles.dayNumber}>{cell.day}</span>
-        {cell.types.length > 0 ? (
-          <span className={styles.icons} aria-hidden="true">
-            {visibleTypes.map((type) => {
-              const Icon = TIMELINE_TYPE_ICON[type];
-              return (
-                <Icon
-                  key={type}
-                  monochrome
-                  className={styles.icon}
-                  data-record-type={type}
-                />
-              );
-            })}
-            {hiddenCount > 0 ? (
-              <span className={styles.moreCount}>+{hiddenCount}</span>
-            ) : null}
-          </span>
-        ) : null}
-      </Link>
+      {ym == null ? (
+        // 前後の月は見せるだけなので、リンクにせずプリフェッチやフォーカスの対象から外す
+        <span className={styles.dayLink}>{content}</span>
+      ) : (
+        <Link
+          // 同じ日をもう一度クリックすると絞り込みが解除されるトグル動作にするため、
+          // 選択中の日と同じ場合は date を付けずに月全体のリンクを作る
+          href={buildTimelineHref(catId, {
+            page: 1,
+            ym,
+            date: isSelected ? undefined : cell.dateKey,
+          })}
+          aria-label={label}
+          className={styles.dayLink}
+        >
+          {content}
+        </Link>
+      )}
     </td>
   );
 }

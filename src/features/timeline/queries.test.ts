@@ -280,4 +280,48 @@ describe("listTimelineForMonth", () => {
     });
     expect(filtered.entries.map((entry) => entry.type)).toEqual(["birthday"]);
   });
+
+  it("前後の月を含めると、カレンダーには前後の月の日付も載り、一覧は指定した月だけになる", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "みけ", sex: "female", birthDate: "2025-12-03" })
+      .returning();
+
+    for (const occurredAt of [
+      "2026-01-31T23:00:00.000Z",
+      "2026-02-10T00:00:00.000Z",
+      "2026-03-01T00:00:00.000Z",
+      // 前後の月よりさらに外側は含めない
+      "2026-04-01T00:00:00.000Z",
+    ]) {
+      await db.insert(weightRecords).values({
+        catId: cat.id,
+        occurredAt: new Date(occurredAt),
+        inputMethod: "direct",
+        catWeightKg: 3,
+      });
+    }
+
+    const result = await listTimelineForMonth(cat.id, 2026, 2, {
+      includeAdjacentMonths: true,
+    });
+
+    expect(
+      result.entries.map((entry) => [
+        entry.type,
+        entry.occurredAt.toISOString(),
+      ]),
+    ).toEqual([
+      ["weight", "2026-02-10T00:00:00.000Z"],
+      ["birthday", "2026-02-03T00:00:00.000Z"],
+    ]);
+    expect(Object.fromEntries(result.datesByDay)).toEqual({
+      "2026-03-03": ["birthday"],
+      "2026-03-01": ["weight"],
+      "2026-02-10": ["weight"],
+      "2026-02-03": ["birthday"],
+      "2026-01-31": ["weight"],
+      "2026-01-03": ["birthday"],
+    });
+  });
 });
