@@ -41,7 +41,7 @@
     "@nivo/line": "^0.99.0",
     "@nivo/swarmplot": "^0.99.0",
     "@noble/hashes": "2.4.0",
-    "agents": "^0.29.0",
+    "agents": "^0.30.0",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.12",
     "next": "16.4.2",
