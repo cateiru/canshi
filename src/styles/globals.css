@@ -60,8 +60,9 @@ a {
 ::view-transition-group(.calendar-prev),
 ::view-transition-group(.calendar-next) {
   overflow: clip;
-  animation-duration: 280ms;
-  animation-timing-function: ease-out;
+  /* 週の数が変わる月では高さも変わるが、表示月の見出しや凡例は切り替えてすぐに新しい位置へ動くため、
+     枠も最初から新しい高さにする（高さを補間すると、6 週の月の最後の週が凡例に重なって見える） */
+  animation: none;
 }
 
 ::view-transition-old(.calendar-prev),

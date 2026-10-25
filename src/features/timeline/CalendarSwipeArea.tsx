@@ -120,10 +120,16 @@ export function CalendarSwipeArea({
 
   /** 横スクロールを使い切ってから、さらに横へ動かした分（カレンダーを追従させる量） */
   function getOverflowDx(gesture: Gesture, dx: number): number {
+    const area = areaRef.current;
     // 指を左へ動かす（dx < 0）とカレンダーは右へスクロールする（scrollLeft が増える）
-    const remaining =
-      dx + (getScrollLeft(areaRef.current) - gesture.scrollLeft);
-    return Math.sign(remaining) === Math.sign(dx) ? remaining : 0;
+    const remaining = dx + (getScrollLeft(area) - gesture.scrollLeft);
+    if (Math.sign(remaining) !== Math.sign(dx)) {
+      return 0;
+    }
+    // カレンダーの幅より大きく動かしても、枠の外へ出し切らずに端で止める。スライドの距離
+    // （src/styles/globals.css の 100% - ドラッグした分）が負になり、逆向きに動くのも防ぐ
+    const width = area?.clientWidth ?? 0;
+    return width > 0 ? Math.max(-width, Math.min(remaining, width)) : remaining;
   }
 
   function start(x: number, y: number, pointerId?: number) {

@@ -289,4 +289,13 @@ describe("CalendarSwipeArea", () => {
     });
     expect(router.push).not.toHaveBeenCalled();
   });
+
+  it("カレンダーの幅より大きく動かしても、追従するのは幅の分まで", () => {
+    const { area, day } = renderArea();
+    setScrollableWidth(area, { scrollWidth: 320, clientWidth: 320 });
+    const base = { pointerId: 1, pointerType: "mouse", button: 0 };
+    fireEvent.pointerDown(day, { ...base, clientX: 380, clientY: 100 });
+    fireEvent.pointerMove(day, { ...base, clientX: 10, clientY: 100 });
+    expect(area.style.translate).toBe("-320px");
+  });
 });
