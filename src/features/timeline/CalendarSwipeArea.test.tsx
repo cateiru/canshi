@@ -12,8 +12,8 @@ vi.mock("next/navigation", () => ({
 const PREV_HREF = "/cats/cat-1/timeline?ym=2026-09";
 const NEXT_HREF = "/cats/cat-1/timeline?ym=2026-11";
 /** 前後の月へ移動するときに router.push へ渡す引数 */
-const TO_PREV = [PREV_HREF, { transitionTypes: ["calendar-prev"] }] as const;
-const TO_NEXT = [NEXT_HREF, { transitionTypes: ["calendar-next"] }] as const;
+const TO_PREV = [PREV_HREF] as const;
+const TO_NEXT = [NEXT_HREF] as const;
 
 function renderArea(onDayClick = vi.fn()) {
   render(
@@ -21,6 +21,8 @@ function renderArea(onDayClick = vi.fn()) {
       aria-label="日付を選択"
       prevHref={PREV_HREF}
       nextHref={NEXT_HREF}
+      prevPanel="9月"
+      nextPanel="11月"
     >
       <a
         href="/cats/cat-1/timeline?date=2026-10-17"
@@ -33,8 +35,11 @@ function renderArea(onDayClick = vi.fn()) {
       </a>
     </CalendarSwipeArea>,
   );
+  const area = screen.getByRole("region", { name: "日付を選択" });
   return {
-    area: screen.getByRole("region", { name: "日付を選択" }),
+    area,
+    // 前後の月と並べてまとめて動かす要素
+    track: area.parentElement as HTMLElement,
     day: screen.getByRole("link", { name: "17" }),
     onDayClick,
   };
@@ -223,66 +228,90 @@ describe("CalendarSwipeArea", () => {
   });
 
   it("ドラッグしているあいだはカレンダーが追従する", () => {
-    const { area, day } = renderArea();
+    const { track, day } = renderArea();
     const base = { pointerId: 1, pointerType: "mouse", button: 0 };
     fireEvent.pointerDown(day, { ...base, clientX: 200, clientY: 100 });
     fireEvent.pointerMove(day, { ...base, clientX: 150, clientY: 104 });
-    expect(area.style.translate).toBe("-50px");
+    expect(track.style.translate).toBe("-50px");
 
     fireEvent.pointerMove(day, { ...base, clientX: 230, clientY: 104 });
-    expect(area.style.translate).toBe("30px");
+    expect(track.style.translate).toBe("30px");
+  });
+
+  it("前後の月は、読み上げや操作の対象にせず左右に並べる", () => {
+    const { track } = renderArea();
+    const [prev, , next] = Array.from(track.children);
+    expect(prev).toHaveTextContent("9月");
+    expect(next).toHaveTextContent("11月");
+    for (const panel of [prev, next]) {
+      expect(panel).toHaveAttribute("aria-hidden", "true");
+      expect(panel).toHaveAttribute("inert");
+    }
   });
 
   it("閾値に届かずに離したときは元の位置へ戻る", () => {
-    const { area, day } = renderArea();
+    const { track, day } = renderArea();
     dragWithMouse(day, { x: 100, y: 100 }, { x: 140, y: 100 });
-    expect(area.style.translate).toBe("");
-    expect(area.dataset.settling).toBe("true");
+    expect(track.style.translate).toBe("");
+    expect(track.dataset.motion).toBe("settle");
   });
 
-  it("月を送るときは動かした位置のまま遷移し、月が切り替わったら元の位置へ戻る", () => {
-    const { rerender } = render(
+  it("月を送るときは隣の月の位置までスライドさせ、遷移した先の月がその位置から引き継ぐ", () => {
+    const view = (prevHref: string, nextHref: string, label: string) => (
       <CalendarSwipeArea
         aria-label="日付を選択"
-        prevHref={PREV_HREF}
-        nextHref={NEXT_HREF}
+        prevHref={prevHref}
+        nextHref={nextHref}
+        prevPanel="前の月"
+        nextPanel="次の月"
       >
-        10月
-      </CalendarSwipeArea>,
+        {label}
+      </CalendarSwipeArea>
     );
+    const { rerender } = render(view(PREV_HREF, NEXT_HREF, "10月"));
     const area = screen.getByRole("region", { name: "日付を選択" });
+    const track = area.parentElement as HTMLElement;
+    Object.defineProperty(track, "offsetWidth", { value: 320 });
+    area.scrollLeft = 6;
+
+    let translateAtNavigation = "";
+    router.push.mockImplementation(() => {
+      translateAtNavigation = track.style.translate;
+      // 遷移した先のページ（11月）が描画される
+      rerender(
+        view(
+          "/cats/cat-1/timeline?ym=2026-10",
+          "/cats/cat-1/timeline?ym=2026-12",
+          "11月",
+        ),
+      );
+    });
     dragWithMouse(area, { x: 200, y: 100 }, { x: 100, y: 100 });
+
     expect(router.push).toHaveBeenCalledExactlyOnceWith(...TO_NEXT);
-    expect(area.style.translate).toBe("-100px");
-
-    rerender(
-      <CalendarSwipeArea
-        aria-label="日付を選択"
-        prevHref="/cats/cat-1/timeline?ym=2026-10"
-        nextHref="/cats/cat-1/timeline?ym=2026-12"
-      >
-        11月
-      </CalendarSwipeArea>,
-    );
-    expect(area.style.translate).toBe("");
+    // 次の月がちょうど収まる位置（カレンダー 1 つ分左）までスライドさせながら遷移する
+    expect(translateAtNavigation).toBe("-320px");
+    // 新しい月は、隣に見せていた次の月と同じ位置から元の位置へ動く
+    expect(track.style.translate).toBe("");
+    expect(track.dataset.motion).toBe("slide");
+    expect(area.scrollLeft).toBe(0);
   });
-
   it("指で動かしたときは、カレンダーの横スクロールに使われた分を除いて追従する", () => {
-    const { area, day } = renderArea();
+    const { area, track, day } = renderArea();
     setScrollableWidth(area, { scrollWidth: 332, clientWidth: 312 });
     fireEvent.touchStart(day, { touches: [{ clientX: 200, clientY: 100 }] });
     // 指を 50px 動かしたうち 20px はカレンダーの横スクロールに使われた
     area.scrollLeft = 20;
     fireEvent.touchMove(day, { touches: [{ clientX: 150, clientY: 100 }] });
-    expect(area.style.translate).toBe("-30px");
+    expect(track.style.translate).toBe("-30px");
   });
 
   it("縦に動かし始めたときは追従せず、途中で横へ動かしても月を送らない", () => {
-    const { area, day } = renderArea();
+    const { track, day } = renderArea();
     fireEvent.touchStart(day, { touches: [{ clientX: 200, clientY: 100 }] });
     fireEvent.touchMove(day, { touches: [{ clientX: 198, clientY: 120 }] });
     fireEvent.touchMove(day, { touches: [{ clientX: 60, clientY: 130 }] });
-    expect(area.style.translate).toBe("");
+    expect(track.style.translate).toBe("");
     fireEvent.touchEnd(day, {
       touches: [],
       changedTouches: [{ clientX: 60, clientY: 130 }],
@@ -291,11 +320,11 @@ describe("CalendarSwipeArea", () => {
   });
 
   it("カレンダーの幅より大きく動かしても、追従するのは幅の分まで", () => {
-    const { area, day } = renderArea();
+    const { area, track, day } = renderArea();
     setScrollableWidth(area, { scrollWidth: 320, clientWidth: 320 });
     const base = { pointerId: 1, pointerType: "mouse", button: 0 };
     fireEvent.pointerDown(day, { ...base, clientX: 380, clientY: 100 });
     fireEvent.pointerMove(day, { ...base, clientX: 10, clientY: 100 });
-    expect(area.style.translate).toBe("-320px");
+    expect(track.style.translate).toBe("-320px");
   });
 });

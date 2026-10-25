@@ -74,27 +74,23 @@ a {
   animation: 280ms ease-out both calendar-slide;
 }
 
-/*
- * ドラッグして月を送ったときは、古い月がすでにドラッグした分（--calendar-drag-distance）だけ
- * ずれた位置に写っている。新しい月もその分だけ手前から動かし、2 か月の間に隙間ができないようにする
- */
 ::view-transition-old(.calendar-prev) {
   --calendar-slide-from: 0;
-  --calendar-slide-to: calc(100% - var(--calendar-drag-distance, 0px));
+  --calendar-slide-to: 100%;
 }
 
 ::view-transition-new(.calendar-prev) {
-  --calendar-slide-from: calc(-100% + var(--calendar-drag-distance, 0px));
+  --calendar-slide-from: -100%;
   --calendar-slide-to: 0;
 }
 
 ::view-transition-old(.calendar-next) {
   --calendar-slide-from: 0;
-  --calendar-slide-to: calc(-100% + var(--calendar-drag-distance, 0px));
+  --calendar-slide-to: -100%;
 }
 
 ::view-transition-new(.calendar-next) {
-  --calendar-slide-from: calc(100% - var(--calendar-drag-distance, 0px));
+  --calendar-slide-from: 100%;
   --calendar-slide-to: 0;
 }
 

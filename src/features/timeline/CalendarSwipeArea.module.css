@@ -6,7 +6,42 @@
   margin-inline: calc(var(--viewport-bleed) * -1);
 }
 
+/* 表示中の月の左右に前後の月を並べ、まとめて動かす */
+.track {
+  position: relative;
+}
+
 /* 閾値に届かずに離したときは、元の位置へなめらかに戻す */
-.area[data-settling="true"] {
+.track[data-motion="settle"] {
   transition: translate var(--transition-base);
+}
+
+/* 月を送るときは、隣の月が収まる位置までスライドさせる */
+.track[data-motion="slide"] {
+  transition: translate 250ms ease-out;
+}
+
+/* 高さは表示中の月に揃え、週の数が多い隣の月は下を切り取る（凡例に重ならないようにする） */
+.track > .panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  overflow: clip;
+  /* 表示中の月の下の余白（スクロール領域の padding）に、隣の月の次の週の上端が覗かないようにする */
+  clip-path: inset(0 0 var(--space-1) 0);
+}
+
+.panel[data-side="prev"] {
+  right: 100%;
+}
+
+.panel[data-side="next"] {
+  left: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track[data-motion] {
+    transition: none;
+  }
 }

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   type CleaningRecord,
@@ -42,6 +42,7 @@ import type { MediaRecordType } from "@/features/media/recordTypes";
 import { type MediaAssetView, toMediaAssetView } from "@/features/media/view";
 import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
+import { shiftYm, type YearMonth } from "@/features/shared/yearMonth";
 import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/media";
 import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
 import {
@@ -188,14 +189,21 @@ async function fetchFeedingEntries(
       leftoverLevel: feedingRecordItems.leftoverLevel,
     })
     .from(feedingRecordItems)
+    // 記録の ID を列挙して inArray に渡すと、記録が多い月（カレンダー用に前後の月も含めるときは
+    // 3 か月分）で D1 のバインドパラメーターの上限を超えるため、ヘッダーと同じ条件で結合して絞り込む
+    .innerJoin(
+      feedingRecords,
+      eq(feedingRecordItems.feedingRecordId, feedingRecords.id),
+    )
     .innerJoin(
       foodProducts,
       eq(feedingRecordItems.foodProductId, foodProducts.id),
     )
     .where(
-      inArray(
-        feedingRecordItems.feedingRecordId,
-        headers.map((header) => header.id),
+      and(
+        eq(feedingRecords.catId, catId),
+        gte(feedingRecords.occurredAt, range.start),
+        lt(feedingRecords.occurredAt, range.end),
       ),
     )
     .orderBy(feedingRecordItems.sortOrder);
@@ -540,13 +548,12 @@ async function fetchExpenseEntries(
 }
 
 /**
- * 猫の生年月日・お迎え日から、指定した月の誕生日・お迎え記念日のエントリを作る。
+ * 猫の生年月日・お迎え日から、指定した月（複数可）の誕生日・お迎え記念日のエントリを作る。
  * 記念日は時刻を持たないため、発生日時はその日の 0 時（naive UTC）にする
  */
 async function fetchAnniversaryEntries(
   catId: string,
-  year: number,
-  month: number,
+  months: readonly YearMonth[],
   d1?: D1Database,
 ): Promise<TimelineEntry[]> {
   const db = getDb(d1);
@@ -559,7 +566,21 @@ async function fetchAnniversaryEntries(
     return [];
   }
 
-  const { birthdays, adoptions } = listAnniversariesForMonth(cat, year, month);
+  return months.flatMap(({ year, month }) => {
+    const { birthdays, adoptions } = listAnniversariesForMonth(
+      cat,
+      year,
+      month,
+    );
+    return toAnniversaryEntries(catId, birthdays, adoptions);
+  });
+}
+
+function toAnniversaryEntries(
+  catId: string,
+  birthdays: ReturnType<typeof listAnniversariesForMonth>["birthdays"],
+  adoptions: ReturnType<typeof listAnniversariesForMonth>["adoptions"],
+): TimelineEntry[] {
   return [
     ...birthdays.map(
       (record): TimelineEntry => ({
@@ -607,12 +628,15 @@ export type ListTimelineForMonthOptions = {
   date?: string;
   /** 指定すると、この種類の記録だけを返す（datesByDay も含む）。省略時はすべての種類 */
   types?: readonly TimelineRecordType[];
+  /** true のとき、datesByDay に前後の月の日付も含める（カレンダーをスワイプしたときに隣の月を見せるため）。
+   * 一覧（entries・hasMore）は指定の有無にかかわらず指定した月だけを対象にする */
+  includeAdjacentMonths?: boolean;
 };
 
 export type ListTimelineForMonthResult = {
   entries: TimelineEntry[];
   hasMore: boolean;
-  /** 記録がある日付ごとの記録種別一覧（カレンダー表示用、月全体が対象） */
+  /** 記録がある日付ごとの記録種別一覧（カレンダー表示用、月全体が対象。includeAdjacentMonths なら前後の月も含む） */
   datesByDay: Map<string, TimelineRecordType[]>;
 };
 
@@ -679,7 +703,22 @@ export async function listTimelineForMonth(
 ): Promise<ListTimelineForMonthResult> {
   const pageSize = normalizePositiveInt(options.pageSize ?? 20, MAX_PAGE_SIZE);
 
-  const range = getMonthRangeUtc(year, month);
+  const months = options.includeAdjacentMonths
+    ? [
+        shiftYm({ year, month }, -1),
+        { year, month },
+        shiftYm({ year, month }, 1),
+      ]
+    : [{ year, month }];
+  // 前後の月も含めるときも、テーブルごとの問い合わせは 1 回で済むよう 3 か月分をまとめて取る
+  const range = {
+    start: getMonthRangeUtc(months[0].year, months[0].month).start,
+    end: getMonthRangeUtc(
+      months[months.length - 1].year,
+      months[months.length - 1].month,
+    ).end,
+  };
+  const ym = `${year}-${String(month).padStart(2, "0")}`;
   // 種類の絞り込みはページ分けの前に行い、1 ページの件数が減らないようにする
   const isIncluded = (type: TimelineRecordType) =>
     !options.types || options.types.includes(type);
@@ -688,7 +727,7 @@ export async function listTimelineForMonth(
   );
   const results = await Promise.all([
     TIMELINE_ANNIVERSARY_TYPES.some(isIncluded)
-      ? fetchAnniversaryEntries(catId, year, month, d1)
+      ? fetchAnniversaryEntries(catId, months, d1)
       : [],
     ...fetchers.map((fetcher) => fetcher(catId, range, d1)),
   ]);
@@ -699,11 +738,16 @@ export async function listTimelineForMonth(
 
   const datesByDay = buildDatesByDay(merged);
 
-  const filtered = options.date
+  const inMonth = options.includeAdjacentMonths
     ? merged.filter(
-        (entry) => splitDateTimeUtc(entry.occurredAt).date === options.date,
+        (entry) => splitDateTimeUtc(entry.occurredAt).date.slice(0, 7) === ym,
       )
     : merged;
+  const filtered = options.date
+    ? inMonth.filter(
+        (entry) => splitDateTimeUtc(entry.occurredAt).date === options.date,
+      )
+    : inMonth;
 
   const maxPage = Math.max(Math.ceil(filtered.length / pageSize), 1);
   const page = Math.min(
