@@ -34,7 +34,7 @@
     "@block65/webcrypto-web-push": "^2.0.0",
     "@cf-wasm/photon": "^0.4.0",
     "@cloudflare/workers-oauth-provider": "^0.10.4",
-    "@modelcontextprotocol/sdk": "1.32.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@nivo/bar": "^0.99.0",
     "@nivo/calendar": "^0.99.0",
     "@nivo/core": "^0.99.0",
