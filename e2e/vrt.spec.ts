@@ -19,6 +19,7 @@ import { expect, takeSnapshot, test } from "./vrt-snapshot";
 //   ネストした一覧ページの「データがある/何もない」の両方をこの1匹で再現する
 // - BUSY_CAT: 同じ日に5種類の記録を登録した猫。タイムラインのカレンダーで1日のアイコンが
 //   表示上限を超えて「+1」になるケース用
+//   水の記録は 51 件登録し、記録一覧のページング（1 ページ 50 件）の表示にも使う
 // - APPROXIMATE_CAT: あいまいモードのごはん記録だけを登録した猫。ごはん記録一覧・
 //   タイムラインのあいまいモード表示用
 //
@@ -715,6 +716,32 @@ for (const { label, path, heading } of FLAT_RECORD_LISTS) {
     await takeSnapshot(page, testInfo);
   });
 }
+
+// 記録一覧は 1 ページに 50 件までを表示し、それより多いときは一覧の下にページ送りを出す。
+// BUSY_CAT の水の記録（51 件）で、1 ページ目（「次のページ」だけ）と最後のページ
+// （「前のページ」だけ）を撮る
+test.describe("記録一覧のページング", () => {
+  test("1ページ目の見た目", async ({ page }, testInfo) => {
+    await page.goto(`/cats/${BUSY_CAT}/water-records`);
+    const pagination = page.getByRole("navigation", { name: "ページ" });
+    await expect(pagination).toHaveText(/1 \/ 2/);
+    // 50 件の一覧を丸ごと撮ると縦に長くなりすぎるため、ページ送りまでスクロールして
+    // 表示領域だけを撮る
+    await pagination.scrollIntoViewIfNeeded();
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+
+  test("最後のページの見た目", async ({ page }, testInfo) => {
+    await page.goto(`/cats/${BUSY_CAT}/water-records?page=2`);
+    await expect(
+      page.getByRole("heading", { name: "VRT記録多数猫の水の記録" }),
+    ).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "ページ" })).toHaveText(
+      /2 \/ 2/,
+    );
+    await takeSnapshot(page, testInfo);
+  });
+});
 
 // 直近365日のカレンダーグラフを持つ記録一覧。グラフ部分は実行日時に依存するため
 // ignoreSelectors で除外する（「データがあるケース」のみ、グラフはデータがある
