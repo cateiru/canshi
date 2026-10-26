@@ -231,8 +231,9 @@ export function CatalogFoodProductsPage(props: {
 // 選んだ画像の切り抜く範囲をダイアログで選ばせ、一辺 IMAGE_MAX_EDGE px 以下の正方形の JPEG に
 // 切り抜いてファイル入力欄の中身を差し替える（EXIF の位置情報なども落ちる）。キャンセルしたとき・
 // 切り抜けなかったときは選んだ画像を外す（元のまま送られても、サーバーが切り抜いた形かを確かめて
-// 断る。catalog/image.ts）。切り抜きが終わるまでは送信ボタンを押せなくする。画像の読み込み中に
-// 選び直したときは、最後に選んだ画像だけを切り抜く。固定の文字列で、利用者の入力は含めない
+// 断る。catalog/image.ts）。切り抜きが終わるまでは送信ボタンを押せなくする。画像の読み込み中や
+// JPEG の書き出し中に選び直したときは、最後に選んだ画像の結果だけを反映する。固定の文字列で、
+// 利用者の入力は含めない
 const CROP_SCRIPT = `
 (function () {
   var dialog = document.querySelector("[data-crop-dialog]");
@@ -359,7 +360,7 @@ const CROP_SCRIPT = `
   }
 
   document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function (input) {
-    // 何回目に選んだ画像か。読み込みを待つ間に選び直されたら、古い画像は切り抜かない
+    // 何回目に選んだ画像か。読み込み・書き出しを待つ間に選び直されたら、古い画像の結果は反映しない
     var selection = 0;
     var field = input.closest(".field");
     var cropError = field && field.querySelector("[data-crop-error]");
@@ -402,6 +403,8 @@ const CROP_SCRIPT = `
           return;
         }
         var blob = await exportJpeg(bitmap, rect, Number(input.dataset.maxEdge));
+        // 決定するとダイアログが閉じるため、書き出しを待つ間に別の画像を選び直せる
+        if (current !== selection) return;
         if (!blob) throw new Error("JPEG に書き出せませんでした");
         var transfer = new DataTransfer();
         transfer.items.add(
