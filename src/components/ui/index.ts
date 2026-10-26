@@ -22,6 +22,7 @@ export * from "./ImagePreview/ImageStage";
 export * from "./Modal/Modal";
 export * from "./MonthNav/MonthNav";
 export * from "./NavCard/NavCard";
+export * from "./Pagination/Pagination";
 export * from "./Radio/Radio";
 export * from "./RecordCard/RecordCard";
 export * from "./SegmentedControl/SegmentedControl";

@@ -4,6 +4,7 @@ import {
   Breadcrumb,
   ButtonLink,
   IconButtonLink,
+  Pagination,
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
@@ -16,6 +17,11 @@ import { listCleaningRecords } from "@/features/cleaning/recordQueries";
 import { getCleaningTargetById } from "@/features/cleaning/targetQueries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
+import {
+  buildPageHref,
+  paginate,
+  parsePageParam,
+} from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -23,10 +29,12 @@ export const dynamic = "force-dynamic";
 
 type CleaningRecordsPageProps = {
   params: Promise<{ catId: string; targetId: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 };
 
 export default async function CleaningRecordsPage({
   params,
+  searchParams,
 }: CleaningRecordsPageProps) {
   const { catId, targetId } = await params;
   const [cat, cleaningTarget] = await Promise.all([
@@ -39,6 +47,12 @@ export default async function CleaningRecordsPage({
   }
 
   const records = await listCleaningRecords(targetId);
+  const { page: pageParam } = await searchParams;
+  const {
+    items: pagedRecords,
+    page,
+    totalPages,
+  } = paginate(records, parsePageParam(pageParam));
 
   return (
     <main className={styles.main}>
@@ -94,7 +108,7 @@ export default async function CleaningRecordsPage({
         </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
-          {records.map((record) => (
+          {pagedRecords.map((record) => (
             <li key={record.id}>
               <RecordCard aria-label={formatDateTimeUtc(record.performedAt)}>
                 <div className={styles.recordHeader}>
@@ -138,6 +152,17 @@ export default async function CleaningRecordsPage({
           ))}
         </ul>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        getHref={(target) =>
+          buildPageHref(
+            `/cats/${catId}/cleaning/targets/${targetId}/records`,
+            target,
+          )
+        }
+      />
     </main>
   );
 }

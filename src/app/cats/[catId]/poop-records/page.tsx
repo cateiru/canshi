@@ -5,6 +5,7 @@ import {
   Breadcrumb,
   ButtonLink,
   IconButtonLink,
+  Pagination,
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
@@ -21,6 +22,11 @@ import { PoopRecordChart } from "@/features/poop-records/PoopRecordChart";
 import { listPoopRecords } from "@/features/poop-records/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
+import {
+  buildPageHref,
+  paginate,
+  parsePageParam,
+} from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -28,10 +34,12 @@ export const dynamic = "force-dynamic";
 
 type PoopRecordsPageProps = {
   params: Promise<{ catId: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 };
 
 export default async function PoopRecordsPage({
   params,
+  searchParams,
 }: PoopRecordsPageProps) {
   const { catId } = await params;
   const cat = await getAccessibleCat(catId);
@@ -41,9 +49,15 @@ export default async function PoopRecordsPage({
   }
 
   const records = await listPoopRecords(catId);
+  const { page: pageParam } = await searchParams;
+  const {
+    items: pagedRecords,
+    page,
+    totalPages,
+  } = paginate(records, parsePageParam(pageParam));
   const mediaByRecordId = await listMediaAssetsByRecords(
     POOP_RECORD_MEDIA_TYPE,
-    records.map((record) => record.id),
+    pagedRecords.map((record) => record.id),
   );
 
   return (
@@ -95,7 +109,7 @@ export default async function PoopRecordsPage({
         </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
-          {records.map((record) => (
+          {pagedRecords.map((record) => (
             <li key={record.id}>
               <RecordCard aria-label={formatDateTimeUtc(record.occurredAt)}>
                 <div className={styles.recordHeader}>
@@ -186,6 +200,14 @@ export default async function PoopRecordsPage({
           ))}
         </ul>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        getHref={(target) =>
+          buildPageHref(`/cats/${catId}/poop-records`, target)
+        }
+      />
     </main>
   );
 }

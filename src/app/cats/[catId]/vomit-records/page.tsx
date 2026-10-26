@@ -5,6 +5,7 @@ import {
   Breadcrumb,
   ButtonLink,
   IconButtonLink,
+  Pagination,
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
@@ -15,6 +16,11 @@ import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import {
+  buildPageHref,
+  paginate,
+  parsePageParam,
+} from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { deleteVomitRecordAction } from "@/features/vomit-records/actions";
 import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
@@ -25,10 +31,12 @@ export const dynamic = "force-dynamic";
 
 type VomitRecordsPageProps = {
   params: Promise<{ catId: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 };
 
 export default async function VomitRecordsPage({
   params,
+  searchParams,
 }: VomitRecordsPageProps) {
   const { catId } = await params;
   const cat = await getAccessibleCat(catId);
@@ -38,9 +46,15 @@ export default async function VomitRecordsPage({
   }
 
   const records = await listVomitRecords(catId);
+  const { page: pageParam } = await searchParams;
+  const {
+    items: pagedRecords,
+    page,
+    totalPages,
+  } = paginate(records, parsePageParam(pageParam));
   const mediaByRecordId = await listMediaAssetsByRecords(
     VOMIT_RECORD_MEDIA_TYPE,
-    records.map((record) => record.id),
+    pagedRecords.map((record) => record.id),
   );
 
   return (
@@ -85,7 +99,7 @@ export default async function VomitRecordsPage({
         </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
-          {records.map((record) => (
+          {pagedRecords.map((record) => (
             <li key={record.id}>
               <RecordCard aria-label={formatDateTimeUtc(record.occurredAt)}>
                 <div className={styles.recordHeader}>
@@ -172,6 +186,14 @@ export default async function VomitRecordsPage({
           ))}
         </ul>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        getHref={(target) =>
+          buildPageHref(`/cats/${catId}/vomit-records`, target)
+        }
+      />
     </main>
   );
 }

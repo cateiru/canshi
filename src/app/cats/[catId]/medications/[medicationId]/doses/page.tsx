@@ -5,6 +5,7 @@ import {
   Breadcrumb,
   ButtonLink,
   IconButtonLink,
+  Pagination,
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
@@ -15,6 +16,11 @@ import { listMedicationDoses } from "@/features/medications/doseQueries";
 import { getMedicationById } from "@/features/medications/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import {
+  buildPageHref,
+  paginate,
+  parsePageParam,
+} from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -22,10 +28,12 @@ export const dynamic = "force-dynamic";
 
 type MedicationDosesPageProps = {
   params: Promise<{ catId: string; medicationId: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 };
 
 export default async function MedicationDosesPage({
   params,
+  searchParams,
 }: MedicationDosesPageProps) {
   const { catId, medicationId } = await params;
   const [cat, medication] = await Promise.all([
@@ -38,6 +46,12 @@ export default async function MedicationDosesPage({
   }
 
   const doses = await listMedicationDoses(medicationId);
+  const { page: pageParam } = await searchParams;
+  const {
+    items: pagedDoses,
+    page,
+    totalPages,
+  } = paginate(doses, parsePageParam(pageParam));
 
   return (
     <main className={styles.main}>
@@ -82,7 +96,7 @@ export default async function MedicationDosesPage({
         </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
-          {doses.map((dose) => (
+          {pagedDoses.map((dose) => (
             <li key={dose.id}>
               <RecordCard aria-label={formatDateTimeUtc(dose.occurredAt)}>
                 <div className={styles.recordHeader}>
@@ -125,6 +139,17 @@ export default async function MedicationDosesPage({
           ))}
         </ul>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        getHref={(target) =>
+          buildPageHref(
+            `/cats/${catId}/medications/${medicationId}/doses`,
+            target,
+          )
+        }
+      />
     </main>
   );
 }
