@@ -1,0 +1,26 @@
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* 前後のリンクとページ番号を 3 等分し、片方のリンクが無くてもページ番号を中央に保つ */
+.slot {
+  flex: 1;
+  display: flex;
+}
+
+.slot:last-child {
+  justify-content: flex-end;
+}
+
+.link {
+  padding-inline: 0;
+}
+
+.pageLabel {
+  flex: 1;
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}

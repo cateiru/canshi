@@ -11,6 +11,7 @@
 --   1日のアイコンが表示上限を超えて「+1」になるケース用）。vrt-cat-populated の
 --   「各記録種別を1件ずつ」を崩さないよう別の猫にしている。猫一覧で末尾に並ぶよう
 --   created_at は他の2匹より前にする。
+--   あわせて、水の記録を 51 件登録する（記録一覧のページング用。1 ページ 50 件のため 2 ページになる）。
 -- - vrt-cat-approximate : あいまいモードのごはん記録だけを登録する（ごはん記録一覧・
 --   タイムラインのあいまいモード表示用）。vrt-cat-populated の「各記録種別を1件ずつ」を
 --   崩さないよう別の猫にしている。猫一覧で vrt-cat-busy のさらに後ろに並ぶよう
@@ -213,6 +214,17 @@ VALUES ('vrt-water-1', 'vrt-cat-populated', strftime('%s', '2024-06-14 09:00:00'
 INSERT INTO weight_records (id, cat_id, occurred_at, input_method, cat_weight_kg, bcs, created_at, updated_at)
 VALUES ('vrt-weight-1', 'vrt-cat-populated', strftime('%s', '2024-06-09 08:00:00'), 'direct', 4.2, 3,
   strftime('%s', '2024-06-09 08:00:00'), strftime('%s', '2024-06-09 08:00:00'));
+
+-- vrt-cat-busy: 水の記録を 1 ページの表示件数（50 件）より 1 件多い 51 件登録する（記録一覧の
+-- ページングの表示用。1 ページ目は 50 件、2 ページ目は 1 件になる）。2024-01-01 から 1 日 1 件で、
+-- タイムラインの VRT で撮る月（2024-06）とその前後の月にかからないようにする
+INSERT INTO water_records (id, cat_id, occurred_at, measurement_method, supplied_amount_ml, created_at, updated_at)
+WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 51)
+SELECT 'vrt-busy-water-' || n, 'vrt-cat-busy',
+  strftime('%s', '2024-01-01 09:00:00', '+' || (n - 1) || ' days'), 'measuring_cup', 200,
+  strftime('%s', '2024-01-01 09:00:00', '+' || (n - 1) || ' days'),
+  strftime('%s', '2024-01-01 09:00:00', '+' || (n - 1) || ' days')
+FROM seq;
 
 -- vrt-cat-busy: 2024-06-18 に5種類の記録を登録する（カレンダーは4種類まで表示し、残りを「+1」にする）
 INSERT INTO poop_records (id, cat_id, occurred_at, consistency, created_at, updated_at)

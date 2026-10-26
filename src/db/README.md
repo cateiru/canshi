@@ -31,6 +31,12 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
   （`medications` 自体は予定・マスタ的な情報のため、タイムラインの対象は実績である `medication_doses` とする）
 
+- 記録テーブルには、一覧を新しい順に読むための「絞り込みの列＋代表の発生日時列」の複合インデックスを設定する（`0057`）。
+  絞り込みの列は基本は `cat_id` で、`cleaning_records` は `cleaning_target_id`、`medication_doses` は `medication_id`
+  （掃除対象ごと・薬ごとに一覧するため）。SQLite は外部キーの列に自動でインデックスを作らないため、インデックスがないと
+  全猫の記録を走査することになる。新しい記録テーブルを追加するときも同様に設定する
+  - ごはん記録の明細（`feeding_record_items`）は、記録ごとにまとめて読むため `feeding_record_id` にインデックスを設定する
+
 - 日付のみを表す列（生年月日・お迎え日など時刻を持たない情報）は `text` 型で ISO8601 の日付文字列（`YYYY-MM-DD`）として保持する
   - 生年月日（`cats.birth_date`）は年のみ・年月のみの入力も受け付ける。その場合も未入力の月・日を 1月・1日で補完した `YYYY-MM-DD` で保持し、わかっている範囲は `cats.birth_date_precision`（`year`・`month`・`day`）で別に持つ。年齢・誕生日の判定は補完した日付をそのまま使い、表示やフォームの初期値だけが精度を参照する
 - 発生日時・作成日時・更新日時など時刻を持つ列は `integer("...", { mode: "timestamp" })`（unix タイムスタンプ）で保持する

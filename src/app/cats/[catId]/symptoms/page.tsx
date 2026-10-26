@@ -5,6 +5,7 @@ import {
   Breadcrumb,
   ButtonLink,
   IconButtonLink,
+  Pagination,
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
@@ -17,6 +18,11 @@ import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { toMediaAssetView } from "@/features/media/view";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import {
+  buildPageHref,
+  paginate,
+  parsePageParam,
+} from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { deleteSymptomAction } from "@/features/symptoms/actions";
 import { STATUS_LABEL } from "@/features/symptoms/labels";
@@ -34,9 +40,13 @@ const STATUS_BADGE_COLOR = {
 
 type SymptomsPageProps = {
   params: Promise<{ catId: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 };
 
-export default async function SymptomsPage({ params }: SymptomsPageProps) {
+export default async function SymptomsPage({
+  params,
+  searchParams,
+}: SymptomsPageProps) {
   const { catId } = await params;
   const cat = await getAccessibleCat(catId);
 
@@ -48,9 +58,15 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
     listSymptoms(catId),
     listHospitalVisits(catId),
   ]);
+  const { page: pageParam } = await searchParams;
+  const {
+    items: pagedRecords,
+    page,
+    totalPages,
+  } = paginate(records, parsePageParam(pageParam));
   const mediaByRecordId = await listMediaAssetsByRecords(
     SYMPTOM_MEDIA_TYPE,
-    records.map((record) => record.id),
+    pagedRecords.map((record) => record.id),
   );
   const hospitalVisitLabelById = new Map(
     hospitalVisitList.map((visit) => [
@@ -101,7 +117,7 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
         </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
-          {records.map((record) => (
+          {pagedRecords.map((record) => (
             <li key={record.id}>
               <RecordCard aria-label={record.symptomType}>
                 <div className={styles.recordHeader}>
@@ -183,6 +199,12 @@ export default async function SymptomsPage({ params }: SymptomsPageProps) {
           ))}
         </ul>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        getHref={(target) => buildPageHref(`/cats/${catId}/symptoms`, target)}
+      />
     </main>
   );
 }

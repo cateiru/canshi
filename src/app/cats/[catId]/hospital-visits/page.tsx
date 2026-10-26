@@ -4,6 +4,7 @@ import {
   Breadcrumb,
   ButtonLink,
   IconButtonLink,
+  Pagination,
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
@@ -22,6 +23,11 @@ import { toMediaAssetView } from "@/features/media/view";
 import { listMedicationsByHospitalVisitIds } from "@/features/medications/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
+import {
+  buildPageHref,
+  paginate,
+  parsePageParam,
+} from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { listSymptoms } from "@/features/symptoms/queries";
 import styles from "./page.module.css";
@@ -30,10 +36,12 @@ export const dynamic = "force-dynamic";
 
 type HospitalVisitsPageProps = {
   params: Promise<{ catId: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 };
 
 export default async function HospitalVisitsPage({
   params,
+  searchParams,
 }: HospitalVisitsPageProps) {
   const { catId } = await params;
   const cat = await getAccessibleCat(catId);
@@ -46,6 +54,12 @@ export default async function HospitalVisitsPage({
     listHospitalVisits(catId),
     listSymptoms(catId),
   ]);
+  const { page: pageParam } = await searchParams;
+  const {
+    items: pagedVisits,
+    page,
+    totalPages,
+  } = paginate(visits, parsePageParam(pageParam));
   const symptomNameById = new Map(
     symptomList.map((symptom) => [symptom.id, symptom.symptomType]),
   );
@@ -53,13 +67,13 @@ export default async function HospitalVisitsPage({
     await Promise.all([
       listMedicationsByHospitalVisitIds(
         catId,
-        visits.map((visit) => visit.id),
+        pagedVisits.map((visit) => visit.id),
       ),
       listMediaAssetsByRecords(
         HOSPITAL_VISIT_MEDIA_TYPE,
-        visits.map((visit) => visit.id),
+        pagedVisits.map((visit) => visit.id),
       ),
-      listExpensesByHospitalVisitIds(visits.map((visit) => visit.id)),
+      listExpensesByHospitalVisitIds(pagedVisits.map((visit) => visit.id)),
     ]);
 
   return (
@@ -111,7 +125,7 @@ export default async function HospitalVisitsPage({
         </RecordEmptyState>
       ) : (
         <ul className={styles.list}>
-          {visits.map((visit) => {
+          {pagedVisits.map((visit) => {
             const prescribedMedications =
               prescribedMedicationsByVisit.get(visit.id) ?? [];
             const expense = expenseByVisitId.get(visit.id);
@@ -219,6 +233,14 @@ export default async function HospitalVisitsPage({
           })}
         </ul>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        getHref={(target) =>
+          buildPageHref(`/cats/${catId}/hospital-visits`, target)
+        }
+      />
     </main>
   );
 }

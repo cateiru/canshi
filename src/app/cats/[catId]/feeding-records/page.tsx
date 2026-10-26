@@ -5,6 +5,7 @@ import {
   Breadcrumb,
   ButtonLink,
   IconButtonLink,
+  Pagination,
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
@@ -33,6 +34,11 @@ import {
   getRelativeDayLabelUtc,
   splitDateTimeUtc,
 } from "@/features/shared/datetime";
+import {
+  buildPageHref,
+  paginate,
+  parsePageParam,
+} from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -40,10 +46,12 @@ export const dynamic = "force-dynamic";
 
 type FeedingRecordsPageProps = {
   params: Promise<{ catId: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 };
 
 export default async function FeedingRecordsPage({
   params,
+  searchParams,
 }: FeedingRecordsPageProps) {
   const { catId } = await params;
   const cat = await getAccessibleCat(catId);
@@ -53,14 +61,21 @@ export default async function FeedingRecordsPage({
   }
 
   const records = await listFeedingRecords(catId);
-  const dateGroups = groupRecordsByDate(records);
+  const { page: pageParam } = await searchParams;
+  const {
+    items: pagedRecords,
+    page,
+    totalPages,
+  } = paginate(records, parsePageParam(pageParam));
+  // ページの境目で同じ日の記録が前後のページに分かれることがある
+  const dateGroups = groupRecordsByDate(pagedRecords);
   // あいまいモードの記録はグラフに含めないため、点が無ければグラフ自体を出さない
   const chartPoints = toFeedingChartPoints(records);
   const now = getNaiveUtcNow();
   const foodProductImageUrls = await listFoodProductImageUrls(
     [
       ...new Set(
-        records.flatMap((record) =>
+        pagedRecords.flatMap((record) =>
           record.items.map((item) => item.foodProductId),
         ),
       ),
@@ -253,6 +268,14 @@ export default async function FeedingRecordsPage({
           ))}
         </ul>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        getHref={(target) =>
+          buildPageHref(`/cats/${catId}/feeding-records`, target)
+        }
+      />
     </main>
   );
 }
