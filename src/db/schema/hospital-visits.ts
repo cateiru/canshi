@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   type AnySQLiteColumn,
+  index,
   integer,
   sqliteTable,
   text,
@@ -8,29 +9,41 @@ import {
 import { cats } from "./cats";
 import { symptoms } from "./symptoms";
 
-export const hospitalVisits = sqliteTable("hospital_visits", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  catId: text("cat_id")
-    .notNull()
-    .references(() => cats.id),
-  symptomId: text("symptom_id").references((): AnySQLiteColumn => symptoms.id),
-  // 受診日時。タイムライン集約における代表の発生日時列（src/db/README.md 参照）
-  visitedAt: integer("visited_at", { mode: "timestamp" }).notNull(),
-  reason: text("reason").notNull(),
-  diagnosis: text("diagnosis"),
-  examinationResults: text("examination_results"),
-  treatment: text("treatment"),
-  nextVisitAt: integer("next_visit_at", { mode: "timestamp" }),
-  memo: text("memo"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-});
+export const hospitalVisits = sqliteTable(
+  "hospital_visits",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    catId: text("cat_id")
+      .notNull()
+      .references(() => cats.id),
+    symptomId: text("symptom_id").references(
+      (): AnySQLiteColumn => symptoms.id,
+    ),
+    // 受診日時。タイムライン集約における代表の発生日時列（src/db/README.md 参照）
+    visitedAt: integer("visited_at", { mode: "timestamp" }).notNull(),
+    reason: text("reason").notNull(),
+    diagnosis: text("diagnosis"),
+    examinationResults: text("examination_results"),
+    treatment: text("treatment"),
+    nextVisitAt: integer("next_visit_at", { mode: "timestamp" }),
+    memo: text("memo"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    // 猫ごとの一覧を新しい順に読むため
+    index("hospital_visits_cat_id_visited_at_idx").on(
+      table.catId,
+      table.visitedAt,
+    ),
+  ],
+);
 
 export type HospitalVisit = typeof hospitalVisits.$inferSelect;
 export type NewHospitalVisit = typeof hospitalVisits.$inferInsert;
