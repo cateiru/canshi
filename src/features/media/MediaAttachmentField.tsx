@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   Button as AriaButton,
   DropZone,
@@ -17,6 +17,7 @@ import {
 } from "react-icons/tb";
 import { Alert } from "@/components/ui";
 import styles from "./MediaAttachmentField.module.css";
+import { SquareImageCropModal } from "./SquareImageCropModal";
 import type {
   MediaAttachmentsController,
   PendingMediaFile,
@@ -30,6 +31,11 @@ export type MediaAttachmentFieldProps = {
   allowVideo?: boolean;
   /** 1 枚だけ添付する用途（ごはん商品の画像など）。選択時に既存を置き換える */
   single?: boolean;
+  /**
+   * 選んだ画像を正方形に切り抜いてから添付する（`single` のときだけ有効）。
+   * 画像を選ぶと切り抜き用のモーダルを開き、決定した範囲の JPEG をアップロードする
+   */
+  cropSquare?: boolean;
   /** ラベルの下に表示する補足 */
   description?: string;
   isDisabled?: boolean;
@@ -48,6 +54,7 @@ export function MediaAttachmentField({
   label = "写真",
   allowVideo = false,
   single = false,
+  cropSquare = false,
   description,
   isDisabled = false,
 }: MediaAttachmentFieldProps) {
@@ -58,6 +65,8 @@ export function MediaAttachmentField({
   const canAddMore = single || controller.remainingCount > 0;
   const acceptedFileTypes = allowVideo ? IMAGE_AND_VIDEO_TYPES : IMAGE_TYPES;
   const canSelect = canAddMore && !isDisabled;
+  // 切り抜き中の元画像
+  const [cropSource, setCropSource] = useState<File | null>(null);
 
   // 添付欄の外や、上限に達して受け付けない状態でファイルを落とすと、ブラウザがそのファイルを開いて
   // 入力中のフォームが失われる。フォームを表示している間はページ全体でファイルのドロップを無効にする
@@ -81,7 +90,15 @@ export function MediaAttachmentField({
     }
     if (single) {
       // 1 枚制限では複数ドロップされても先頭の 1 枚だけを使う
-      controller.replaceAll(files.slice(0, 1));
+      const [file] = files;
+      // 画像ではないファイルは切り抜かず、そのまま渡して事前チェックのメッセージを出す。
+      // 切り抜いた後の小さな画像をアップロードするため、元画像の大きさは問わない
+      if (cropSquare && file.type.startsWith("image/")) {
+        controller.clearRejected();
+        setCropSource(file);
+        return;
+      }
+      controller.replaceAll([file]);
     } else {
       controller.addFiles(files);
     }
@@ -215,6 +232,18 @@ export function MediaAttachmentField({
             ))}
           </ul>
         </Alert>
+      ) : null}
+
+      {cropSquare ? (
+        <SquareImageCropModal
+          file={cropSource}
+          title={`${label}の範囲を選ぶ`}
+          onClose={() => setCropSource(null)}
+          onCropped={(cropped) => {
+            setCropSource(null);
+            controller.replaceAll([cropped]);
+          }}
+        />
       ) : null}
     </div>
   );
