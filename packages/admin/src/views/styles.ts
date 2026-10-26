@@ -503,6 +503,7 @@ label.checkbox input:checked:hover { border-color: var(--color-ink); }
 /* 商品画像の選択欄（メインアプリの画像の選択欄）。透明なファイル入力欄を点線の枠に重ねる */
 .image-field { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }
 .product-image.current-image { width: 160px; height: 160px; }
+.product-image[hidden] { display: none; }
 .file-chooser {
   position: relative;
   display: flex;
@@ -541,4 +542,42 @@ label.checkbox input:checked:hover { border-color: var(--color-ink); }
 .file-chooser svg.icon { width: 26px; height: 26px; }
 .file-chooser-title { font-size: var(--text-sm); font-weight: var(--font-weight-bold); }
 .file-chooser-note { font-size: var(--text-xs); overflow-wrap: anywhere; }
+
+/* 商品画像の切り抜く範囲を選ぶダイアログ（メインアプリの Modal と切り抜きの UI） */
+dialog.crop-dialog {
+  width: min(400px, calc(100vw - var(--space-8)));
+  max-height: calc(100dvh - var(--space-8));
+  overflow: auto;
+  padding: var(--space-6);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: 16px;
+  color: var(--color-ink);
+  background: var(--color-bg);
+}
+dialog.crop-dialog[open] { display: flex; flex-direction: column; gap: var(--space-3); }
+dialog.crop-dialog::backdrop { background: color-mix(in srgb, var(--color-ink) 50%, transparent); }
+dialog.crop-dialog h2 { font-size: var(--text-lg); }
+.crop-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  background: var(--color-surface);
+  cursor: grab;
+  touch-action: none;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+}
+.crop-canvas:active { cursor: grabbing; }
+.crop-canvas:focus-visible { outline-color: var(--color-focus-ring); }
+.crop-zoom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+.crop-zoom input { flex: 1; min-width: 0; accent-color: var(--color-ink); }
+.crop-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 `;

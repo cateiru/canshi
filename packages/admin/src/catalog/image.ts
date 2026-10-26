@@ -1,12 +1,12 @@
 /**
- * 共通のごはん商品の画像の検証。画像はブラウザで長辺 `IMAGE_MAX_EDGE` px の JPEG に縮小してから
- * 送る（`views/catalogPages.tsx` のスクリプト）。Workers では画像をデコード・再エンコードしないため、
- * 縮小したものと同じ形（長辺 `IMAGE_MAX_EDGE` px 以下で、位置情報などのメタデータを持たない JPEG）
- * であることをサーバーでも確かめ、スクリプトが動かなかった・縮小が終わる前に送られたなどで
- * 元のまま届いた画像は断る。サムネイルは作らずにそのまま保存する
+ * 共通のごはん商品の画像の検証。画像はブラウザで一辺 `IMAGE_MAX_EDGE` px 以下の正方形の JPEG に
+ * 切り抜いてから送る（`views/catalogPages.tsx` のスクリプト）。Workers では画像をデコード・
+ * 再エンコードしないため、切り抜いたものと同じ形（一辺 `IMAGE_MAX_EDGE` px 以下の正方形で、
+ * 位置情報などのメタデータを持たない JPEG）であることをサーバーでも確かめ、スクリプトが動かなかった・
+ * 切り抜きが終わる前に送られたなどで元のまま届いた画像は断る。サムネイルは作らずにそのまま保存する
  */
 
-/** ブラウザで縮小するときの長辺（px） */
+/** ブラウザで切り抜くときの一辺の上限（px） */
 export const IMAGE_MAX_EDGE = 800;
 
 /** 受け付ける画像の大きさの上限 */
@@ -92,12 +92,12 @@ export type CheckedImage =
   | { ok: true; bytes: Uint8Array; mimeType: CatalogImageMimeType }
   | { ok: false; error: string };
 
-const NOT_RESIZED_ERROR =
-  "画像をブラウザで縮小できませんでした。画像を選び直してください（縮小が終わる前に送った場合も、選び直してから送ってください）";
+const NOT_CROPPED_ERROR =
+  "画像をブラウザで正方形に切り抜けませんでした。画像を選び直してください（切り抜きが終わる前に送った場合も、選び直してから送ってください）";
 
 export async function checkCatalogImage(file: File): Promise<CheckedImage> {
   if (file.size > IMAGE_MAX_BYTES) {
-    return { ok: false, error: NOT_RESIZED_ERROR };
+    return { ok: false, error: NOT_CROPPED_ERROR };
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
   const info = inspectJpeg(bytes);
@@ -105,10 +105,10 @@ export async function checkCatalogImage(file: File): Promise<CheckedImage> {
     !info ||
     info.hasMetadata ||
     info.width === 0 ||
-    info.height === 0 ||
-    Math.max(info.width, info.height) > IMAGE_MAX_EDGE
+    info.width !== info.height ||
+    info.width > IMAGE_MAX_EDGE
   ) {
-    return { ok: false, error: NOT_RESIZED_ERROR };
+    return { ok: false, error: NOT_CROPPED_ERROR };
   }
   return { ok: true, bytes, mimeType: "image/jpeg" };
 }

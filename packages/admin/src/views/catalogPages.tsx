@@ -228,64 +228,200 @@ export function CatalogFoodProductsPage(props: {
   );
 }
 
-// 選んだ画像をブラウザで長辺 IMAGE_MAX_EDGE px の JPEG に縮小し、ファイル入力欄の中身を
-// 差し替える（EXIF の位置情報なども落ちる）。縮小できなかったときは選んだ画像を外して知らせる
-// （元のまま送られても、サーバーが縮小済みの形かを確かめて断る。catalog/image.ts）。
-// 縮小が終わるまでは送信ボタンを押せなくする。縮小中に画像を選び直したときは、最後に選んだ画像の
-// 縮小だけを反映し、それより前の縮小の結果は捨てる。固定の文字列で、利用者の入力は含めない
-const RESIZE_SCRIPT = `
-document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function (input) {
-  // 何回目に選んだ画像か。縮小を待つ間に選び直されたら、古い縮小の結果を反映しない
-  var selection = 0;
-  input.addEventListener("change", async function () {
-    var current = ++selection;
-    var file = input.files && input.files[0];
-    var field = input.closest(".field");
-    var resizeError = field && field.querySelector("[data-resize-error]");
-    var fileName = field && field.querySelector("[data-file-name]");
-    var submit = input.form && input.form.querySelector('button[type="submit"]');
-    if (resizeError) resizeError.hidden = true;
-    // 選び直しで選択を取り消したときは、縮小中だった前の画像の分も含めて元に戻す
-    if (!file) {
-      if (fileName) fileName.textContent = fileName.dataset.fileName;
-      if (submit) submit.disabled = false;
-      return;
-    }
-    if (submit) submit.disabled = true;
-    try {
-      var maxEdge = Number(input.dataset.maxEdge);
-      var bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-      var scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
-      var canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-      var context = canvas.getContext("2d");
-      context.fillStyle = "#fff";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      bitmap.close();
-      var blob = await new Promise(function (resolve) {
-        canvas.toBlob(resolve, "image/jpeg", 0.85);
-      });
-      if (!blob) throw new Error("JPEG に書き出せませんでした");
-      if (current !== selection) return;
-      var transfer = new DataTransfer();
-      transfer.items.add(
-        new File([blob], file.name.replace(/\\.[^.]*$/, "") + ".jpg", { type: "image/jpeg" })
-      );
-      input.files = transfer.files;
-      if (fileName) fileName.textContent = file.name;
-    } catch (error) {
-      if (current !== selection) return;
-      console.error(error);
-      input.value = "";
-      if (resizeError) resizeError.hidden = false;
-      if (fileName) fileName.textContent = fileName.dataset.fileName;
-    } finally {
-      if (current === selection && submit) submit.disabled = false;
-    }
+// 選んだ画像の切り抜く範囲をダイアログで選ばせ、一辺 IMAGE_MAX_EDGE px 以下の正方形の JPEG に
+// 切り抜いてファイル入力欄の中身を差し替える（EXIF の位置情報なども落ちる）。キャンセルしたとき・
+// 切り抜けなかったときは選んだ画像を外す（元のまま送られても、サーバーが切り抜いた形かを確かめて
+// 断る。catalog/image.ts）。切り抜きが終わるまでは送信ボタンを押せなくする。画像の読み込み中に
+// 選び直したときは、最後に選んだ画像だけを切り抜く。固定の文字列で、利用者の入力は含めない
+const CROP_SCRIPT = `
+(function () {
+  var dialog = document.querySelector("[data-crop-dialog]");
+  if (!dialog) return;
+  var canvas = dialog.querySelector("[data-crop-canvas]");
+  var zoomInput = dialog.querySelector("[data-crop-zoom]");
+  var context = canvas.getContext("2d");
+  var maxZoom = Number(zoomInput.max);
+  // 切り抜き中の元画像と、切り抜く正方形の中心（元画像の px）・ズーム倍率
+  var state = null;
+  var drag = null;
+
+  // 切り抜く正方形の一辺（元画像の px）。ズーム 1 倍で短辺いっぱいになる
+  function cropSide() {
+    return Math.min(state.bitmap.width, state.bitmap.height) / state.zoom;
+  }
+  function clampCenter() {
+    var half = cropSide() / 2;
+    state.centerX = Math.min(state.bitmap.width - half, Math.max(half, state.centerX));
+    state.centerY = Math.min(state.bitmap.height - half, Math.max(half, state.centerY));
+  }
+  function cropRect() {
+    var side = cropSide();
+    return { x: state.centerX - side / 2, y: state.centerY - side / 2, side: side };
+  }
+  function draw() {
+    var rect = cropRect();
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(state.bitmap, rect.x, rect.y, rect.side, rect.side, 0, 0, canvas.width, canvas.height);
+  }
+  function setZoom(zoom) {
+    state.zoom = Math.min(maxZoom, Math.max(1, zoom));
+    zoomInput.value = String(state.zoom);
+    clampCenter();
+    draw();
+  }
+  // 画面上の移動量（CSS px）だけ画像を動かす
+  function pan(dx, dy) {
+    var ratio = cropSide() / canvas.getBoundingClientRect().width;
+    state.centerX -= dx * ratio;
+    state.centerY -= dy * ratio;
+    clampCenter();
+    draw();
+  }
+
+  canvas.addEventListener("pointerdown", function (event) {
+    if (!state) return;
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    canvas.setPointerCapture(event.pointerId);
   });
-});
+  canvas.addEventListener("pointermove", function (event) {
+    if (!state || !drag || drag.id !== event.pointerId) return;
+    pan(event.clientX - drag.x, event.clientY - drag.y);
+    drag.x = event.clientX;
+    drag.y = event.clientY;
+  });
+  function endDrag(event) {
+    if (drag && drag.id === event.pointerId) drag = null;
+  }
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
+  canvas.addEventListener("wheel", function (event) {
+    if (!state) return;
+    event.preventDefault();
+    setZoom(state.zoom * Math.exp(-event.deltaY * 0.002));
+  }, { passive: false });
+  // 矢印キーでも画像を動かせるようにする（Shift で大きく動かす）
+  canvas.addEventListener("keydown", function (event) {
+    if (!state) return;
+    var step = event.shiftKey ? 40 : 10;
+    var moves = {
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0],
+      ArrowUp: [0, -step],
+      ArrowDown: [0, step],
+    };
+    var move = moves[event.key];
+    if (!move) return;
+    event.preventDefault();
+    pan(move[0], move[1]);
+  });
+  zoomInput.addEventListener("input", function () {
+    if (state) setZoom(Number(zoomInput.value));
+  });
+  dialog.querySelector("[data-crop-confirm]").addEventListener("click", function () {
+    dialog.close("confirm");
+  });
+  dialog.querySelector("[data-crop-cancel]").addEventListener("click", function () {
+    dialog.close("cancel");
+  });
+
+  // 範囲を選ばせ、決定したら切り抜く範囲（元画像の px）、キャンセルしたら null を返す
+  function chooseCropRect(bitmap) {
+    state = { bitmap: bitmap, zoom: 1, centerX: bitmap.width / 2, centerY: bitmap.height / 2 };
+    zoomInput.value = "1";
+    draw();
+    // Esc で閉じたときは returnValue が変わらないため、前回の値を消しておく
+    dialog.returnValue = "";
+    dialog.showModal();
+    return new Promise(function (resolve) {
+      dialog.addEventListener("close", function () {
+        var rect = dialog.returnValue === "confirm" ? cropRect() : null;
+        state = null;
+        drag = null;
+        resolve(rect);
+      }, { once: true });
+    });
+  }
+
+  function exportJpeg(bitmap, rect, maxEdge) {
+    var size = Math.max(1, Math.min(maxEdge, Math.round(rect.side)));
+    var output = document.createElement("canvas");
+    output.width = size;
+    output.height = size;
+    var outputContext = output.getContext("2d");
+    outputContext.fillStyle = "#fff";
+    outputContext.fillRect(0, 0, size, size);
+    outputContext.imageSmoothingQuality = "high";
+    outputContext.drawImage(bitmap, rect.x, rect.y, rect.side, rect.side, 0, 0, size, size);
+    return new Promise(function (resolve) {
+      output.toBlob(resolve, "image/jpeg", 0.85);
+    });
+  }
+
+  document.querySelectorAll('input[type="file"][data-max-edge]').forEach(function (input) {
+    // 何回目に選んだ画像か。読み込みを待つ間に選び直されたら、古い画像は切り抜かない
+    var selection = 0;
+    var field = input.closest(".field");
+    var cropError = field && field.querySelector("[data-crop-error]");
+    var fileName = field && field.querySelector("[data-file-name]");
+    var preview = field && field.querySelector("[data-crop-preview]");
+    var submit = input.form && input.form.querySelector('button[type="submit"]');
+
+    function showPreview(blob) {
+      if (!preview) return;
+      if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+      preview.dataset.objectUrl = blob ? URL.createObjectURL(blob) : "";
+      if (blob) preview.src = preview.dataset.objectUrl;
+      else preview.removeAttribute("src");
+      preview.hidden = !blob;
+    }
+    function clearSelection() {
+      input.value = "";
+      if (fileName) fileName.textContent = fileName.dataset.fileName;
+      showPreview(null);
+    }
+
+    input.addEventListener("change", async function () {
+      var current = ++selection;
+      var file = input.files && input.files[0];
+      if (cropError) cropError.hidden = true;
+      // 選び直しで選択を取り消したときは、切り抜いた前の画像の分も含めて元に戻す
+      if (!file) {
+        clearSelection();
+        if (submit) submit.disabled = false;
+        return;
+      }
+      if (submit) submit.disabled = true;
+      var bitmap = null;
+      try {
+        bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+        if (current !== selection) return;
+        var rect = await chooseCropRect(bitmap);
+        if (!rect) {
+          clearSelection();
+          return;
+        }
+        var blob = await exportJpeg(bitmap, rect, Number(input.dataset.maxEdge));
+        if (!blob) throw new Error("JPEG に書き出せませんでした");
+        var transfer = new DataTransfer();
+        transfer.items.add(
+          new File([blob], file.name.replace(/\\.[^.]*$/, "") + ".jpg", { type: "image/jpeg" })
+        );
+        input.files = transfer.files;
+        if (fileName) fileName.textContent = file.name;
+        showPreview(blob);
+      } catch (error) {
+        if (current !== selection) return;
+        console.error(error);
+        clearSelection();
+        if (cropError) cropError.hidden = false;
+      } finally {
+        if (bitmap) bitmap.close();
+        if (current === selection && submit) submit.disabled = false;
+      }
+    });
+  });
+})();
 `;
 
 function FieldError(props: { id: string; message?: string }) {
@@ -671,6 +807,14 @@ export function CatalogFoodProductFormPage(props: {
                 height={160}
               />
             )}
+            <img
+              class="product-image current-image"
+              alt="切り抜いた商品画像"
+              width={160}
+              height={160}
+              data-crop-preview
+              hidden
+            />
             {/* メインアプリの画像の選択欄と同じ見た目の点線の枠。ファイル入力欄を枠いっぱいに
                 重ねて透明にし、押す・ドラッグ＆ドロップのどちらでも選べるようにする */}
             <label class="file-chooser">
@@ -695,10 +839,11 @@ export function CatalogFoodProductFormPage(props: {
             </label>
           </div>
           <FieldDescription id="field-image-description">
-            選んだ画像は長辺 {IMAGE_MAX_EDGE}px の JPEG に縮小して保存します。
+            選んだ画像は正方形に切り抜き、一辺 {IMAGE_MAX_EDGE}px 以下の JPEG
+            にして保存します。
           </FieldDescription>
-          <p class="field-error" role="alert" data-resize-error hidden>
-            画像を縮小できませんでした。別の画像を選んでください。
+          <p class="field-error" role="alert" data-crop-error hidden>
+            画像を切り抜けませんでした。別の画像を選んでください。
           </p>
           <FieldError id="field-image-error" message={errors.image} />
           {product?.imageAssetId && (
@@ -712,7 +857,47 @@ export function CatalogFoodProductFormPage(props: {
           {product ? "更新する" : "登録する"}
         </button>
       </form>
-      <script dangerouslySetInnerHTML={{ __html: RESIZE_SCRIPT }} />
+      {/* 商品画像を選んだときに開く、切り抜く範囲を選ぶダイアログ（CROP_SCRIPT が操作する） */}
+      <dialog
+        class="crop-dialog"
+        aria-labelledby="crop-dialog-title"
+        aria-describedby="crop-dialog-description"
+        data-crop-dialog
+      >
+        <h2 id="crop-dialog-title">商品画像の範囲を選ぶ</h2>
+        <p class="field-description" id="crop-dialog-description">
+          ドラッグ・矢印キーで位置を調整、ホイール・スライダーでズーム
+        </p>
+        <canvas
+          class="crop-canvas"
+          width={640}
+          height={640}
+          tabindex={0}
+          role="img"
+          aria-label="切り抜く範囲"
+          data-crop-canvas
+        />
+        <label class="crop-zoom">
+          ズーム
+          <input
+            type="range"
+            min="1"
+            max="3"
+            step="0.01"
+            value="1"
+            data-crop-zoom
+          />
+        </label>
+        <div class="crop-actions">
+          <button type="button" class="primary" data-crop-confirm>
+            この範囲で決定する
+          </button>
+          <button type="button" data-crop-cancel>
+            キャンセル
+          </button>
+        </div>
+      </dialog>
+      <script dangerouslySetInnerHTML={{ __html: CROP_SCRIPT }} />
       <script dangerouslySetInnerHTML={{ __html: PACKAGE_SIZES_SCRIPT }} />
     </>
   );
