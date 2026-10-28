@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.3/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -7,7 +7,12 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!drizzle", "!**/worker-configuration.d.ts"]
+    "includes": [
+      "**",
+      "!drizzle",
+      "!**/worker-configuration.d.ts",
+      "!pnpm-lock.yaml"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -21,6 +26,11 @@
       "performance": {
         "noImgElement": "off"
       }
+    }
+  },
+  "markdown": {
+    "formatter": {
+      "enabled": false
     }
   },
   "javascript": {

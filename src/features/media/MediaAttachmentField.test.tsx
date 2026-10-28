@@ -57,6 +57,11 @@ function Harness({
   );
 }
 
+function DisabledHarness() {
+  const controller = useMediaAttachments({ limits: DEFAULT_MEDIA_LIMITS });
+  return <MediaAttachmentField controller={controller} isDisabled />;
+}
+
 const existingAsset: MediaAssetView = {
   id: "asset-1",
   recordType: "poop_record",
@@ -314,11 +319,7 @@ describe("MediaAttachmentField", () => {
 
   it("保存中はファイル選択ボタンとドロップを受け付けない", () => {
     deferredUploads();
-    function Disabled() {
-      const controller = useMediaAttachments({ limits: DEFAULT_MEDIA_LIMITS });
-      return <MediaAttachmentField controller={controller} isDisabled />;
-    }
-    render(<Disabled />);
+    render(<DisabledHarness />);
     const button = screen.getByRole("button", { name: "追加する" });
     expect(button).toBeDisabled();
 
