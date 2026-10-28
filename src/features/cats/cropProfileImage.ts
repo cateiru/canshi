@@ -20,6 +20,7 @@ export async function cropProfileImage(
   imageUrl: string,
   area: CropArea,
   rotation: number,
+  fileName = "profile.jpg",
 ): Promise<File> {
   const image = await loadImage(imageUrl);
   if (image.naturalWidth === 0 || image.naturalHeight === 0) {
@@ -63,5 +64,5 @@ export async function cropProfileImage(
       JPEG_QUALITY,
     );
   });
-  return new File([blob], "profile.jpg", { type: "image/jpeg" });
+  return new File([blob], fileName, { type: "image/jpeg" });
 }

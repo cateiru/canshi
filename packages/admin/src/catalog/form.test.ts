@@ -182,19 +182,21 @@ describe("inspectJpeg", () => {
 describe("checkCatalogImage", () => {
   const file = (bytes: Uint8Array) => new File([bytes], "photo.jpg");
 
-  it("ブラウザで縮小した形（長辺 800px 以下・メタデータなしの JPEG）だけを受け付ける", async () => {
-    expect(await checkCatalogImage(file(createJpeg(800, 533)))).toMatchObject({
+  it("ブラウザで切り抜いた形（一辺 800px 以下の正方形・メタデータなしの JPEG）だけを受け付ける", async () => {
+    expect(await checkCatalogImage(file(createJpeg(800, 800)))).toMatchObject({
       ok: true,
       mimeType: "image/jpeg",
     });
   });
 
-  it("縮小されずに届いた画像は断る", async () => {
+  it("切り抜かれずに届いた画像は断る", async () => {
     const rejected = [
-      // 長辺が 800px を超える
-      createJpeg(801, 600),
+      // 一辺が 800px を超える
+      createJpeg(801, 801),
+      // 正方形ではない
+      createJpeg(800, 533),
       // 位置情報などを含みうる Exif を持つ
-      createJpeg(400, 300, { exif: true }),
+      createJpeg(400, 400, { exif: true }),
       // JPEG ではない（スクリプトが動かず PNG のまま届いた）
       new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     ];

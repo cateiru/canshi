@@ -1,9 +1,27 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { createPng } from "../src/features/media/testing/createPng";
 import { fillAndKeep } from "./helpers";
 
 function png(color: [number, number, number, number]) {
-  return Buffer.from(createPng(300, 300, () => color));
+  // 正方形に切り抜かれることを確かめるため横長にする
+  return Buffer.from(createPng(400, 300, () => color));
+}
+
+/** 商品画像を選び、切り抜きのモーダルで決定する */
+async function chooseProductImage(
+  page: Page,
+  name: string,
+  color: [number, number, number, number],
+) {
+  await page.getByLabel("商品画像").setInputFiles({
+    name,
+    mimeType: "image/png",
+    buffer: png(color),
+  });
+  const dialog = page.getByRole("dialog", { name: "商品画像の範囲を選ぶ" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "この範囲で決定する" }).click();
+  await expect(dialog).toHaveCount(0);
 }
 
 // ごはん商品に画像を 1 枚登録・差し替え・削除でき、ごはん記録フォーム・プリセットで商品画像が表示されることを検証する
@@ -14,12 +32,9 @@ test("ごはん商品の画像を登録・差し替え・削除できる", async
   await fillAndKeep(page.getByLabel("商品名"), productName);
   await fillAndKeep(page.getByLabel("カロリー（kcal/100g）"), "380");
   await fillAndKeep(page.getByLabel("内容量（g）"), "1500");
-  await page.getByLabel("商品画像").setInputFiles({
-    name: "package-1.png",
-    mimeType: "image/png",
-    buffer: png([220, 120, 40, 255]),
-  });
-  await expect(page.getByRole("img", { name: "package-1.png" })).toBeVisible();
+  await chooseProductImage(page, "package-1.png", [220, 120, 40, 255]);
+  // 切り抜いた画像は JPEG になる
+  await expect(page.getByRole("img", { name: "package-1.jpg" })).toBeVisible();
   await page.getByRole("button", { name: "登録する", exact: true }).click();
   await expect(page).toHaveURL(/food-products$/);
 
@@ -69,12 +84,8 @@ test("ごはん商品の画像を登録・差し替え・削除できる", async
     .getByRole("article", { name: productName })
     .getByRole("link", { name: "編集する" })
     .click();
-  await page.getByLabel("商品画像").setInputFiles({
-    name: "package-2.png",
-    mimeType: "image/png",
-    buffer: png([40, 120, 220, 255]),
-  });
-  await expect(page.getByRole("img", { name: "package-2.png" })).toBeVisible();
+  await chooseProductImage(page, "package-2.png", [40, 120, 220, 255]);
+  await expect(page.getByRole("img", { name: "package-2.jpg" })).toBeVisible();
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page).toHaveURL(/food-products$/);
   // 保存後は一覧へ戻り（router.back）、キャッシュされた一覧を表示してから

@@ -305,8 +305,8 @@ describe("家のメンバーの追加・削除", () => {
 });
 
 describe("共通のごはん商品", () => {
-  // ブラウザで縮小した形の JPEG（長辺 800px 以下・メタデータなし）
-  const JPEG_BYTES = createJpeg(800, 533);
+  // ブラウザで切り抜いた形の JPEG（一辺 800px 以下の正方形・メタデータなし）
+  const JPEG_BYTES = createJpeg(800, 800);
 
   function productForm(values: Record<string, string | string[]> = {}) {
     const form = new FormData();
@@ -552,10 +552,12 @@ describe("共通のごはん商品", () => {
     expect(await listProducts()).toEqual([]);
   });
 
-  it("ブラウザで縮小されずに届いた画像・画像ではないファイルは登録せず、R2 にも置かない", async () => {
+  it("ブラウザで切り抜かれずに届いた画像・画像ではないファイルは登録せず、R2 にも置かない", async () => {
     const files = [
       // スクリプトが動かず、位置情報などの Exif を持ったまま届いた写真
       new File([createJpeg(4000, 3000, { exif: true })], "photo.jpg"),
+      // 正方形ではない
+      new File([createJpeg(800, 533)], "wide.jpg"),
       new File(["not an image"], "note.txt"),
     ];
     for (const file of files) {
@@ -564,7 +566,7 @@ describe("共通のごはん商品", () => {
       const response = await postMultipart("/food-products", form);
       expect(response.status).toBe(400);
       expect(await response.text()).toContain(
-        "画像をブラウザで縮小できませんでした",
+        "画像をブラウザで正方形に切り抜けませんでした",
       );
     }
     expect(await listProducts()).toEqual([]);
@@ -580,7 +582,7 @@ describe("共通のごはん商品", () => {
     expect(editHtml).toContain("今の画像を削除する");
 
     const form = productForm({ name: "かつお味 カリカリ", textureType: "wet" });
-    const replacement = createJpeg(600, 800);
+    const replacement = createJpeg(600, 600);
     form.append("image", new File([replacement], "photo2.jpg"));
     const response = await postMultipart(`/food-products/${id}`, form);
     expect(response.status).toBe(303);
@@ -642,7 +644,7 @@ describe("共通のごはん商品", () => {
     const larger = productForm();
     larger.append(
       "image",
-      new File([createJpeg(800, 533, { padding: 100 })], "large.jpg"),
+      new File([createJpeg(800, 800, { padding: 100 })], "large.jpg"),
     );
     expect((await postMultipart(`/food-products/${id}`, larger)).status).toBe(
       507,

@@ -214,6 +214,8 @@ export function FoodProductForm({
         controller={media}
         label="商品画像"
         single
+        cropSquare
+        description="選んだ画像は正方形に切り抜いて保存します。"
         isDisabled={isPending}
       />
 
