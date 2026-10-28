@@ -466,6 +466,7 @@ for (const { label, theme, contrast } of [
     });
 
     // 猫の年齢・お迎えからの期間は実行日時から計算されるため、その部分だけ除外する
+    // biome-ignore lint/correctness/usePlaywrightValidDescribeCallback: スナップショットのファイル名（titlePath から作る）を変えずに test.use を適用するため、タイトルなしの describe にする
     test.describe(() => {
       test.use({ ignoreSelectors: ['[class*="details"] dd'] });
 
