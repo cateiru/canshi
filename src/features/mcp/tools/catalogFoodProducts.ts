@@ -194,7 +194,9 @@ function prepareImage(
 }
 
 /**
- * 商品の画像を差し替える。失敗したら AI に返すメッセージ（商品が見つからないときも含む）
+ * 商品の画像を差し替える。失敗したら AI に返すメッセージ（商品が見つからないときも含む）。
+ * 商品を保存した後に呼ぶため、R2・D1 の通信エラーなどの想定外の失敗も投げ直さずにメッセージにする
+ * （投げ直すと、保存済みの商品の ID を返せず、AI が追加をやり直して商品が重複する）
  */
 async function saveImage(
   ctx: McpToolContext,
@@ -209,7 +211,8 @@ async function saveImage(
     if (error instanceof MediaUploadError) {
       return `画像を保存できませんでした。${error.message}`;
     }
-    throw error;
+    console.error("共通のごはん商品の画像を保存できませんでした", error);
+    return "画像を保存できませんでした。時間をおいて、update_catalog_food_product で画像だけをもう一度指定してください";
   }
   return null;
 }

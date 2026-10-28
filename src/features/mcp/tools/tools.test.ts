@@ -1031,6 +1031,42 @@ describe("共通のごはん商品", () => {
     );
   });
 
+  it("画像の保存が想定外のエラーで失敗しても、保存した商品の ID を返す", async () => {
+    await makeAdmin();
+    await allow({
+      catalogOperations: [
+        "catalogFoodProduct:create",
+        "catalogFoodProduct:update",
+      ],
+    });
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    replaceCatalogFoodProductImage.mockRejectedValue(new Error("R2 の障害"));
+
+    const created = await call("create_catalog_food_product", {
+      ...product,
+      image: PNG_BASE64,
+    });
+    const [row] = await db.select().from(catalogFoodProducts);
+    expect(created.value).toEqual({
+      id: row.id,
+      imageError: expect.stringContaining("画像を保存できませんでした"),
+    });
+    expect(
+      (
+        await call("update_catalog_food_product", {
+          id: row.id,
+          image: PNG_BASE64,
+        })
+      ).error,
+    ).toContain("商品は保存しましたが、画像を保存できませんでした");
+    expect(consoleError).toHaveBeenCalled();
+
+    replaceCatalogFoodProductImage.mockResolvedValue(true);
+    consoleError.mockRestore();
+  });
+
   it("画像でないデータは、商品を保存する前に断る", async () => {
     await makeAdmin();
     await allow({
