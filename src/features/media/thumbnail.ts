@@ -41,7 +41,8 @@ export type ThumbnailResult = {
   sourceHeight: number;
 };
 
-function ensurePhoton() {
+/** photon を初期化する。共通のごはん商品の画像の加工（`catalog-food-products/image.ts`）でも使う */
+export function ensurePhoton() {
   if (!initPhoton.initialized) {
     initPhoton.sync({ module: photonWasm });
   }
@@ -51,7 +52,7 @@ function ensurePhoton() {
  * EXIF Orientation を画素に適用して正位置にする。
  * 戻り値が入力と別インスタンスの場合、入力はこの関数内で解放済み
  */
-function applyOrientation(
+export function applyOrientation(
   image: PhotonImage,
   orientation: ExifOrientation,
 ): PhotonImage {

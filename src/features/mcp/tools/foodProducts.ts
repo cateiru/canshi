@@ -16,8 +16,6 @@ import {
   updateFoodProduct,
 } from "@/features/food-products/mutations";
 import { foodProductFormSchema } from "@/features/food-products/schema";
-import { DEFAULT_MEDIA_LIMITS } from "@/features/media/limits";
-import { SNIFF_HEAD_BYTES, sniffMediaType } from "@/features/media/mimeSniff";
 import {
   deleteMediaAssetRows,
   MediaUploadError,
@@ -41,6 +39,11 @@ import {
   resolveHouseholdOperation,
   resolvePermissions,
 } from "./context";
+import {
+  decodeImageBase64,
+  INVALID_IMAGE_ERROR,
+  MAX_IMAGE_BASE64_LENGTH,
+} from "./imageArgs";
 
 const PRODUCT_DESCRIPTION =
   "kcalPer100g（100g あたりのカロリー）と packageAmountG（内容量、g）は正の数。" +
@@ -50,10 +53,6 @@ const PRODUCT_DESCRIPTION =
   `lifeStages は対象の猫（${FOOD_PRODUCT_LIFE_STAGES.join("・")}。kitten=子猫、adult=成猫、` +
   "senior=シニア、care=療法食などのケア）で、複数を指定できる。" +
   "targetBreed は対象の猫種（未指定ならすべての猫種向け）。";
-
-/** base64 の文字数の上限。画像の上限（既定 10MB）を base64 にした長さ */
-const MAX_IMAGE_BASE64_LENGTH =
-  Math.ceil(DEFAULT_MEDIA_LIMITS.maxImageBytes / 3) * 4 + 100;
 
 const IMAGE_DESCRIPTION =
   "商品の画像（JPEG・PNG・WebP・GIF）を base64 で指定する（data URL の形式も可）。" +
@@ -130,28 +129,6 @@ function formArgs(args: Record<string, unknown>) {
   return rest;
 }
 
-/** base64（data URL の形式も可）の画像を読む。画像でなければ null */
-export function decodeImageBase64(value: string): Blob | null {
-  const base64 = value.replace(/^data:[^,]*;base64,/, "").replace(/\s/g, "");
-  let binary: string;
-  try {
-    binary = atob(base64);
-  } catch {
-    return null;
-  }
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index++) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  if (sniffMediaType(bytes.subarray(0, SNIFF_HEAD_BYTES))?.kind !== "image") {
-    return null;
-  }
-  return new Blob([bytes]);
-}
-
-const INVALID_IMAGE_ERROR =
-  "image が画像（JPEG・PNG・WebP・GIF）の base64 ではありません";
-
 /**
  * 商品の画像を保存し、それまでの画像を消す（商品の画像は 1 枚）。
  * 失敗したら AI に返すメッセージ
@@ -159,13 +136,13 @@ const INVALID_IMAGE_ERROR =
 async function replaceFoodProductImage(
   ctx: McpToolContext,
   productId: string,
-  image: Blob,
+  image: Uint8Array<ArrayBuffer>,
 ): Promise<string | null> {
   let asset: { id: string };
   try {
     asset = await storeMediaAsset(
       {
-        file: image,
+        file: new Blob([image]),
         recordType: FOOD_PRODUCT_MEDIA_TYPE,
         recordId: productId,
         catId: null,
