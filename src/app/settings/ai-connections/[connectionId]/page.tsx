@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TbEye } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
-import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
 import { updateMcpPermissionsAction } from "@/features/mcp/actions";
+import { getMcpClientIcon } from "@/features/mcp/clientIcons";
 import { getUserMcpConnection } from "@/features/mcp/connections";
 import { formatRedirectUri } from "@/features/mcp/consent";
 import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
@@ -66,7 +66,7 @@ export default async function AiConnectionPage({
       />
 
       <header className={styles.header}>
-        <RecordPageHeading icon={AiConnectionIcon}>
+        <RecordPageHeading icon={getMcpClientIcon(connection.redirectUri)}>
           {clientName}
         </RecordPageHeading>
         <p className={styles.description}>
