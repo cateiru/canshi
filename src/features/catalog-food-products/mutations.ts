@@ -15,7 +15,7 @@ import type { CatalogFoodProductInput } from "./schema";
 
 /*
  * 共通のごはん商品の保存。AI との接続（MCP）から使う（管理画面は `packages/admin` で別に書く）。
- * admin のユーザーであることは呼び出し元で確かめる。MCP は Durable Object の中で動き
+ * admin のユーザーであることは呼び出し元で確かめる。MCP は Next.js（OpenNext）の外で動き
  * `getCloudflareContext()` を使えないため、D1・R2 は引数で受け取る
  */
 

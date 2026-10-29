@@ -18,7 +18,7 @@ import { insertExpenseCats, insertExpenseHospitalVisits } from "./storage";
 
 /*
  * 支出記録の保存。画面（`./actions.ts`）と AI との接続（MCP）の両方から使う。
- * 支出の家を参照できるかは呼び出し側で確かめる。MCP は Durable Object の中で動き
+ * 支出の家を参照できるかは呼び出し側で確かめる。MCP は Next.js（OpenNext）の外で動き
  * `getCloudflareContext()` を使えないため、D1 は引数で受け取る
  */
 

@@ -1,5 +1,5 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { McpAgent } from "agents/mcp";
+import { McpServer } from "@modelcontextprotocol/server";
+import { createMcpHandler } from "agents/mcp/server";
 import { z } from "zod";
 import { getUserById } from "@/features/auth/users";
 import {
@@ -35,243 +35,259 @@ const BIRTH_DATE_PRECISION_DESCRIPTION =
   "day=年月日すべて）で、year・month の場合 birthDate の不明な月・日は 1月・1日で補完されている。";
 
 /**
+ * `OAuthProvider` の `apiHandler` に渡す、MCP サーバー（`route`、`/mcp`）の HTTP ハンドラを作る。
+ *
+ * MCP の 2026-07-28 版の仕様（セッションを持たない）に沿って、リクエストごとに
+ * `createCanshiMcpServer()` で MCP サーバーを作り直して応答する。`initialize` で始める
+ * それより前の版（2025-11-25 など）のクライアントにも、同じくリクエストごとに作り直した
+ * サーバーで、セッションを持たずに応答する（`agents` の `createMcpHandler()`）。
+ * ユーザーと接続は、リクエストごとの `ctx.props`（`./clientId.ts` の `withMcpClientId` が
+ * 接続の ID を入れたもの）から求める
+ */
+export function createCanshiMcpHandler(route: string) {
+  return {
+    fetch(request, env, ctx) {
+      const props = ctx.props as McpProps | undefined;
+      return createMcpHandler(() => createCanshiMcpServer(env, props), {
+        route,
+      }).fetch(request);
+    },
+  } satisfies { fetch: ExportedHandlerFetchHandler<Env> };
+}
+
+/**
+ * ツールを呼んだユーザーの ID と、接続（OAuth のクライアント）の ID。読み取りの範囲は
+ * 接続ごとに設定する。ユーザー ID を持たないトークンや、削除されたユーザーのトークン、
+ * 接続を求められなかったリクエスト（`./clientId.ts`）では、ツールの結果として返す
+ * エラーメッセージを返す。接続が分からないまま範囲を決めると、制限した範囲を
+ * 読み取れてしまうため、読み取りを断る
+ */
+async function resolveConnection(
+  env: Env,
+  props: McpProps | undefined,
+): Promise<{ userId: string; clientId: string } | { error: string }> {
+  const userId = getUserIdFromProps(props);
+  if (!userId) {
+    return { error: MISSING_USER_ERROR_MESSAGE };
+  }
+  const clientId = getClientIdFromProps(props);
+  if (!clientId) {
+    return { error: MISSING_CLIENT_ERROR_MESSAGE };
+  }
+  if (!(await getUserById(userId, env.DB))) {
+    return {
+      error: "ユーザーが見つかりません。MCP に接続し直してください",
+    };
+  }
+  return { userId, clientId };
+}
+
+/**
+ * ユーザーが参照でき、この接続からの読み取りも許可している猫と、その猫について
+ * 読み取れる記録の種類を返す。どちらかを満たさなければ null
+ */
+async function resolveAllowedCat(
+  env: Env,
+  connection: { userId: string; clientId: string },
+  catId: string,
+) {
+  const [cat, permissions] = await Promise.all([
+    getCatForUser(connection.userId, catId, env.DB),
+    getMcpPermissions(connection.userId, connection.clientId, env.DB),
+  ]);
+  if (!cat || !isCatAllowedForMcp(permissions, cat)) {
+    return null;
+  }
+  return { cat, recordTypes: allowedMcpRecordTypes(permissions, cat.id) };
+}
+
+/**
  * CANSHI の MCP サーバー本体（`/mcp`）。猫のプロフィール・タイムラインを読み取るツールと、
  * 記録の追加・編集、ごはん商品・プリセット・共通のごはん商品を扱うツール（`./tools/`）を公開する
- * （docs/plans/32_mcp_oidc_overview.md 参照）。
+ * （docs/plans/32_mcp_oidc_overview.md 参照）。リクエストごとに作る（`createCanshiMcpHandler`）。
  *
- * 各ツールはトークンに保存した CANSHI のユーザー ID（`this.props.userId`、
+ * 各ツールはトークンに保存した CANSHI のユーザー ID（`props.userId`、
  * `/oauth/authorize` で同意したときにログインしていたユーザー）の家の猫のうち、
- * そのユーザーがこの接続（`this.props.clientId`）に読み取りを許可した家・猫・記録の種類
+ * そのユーザーがこの接続（`props.clientId`）に読み取りを許可した家・猫・記録の種類
  * （`./permissions.ts`）だけを参照する。
  * 許可していない猫は、存在しない猫と区別しない。記録の書き込みやごはん商品・プリセットの
  * 操作は、接続に許可した操作だけを、読み取りを許可した範囲の中で行える。共通のごはん商品は、
  * admin のユーザーが接続に許可した操作だけを行える。
- * Durable Object の中で動くため、D1 は `getCloudflareContext()` ではなく
- * `this.env.DB` を明示的に渡す
+ * Next.js（OpenNext）の外で動くため、D1 は `getCloudflareContext()` ではなく
+ * `env.DB` を明示的に渡す
  */
-export class CanshiMcp extends McpAgent<Env, Record<string, never>, McpProps> {
-  server = new McpServer({ name: "CANSHI MCP Server", version: "0.1.0" });
+export function createCanshiMcpServer(
+  env: Env,
+  props: McpProps | undefined,
+): McpServer {
+  const server = new McpServer({
+    name: "CANSHI MCP Server",
+    version: "0.1.0",
+  });
+  const ctx: McpToolContext = {
+    env,
+    resolveConnection: () => resolveConnection(env, props),
+  };
 
-  /**
-   * ツールを呼んだユーザーの ID と、接続（OAuth のクライアント）の ID。読み取りの範囲は
-   * 接続ごとに設定する。ユーザー ID を持たないトークンや、削除されたユーザーのトークン、
-   * 接続を求められなかったリクエスト（`./clientId.ts`）では、ツールの結果として返す
-   * エラーメッセージを返す。接続が分からないまま範囲を決めると、制限した範囲を
-   * 読み取れてしまうため、読み取りを断る
-   */
-  private async resolveConnection(): Promise<
-    { userId: string; clientId: string } | { error: string }
-  > {
-    const userId = getUserIdFromProps(this.props);
-    if (!userId) {
-      return { error: MISSING_USER_ERROR_MESSAGE };
-    }
-    const clientId = getClientIdFromProps(this.props);
-    if (!clientId) {
-      return { error: MISSING_CLIENT_ERROR_MESSAGE };
-    }
-    if (!(await getUserById(userId, this.env.DB))) {
-      return {
-        error: "ユーザーが見つかりません。MCP に接続し直してください",
-      };
-    }
-    return { userId, clientId };
-  }
+  server.registerTool(
+    "list_households",
+    {
+      title: "家の一覧を取得",
+      description:
+        "ユーザーが所属している家の一覧を取得する。ごはん商品・プリセットは家ごとに登録する。" +
+        "operations は、その家でこの接続に許可されているごはん商品・プリセットの操作" +
+        "（foodProduct:read・foodProduct:create・foodProduct:update・feedingPreset:read・" +
+        "feedingPreset:create・feedingPreset:update・feedingPreset:delete）。" +
+        "ユーザーが読み取りを許可していない家は含まれない。",
+      annotations: { readOnlyHint: true },
+    },
+    async () => {
+      const connection = await ctx.resolveConnection();
+      if ("error" in connection) {
+        return errorResult(connection.error);
+      }
+      const [households, permissions] = await Promise.all([
+        listHouseholdsForUser(connection.userId, env.DB),
+        getMcpPermissions(connection.userId, connection.clientId, env.DB),
+      ]);
+      return jsonResult({
+        households: households
+          .filter((household) =>
+            isHouseholdAllowedForMcp(permissions, household.id),
+          )
+          .map((household) => ({
+            id: household.id,
+            name: household.name,
+            operations: permissions.householdOperations[household.id] ?? [],
+          })),
+      });
+    },
+  );
 
-  /**
-   * ユーザーが参照でき、この接続からの読み取りも許可している猫と、その猫について
-   * 読み取れる記録の種類を返す。どちらかを満たさなければ null
-   */
-  private async resolveAllowedCat(
-    connection: { userId: string; clientId: string },
-    catId: string,
-  ) {
-    const [cat, permissions] = await Promise.all([
-      getCatForUser(connection.userId, catId, this.env.DB),
-      getMcpPermissions(connection.userId, connection.clientId, this.env.DB),
-    ]);
-    if (!cat || !isCatAllowedForMcp(permissions, cat)) {
-      return null;
-    }
-    return { cat, recordTypes: allowedMcpRecordTypes(permissions, cat.id) };
-  }
+  server.registerTool(
+    "list_cats",
+    {
+      title: "猫の一覧を取得",
+      description:
+        "登録されている猫のプロフィール一覧を取得する。" +
+        "ユーザーが読み取りを許可していない猫は含まれない。" +
+        BIRTH_DATE_PRECISION_DESCRIPTION,
+    },
+    async () => {
+      const connection = await ctx.resolveConnection();
+      if ("error" in connection) {
+        return errorResult(connection.error);
+      }
+      const [cats, permissions] = await Promise.all([
+        listCatsForUser(connection.userId, env.DB),
+        getMcpPermissions(connection.userId, connection.clientId, env.DB),
+      ]);
+      return jsonResult({
+        cats: cats
+          .filter((cat) => isCatAllowedForMcp(permissions, cat))
+          .map(toCatSummary),
+      });
+    },
+  );
 
-  async init() {
-    const ctx: McpToolContext = {
-      env: this.env,
-      resolveConnection: () => this.resolveConnection(),
-    };
-
-    this.server.registerTool(
-      "list_households",
-      {
-        title: "家の一覧を取得",
-        description:
-          "ユーザーが所属している家の一覧を取得する。ごはん商品・プリセットは家ごとに登録する。" +
-          "operations は、その家でこの接続に許可されているごはん商品・プリセットの操作" +
-          "（foodProduct:read・foodProduct:create・foodProduct:update・feedingPreset:read・" +
-          "feedingPreset:create・feedingPreset:update・feedingPreset:delete）。" +
-          "ユーザーが読み取りを許可していない家は含まれない。",
-        annotations: { readOnlyHint: true },
+  server.registerTool(
+    "get_cat_profile",
+    {
+      title: "猫のプロフィールを取得",
+      description:
+        "指定した ID の猫のプロフィールを1件取得する。" +
+        BIRTH_DATE_PRECISION_DESCRIPTION,
+      inputSchema: {
+        catId: z.string().describe("猫の ID（list_cats で取得できる）"),
       },
-      async () => {
-        const connection = await this.resolveConnection();
-        if ("error" in connection) {
-          return errorResult(connection.error);
-        }
-        const [households, permissions] = await Promise.all([
-          listHouseholdsForUser(connection.userId, this.env.DB),
-          getMcpPermissions(
-            connection.userId,
-            connection.clientId,
-            this.env.DB,
+    },
+    async ({ catId }) => {
+      const connection = await ctx.resolveConnection();
+      if ("error" in connection) {
+        return errorResult(connection.error);
+      }
+      const allowed = await resolveAllowedCat(env, connection, catId);
+      if (!allowed) {
+        return errorResult(`catId="${catId}" の猫が見つかりません`);
+      }
+      return jsonResult(toCatSummary(allowed.cat));
+    },
+  );
+
+  server.registerTool(
+    "list_timeline",
+    {
+      title: "猫のタイムラインを取得",
+      description:
+        "指定した猫の、指定した年月の記録（ごはん・うんち・体重・通院・投薬など）を" +
+        "発生日時の降順で取得する。" +
+        '猫の生年月日・お迎え日から求めた記念日も含む。誕生日（type="birthday"）は' +
+        "record.ageMonths に生まれてからの月数（0=生まれた日、12 の倍数=毎年の誕生日、" +
+        '1〜11=1歳未満の毎月の記念日）を、お迎え記念日（type="adoption"）は' +
+        "record.years にお迎えしてからの年数（0=お迎えした日）を持ち、" +
+        "同じ日の記録より先頭に並ぶ。" +
+        '体重記録（type="weight"）には猫の体重 catWeightKg に加え、' +
+        "BCS（ボディコンディションスコア）の bcs（1〜5 の 5 段階。1=痩せ、" +
+        "2=やや痩せ、3=理想体重、4=やや肥満、5=肥満。未評価は null）と" +
+        "そのラベル bcsLabel が含まれる。" +
+        'ごはん記録（type="feeding"）は record.mode で記録方法を表す。' +
+        'mode="strict"（厳格モード）は商品ごと（record.items）の与えた量 givenAmountG・' +
+        "残した量 leftoverAmountG をグラム単位で持ち、推定摂取量 estimatedIntakeG・" +
+        "推定カロリー estimatedKcal も計算済み。" +
+        'mode="approximate"（あいまいモード）はグラム単位の値と推定値がすべて null で、' +
+        "代わりに与えた量 givenAmountLevel（less=少なめ、normal=普通、more=多め）と" +
+        "残した量 leftoverLevel（none=完食、little=少し残し、most=ほとんど残し）を持つ。" +
+        "それぞれの日本語ラベルは modeLabel・givenAmountLevelLabel・leftoverLevelLabel に含まれる。" +
+        "ユーザーが読み取りを許可していない種類の記録は含まれない。",
+      inputSchema: {
+        catId: z.string().describe("猫の ID（list_cats で取得できる）"),
+        year: z.number().int().describe("年（例: 2026）"),
+        month: z.number().int().min(1).max(12).describe("月（1〜12）"),
+        date: z
+          .string()
+          .optional()
+          .describe(
+            "YYYY-MM-DD形式。指定すると月内のこの日の記録だけに絞り込む",
           ),
-        ]);
-        return jsonResult({
-          households: households
-            .filter((household) =>
-              isHouseholdAllowedForMcp(permissions, household.id),
-            )
-            .map((household) => ({
-              id: household.id,
-              name: household.name,
-              operations: permissions.householdOperations[household.id] ?? [],
-            })),
-        });
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe("ページ番号（1始まり、省略時は1）"),
       },
-    );
-
-    this.server.registerTool(
-      "list_cats",
-      {
-        title: "猫の一覧を取得",
-        description:
-          "登録されている猫のプロフィール一覧を取得する。" +
-          "ユーザーが読み取りを許可していない猫は含まれない。" +
-          BIRTH_DATE_PRECISION_DESCRIPTION,
-      },
-      async () => {
-        const connection = await this.resolveConnection();
-        if ("error" in connection) {
-          return errorResult(connection.error);
-        }
-        const [cats, permissions] = await Promise.all([
-          listCatsForUser(connection.userId, this.env.DB),
-          getMcpPermissions(
-            connection.userId,
-            connection.clientId,
-            this.env.DB,
-          ),
-        ]);
-        return jsonResult({
-          cats: cats
-            .filter((cat) => isCatAllowedForMcp(permissions, cat))
-            .map(toCatSummary),
-        });
-      },
-    );
-
-    this.server.registerTool(
-      "get_cat_profile",
-      {
-        title: "猫のプロフィールを取得",
-        description:
-          "指定した ID の猫のプロフィールを1件取得する。" +
-          BIRTH_DATE_PRECISION_DESCRIPTION,
-        inputSchema: {
-          catId: z.string().describe("猫の ID（list_cats で取得できる）"),
+    },
+    async ({ catId, year, month, date, page }) => {
+      const connection = await ctx.resolveConnection();
+      if ("error" in connection) {
+        return errorResult(connection.error);
+      }
+      // 別の家の猫・読み取りを許可していない猫・存在しない猫は区別しない
+      const allowed = await resolveAllowedCat(env, connection, catId);
+      if (!allowed) {
+        return errorResult(`catId="${catId}" の猫が見つかりません`);
+      }
+      const result = await listTimelineForMonth(
+        catId,
+        year,
+        month,
+        {
+          date,
+          page,
+          types: [...MCP_ALWAYS_ALLOWED_TIMELINE_TYPES, ...allowed.recordTypes],
         },
-      },
-      async ({ catId }) => {
-        const connection = await this.resolveConnection();
-        if ("error" in connection) {
-          return errorResult(connection.error);
-        }
-        const allowed = await this.resolveAllowedCat(connection, catId);
-        if (!allowed) {
-          return errorResult(`catId="${catId}" の猫が見つかりません`);
-        }
-        return jsonResult(toCatSummary(allowed.cat));
-      },
-    );
+        env.DB,
+      );
+      return jsonResult({
+        entries: result.entries.map(toTimelineEntrySummary),
+        hasMore: result.hasMore,
+      });
+    },
+  );
 
-    this.server.registerTool(
-      "list_timeline",
-      {
-        title: "猫のタイムラインを取得",
-        description:
-          "指定した猫の、指定した年月の記録（ごはん・うんち・体重・通院・投薬など）を" +
-          "発生日時の降順で取得する。" +
-          '猫の生年月日・お迎え日から求めた記念日も含む。誕生日（type="birthday"）は' +
-          "record.ageMonths に生まれてからの月数（0=生まれた日、12 の倍数=毎年の誕生日、" +
-          '1〜11=1歳未満の毎月の記念日）を、お迎え記念日（type="adoption"）は' +
-          "record.years にお迎えしてからの年数（0=お迎えした日）を持ち、" +
-          "同じ日の記録より先頭に並ぶ。" +
-          '体重記録（type="weight"）には猫の体重 catWeightKg に加え、' +
-          "BCS（ボディコンディションスコア）の bcs（1〜5 の 5 段階。1=痩せ、" +
-          "2=やや痩せ、3=理想体重、4=やや肥満、5=肥満。未評価は null）と" +
-          "そのラベル bcsLabel が含まれる。" +
-          'ごはん記録（type="feeding"）は record.mode で記録方法を表す。' +
-          'mode="strict"（厳格モード）は商品ごと（record.items）の与えた量 givenAmountG・' +
-          "残した量 leftoverAmountG をグラム単位で持ち、推定摂取量 estimatedIntakeG・" +
-          "推定カロリー estimatedKcal も計算済み。" +
-          'mode="approximate"（あいまいモード）はグラム単位の値と推定値がすべて null で、' +
-          "代わりに与えた量 givenAmountLevel（less=少なめ、normal=普通、more=多め）と" +
-          "残した量 leftoverLevel（none=完食、little=少し残し、most=ほとんど残し）を持つ。" +
-          "それぞれの日本語ラベルは modeLabel・givenAmountLevelLabel・leftoverLevelLabel に含まれる。" +
-          "ユーザーが読み取りを許可していない種類の記録は含まれない。",
-        inputSchema: {
-          catId: z.string().describe("猫の ID（list_cats で取得できる）"),
-          year: z.number().int().describe("年（例: 2026）"),
-          month: z.number().int().min(1).max(12).describe("月（1〜12）"),
-          date: z
-            .string()
-            .optional()
-            .describe(
-              "YYYY-MM-DD形式。指定すると月内のこの日の記録だけに絞り込む",
-            ),
-          page: z
-            .number()
-            .int()
-            .min(1)
-            .optional()
-            .describe("ページ番号（1始まり、省略時は1）"),
-        },
-      },
-      async ({ catId, year, month, date, page }) => {
-        const connection = await this.resolveConnection();
-        if ("error" in connection) {
-          return errorResult(connection.error);
-        }
-        // 別の家の猫・読み取りを許可していない猫・存在しない猫は区別しない
-        const allowed = await this.resolveAllowedCat(connection, catId);
-        if (!allowed) {
-          return errorResult(`catId="${catId}" の猫が見つかりません`);
-        }
-        const result = await listTimelineForMonth(
-          catId,
-          year,
-          month,
-          {
-            date,
-            page,
-            types: [
-              ...MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
-              ...allowed.recordTypes,
-            ],
-          },
-          this.env.DB,
-        );
-        return jsonResult({
-          entries: result.entries.map(toTimelineEntrySummary),
-          hasMore: result.hasMore,
-        });
-      },
-    );
-
-    registerRecordTools(this.server, ctx);
-    registerFoodProductTools(this.server, ctx);
-    registerFeedingPresetTools(this.server, ctx);
-    registerCatalogFoodProductTools(this.server, ctx);
-  }
+  registerRecordTools(server, ctx);
+  registerFoodProductTools(server, ctx);
+  registerFeedingPresetTools(server, ctx);
+  registerCatalogFoodProductTools(server, ctx);
+  return server;
 }

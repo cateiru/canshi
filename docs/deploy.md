@@ -25,7 +25,6 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
   - ISR・SSG のキャッシュ用バケット（メディア用とは分離する。`docs/idea/index.md` の方針）
 - Cloudflare Workers 全体の Access 設定と許可ポリシー（プレビュー URL の保護に使う）
 - Cloudflare Workflows（定期通知が実装される第2段階以降で必要）
-- Durable Objects（MCP のセッション用。「MCP サーバー」節）
 
 ## 環境変数・シークレット
 
@@ -312,11 +311,15 @@ CANSHI のデータを参照できる MCP サーバーを、メインアプリ�
   `@cloudflare/workers-oauth-provider` は Workers KV（`env.OAUTH_KV`）に保存する作りのため、
   KV と同じ操作を D1 で実装したもの（`src/features/mcp/d1KvStore.ts`）を `OAUTH_KV` として渡している。
   期限切れの行は定期実行（15 分ごとの `scheduled`）で削除する
-- MCP のセッション状態は Durable Object（`CanshiMcp`、バインディング名 `MCP_OBJECT`）に保存する。
-  Durable Object のマイグレーション（`wrangler.toml` の `[[migrations]]`）は `wrangler deploy`
-  でだけ適用され、Workers Builds のブランチプレビュー（`wrangler versions upload`）では
-  適用できない。新しいマイグレーションを含む PR のプレビューのビルドは失敗するが、
-  マージ後の本番デプロイで適用される
+- MCP サーバーは MCP の 2026-07-28 版の仕様に沿ってセッションを持たず、リクエストごとに
+  作り直して応答する（`src/features/mcp/agent.ts`、MCP の SDK v2 と `agents` の
+  `createMcpHandler()`）。2025-11-25 版など `initialize` で始めるそれより前の版のクライアントにも、
+  同じくセッションを持たずに応答する
+- 以前はセッション状態を Durable Object（`CanshiMcp`、バインディング名 `MCP_OBJECT`）に
+  保存していた。使わなくなったため、`wrangler.toml` の `[[migrations]]`（tag `v2`）で削除する。
+  Durable Object のマイグレーションは `wrangler deploy` でだけ適用され、Workers Builds の
+  ブランチプレビュー（`wrangler versions upload`）では適用できない。新しいマイグレーションを
+  含む PR のプレビューのビルドは失敗するが、マージ後の本番デプロイで適用される
 - メインアプリの本番ドメインは Access で保護していないため、`/mcp` などには Access のログイン画面を
   挟まずに到達できる。プレビュー URL は Access で保護しているため、プレビューでは MCP を使えない
 
