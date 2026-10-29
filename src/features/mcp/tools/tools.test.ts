@@ -32,7 +32,7 @@ import type { McpToolContext } from "./context";
 
 // `src/features/symptoms/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
 // D1 専用の `db.batch` は順番に実行するだけの簡易実装で補う。商品画像の保存（R2）は
-// このテストの対象外のため差し替える
+// このテストの対象外のため差し替える（共通のごはん商品の画像の加工は差し替えずに行う）
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
   getDb: () => db,
@@ -46,6 +46,18 @@ vi.mock("@/features/media/storage", () => ({
   deleteMediaAssetRows,
   MediaUploadError: class extends Error {},
 }));
+const { replaceCatalogFoodProductImage } = vi.hoisted(() => ({
+  replaceCatalogFoodProductImage: vi.fn(async () => true),
+}));
+vi.mock(
+  "@/features/catalog-food-products/mutations",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("@/features/catalog-food-products/mutations")
+    >()),
+    replaceCatalogFoodProductImage,
+  }),
+);
 
 const { registerRecordTools } = await import("./records");
 const { registerFoodProductTools } = await import("./foodProducts");
@@ -166,6 +178,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.clearAllMocks();
 });
 
 describe("記録の追加", () => {
@@ -975,6 +988,118 @@ describe("共通のごはん商品", () => {
         })
       ).error,
     ).toContain("検索キーワードは20件までです");
+  });
+
+  it("画像を正方形の JPEG にして登録・差し替える", async () => {
+    await makeAdmin();
+    await allow({
+      catalogOperations: [
+        "catalogFoodProduct:create",
+        "catalogFoodProduct:update",
+      ],
+    });
+
+    const created = await call("create_catalog_food_product", {
+      ...product,
+      image: `data:image/png;base64,${PNG_BASE64}`,
+    });
+    const [row] = await db.select().from(catalogFoodProducts);
+    expect(created.value).toEqual({ id: row.id });
+    expect(replaceCatalogFoodProductImage).toHaveBeenCalledWith(
+      row.id,
+      { bytes: expect.any(Uint8Array), size: 1 },
+      expect.anything(),
+    );
+
+    const { MediaUploadError } = await import("@/features/media/storage");
+    replaceCatalogFoodProductImage.mockRejectedValueOnce(
+      new MediaUploadError("保存容量の上限を超えるためアップロードできません"),
+    );
+    expect(
+      (
+        await call("update_catalog_food_product", {
+          id: row.id,
+          name: "まぐろ（新）",
+          image: PNG_BASE64,
+        })
+      ).error,
+    ).toBe(
+      "商品は保存しましたが、画像を保存できませんでした。保存容量の上限を超えるためアップロードできません",
+    );
+    expect((await db.select().from(catalogFoodProducts))[0].name).toBe(
+      "まぐろ（新）",
+    );
+  });
+
+  it("画像の保存が想定外のエラーで失敗しても、保存した商品の ID を返す", async () => {
+    await makeAdmin();
+    await allow({
+      catalogOperations: [
+        "catalogFoodProduct:create",
+        "catalogFoodProduct:update",
+      ],
+    });
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    replaceCatalogFoodProductImage.mockRejectedValue(new Error("R2 の障害"));
+
+    const created = await call("create_catalog_food_product", {
+      ...product,
+      image: PNG_BASE64,
+    });
+    const [row] = await db.select().from(catalogFoodProducts);
+    expect(created.value).toEqual({
+      id: row.id,
+      imageError: expect.stringContaining("画像を保存できませんでした"),
+    });
+    expect(
+      (
+        await call("update_catalog_food_product", {
+          id: row.id,
+          image: PNG_BASE64,
+        })
+      ).error,
+    ).toContain("商品は保存しましたが、画像を保存できませんでした");
+    expect(consoleError).toHaveBeenCalled();
+
+    replaceCatalogFoodProductImage.mockResolvedValue(true);
+    consoleError.mockRestore();
+  });
+
+  it("画像でないデータは、商品を保存する前に断る", async () => {
+    await makeAdmin();
+    await allow({
+      catalogOperations: [
+        "catalogFoodProduct:create",
+        "catalogFoodProduct:update",
+      ],
+    });
+
+    expect(
+      (
+        await call("create_catalog_food_product", {
+          ...product,
+          image: btoa("not an image"),
+        })
+      ).error,
+    ).toContain("image が画像");
+    expect(await db.select().from(catalogFoodProducts)).toEqual([]);
+
+    const created = await call("create_catalog_food_product", product);
+    expect(
+      (
+        await call("update_catalog_food_product", {
+          id: created.value?.id,
+          name: "書き換え",
+          image: btoa("not an image"),
+        })
+      ).error,
+    ).toContain("image が画像");
+    expect((await db.select().from(catalogFoodProducts))[0].name).toBe(
+      "まぐろ",
+    );
+    expect(replaceCatalogFoodProductImage).not.toHaveBeenCalled();
   });
 
   it("許可した後に admin でなくなると、編集できなくなる", async () => {

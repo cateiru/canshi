@@ -8,9 +8,15 @@ import {
   FOOD_PRODUCT_LIFE_STAGES,
 } from "@/db/schema";
 import { getUserById } from "@/features/auth/users";
+import {
+  CATALOG_IMAGE_MAX_EDGE,
+  type CatalogImage,
+  toCatalogImage,
+} from "@/features/catalog-food-products/image";
 import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "@/features/catalog-food-products/media";
 import {
   createCatalogFoodProduct,
+  replaceCatalogFoodProductImage,
   updateCatalogFoodProduct,
 } from "@/features/catalog-food-products/mutations";
 import { catalogPackageSizes } from "@/features/catalog-food-products/packageSizes";
@@ -26,6 +32,8 @@ import {
 } from "@/features/catalog-food-products/schema";
 import { parseCatalogSearchParams } from "@/features/catalog-food-products/search";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
+import { MediaUploadError } from "@/features/media/storage";
+import { MAX_DECODE_PIXELS } from "@/features/media/thumbnailSize";
 import {
   type FormValues,
   mergeFormValues,
@@ -44,6 +52,11 @@ import {
   operationNotAllowedMessage,
   resolvePermissions,
 } from "./context";
+import {
+  decodeImageBase64,
+  INVALID_IMAGE_ERROR,
+  MAX_IMAGE_BASE64_LENGTH,
+} from "./imageArgs";
 
 const NOT_ADMIN_ERROR =
   "共通のごはん商品は、CANSHI の管理者のユーザーだけが扱えます";
@@ -63,8 +76,15 @@ const PRODUCT_DESCRIPTION =
   `searchKeywords は検索キーワード（${MAX_CATALOG_SEARCH_KEYWORDS} 件まで、1 語 ${MAX_CATALOG_SEARCH_KEYWORD_LENGTH} 文字以内）で、` +
   "商品名・メーカー名とは別の呼び方（「CIAO ちゅ〜る」に対する「ちゅーる」「ちゃおちゅーる」など）を登録すると、" +
   "その呼び方の一部でも検索で見つかる。" +
-  "家に追加済みのごはん商品は内容を写したものなので、共通のごはん商品を編集しても変わらない。" +
-  "画像は CANSHI の管理画面から登録する。";
+  "家に追加済みのごはん商品は内容を写したものなので、共通のごはん商品を編集しても変わらない。";
+
+const IMAGE_DESCRIPTION =
+  "商品の画像（JPEG・PNG・WebP・GIF）を base64 で指定する（data URL の形式も可）。" +
+  "大きさ・縦横比は問わない。サーバーで画像の中央を正方形に切り抜き、" +
+  `一辺 ${CATALOG_IMAGE_MAX_EDGE}px 以下の JPEG にして保存する（透明な部分は白にする）。` +
+  "商品が中央に写った画像を選ぶ。" +
+  `画素数は ${MAX_DECODE_PIXELS / 1_000_000} 百万画素以下にする（長辺 2000px 程度に縮小してから送る）。` +
+  "指定すると今の画像を置き換える。";
 
 const productFields = {
   name: z.string().optional().describe("商品名（100文字以内）"),
@@ -103,6 +123,11 @@ const productFields = {
     .describe(
       "検索キーワード。編集で指定すると、キーワードをすべて置き換える（空配列で未設定にする）",
     ),
+  image: z
+    .string()
+    .max(MAX_IMAGE_BASE64_LENGTH)
+    .optional()
+    .describe(IMAGE_DESCRIPTION),
 };
 
 function toCatalogFoodProductSummary(
@@ -140,8 +165,56 @@ function toFormValues(product: CatalogFoodProduct): FormValues {
 
 /** フォームの値に含めない引数を除く */
 function formArgs(args: Record<string, unknown>) {
-  const { id: _id, ...rest } = args;
+  const { id: _id, image: _image, ...rest } = args;
   return rest;
+}
+
+/**
+ * 引数の画像を読み、共通のごはん商品の画像の形（正方形の JPEG）にする。商品を保存する前に
+ * 呼び、画像でない・読み込めないときは商品を保存せずに断る。失敗したら AI に返すメッセージ
+ */
+function prepareImage(
+  value: string | undefined,
+): { image: CatalogImage | null } | { error: string } {
+  if (value === undefined) {
+    return { image: null };
+  }
+  const bytes = decodeImageBase64(value);
+  if (!bytes) {
+    return { error: INVALID_IMAGE_ERROR };
+  }
+  try {
+    return { image: toCatalogImage(bytes) };
+  } catch (error) {
+    if (error instanceof MediaUploadError) {
+      return { error: `画像を保存できませんでした。${error.message}` };
+    }
+    throw error;
+  }
+}
+
+/**
+ * 商品の画像を差し替える。失敗したら AI に返すメッセージ（商品が見つからないときも含む）。
+ * 商品を保存した後に呼ぶため、R2・D1 の通信エラーなどの想定外の失敗も投げ直さずにメッセージにする
+ * （投げ直すと、保存済みの商品の ID を返せず、AI が追加をやり直して商品が重複する）
+ */
+async function saveImage(
+  ctx: McpToolContext,
+  productId: string,
+  image: CatalogImage,
+): Promise<string | null> {
+  try {
+    if (!(await replaceCatalogFoodProductImage(productId, image, ctx.env))) {
+      return `画像を保存できませんでした。id="${productId}" の共通のごはん商品が見つかりません`;
+    }
+  } catch (error) {
+    if (error instanceof MediaUploadError) {
+      return `画像を保存できませんでした。${error.message}`;
+    }
+    console.error("共通のごはん商品の画像を保存できませんでした", error);
+    return "画像を保存できませんでした。時間をおいて、update_catalog_food_product で画像だけをもう一度指定してください";
+  }
+  return null;
 }
 
 /**
@@ -172,7 +245,7 @@ async function resolveCatalogOperation(
 /**
  * 共通のごはん商品（`catalog_food_products`）の読み取り・追加・編集のツールを登録する。
  * 扱えるのは admin のユーザーで、接続にその操作を許可しているときに限る。
- * 画像の登録と、商品の削除は管理画面だけで行う
+ * 画像は追加・編集で登録・差し替えできる。画像だけの削除と、商品の削除は管理画面だけで行う
  */
 export function registerCatalogFoodProductTools(
   server: McpServer,
@@ -258,8 +331,15 @@ export function registerCatalogFoodProductTools(
       if ("error" in parsed) {
         return errorResult(parsed.error);
       }
+      const prepared = prepareImage(args.image);
+      if ("error" in prepared) {
+        return errorResult(prepared.error);
+      }
       const id = await createCatalogFoodProduct(parsed.data, ctx.env.DB);
-      return jsonResult({ id });
+      const imageError = prepared.image
+        ? await saveImage(ctx, id, prepared.image)
+        : null;
+      return jsonResult(imageError ? { id, imageError } : { id });
     },
   );
 
@@ -309,8 +389,18 @@ export function registerCatalogFoodProductTools(
       if ("error" in parsed) {
         return errorResult(parsed.error);
       }
+      const prepared = prepareImage(args.image);
+      if ("error" in prepared) {
+        return errorResult(prepared.error);
+      }
       if (!(await updateCatalogFoodProduct(args.id, parsed.data, ctx.env.DB))) {
         return errorResult(notFound);
+      }
+      if (prepared.image) {
+        const imageError = await saveImage(ctx, args.id, prepared.image);
+        if (imageError) {
+          return errorResult(`商品は保存しましたが、${imageError}`);
+        }
       }
       return jsonResult({ id: args.id });
     },
