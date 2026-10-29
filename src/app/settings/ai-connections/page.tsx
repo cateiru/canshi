@@ -3,6 +3,7 @@ import { TbEye, TbPlugConnected } from "react-icons/tb";
 import { Breadcrumb, ButtonLink, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
+import { getMcpClientIcon } from "@/features/mcp/clientIcons";
 import { listUserMcpConnections } from "@/features/mcp/connections";
 import { formatRedirectUri } from "@/features/mcp/consent";
 import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
@@ -84,6 +85,7 @@ export default async function AiConnectionsPage() {
             <ul className={styles.connections}>
               {connections.map((connection) => {
                 const clientName = connection.clientName ?? UNNAMED_CLIENT;
+                const ClientIcon = getMcpClientIcon(connection.redirectUri);
                 const connectedAtUtc = getNaiveUtcNow(connection.createdAt);
                 const connectedAt = formatDateTimeUtc(connectedAtUtc);
                 const lastUsedAt = connection.lastUsedAt
@@ -97,7 +99,7 @@ export default async function AiConnectionsPage() {
                     >
                       <div className={styles.app}>
                         <span className={styles.appIcon}>
-                          <TbPlugConnected size={28} aria-hidden="true" />
+                          <ClientIcon size={28} aria-hidden="true" />
                         </span>
                         <div className={styles.identity}>
                           <Heading level={3} size="lg">

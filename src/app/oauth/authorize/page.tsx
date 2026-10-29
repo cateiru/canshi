@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import {
-  TbAlertTriangle,
-  TbEye,
-  TbPlugConnected,
-  TbUser,
-} from "react-icons/tb";
+import { TbAlertTriangle, TbEye, TbUser } from "react-icons/tb";
 import { Alert, Button, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
+import { getMcpClientIcon } from "@/features/mcp/clientIcons";
 import {
   decodeMcpConsentRequest,
   formatRedirectUri,
@@ -52,6 +48,7 @@ export default async function AuthorizePage({
   const permissionTree = consent
     ? await getMcpPermissionTree(user.id, consent.clientId)
     : null;
+  const ClientIcon = getMcpClientIcon(consent?.redirectUri ?? null);
 
   return (
     <main className={styles.main}>
@@ -72,7 +69,7 @@ export default async function AuthorizePage({
           >
             <div className={styles.app}>
               <span className={styles.appIcon}>
-                <TbPlugConnected size={28} aria-hidden="true" />
+                <ClientIcon size={28} aria-hidden="true" />
               </span>
               <div className={styles.appIdentity}>
                 <p className={styles.note}>接続をリクエストしているアプリ</p>
