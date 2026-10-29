@@ -11,6 +11,8 @@ vi.mock("@cloudflare/workers-oauth-provider", () => ({
     readonly redirectUri?: string;
     readonly state?: string;
     readonly issuer?: string;
+    // 実物はライブラリが戻り先を確かめたときだけ組み立てる。テストでは後から付ける
+    readonly redirectTo?: string;
     constructor(
       code: string,
       options: {
@@ -28,6 +30,7 @@ vi.mock("@cloudflare/workers-oauth-provider", () => ({
       this.issuer = options.issuer;
     }
   },
+  CimdFetchError: class CimdFetchError extends Error {},
 }));
 
 vi.mock("@/features/auth/sessions", () => ({
@@ -38,7 +41,7 @@ vi.mock("./permissions", () => ({
   saveMcpPermissionsFromForm: vi.fn(async () => true),
 }));
 
-const { AuthorizationError } = await import(
+const { AuthorizationError, CimdFetchError } = await import(
   "@cloudflare/workers-oauth-provider"
 );
 const { getSessionUser } = await import("@/features/auth/sessions");
@@ -169,25 +172,56 @@ describe("withMcpAuthorize", () => {
     expect(next.fetch).not.toHaveBeenCalled();
   });
 
-  it("GET で戻り先のわかる不正なリクエストは、エラーを付けてクライアントへ戻す", async () => {
+  it("GET で戻り先を確かめられた不正なリクエストは、ライブラリが組み立てたエラーの戻り先へ戻す", async () => {
     const { helpers, fetch } = setup();
+    const redirectTo =
+      "https://client.example.test/cb?error=invalid_request&error_description=PKCE+is+required&state=xyz";
+    helpers.parseAuthRequest.mockRejectedValueOnce(
+      Object.assign(
+        new AuthorizationError("invalid_request", {
+          description: "PKCE is required",
+          redirectUri: "https://client.example.test/cb",
+          state: "xyz",
+        }),
+        { redirectTo },
+      ),
+    );
+
+    const response = await fetch(new Request(AUTHORIZE_URL));
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe(redirectTo);
+  });
+
+  it("GET で戻り先を確かめられなかった不正なリクエストは、戻り先があっても戻さず 400 にする", async () => {
+    const { helpers, next, fetch } = setup();
     helpers.parseAuthRequest.mockRejectedValueOnce(
       new AuthorizationError("invalid_request", {
-        description: "PKCE is required",
-        redirectUri: "https://client.example.test/cb",
+        description: "Invalid redirect URI",
+        redirectUri: "https://attacker.example.test/cb",
         state: "xyz",
       }),
     );
 
     const response = await fetch(new Request(AUTHORIZE_URL));
 
-    expect(response.status).toBe(302);
-    const location = new URL(response.headers.get("Location") ?? "");
-    expect(location.origin + location.pathname).toBe(
-      "https://client.example.test/cb",
+    expect(response.status).toBe(400);
+    expect(next.fetch).not.toHaveBeenCalled();
+  });
+
+  it("GET でクライアントの情報を置いた URL（CIMD）を取得できなければ 400 にする", async () => {
+    const { helpers, next, fetch } = setup();
+    helpers.parseAuthRequest.mockRejectedValueOnce(
+      new CimdFetchError(
+        "https://client.example.test/client-metadata.json",
+        new Error("fetch failed"),
+      ),
     );
-    expect(location.searchParams.get("error")).toBe("invalid_request");
-    expect(location.searchParams.get("state")).toBe("xyz");
+
+    const response = await fetch(new Request(AUTHORIZE_URL));
+
+    expect(response.status).toBe(400);
+    expect(next.fetch).not.toHaveBeenCalled();
   });
 
   it("POST の「許可する」で、ログイン中のユーザーで認可を完了してクライアントへ戻す", async () => {
@@ -202,7 +236,7 @@ describe("withMcpAuthorize", () => {
     expect(helpers.completeAuthorization).toHaveBeenCalledWith({
       request: authRequest,
       userId: "user-1",
-      metadata: {},
+      metadata: { clientName: "テストのアプリ" },
       scope: [],
       props: { userId: "user-1" },
     });
@@ -342,6 +376,7 @@ describe("withMcpAuthorize", () => {
       authorization_endpoint: `${ORIGIN}/oauth/authorize`,
       token_endpoint: `${ORIGIN}/oauth/token`,
       registration_endpoint: `${ORIGIN}/oauth/register`,
+      client_id_metadata_document_supported: true,
     });
   });
 });

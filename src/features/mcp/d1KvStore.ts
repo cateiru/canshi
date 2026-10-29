@@ -127,7 +127,7 @@ export function revokedGrantMarkerKey(userId: string, grantId: string) {
 }
 
 /**
- * ライブラリ（0.10.4）の grant・アクセストークンのキーから、ユーザー ID と grant ID を
+ * ライブラリ（1.2.4）の grant・アクセストークンのキーから、ユーザー ID と grant ID を
  * 取り出す。それ以外のキーは null
  */
 function parseGrantOfKey(key: string) {

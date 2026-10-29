@@ -38,9 +38,11 @@ export interface McpConnection {
  *
  * OAuth のデータは `@cloudflare/workers-oauth-provider` が `oauth_kv_entries` に保存している。
  * ライブラリは `cloudflare:workers` に依存し Next.js のバンドルに含められず、
- * `OAuthHelpers.listUserGrants()` を使えないため、同じキー（0.10.4 時点で
+ * `OAuthHelpers.listUserGrants()` を使えないため、同じキー（1.2.4 時点で
  * `grant:{userId}:{grantId}`・`client:{clientId}`）を直接読む。
- * ライブラリを更新したときは、キーの形式が変わっていないか確かめること
+ * ライブラリを更新したときは、キーの形式が変わっていないか確かめること。
+ * CIMD のクライアントは `client:{clientId}` が無いため、同意したときに grant に残した
+ * 名前（`./authorize.ts`）を使う
  */
 export async function listUserMcpConnections(
   userId: string,
@@ -77,7 +79,7 @@ export async function listUserMcpConnections(
     .map((grant) => ({
       id: grant.id,
       clientId: grant.clientId,
-      clientName: clientNames.get(grant.clientId) ?? null,
+      clientName: clientNames.get(grant.clientId) ?? grant.clientName ?? null,
       redirectUri: grant.redirectUri ?? null,
       createdAt: new Date(grant.createdAt * 1000),
       lastUsedAt: lastUsedAts.get(grant.id) ?? null,
@@ -161,10 +163,16 @@ export async function revokeUserMcpConnection(
   // grant が無いと書き込まれない（`./usages.ts` の `recordMcpConnectionUsage`）
   await deleteMcpConnectionUsage(userId, grantId, d1);
 
-  // 読み取りの範囲も消す。もう一度接続したときは、すべて読み取れる状態から選び直す
+  // 読み取りの範囲も消す。もう一度接続したときは、すべて読み取れる状態から選び直す。
+  // CIMD のクライアントは同じアプリのすべての接続で ID が同じため、同じユーザーが同じアプリと
+  // ほかにも接続している（戻り先の違う grant が残っている）ときは、範囲をその接続と共有して
+  // いるため消さない。消すと、残った接続の範囲がすべて読み取れる状態に戻ってしまう
   const clientId = parseStoredGrant(grant)?.clientId;
   if (clientId) {
-    await deleteMcpPermissions(userId, clientId, d1);
+    const remaining = await listUserMcpConnections(userId, d1);
+    if (!remaining.some((connection) => connection.clientId === clientId)) {
+      await deleteMcpPermissions(userId, clientId, d1);
+    }
   }
   return true;
 }
@@ -185,16 +193,16 @@ interface StoredGrant {
   /** unix 秒。grant の有効期限を設定していない場合は無い */
   expiresAt?: number;
   redirectUri?: string;
+  /** 同意したときに残したクライアントの名前（`metadata.clientName`、`./authorize.ts`） */
+  clientName?: string;
 }
 
 function parseStoredGrant(value: unknown): StoredGrant | null {
   if (typeof value !== "object" || value === null) {
     return null;
   }
-  const { id, clientId, createdAt, expiresAt, redirectUri } = value as Record<
-    string,
-    unknown
-  >;
+  const { id, clientId, createdAt, expiresAt, redirectUri, metadata } =
+    value as Record<string, unknown>;
   if (
     typeof id !== "string" ||
     typeof clientId !== "string" ||
@@ -208,6 +216,7 @@ function parseStoredGrant(value: unknown): StoredGrant | null {
     createdAt,
     expiresAt: typeof expiresAt === "number" ? expiresAt : undefined,
     redirectUri: typeof redirectUri === "string" ? redirectUri : undefined,
+    clientName: parseClientName(metadata) ?? undefined,
   };
 }
 
@@ -215,7 +224,10 @@ function isExpired(grant: StoredGrant) {
   return grant.expiresAt !== undefined && grant.expiresAt * 1000 <= Date.now();
 }
 
-/** 登録済みのクライアントの情報から名前だけを取り出す（ほかの項目は画面に渡さない） */
+/**
+ * 登録済みのクライアントの情報・grant の `metadata` から名前だけを取り出す
+ * （ほかの項目は画面に渡さない）
+ */
 function parseClientName(value: unknown): string | null {
   if (typeof value !== "object" || value === null) {
     return null;

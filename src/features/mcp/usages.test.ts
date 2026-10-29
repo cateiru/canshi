@@ -50,7 +50,7 @@ const GRANTS = [
 ];
 
 /**
- * `@cloudflare/workers-oauth-provider`（0.10.4）が保存するのと同じキーで grant を保存する。
+ * `@cloudflare/workers-oauth-provider`（1.2.4）が保存するのと同じキーで grant を保存する。
  * 記録は grant が残っているかだけを見るため、値は必要な項目だけにする
  */
 async function putGrant(

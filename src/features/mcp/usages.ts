@@ -91,7 +91,7 @@ export async function purgeOrphanedMcpConnectionUsages(
   `);
 }
 
-/** ライブラリ（0.10.4）が grant を保存するキー */
+/** ライブラリ（1.2.4）が grant を保存するキー */
 function grantKey(userId: string, grantId: string) {
   return `grant:${userId}:${grantId}`;
 }

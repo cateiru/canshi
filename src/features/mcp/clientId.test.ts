@@ -24,7 +24,7 @@ beforeEach(async () => {
     migrationsFolder: "./drizzle",
   });
   await db.insert(users).values({ id: "user-1", name: "ユーザー1" });
-  // `@cloudflare/workers-oauth-provider`（0.10.4）が保存するのと同じキー・形式の grant
+  // `@cloudflare/workers-oauth-provider`（1.2.4）が保存するのと同じキー・形式の grant
   await new D1KvStore(d1).put(
     "grant:user-1:grant-1",
     JSON.stringify({

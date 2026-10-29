@@ -1,6 +1,7 @@
 import {
   AuthorizationError,
   type AuthRequest,
+  CimdFetchError,
   type OAuthHelpers,
 } from "@cloudflare/workers-oauth-provider";
 import { getSessionUser } from "@/features/auth/sessions";
@@ -87,8 +88,10 @@ function withoutConsentHeader(request: Request) {
 
 /**
  * `parseAuthRequest()` を呼び、`AuthorizationError` は `workers-oauth-provider` の
- * README のパターンに従って処理する。エラー用の `Response` を返した場合は
- * 呼び出し元がそのまま返す
+ * README のパターンに従って処理する。クライアントへ戻してよい場合（ライブラリが戻り先を
+ * 確かめ、`redirectTo` を付けた場合）だけエラーを付けて戻し、それ以外は 400 にする。
+ * CIMD（クライアントの情報を置いた URL）を取得できなかった場合も 400 にする。
+ * エラー用の `Response` を返した場合は呼び出し元がそのまま返す
  */
 async function parseAuthorizeRequest(
   request: Request,
@@ -97,18 +100,18 @@ async function parseAuthorizeRequest(
   try {
     return await helpers.parseAuthRequest(request);
   } catch (error) {
+    if (error instanceof CimdFetchError) {
+      return new Response("Invalid client metadata document", {
+        status: 400,
+      });
+    }
     if (!(error instanceof AuthorizationError)) {
       throw error;
     }
-    if (!error.redirectUri) {
+    if (!error.redirectTo) {
       return new Response(error.description, { status: 400 });
     }
-    const redirect = new URL(error.redirectUri);
-    redirect.searchParams.set("error", error.code);
-    redirect.searchParams.set("error_description", error.description);
-    if (error.state) redirect.searchParams.set("state", error.state);
-    if (error.issuer) redirect.searchParams.set("iss", error.issuer);
-    return Response.redirect(redirect.toString(), 302);
+    return Response.redirect(error.redirectTo, 302);
   }
 }
 
@@ -192,11 +195,15 @@ async function handleAuthorizePost(
     );
   }
 
+  // クライアントの名前は grant にも残し、設定の「AIとの接続」に表示する。CIMD のクライアントは
+  // 登録の情報（`client:{clientId}`）を保存しないため、ここで残さないと名前がわからない
+  // （`./connections.ts`）
+  const client = await helpers.lookupClient(authRequest.clientId);
   const props: McpProps = { userId: user.id };
   const { redirectTo } = await helpers.completeAuthorization({
     request: authRequest,
     userId: user.id,
-    metadata: {},
+    metadata: { clientName: client?.clientName ?? null },
     scope: authRequest.scope,
     props,
   });
@@ -241,8 +248,12 @@ function openIdConfiguration(url: URL) {
       "client_secret_basic",
       "client_secret_post",
       "none",
+      "private_key_jwt",
     ],
+    token_endpoint_auth_signing_alg_values_supported: ["RS256", "ES256"],
     revocation_endpoint: `${url.origin}${OAUTH_TOKEN_PATH}`,
     code_challenge_methods_supported: ["S256"],
+    authorization_response_iss_parameter_supported: true,
+    client_id_metadata_document_supported: true,
   });
 }
