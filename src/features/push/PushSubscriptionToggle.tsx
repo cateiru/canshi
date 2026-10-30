@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Alert, Checkbox } from "@/components/ui";
+import { TbSend } from "react-icons/tb";
+import { Alert, Button, Checkbox } from "@/components/ui";
+import { getLocalNowParts } from "@/features/shared/datetime";
 import styles from "./PushSubscriptionToggle.module.css";
 import {
+  requestTestPushAction,
   subscribeToPushAction,
   unsubscribeFromPushAction,
 } from "./subscriptionActions";
@@ -61,6 +64,11 @@ export function PushSubscriptionToggle() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isTestPending, setIsTestPending] = useState(false);
+  // テスト通知が届く予定の時刻（この端末の時計での HH:MM）
+  const [testScheduledTime, setTestScheduledTime] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +112,7 @@ export function PushSubscriptionToggle() {
       return;
     }
     setError(null);
+    setTestScheduledTime(null);
     setIsPending(true);
     try {
       const registration = await navigator.serviceWorker.ready;
@@ -145,6 +154,33 @@ export function PushSubscriptionToggle() {
       setError("通知の設定に失敗しました");
     } finally {
       setIsPending(false);
+    }
+  }
+
+  async function handleTestPush() {
+    setError(null);
+    setTestScheduledTime(null);
+    setIsTestPending(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        setIsSubscribed(false);
+        setError(
+          "この端末の通知の登録が見つかりませんでした。通知をオンにしてください",
+        );
+        return;
+      }
+      const result = await requestTestPushAction(subscription.endpoint);
+      if ("error" in result) {
+        setError(result.error);
+        return;
+      }
+      setTestScheduledTime(getLocalNowParts(new Date(result.scheduledAt)).time);
+    } catch {
+      setError("テスト通知の予約に失敗しました");
+    } finally {
+      setIsTestPending(false);
     }
   }
 
@@ -193,6 +229,27 @@ export function PushSubscriptionToggle() {
           {isPending ? "変更中…" : isSubscribed ? "オン" : "オフ"}
         </span>
       </Checkbox>
+      {isSubscribed ? (
+        <div className={styles.testPush}>
+          <Button
+            leftIcon={TbSend}
+            isDisabled={isPending || isTestPending}
+            onPress={handleTestPush}
+          >
+            {isTestPending ? "予約しています…" : "テスト通知を送る"}
+          </Button>
+          <p className={styles.testPushDescription}>
+            通常のお知らせと同じ仕組みで、次の定期送信（15
+            分ごと）のときにこの端末へ届きます。
+          </p>
+        </div>
+      ) : null}
+      {testScheduledTime ? (
+        <Alert color="success" role="status">
+          テスト通知を予約しました。{testScheduledTime}
+          ごろにこの端末へ届きます（数分遅れることがあります）。
+        </Alert>
+      ) : null}
       {error ? <Alert color="error">{error}</Alert> : null}
     </div>
   );

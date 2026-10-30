@@ -56,6 +56,9 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     `feeding_presets.household_id` を持つ（「ごはん記録」の節を参照）
   - Web Push の購読（`push_subscriptions.user_id`）は購読したユーザーを持ち、通知はその猫の家のメンバーの
     購読にだけ送る（`src/features/push/targets.ts`）。ユーザーの導入前の購読（NULL）には送らない
+  - 通知設定の「テスト通知を送る」は、ユーザー自身の購読へのテスト通知を `push_test_requests` に予約し、
+    次のスケジュール実行で送って行を削除する（`src/features/push/sendTestPush.ts`）。予約は購読ごとに 1 件
+    （`subscription_id` が一意）で、通知（`notifications`）は作らない
 - ログインは Cloudflare Access の OIDC で行い、ID トークンのメールアドレスだけを受け取る。DB には
   メールアドレスそのものを保存せず、環境変数の SALT（`EMAIL_HASH_SALT`）を使って argon2id で
   ハッシュにした値を `users.email_hash`（一意）に保存し、同じユーザーかどうかもこの値で判定する

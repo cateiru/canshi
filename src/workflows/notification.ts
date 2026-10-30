@@ -3,6 +3,7 @@ import {
   type WorkflowEvent,
   type WorkflowStep,
 } from "cloudflare:workers";
+import type { VapidKeys } from "@block65/webcrypto-web-push";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { notifications } from "@/db/schema";
@@ -15,6 +16,11 @@ import {
   listUnpushedNotifications,
 } from "@/features/push/queries";
 import { sendPushToSubscription } from "@/features/push/sendPush";
+import {
+  listPushTestTargets,
+  type PushTestTarget,
+  sendTestPush,
+} from "@/features/push/sendTestPush";
 import {
   buildPushAccessIndex,
   selectPushTargets,
@@ -55,6 +61,10 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
       // Push 送信はスキップする
       return;
     }
+
+    // 通知設定で予約されたテスト通知。通常の通知が 0 件の回でも送るよう、下の早期 return より
+    // 前に送る
+    await this.sendTestPushes(step, vapid);
 
     const { pending, subscriptions, catAccesses, householdAccesses } =
       await step.do("list pending pushes", async () => {
@@ -174,5 +184,58 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
           .where(eq(notifications.id, notification.id));
       }
     });
+  }
+
+  /**
+   * 予約されたテスト通知を送る（`src/features/push/sendTestPush.ts`）。失敗しても通常の
+   * 通知の送信は止めず、送れなかった予約は残して次のスケジュール実行で送り直す
+   */
+  private async sendTestPushes(
+    step: WorkflowStep,
+    vapid: VapidKeys,
+  ): Promise<void> {
+    let targets: PushTestTarget[];
+    try {
+      targets = await step.do("list push test requests", async () =>
+        listPushTestTargets(this.env.DB),
+      );
+    } catch (error) {
+      console.error("テスト通知の予約の取得に失敗しました", error);
+      return;
+    }
+
+    for (const target of targets) {
+      try {
+        await step.do(
+          `push test ${target.requestId}`,
+          {
+            retries: {
+              limit: 3,
+              delay: "30 seconds",
+              backoff: "exponential",
+            },
+          },
+          async () => {
+            const result = await sendTestPush(
+              getDb(this.env.DB),
+              target,
+              vapid,
+            );
+            if (result.outcome === "retriable") {
+              // 通常の通知と同じく、429／5xx はステップのリトライに委ねる
+              throw new Error(
+                `Push応答が一時的な失敗でした（status=${result.status}）`,
+              );
+            }
+            return result;
+          },
+        );
+      } catch (error) {
+        console.error(
+          `テスト通知の送信に失敗しました（request=${target.requestId}, subscription=${target.subscription.id}）`,
+          error,
+        );
+      }
+    }
   }
 }

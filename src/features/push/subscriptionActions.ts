@@ -4,6 +4,7 @@ import { and, eq, isNull, or } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { pushSubscriptions } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
+import { nextScheduledRunAt, requestTestPush } from "./sendTestPush";
 import { pushSubscribeSchema } from "./subscriptionSchema";
 
 export type PushSubscriptionActionResult = { error?: string };
@@ -73,5 +74,33 @@ export async function unsubscribeFromPushAction(
   } catch (error) {
     console.error("Push購読の解除に失敗しました", error);
     return { error: "Push購読の解除に失敗しました" };
+  }
+}
+
+export type TestPushActionResult =
+  | { error: string }
+  // 次のスケジュール実行の時刻（ISO 8601）。この時刻ごろにテスト通知が届く
+  | { scheduledAt: string };
+
+/**
+ * この端末（`endpoint`）へのテスト通知を、次のスケジュール実行で送るよう予約する。
+ * 通常の通知と同じ経路（`src/workflows/notification.ts`）で送るため、すぐには届かない
+ */
+export async function requestTestPushAction(
+  endpoint: string,
+): Promise<TestPushActionResult> {
+  const user = await requireUser();
+  try {
+    const result = await requestTestPush(getDb(), user.id, endpoint);
+    if (result.outcome === "not-subscribed") {
+      return {
+        error:
+          "この端末の通知の登録が見つかりませんでした。通知を一度オフにしてから、もう一度オンにしてください",
+      };
+    }
+    return { scheduledAt: nextScheduledRunAt(new Date()).toISOString() };
+  } catch (error) {
+    console.error("テスト通知の予約に失敗しました", error);
+    return { error: "テスト通知の予約に失敗しました" };
   }
 }
