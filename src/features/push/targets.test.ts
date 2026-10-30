@@ -28,10 +28,13 @@ const subscriptions = [
 function targetIds(notification: {
   catId: string | null;
   householdId: string | null;
+  userId?: string | null;
 }) {
-  return selectPushTargets(notification, subscriptions, accessIndex).map(
-    (subscription) => subscription.id,
-  );
+  return selectPushTargets(
+    { userId: null, ...notification },
+    subscriptions,
+    accessIndex,
+  ).map((subscription) => subscription.id);
 }
 
 describe("selectPushTargets", () => {
@@ -57,12 +60,21 @@ describe("selectPushTargets", () => {
     ]);
   });
 
+  it("ユーザーについての通知は、そのユーザー本人の購読だけに送る", () => {
+    expect(
+      targetIds({ catId: null, householdId: null, userId: "owner" }),
+    ).toEqual(["owner-phone", "owner-pc"]);
+    expect(
+      targetIds({ catId: null, householdId: null, userId: "nobody" }),
+    ).toEqual([]);
+  });
+
   it("ユーザーに紐付いていない購読や、どの家にも属さない猫・メンバーのいない家の通知は送らない", () => {
     expect(targetIds({ catId: "orphan", householdId: null })).toEqual([]);
     expect(targetIds({ catId: null, householdId: "empty" })).toEqual([]);
     expect(
       selectPushTargets(
-        { catId: "tama", householdId: null },
+        { catId: "tama", householdId: null, userId: null },
         [{ id: "legacy", userId: null }],
         accessIndex,
       ),

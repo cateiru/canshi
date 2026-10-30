@@ -17,6 +17,11 @@ import type { SubmitRedirect } from "@/features/navigation/types";
 import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "./media";
 import { parsePackageSizeValue } from "./packageSizes";
 import { listAddedCatalogFoodProductIds } from "./queries";
+import {
+  createCatalogFoodProductRequest,
+  MAX_OPEN_CATALOG_REQUESTS,
+} from "./requests";
+import { parseCatalogSearchParams } from "./search";
 
 /**
  * 追加できたら（追加済みのときも）`redirectTo` に家のごはん商品一覧を返し、クライアント
@@ -173,4 +178,39 @@ export async function addCatalogFoodProductAction(
   }
 
   return { redirectTo: returnTo };
+}
+
+export type RequestCatalogFoodProductState = {
+  /** リクエストできた（同じ条件のリクエストがすでにあったときも含む） */
+  isRequested?: boolean;
+  error?: string;
+};
+
+/**
+ * 検索して見つからなかった共通のごはん商品を、フォームの `searchQuery`（検索ページの URL の
+ * クエリ）の検索条件でリクエストする。条件は検索ページと同じ規則で読み直して正規化する
+ */
+export async function requestCatalogFoodProductAction(
+  _prevState: RequestCatalogFoodProductState,
+  formData: FormData,
+): Promise<RequestCatalogFoodProductState> {
+  const user = await requireUser();
+  const searchQuery = formData.get("searchQuery");
+  const criteria = parseCatalogSearchParams(
+    Object.fromEntries(
+      new URLSearchParams(typeof searchQuery === "string" ? searchQuery : ""),
+    ),
+  );
+  const result = await createCatalogFoodProductRequest(user.id, criteria);
+  switch (result) {
+    case "created":
+    case "already-requested":
+      return { isRequested: true };
+    case "no-criteria":
+      return { error: "検索条件を入力してから、リクエストしてください" };
+    case "limit-reached":
+      return {
+        error: `対応を待っているリクエストが${MAX_OPEN_CATALOG_REQUESTS}件あります。対応が終わってから、もう一度リクエストしてください`,
+      };
+  }
 }

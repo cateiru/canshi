@@ -730,3 +730,112 @@ describe("共通のごはん商品", () => {
     expect(await listProducts()).toEqual([]);
   });
 });
+
+describe("共通のごはん商品のリクエスト", () => {
+  async function insertRequest(
+    id: string,
+    userId: string,
+    label: string,
+    completedAt: number | null = null,
+  ) {
+    await env.DB.prepare(
+      `INSERT INTO catalog_food_product_requests
+        (id, user_id, search_query, label, completed_at, created_at)
+      VALUES (?1, ?2, ?3, ?4, ?5, unixepoch())`,
+    )
+      .bind(id, userId, "q=%E3%81%BE%E3%81%90%E3%82%8D", label, completedAt)
+      .run();
+  }
+
+  async function listNotifications() {
+    const { results } = await env.DB.prepare(
+      "SELECT cat_id, household_id, user_id, kind, reference_id, dedupe_key, title, body, url, status FROM notifications",
+    ).all();
+    return results;
+  }
+
+  it("対応を待っているリクエストと完了にしたリクエストを、利用者の入力をエスケープして表示する", async () => {
+    await insertRequest("request-1", "user-2", "キーワード：<b>まぐろ</b>");
+    await insertRequest("request-2", "user-3", "キーワード：かつお", 1);
+
+    const response = await request("/food-product-requests");
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("キーワード：&lt;b&gt;まぐろ&lt;/b&gt;");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).toContain("キーワード：かつお");
+    expect(html).toContain(
+      'action="/food-product-requests/request-1/complete"',
+    );
+    expect(html).not.toContain(
+      'action="/food-product-requests/request-2/complete"',
+    );
+  });
+
+  it("リクエストがなければ、ないことを表示する", async () => {
+    const html = await (await request("/food-product-requests")).text();
+    expect(html).toContain("対応を待っているリクエストはありません。");
+    expect(html).toContain("完了にしたリクエストはありません。");
+  });
+
+  it("完了にすると、リクエストしたユーザーだけに通知を作る", async () => {
+    await insertRequest("request-1", "user-3", "キーワード：まぐろ");
+
+    const response = await postForm(
+      "/food-product-requests/request-1/complete",
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get("Location")).toBe(
+      "/food-product-requests?completion=completed&request=request-1",
+    );
+    expect(await listNotifications()).toEqual([
+      {
+        cat_id: null,
+        household_id: null,
+        user_id: "user-3",
+        kind: "catalog_request_completed",
+        reference_id: "request-1",
+        dedupe_key: "catalog_request_completed:request-1",
+        // メインアプリの `catalogRequestCompletedMessage` と同じ文言・URL
+        title: "共通のごはん商品のリクエストに対応しました",
+        body: "リクエストした検索条件（キーワード：まぐろ）に対応しました。もう一度検索してみてください",
+        url: "/food-products/search?q=%E3%81%BE%E3%81%90%E3%82%8D",
+        status: "pending",
+      },
+    ]);
+
+    const html = await (
+      await request(response.headers.get("Location") ?? "")
+    ).text();
+    expect(html).toContain("のリクエストを完了にし、はなこ");
+    expect(html).toContain("対応を待っているリクエストはありません。");
+  });
+
+  it("完了にしたリクエストをもう一度完了にしても、通知を重ねて作らない", async () => {
+    await insertRequest("request-1", "user-3", "キーワード：まぐろ");
+
+    await postForm("/food-product-requests/request-1/complete");
+    const response = await postForm(
+      "/food-product-requests/request-1/complete",
+    );
+    expect(response.headers.get("Location")).toBe(
+      "/food-product-requests?completion=already-completed&request=request-1",
+    );
+    expect(await listNotifications()).toHaveLength(1);
+  });
+
+  it("存在しないリクエストは 404 にし、ほかのオリジンからの送信は断る", async () => {
+    expect(
+      (await postForm("/food-product-requests/missing/complete")).status,
+    ).toBe(404);
+
+    await insertRequest("request-1", "user-3", "キーワード：まぐろ");
+    const response = await postForm(
+      "/food-product-requests/request-1/complete",
+      "https://evil.example",
+    );
+    expect(response.status).toBe(403);
+    expect(await listNotifications()).toEqual([]);
+  });
+});

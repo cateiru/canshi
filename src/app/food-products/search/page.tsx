@@ -2,7 +2,10 @@ import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/session";
 import { AddCatalogFoodProductButton } from "@/features/catalog-food-products/AddCatalogFoodProductButton";
-import { addCatalogFoodProductAction } from "@/features/catalog-food-products/actions";
+import {
+  addCatalogFoodProductAction,
+  requestCatalogFoodProductAction,
+} from "@/features/catalog-food-products/actions";
 import { CatalogSearchForm } from "@/features/catalog-food-products/CatalogSearchForm";
 import {
   catalogPackageSizes,
@@ -15,6 +18,12 @@ import {
   listCatalogFoodProductImageUrls,
   searchCatalogFoodProducts,
 } from "@/features/catalog-food-products/queries";
+import { RequestCatalogFoodProductButton } from "@/features/catalog-food-products/RequestCatalogFoodProductButton";
+import {
+  hasCatalogSearchCriteria,
+  hasOpenCatalogFoodProductRequest,
+  toCatalogSearchQuery,
+} from "@/features/catalog-food-products/requests";
 import {
   hasAdvancedCriteria,
   parseCatalogSearchParams,
@@ -93,6 +102,12 @@ export default async function SearchFoodProductsPage({
   const imageUrls = await listCatalogFoodProductImageUrls(
     items.map((item) => item.id),
   );
+  // 条件を指定して見つからなかったときは、その条件で共通のごはん商品をリクエストできる
+  // （条件なしで見つからないのは、共通のごはん商品が 1 件もないときだけなのでリクエストさせない）
+  const canRequest = items.length === 0 && hasCatalogSearchCriteria(criteria);
+  const isRequested = canRequest
+    ? await hasOpenCatalogFoodProductRequest(user.id, criteria)
+    : false;
 
   return (
     <main className={listStyles.main}>
@@ -154,6 +169,15 @@ export default async function SearchFoodProductsPage({
                 </ButtonLink>
               </ReplaceNavigation>
             </div>
+            {canRequest ? (
+              <RequestCatalogFoodProductButton
+                // 条件を変えて検索し直したときに、リクエストの状態を作り直す
+                key={toCatalogSearchQuery(criteria)}
+                action={requestCatalogFoodProductAction}
+                searchQuery={toCatalogSearchQuery(criteria)}
+                isRequested={isRequested}
+              />
+            ) : null}
           </Surface>
         ) : (
           <ul className={styles.list}>

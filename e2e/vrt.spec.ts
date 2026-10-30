@@ -164,6 +164,19 @@ test("共通のごはん商品の検索ページの見た目", async ({ page }, 
   await takeSnapshot(page, testInfo);
 });
 
+// 見つからなかったときの空の状態と、その条件で共通のごはん商品をリクエストするボタン
+test("共通のごはん商品の検索で見つからなかったときの見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(
+    `/food-products/search?householdId=vrt-household&q=${encodeURIComponent("VRTにない商品")}`,
+  );
+  await expect(
+    page.getByRole("button", { name: "この条件でリクエストする" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("ごはんプリセット一覧ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/feeding-presets");
   await expect(

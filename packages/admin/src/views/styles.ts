@@ -79,7 +79,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-wrap: break-word;
 }
-h1, h2 { margin: 0; line-height: var(--line-height-heading); }
+h1, h2, h3 { margin: 0; line-height: var(--line-height-heading); }
 header, main {
   width: 100%;
   max-width: 80rem;
@@ -102,6 +102,7 @@ main {
   padding-bottom: var(--space-10);
 }
 main h2 { font-size: var(--text-xl); }
+main h3 { font-size: var(--text-lg); }
 a {
   color: var(--color-ink);
   text-decoration: underline;

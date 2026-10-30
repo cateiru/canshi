@@ -13,7 +13,7 @@ import {
 } from "@/features/timeline/labels";
 import styles from "./McpPermissionTreeField.module.css";
 import {
-  MCP_CATALOG_OPERATION_GROUP,
+  MCP_CATALOG_OPERATION_GROUPS,
   MCP_CATALOG_OPERATIONS,
   MCP_HOUSEHOLD_OPERATION_GROUPS,
   MCP_HOUSEHOLD_OPERATIONS,
@@ -296,41 +296,43 @@ export function McpPermissionTreeField({
         </ul>
       )}
       {catalogOperations !== null ? (
-        <fieldset
-          aria-label={MCP_CATALOG_OPERATION_GROUP.label}
-          className={styles.catalog}
-        >
+        <fieldset aria-label="共通のごはん商品" className={styles.catalog}>
           <span className={styles.catalogLabel}>
             <FoodProductIcon
               className={styles.icon}
               size={20}
               aria-hidden="true"
             />
-            {MCP_CATALOG_OPERATION_GROUP.label}
+            共通のごはん商品
           </span>
           <p className={styles.catalogNote}>
-            管理者だけが選べます。すべての家で検索・追加に使う商品を、このアプリから扱えるようにします。
+            管理者だけが選べます。すべての家で検索・追加に使う商品と、商品のリクエストを、このアプリから扱えるようにします。
           </p>
-          <span
-            className={`${styles.operationChoices} ${styles.catalogChoices}`}
-          >
-            {MCP_CATALOG_OPERATION_GROUP.operations.map(
-              ({ operation, label }) => (
-                <Checkbox
-                  key={operation}
-                  aria-label={`${MCP_CATALOG_OPERATION_GROUP.label}を${label}`}
-                  isSelected={checked.catalog.has(operation)}
-                  onChange={(value) =>
-                    update((draft) => {
-                      toggle(draft.catalog, operation, value);
-                    })
-                  }
-                >
-                  {label}
-                </Checkbox>
-              ),
-            )}
-          </span>
+          {MCP_CATALOG_OPERATION_GROUPS.map((group) => (
+            <fieldset
+              key={group.label}
+              aria-label={group.shortLabel}
+              className={styles.operationGroup}
+            >
+              <span className={styles.operationLabel}>{group.shortLabel}</span>
+              <span className={styles.operationChoices}>
+                {group.operations.map(({ operation, label }) => (
+                  <Checkbox
+                    key={operation}
+                    aria-label={`${group.label}を${label}`}
+                    isSelected={checked.catalog.has(operation)}
+                    onChange={(value) =>
+                      update((draft) => {
+                        toggle(draft.catalog, operation, value);
+                      })
+                    }
+                  >
+                    {label}
+                  </Checkbox>
+                ))}
+              </span>
+            </fieldset>
+          ))}
         </fieldset>
       ) : null}
     </div>

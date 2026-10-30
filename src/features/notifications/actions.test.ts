@@ -142,6 +142,58 @@ describe("家についての通知", () => {
   });
 });
 
+describe("ユーザーについての通知", () => {
+  async function insertUserNotification(userId: string) {
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        userId,
+        kind: "catalog_request_completed",
+        dedupeKey: `dedupe-${crypto.randomUUID()}`,
+        title: "共通のごはん商品のリクエストに対応しました",
+        body: "もう一度検索してみてください",
+        url: "/food-products/search?q=a",
+        dueAt: new Date(),
+      })
+      .returning();
+    return notification;
+  }
+
+  async function rowOf(id: string) {
+    const [row] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return row;
+  }
+
+  it("本人宛ての通知は既読・完了にできる", async () => {
+    const notification = await insertUserNotification("user-1");
+
+    await markNotificationsReadAction([notification.id]);
+    expect((await rowOf(notification.id)).readAt).toBeInstanceOf(Date);
+    await markNotificationDoneAction(notification.id);
+    expect((await rowOf(notification.id)).status).toBe("done");
+  });
+
+  it("別のユーザー宛ての通知は完了・延期・既読にできない", async () => {
+    const notification = await insertUserNotification("user-2");
+
+    await markNotificationDoneAction(notification.id);
+    expect(
+      await snoozeNotificationAction(
+        notification.id,
+        new Date("2026-09-20T00:00:00.000Z"),
+      ),
+    ).toEqual({ error: "通知が見つかりませんでした" });
+    await markNotificationsReadAction([notification.id]);
+
+    const unchanged = await rowOf(notification.id);
+    expect(unchanged.status).toBe("pending");
+    expect(unchanged.readAt).toBeNull();
+  });
+});
+
 describe("snoozeNotificationAction", () => {
   it("別の家の猫の通知は延期できない", async () => {
     const [cat] = await db

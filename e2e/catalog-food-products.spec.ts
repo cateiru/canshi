@@ -182,3 +182,66 @@ test("登録方法の選択・検索のページは履歴に残らず、登録�
   await page.goBack();
   await expect(page).toHaveURL(householdPage);
 });
+
+test("見つからなかった条件で共通のごはん商品をリクエストし、完了にされると通知が届く", async ({
+  page,
+}) => {
+  const keyword = `見つからない商品-${Date.now()}`;
+
+  await page.goto(`/food-products/search?q=${encodeURIComponent(keyword)}`);
+  await expect(
+    page.getByRole("heading", { name: "見つかりませんでした" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "この条件でリクエストする" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "この条件でリクエスト済みです",
+  );
+
+  // 開き直しても、同じ条件ではリクエスト済みと表示する
+  await page.reload();
+  await expect(page.getByRole("status")).toContainText(
+    "この条件でリクエスト済みです",
+  );
+  await expect(
+    page.getByRole("button", { name: "この条件でリクエストする" }),
+  ).toHaveCount(0);
+
+  // 管理画面の完了の処理と同じく、通知を作ってから完了にする
+  // （管理画面は別の Worker のため、ローカルの D1 に直接書き込む）
+  await expect(async () => {
+    execFileSync(
+      "node_modules/.bin/wrangler",
+      [
+        "d1",
+        "execute",
+        "DB",
+        "--local",
+        "--persist-to",
+        ".wrangler/state",
+        "--command",
+        `INSERT INTO notifications (id, user_id, kind, reference_id, dedupe_key, title, body, url, due_at, status)
+        SELECT lower(hex(randomblob(16))), r.user_id, 'catalog_request_completed', r.id, 'catalog_request_completed:' || r.id,
+          '共通のごはん商品のリクエストに対応しました', 'リクエストした検索条件（' || r.label || '）に対応しました。もう一度検索してみてください',
+          '/food-products/search?' || r.search_query, unixepoch(), 'pending'
+        FROM catalog_food_product_requests r WHERE r.label = 'キーワード：${keyword}' AND r.completed_at IS NULL
+        ON CONFLICT (dedupe_key) DO NOTHING;
+        UPDATE catalog_food_product_requests SET completed_at = unixepoch() WHERE label = 'キーワード：${keyword}'`,
+      ],
+      { stdio: "inherit" },
+    );
+  }).toPass({ intervals: [1_000, 2_000, 5_000], timeout: 60_000 });
+
+  await page.goto("/notifications");
+  const notification = page
+    .getByRole("listitem")
+    .filter({ hasText: `キーワード：${keyword}` });
+  await expect(notification).toBeVisible({ timeout: 40_000 });
+  await notification
+    .getByRole("link", { name: "共通のごはん商品のリクエストに対応しました" })
+    .click();
+  await expect(page).toHaveURL(/\/food-products\/search\?q=/);
+  // 完了にした後は、同じ条件でもう一度リクエストできる
+  await expect(
+    page.getByRole("button", { name: "この条件でリクエストする" }),
+  ).toBeVisible();
+});

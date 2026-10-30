@@ -86,12 +86,14 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
           ]);
         return { pending, subscriptions, catAccesses, householdAccesses };
       });
-    // 通知は、その猫の家（家についての通知はその家）のメンバーの購読にだけ送る。
+    // 通知は、その猫の家（家についての通知はその家）のメンバーの購読にだけ送る。ユーザーについての
+    // 通知は、そのユーザー本人の購読にだけ送る。
     // 別の家の通知（タイトル・本文に猫の名前を含む）を、関係のない端末に送らない
     const accessIndex = buildPushAccessIndex(catAccesses, householdAccesses);
     const targetsOf = (notification: {
       catId: string | null;
       householdId: string | null;
+      userId: string | null;
     }) => selectPushTargets(notification, subscriptions, accessIndex);
 
     if (pending.length === 0 || subscriptions.length === 0) {

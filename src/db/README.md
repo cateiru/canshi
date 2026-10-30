@@ -185,6 +185,22 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     その更新も反映するため、読む側は先頭の候補を `package_amount_g`・`package_unit` から取り、`package_sizes` からは
     2 件目以降だけを使う（`src/features/catalog-food-products/packageSizes.ts`）
 - 検索結果の並び順のため `(manufacturer, name)` のインデックスを設定する
+- 共通のごはん商品のリクエスト（`catalog_food_product_requests`、#355・`0059`）は、検索して見つからなかったユーザーが
+  その検索条件で商品の追加をお願いするもの（`src/features/catalog-food-products/requests.ts`）。共通のごはん商品に
+  追加するのは管理者で、リクエストから自動では追加しない
+  - 検索条件は、検索ページの URL のクエリ（`search_query`）で持つ。項目の順番を固定し、未指定の条件と追加先の家は
+    含めないため、同じ条件は同じ文字列になる。表示用の要約（`label`）はリクエストした時点でメインアプリが作って
+    保存し、管理画面はそれをそのまま表示する（管理画面はメインアプリのラベルを import できないため）
+  - 同じユーザーが同じ条件で未完了のリクエストを重ねて作らないよう、`(user_id, search_query)` に
+    `completed_at IS NULL` の部分一意インデックスを設定する。完了した後は同じ条件でもう一度リクエストできる。
+    1 人のユーザーの未完了のリクエストは 20 件まで
+  - 管理画面（`packages/admin/src/db/catalogFoodProductRequests.ts`）か、admin のユーザーの MCP の接続
+    （`mcp_permissions.catalog_operations` の `catalogFoodProductRequest:read`・`catalogFoodProductRequest:complete`）
+    から一覧・完了にする。完了にすると、リクエストしたユーザーへの通知（`notifications.user_id`、
+    `catalog_request_completed`）を作る。通知の INSERT ... SELECT と完了の UPDATE を同じ batch で行い、どちらも
+    未完了のときだけ反映する。通知の `dedupe_key`（`catalog_request_completed:{ID}`）で、同時に完了にされても
+    通知は 1 件にする。文言・URL は管理画面とメインアプリで揃える
+  - 完了は元に戻せない。リクエストの削除も持たない
 
 ## 支出記録（`expense_records`・`expense_record_cats`・`expense_record_hospital_visits`）
 
@@ -251,14 +267,19 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 ## 通知（`notifications`・`notification_settings`・`notification_preferences`）
 
 - `28` で追加した、通知条件の判定結果を保持するテーブル群
-- `notifications` は、猫についての通知では `cat_id`、家についての通知（猫を問わないもの）では `household_id` を持ち、
-  どちらか一方だけを必ず持つ（CHECK 制約 `notifications_target_check`）
-  - 一覧・操作は、ユーザーの家の猫の通知と、ユーザーが所属する家の通知に限る（`src/features/notifications/access.ts`）。
-    通知センターで猫を選んで絞り込んだときは、家についての通知は表示しない
-  - Push は、猫についての通知はその猫の家のメンバー、家についての通知はその家のメンバーの購読にだけ送る
-    （`src/features/push/targets.ts`）
-  - `0044` で `cat_id` の NOT NULL を外すためにテーブルを作り直した。D1 では外部キー制約を無効にできず、
-    DROP TABLE の暗黙の DELETE で `push_deliveries` の行が CASCADE で消えるため、退避してから戻している
+- `notifications` は、猫についての通知では `cat_id`、家についての通知（猫を問わないもの）では `household_id`、
+  ユーザーについての通知（本人だけに届けるもの）では `user_id` を持ち、どれか 1 つだけを必ず持つ
+  （CHECK 制約 `notifications_target_check`）
+  - ユーザーについての通知は、今は共通のごはん商品のリクエストの完了（`catalog_request_completed`）だけ
+    （「共通のごはん商品」の節を参照）
+  - 一覧・操作は、ユーザーの家の猫の通知と、ユーザーが所属する家の通知、ユーザー本人宛ての通知に限る
+    （`src/features/notifications/access.ts`）。通知センターで猫を選んで絞り込んだときは、家・ユーザーについての
+    通知は表示しない
+  - Push は、猫についての通知はその猫の家のメンバー、家についての通知はその家のメンバー、ユーザーについての通知は
+    そのユーザー本人の購読にだけ送る（`src/features/push/targets.ts`）
+  - `0044` で `cat_id` の NOT NULL を外すため、`0059` で `user_id` を足して CHECK 制約を変えるためにテーブルを
+    作り直した。D1 では外部キー制約を無効にできず、DROP TABLE の暗黙の DELETE で `push_deliveries` の行が
+    CASCADE で消えるため、退避してから戻している
 - `notifications`・`notification_settings` は `cat_id` を持つが、記録テーブルではない（猫自身の行動・状態の記録ではなく、アプリが生成した通知・その設定のため）。タイムライン機能（`14`）の集約対象からは除外する（「共通カラム規約」の代表の発生日時列の一覧にも含めない）
 - `notification_preferences` は猫に紐付かない、アプリ全体で 1 行だけの設定（通知時刻・タイムゾーン）だったが、通知時刻は 18:00（日本時間）固定になったため現在は未使用（後続で削除予定）
 - 掃除対象ごとの通知時刻は `cleaning_targets.notify_time`（`HH:MM`、15 分刻み、nullable）で持つ。NULL の場合は 18:00 に通知する

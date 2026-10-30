@@ -274,12 +274,18 @@ describe("McpPermissionTreeField", () => {
     fireEvent.click(
       catalog.getByRole("checkbox", { name: "共通のごはん商品を編集" }),
     );
+    fireEvent.click(
+      catalog.getByRole("checkbox", {
+        name: "共通のごはん商品のリクエストを完了",
+      }),
+    );
     // 家を外しても、共通のごはん商品の操作は外れない
     fireEvent.click(checkbox("家1"));
 
     expect(value().catalogOperations).toEqual([
       "catalogFoodProduct:read",
       "catalogFoodProduct:update",
+      "catalogFoodProductRequest:complete",
     ]);
   });
 

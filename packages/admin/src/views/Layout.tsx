@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { href: "/users", label: "ユーザー" },
   { href: "/households", label: "家" },
   { href: "/food-products", label: "共通のごはん商品" },
+  { href: "/food-product-requests", label: "リクエスト" },
 ] as const;
 
 /** パンくずの項目。`href` のない項目は今のページ */

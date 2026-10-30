@@ -157,11 +157,6 @@
   font-size: var(--text-sm);
 }
 
-/* 広い画面では、家ごとの操作と同じ幅の選択肢を左に寄せて並べる */
-.catalogChoices {
-  align-self: flex-start;
-}
-
 .operationLabel {
   font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
@@ -180,9 +175,5 @@
 
   .operationChoices {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .catalogChoices {
-    align-self: stretch;
   }
 }

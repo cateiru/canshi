@@ -7,7 +7,7 @@ import { expect, takeSnapshot, test } from "../e2e/vrt-snapshot";
 // （CI の vrt-admin ジョブでは自動的に実行される）。ローカルの D1 に e2e などで作った
 // データが残っていると、その分も一覧に表示される。
 //
-// 書き込み（ログアウトさせる・メンバーの追加・削除・共通のごはん商品の登録など）はデータを変えてしまうため実行せず、
+// 書き込み（ログアウトさせる・メンバーの追加・削除・共通のごはん商品の登録・リクエストの完了など）はデータを変えてしまうため実行せず、
 // 結果の表示はリダイレクト先の URL のクエリで再現する（packages/admin/src/app.tsx）
 
 const PAGES = [
@@ -16,6 +16,7 @@ const PAGES = [
   { title: "家", path: "/households" },
   { title: "共通のごはん商品", path: "/food-products" },
   { title: "共通のごはん商品を登録する", path: "/food-products/new" },
+  { title: "共通のごはん商品のリクエスト", path: "/food-product-requests" },
 ] as const;
 
 for (const viewport of [
@@ -87,6 +88,18 @@ test("共通のごはん商品を登録した結果の見た目", async ({ page 
   await page.goto("/food-products?catalogChange=created&product=vrt-catalog-2");
   await expect(page.getByRole("status")).toHaveText(
     "VRTまぐろパウチ を登録しました。",
+  );
+  await takeSnapshot(page, testInfo);
+});
+
+test("共通のごはん商品のリクエストを完了にした結果の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(
+    "/food-product-requests?completion=completed&request=vrt-request-done",
+  );
+  await expect(page.getByRole("status")).toContainText(
+    "のリクエストを完了にし、VRT招待者 に通知しました。",
   );
   await takeSnapshot(page, testInfo);
 });

@@ -109,6 +109,16 @@ VALUES
     '[{"amountG":40,"unit":"袋"},{"amountG":160,"unit":null}]',
     strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
+-- 共通のごはん商品のリクエスト（管理画面の VRT（e2e-admin/vrt.spec.ts）で、対応を待っているリクエストと
+-- 完了にしたリクエストの表を表示する用）。メインアプリの検索ページの「リクエスト済み」の表示に
+-- 影響しないよう、VRT ユーザーではなく VRT招待者のリクエストにする
+INSERT INTO catalog_food_product_requests (id, user_id, search_query, label, completed_at, created_at)
+VALUES
+  ('vrt-request-open', 'vrt-inviter', 'q=%E3%81%BE%E3%81%90%E3%82%8D&textureType=wet',
+    'キーワード：まぐろ、種類：ウェット', NULL, strftime('%s', '2024-06-03 00:00:00')),
+  ('vrt-request-done', 'vrt-inviter', 'q=VRT%E3%83%86%E3%82%B9%E3%83%88%E3%83%95%E3%83%BC%E3%83%89',
+    'キーワード：VRTテストフード', strftime('%s', '2024-06-04 00:00:00'), strftime('%s', '2024-06-02 00:00:00'));
+
 -- メーカー名・対象の猫・猫種も入れ、商品一覧のカードで表示されるケースを再現する
 INSERT INTO food_products (id, name, manufacturer, kcal_per_100g, package_amount_g, nutrition_type, texture_type, life_stages, target_breed, catalog_food_product_id, created_at, updated_at)
 VALUES ('vrt-food-1', 'VRTテストフード', 'VRTフーズ', 350, 1000, 'complete', 'dry', '["adult","senior"]', 'ペルシャ', 'vrt-catalog-1',

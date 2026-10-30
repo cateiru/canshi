@@ -73,30 +73,46 @@ export const MCP_HOUSEHOLD_OPERATION_GROUPS: {
 ];
 
 /**
- * AI との接続に許可するかを選べる、共通のごはん商品（`catalog_food_products`）の操作。
- * 共通のごはん商品はすべての家のユーザーが検索・追加に使うため、アプリ全体の権限が admin の
+ * AI との接続に許可するかを選べる、共通のごはん商品（`catalog_food_products`）と、そのリクエスト
+ * （`catalog_food_product_requests`）の操作。共通のごはん商品はすべての家のユーザーが検索・追加に
+ * 使い、リクエストにはすべてのユーザーの検索条件が含まれるため、アプリ全体の権限が admin の
  * ユーザーだけが許可できる。家ごとの操作と同じく、許可したものだけを行える
  */
 export const MCP_CATALOG_OPERATIONS = [
   "catalogFoodProduct:read",
   "catalogFoodProduct:create",
   "catalogFoodProduct:update",
+  "catalogFoodProductRequest:read",
+  "catalogFoodProductRequest:complete",
 ] as const;
 
 export type McpCatalogOperation = (typeof MCP_CATALOG_OPERATIONS)[number];
 
-/** 設定画面・同意画面に表示する、共通のごはん商品の操作 */
-export const MCP_CATALOG_OPERATION_GROUP: {
+/** 設定画面・同意画面に表示する、共通のごはん商品とそのリクエストの操作 */
+export const MCP_CATALOG_OPERATION_GROUPS: {
   label: string;
+  /** 共通のごはん商品の枠の中で、行の見出しに使う短い名前 */
+  shortLabel: string;
   operations: { operation: McpCatalogOperation; label: string }[];
-} = {
-  label: "共通のごはん商品",
-  operations: [
-    { operation: "catalogFoodProduct:read", label: "読む" },
-    { operation: "catalogFoodProduct:create", label: "追加" },
-    { operation: "catalogFoodProduct:update", label: "編集" },
-  ],
-};
+}[] = [
+  {
+    label: "共通のごはん商品",
+    shortLabel: "商品",
+    operations: [
+      { operation: "catalogFoodProduct:read", label: "読む" },
+      { operation: "catalogFoodProduct:create", label: "追加" },
+      { operation: "catalogFoodProduct:update", label: "編集" },
+    ],
+  },
+  {
+    label: "共通のごはん商品のリクエスト",
+    shortLabel: "リクエスト",
+    operations: [
+      { operation: "catalogFoodProductRequest:read", label: "読む" },
+      { operation: "catalogFoodProductRequest:complete", label: "完了" },
+    ],
+  },
+];
 
 /**
  * AI との接続から読み取れる範囲と、書き込める範囲（`src/db/schema/mcp-permissions.ts` 参照）。
