@@ -92,6 +92,14 @@ test("共通のごはん商品を登録した結果の見た目", async ({ page 
   await takeSnapshot(page, testInfo);
 });
 
+test("共通のごはん商品を検索した結果の見た目", async ({ page }, testInfo) => {
+  await page.goto(
+    `/food-products?manufacturer=${encodeURIComponent("VRTフーズ")}&q=${encodeURIComponent("まぐろ")}`,
+  );
+  await expect(page.getByText("2 件中 1 件")).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("共通のごはん商品のリクエストを完了にした結果の見た目", async ({
   page,
 }, testInfo) => {

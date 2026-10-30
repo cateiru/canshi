@@ -9,6 +9,7 @@ import {
   toInput,
 } from "./catalog/form";
 import { type CheckedImage, checkCatalogImage } from "./catalog/image";
+import { parseCatalogListSearch } from "./catalog/search";
 import { resolveStorageLimitBytes } from "./catalog/storage";
 import {
   completeCatalogFoodProductRequest,
@@ -255,13 +256,21 @@ export function createApp() {
         : result && product
           ? { result, product }
           : undefined;
+    const search = parseCatalogListSearch(
+      c.req.query("manufacturer"),
+      c.req.query("q"),
+    );
     return c.html(
       <Layout
         title="共通のごはん商品"
         currentPath="/food-products"
         actions={<CatalogFoodProductsActions />}
       >
-        <CatalogFoodProductsPage products={products} change={change} />
+        <CatalogFoodProductsPage
+          products={products}
+          change={change}
+          search={search}
+        />
       </Layout>,
     );
   });

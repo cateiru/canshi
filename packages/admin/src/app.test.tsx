@@ -469,6 +469,103 @@ describe("共通のごはん商品", () => {
     expect((await listProducts())[0].search_keywords).toBe("[]");
   });
 
+  describe("メーカーごとのまとまりと検索", () => {
+    async function create(values: Record<string, string>) {
+      const response = await postMultipart(
+        "/food-products",
+        productForm(values),
+      );
+      expect(response.status).toBe(303);
+      return new URL(
+        response.headers.get("Location") ?? "",
+        ORIGIN,
+      ).searchParams.get("product") as string;
+    }
+
+    /** メーカーごとのまとまり（`<details>`）の HTML を並び順に返す */
+    async function sections(path: string) {
+      const html = await (await request(path)).text();
+      return html.split("<details").slice(1);
+    }
+
+    beforeEach(async () => {
+      await create({ name: "まぐろ味 カリカリ", manufacturer: "ねこフード" });
+      await create({
+        name: "かつお味 パウチ",
+        manufacturer: "ねこフード",
+        searchKeywords: "Premium",
+      });
+      await create({ name: "とりささみ", manufacturer: "いぬフード" });
+      await create({ name: "まぐろスープ", manufacturer: "" });
+    });
+
+    it("メーカーごとに閉じてまとめ、メーカー名のない商品は最後にまとめる", async () => {
+      const [inu, neko, none] = await sections("/food-products");
+      expect(inu).toContain("いぬフード");
+      expect(inu).toContain("1 件");
+      expect(neko).toContain("ねこフード");
+      expect(neko).toContain("2 件");
+      expect(neko).toContain("まぐろ味 カリカリ");
+      expect(neko).toContain("かつお味 パウチ");
+      expect(none).toContain("メーカー名なし");
+      expect(none).toContain("まぐろスープ");
+      for (const section of [inu, neko, none]) {
+        expect(section).not.toMatch(/^[^>]*\bopen\b/);
+      }
+    });
+
+    it("登録・更新した商品のメーカーのまとまりを開く", async () => {
+      const id = await create({ name: "しらす", manufacturer: "いぬフード" });
+      const [inu, neko] = await sections(
+        `/food-products?catalogChange=created&product=${id}`,
+      );
+      expect(inu).toMatch(/^[^>]*\bopen\b/);
+      expect(neko).not.toMatch(/^[^>]*\bopen\b/);
+    });
+
+    it("検索したメーカーの商品だけを、商品名・検索キーワードで絞り込む", async () => {
+      const [inu, neko, none] = await sections(
+        `/food-products?manufacturer=${encodeURIComponent("ねこフード")}&q=${encodeURIComponent(" まぐろ ")}`,
+      );
+      expect(neko).toMatch(/^[^>]*\bopen\b/);
+      expect(neko).toContain("2 件中 1 件");
+      expect(neko).toContain("まぐろ味 カリカリ");
+      expect(neko).not.toContain("かつお味 パウチ");
+      expect(neko).toContain('value="まぐろ"');
+      expect(neko).toContain('href="/food-products"');
+      // ほかのメーカーは絞り込まず、閉じたまま
+      expect(none).not.toMatch(/^[^>]*\bopen\b/);
+      expect(none).toContain("まぐろスープ");
+      expect(inu).toContain("とりささみ");
+
+      // 検索キーワードでも絞り込め、英字の大文字・小文字は区別しない
+      const [, byKeyword] = await sections(
+        `/food-products?manufacturer=${encodeURIComponent("ねこフード")}&q=premium`,
+      );
+      expect(byKeyword).toContain("かつお味 パウチ");
+      expect(byKeyword).not.toContain("まぐろ味 カリカリ");
+    });
+
+    it("メーカー名のない商品は、メーカーを空にして検索する", async () => {
+      const [, neko, none] = await sections(
+        `/food-products?manufacturer=&q=${encodeURIComponent("まぐろ")}`,
+      );
+      expect(none).toMatch(/^[^>]*\bopen\b/);
+      expect(none).toContain("1 件中 1 件");
+      expect(neko).not.toMatch(/^[^>]*\bopen\b/);
+      expect(neko).toContain("2 件");
+    });
+
+    it("一致する商品がなければそう表示する", async () => {
+      const [, neko] = await sections(
+        `/food-products?manufacturer=${encodeURIComponent("ねこフード")}&q=${encodeURIComponent("ちゅーる")}`,
+      );
+      expect(neko).toContain("2 件中 0 件");
+      expect(neko).toContain("「ちゅーる」に一致する商品はありません。");
+      expect(neko).not.toContain("<table");
+    });
+  });
+
   it("候補を追加する前に登録された商品は、元の内容量を候補として表示する", async () => {
     await env.DB.prepare(
       `INSERT INTO catalog_food_products

@@ -15,13 +15,21 @@ import {
   type TextureType,
 } from "../catalog/form";
 import { IMAGE_MAX_EDGE } from "../catalog/image";
+import {
+  type CatalogListSearch,
+  type CatalogManufacturerGroup,
+  groupCatalogFoodProducts,
+  matchesCatalogKeywords,
+} from "../catalog/search";
 import type { CatalogFoodProduct } from "../db/catalogFoodProducts";
 import { formatDateTime } from "./format";
 import {
+  ChevronDownIcon,
   PencilIcon,
   PhotoIcon,
   PhotoPlusIcon,
   PlusIcon,
+  SearchIcon,
   TrashIcon,
 } from "./icons";
 
@@ -106,10 +114,181 @@ export function CatalogFoodProductsActions() {
   );
 }
 
+const NO_MANUFACTURER_LABEL = "メーカー名なし";
+
+function CatalogFoodProductRow(props: { product: CatalogFoodProduct }) {
+  const { product } = props;
+  const target = formatTarget(product);
+  return (
+    <tr>
+      <td>
+        {product.imageAssetId ? (
+          <img
+            class="product-image"
+            src={`${productPath(product.id)}/image?v=${encodeURIComponent(product.imageAssetId)}`}
+            alt=""
+            width={64}
+            height={64}
+            loading="lazy"
+          />
+        ) : (
+          <span class="product-image placeholder">
+            <PhotoIcon />
+            <span class="visually-hidden">画像なし</span>
+          </span>
+        )}
+      </td>
+      <td>
+        <span class="product-name">{product.name}</span>
+        {product.searchKeywords.length > 0 && (
+          <span class="sub">
+            検索キーワード：{product.searchKeywords.join("、")}
+          </span>
+        )}
+        <code>{product.id}</code>
+      </td>
+      <td class="nowrap">
+        {NUTRITION_TYPE_LABEL[product.nutritionType]}
+        <br />
+        {TEXTURE_TYPE_LABEL[product.textureType]}
+      </td>
+      <td class="num">{product.kcalPer100g} kcal/100g</td>
+      <td class="num">
+        {product.packageSizes.map((size) => (
+          <span class="package-size">{formatPackageSize(size)}</span>
+        ))}
+      </td>
+      <td>{target ?? <span class="empty">-</span>}</td>
+      <td class="num">{product.addedCount}</td>
+      <td>{formatDateTime(product.updatedAt)}</td>
+      <td>
+        <div class="actions">
+          <a
+            href={`${productPath(product.id)}/edit`}
+            class="icon-button"
+            aria-label={`${product.name}を編集する`}
+            title="編集する"
+          >
+            <PencilIcon />
+          </a>
+          {/* 確認文には商品名などの入力値を含めない（属性値の中の JS として実行されるため） */}
+          <form
+            method="post"
+            action={`${productPath(product.id)}/delete`}
+            onsubmit="return confirm('この共通のごはん商品を削除しますか？家に追加済みの商品は残ります。')"
+          >
+            <button
+              type="submit"
+              class="icon-button"
+              aria-label={`${product.name}を削除する`}
+              title="削除する"
+            >
+              <TrashIcon />
+            </button>
+          </form>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * メーカーごとに折りたたむまとまり。中の検索フォームはこのメーカーの商品だけを、商品名・検索
+ * キーワードで絞り込む（`/food-products?manufacturer=…&q=…`。メーカー名のないまとまりは
+ * `manufacturer` を空にする）
+ */
+function CatalogManufacturerSection(props: {
+  group: CatalogManufacturerGroup;
+  /** このまとまりで検索しているときの検索語。検索していなければ null */
+  search: CatalogListSearch | null;
+  open: boolean;
+}) {
+  const { group, search } = props;
+  const label = group.manufacturer ?? NO_MANUFACTURER_LABEL;
+  const products = search
+    ? group.products.filter((product) =>
+        matchesCatalogKeywords(product, search.keywords),
+      )
+    : group.products;
+  return (
+    <details class="manufacturer-group" open={props.open}>
+      <summary>
+        <ChevronDownIcon />
+        <span class="manufacturer-name">{label}</span>
+        <span class="count">
+          {search
+            ? `${group.products.length} 件中 ${products.length} 件`
+            : `${group.products.length} 件`}
+        </span>
+      </summary>
+      <div class="manufacturer-body">
+        <form method="get" action="/food-products" class="search-form">
+          <input
+            type="hidden"
+            name="manufacturer"
+            value={group.manufacturer ?? ""}
+          />
+          <label class="search-field">
+            <span class="visually-hidden">{label}の商品を検索</span>
+            <input
+              type="search"
+              name="q"
+              value={search?.query ?? ""}
+              placeholder="商品名・検索キーワード"
+            />
+          </label>
+          <button type="submit" class="with-icon">
+            <SearchIcon />
+            検索する
+          </button>
+          {search && (
+            <a href="/food-products" class="clear-search">
+              検索をやめる
+            </a>
+          )}
+        </form>
+        {products.length === 0 ? (
+          <p class="empty">「{search?.query}」に一致する商品はありません。</p>
+        ) : (
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">画像</th>
+                  <th scope="col">商品名</th>
+                  <th scope="col">区分・種類</th>
+                  <th scope="col">カロリー</th>
+                  <th scope="col">内容量</th>
+                  <th scope="col">対象</th>
+                  <th scope="col">家への追加</th>
+                  <th scope="col">更新日時</th>
+                  <th scope="col">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <CatalogFoodProductRow product={product} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
 export function CatalogFoodProductsPage(props: {
   products: CatalogFoodProduct[];
   change?: CatalogChange;
+  search?: CatalogListSearch | null;
 }) {
+  const { search, change } = props;
+  // 検索しているまとまりと、登録・更新した商品のまとまりだけを開いておく
+  const changedManufacturer =
+    change && change.result !== "deleted"
+      ? change.product.manufacturer
+      : undefined;
   return (
     <>
       {/* 日本語の文の途中で改行すると空白が入るため、文ごとに分けて書く */}
@@ -121,107 +300,21 @@ export function CatalogFoodProductsPage(props: {
           家に追加した商品は内容を写したものなので、ここで編集・削除しても家の商品は変わりません。
         </span>
       </p>
-      {props.change && <CatalogChangeNotice change={props.change} />}
+      {change && <CatalogChangeNotice change={change} />}
       {props.products.length === 0 ? (
         <p class="empty">共通のごはん商品はまだありません。</p>
       ) : (
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">画像</th>
-                <th scope="col">商品名</th>
-                <th scope="col">区分・種類</th>
-                <th scope="col">カロリー</th>
-                <th scope="col">内容量</th>
-                <th scope="col">対象</th>
-                <th scope="col">家への追加</th>
-                <th scope="col">更新日時</th>
-                <th scope="col">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {props.products.map((product) => {
-                const target = formatTarget(product);
-                return (
-                  <tr>
-                    <td>
-                      {product.imageAssetId ? (
-                        <img
-                          class="product-image"
-                          src={`${productPath(product.id)}/image?v=${encodeURIComponent(product.imageAssetId)}`}
-                          alt=""
-                          width={64}
-                          height={64}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span class="product-image placeholder">
-                          <PhotoIcon />
-                          <span class="visually-hidden">画像なし</span>
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <span class="product-name">{product.name}</span>
-                      {product.manufacturer && (
-                        <span class="sub">{product.manufacturer}</span>
-                      )}
-                      {product.searchKeywords.length > 0 && (
-                        <span class="sub">
-                          検索キーワード：{product.searchKeywords.join("、")}
-                        </span>
-                      )}
-                      <code>{product.id}</code>
-                    </td>
-                    <td class="nowrap">
-                      {NUTRITION_TYPE_LABEL[product.nutritionType]}
-                      <br />
-                      {TEXTURE_TYPE_LABEL[product.textureType]}
-                    </td>
-                    <td class="num">{product.kcalPer100g} kcal/100g</td>
-                    <td class="num">
-                      {product.packageSizes.map((size) => (
-                        <span class="package-size">
-                          {formatPackageSize(size)}
-                        </span>
-                      ))}
-                    </td>
-                    <td>{target ?? <span class="empty">-</span>}</td>
-                    <td class="num">{product.addedCount}</td>
-                    <td>{formatDateTime(product.updatedAt)}</td>
-                    <td>
-                      <div class="actions">
-                        <a
-                          href={`${productPath(product.id)}/edit`}
-                          class="icon-button"
-                          aria-label={`${product.name}を編集する`}
-                          title="編集する"
-                        >
-                          <PencilIcon />
-                        </a>
-                        {/* 確認文には商品名などの入力値を含めない（属性値の中の JS として実行されるため） */}
-                        <form
-                          method="post"
-                          action={`${productPath(product.id)}/delete`}
-                          onsubmit="return confirm('この共通のごはん商品を削除しますか？家に追加済みの商品は残ります。')"
-                        >
-                          <button
-                            type="submit"
-                            class="icon-button"
-                            aria-label={`${product.name}を削除する`}
-                            title="削除する"
-                          >
-                            <TrashIcon />
-                          </button>
-                        </form>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div class="manufacturer-groups">
+          {groupCatalogFoodProducts(props.products).map((group) => {
+            const searching = search?.manufacturer === group.manufacturer;
+            return (
+              <CatalogManufacturerSection
+                group={group}
+                search={searching ? search : null}
+                open={searching || changedManufacturer === group.manufacturer}
+              />
+            );
+          })}
         </div>
       )}
     </>
