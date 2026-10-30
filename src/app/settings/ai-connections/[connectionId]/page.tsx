@@ -91,9 +91,6 @@ export default async function AiConnectionPage({
               : NO_LAST_USED_AT}
           </dd>
         </dl>
-        <p className={styles.description}>
-          アプリの名前は、アプリ自身が申告したものです。
-        </p>
         <McpAccessNotice />
       </Surface>
 

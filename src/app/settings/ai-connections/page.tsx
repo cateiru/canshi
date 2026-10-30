@@ -105,9 +105,6 @@ export default async function AiConnectionsPage() {
                           <Heading level={3} size="lg">
                             {clientName}
                           </Heading>
-                          <p className={styles.description}>
-                            アプリ自身が申告した名前です。
-                          </p>
                         </div>
                       </div>
                       <dl className={styles.details}>
