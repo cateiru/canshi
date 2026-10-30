@@ -12,7 +12,10 @@ import {
 } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
-import { accessibleNotificationsCondition } from "./access";
+import {
+  ACCESSIBLE_NOTIFICATIONS_CONDITION_PARAMETERS,
+  accessibleNotificationsCondition,
+} from "./access";
 
 export type NotificationActionResult = { error?: string };
 
@@ -299,8 +302,11 @@ export async function markNotificationsReadAction(
   try {
     const db = getDb();
     const readAt = new Date();
-    // `set` の既読日時と `accessibleNotificationsCondition` の userId（2 個）の分を 3 個予約する
-    for (const chunk of chunkForBoundParameters(ids, 3)) {
+    // `set` の既読日時（1 個）と `accessibleNotificationsCondition` の userId の分を予約する
+    for (const chunk of chunkForBoundParameters(
+      ids,
+      1 + ACCESSIBLE_NOTIFICATIONS_CONDITION_PARAMETERS,
+    )) {
       await db
         .update(notifications)
         .set({ readAt })

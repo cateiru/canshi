@@ -7,10 +7,16 @@ import {
 } from "@/features/households/queries";
 
 /**
+ * `accessibleNotificationsCondition` が使うバインドパラメーターの数。`inArray` を
+ * `chunkForBoundParameters` で分割するときに、この数を予約する
+ */
+export const ACCESSIBLE_NOTIFICATIONS_CONDITION_PARAMETERS = 3;
+
+/**
  * ユーザーが参照できる通知に一致する条件。猫についての通知はユーザーの家の猫の通知、
  * 家についての通知はユーザーが所属する家の通知、ユーザーについての通知はユーザー本人宛ての
  * 通知に限る。別の家・別のユーザーの通知は、存在しない通知と同じく一覧・更新の対象にしない。
- * バインドパラメーターとして userId を 3 個使う
+ * バインドパラメーターとして userId を `ACCESSIBLE_NOTIFICATIONS_CONDITION_PARAMETERS` 個使う
  */
 export function accessibleNotificationsCondition(
   db: ReturnType<typeof getDb>,
