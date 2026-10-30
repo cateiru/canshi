@@ -786,6 +786,16 @@ test.describe("記録一覧のページング", () => {
     );
     await takeSnapshot(page, testInfo);
   });
+
+  // タイムラインも記録一覧と同じページ送りを使う。BUSY_CAT の 2024-01 は水の記録が
+  // 31 件あり、1 ページ 20 件のため 2 ページになる
+  test("タイムラインの最後のページの見た目", async ({ page }, testInfo) => {
+    await page.goto(`/cats/${BUSY_CAT}/timeline?page=2&ym=2024-01`);
+    const pagination = page.getByRole("navigation", { name: "ページ" });
+    await expect(pagination).toHaveText(/2 \/ 2/);
+    await pagination.scrollIntoViewIfNeeded();
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
 });
 
 // 直近365日のカレンダーグラフを持つ記録一覧。グラフ部分は実行日時に依存するため
