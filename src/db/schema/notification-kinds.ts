@@ -9,4 +9,5 @@ export const NOTIFICATION_KINDS = [
   "symptom_ongoing",
   "feeding_time",
   "feeding_not_recorded",
+  "catalog_request_completed",
 ] as const;

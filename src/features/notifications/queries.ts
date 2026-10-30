@@ -70,7 +70,10 @@ export async function getResolvedSettingsForCat(
 /** 通知一覧の絞り込み。ユーザーが参照できる猫（所属する家の猫）の通知だけを返す */
 export type NotificationFilter = {
   userId: string;
-  /** 猫で絞り込む。絞り込んだときは、家についての通知（`household_id` を持つもの）は含めない */
+  /**
+   * 猫で絞り込む。絞り込んだときは、家についての通知（`household_id` を持つもの）と
+   * ユーザーについての通知（`user_id` を持つもの）は含めない
+   */
   catId?: string;
 };
 

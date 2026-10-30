@@ -25,6 +25,11 @@ import {
   searchCatalogFoodProducts,
 } from "@/features/catalog-food-products/queries";
 import {
+  CATALOG_REQUEST_LIST_LIMIT,
+  completeCatalogFoodProductRequest,
+  listCatalogFoodProductRequests,
+} from "@/features/catalog-food-products/requests";
+import {
   catalogFoodProductSchema,
   MAX_CATALOG_PACKAGE_SIZES,
   MAX_CATALOG_SEARCH_KEYWORD_LENGTH,
@@ -243,7 +248,8 @@ async function resolveCatalogOperation(
 }
 
 /**
- * 共通のごはん商品（`catalog_food_products`）の読み取り・追加・編集のツールを登録する。
+ * 共通のごはん商品（`catalog_food_products`）の読み取り・追加・編集と、そのリクエスト
+ * （`catalog_food_product_requests`）の読み取り・完了のツールを登録する。
  * 扱えるのは admin のユーザーで、接続にその操作を許可しているときに限る。
  * 画像は追加・編集で登録・差し替えできる。画像だけの削除と、商品の削除は管理画面だけで行う
  */
@@ -403,6 +409,94 @@ export function registerCatalogFoodProductTools(
         }
       }
       return jsonResult({ id: args.id });
+    },
+  );
+
+  server.registerTool(
+    "list_catalog_food_product_requests",
+    {
+      title: "共通のごはん商品のリクエストを取得",
+      description:
+        "ユーザーが共通のごはん商品を検索して見つからなかったときに送った、商品の追加のリクエストを取得する。" +
+        "status が open（既定）なら対応を待っているリクエストを古い順に、completed なら完了にしたリクエストを新しい順に、" +
+        `${CATALOG_REQUEST_LIST_LIMIT} 件まで返す。それより多いときは hasMore が true になる。` +
+        "criteria はユーザーが検索した条件（keywords・manufacturer・textureType・nutritionType・lifeStage・targetBreed）で、" +
+        "label はその要約。リクエストしたユーザーは返さない。" +
+        "条件に合う商品を create_catalog_food_product で追加したら、complete_catalog_food_product_request で完了にする。" +
+        "CANSHI の管理者のユーザーで、共通のごはん商品のリクエストの読み取りを許可した接続だけが使える。",
+      inputSchema: {
+        status: z
+          .enum(["open", "completed"])
+          .optional()
+          .describe("open=対応を待っている（既定）、completed=完了にした"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ status }) => {
+      const resolved = await resolveCatalogOperation(
+        ctx,
+        "catalogFoodProductRequest:read",
+      );
+      if ("error" in resolved) {
+        return errorResult(resolved.error);
+      }
+      const { items, hasMore } = await listCatalogFoodProductRequests(
+        status ?? "open",
+        ctx.env.DB,
+      );
+      return jsonResult({
+        requests: items.map((request) => ({
+          id: request.id,
+          label: request.label,
+          criteria: parseCatalogSearchParams(
+            Object.fromEntries(new URLSearchParams(request.searchQuery)),
+          ),
+          createdAt: request.createdAt.toISOString(),
+          completedAt: request.completedAt?.toISOString() ?? null,
+        })),
+        hasMore,
+      });
+    },
+  );
+
+  server.registerTool(
+    "complete_catalog_food_product_request",
+    {
+      title: "共通のごはん商品のリクエストを完了にする",
+      description:
+        "共通のごはん商品のリクエストを 1 件完了にし、リクエストしたユーザーに対応したことを通知する。" +
+        "完了にしたリクエストは元に戻せない。共通のごはん商品を追加したかどうかは確かめないため、" +
+        "条件に合う商品を追加してから（追加できない商品なら、そのことをユーザーに確かめてから）完了にする。" +
+        "CANSHI の管理者のユーザーで、共通のごはん商品のリクエストの完了を許可した接続だけが使える。",
+      inputSchema: {
+        id: z
+          .string()
+          .describe(
+            "リクエストの ID（list_catalog_food_product_requests で取得できる）",
+          ),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+      },
+    },
+    async ({ id }) => {
+      const resolved = await resolveCatalogOperation(
+        ctx,
+        "catalogFoodProductRequest:complete",
+      );
+      if ("error" in resolved) {
+        return errorResult(resolved.error);
+      }
+      const result = await completeCatalogFoodProductRequest(id, ctx.env.DB);
+      if (result === "not-found") {
+        return errorResult(`id="${id}" のリクエストが見つかりません`);
+      }
+      return jsonResult({
+        id,
+        alreadyCompleted: result === "already-completed",
+      });
     },
   );
 }

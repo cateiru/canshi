@@ -39,11 +39,15 @@ export function buildPushAccessIndex(
 
 /**
  * 通知を送る購読を返す。猫についての通知はその猫を参照できるユーザー（猫の家のメンバー）、
- * 家についての通知はその家のメンバーの購読だけを対象にし、ユーザーに紐付いていない購読
- * （ユーザーの導入前のもの）には送らない
+ * 家についての通知はその家のメンバー、ユーザーについての通知はそのユーザー本人の購読だけを
+ * 対象にし、ユーザーに紐付いていない購読（ユーザーの導入前のもの）には送らない
  */
 export function selectPushTargets<T extends { userId: string | null }>(
-  notification: { catId: string | null; householdId: string | null },
+  notification: {
+    catId: string | null;
+    householdId: string | null;
+    userId: string | null;
+  },
   subscriptions: readonly T[],
   { catIdsByUser, householdIdsByUser }: PushAccessIndex,
 ): T[] {
@@ -62,6 +66,9 @@ export function selectPushTargets<T extends { userId: string | null }>(
           .get(subscription.userId)
           ?.has(notification.householdId) ?? false
       );
+    }
+    if (notification.userId != null) {
+      return subscription.userId === notification.userId;
     }
     return false;
   });

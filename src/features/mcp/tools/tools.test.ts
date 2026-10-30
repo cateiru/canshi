@@ -7,6 +7,7 @@ import initSqlJs from "sql.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import {
+  catalogFoodProductRequests,
   catalogFoodProducts,
   cats,
   expenseRecordCats,
@@ -20,6 +21,7 @@ import {
   mcpPermissions,
   medicationDoses,
   medications,
+  notifications,
   poopRecords,
   users,
   weightRecords,
@@ -1124,5 +1126,125 @@ describe("共通のごはん商品", () => {
     ).toContain("管理者のユーザーだけが扱えます");
     const [row] = await db.select().from(catalogFoodProducts);
     expect(row.name).toBe("まぐろ");
+  });
+});
+
+describe("共通のごはん商品のリクエスト", () => {
+  async function makeAdmin() {
+    await db.update(users).set({ role: "admin" }).where(eq(users.id, "user-1"));
+  }
+
+  beforeEach(async () => {
+    await db.insert(catalogFoodProductRequests).values([
+      {
+        id: "request-1",
+        userId: "user-2",
+        searchQuery: "q=%E3%81%BE%E3%81%90%E3%82%8D&textureType=wet",
+        label: "キーワード：まぐろ、種類：ウェット",
+        createdAt: new Date("2026-10-01T00:00:00Z"),
+      },
+      {
+        id: "request-2",
+        userId: "user-2",
+        searchQuery: "q=%E3%81%8B%E3%81%A4%E3%81%8A",
+        label: "キーワード：かつお",
+        createdAt: new Date("2026-10-02T00:00:00Z"),
+      },
+    ]);
+  });
+
+  it("admin でないユーザーは、接続に許可していても扱えない", async () => {
+    await allow({
+      catalogOperations: [
+        "catalogFoodProductRequest:read",
+        "catalogFoodProductRequest:complete",
+      ],
+    });
+
+    expect((await call("list_catalog_food_product_requests")).error).toContain(
+      "管理者のユーザーだけが扱えます",
+    );
+    expect(
+      (await call("complete_catalog_food_product_request", { id: "request-1" }))
+        .error,
+    ).toContain("管理者のユーザーだけが扱えます");
+    expect(await db.select().from(notifications)).toEqual([]);
+  });
+
+  it("admin でも、接続に許可していない操作は行えない", async () => {
+    await makeAdmin();
+    await allow({ catalogOperations: ["catalogFoodProduct:read"] });
+
+    expect((await call("list_catalog_food_product_requests")).error).toContain(
+      "「共通のごはん商品のリクエストの読み取り」が許可されていません",
+    );
+    expect(
+      (await call("complete_catalog_food_product_request", { id: "request-1" }))
+        .error,
+    ).toContain("「共通のごはん商品のリクエストの完了」が許可されていません");
+    expect(await db.select().from(notifications)).toEqual([]);
+  });
+
+  it("対応を待っているリクエストを、検索条件とともに古い順に返す", async () => {
+    await makeAdmin();
+    await allow({ catalogOperations: ["catalogFoodProductRequest:read"] });
+
+    expect((await call("list_catalog_food_product_requests")).value).toEqual({
+      requests: [
+        {
+          id: "request-1",
+          label: "キーワード：まぐろ、種類：ウェット",
+          criteria: {
+            keywords: ["まぐろ"],
+            manufacturer: null,
+            textureType: "wet",
+            nutritionType: null,
+            lifeStage: null,
+            targetBreed: null,
+          },
+          createdAt: "2026-10-01T00:00:00.000Z",
+          completedAt: null,
+        },
+        expect.objectContaining({ id: "request-2" }),
+      ],
+      hasMore: false,
+    });
+  });
+
+  it("完了にすると、リクエストしたユーザーに通知し、完了の一覧に移す", async () => {
+    await makeAdmin();
+    await allow({
+      catalogOperations: [
+        "catalogFoodProductRequest:read",
+        "catalogFoodProductRequest:complete",
+      ],
+    });
+
+    expect(
+      (await call("complete_catalog_food_product_request", { id: "request-1" }))
+        .value,
+    ).toEqual({ id: "request-1", alreadyCompleted: false });
+    expect(
+      (await call("complete_catalog_food_product_request", { id: "request-1" }))
+        .value,
+    ).toEqual({ id: "request-1", alreadyCompleted: true });
+    expect(
+      (await call("complete_catalog_food_product_request", { id: "missing" }))
+        .error,
+    ).toContain('id="missing" のリクエストが見つかりません');
+
+    expect(await db.select().from(notifications)).toEqual([
+      expect.objectContaining({
+        userId: "user-2",
+        kind: "catalog_request_completed",
+        referenceId: "request-1",
+      }),
+    ]);
+    const completed = await call("list_catalog_food_product_requests", {
+      status: "completed",
+    });
+    expect(completed.value?.requests).toEqual([
+      expect.objectContaining({ id: "request-1" }),
+    ]);
   });
 });

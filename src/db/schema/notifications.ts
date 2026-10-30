@@ -9,10 +9,12 @@ import {
 import { cats } from "./cats";
 import { households } from "./households";
 import { NOTIFICATION_KINDS } from "./notification-kinds";
+import { users } from "./users";
 
 /**
  * 生成された通知。猫についての通知は `cat_id`、家についての通知（猫を問わないもの）は
- * `household_id` を持ち、どちらか一方だけを必ず持つ（`notifications_target_check`）。
+ * `household_id`、ユーザーについての通知（共通のごはん商品のリクエストの完了など、本人だけに
+ * 届けるもの）は `user_id` を持ち、どれか 1 つだけを必ず持つ（`notifications_target_check`）。
  * `cat_id` を持つが記録テーブルではなく、タイムライン（`14`）の対象外（`src/db/README.md` 参照）。`dedupe_key` の UNIQUE 制約により、同じ判定結果からの
  * 二重生成を防ぐ（`src/features/notifications/generate.ts` が `onConflictDoNothing` で insert する）
  */
@@ -26,9 +28,11 @@ export const notifications = sqliteTable(
     catId: text("cat_id").references(() => cats.id),
     // 家についての通知の家。猫についての通知では null（猫の家は `cats.household_id` から引く）
     householdId: text("household_id").references(() => households.id),
+    // ユーザーについての通知の宛先のユーザー。猫・家についての通知では null
+    userId: text("user_id").references(() => users.id),
     kind: text("kind", { enum: NOTIFICATION_KINDS }).notNull(),
-    // cleaning_due の場合は cleaning_targets.id、symptom_ongoing の場合は symptoms.id を持つ。
-    // それ以外は null
+    // cleaning_due の場合は cleaning_targets.id、symptom_ongoing の場合は symptoms.id、
+    // catalog_request_completed の場合は catalog_food_product_requests.id を持つ。それ以外は null
     referenceId: text("reference_id"),
     dedupeKey: text("dedupe_key").notNull().unique(),
     title: text("title").notNull(),
@@ -57,7 +61,7 @@ export const notifications = sqliteTable(
     // 修飾しない列名で書く
     check(
       "notifications_target_check",
-      sql`(cat_id IS NULL) <> (household_id IS NULL)`,
+      sql`(cat_id IS NOT NULL) + (household_id IS NOT NULL) + (user_id IS NOT NULL) = 1`,
     ),
   ],
 );

@@ -11,6 +11,10 @@ import {
 import { type CheckedImage, checkCatalogImage } from "./catalog/image";
 import { resolveStorageLimitBytes } from "./catalog/storage";
 import {
+  completeCatalogFoodProductRequest,
+  listCatalogFoodProductRequests,
+} from "./db/catalogFoodProductRequests";
+import {
   createCatalogFoodProduct,
   deleteCatalogFoodProduct,
   getCatalogFoodProduct,
@@ -42,6 +46,10 @@ import {
   type UserRoleChange,
   UsersPage,
 } from "./views/pages";
+import {
+  CatalogFoodProductRequestsPage,
+  type RequestCompletion,
+} from "./views/requestPages";
 
 const ROLE_CHANGE_RESULTS = [
   "updated",
@@ -88,6 +96,11 @@ function catalogResultUrl(
   }
   return `/food-products?${params}`;
 }
+
+const REQUEST_COMPLETION_RESULTS = [
+  "completed",
+  "already-completed",
+] as const satisfies readonly RequestCompletion["result"][];
 
 /** 共通のごはん商品の登録・編集ページのパンくず（一覧へ戻れるようにする） */
 function catalogBreadcrumb(label: string) {
@@ -397,6 +410,44 @@ export function createApp() {
       return c.notFound();
     }
     return c.redirect(catalogResultUrl("deleted"), 303);
+  });
+
+  app.get("/food-product-requests", async (c) => {
+    const { open, completed } = await listCatalogFoodProductRequests(c.env.DB);
+    // 完了にした直後は、その結果を表示する
+    const result = REQUEST_COMPLETION_RESULTS.find(
+      (value) => value === c.req.query("completion"),
+    );
+    const request = [...open, ...completed].find(
+      (item) => item.id === c.req.query("request"),
+    );
+    const completion = result && request ? { result, request } : undefined;
+    return c.html(
+      <Layout
+        title="共通のごはん商品のリクエスト"
+        currentPath="/food-product-requests"
+      >
+        <CatalogFoodProductRequestsPage
+          open={open}
+          completed={completed}
+          completion={completion}
+        />
+      </Layout>,
+    );
+  });
+
+  // リクエストを完了にし、リクエストしたユーザーに通知する
+  app.post("/food-product-requests/:requestId/complete", async (c) => {
+    const requestId = c.req.param("requestId");
+    const result = await completeCatalogFoodProductRequest(c.env.DB, requestId);
+    if (result === "not-found") {
+      return c.notFound();
+    }
+    const params = new URLSearchParams({
+      completion: result,
+      request: requestId,
+    });
+    return c.redirect(`/food-product-requests?${params}`, 303);
   });
 
   // 共通のごはん商品の画像。管理画面の一覧・編集フォームで表示する

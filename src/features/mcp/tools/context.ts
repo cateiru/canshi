@@ -54,6 +54,8 @@ const OPERATION_LABEL: Record<
   "catalogFoodProduct:read": "共通のごはん商品の読み取り",
   "catalogFoodProduct:create": "共通のごはん商品の追加",
   "catalogFoodProduct:update": "共通のごはん商品の編集",
+  "catalogFoodProductRequest:read": "共通のごはん商品のリクエストの読み取り",
+  "catalogFoodProductRequest:complete": "共通のごはん商品のリクエストの完了",
 };
 
 const ASK_USER_TO_ALLOW =
