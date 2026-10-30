@@ -38,7 +38,7 @@ afterEach(() => {
 });
 
 /**
- * `@cloudflare/workers-oauth-provider`（0.10.4）の `completeAuthorization()` が保存するのと
+ * `@cloudflare/workers-oauth-provider`（1.2.4）の `completeAuthorization()` が保存するのと
  * 同じキー・形式で、クライアント・grant・アクセストークンを保存する
  */
 async function seed() {
@@ -123,6 +123,26 @@ async function seed() {
   return store;
 }
 
+/** CIMD のクライアントの ID（クライアントの情報を置いた URL） */
+const CIMD_CLIENT_ID = "https://claude.ai/oauth/mcp-oauth-client-metadata";
+
+/**
+ * CIMD のクライアントの grant。`client:{clientId}` は保存されず、名前は同意したときに
+ * `metadata.clientName` に残す（`./authorize.ts`）
+ */
+function cimdGrant(id: string, redirectUri: string) {
+  return {
+    id,
+    clientId: CIMD_CLIENT_ID,
+    userId: "user-1",
+    scope: [],
+    metadata: { clientName: "Claude" },
+    encryptedProps: "encrypted",
+    createdAt: NOW_SECONDS,
+    redirectUri,
+  };
+}
+
 describe("listUserMcpConnections", () => {
   it("ユーザーの期限内の接続を新しい順に、クライアントの名前と合わせて返す", async () => {
     await seed();
@@ -145,6 +165,21 @@ describe("listUserMcpConnections", () => {
         lastUsedAt: null,
       },
     ]);
+  });
+
+  it("CIMD のクライアントは、同意したときに grant に残した名前を返す", async () => {
+    await seed();
+    await new D1KvStore(d1).put(
+      "grant:user-1:grantCimd",
+      JSON.stringify(cimdGrant("grantCimd", "https://claude.ai/cb")),
+    );
+
+    const [connection] = await listUserMcpConnections("user-1", d1);
+    expect(connection).toMatchObject({
+      id: "grantCimd",
+      clientId: CIMD_CLIENT_ID,
+      clientName: "Claude",
+    });
   });
 
   it("接続ごとに、最後に使った日時を返す", async () => {
@@ -266,6 +301,30 @@ describe("revokeUserMcpConnection", () => {
       { userId: "user-1", clientId: "client-noname" },
       { userId: "user-2", clientId: "client-chatgpt" },
     ]);
+  });
+
+  it("同じアプリ（CIMD のクライアント）とほかにも接続していれば、共有している読み取りの範囲は残す", async () => {
+    const store = await seed();
+    await store.put(
+      "grant:user-1:grantCimdA",
+      JSON.stringify(cimdGrant("grantCimdA", "https://claude.ai/cb-a")),
+    );
+    await store.put(
+      "grant:user-1:grantCimdB",
+      JSON.stringify(cimdGrant("grantCimdB", "https://claude.ai/cb-b")),
+    );
+    await db.insert(users).values({ id: "user-1", name: "ユーザー1" });
+    await db.insert(mcpPermissions).values({
+      userId: "user-1",
+      clientId: CIMD_CLIENT_ID,
+      excludedCatIds: ["c"],
+    });
+
+    await revokeUserMcpConnection("user-1", "grantCimdA", d1);
+    expect(await db.select().from(mcpPermissions)).toHaveLength(1);
+
+    await revokeUserMcpConnection("user-1", "grantCimdB", d1);
+    expect(await db.select().from(mcpPermissions)).toEqual([]);
   });
 
   it("解除した接続を最後に使った日時の記録だけを削除する", async () => {

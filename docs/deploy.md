@@ -306,6 +306,15 @@ CANSHI のデータを参照できる MCP サーバーを、メインアプリ�
   同意画面へ戻る。「許可する」を押すと、ログイン中のユーザーの ID をトークンに保存して認可を完了する
   （`src/features/mcp/authorize.ts`）。DCR は誰でも呼べるため、一度許可したクライアントでも
   毎回同意画面を表示する
+- クライアントの登録は、MCP の 2026-07-28 版で推奨される Client ID Metadata Document（CIMD、
+  クライアントの情報を置いた HTTPS の URL を `client_id` にする方式）と、従来の Dynamic Client
+  Registration（DCR、`/oauth/register`）の両方を受け付ける。CIMD の文書を取得するため、
+  `wrangler.toml` の互換性フラグに `global_fetch_strictly_public` を入れている。CIMD のクライアントは
+  同じアプリのすべての接続で `client_id` が同じため、接続ごとの読み取りの範囲もアプリごとに共有する
+- アクセストークンは MCP サーバーの URL（`https://canshi.cateiru.dev/mcp`、RFC 8707 の resource）に
+  紐づける（`src/worker.ts` の `resourceMetadata`、オリジンごとに決める）。
+  `@cloudflare/workers-oauth-provider` を 0.10 系から 1 系へ上げたとき、これと違う resource に
+  紐づいていた接続は、トークンの更新で `invalid_grant` になり、一度だけ接続し直しになる
 - MCP のツールは、トークンに保存したユーザーの家の猫だけを返す
 - クライアント登録・認可・トークンは D1 の `oauth_kv_entries` テーブルに保存する。
   `@cloudflare/workers-oauth-provider` は Workers KV（`env.OAUTH_KV`）に保存する作りのため、

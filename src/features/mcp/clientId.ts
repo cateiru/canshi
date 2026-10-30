@@ -54,7 +54,7 @@ export function withMcpClientId(apiHandler: {
  * アクセストークンの grant の ID と、そのクライアントの ID。`OAuthProvider` は `apiHandler` を呼ぶ前に
  * トークンを検証済みのため、ここではトークンから grant の ID を取り出すだけでよい。
  *
- * アクセストークンは `@cloudflare/workers-oauth-provider`（0.10.4 時点）が
+ * アクセストークンは `@cloudflare/workers-oauth-provider`（1.2.4 時点）が
  * `{userId}:{grantId}:{secret}` の形式で発行する。ライブラリを更新したときは、形式が
  * 変わっていないか確かめること（変わると、ツールが読み取りを断るようになる）
  */
