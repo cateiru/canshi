@@ -110,6 +110,10 @@ Worker・Access ポリシーには変更を加えない。
 
 ## クライアント登録方式の検討
 
+> 2026-10 追記: `@cloudflare/workers-oauth-provider` の v1 で CIMD に対応したため、CIMD と DCR の
+> 両方を受け付けるようにした（Issue #400、PR #402）。Claude は CIMD で接続する。現在の構成は
+> `docs/deploy.md` の「MCP サーバー」節を参照。以下は当時の検討の記録。
+
 - MCP の最新仕様では、認可サーバーが対応していれば Client ID Metadata Document（CIMD、HTTPS
   URL を `client_id` として使う方式）が新規実装で推奨されている。ChatGPT はこの CIMD（公開
   クライアントまたは `private_key_jwt` によるクライアント認証）に対応している
