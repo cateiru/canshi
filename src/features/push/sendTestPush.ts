@@ -86,9 +86,8 @@ export async function listPushTestTargets(
 
 /**
  * 予約されたテスト通知を送る。応答の扱いは通常の通知と同じ（`applyPushResponse`）で、
- * `retriable` 以外では予約を削除する。`retriable` のときは予約を残すので、
- * 呼び出し側でステップのリトライに委ね、リトライし尽くしたら次のスケジュール実行で送り直す。
- * `fetch` 自体の失敗も、予約を残したまま例外をそのまま投げる
+ * `retriable` 以外では予約を削除する。`retriable` のときは予約を残し、次のスケジュール実行で
+ * 送り直す。`fetch` 自体の失敗も、予約を残したまま例外をそのまま投げる
  */
 export async function sendTestPush(
   db: ReturnType<typeof getDb>,

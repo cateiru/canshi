@@ -62,10 +62,19 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
       return;
     }
 
-    // 通知設定で予約されたテスト通知。通常の通知が 0 件の回でも送るよう、下の早期 return より
-    // 前に送る
-    await this.sendTestPushes(step, vapid);
+    await this.sendNotificationPushes(step, vapid, now);
 
+    // 通知設定で予約されたテスト通知。テスト通知の送信の失敗が通常の通知を遅らせないよう、
+    // 通常の通知を送り終えてから送る
+    await this.sendTestPushes(step, vapid);
+  }
+
+  /** 生成済みでまだ送っていない通知を、送り先の購読へ送る */
+  private async sendNotificationPushes(
+    step: WorkflowStep,
+    vapid: VapidKeys,
+    now: Date,
+  ): Promise<void> {
     const { pending, subscriptions, catAccesses, householdAccesses } =
       await step.do("list pending pushes", async () => {
         const [pending, subscriptions, catAccesses, householdAccesses] =
@@ -187,8 +196,9 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
   }
 
   /**
-   * 予約されたテスト通知を送る（`src/features/push/sendTestPush.ts`）。失敗しても通常の
-   * 通知の送信は止めず、送れなかった予約は残して次のスケジュール実行で送り直す
+   * 予約されたテスト通知を送る（`src/features/push/sendTestPush.ts`）。テスト通知はステップの
+   * リトライで待たず、送れなかった予約は残して次のスケジュール実行で送り直す。リトライで待つと、
+   * 実行が次のスケジュール実行と重なって同じ予約を二重に送ることがあるため
    */
   private async sendTestPushes(
     step: WorkflowStep,
@@ -196,10 +206,9 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
   ): Promise<void> {
     let targets: PushTestTarget[];
     try {
-      // 失敗しても通常の通知の送信を長く待たせないよう、リトライは 1 回に絞る
       targets = await step.do(
         "list push test requests",
-        { retries: { limit: 1, delay: "10 seconds" } },
+        { retries: { limit: 0, delay: "10 seconds" } },
         async () => listPushTestTargets(this.env.DB),
       );
     } catch (error) {
@@ -211,13 +220,7 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
       try {
         await step.do(
           `push test ${target.requestId}`,
-          {
-            retries: {
-              limit: 3,
-              delay: "30 seconds",
-              backoff: "exponential",
-            },
-          },
+          { retries: { limit: 0, delay: "10 seconds" } },
           async () => {
             const result = await sendTestPush(
               getDb(this.env.DB),
@@ -225,9 +228,9 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
               vapid,
             );
             if (result.outcome === "retriable") {
-              // 通常の通知と同じく、429／5xx はステップのリトライに委ねる
-              throw new Error(
-                `Push応答が一時的な失敗でした（status=${result.status}）`,
+              // 429／5xx では予約が残っているので、次のスケジュール実行で送り直す
+              console.error(
+                `テスト通知の送信が一時的な失敗でした（request=${target.requestId}, status=${result.status}）`,
               );
             }
             return result;
