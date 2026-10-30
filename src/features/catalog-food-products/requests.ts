@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { catalogFoodProductRequests, notifications } from "@/db/schema";
+import { catalogFoodProductRequests, notifications, users } from "@/db/schema";
 import {
   LIFE_STAGE_LABEL,
   NUTRITION_TYPE_LABEL,
@@ -125,7 +125,9 @@ export type CreateCatalogFoodProductRequestResult =
 
 /**
  * 検索条件で共通のごはん商品をリクエストする。同じ条件の未完了のリクエストがあれば作らない
- * （一意インデックスで、同時に送られたときも 1 件にする）
+ * （一意インデックスで、同時に送られたときも 1 件にする）。
+ * 未完了のリクエストの数の上限の判定と追加は 1 つの `INSERT ... SELECT` にし、別の条件の
+ * リクエストが同時に送られても上限を超えないようにする
  */
 export async function createCatalogFoodProductRequest(
   userId: string,
@@ -135,11 +137,8 @@ export async function createCatalogFoodProductRequest(
   if (!hasCatalogSearchCriteria(criteria)) {
     return "no-criteria";
   }
-  if (await hasOpenCatalogFoodProductRequest(userId, criteria, d1)) {
-    return "already-requested";
-  }
   const db = getDb(d1);
-  const [{ openCount }] = await db
+  const openCount = db
     .select({ openCount: count() })
     .from(catalogFoodProductRequests)
     .where(
@@ -148,19 +147,37 @@ export async function createCatalogFoodProductRequest(
         isNull(catalogFoodProductRequests.completedAt),
       ),
     );
-  if (openCount >= MAX_OPEN_CATALOG_REQUESTS) {
-    return "limit-reached";
-  }
+  // INSERT ... SELECT では `$defaultFn` や SQL の既定値が効かないため、全カラムの値を
+  // テーブル定義の順に明示する（`completeCatalogFoodProductRequest` と同じ方式）
   const created = await db
     .insert(catalogFoodProductRequests)
-    .values({
-      userId,
-      searchQuery: toCatalogSearchQuery(criteria),
-      label: formatCatalogSearchCriteria(criteria),
-    })
+    .select(
+      db
+        .select({
+          id: sql`${crypto.randomUUID()}`.as("id"),
+          userId: users.id,
+          searchQuery: sql`${toCatalogSearchQuery(criteria)}`.as("searchQuery"),
+          label: sql`${formatCatalogSearchCriteria(criteria)}`.as("label"),
+          completedAt: sql`null`.as("completedAt"),
+          createdAt: sql`(unixepoch())`.as("createdAt"),
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.id, userId),
+            sql`(${openCount}) < ${MAX_OPEN_CATALOG_REQUESTS}`,
+          ),
+        ),
+    )
     .onConflictDoNothing()
     .returning({ id: catalogFoodProductRequests.id });
-  return created.length > 0 ? "created" : "already-requested";
+  if (created.length > 0) {
+    return "created";
+  }
+  // 追加しなかったのは、同じ条件の未完了のリクエストがあったか、上限に達していたとき
+  return (await hasOpenCatalogFoodProductRequest(userId, criteria, d1))
+    ? "already-requested"
+    : "limit-reached";
 }
 
 /** MCP の一覧で返す件数の上限 */

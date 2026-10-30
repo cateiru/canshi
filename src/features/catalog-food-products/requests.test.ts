@@ -166,6 +166,28 @@ describe("createCatalogFoodProductRequest", () => {
       await createCatalogFoodProductRequest("user-2", criteria({ q: "追加" })),
     ).toBe("created");
   });
+
+  it("別の条件のリクエストが同時に送られても、上限を超えて作らない", async () => {
+    for (let index = 0; index < MAX_OPEN_CATALOG_REQUESTS - 1; index++) {
+      await createCatalogFoodProductRequest(
+        "user-1",
+        criteria({ q: `商品${index}` }),
+      );
+    }
+
+    const results = await Promise.all([
+      createCatalogFoodProductRequest("user-1", criteria({ q: "同時1" })),
+      createCatalogFoodProductRequest("user-1", criteria({ q: "同時2" })),
+    ]);
+
+    expect(results.sort()).toEqual(["created", "limit-reached"]);
+    expect(
+      await db
+        .select()
+        .from(catalogFoodProductRequests)
+        .where(eq(catalogFoodProductRequests.userId, "user-1")),
+    ).toHaveLength(MAX_OPEN_CATALOG_REQUESTS);
+  });
 });
 
 describe("completeCatalogFoodProductRequest", () => {
