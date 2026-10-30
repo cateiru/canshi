@@ -13,7 +13,7 @@ import type { FeedingPresetFormInput } from "./schema";
 
 /*
  * ごはんプリセットの保存・削除。画面（`./actions.ts`）と AI との接続（MCP）の両方から使う。
- * 家のメンバーであることは文の中で確かめる。MCP は Durable Object の中で動き
+ * 家のメンバーであることは文の中で確かめる。MCP は Next.js（OpenNext）の外で動き
  * `getCloudflareContext()` を使えないため、D1 は引数で受け取る
  */
 

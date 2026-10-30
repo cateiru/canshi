@@ -1,7 +1,7 @@
 /**
  * MCP の認可（`/oauth/authorize` の同意）で `completeAuthorization()` の `props` に
- * 渡す値と対応する。トークンに暗号化して保存され、Durable Object 上で `this.props` として
- * ツール実装から参照できる
+ * 渡す値と対応する。トークンに暗号化して保存され、リクエストごとの `ctx.props` から
+ * ツール実装に渡す（`./agent.ts`）
  */
 export interface McpProps extends Record<string, unknown> {
   /** 同意したときにログインしていた CANSHI のユーザー ID */

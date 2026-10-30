@@ -69,7 +69,7 @@ export type StoreMediaAssetInput = StoreMediaFileInput & {
 
 /**
  * R2 と D1 のバインディング。省略すると `getCloudflareContext()` から取る。
- * Durable Object の中で動く AI との接続（MCP）からは、`getCloudflareContext()` を
+ * Next.js（OpenNext）の外で動く AI との接続（MCP）からは、`getCloudflareContext()` を
  * 使えないため明示的に渡す
  */
 export type MediaEnv = Pick<Env, "DB" | "MEDIA_BUCKET">;

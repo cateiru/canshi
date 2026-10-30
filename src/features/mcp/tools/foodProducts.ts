@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { z } from "zod";
 import { chunkForBoundParameters } from "@/db/batch";

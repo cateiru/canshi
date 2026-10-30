@@ -1,5 +1,5 @@
 import OAuthProvider from "@cloudflare/workers-oauth-provider";
-import { CanshiMcp } from "@/features/mcp/agent";
+import { createCanshiMcpHandler } from "@/features/mcp/agent";
 import {
   MCP_API_ROUTE,
   OAUTH_AUTHORIZE_PATH,
@@ -19,11 +19,9 @@ import { purgeOrphanedMcpConnectionUsages } from "@/features/mcp/usages";
 // @ts-expect-error
 import { default as handler } from "../.open-next/worker.js";
 
-// `wrangler.toml` の `[[workflows]]`・`[[durable_objects.bindings]]` の `class_name` は
-// このモジュール（`main`）からの export を指す。Workflow の実体は
-// `src/workflows/notification.ts`、MCP サーバーの実体は `src/features/mcp/agent.ts` にある
+// `wrangler.toml` の `[[workflows]]` の `class_name` はこのモジュール（`main`）からの
+// export を指す。Workflow の実体は `src/workflows/notification.ts` にある
 export { NotificationWorkflow } from "@/workflows/notification";
-export { CanshiMcp };
 
 // ChatGPT などの外部 AI エージェント向けの MCP サーバー（`/mcp`）と、その OAuth 2.1
 // 認可サーバー。`/mcp`・`/oauth/token`・`/oauth/register`・`/.well-known/oauth-*` は
@@ -32,7 +30,7 @@ export { CanshiMcp };
 const oauthProvider = new OAuthProvider({
   apiRoute: MCP_API_ROUTE,
   // 接続ごとの読み取りの範囲を選べるよう、アクセストークンのクライアントの ID を props に入れる
-  apiHandler: withMcpClientId(CanshiMcp.serve(MCP_API_ROUTE)),
+  apiHandler: withMcpClientId(createCanshiMcpHandler(MCP_API_ROUTE)),
   defaultHandler: withMcpAuthorize(handler),
   authorizeEndpoint: OAUTH_AUTHORIZE_PATH,
   tokenEndpoint: OAUTH_TOKEN_PATH,

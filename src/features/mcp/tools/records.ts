@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { and, asc, eq } from "drizzle-orm";
 import { type ZodRawShape, z } from "zod";
 import { getDb } from "@/db/client";

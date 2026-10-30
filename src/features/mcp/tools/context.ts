@@ -19,8 +19,8 @@ import { getMcpPermissions } from "../permissions";
 export type McpConnection = { userId: string; clientId: string };
 
 /**
- * ツールの実装に渡す、MCP サーバー（`CanshiMcp`）の環境。Durable Object の中で動くため、
- * D1・R2 は `getCloudflareContext()` ではなく `env` から明示的に渡す
+ * ツールの実装に渡す、MCP サーバー（`createCanshiMcpServer()`）の環境。Next.js（OpenNext）の
+ * 外で動くため、D1・R2 は `getCloudflareContext()` ではなく `env` から明示的に渡す
  */
 export interface McpToolContext {
   env: Env;
