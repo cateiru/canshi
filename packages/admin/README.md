@@ -5,7 +5,8 @@ Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-ad
 [Hono](https://hono.dev/) の JSX でサーバーサイドレンダリングする。
 
 基本的には閲覧用で、書き込みはユーザーの権限の変更と、ユーザーをすべての端末からログアウトさせる
-操作、家へのメンバーの追加・削除、共通のごはん商品の登録・編集・削除だけを持つ。
+操作、家へのメンバーの追加・削除、共通のごはん商品の登録・編集・削除、共通のごはん商品のリクエストの
+完了だけを持つ。
 
 | パス | 内容 |
 | --- | --- |
@@ -23,6 +24,8 @@ Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-ad
 | `POST /food-products/:productId` | 共通のごはん商品を更新する。画像を選び直したとき・削除を選んだときは古い画像を削除する。家に追加済みの商品は内容を写したものなので変わらない。終わると `/food-products` に戻る |
 | `POST /food-products/:productId/delete` | 共通のごはん商品と画像を削除する。家に追加済みの商品は残り、追加元（`food_products.catalog_food_product_id`）だけが NULL になる。終わると `/food-products` に戻る |
 | `/food-products/:productId/image` | 共通のごはん商品の画像（一覧・編集フォームで表示する） |
+| `/food-product-requests` | 共通のごはん商品のリクエストの一覧。ユーザーがメインアプリで検索して見つからなかったときに送った検索条件を、対応を待っているもの（古い順）と完了にしたもの（新しい順に 50 件）に分けて表示する |
+| `POST /food-product-requests/:requestId/complete` | リクエストを完了にし、リクエストしたユーザーへの通知を作る（Push はメインアプリの次の定期送信で送る）。完了は取り消せない。終わると `/food-product-requests` に戻る |
 
 見た目はメインアプリのデザインルール（[`docs/idea/design.md`](../../docs/idea/design.md)）に揃え、
 `src/views/styles.ts` にメインアプリの `src/styles/tokens.css` と同じトークンを写して使う。
