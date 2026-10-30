@@ -7,7 +7,6 @@ import { updateMcpPermissionsAction } from "@/features/mcp/actions";
 import { getMcpClientIcon } from "@/features/mcp/clientIcons";
 import { getUserMcpConnection } from "@/features/mcp/connections";
 import { formatRedirectUri } from "@/features/mcp/consent";
-import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
 import { McpPermissionsForm } from "@/features/mcp/McpPermissionsForm";
 import { getMcpPermissionTree } from "@/features/mcp/permissions";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
@@ -91,7 +90,6 @@ export default async function AiConnectionPage({
               : NO_LAST_USED_AT}
           </dd>
         </dl>
-        <McpAccessNotice />
       </Surface>
 
       <Surface

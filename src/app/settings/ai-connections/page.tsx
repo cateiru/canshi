@@ -6,7 +6,6 @@ import { requireUser } from "@/features/auth/session";
 import { getMcpClientIcon } from "@/features/mcp/clientIcons";
 import { listUserMcpConnections } from "@/features/mcp/connections";
 import { formatRedirectUri } from "@/features/mcp/consent";
-import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
 import { RevokeMcpConnectionButton } from "@/features/mcp/RevokeMcpConnectionButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -54,8 +53,6 @@ export default async function AiConnectionsPage() {
           接続しているアプリの確認や解除、アプリごとに読み取れる情報と許可する操作の設定ができます。
         </p>
       </header>
-
-      <McpAccessNotice />
 
       <section className={styles.section} aria-labelledby="ai-connections">
         <div className={styles.sectionHeader}>
