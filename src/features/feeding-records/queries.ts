@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
   type FeedingMode,
@@ -39,32 +40,35 @@ async function attachItems(
   }
 
   const db = getDb();
-  const itemRows = await db
-    .select({
-      id: feedingRecordItems.id,
-      feedingRecordId: feedingRecordItems.feedingRecordId,
-      foodProductId: feedingRecordItems.foodProductId,
-      foodProductName: foodProducts.name,
-      givenAmountG: feedingRecordItems.givenAmountG,
-      leftoverAmountG: feedingRecordItems.leftoverAmountG,
-      estimatedIntakeG: feedingRecordItems.estimatedIntakeG,
-      estimatedKcal: feedingRecordItems.estimatedKcal,
-      givenAmountLevel: feedingRecordItems.givenAmountLevel,
-      leftoverLevel: feedingRecordItems.leftoverLevel,
-      sortOrder: feedingRecordItems.sortOrder,
-    })
-    .from(feedingRecordItems)
-    .innerJoin(
-      foodProducts,
-      eq(feedingRecordItems.foodProductId, foodProducts.id),
-    )
-    .where(
-      inArray(
-        feedingRecordItems.feedingRecordId,
-        headers.map((header) => header.id),
-      ),
-    )
-    .orderBy(feedingRecordItems.sortOrder);
+  // 一覧では猫の記録をすべて渡すため、記録の ID を D1 のバインドパラメーターの上限内に分割して引く。
+  // 1 つの記録の明細は同じチャンクに収まるので、記録ごとの sortOrder の並びは保たれる
+  const itemRows = [];
+  for (const ids of chunkForBoundParameters(
+    headers.map((header) => header.id),
+  )) {
+    const rows = await db
+      .select({
+        id: feedingRecordItems.id,
+        feedingRecordId: feedingRecordItems.feedingRecordId,
+        foodProductId: feedingRecordItems.foodProductId,
+        foodProductName: foodProducts.name,
+        givenAmountG: feedingRecordItems.givenAmountG,
+        leftoverAmountG: feedingRecordItems.leftoverAmountG,
+        estimatedIntakeG: feedingRecordItems.estimatedIntakeG,
+        estimatedKcal: feedingRecordItems.estimatedKcal,
+        givenAmountLevel: feedingRecordItems.givenAmountLevel,
+        leftoverLevel: feedingRecordItems.leftoverLevel,
+        sortOrder: feedingRecordItems.sortOrder,
+      })
+      .from(feedingRecordItems)
+      .innerJoin(
+        foodProducts,
+        eq(feedingRecordItems.foodProductId, foodProducts.id),
+      )
+      .where(inArray(feedingRecordItems.feedingRecordId, ids))
+      .orderBy(feedingRecordItems.sortOrder);
+    itemRows.push(...rows);
+  }
 
   const itemsByRecordId = new Map<string, FeedingRecordItemWithProduct[]>();
   for (const row of itemRows) {
