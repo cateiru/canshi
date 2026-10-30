@@ -196,8 +196,11 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
   ): Promise<void> {
     let targets: PushTestTarget[];
     try {
-      targets = await step.do("list push test requests", async () =>
-        listPushTestTargets(this.env.DB),
+      // 失敗しても通常の通知の送信を長く待たせないよう、リトライは 1 回に絞る
+      targets = await step.do(
+        "list push test requests",
+        { retries: { limit: 1, delay: "10 seconds" } },
+        async () => listPushTestTargets(this.env.DB),
       );
     } catch (error) {
       console.error("テスト通知の予約の取得に失敗しました", error);
