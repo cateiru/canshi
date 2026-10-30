@@ -3,6 +3,7 @@ import {
   type WorkflowEvent,
   type WorkflowStep,
 } from "cloudflare:workers";
+import type { VapidKeys } from "@block65/webcrypto-web-push";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { notifications } from "@/db/schema";
@@ -15,6 +16,11 @@ import {
   listUnpushedNotifications,
 } from "@/features/push/queries";
 import { sendPushToSubscription } from "@/features/push/sendPush";
+import {
+  listPushTestTargets,
+  type PushTestTarget,
+  sendTestPush,
+} from "@/features/push/sendTestPush";
 import {
   buildPushAccessIndex,
   selectPushTargets,
@@ -56,6 +62,19 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
       return;
     }
 
+    await this.sendNotificationPushes(step, vapid, now);
+
+    // 通知設定で予約されたテスト通知。テスト通知の送信の失敗が通常の通知を遅らせないよう、
+    // 通常の通知を送り終えてから送る
+    await this.sendTestPushes(step, vapid);
+  }
+
+  /** 生成済みでまだ送っていない通知を、送り先の購読へ送る */
+  private async sendNotificationPushes(
+    step: WorkflowStep,
+    vapid: VapidKeys,
+    now: Date,
+  ): Promise<void> {
     const { pending, subscriptions, catAccesses, householdAccesses } =
       await step.do("list pending pushes", async () => {
         const [pending, subscriptions, catAccesses, householdAccesses] =
@@ -174,5 +193,55 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
           .where(eq(notifications.id, notification.id));
       }
     });
+  }
+
+  /**
+   * 予約されたテスト通知を送る（`src/features/push/sendTestPush.ts`）。テスト通知はステップの
+   * リトライで待たず、送れなかった予約は残して次のスケジュール実行で送り直す。リトライで待つと、
+   * 実行が次のスケジュール実行と重なって同じ予約を二重に送ることがあるため
+   */
+  private async sendTestPushes(
+    step: WorkflowStep,
+    vapid: VapidKeys,
+  ): Promise<void> {
+    let targets: PushTestTarget[];
+    try {
+      targets = await step.do(
+        "list push test requests",
+        { retries: { limit: 0, delay: "10 seconds" } },
+        async () => listPushTestTargets(this.env.DB),
+      );
+    } catch (error) {
+      console.error("テスト通知の予約の取得に失敗しました", error);
+      return;
+    }
+
+    for (const target of targets) {
+      try {
+        await step.do(
+          `push test ${target.requestId}`,
+          { retries: { limit: 0, delay: "10 seconds" } },
+          async () => {
+            const result = await sendTestPush(
+              getDb(this.env.DB),
+              target,
+              vapid,
+            );
+            if (result.outcome === "retriable") {
+              // 429／5xx では予約が残っているので、次のスケジュール実行で送り直す
+              console.error(
+                `テスト通知の送信が一時的な失敗でした（request=${target.requestId}, status=${result.status}）`,
+              );
+            }
+            return result;
+          },
+        );
+      } catch (error) {
+        console.error(
+          `テスト通知の送信に失敗しました（request=${target.requestId}, subscription=${target.subscription.id}）`,
+          error,
+        );
+      }
+    }
   }
 }

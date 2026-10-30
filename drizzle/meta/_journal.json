@@ -407,6 +407,13 @@
       "when": 1792978259496,
       "tag": "0057_record_list_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "6",
+      "when": 1793357509140,
+      "tag": "0058_fuzzy_earthquake",
+      "breakpoints": true
     }
   ]
 }

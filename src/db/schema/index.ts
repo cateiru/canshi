@@ -28,6 +28,7 @@ export * from "./oauth-kv-entries";
 export * from "./poop-records";
 export * from "./push-deliveries";
 export * from "./push-subscriptions";
+export * from "./push-test-requests";
 export * from "./sessions";
 export * from "./shampoo-records";
 export * from "./symptoms";

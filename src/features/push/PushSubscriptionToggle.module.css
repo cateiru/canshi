@@ -53,3 +53,17 @@
   background: var(--color-bg);
   color: var(--color-ink-muted);
 }
+
+.testPush {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.testPushDescription {
+  flex: 1 1 16rem;
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}

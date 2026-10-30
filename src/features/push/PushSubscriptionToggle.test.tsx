@@ -3,11 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const subscribeToPushAction = vi.fn().mockResolvedValue({});
 const unsubscribeFromPushAction = vi.fn().mockResolvedValue({});
+const requestTestPushAction = vi.fn();
 
 vi.mock("./subscriptionActions", () => ({
   subscribeToPushAction: (...args: unknown[]) => subscribeToPushAction(...args),
   unsubscribeFromPushAction: (...args: unknown[]) =>
     unsubscribeFromPushAction(...args),
+  requestTestPushAction: (...args: unknown[]) => requestTestPushAction(...args),
 }));
 
 async function loadComponent() {
@@ -20,6 +22,7 @@ describe("PushSubscriptionToggle", () => {
     vi.resetModules();
     subscribeToPushAction.mockClear();
     unsubscribeFromPushAction.mockClear();
+    requestTestPushAction.mockReset();
   });
 
   afterEach(() => {
@@ -117,5 +120,84 @@ describe("PushSubscriptionToggle", () => {
       auth: "auth-value",
       userAgent: expect.any(String),
     });
+  });
+
+  function stubSubscribedDevice() {
+    vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "AAAA");
+    vi.stubGlobal("PushManager", class {});
+    const subscription = {
+      endpoint: "https://push.example.com/subscription-1",
+    };
+    Object.defineProperty(navigator, "serviceWorker", {
+      value: {
+        ready: Promise.resolve({
+          pushManager: {
+            getSubscription: vi.fn().mockResolvedValue(subscription),
+          },
+        }),
+      },
+      configurable: true,
+    });
+  }
+
+  it("未購読の端末ではテスト通知のボタンを表示しない", async () => {
+    vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "AAAA");
+    vi.stubGlobal("PushManager", class {});
+    Object.defineProperty(navigator, "serviceWorker", {
+      value: {
+        ready: Promise.resolve({
+          pushManager: { getSubscription: vi.fn().mockResolvedValue(null) },
+        }),
+      },
+      configurable: true,
+    });
+    const PushSubscriptionToggle = await loadComponent();
+
+    render(<PushSubscriptionToggle />);
+
+    await screen.findByRole("checkbox", { name: "この端末で通知を受け取る" });
+    expect(
+      screen.queryByRole("button", { name: "テスト通知を送る" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("購読中の端末ではテスト通知を予約し、届く時刻を表示する", async () => {
+    stubSubscribedDevice();
+    const scheduledAt = new Date(2026, 9, 30, 12, 15);
+    requestTestPushAction.mockResolvedValue({
+      scheduledAt: scheduledAt.toISOString(),
+    });
+    const PushSubscriptionToggle = await loadComponent();
+
+    render(<PushSubscriptionToggle />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "テスト通知を送る" }),
+    );
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "テスト通知を予約しました。12:15ごろにこの端末へ届きます",
+    );
+    expect(requestTestPushAction).toHaveBeenCalledWith(
+      "https://push.example.com/subscription-1",
+    );
+  });
+
+  it("テスト通知を予約できなかった場合はエラーを表示する", async () => {
+    stubSubscribedDevice();
+    requestTestPushAction.mockResolvedValue({
+      error: "テスト通知の予約に失敗しました",
+    });
+    const PushSubscriptionToggle = await loadComponent();
+
+    render(<PushSubscriptionToggle />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "テスト通知を送る" }),
+    );
+
+    expect(
+      await screen.findByText("テスト通知の予約に失敗しました"),
+    ).toBeInTheDocument();
   });
 });

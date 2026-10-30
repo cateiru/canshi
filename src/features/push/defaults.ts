@@ -7,3 +7,9 @@ export const MAX_PUSH_FAILURE_COUNT = 5;
  * 何度か跨いでも再送されるよう、余裕を持って 1 日分を設定する
  */
 export const PUSH_MESSAGE_TTL_SECONDS = 60 * 60 * 24;
+
+/**
+ * 通知のスケジュール実行の間隔（分）。`wrangler.toml` の `[triggers]` の
+ * `crons`（15 分ごと）と合わせること
+ */
+export const PUSH_SCHEDULE_INTERVAL_MINUTES = 15;

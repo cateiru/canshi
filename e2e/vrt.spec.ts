@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import {
   encodeMcpConsentRequest,
   MCP_CONSENT_HEADER,
@@ -421,19 +422,62 @@ test("招待ページ（使えない招待）の見た目", async ({ page }, tes
   await takeSnapshot(page, testInfo);
 });
 
+/**
+ * この端末の Push 購読の状態を固定する。`next dev` では Service Worker を登録しないため
+ * `navigator.serviceWorker.ready` が解決せず、PushSubscriptionToggle の判定が終わらない。
+ * `endpoint` を渡すと購読中、`null` なら未購読として描画させる（VAPID 公開鍵は CI の
+ * VRT ジョブの環境変数でダミーを渡している）
+ */
+async function stubPushSubscription(page: Page, endpoint: string | null) {
+  await page.addInitScript((endpoint) => {
+    const registration = {
+      pushManager: {
+        getSubscription: async () => (endpoint ? { endpoint } : null),
+      },
+    };
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        ready: Promise.resolve(registration),
+        register: async () => registration,
+      },
+    });
+    if (!("PushManager" in window)) {
+      Object.defineProperty(window, "PushManager", {
+        configurable: true,
+        value: class {},
+      });
+    }
+  }, endpoint);
+}
+
 test("通知設定ページの見た目", async ({ page }, testInfo) => {
+  await stubPushSubscription(page, null);
   await page.goto("/settings/notifications");
   // 「猫ごとの通知設定」の見出しにも部分一致してしまうため、完全一致で探す
   await expect(
     page.getByRole("heading", { name: "通知設定", exact: true }),
   ).toBeVisible();
   // PushSubscriptionToggle はクライアント側で実行環境を判定するまで何も描画しない。
-  // 判定前に fullPage の高さが計測されると、その直後に案内が表示されてフッターの
-  // 位置だけがずれたスクリーンショットになるため、VRT 環境の確定表示を待つ。
-  const pushSettings = page
-    .getByRole("heading", { name: "この端末での通知" })
-    .locator("..");
-  await expect(pushSettings.getByRole("alert")).toBeVisible();
+  // 判定前に fullPage の高さが計測されると、その直後にトグルが表示されてフッターの
+  // 位置だけがずれたスクリーンショットになるため、確定表示を待つ。
+  await expect(
+    page.getByRole("checkbox", { name: "この端末で通知を受け取る" }),
+  ).not.toBeChecked();
+  await takeSnapshot(page, testInfo);
+});
+
+test("通知設定ページ（この端末で通知を受け取っている）の見た目", async ({
+  page,
+}, testInfo) => {
+  await stubPushSubscription(page, "https://push.example.com/vrt");
+  await page.goto("/settings/notifications");
+  await expect(
+    page.getByRole("checkbox", { name: "この端末で通知を受け取る" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("button", { name: "テスト通知を送る" }),
+  ).toBeVisible();
   await takeSnapshot(page, testInfo);
 });
 

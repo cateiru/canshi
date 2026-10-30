@@ -97,6 +97,9 @@ jobs:
       S3_BUCKET: cateiru-public-storage
       S3_PATH_PREFIX: canshi/vrt
       REPORT_DOMAIN: storage.cateiru.dev
+      # 通知設定ページの「この端末での通知」を、Push 通知が使える環境として撮るためのダミーの公開鍵。
+      # VRT では購読の登録・送信はしない（e2e/vrt.spec.ts の stubPushSubscription 参照）
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: BD_5cIVMj9x57kOEY1LZQbq9GB6Bjapk_9JPLOWwe1mt2ilHwfXfUtnkQ6p1N7bYxHrPNJwl-TvuDlU7lBwZBkA
     steps:
       - uses: actions/checkout@v7
         with:
