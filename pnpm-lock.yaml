@@ -197,8 +197,8 @@ importers:
         specifier: 2.4.0
         version: 2.4.0
       agents:
-        specifier: ^0.30.0
-        version: 0.30.1(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.4.0)(react@19.3.1)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.36.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
+        specifier: ^0.31.0
+        version: 0.31.0(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.4.0)(react@19.3.1)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.36.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.4(@types/sql.js@1.4.11)(sql.js@1.15.2)
@@ -2281,8 +2281,8 @@ packages:
     resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
     engines: {node: '>= 8.0.0'}
 
-  agents@0.30.1:
-    resolution: {integrity: sha512-CgDYWFVX73Y2l2BMeQenljAGF+0Mp3qnbFo1Zp68WCt77Ub58KYzez0ZPDY8s0i38wrR+HezYfnneQP/qD5IBw==}
+  agents@0.31.0:
+    resolution: {integrity: sha512-FQeIsuMXycGPtQUxpRcT3ArVe8tkhGkioGLQ1kKRIzDCbYBOyx3RzAxi+G2dq6pku+uUqR04QYg+i3BzDouMnA==}
     hasBin: true
     peerDependencies:
       '@ai-sdk/provider': ^4.0.0
@@ -2317,6 +2317,10 @@ packages:
       '@earendil-works/pi-ai':
         optional: true
       '@earendil-works/pi-durable':
+        optional: true
+      '@modelcontextprotocol/sdk':
+        optional: true
+      '@modelcontextprotocol/server':
         optional: true
       '@opencode/plugin':
         optional: true
@@ -5685,6 +5689,7 @@ snapshots:
   '@hono/node-server@2.1.3(hono@4.13.14)':
     dependencies:
       hono: 4.13.14
+    optional: true
 
   '@img/colour@1.1.0': {}
 
@@ -5879,6 +5884,7 @@ snapshots:
       '@cfworker/json-schema': 4.1.1
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   '@modelcontextprotocol/server@2.4.0':
     dependencies:
@@ -6687,13 +6693,11 @@ snapshots:
     dependencies:
       humanize-ms: 1.2.1
 
-  agents@0.30.1(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.4.0)(react@19.3.1)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.36.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7):
+  agents@0.31.0(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/sdk@1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7))(@modelcontextprotocol/server@2.4.0)(react@19.3.1)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.36.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7):
     dependencies:
       '@babel/plugin-proposal-decorators': 8.0.2(@babel/core@8.0.6)
       '@cfworker/json-schema': 4.1.1
       '@modelcontextprotocol/client': 2.4.0
-      '@modelcontextprotocol/sdk': 1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7)
-      '@modelcontextprotocol/server': 2.4.0
       '@rolldown/plugin-babel': 0.2.4(@babel/core@8.0.6)(@babel/runtime@7.29.7)(rolldown@1.2.12)(vite@8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.36.0)(tsx@4.23.15)(yaml@2.9.1))
       capnweb: 0.12.0
       cron-schedule: 6.0.0
@@ -6705,6 +6709,8 @@ snapshots:
       yaml: 2.9.1
       zod: 4.6.7
     optionalDependencies:
+      '@modelcontextprotocol/sdk': 1.32.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.7)
+      '@modelcontextprotocol/server': 2.4.0
       react: 19.3.1
       vite: 8.3.1(@types/node@24.19.2)(esbuild@0.28.2)(terser@5.36.0)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
@@ -6716,6 +6722,7 @@ snapshots:
   ajv-formats@3.0.1:
     dependencies:
       ajv: 8.20.0
+    optional: true
 
   ajv@8.20.0:
     dependencies:
@@ -6723,6 +6730,7 @@ snapshots:
       fast-uri: 3.1.8
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
+    optional: true
 
   ansi-colors@4.1.3: {}
 
@@ -6963,6 +6971,7 @@ snapshots:
     dependencies:
       object-assign: 4.1.1
       vary: 1.1.2
+    optional: true
 
   cp-file@9.1.0:
     dependencies:
@@ -7287,6 +7296,7 @@ snapshots:
       ip-address: 10.7.2
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   express@5.2.1(supports-color@10.2.2):
     dependencies:
@@ -7327,7 +7337,8 @@ snapshots:
       iconv-lite: 0.4.24
       tmp: 0.0.33
 
-  fast-deep-equal@3.1.3: {}
+  fast-deep-equal@3.1.3:
+    optional: true
 
   fast-glob@3.3.3:
     dependencies:
@@ -7337,7 +7348,8 @@ snapshots:
       merge2: 1.4.1
       micromatch: 4.0.8
 
-  fast-uri@3.1.8: {}
+  fast-uri@3.1.8:
+    optional: true
 
   fastq@1.20.3:
     dependencies:
@@ -7582,7 +7594,8 @@ snapshots:
 
   internmap@2.0.3: {}
 
-  ip-address@10.7.2: {}
+  ip-address@10.7.2:
+    optional: true
 
   ipaddr.js@1.9.1: {}
 
@@ -7673,9 +7686,11 @@ snapshots:
 
   json-parse-even-better-errors@2.3.1: {}
 
-  json-schema-traverse@1.0.0: {}
+  json-schema-traverse@1.0.0:
+    optional: true
 
-  json-schema-typed@8.0.2: {}
+  json-schema-typed@8.0.2:
+    optional: true
 
   json5@2.2.3: {}
 
@@ -7929,7 +7944,8 @@ snapshots:
 
   normalize-wheel@1.0.1: {}
 
-  object-assign@4.1.1: {}
+  object-assign@4.1.1:
+    optional: true
 
   object-inspect@1.13.4: {}
 
@@ -8837,5 +8853,6 @@ snapshots:
   zod-to-json-schema@3.25.2(zod@4.6.7):
     dependencies:
       zod: 4.6.7
+    optional: true
 
   zod@4.6.7: {}
