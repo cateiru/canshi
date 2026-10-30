@@ -248,6 +248,24 @@ describe("sendTestPush", () => {
     expect(updated.failureCount).toBe(1);
   });
 
+  it("送っている間に同じ端末で予約し直された場合は、新しい予約を消さない", async () => {
+    const target = await requestFor();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => {
+        await requestTestPush(db, "user-1", target.subscription.endpoint);
+        return new Response(null, { status: 201 });
+      }),
+    );
+
+    const result = await sendTestPush(db, target, vapid);
+
+    expect(result).toEqual({ outcome: "sent" });
+    const requests = await listRequests();
+    expect(requests).toHaveLength(1);
+    expect(requests[0].id).not.toBe(target.requestId);
+  });
+
   it("fetch が例外を投げた場合は予約を残したまま投げ直す", async () => {
     const target = await requestFor();
     vi.stubGlobal(

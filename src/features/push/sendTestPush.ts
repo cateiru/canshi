@@ -30,7 +30,8 @@ export function nextScheduledRunAt(now: Date): Date {
 
 /**
  * ユーザーの購読（`endpoint`）へのテスト通知を予約する。別のユーザーの購読には予約できない。
- * 同じ端末で予約し直した場合は、予約した日時だけを更新する
+ * 同じ端末で予約し直した場合は、予約の ID を振り直して日時を更新する。ID を振り直すことで、
+ * 予約し直す前の予約を送っている途中の処理（`sendTestPush`）が、新しい予約を消さないようにする
  */
 export async function requestTestPush(
   db: ReturnType<typeof getDb>,
@@ -55,7 +56,7 @@ export async function requestTestPush(
     .values({ subscriptionId: subscription.id })
     .onConflictDoUpdate({
       target: pushTestRequests.subscriptionId,
-      set: { requestedAt: new Date() },
+      set: { id: crypto.randomUUID(), requestedAt: new Date() },
     });
   return { outcome: "requested" };
 }
@@ -101,7 +102,8 @@ export async function sendTestPush(
   );
   const result = await applyPushResponse(db, target.subscription, res);
   if (result.outcome !== "retriable") {
-    // 購読を削除した場合は cascade で予約も消えるが、外部キーの制約に頼らず明示的に消す
+    // 購読を削除した場合は cascade で予約も消えるが、外部キーの制約に頼らず明示的に消す。
+    // 一覧を取得した後に予約し直された場合は ID が変わっているので、新しい予約は消さない
     await db
       .delete(pushTestRequests)
       .where(eq(pushTestRequests.id, target.requestId));
