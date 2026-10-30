@@ -10,7 +10,6 @@ import {
   formatRedirectUri,
   MCP_CONSENT_HEADER,
 } from "@/features/mcp/consent";
-import { McpAccessNotice } from "@/features/mcp/McpAccessNotice";
 import { McpPermissionTreeField } from "@/features/mcp/McpPermissionTreeField";
 import { getMcpPermissionTree } from "@/features/mcp/permissions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -92,7 +91,6 @@ export default async function AuthorizePage({
                 </dd>
               </div>
             </dl>
-            <McpAccessNotice />
           </Surface>
           <p className={styles.caution}>
             <TbAlertTriangle size={20} aria-hidden="true" />
