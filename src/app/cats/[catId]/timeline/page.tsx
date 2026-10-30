@@ -22,9 +22,9 @@ export const dynamic = "force-dynamic";
 const PAGE_SIZE = 20;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-// listTimelineForMonth 内部でも同じ上限でクランプされるが、リンク生成側の
-// page パラメータが極端な値（Infinity・巨大な数値など）にならないよう
-// あらかじめ丸めておく
+// listTimelineForMonth 内部でも同じ上限でクランプされるが、極端な値
+// （Infinity・巨大な数値など）を問い合わせに渡さないよう、あらかじめ丸めておく。
+// ページ送りのリンクは、総ページ数で丸めた後の page（戻り値）から作る
 function parsePage(value: string | undefined): number {
   const parsed = Number.parseInt(value ?? "", 10);
   return normalizePositiveInt(parsed, MAX_PAGE);
