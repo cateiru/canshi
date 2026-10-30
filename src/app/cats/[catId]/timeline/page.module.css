@@ -9,10 +9,3 @@
 .list {
   list-style: none;
 }
-
-.pagination {
-  flex-wrap: wrap;
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-}

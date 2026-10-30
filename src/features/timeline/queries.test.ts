@@ -130,7 +130,7 @@ describe("listTimelineForMonth", () => {
     ]);
   });
 
-  it("pageSize を超える件数は hasMore と page で正しく分割される", async () => {
+  it("pageSize を超える件数は hasMore・page・totalPages で正しく分割される", async () => {
     const [cat] = await db
       .insert(cats)
       .values({ name: "みけ", sex: "male" })
@@ -151,6 +151,8 @@ describe("listTimelineForMonth", () => {
     });
     expect(firstPage.entries).toHaveLength(2);
     expect(firstPage.hasMore).toBe(true);
+    expect(firstPage.page).toBe(1);
+    expect(firstPage.totalPages).toBe(2);
     // 降順のため最初のページは 6/3, 6/2
     expect(expectWeightRecord(firstPage.entries[0]).catWeightKg).toBeCloseTo(6);
 
@@ -160,9 +162,20 @@ describe("listTimelineForMonth", () => {
     });
     expect(secondPage.entries).toHaveLength(1);
     expect(secondPage.hasMore).toBe(false);
+    expect(secondPage.page).toBe(2);
+    expect(secondPage.totalPages).toBe(2);
     expect(expectWeightRecord(secondPage.entries[0]).catWeightKg).toBeCloseTo(
       4,
     );
+
+    // 総ページ数を超えるページは最終ページに丸める
+    const beyondLastPage = await listTimelineForMonth(cat.id, 2026, 6, {
+      pageSize: 2,
+      page: 5,
+    });
+    expect(beyondLastPage.page).toBe(2);
+    expect(beyondLastPage.totalPages).toBe(2);
+    expect(beyondLastPage.entries).toHaveLength(1);
   });
 
   it("date で指定した日だけに一覧を絞り込める", async () => {

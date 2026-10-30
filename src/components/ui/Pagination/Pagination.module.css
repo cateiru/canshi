@@ -1,26 +1,41 @@
+/*
+ * 前後のリンクとページ番号を 3 列に並べる。前後の列を同じ幅にして、片方のリンクが
+ * 無くてもページ番号を中央に保つ
+ */
 .pagination {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2);
 }
 
-/* 前後のリンクとページ番号を 3 等分し、片方のリンクが無くてもページ番号を中央に保つ */
 .slot {
-  flex: 1;
   display: flex;
+  min-width: 0;
 }
 
 .slot:last-child {
   justify-content: flex-end;
 }
 
-.link {
-  padding-inline: 0;
-}
-
 .pageLabel {
-  flex: 1;
-  text-align: center;
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/*
+ * 狭い画面では 3 列に収めると前後のリンクの文字が折り返すため、ページ番号を上の行に、
+ * 前後のリンクを下の行に分ける。文字や操作領域は縮めない
+ */
+@media (max-width: 480px) {
+  .pagination {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pageLabel {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
 }

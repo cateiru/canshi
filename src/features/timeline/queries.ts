@@ -636,6 +636,10 @@ export type ListTimelineForMonthOptions = {
 export type ListTimelineForMonthResult = {
   entries: TimelineEntry[];
   hasMore: boolean;
+  /** 実際に表示するページ（総ページ数を超えるページが指定された場合は最終ページに丸める） */
+  page: number;
+  /** 総ページ数（記録が0件でも 1） */
+  totalPages: number;
   /** 記録がある日付ごとの記録種別一覧（カレンダー表示用、月全体が対象。includeAdjacentMonths なら前後の月も含む） */
   datesByDay: Map<string, TimelineRecordType[]>;
 };
@@ -761,7 +765,7 @@ export async function listTimelineForMonth(
   );
   const hasMore = filtered.length > start + pageSize;
 
-  return { entries, hasMore, datesByDay };
+  return { entries, hasMore, page, totalPages: maxPage, datesByDay };
 }
 
 /**

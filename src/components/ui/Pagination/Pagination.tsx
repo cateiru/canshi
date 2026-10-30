@@ -24,9 +24,8 @@ export function Pagination({ page, totalPages, getHref }: PaginationProps) {
         {page > 1 ? (
           <ButtonLink
             href={getHref(page - 1)}
-            variant="ghost"
+            variant="secondary"
             leftIcon={TbChevronLeft}
-            className={styles.link}
           >
             前のページ
           </ButtonLink>
@@ -39,9 +38,8 @@ export function Pagination({ page, totalPages, getHref }: PaginationProps) {
         {page < totalPages ? (
           <ButtonLink
             href={getHref(page + 1)}
-            variant="ghost"
+            variant="secondary"
             rightIcon={TbChevronRight}
-            className={styles.link}
           >
             次のページ
           </ButtonLink>

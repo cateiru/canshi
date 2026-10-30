@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TbTimeline } from "react-icons/tb";
-import { Breadcrumb } from "@/components/ui";
+import { Breadcrumb, Pagination } from "@/components/ui";
 import { getAccessibleCat } from "@/features/auth/session";
 import { listFoodProductImageUrls } from "@/features/food-products/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
@@ -23,9 +22,9 @@ export const dynamic = "force-dynamic";
 const PAGE_SIZE = 20;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-// listTimelineForMonth 内部でも同じ上限でクランプされるが、リンク生成側の
-// page パラメータが極端な値（Infinity・巨大な数値など）にならないよう
-// あらかじめ丸めておく
+// listTimelineForMonth 内部でも同じ上限でクランプされるが、極端な値
+// （Infinity・巨大な数値など）を問い合わせに渡さないよう、あらかじめ丸めておく。
+// ページ送りのリンクは、総ページ数で丸めた後の page（戻り値）から作る
 function parsePage(value: string | undefined): number {
   const parsed = Number.parseInt(value ?? "", 10);
   return normalizePositiveInt(parsed, MAX_PAGE);
@@ -65,7 +64,7 @@ export default async function TimelinePage({
     notFound();
   }
 
-  const page = parsePage(pageParam);
+  const requestedPage = parsePage(pageParam);
 
   // サーバーの実UTC時刻ではなく、記録の保存値と同じ「naive UTC」の現在時刻を
   // 基準にする（datetime.ts の getNaiveUtcNow を参照）。実UTCのまま使うと
@@ -87,12 +86,12 @@ export default async function TimelinePage({
       ? nowDateKey
       : parseSelectedDate(dateParam, ym);
 
-  const { entries, hasMore, datesByDay } = await listTimelineForMonth(
+  const { entries, page, totalPages, datesByDay } = await listTimelineForMonth(
     catId,
     year,
     month,
     {
-      page,
+      page: requestedPage,
       pageSize: PAGE_SIZE,
       date: selectedDate ?? undefined,
       // カレンダーをスワイプしているあいだに、前後の月の記録のアイコンも見せる
@@ -100,16 +99,6 @@ export default async function TimelinePage({
     },
   );
 
-  const prevHref = buildTimelineHref(catId, {
-    page: page - 1,
-    ym,
-    date: selectedDate ?? undefined,
-  });
-  const nextHref = buildTimelineHref(catId, {
-    page: page + 1,
-    ym,
-    date: selectedDate ?? undefined,
-  });
   const prevMonth = shiftYm({ year, month }, -1);
   const nextMonth = shiftYm({ year, month }, 1);
   // 月を移動すると選択中の日付は別の月に属することになるため、date は
@@ -197,10 +186,17 @@ export default async function TimelinePage({
         </ul>
       )}
 
-      <div className={styles.pagination}>
-        {page > 1 ? <Link href={prevHref}>← 前のページ</Link> : <span />}
-        {hasMore ? <Link href={nextHref}>次のページ →</Link> : <span />}
-      </div>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        getHref={(target) =>
+          buildTimelineHref(catId, {
+            page: target,
+            ym,
+            date: selectedDate ?? undefined,
+          })
+        }
+      />
     </main>
   );
 }
