@@ -28,8 +28,12 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   | `symptoms`           | `onset_at`          |
   | `medication_doses`   | `occurred_at`       |
   | `hospital_visits`    | `visited_at`        |
+  | `memo_records`       | `recorded_at`       |
 
   （`medications` 自体は予定・マスタ的な情報のため、タイムラインの対象は実績である `medication_doses` とする）
+
+  （`memo_records.recorded_at` は、日付を残さないメモでは NULL になる。NULL のメモはタイムラインの対象外で、
+  一覧と MCP の `list_memos` からだけ読む）
 
 - 記録テーブルには、一覧を新しい順に読むための「絞り込みの列＋代表の発生日時列」の複合インデックスを設定する（`0057`）。
   絞り込みの列は基本は `cat_id` で、`cleaning_records` は `cleaning_target_id`、`medication_doses` は `medication_id`

@@ -310,6 +310,22 @@ export function ShampooIcon(props: RecordIconProps) {
   );
 }
 
+export function MemoIcon(props: RecordIconProps) {
+  const catTransform = "translate(2 0) scale(.83)";
+  const note = "M4 12h16v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z";
+  const paws = "M7 12a1.5 1.5 0 0 1 3 0Zm7 0a1.5 1.5 0 0 1 3 0Z";
+
+  return (
+    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
+      <CatOutline transform={catTransform} />
+      {/* 猫の顎の線をメモ用紙の塗りで隠し、用紙の縁に前足を掛ける。 */}
+      <path className={styles.foregroundFill} fill="#fff4df" d={note} />
+      <path d="M7.5 15.5h9m-9 3h6" />
+      <path className={styles.foregroundFill} fill="#f5dfb7" d={paws} />
+    </RecordIcon>
+  );
+}
+
 export function BroomIcon(props: RecordIconProps) {
   const catTransform = "translate(-1 2) scale(.75)";
   const broom = "m16 13 4 1 2 7h-9Z";

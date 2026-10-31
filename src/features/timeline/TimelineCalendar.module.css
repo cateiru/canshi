@@ -163,6 +163,10 @@
   color: var(--color-record-expense);
 }
 
+.icon[data-record-type="memo"] {
+  color: var(--color-record-memo);
+}
+
 .moreCount {
   font-size: var(--text-xs);
   color: var(--color-ink);

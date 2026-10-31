@@ -21,6 +21,7 @@ export const MCP_PERMISSION_RECORD_TYPES = [
   "medicationDose",
   "hospitalVisit",
   "expense",
+  "memo",
 ] as const satisfies readonly TimelineRecordType[];
 
 export type McpPermissionRecordType =
