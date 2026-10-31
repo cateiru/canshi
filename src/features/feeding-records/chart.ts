@@ -1,5 +1,5 @@
 import type { FeedingMode } from "@/db/schema";
-import { roundKcal, sumFeedingTotals } from "./calculations";
+import { sumFeedingTotals } from "./calculations";
 
 export type FeedingChartPoint = {
   occurredAtIso: string;
@@ -36,33 +36,24 @@ type FeedingChartRecord = {
 export function toFeedingChartPoints(
   records: FeedingChartRecord[],
 ): FeedingChartPoint[] {
-  const totalsByDate = new Map<
-    string,
-    { totalIntakeG: number; totalKcal: number }
-  >();
+  // 記録ごとに丸めてから足すと端数がずれるため、日ごとに商品をまとめて一度だけ合計・丸める
+  const itemsByDate = new Map<string, FeedingChartRecord["items"]>();
 
   for (const record of records) {
     if (record.mode !== "strict") {
       continue;
     }
     const dateKey = record.occurredAt.toISOString().slice(0, 10);
-    const totals = totalsByDate.get(dateKey) ?? {
-      totalIntakeG: 0,
-      totalKcal: 0,
-    };
-    const recordTotals = sumFeedingTotals(record.items);
-    totals.totalIntakeG += recordTotals.totalIntakeG;
-    totals.totalKcal += recordTotals.totalKcal;
-    totalsByDate.set(dateKey, totals);
+    const items = itemsByDate.get(dateKey) ?? [];
+    items.push(...record.items);
+    itemsByDate.set(dateKey, items);
   }
 
-  return [...totalsByDate.entries()]
+  return [...itemsByDate.entries()]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([dateKey, totals]) => ({
+    .map(([dateKey, items]) => ({
       occurredAtIso: `${dateKey}T00:00:00.000Z`,
-      totalIntakeG: totals.totalIntakeG,
-      // 記録ごとの合計を足すと浮動小数の誤差が乗るため、日の合計も丸め直す
-      totalKcal: roundKcal(totals.totalKcal),
+      ...sumFeedingTotals(items),
     }));
 }
 
