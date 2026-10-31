@@ -1,4 +1,5 @@
 import type { Cat } from "@/db/schema";
+import { roundKcal } from "@/features/feeding-records/calculations";
 import {
   FEEDING_MODE_LABEL,
   GIVEN_AMOUNT_LEVEL_LABEL,
@@ -25,7 +26,8 @@ export function toCatSummary(cat: Cat) {
 
 /**
  * 記録本体を MCP ツール向けに整える。体重記録の BCS やごはん記録の記録方法・
- * 段階での量は値だけでは意味が伝わりにくいため、表示用のラベルを添える
+ * 段階での量は値だけでは意味が伝わりにくいため、表示用のラベルを添える。
+ * ごはん記録の推定カロリーは画面の表示に合わせて小数第二位で四捨五入する
  */
 function toRecordSummary(entry: TimelineEntry) {
   if (entry.type === "feeding") {
@@ -35,6 +37,8 @@ function toRecordSummary(entry: TimelineEntry) {
       modeLabel: FEEDING_MODE_LABEL[record.mode],
       items: record.items.map((item) => ({
         ...item,
+        estimatedKcal:
+          item.estimatedKcal === null ? null : roundKcal(item.estimatedKcal),
         givenAmountLevelLabel: item.givenAmountLevel
           ? GIVEN_AMOUNT_LEVEL_LABEL[item.givenAmountLevel]
           : null,

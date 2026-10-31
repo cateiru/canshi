@@ -1,5 +1,5 @@
 import type { FeedingMode } from "@/db/schema";
-import { sumFeedingTotals } from "./calculations";
+import { roundKcal, sumFeedingTotals } from "./calculations";
 
 export type FeedingChartPoint = {
   occurredAtIso: string;
@@ -30,6 +30,7 @@ type FeedingChartRecord = {
  * listFeedingRecords() の結果を、Nivo の折れ線グラフ用に日付単位で集計する。
  * 同じ日に複数回食事した記録があっても、その日の合計を1点として扱う
  * （一覧の日付区切りと表示単位を揃える）。
+ * カロリーは小数第二位で四捨五入する。
  * あいまいモードの記録は摂取量・カロリーを持たないため、グラフには含めない
  */
 export function toFeedingChartPoints(
@@ -60,7 +61,8 @@ export function toFeedingChartPoints(
     .map(([dateKey, totals]) => ({
       occurredAtIso: `${dateKey}T00:00:00.000Z`,
       totalIntakeG: totals.totalIntakeG,
-      totalKcal: totals.totalKcal,
+      // 記録ごとの合計を足すと浮動小数の誤差が乗るため、日の合計も丸め直す
+      totalKcal: roundKcal(totals.totalKcal),
     }));
 }
 

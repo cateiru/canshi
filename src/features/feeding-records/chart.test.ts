@@ -57,6 +57,31 @@ describe("toFeedingChartPoints", () => {
     expect(points[0]?.totalKcal).toBe(100);
   });
 
+  it("日の合計カロリーは小数第二位を四捨五入する", () => {
+    const records = [
+      {
+        mode: "strict" as const,
+        occurredAt: new Date("2026-09-01T00:00:00.000Z"),
+        items: [item(10, 1.1)],
+      },
+      {
+        mode: "strict" as const,
+        occurredAt: new Date("2026-09-01T12:00:00.000Z"),
+        items: [item(10, 2.2)],
+      },
+      {
+        mode: "strict" as const,
+        occurredAt: new Date("2026-09-01T18:00:00.000Z"),
+        items: [item(10, 0.1)],
+      },
+    ];
+
+    const points = toFeedingChartPoints(records);
+
+    // そのまま足すと 3.4000000000000004 になる
+    expect(points[0]?.totalKcal).toBe(3.4);
+  });
+
   it("同じ日付の複数記録を1点に合算する", () => {
     const records = [
       {
