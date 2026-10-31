@@ -17,7 +17,7 @@ Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-ad
 | `POST /users/:userId/sessions/delete` | ユーザーのログインセッションをすべて削除する（すべての端末からログアウトさせる）。終わると `/users` に戻る |
 | `POST /households/:householdId/members` | フォームの `userId` のユーザーを家のメンバー（`member`）として追加する。すでにメンバーなら何もしない。終わると `/households` に戻る |
 | `POST /households/:householdId/members/:userId/delete` | ユーザーを家から外す。家にオーナーがいなくならないよう、オーナーは外せない（メインアプリでオーナーを移譲してから外す）。終わると `/households` に戻る |
-| `/food-products` | 共通のごはん商品の一覧（画像・区分・カロリー・内容量・対象・家に追加された数）。どの家のユーザーも、メインアプリでごはん商品を登録するときに検索して家に追加できる |
+| `/food-products` | 共通のごはん商品の一覧（画像・区分・カロリー・内容量・対象・家に追加された数）。どの家のユーザーも、メインアプリでごはん商品を登録するときに検索して家に追加できる。メーカーごとに折りたたんで表示し（メーカー名のない商品は最後にまとめる）、まとまりごとの検索フォームで、そのメーカーの商品を商品名・検索キーワードで絞り込める（`?manufacturer=<メーカー名>&q=<検索語>`。メーカー名のないまとまりは `manufacturer` を空にする）。検索したまとまりと、登録・更新した商品のまとまりだけを開いて表示する |
 | `/food-products/new` | 共通のごはん商品の登録フォーム |
 | `POST /food-products` | 共通のごはん商品を登録する。終わると `/food-products` に戻る |
 | `/food-products/:productId/edit` | 共通のごはん商品の編集フォーム |

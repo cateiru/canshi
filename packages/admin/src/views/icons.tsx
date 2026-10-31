@@ -83,3 +83,17 @@ export function PhotoIcon() {
     />
   );
 }
+
+/** TbSearch */
+export function SearchIcon() {
+  return (
+    <TablerIcon
+      paths={["M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0", "M21 21l-6 -6"]}
+    />
+  );
+}
+
+/** TbChevronDown */
+export function ChevronDownIcon() {
+  return <TablerIcon paths={["M6 9l6 6l6 -6"]} />;
+}

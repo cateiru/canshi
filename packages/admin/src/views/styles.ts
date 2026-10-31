@@ -378,6 +378,61 @@ button[type="submit"].primary { min-height: 48px; font-size: var(--text-md); }
 td .sub { display: block; color: var(--color-ink-muted); }
 td code { display: block; }
 
+/* 共通のごはん商品の一覧はメーカーごとに折りたたみ、開いた中で商品を検索できるようにする */
+.manufacturer-groups { display: flex; flex-direction: column; gap: var(--space-3); }
+details.manufacturer-group {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 16px;
+}
+details.manufacturer-group > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: 16px;
+  font-weight: var(--font-weight-bold);
+  list-style: none;
+  cursor: pointer;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition:
+    background-color var(--transition-base),
+    outline-color var(--transition-base);
+}
+details.manufacturer-group > summary::-webkit-details-marker { display: none; }
+details.manufacturer-group > summary:hover { background-color: var(--color-surface-hover); }
+details.manufacturer-group > summary:focus-visible { outline-color: var(--color-focus-ring); }
+details.manufacturer-group > summary svg.icon {
+  transform: rotate(-90deg);
+  transition: transform var(--transition-base);
+}
+details.manufacturer-group[open] > summary svg.icon { transform: none; }
+.manufacturer-name { min-width: 0; overflow-wrap: anywhere; }
+details.manufacturer-group > summary .count {
+  margin-left: auto;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
+  white-space: nowrap;
+}
+.manufacturer-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-4);
+}
+form.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.search-field { flex: 1 1 16rem; max-width: 28rem; }
+@media (max-width: 480px) {
+  .manufacturer-body { padding-inline: var(--space-2); }
+}
+
 /* 登録・編集フォーム。メインアプリのごはん商品のフォームと同じ幅・間隔にする */
 form.product-form {
   display: flex;
@@ -404,7 +459,7 @@ form.product-form {
 fieldset .field-error { font-size: var(--text-sm); }
 
 /* メインアプリの FormField と同じく、白い背景と入力欄の枠線で識別できるようにする */
-input[type="text"], input[type="number"], textarea {
+input[type="text"], input[type="search"], input[type="number"], textarea {
   width: 100%;
   min-height: 48px;
   border: var(--border-width) solid var(--color-border-input);
@@ -420,7 +475,7 @@ input[type="text"], input[type="number"], textarea {
     border-color var(--transition-base),
     outline-color var(--transition-base);
 }
-input[type="text"]:hover, input[type="number"]:hover, textarea:hover { border-color: var(--color-accent-strong); }
+input[type="text"]:hover, input[type="search"]:hover, input[type="number"]:hover, textarea:hover { border-color: var(--color-accent-strong); }
 input:focus, textarea:focus { outline-color: transparent; }
 input:focus-visible, textarea:focus-visible { outline-color: var(--color-focus-ring); }
 textarea { resize: vertical; line-height: var(--line-height-body); }
@@ -431,7 +486,7 @@ select[aria-invalid="true"], select[aria-invalid="true"]:hover {
 }
 form.product-form select { width: 100%; max-width: none; min-height: 48px; }
 @media (max-width: 480px) {
-  input[type="text"], input[type="number"], textarea { padding-inline: var(--space-2); }
+  input[type="text"], input[type="search"], input[type="number"], textarea { padding-inline: var(--space-2); }
 }
 
 /* チェックボックスのまとまり（メインアプリの FormGroup） */
