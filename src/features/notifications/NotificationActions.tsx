@@ -32,7 +32,9 @@ type NotificationActionsProps = {
  * Server Action の実行後、`router.refresh()` でサーバー側の一覧を取り直す。
  * 掃除の通知は「完了にする」の代わりに「掃除して完了にする」を表示し、
  * 完了と同時に掃除記録を追加する。症状の確認通知は「解消した」（症状記録を解消に更新して完了）と
- * 「まだ続いている」（症状記録はそのままで完了。1ヶ月後に再び確認する）を表示する
+ * 「まだ続いている」（症状記録はそのままで完了。1ヶ月後に再び確認する）を表示する。
+ * 共通のごはん商品のリクエストの完了通知は、知らせるだけで後から対応することがないため、
+ * 延期・無視は出さず「完了にする」だけを表示する
  */
 export function NotificationActions({
   notificationId,
@@ -56,6 +58,20 @@ export function NotificationActions({
       }
       router.refresh();
     });
+  }
+
+  if (kind === "catalog_request_completed") {
+    return (
+      <div className={styles.actions}>
+        <Button
+          variant="primary"
+          isDisabled={isPending}
+          onPress={() => run(() => markNotificationDoneAction(notificationId))}
+        >
+          完了にする
+        </Button>
+      </div>
+    );
   }
 
   return (

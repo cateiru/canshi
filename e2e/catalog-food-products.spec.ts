@@ -236,6 +236,16 @@ test("見つからなかった条件で共通のごはん商品をリクエス�
     .getByRole("listitem")
     .filter({ hasText: `キーワード：${keyword}` });
   await expect(notification).toBeVisible({ timeout: 40_000 });
+  // リクエストの完了通知は知らせるだけのため、延期・無視は出さず完了だけを表示する
+  await expect(
+    notification.getByRole("button", { name: "完了にする" }),
+  ).toBeVisible();
+  await expect(notification.getByRole("button", { name: /延期/ })).toHaveCount(
+    0,
+  );
+  await expect(
+    notification.getByRole("button", { name: "無視する" }),
+  ).toHaveCount(0);
   await notification
     .getByRole("link", { name: "共通のごはん商品のリクエストに対応しました" })
     .click();
