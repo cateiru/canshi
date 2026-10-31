@@ -30,37 +30,30 @@ type FeedingChartRecord = {
  * listFeedingRecords() の結果を、Nivo の折れ線グラフ用に日付単位で集計する。
  * 同じ日に複数回食事した記録があっても、その日の合計を1点として扱う
  * （一覧の日付区切りと表示単位を揃える）。
+ * カロリーは小数第二位で四捨五入する。
  * あいまいモードの記録は摂取量・カロリーを持たないため、グラフには含めない
  */
 export function toFeedingChartPoints(
   records: FeedingChartRecord[],
 ): FeedingChartPoint[] {
-  const totalsByDate = new Map<
-    string,
-    { totalIntakeG: number; totalKcal: number }
-  >();
+  // 記録ごとに丸めてから足すと端数がずれるため、日ごとに商品をまとめて一度だけ合計・丸める
+  const itemsByDate = new Map<string, FeedingChartRecord["items"]>();
 
   for (const record of records) {
     if (record.mode !== "strict") {
       continue;
     }
     const dateKey = record.occurredAt.toISOString().slice(0, 10);
-    const totals = totalsByDate.get(dateKey) ?? {
-      totalIntakeG: 0,
-      totalKcal: 0,
-    };
-    const recordTotals = sumFeedingTotals(record.items);
-    totals.totalIntakeG += recordTotals.totalIntakeG;
-    totals.totalKcal += recordTotals.totalKcal;
-    totalsByDate.set(dateKey, totals);
+    const items = itemsByDate.get(dateKey) ?? [];
+    items.push(...record.items);
+    itemsByDate.set(dateKey, items);
   }
 
-  return [...totalsByDate.entries()]
+  return [...itemsByDate.entries()]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([dateKey, totals]) => ({
+    .map(([dateKey, items]) => ({
       occurredAtIso: `${dateKey}T00:00:00.000Z`,
-      totalIntakeG: totals.totalIntakeG,
-      totalKcal: totals.totalKcal,
+      ...sumFeedingTotals(items),
     }));
 }
 
