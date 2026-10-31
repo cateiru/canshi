@@ -76,6 +76,11 @@
   align-items: flex-start;
 }
 
+.memoContent {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .feedingImages {
   display: flex;
   flex-wrap: wrap;

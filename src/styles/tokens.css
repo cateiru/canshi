@@ -68,6 +68,7 @@
   --color-record-medication-dose: #15803d;
   --color-record-hospital-visit: #be185d;
   --color-record-expense: #8a6508;
+  --color-record-memo: #4b5563;
 
   /*
    * 枠線・補助テキストの割合。コントラストを上げる設定で下のブロックが上書きする。
@@ -197,6 +198,7 @@
   --color-record-medication-dose: #4ade80;
   --color-record-hospital-visit: #f472b6;
   --color-record-expense: #d9b44a;
+  --color-record-memo: #cbd5e1;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -231,6 +233,7 @@
     --color-record-medication-dose: #4ade80;
     --color-record-hospital-visit: #f472b6;
     --color-record-expense: #d9b44a;
+    --color-record-memo: #cbd5e1;
   }
 }
 

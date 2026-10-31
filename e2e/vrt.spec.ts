@@ -17,7 +17,8 @@ import { expect, takeSnapshot, test } from "./vrt-snapshot";
 // - EMPTY_CAT: どの記録も登録していない猫。各記録一覧の「何もないケース」用
 // - CAT: 各記録種別を1件ずつ登録した猫。「データがあるケース」用。
 //   掃除記録の対象・服薬予定はそれぞれ2件登録し、1件だけ実績なしにすることで、
-//   ネストした一覧ページの「データがある/何もない」の両方をこの1匹で再現する
+//   ネストした一覧ページの「データがある/何もない」の両方をこの1匹で再現する。
+//   メモは日付ありと日付なしを1件ずつ登録し、一覧で両方のカードを撮る
 // - BUSY_CAT: 同じ日に5種類の記録を登録した猫。タイムラインのカレンダーで1日のアイコンが
 //   表示上限を超えて「+1」になるケース用
 //   水の記録は 51 件登録し、記録一覧のページング（1 ページ 50 件）の表示にも使う
@@ -743,6 +744,7 @@ const FLAT_RECORD_LISTS: RecordListCase[] = [
   },
   { label: "症状記録", path: "symptoms", heading: "の症状記録" },
   { label: "服薬予定", path: "medications", heading: "の服薬予定" },
+  { label: "メモ", path: "memo-records", heading: "のメモ" },
 ];
 
 for (const { label, path, heading } of FLAT_RECORD_LISTS) {
@@ -978,6 +980,7 @@ test.describe("記録追加ページ（日付欄あり）", () => {
       heading: "ごはんを記録する",
     },
     { label: "支出記録", path: "expenses/new", heading: "支出を記録する" },
+    { label: "メモ", path: "memo-records/new", heading: "メモを記録する" },
   ];
 
   for (const { label, path, heading } of NEW_RECORD_PAGES) {
@@ -1000,6 +1003,26 @@ test.describe("記録追加ページ（日付欄あり）", () => {
     await page.getByRole("radio", { name: "あいまいモード" }).click();
     await expect(
       page.getByRole("radiogroup", { name: "残した量" }).first(),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+
+  // 「日付を残す」を外すと日付・時刻欄が消え、タイムラインに出ない旨の案内が出る。
+  // 保存はしないため、フィクスチャのデータは変わらない
+  test("メモ追加ページ（日付を残さない）の見た目", async ({
+    page,
+  }, testInfo) => {
+    await page.goto(`/cats/${EMPTY_CAT}/memo-records/new`);
+    await expect(
+      page.getByRole("heading", { name: "メモを記録する" }),
+    ).toBeVisible();
+    // Checkbox の実体（input）は視覚的に隠れておりクリック不可のため、表示テキストをクリックする
+    await page.getByText("日付を残す", { exact: true }).click();
+    await expect(
+      page.getByRole("checkbox", { name: "日付を残す" }),
+    ).not.toBeChecked();
+    await expect(
+      page.getByText("日付を残さないメモは、タイムラインには表示されません。"),
     ).toBeVisible();
     await takeSnapshot(page, testInfo);
   });
