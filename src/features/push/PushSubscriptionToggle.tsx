@@ -238,10 +238,6 @@ export function PushSubscriptionToggle() {
           >
             {isTestPending ? "予約しています…" : "テスト通知を送る"}
           </Button>
-          <p className={styles.testPushDescription}>
-            通常のお知らせと同じ仕組みで、次の定期送信（15
-            分ごと）のときにこの端末へ届きます。
-          </p>
         </div>
       ) : null}
       {testScheduledTime ? (
