@@ -17,8 +17,10 @@ import {
   hospitalVisits,
   type LeftoverLevel,
   type MedicationDose,
+  type MemoRecord,
   medicationDoses,
   medications,
+  memoRecords,
   type PoopRecord,
   poopRecords,
   type ShampooRecord,
@@ -72,6 +74,7 @@ export const TIMELINE_RECORD_TYPES = [
   "medicationDose",
   "hospitalVisit",
   "expense",
+  "memo",
 ] as const;
 
 export type TimelineRecordType = (typeof TIMELINE_RECORD_TYPES)[number];
@@ -144,7 +147,8 @@ export type TimelineEntry =
       MedicationDose & { medicationName: string }
     >
   | TimelineEntryOf<"hospitalVisit", HospitalVisit>
-  | TimelineEntryOf<"expense", ExpenseRecord>;
+  | TimelineEntryOf<"expense", ExpenseRecord>
+  | TimelineEntryOf<"memo", MemoRecord & { recordedAt: Date }>;
 
 type DateRange = { start: Date; end: Date };
 
@@ -370,6 +374,42 @@ async function fetchShampooEntries(
     media: [],
     record,
   }));
+}
+
+async function fetchMemoEntries(
+  catId: string,
+  range: DateRange,
+  d1?: D1Database,
+): Promise<TimelineEntry[]> {
+  const db = getDb(d1);
+  // 日付を残さないメモ（recorded_at が NULL）は範囲の条件に一致しないため、タイムラインに載らない
+  const rows = await db
+    .select()
+    .from(memoRecords)
+    .where(
+      and(
+        eq(memoRecords.catId, catId),
+        gte(memoRecords.recordedAt, range.start),
+        lt(memoRecords.recordedAt, range.end),
+      ),
+    )
+    .orderBy(desc(memoRecords.recordedAt));
+
+  return rows.flatMap((record) => {
+    const { recordedAt } = record;
+    if (!recordedAt) {
+      return [];
+    }
+    return [
+      {
+        id: record.id,
+        type: "memo",
+        occurredAt: recordedAt,
+        media: [],
+        record: { ...record, recordedAt },
+      },
+    ];
+  });
 }
 
 async function fetchCleaningEntries(
@@ -618,6 +658,7 @@ const FETCHERS: Record<
   medicationDose: fetchMedicationDoseEntries,
   hospitalVisit: fetchHospitalVisitEntries,
   expense: fetchExpenseEntries,
+  memo: fetchMemoEntries,
 };
 
 export type ListTimelineForMonthOptions = {

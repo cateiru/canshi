@@ -12,6 +12,7 @@ import {
   hospitalVisits,
   medicationDoses,
   medications,
+  memoRecords,
   notificationSettings,
   notifications,
   poopRecords,
@@ -188,6 +189,7 @@ export async function deleteCatAction(id: string): Promise<SubmitRedirect> {
     db.delete(vomitRecords).where(eq(vomitRecords.catId, id)),
     db.delete(waterRecords).where(eq(waterRecords.catId, id)),
     db.delete(shampooRecords).where(eq(shampooRecords.catId, id)),
+    db.delete(memoRecords).where(eq(memoRecords.catId, id)),
     // cleaning_records は cats・cleaning_targets の双方を参照するため、
     // cleaning_targets より先に削除する
     db.delete(cleaningRecords).where(eq(cleaningRecords.catId, id)),

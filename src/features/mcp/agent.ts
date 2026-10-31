@@ -238,6 +238,7 @@ export function createCanshiMcpServer(
         "代わりに与えた量 givenAmountLevel（less=少なめ、normal=普通、more=多め）と" +
         "残した量 leftoverLevel（none=完食、little=少し残し、most=ほとんど残し）を持つ。" +
         "それぞれの日本語ラベルは modeLabel・givenAmountLevelLabel・leftoverLevelLabel に含まれる。" +
+        'メモ（type="memo"）は日付を残したものだけを含む。日付を残さないメモも読むときは list_memos を使う。' +
         "ユーザーが読み取りを許可していない種類の記録は含まれない。",
       inputSchema: {
         catId: z.string().describe("猫の ID（list_cats で取得できる）"),

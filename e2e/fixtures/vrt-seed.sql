@@ -7,6 +7,7 @@
 -- - vrt-cat-populated : 各記録種別を1件ずつ登録する（「データがあるケース」用）。
 --   掃除記録・服薬予定はネストした一覧ページの「データがある/何もない」の両方を
 --   このデータだけで再現するため、対象/服薬予定をそれぞれ2件（1件は記録なし）にする。
+--   メモは日付ありと日付なしの両方のカードを撮るため2件にする。
 -- - vrt-cat-busy      : 同じ日に5種類の記録を登録する（タイムラインのカレンダーで
 --   1日のアイコンが表示上限を超えて「+1」になるケース用）。vrt-cat-populated の
 --   「各記録種別を1件ずつ」を崩さないよう別の猫にしている。猫一覧で末尾に並ぶよう
@@ -224,6 +225,17 @@ VALUES ('vrt-water-1', 'vrt-cat-populated', strftime('%s', '2024-06-14 09:00:00'
 INSERT INTO weight_records (id, cat_id, occurred_at, input_method, cat_weight_kg, bcs, created_at, updated_at)
 VALUES ('vrt-weight-1', 'vrt-cat-populated', strftime('%s', '2024-06-09 08:00:00'), 'direct', 4.2, 3,
   strftime('%s', '2024-06-09 08:00:00'), strftime('%s', '2024-06-09 08:00:00'));
+
+-- メモ: 日付ありと日付なし（recorded_at が NULL）を1件ずつ登録する（一覧で両方のカードの表示を撮る。
+-- 日付なしはタイムラインに出ない）。改行を含めて、本文の折り返し表示も撮る
+INSERT INTO memo_records (id, cat_id, recorded_at, content, created_at, updated_at)
+VALUES ('vrt-memo-1', 'vrt-cat-populated', strftime('%s', '2024-06-20 21:00:00'),
+  'ブラッシングを嫌がらなくなった。' || char(10) || '新しいブラシが気に入ったみたい。',
+  strftime('%s', '2024-06-20 21:00:00'), strftime('%s', '2024-06-20 21:00:00'));
+
+INSERT INTO memo_records (id, cat_id, content, created_at, updated_at)
+VALUES ('vrt-memo-2', 'vrt-cat-populated', '好きなおもちゃは羽根のついたじゃらし。',
+  strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
 -- vrt-cat-busy: 水の記録を 1 ページの表示件数（50 件）より 1 件多い 51 件登録する（記録一覧の
 -- ページングの表示用。1 ページ目は 50 件、2 ページ目は 1 件になる）。2024-01-01 から 1 日 1 件で、

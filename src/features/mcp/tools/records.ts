@@ -14,6 +14,7 @@ import {
   hospitalVisits,
   LEFTOVER_LEVELS,
   medicationDoses,
+  memoRecords,
   poopRecords,
   shampooRecords,
   symptoms,
@@ -47,6 +48,15 @@ import {
 import { medicationDoseFormSchema } from "@/features/medications/doseSchema";
 import { listMedications } from "@/features/medications/queries";
 import {
+  createMemoRecord,
+  updateMemoRecord,
+} from "@/features/memo-records/mutations";
+import { listMemoRecords } from "@/features/memo-records/queries";
+import {
+  MEMO_CONTENT_MAX_LENGTH,
+  memoRecordFormSchema,
+} from "@/features/memo-records/schema";
+import {
   createPoopRecord,
   updatePoopRecord,
 } from "@/features/poop-records/mutations";
@@ -57,6 +67,7 @@ import {
 } from "@/features/shampoo-records/mutations";
 import { shampooRecordFormSchema } from "@/features/shampoo-records/schema";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
+import { paginate } from "@/features/shared/pagination";
 import { createSymptom, updateSymptom } from "@/features/symptoms/mutations";
 import { symptomFormSchema } from "@/features/symptoms/schema";
 import {
@@ -717,6 +728,69 @@ const hospitalVisitTool = defineRecordTool({
     updateHospitalVisit(cat, id, data, ctx.env.DB),
 });
 
+const memoTool = defineRecordTool({
+  recordType: "memo",
+  name: "memo",
+  label: "メモ",
+  description:
+    "content（本文）は追加では必須。" +
+    "hasDate を false にすると日付を残さないメモになり、タイムライン（list_timeline）には載らない" +
+    "（list_memos では読める）。追加で hasDate を省略すると日付を残す。" +
+    "日付を残さないメモの編集で recordedDate・recordedTime を指定すると、日付を残すメモにする" +
+    "（片方だけを指定したときは、もう片方を今の日時にする）。" +
+    "メモの ID は list_memos でも取得できる。",
+  fields: {
+    content: z
+      .string()
+      .optional()
+      .describe(`メモの本文（${MEMO_CONTENT_MAX_LENGTH}文字以内）`),
+    hasDate: z.boolean().optional().describe("日付を残すか"),
+    recordedDate: dateField("日付"),
+    recordedTime: timeField("時刻"),
+  },
+  schema: memoRecordFormSchema,
+  defaults: () => ({
+    ...nowDateTimeValues("recordedDate", "recordedTime"),
+    hasDate: "on",
+  }),
+  async load(db, catId, id) {
+    const [row] = await db
+      .select()
+      .from(memoRecords)
+      .where(and(eq(memoRecords.id, id), eq(memoRecords.catId, catId)))
+      .limit(1);
+    if (!row) return null;
+    return {
+      existing: null,
+      values: {
+        hasDate: toCheckboxValue(row.recordedAt != null),
+        // 日付を残さないメモに日付を残すときは、指定しなかった日付・時刻を今の日時にする
+        ...(row.recordedAt
+          ? dateTimeValues("recordedDate", "recordedTime", row.recordedAt)
+          : nowDateTimeValues("recordedDate", "recordedTime")),
+        content: row.content,
+      },
+    };
+  },
+  adjust(values, args) {
+    // 日付・時刻を指定したのに hasDate を省略したときは、日付を残すメモにする
+    if (
+      args.hasDate === undefined &&
+      (args.recordedDate !== undefined || args.recordedTime !== undefined)
+    ) {
+      return { ...values, hasDate: "on" };
+    }
+    return values;
+  },
+  create: async ({ ctx, cat, data }) => ({
+    id: await createMemoRecord(cat.id, data, ctx.env.DB),
+  }),
+  update: async ({ ctx, cat, id, data }) =>
+    (await updateMemoRecord(cat.id, id, data, ctx.env.DB))
+      ? { id }
+      : { error: RECORD_NOT_FOUND_ERROR },
+});
+
 /** 支出の記録の関連する猫のうち、この接続から支出の記録を書き込める猫だけを返す */
 async function listExpenseWritableCatIds(
   ctx: McpToolContext,
@@ -975,6 +1049,7 @@ const RECORD_TOOLS = [
   medicationDoseTool,
   hospitalVisitTool,
   expenseTool,
+  memoTool,
 ] as const;
 
 /** 引数のうち、フォームの値に含めるものだけを取り出す */
@@ -1101,8 +1176,8 @@ function registerRecordTool<TData, TExisting>(
 }
 
 /**
- * 記録の追加・編集のツールと、記録に必要な ID を調べるツール（掃除対象・服薬予定の一覧）を
- * 登録する。書き込めるのは、接続に書き込みを許可していて、読み取りも許可している
+ * 記録の追加・編集のツールと、記録に必要な ID を調べるツール（掃除対象・服薬予定の一覧）、
+ * タイムラインに載らないメモを読むツール（メモの一覧）を登録する。書き込めるのは、接続に書き込みを許可していて、読み取りも許可している
  * 猫・記録の種類に限る（`./context.ts` の `resolveWritableCat`）
  */
 export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
@@ -1174,7 +1249,51 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
       });
     },
   );
+
+  server.registerTool(
+    "list_memos",
+    {
+      title: "メモの一覧を取得",
+      description:
+        "猫のメモの一覧を取得する。日付を残さないメモ（recordedAt が null）はタイムライン" +
+        "（list_timeline）に載らないため、メモを読むときはこのツールを使う。" +
+        "日付を残さないメモ（新しく作った順）、日付を残したメモ（recordedAt の新しい順）の順に並ぶ。" +
+        `1 ページは ${MEMO_PAGE_SIZE} 件で、hasMore が true なら次のページがある。`,
+      inputSchema: {
+        catId: z.string().describe("猫の ID（list_cats で取得できる）"),
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe("ページ番号（1始まり、省略時は1）"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ catId, page }) => {
+      const allowed = await resolveReadableCat(ctx, catId, "memo");
+      if ("error" in allowed) {
+        return errorResult(allowed.error);
+      }
+      const records = await listMemoRecords(catId, ctx.env.DB);
+      const paged = paginate(records, page ?? 1, MEMO_PAGE_SIZE);
+      return jsonResult({
+        memos: paged.items.map((record) => ({
+          id: record.id,
+          recordedAt: record.recordedAt,
+          content: record.content,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt,
+        })),
+        page: paged.page,
+        hasMore: paged.page < paged.totalPages,
+      });
+    },
+  );
 }
+
+/** `list_memos` の 1 ページの件数 */
+const MEMO_PAGE_SIZE = 50;
 
 /**
  * 読み取りを許可している猫と記録の種類であることを確かめる。許可していない猫・種類は、

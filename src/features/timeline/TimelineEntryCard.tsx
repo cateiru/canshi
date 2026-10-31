@@ -131,6 +131,8 @@ function getEditHref(catId: string, entry: TimelineEntry): string {
       return `/cats/${catId}/hospital-visits/${entry.record.id}/edit`;
     case "expense":
       return `/cats/${catId}/expenses/${entry.record.id}/edit`;
+    case "memo":
+      return `/cats/${catId}/memo-records/${entry.record.id}/edit`;
     default: {
       const exhaustiveCheck: never = entry;
       return exhaustiveCheck;
@@ -348,6 +350,12 @@ function renderBody(
         </div>
       );
     }
+    case "memo":
+      return (
+        <div className={styles.body}>
+          <p className={styles.memoContent}>{entry.record.content}</p>
+        </div>
+      );
     default: {
       const exhaustiveCheck: never = entry;
       return exhaustiveCheck;

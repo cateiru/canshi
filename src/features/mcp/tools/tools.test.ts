@@ -21,6 +21,7 @@ import {
   mcpPermissions,
   medicationDoses,
   medications,
+  memoRecords,
   notifications,
   poopRecords,
   users,
@@ -545,6 +546,119 @@ const PRODUCT = {
 /** 1x1 の PNG */
 const PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+describe("メモ", () => {
+  it("日付を残すメモと残さないメモを追加する", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 日本時間では 2026-10-20 00:30
+    vi.setSystemTime(new Date("2026-10-19T15:30:00.000Z"));
+    await allow(WRITE_ALL_RECORDS);
+
+    const dated = await call("create_memo", {
+      catId: "cat-1",
+      content: "爪を切った",
+    });
+    const undated = await call("create_memo", {
+      catId: "cat-1",
+      content: "好きなおもちゃはねずみ",
+      hasDate: false,
+    });
+
+    const records = await db.select().from(memoRecords);
+    expect(records).toHaveLength(2);
+    expect(
+      records.find((record) => record.id === dated.value?.id),
+    ).toMatchObject({
+      content: "爪を切った",
+      recordedAt: new Date("2026-10-20T00:30:00.000Z"),
+    });
+    expect(
+      records.find((record) => record.id === undated.value?.id),
+    ).toMatchObject({ content: "好きなおもちゃはねずみ", recordedAt: null });
+  });
+
+  it("本文が無ければ追加しない", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    const result = await call("create_memo", { catId: "cat-1", content: " " });
+
+    expect(result.error).toContain("メモを入力してください");
+    expect(await db.select().from(memoRecords)).toEqual([]);
+  });
+
+  it("日付を残さないメモの編集で日付を指定すると、日付を残すメモにする", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 日本時間では 2026-10-20 00:30
+    vi.setSystemTime(new Date("2026-10-19T15:30:00.000Z"));
+    await allow(WRITE_ALL_RECORDS);
+    const [record] = await db
+      .insert(memoRecords)
+      .values({ catId: "cat-1", content: "メモ" })
+      .returning();
+
+    await call("update_memo", {
+      catId: "cat-1",
+      id: record.id,
+      recordedDate: "2026-10-18",
+    });
+
+    const [updated] = await db.select().from(memoRecords);
+    expect(updated).toMatchObject({
+      content: "メモ",
+      recordedAt: new Date("2026-10-18T00:30:00.000Z"),
+    });
+
+    await call("update_memo", {
+      catId: "cat-1",
+      id: record.id,
+      hasDate: false,
+    });
+
+    const [cleared] = await db.select().from(memoRecords);
+    expect(cleared.recordedAt).toBeNull();
+  });
+
+  it("一覧は日付を残さないメモを先に、日付を残したメモを新しい順に返す", async () => {
+    await db.insert(memoRecords).values([
+      {
+        id: "memo-old",
+        catId: "cat-1",
+        content: "古い",
+        recordedAt: new Date("2026-10-01T08:00:00.000Z"),
+      },
+      { id: "memo-undated", catId: "cat-1", content: "日付なし" },
+      {
+        id: "memo-new",
+        catId: "cat-1",
+        content: "新しい",
+        recordedAt: new Date("2026-10-10T08:00:00.000Z"),
+      },
+      { id: "memo-other-cat", catId: "cat-2", content: "ほかの猫" },
+    ]);
+
+    const result = await call("list_memos", { catId: "cat-1" });
+
+    const memos = result.value?.memos as { id: string }[];
+    expect(memos.map((memo) => memo.id)).toEqual([
+      "memo-undated",
+      "memo-new",
+      "memo-old",
+    ]);
+    expect(result.value?.hasMore).toBe(false);
+  });
+
+  it("メモの読み取りを許可していない猫の一覧は、存在しない猫と区別しない", async () => {
+    await allow({ excludedRecordTypes: { "cat-1": ["memo"] } });
+    await db
+      .insert(memoRecords)
+      .values({ catId: "cat-1", content: "日付なし" });
+
+    for (const catId of ["cat-1", "cat-4"]) {
+      const result = await call("list_memos", { catId });
+      expect(result.error).toBe(`catId="${catId}" の猫が見つかりません`);
+    }
+  });
+});
 
 describe("ごはん商品", () => {
   it("読み取りを許可していない接続は、一覧を取得できない", async () => {
