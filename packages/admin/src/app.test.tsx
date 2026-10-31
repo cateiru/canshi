@@ -514,6 +514,25 @@ describe("共通のごはん商品", () => {
       }
     });
 
+    it("閉じたまとまりの中身は template に入れ、削除フォームはページに 1 つだけ置く", async () => {
+      const html = await (await request("/food-products")).text();
+      const [inu, neko] = html.split("<details").slice(1);
+      expect(inu).toContain('<template data-manufacturer-body="true">');
+      expect(neko).toMatch(
+        /<template data-manufacturer-body="true">[\s\S]*まぐろ味 カリカリ[\s\S]*<\/template>/,
+      );
+      expect(html.match(/<form[^>]*method="post"/g)).toHaveLength(1);
+      expect(html).toContain('form="catalog-delete-form"');
+      expect(html).toMatch(/formaction="\/food-products\/[^"]+\/delete"/);
+
+      // 開いて表示するまとまりは template に入れない
+      const [, opened] = await sections(
+        `/food-products?manufacturer=${encodeURIComponent("ねこフード")}&q=${encodeURIComponent("まぐろ")}`,
+      );
+      expect(opened).not.toContain("<template");
+      expect(opened).toContain("まぐろ味 カリカリ");
+    });
+
     it("登録・更新した商品のメーカーのまとまりを開く", async () => {
       const id = await create({ name: "しらす", manufacturer: "いぬフード" });
       const [inu, neko] = await sections(

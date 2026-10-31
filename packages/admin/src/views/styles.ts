@@ -420,7 +420,7 @@ details.manufacturer-group > summary .count {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: 0 var(--space-4) var(--space-4);
+  padding: var(--space-2) var(--space-4) var(--space-4);
 }
 form.search-form {
   display: flex;

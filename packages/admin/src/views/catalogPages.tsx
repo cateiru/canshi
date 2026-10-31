@@ -116,6 +116,36 @@ export function CatalogFoodProductsActions() {
 
 const NO_MANUFACTURER_LABEL = "メーカー名なし";
 
+/**
+ * 一覧の行の削除ボタンが使う、ページに 1 つの削除フォーム。行ごとにフォームを置くと、
+ * パスワードマネージャーの拡張機能（1Password など）がまとまりを開くたびにすべてのフォームを
+ * 調べ直し、商品が数百件あるとページが数十秒固まるため
+ */
+const DELETE_FORM_ID = "catalog-delete-form";
+
+// 閉じて表示したまとまりの中身（`<template data-manufacturer-body>`）を、開いたときに差し込む。
+// 数百件の商品の表を最初から DOM に置くと、まとまりを開くたびに拡張機能が DOM 全体を調べ直して
+// ページが固まるため、開いたまとまりの分だけを置く。toggle は開いた後に届き、空のまま一瞬描画される
+// ことがあるため、summary のクリック（キーボードでの開閉を含む）で先に差し込み、それ以外の方法で
+// 開いたときは toggle で差し込む。toggle はバブリングしないため捕捉で受ける。固定の文字列で、
+// 利用者の入力は含めない
+const MANUFACTURER_BODY_SCRIPT = `
+(function () {
+  function fill(details) {
+    var template = details.querySelector("template[data-manufacturer-body]");
+    if (template) template.replaceWith(template.content);
+  }
+  document.addEventListener("click", function (event) {
+    var summary = event.target instanceof Element && event.target.closest("details.manufacturer-group > summary");
+    if (summary) fill(summary.parentElement);
+  }, true);
+  document.addEventListener("toggle", function (event) {
+    var details = event.target;
+    if (details instanceof HTMLDetailsElement && details.open) fill(details);
+  }, true);
+})();
+`;
+
 function CatalogFoodProductRow(props: { product: CatalogFoodProduct }) {
   const { product } = props;
   const target = formatTarget(product);
@@ -171,21 +201,17 @@ function CatalogFoodProductRow(props: { product: CatalogFoodProduct }) {
           >
             <PencilIcon />
           </a>
-          {/* 確認文には商品名などの入力値を含めない（属性値の中の JS として実行されるため） */}
-          <form
-            method="post"
-            action={`${productPath(product.id)}/delete`}
-            onsubmit="return confirm('この共通のごはん商品を削除しますか？家に追加済みの商品は残ります。')"
+          {/* 送信先だけを変えて、ページに 1 つの削除フォーム（DELETE_FORM_ID）から送る */}
+          <button
+            type="submit"
+            form={DELETE_FORM_ID}
+            formaction={`${productPath(product.id)}/delete`}
+            class="icon-button"
+            aria-label={`${product.name}を削除する`}
+            title="削除する"
           >
-            <button
-              type="submit"
-              class="icon-button"
-              aria-label={`${product.name}を削除する`}
-              title="削除する"
-            >
-              <TrashIcon />
-            </button>
-          </form>
+            <TrashIcon />
+          </button>
         </div>
       </td>
     </tr>
@@ -210,6 +236,14 @@ function CatalogManufacturerSection(props: {
         matchesCatalogKeywords(product, search.keywords),
       )
     : group.products;
+  const body = (
+    <CatalogManufacturerBody
+      group={group}
+      search={search}
+      label={label}
+      products={products}
+    />
+  );
   return (
     <details class="manufacturer-group" open={props.open}>
       <summary>
@@ -222,59 +256,77 @@ function CatalogManufacturerSection(props: {
         </span>
       </summary>
       <div class="manufacturer-body">
-        <form method="get" action="/food-products" class="search-form">
-          <input
-            type="hidden"
-            name="manufacturer"
-            value={group.manufacturer ?? ""}
-          />
-          <label class="search-field">
-            <span class="visually-hidden">{label}の商品を検索</span>
-            <input
-              type="search"
-              name="q"
-              value={search?.query ?? ""}
-              placeholder="商品名・検索キーワード"
-            />
-          </label>
-          <button type="submit" class="with-icon">
-            <SearchIcon />
-            検索する
-          </button>
-          {search && (
-            <a href="/food-products" class="clear-search">
-              検索をやめる
-            </a>
-          )}
-        </form>
-        {products.length === 0 ? (
-          <p class="empty">「{search?.query}」に一致する商品はありません。</p>
-        ) : (
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">画像</th>
-                  <th scope="col">商品名</th>
-                  <th scope="col">区分・種類</th>
-                  <th scope="col">カロリー</th>
-                  <th scope="col">内容量</th>
-                  <th scope="col">対象</th>
-                  <th scope="col">家への追加</th>
-                  <th scope="col">更新日時</th>
-                  <th scope="col">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => (
-                  <CatalogFoodProductRow product={product} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {props.open ? body : <template data-manufacturer-body>{body}</template>}
       </div>
     </details>
+  );
+}
+
+/**
+ * まとまりの中身（検索フォームと商品の表）。閉じて表示するまとまりでは `<template>` に入れて
+ * DOM に置かず、開いたときに MANUFACTURER_BODY_SCRIPT が差し込む
+ */
+function CatalogManufacturerBody(props: {
+  group: CatalogManufacturerGroup;
+  search: CatalogListSearch | null;
+  label: string;
+  products: CatalogFoodProduct[];
+}) {
+  const { group, search, label, products } = props;
+  return (
+    <>
+      <form method="get" action="/food-products" class="search-form">
+        <input
+          type="hidden"
+          name="manufacturer"
+          value={group.manufacturer ?? ""}
+        />
+        <label class="search-field">
+          <span class="visually-hidden">{label}の商品を検索</span>
+          <input
+            type="search"
+            name="q"
+            value={search?.query ?? ""}
+            placeholder="商品名・検索キーワード"
+          />
+        </label>
+        <button type="submit" class="with-icon">
+          <SearchIcon />
+          検索する
+        </button>
+        {search && (
+          <a href="/food-products" class="clear-search">
+            検索をやめる
+          </a>
+        )}
+      </form>
+      {products.length === 0 ? (
+        <p class="empty">「{search?.query}」に一致する商品はありません。</p>
+      ) : (
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">画像</th>
+                <th scope="col">商品名</th>
+                <th scope="col">区分・種類</th>
+                <th scope="col">カロリー</th>
+                <th scope="col">内容量</th>
+                <th scope="col">対象</th>
+                <th scope="col">家への追加</th>
+                <th scope="col">更新日時</th>
+                <th scope="col">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product) => (
+                <CatalogFoodProductRow product={product} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -317,6 +369,13 @@ export function CatalogFoodProductsPage(props: {
           })}
         </div>
       )}
+      {/* 確認文には商品名などの入力値を含めない（属性値の中の JS として実行されるため） */}
+      <form
+        id={DELETE_FORM_ID}
+        method="post"
+        onsubmit="return confirm('この共通のごはん商品を削除しますか？家に追加済みの商品は残ります。')"
+      />
+      <script dangerouslySetInnerHTML={{ __html: MANUFACTURER_BODY_SCRIPT }} />
     </>
   );
 }
