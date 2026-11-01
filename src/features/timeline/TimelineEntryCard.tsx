@@ -380,7 +380,7 @@ function formatBrushingSummary(record: BrushingRecord): string {
   return [
     record.durationMinutes != null ? `${record.durationMinutes}分` : null,
     record.shedAmount ? `抜け毛${SHED_AMOUNT_LABEL[record.shedAmount]}` : null,
-    record.hasMats ? "毛玉・もつれあり" : null,
+    record.hasMats ? "毛玉やもつれあり" : null,
     record.hasSkinIssue ? "皮膚の異常あり" : null,
     record.memo,
   ]
