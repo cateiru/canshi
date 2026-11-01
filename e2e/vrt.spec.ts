@@ -203,6 +203,22 @@ test("家の設定から開いたごはん商品一覧ページの見た目", as
   await takeSnapshot(page, testInfo);
 });
 
+// フィクスチャの商品はごはん記録・プリセットに使われているため、削除の代わりに理由を表示する
+test("使われているごはん商品の削除ダイアログの見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/food-products?householdId=vrt-household");
+  await page
+    .getByRole("article", { name: "VRTテストフード" })
+    .getByRole("button", { name: "削除する" })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "商品の削除" });
+  await expect(
+    dialog.getByText("この商品を使ったごはん記録があるため削除できません。"),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo, { fullPage: false });
+});
+
 test("家の設定から開いたごはんプリセット一覧ページの見た目", async ({
   page,
 }, testInfo) => {
