@@ -8,8 +8,30 @@
   outline-offset: calc(-1 * var(--border-width));
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  border-radius: 16px;
+  transition: background-color var(--transition-base);
+}
+
+/* 右端に操作があるときも、見出しの行全体を押せる範囲として見せる */
+.header:has(.trigger[data-hovered]) {
+  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
+}
+
 .heading {
+  flex: 1;
+  min-width: 0;
   margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+  padding-right: var(--space-6);
 }
 
 .trigger {
@@ -29,10 +51,6 @@
   transition: background-color var(--transition-base);
 }
 
-.trigger[data-hovered] {
-  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
-}
-
 .trigger[data-focus-visible] {
   outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: calc(-1 * var(--focus-ring-width));
@@ -47,6 +65,11 @@
   margin-left: auto;
   color: var(--color-ink-muted);
   font-size: var(--text-sm);
+}
+
+/* 右端の操作と件数などの補足が離れすぎないよう、開閉ボタンの右の余白を詰める */
+.header:has(.headerActions) .trigger {
+  padding-right: var(--space-3);
 }
 
 .caret {
@@ -67,6 +90,10 @@
 @media (max-width: 480px) {
   .trigger {
     padding: var(--space-4);
+  }
+
+  .headerActions {
+    padding-right: var(--space-4);
   }
 
   .panelInner {

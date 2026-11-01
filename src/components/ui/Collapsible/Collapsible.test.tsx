@@ -80,4 +80,26 @@ describe("Collapsible", () => {
     expect(heading).toHaveTextContent("BCSの見方");
     expect(heading).toHaveTextContent("5段階");
   });
+
+  it("見出しの右端の操作は開閉ボタンの外に描画され、押しても開閉しない", () => {
+    render(
+      <Collapsible
+        title="うちの家"
+        titleAside="2匹"
+        headerActions={<button type="button">家の設定</button>}
+      >
+        <p>猫の一覧</p>
+      </Collapsible>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "うちの家2匹" });
+    const action = screen.getByRole("button", { name: "家の設定" });
+    expect(trigger).not.toContainElement(action);
+    expect(screen.getByRole("heading", { level: 2 })).not.toContainElement(
+      action,
+    );
+
+    fireEvent.click(action);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+  });
 });
