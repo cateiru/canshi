@@ -6,6 +6,7 @@ import { deleteFoodProductAction } from "@/features/food-products/actions";
 import { DeleteFoodProductButton } from "@/features/food-products/DeleteFoodProductButton";
 import { FoodProductImage } from "@/features/food-products/FoodProductImage";
 import {
+  FOOD_PRODUCT_IN_USE_MESSAGE,
   formatFoodProductTarget,
   NUTRITION_TYPE_LABEL,
   packageAmountParts,
@@ -14,6 +15,7 @@ import {
 import {
   listFoodProductImageUrls,
   listFoodProductsForUser,
+  listFoodProductUsages,
 } from "@/features/food-products/queries";
 import { groupByHousehold } from "@/features/households/groupCats";
 import { HouseholdSections } from "@/features/households/HouseholdSections";
@@ -52,9 +54,14 @@ export default async function FoodProductsPage({
     filterHousehold ? [filterHousehold] : householdList,
     foodProductList,
   );
-  const imageUrls = await listFoodProductImageUrls(
-    groups.flatMap(({ items }) => items.map((foodProduct) => foodProduct.id)),
+  const productIds = groups.flatMap(({ items }) =>
+    items.map((foodProduct) => foodProduct.id),
   );
+  // ごはん記録・プリセットに使われている商品は削除できないため、削除ボタンで理由を表示する
+  const [imageUrls, usages] = await Promise.all([
+    listFoodProductImageUrls(productIds),
+    listFoodProductUsages(productIds),
+  ]);
 
   return (
     <main className={styles.main}>
@@ -124,6 +131,7 @@ export default async function FoodProductsPage({
               <ul className={styles.list}>
                 {items.map((foodProduct) => {
                   const target = formatFoodProductTarget(foodProduct);
+                  const usage = usages.get(foodProduct.id);
                   const packageAmount = packageAmountParts(
                     foodProduct.packageAmountG,
                   );
@@ -161,6 +169,11 @@ export default async function FoodProductsPage({
                                 foodProduct.id,
                               )}
                               foodProductName={foodProduct.name}
+                              inUseMessage={
+                                usage
+                                  ? FOOD_PRODUCT_IN_USE_MESSAGE[usage]
+                                  : undefined
+                              }
                             />
                           </div>
                         </div>

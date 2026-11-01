@@ -21,6 +21,15 @@ export const LIFE_STAGE_LABEL: Record<FoodProductLifeStage, string> = {
   care: "療養",
 };
 
+/** 商品を使っているもの。使われている商品は削除できない */
+export type FoodProductUsage = "feedingRecord" | "feedingPreset";
+
+/** 使われている商品を削除しようとしたときに、削除できない理由として表示する文言 */
+export const FOOD_PRODUCT_IN_USE_MESSAGE: Record<FoodProductUsage, string> = {
+  feedingRecord: "この商品を使ったごはん記録があるため削除できません",
+  feedingPreset: "この商品を使ったプリセットがあるため削除できません",
+};
+
 /**
  * 内容量の数値と単位。1000g 以上は kg にする（1500 → 「1.5」「kg」）。
  * 割り算で出る誤差（1100.1 / 1000 = 1.1001000000000001 など）は丸めて消す

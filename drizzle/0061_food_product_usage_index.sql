@@ -1,0 +1,1 @@
+CREATE INDEX `feeding_record_items_food_product_id_idx` ON `feeding_record_items` (`food_product_id`);

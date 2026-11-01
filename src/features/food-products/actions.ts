@@ -2,11 +2,7 @@
 
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import {
-  feedingPresetItems,
-  feedingRecordItems,
-  foodProducts,
-} from "@/db/schema";
+import { foodProducts } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
 import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "@/features/cats/mutations";
 import { readFormHouseholdId } from "@/features/households/formHousehold";
@@ -14,9 +10,10 @@ import { isHouseholdMemberCondition } from "@/features/households/queries";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
+import { FOOD_PRODUCT_IN_USE_MESSAGE } from "./labels";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "./media";
 import { createFoodProduct, updateFoodProduct } from "./mutations";
-import { getFoodProductForUser } from "./queries";
+import { getFoodProductForUser, listFoodProductUsages } from "./queries";
 import {
   type FoodProductFormFieldErrors,
   foodProductFormSchema,
@@ -113,31 +110,13 @@ export async function deleteFoodProductAction(
     return { error: "商品が見つかりませんでした" };
   }
 
-  const db = getDb();
-  // food_product_id は ON DELETE 制約でこのまま削除すると失敗するため、
-  // ごはん記録から参照されている場合は削除せずにエラーを返す
-  const [inUse] = await db
-    .select({ id: feedingRecordItems.id })
-    .from(feedingRecordItems)
-    .where(eq(feedingRecordItems.foodProductId, id))
-    .limit(1);
-
-  if (inUse) {
-    return { error: "この商品を使ったごはん記録があるため削除できません" };
-  }
-
-  // プリセットから参照されている商品を削除すると、プリセットに壊れた参照
-  // （存在しない商品 ID）が残ってしまうため、こちらも同様にガードする
-  const [inUseByPreset] = await db
-    .select({ id: feedingPresetItems.id })
-    .from(feedingPresetItems)
-    .where(eq(feedingPresetItems.foodProductId, id))
-    .limit(1);
-
-  if (inUseByPreset) {
-    return {
-      error: "この商品を使ったプリセットがあるため削除できません",
-    };
+  // ごはん記録から参照されている商品は ON DELETE 制約でこのまま削除すると失敗し、プリセットから
+  // 参照されている商品を削除するとプリセットに壊れた参照（存在しない商品 ID）が残るため、
+  // どちらかに使われている場合は削除せずにエラーを返す。一覧でも削除できないことを先に表示しているが、
+  // 一覧を開いた後に記録・プリセットで使われた場合に備えて、ここでも確かめる
+  const usage = (await listFoodProductUsages([id])).get(id);
+  if (usage) {
+    return { error: FOOD_PRODUCT_IN_USE_MESSAGE[usage] };
   }
 
   // 商品画像（R2 のオブジェクトと media_assets 行）を先に削除する。ほかの記録の削除と同じく、
@@ -147,6 +126,7 @@ export async function deleteFoodProductAction(
   // 商品が残る。R2 の削除は D1 のトランザクションに含められないため、孤立した画像を作らないことを
   // 優先した（`syncRecordMedia` と同じく、PR #257 のレビューで見送った）
   await deleteMediaAssetsByRecord(FOOD_PRODUCT_MEDIA_TYPE, id);
+  const db = getDb();
   // 最初の確認の後に家から外された場合に削除が通らないよう、所属の確認は DELETE の WHERE にも含める
   const deleted = await db
     .delete(foodProducts)

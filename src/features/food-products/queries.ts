@@ -1,9 +1,16 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
-import { type FoodProduct, foodProducts, householdMembers } from "@/db/schema";
+import {
+  type FoodProduct,
+  feedingPresetItems,
+  feedingRecordItems,
+  foodProducts,
+  householdMembers,
+} from "@/db/schema";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { mediaThumbnailUrl } from "@/features/media/view";
+import type { FoodProductUsage } from "./labels";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "./media";
 
 /**
@@ -77,6 +84,38 @@ export async function listFoodProductsByIds(
     );
   }
   return rows;
+}
+
+/**
+ * 商品 ID → 商品を使っているもの（ごはん記録・プリセット）。どちらにも使われていない商品は含まない。
+ * 使われている商品は削除できない（明細から参照されたまま消すと外部キー制約で失敗する・壊れた参照が残る）ため、
+ * 一覧で削除できるかを出し分けたり、削除の前に確かめたりするのに使う。
+ * 両方に使われている商品は、ごはん記録に使われていることを返す
+ */
+export async function listFoodProductUsages(
+  productIds: string[],
+): Promise<Map<string, FoodProductUsage>> {
+  const db = getDb();
+  const usages = new Map<string, FoodProductUsage>();
+  for (const chunk of chunkForBoundParameters(productIds)) {
+    const [recordRows, presetRows] = await Promise.all([
+      db
+        .selectDistinct({ foodProductId: feedingRecordItems.foodProductId })
+        .from(feedingRecordItems)
+        .where(inArray(feedingRecordItems.foodProductId, chunk)),
+      db
+        .selectDistinct({ foodProductId: feedingPresetItems.foodProductId })
+        .from(feedingPresetItems)
+        .where(inArray(feedingPresetItems.foodProductId, chunk)),
+    ]);
+    for (const { foodProductId } of presetRows) {
+      usages.set(foodProductId, "feedingPreset");
+    }
+    for (const { foodProductId } of recordRows) {
+      usages.set(foodProductId, "feedingRecord");
+    }
+  }
+  return usages;
 }
 
 /**

@@ -72,7 +72,8 @@ const {
   updateFoodProductAction,
   deleteFoodProductAction,
 } = await import("./actions");
-const { listFoodProducts, listFoodProductsForUser } = await import("./queries");
+const { listFoodProducts, listFoodProductUsages, listFoodProductsForUser } =
+  await import("./queries");
 const {
   createFeedingPresetAction,
   updateFeedingPresetAction,
@@ -285,6 +286,75 @@ describe("ごはん商品", () => {
     expect(
       await db.select().from(foodProducts).where(eq(foodProducts.id, "food-1")),
     ).toEqual([]);
+  });
+});
+
+describe("使われているごはん商品", () => {
+  beforeEach(async () => {
+    await addProduct("food-record", "household-1");
+    await addProduct("food-preset", "household-1");
+    await addProduct("food-both", "household-1");
+    await db.insert(feedingRecords).values({
+      id: "meal",
+      catId: "tama",
+      occurredAt: new Date("2026-10-01T08:00:00Z"),
+    });
+    await db.insert(feedingRecordItems).values([
+      { feedingRecordId: "meal", foodProductId: "food-record", sortOrder: 0 },
+      { feedingRecordId: "meal", foodProductId: "food-both", sortOrder: 1 },
+    ]);
+    await db
+      .insert(feedingPresets)
+      .values({ id: "preset-1", householdId: "household-1", name: "朝" });
+    await db.insert(feedingPresetItems).values([
+      { presetId: "preset-1", foodProductId: "food-preset", sortOrder: 0 },
+      { presetId: "preset-1", foodProductId: "food-both", sortOrder: 1 },
+    ]);
+  });
+
+  it("ごはん記録・プリセットに使われている商品と、使っているものを返す", async () => {
+    const usages = await listFoodProductUsages([
+      "food-1",
+      "food-record",
+      "food-preset",
+      "food-both",
+    ]);
+    // 両方に使われている商品はごはん記録を返し、使われていない商品は含めない
+    expect(Object.fromEntries(usages)).toEqual({
+      "food-record": "feedingRecord",
+      "food-preset": "feedingPreset",
+      "food-both": "feedingRecord",
+    });
+  });
+
+  it("D1 のバインド上限を超える件数の商品 ID でも調べられる", async () => {
+    const ids = [
+      ...Array.from({ length: 150 }, (_, index) => `unknown-${index}`),
+      "food-preset",
+    ];
+    expect(Object.fromEntries(await listFoodProductUsages(ids))).toEqual({
+      "food-preset": "feedingPreset",
+    });
+    expect((await listFoodProductUsages([])).size).toBe(0);
+  });
+
+  it("使われている商品は削除せず、理由を返す", async () => {
+    expect(await deleteFoodProductAction("food-record")).toEqual({
+      error: "この商品を使ったごはん記録があるため削除できません",
+    });
+    expect(await deleteFoodProductAction("food-preset")).toEqual({
+      error: "この商品を使ったプリセットがあるため削除できません",
+    });
+    expect(await deleteFoodProductAction("food-both")).toEqual({
+      error: "この商品を使ったごはん記録があるため削除できません",
+    });
+    // 画像も消さない
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
+    expect(
+      (await listFoodProducts("household-1")).map((product) => product.id),
+    ).toEqual(
+      expect.arrayContaining(["food-record", "food-preset", "food-both"]),
+    );
   });
 });
 
