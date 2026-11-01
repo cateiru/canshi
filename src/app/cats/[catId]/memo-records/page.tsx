@@ -10,7 +10,11 @@ import {
 } from "@/components/ui";
 import { MemoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/session";
+import { MediaGallery } from "@/features/media/MediaGallery";
+import { listMediaAssetsByRecords } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { deleteMemoRecordAction } from "@/features/memo-records/actions";
+import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/media";
 import { listMemoRecords } from "@/features/memo-records/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
@@ -47,6 +51,10 @@ export default async function MemoRecordsPage({
     page,
     totalPages,
   } = paginate(records, parsePageParam(pageParam));
+  const mediaByRecordId = await listMediaAssetsByRecords(
+    MEMO_RECORD_MEDIA_TYPE,
+    pagedRecords.map((record) => record.id),
+  );
 
   return (
     <main className={styles.main}>
@@ -134,6 +142,15 @@ export default async function MemoRecordsPage({
                 </div>
 
                 <p className={styles.content}>{record.content}</p>
+
+                <div className={styles.media}>
+                  <MediaGallery
+                    assets={(mediaByRecordId.get(record.id) ?? []).map(
+                      toMediaAssetView,
+                    )}
+                    title="メモの画像"
+                  />
+                </div>
               </RecordCard>
             </li>
           ))}

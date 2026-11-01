@@ -10,31 +10,62 @@ import {
   Textarea,
 } from "@/components/ui";
 import type { MemoRecord } from "@/db/schema";
-import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
+import type { MediaLimits } from "@/features/media/limits";
+import { MediaAttachmentField } from "@/features/media/MediaAttachmentField";
+import { useMediaAttachments } from "@/features/media/useMediaAttachments";
+import { useMediaFormAction } from "@/features/media/useMediaFormAction";
+import type { MediaAssetView } from "@/features/media/view";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
 import type { MemoRecordFormState } from "./actions";
 import styles from "./MemoRecordForm.module.css";
 
+type FormAction = (
+  state: MemoRecordFormState,
+  formData: FormData,
+) => Promise<MemoRecordFormState>;
+
 type MemoRecordFormProps = {
-  action: (
+  catId: string;
+  action: FormAction;
+  /**
+   * 新規作成でアップロードだけ失敗したときの再送信に使う更新 Action（記録 ID を除いて bind したもの）。
+   * 編集フォームでは不要
+   */
+  updateAction?: (
+    recordId: string,
     state: MemoRecordFormState,
     formData: FormData,
   ) => Promise<MemoRecordFormState>;
   memoRecord?: MemoRecord;
+  mediaAssets?: MediaAssetView[];
+  mediaLimits: MediaLimits;
   submitLabel: string;
 };
 
 const initialState: MemoRecordFormState = {};
 
 export function MemoRecordForm({
+  catId,
   action,
+  updateAction,
   memoRecord,
+  mediaAssets,
+  mediaLimits,
   submitLabel,
 }: MemoRecordFormProps) {
-  const [state, formAction, isPending] = useSubmitActionState(
+  const media = useMediaAttachments({
+    initial: mediaAssets,
+    limits: mediaLimits,
+  });
+  const [state, formAction, isPending] = useMediaFormAction({
     action,
+    updateAction: updateAction
+      ? (recordId) => updateAction.bind(null, recordId)
+      : undefined,
     initialState,
-  );
+    media,
+    redirectTo: `/cats/${catId}/memo-records`,
+  });
   const [now] = useState(() => new Date());
   // 追加するときは、ほかの記録と同じく今の日時を残す状態から始める
   const [hasDate, setHasDate] = useState(
@@ -54,6 +85,12 @@ export function MemoRecordForm({
         defaultValue={memoRecord?.content ?? ""}
         errorMessage={state.fieldErrors?.content?.[0]}
         isRequired
+      />
+
+      <MediaAttachmentField
+        controller={media}
+        label="画像"
+        isDisabled={isPending}
       />
 
       <Checkbox name="hasDate" isSelected={hasDate} onChange={setHasDate}>

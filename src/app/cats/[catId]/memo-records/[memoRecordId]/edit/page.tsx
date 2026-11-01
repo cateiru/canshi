@@ -2,8 +2,12 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { MemoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/session";
+import { resolveMediaLimits } from "@/features/media/limits";
+import { listMediaAssetsByRecord } from "@/features/media/queries";
+import { toMediaAssetView } from "@/features/media/view";
 import { updateMemoRecordAction } from "@/features/memo-records/actions";
 import { MemoRecordForm } from "@/features/memo-records/MemoRecordForm";
+import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/media";
 import { getMemoRecordById } from "@/features/memo-records/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
@@ -27,6 +31,11 @@ export default async function EditMemoRecordPage({
     notFound();
   }
 
+  const mediaAssets = await listMediaAssetsByRecord(
+    MEMO_RECORD_MEDIA_TYPE,
+    memoRecord.id,
+  );
+
   return (
     <main className={styles.main}>
       <Breadcrumb
@@ -44,7 +53,10 @@ export default async function EditMemoRecordPage({
       </RecordPageHeading>
       <MemoRecordForm
         action={updateMemoRecordAction.bind(null, catId, memoRecord.id)}
+        catId={catId}
         memoRecord={memoRecord}
+        mediaAssets={mediaAssets.map(toMediaAssetView)}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="更新する"
       />
     </main>

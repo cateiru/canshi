@@ -52,6 +52,10 @@
   overflow-wrap: anywhere;
 }
 
+.media {
+  margin-top: var(--space-3);
+}
+
 @media (max-width: 480px) {
   .recordDate {
     font-size: var(--text-sm);
