@@ -1,6 +1,12 @@
 import Link from "next/link";
-import { TbPlus } from "react-icons/tb";
-import { Badge, Breadcrumb, ButtonLink, Collapsible } from "@/components/ui";
+import { TbPlus, TbSettings } from "react-icons/tb";
+import {
+  Badge,
+  Breadcrumb,
+  ButtonLink,
+  Collapsible,
+  IconButtonLink,
+} from "@/components/ui";
 import type { Cat } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
 import {
@@ -115,6 +121,13 @@ export default async function CatsPage() {
               key={household.id}
               title={household.name}
               titleAside={`${cats.length}匹`}
+              headerActions={
+                <IconButtonLink
+                  href={`/settings/households/${encodeURIComponent(household.id)}`}
+                  icon={TbSettings}
+                  aria-label={`${household.name}の設定`}
+                />
+              }
               storageKey={householdExpandedStorageKey(household.id)}
             >
               {cats.length === 0 ? (

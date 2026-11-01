@@ -22,6 +22,11 @@ export type CollapsibleProps = {
   headingLevel?: 2 | 3 | 4;
   /** 見出しの横に添える補足（件数・状態など）。押せる要素は入れない */
   titleAside?: ReactNode;
+  /**
+   * 見出しの右端に置く操作（設定ページへのリンクなど）。
+   * 開閉ボタンの外に描画するため、押しても開閉しない
+   */
+  headerActions?: ReactNode;
   className?: string;
   children: ReactNode;
 };
@@ -33,6 +38,7 @@ export function Collapsible({
   defaultExpanded = true,
   headingLevel = 2,
   titleAside,
+  headerActions,
   className,
   children,
 }: CollapsibleProps) {
@@ -72,19 +78,24 @@ export function Collapsible({
       onExpandedChange={handleExpandedChange}
       className={classes}
     >
-      <Heading level={headingLevel} className={styles.heading}>
-        <Button slot="trigger" className={styles.trigger}>
-          <TbTriangleFilled
-            aria-hidden="true"
-            size={12}
-            className={styles.caret}
-          />
-          <span className={styles.title}>{title}</span>
-          {titleAside ? (
-            <span className={styles.titleAside}>{titleAside}</span>
-          ) : null}
-        </Button>
-      </Heading>
+      <div className={styles.header}>
+        <Heading level={headingLevel} className={styles.heading}>
+          <Button slot="trigger" className={styles.trigger}>
+            <TbTriangleFilled
+              aria-hidden="true"
+              size={12}
+              className={styles.caret}
+            />
+            <span className={styles.title}>{title}</span>
+            {titleAside ? (
+              <span className={styles.titleAside}>{titleAside}</span>
+            ) : null}
+          </Button>
+        </Heading>
+        {headerActions ? (
+          <div className={styles.headerActions}>{headerActions}</div>
+        ) : null}
+      </div>
       <DisclosurePanel>
         <div className={styles.panelInner}>{children}</div>
       </DisclosurePanel>
