@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { Breadcrumb } from "@/components/ui";
+import { TbBell } from "react-icons/tb";
+import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { getAccessibleCat, requireUser } from "@/features/auth/session";
 import { updateCatAction } from "@/features/cats/actions";
 import { CatForm } from "@/features/cats/CatForm";
@@ -39,7 +40,18 @@ export default async function EditCatPage({ params }: EditCatPageProps) {
         ]}
       />
 
-      <RecordPageHeading icon={CatIcon}>{cat.name}を編集する</RecordPageHeading>
+      <div className={styles.header}>
+        <RecordPageHeading icon={CatIcon}>
+          {cat.name}を編集する
+        </RecordPageHeading>
+        <ButtonLink
+          href={`/cats/${cat.id}/notification-settings`}
+          variant="secondary"
+          leftIcon={TbBell}
+        >
+          通知設定
+        </ButtonLink>
+      </div>
       <p>プロフィールや記念日、飼っている家を変更できます。</p>
       <CatForm
         action={updateCatAction.bind(null, cat.id)}
