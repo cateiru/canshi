@@ -42,6 +42,7 @@ import {
 } from "@/features/media/queries";
 import type { MediaRecordType } from "@/features/media/recordTypes";
 import { type MediaAssetView, toMediaAssetView } from "@/features/media/view";
+import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/media";
 import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { shiftYm, type YearMonth } from "@/features/shared/yearMonth";
@@ -98,6 +99,7 @@ const TIMELINE_MEDIA_RECORD_TYPES: Partial<
   // 服薬は予定（medications）に添付するため、投薬実績（medicationDose）のエントリには表示しない
   hospitalVisit: HOSPITAL_VISIT_MEDIA_TYPE,
   expense: EXPENSE_MEDIA_TYPE,
+  memo: MEMO_RECORD_MEDIA_TYPE,
 };
 
 type TimelineEntryOf<T extends TimelineRecordType, R> = {

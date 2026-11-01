@@ -6,6 +6,7 @@ import {
   foodProducts,
   hospitalVisits,
   medications,
+  memoRecords,
   poopRecords,
   symptoms,
   vomitRecords,
@@ -70,6 +71,14 @@ export async function resolveMediaRecordOwner(
         .select({ catId: hospitalVisits.catId })
         .from(hospitalVisits)
         .where(eq(hospitalVisits.id, recordId))
+        .limit(1);
+      return row ?? null;
+    }
+    case "memo_record": {
+      const [row] = await db
+        .select({ catId: memoRecords.catId })
+        .from(memoRecords)
+        .where(eq(memoRecords.id, recordId))
         .limit(1);
       return row ?? null;
     }

@@ -2,7 +2,11 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { MemoIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/session";
-import { createMemoRecordAction } from "@/features/memo-records/actions";
+import { resolveMediaLimits } from "@/features/media/limits";
+import {
+  createMemoRecordAction,
+  updateMemoRecordAction,
+} from "@/features/memo-records/actions";
 import { MemoRecordForm } from "@/features/memo-records/MemoRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
@@ -39,7 +43,10 @@ export default async function NewMemoRecordPage({
         {cat.name}のメモを記録する
       </RecordPageHeading>
       <MemoRecordForm
+        catId={catId}
         action={createMemoRecordAction.bind(null, catId)}
+        updateAction={updateMemoRecordAction.bind(null, catId)}
+        mediaLimits={resolveMediaLimits()}
         submitLabel="記録する"
       />
     </main>
