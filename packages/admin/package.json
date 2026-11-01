@@ -14,7 +14,7 @@
     "hono": "^4.13.13"
   },
   "devDependencies": {
-    "@types/node": "^24.19.1",
+    "@types/node": "^26.0.0",
     "@types/sql.js": "^1.4.11",
     "sql.js": "^1.14.2",
     "typescript": "^5",
