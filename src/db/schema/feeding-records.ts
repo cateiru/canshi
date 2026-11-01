@@ -77,6 +77,8 @@ export const feedingRecordItems = sqliteTable(
     index("feeding_record_items_feeding_record_id_idx").on(
       table.feedingRecordId,
     ),
+    // ごはん商品の一覧で、商品がごはん記録に使われているか（削除できるか）を調べるため
+    index("feeding_record_items_food_product_id_idx").on(table.foodProductId),
   ],
 );
 

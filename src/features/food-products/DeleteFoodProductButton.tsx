@@ -10,11 +10,17 @@ import styles from "./DeleteFoodProductButton.module.css";
 type DeleteFoodProductButtonProps = {
   action: () => Promise<DeleteFoodProductResult>;
   foodProductName: string;
+  /**
+   * 商品がごはん記録・プリセットに使われていて削除できないときの理由。
+   * 渡すと、確認ダイアログで削除の代わりに理由だけを表示する
+   */
+  inUseMessage?: string;
 };
 
 export function DeleteFoodProductButton({
   action,
   foodProductName,
+  inUseMessage,
 }: DeleteFoodProductButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -42,19 +48,34 @@ export function DeleteFoodProductButton({
         onPress={() => setOpen(true)}
       />
       <Modal open={open} title="商品の削除" onClose={() => setOpen(false)}>
-        <p>「{foodProductName}」を削除しますか？この操作は取り消せません。</p>
-        <div className={styles.actions}>
-          <Button
-            variant="danger"
-            isDisabled={isPending}
-            onPress={handleDelete}
-          >
-            {isPending ? "削除中..." : "削除する"}
-          </Button>
-          <Button variant="secondary" onPress={() => setOpen(false)}>
-            キャンセル
-          </Button>
-        </div>
+        {inUseMessage ? (
+          <>
+            <p>{inUseMessage}。</p>
+            <div className={styles.actions}>
+              <Button variant="secondary" onPress={() => setOpen(false)}>
+                閉じる
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p>
+              「{foodProductName}」を削除しますか？この操作は取り消せません。
+            </p>
+            <div className={styles.actions}>
+              <Button
+                variant="danger"
+                isDisabled={isPending}
+                onPress={handleDelete}
+              >
+                {isPending ? "削除中..." : "削除する"}
+              </Button>
+              <Button variant="secondary" onPress={() => setOpen(false)}>
+                キャンセル
+              </Button>
+            </div>
+          </>
+        )}
       </Modal>
     </>
   );
