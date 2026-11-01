@@ -1,6 +1,8 @@
 import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  type BrushingRecord,
+  brushingRecords,
   type CleaningRecord,
   cats,
   cleaningRecords,
@@ -70,6 +72,7 @@ export const TIMELINE_RECORD_TYPES = [
   "vomit",
   "water",
   "shampoo",
+  "brushing",
   "cleaning",
   "symptom",
   "medicationDose",
@@ -142,6 +145,7 @@ export type TimelineEntry =
   | TimelineEntryOf<"vomit", VomitRecord>
   | TimelineEntryOf<"water", WaterRecord>
   | TimelineEntryOf<"shampoo", ShampooRecord>
+  | TimelineEntryOf<"brushing", BrushingRecord>
   | TimelineEntryOf<"cleaning", CleaningRecord & { cleaningTargetName: string }>
   | TimelineEntryOf<"symptom", Symptom>
   | TimelineEntryOf<
@@ -372,6 +376,33 @@ async function fetchShampooEntries(
   return rows.map((record) => ({
     id: record.id,
     type: "shampoo",
+    occurredAt: record.performedAt,
+    media: [],
+    record,
+  }));
+}
+
+async function fetchBrushingEntries(
+  catId: string,
+  range: DateRange,
+  d1?: D1Database,
+): Promise<TimelineEntry[]> {
+  const db = getDb(d1);
+  const rows = await db
+    .select()
+    .from(brushingRecords)
+    .where(
+      and(
+        eq(brushingRecords.catId, catId),
+        gte(brushingRecords.performedAt, range.start),
+        lt(brushingRecords.performedAt, range.end),
+      ),
+    )
+    .orderBy(desc(brushingRecords.performedAt));
+
+  return rows.map((record) => ({
+    id: record.id,
+    type: "brushing",
     occurredAt: record.performedAt,
     media: [],
     record,
@@ -655,6 +686,7 @@ const FETCHERS: Record<
   vomit: fetchVomitEntries,
   water: fetchWaterEntries,
   shampoo: fetchShampooEntries,
+  brushing: fetchBrushingEntries,
   cleaning: fetchCleaningEntries,
   symptom: fetchSymptomEntries,
   medicationDose: fetchMedicationDoseEntries,

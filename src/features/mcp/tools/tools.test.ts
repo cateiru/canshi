@@ -7,6 +7,7 @@ import initSqlJs from "sql.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import {
+  brushingRecords,
   catalogFoodProductRequests,
   catalogFoodProducts,
   cats,
@@ -546,6 +547,106 @@ const PRODUCT = {
 /** 1x1 の PNG */
 const PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+describe("ブラッシングの記録", () => {
+  it("項目を指定して追加し、省略した項目は未入力・チェックなしにする", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 日本時間では 2026-11-01 21:00
+    vi.setSystemTime(new Date("2026-11-01T12:00:00.000Z"));
+    await allow(WRITE_ALL_RECORDS);
+
+    const detailed = await call("create_brushing_record", {
+      catId: "cat-1",
+      durationMinutes: 10,
+      shedAmount: "more",
+      hasMats: true,
+      memo: "お腹の毛玉をほぐした",
+    });
+    const plain = await call("create_brushing_record", { catId: "cat-1" });
+
+    const records = await db.select().from(brushingRecords);
+    expect(
+      records.find((record) => record.id === detailed.value?.id),
+    ).toMatchObject({
+      catId: "cat-1",
+      performedAt: new Date("2026-11-01T21:00:00.000Z"),
+      durationMinutes: 10,
+      shedAmount: "more",
+      hasMats: true,
+      hasSkinIssue: false,
+      memo: "お腹の毛玉をほぐした",
+    });
+    expect(
+      records.find((record) => record.id === plain.value?.id),
+    ).toMatchObject({
+      durationMinutes: null,
+      shedAmount: null,
+      hasMats: false,
+      hasSkinIssue: false,
+      memo: null,
+    });
+  });
+
+  it("時間がフォームの範囲を超えると追加しない", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    const result = await call("create_brushing_record", {
+      catId: "cat-1",
+      durationMinutes: 601,
+    });
+
+    expect(result.error).toContain("時間は600分以内で入力してください");
+    expect(await db.select().from(brushingRecords)).toEqual([]);
+  });
+
+  it("編集では指定した項目だけを変え、null の項目は空にする", async () => {
+    await allow(WRITE_ALL_RECORDS);
+    const [record] = await db
+      .insert(brushingRecords)
+      .values({
+        catId: "cat-1",
+        performedAt: new Date("2026-11-01T21:00:00.000Z"),
+        durationMinutes: 10,
+        shedAmount: "usual",
+        hasMats: true,
+        memo: "背中",
+      })
+      .returning();
+
+    const result = await call("update_brushing_record", {
+      catId: "cat-1",
+      id: record.id,
+      shedAmount: null,
+      hasSkinIssue: true,
+    });
+
+    expect(result.value?.id).toBe(record.id);
+    const [updated] = await db.select().from(brushingRecords);
+    expect(updated).toMatchObject({
+      performedAt: new Date("2026-11-01T21:00:00.000Z"),
+      durationMinutes: 10,
+      shedAmount: null,
+      hasMats: true,
+      hasSkinIssue: true,
+      memo: "背中",
+    });
+  });
+
+  it("書き込みを許可していなければ追加できない", async () => {
+    await allow({
+      writableRecordTypes: {
+        "cat-1": MCP_PERMISSION_RECORD_TYPES.filter(
+          (type) => type !== "brushing",
+        ),
+      },
+    });
+
+    const result = await call("create_brushing_record", { catId: "cat-1" });
+
+    expect(result.error).toBeDefined();
+    expect(await db.select().from(brushingRecords)).toEqual([]);
+  });
+});
 
 describe("メモ", () => {
   it("日付を残すメモと残さないメモを追加する", async () => {

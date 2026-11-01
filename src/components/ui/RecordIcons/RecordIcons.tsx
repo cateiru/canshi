@@ -310,6 +310,29 @@ export function ShampooIcon(props: RecordIconProps) {
   );
 }
 
+export function BrushingIcon(props: RecordIconProps) {
+  const catTransform = "translate(2 0) scale(.8)";
+  const brushHead = "M6 15h11a1.5 1.5 0 0 1 0 3H6a1.5 1.5 0 0 1 0-3Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <CatFill transform={catTransform} />
+          <path fill="#e99a70" d={brushHead} />
+        </>
+      }
+    >
+      <CatOutline transform={catTransform} />
+      {/* ブラシの頭と、その下に並ぶ毛。持ち手は背景に直接描く。 */}
+      <path d={brushHead} />
+      <path className={styles.line} d="M7 18v3m3-3v3m3-3v3m3-3v3" />
+      <path className={styles.line} d="m18.5 16.5 4-3.5" />
+    </RecordIcon>
+  );
+}
+
 export function MemoIcon(props: RecordIconProps) {
   const catTransform = "translate(2 0) scale(.83)";
   const note = "M4 12h16v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z";

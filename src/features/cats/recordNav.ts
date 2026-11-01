@@ -2,6 +2,7 @@ import type { IconType } from "react-icons";
 import { TbTimeline } from "react-icons/tb";
 import {
   BroomIcon,
+  BrushingIcon,
   ExpenseIcon,
   FeedingIcon,
   HospitalIcon,
@@ -59,6 +60,11 @@ export const RECORD_NAV_ITEMS: RecordNavItem[] = [
     href: (catId) => `/cats/${catId}/shampoo-records`,
     icon: ShampooIcon,
     label: "シャンプー記録",
+  },
+  {
+    href: (catId) => `/cats/${catId}/brushing-records`,
+    icon: BrushingIcon,
+    label: "ブラッシング記録",
   },
   {
     href: (catId) => `/cats/${catId}/cleaning`,

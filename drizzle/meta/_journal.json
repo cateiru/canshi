@@ -435,6 +435,13 @@
       "when": 1793521900403,
       "tag": "0061_food_product_usage_index",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "6",
+      "when": 1793523767314,
+      "tag": "0062_brushing_records",
+      "breakpoints": true
     }
   ]
 }

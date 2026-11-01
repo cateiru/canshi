@@ -1,0 +1,22 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 800px;
+}
+
+.select > button {
+  min-height: 48px;
+  border-color: var(--color-border-input);
+  border-radius: 8px;
+  font-size: var(--text-input);
+}
+
+.select[data-invalid] > button {
+  border-color: var(--color-error);
+}
+
+.errorMessage {
+  font-size: var(--text-sm);
+  color: var(--color-error-strong);
+}
