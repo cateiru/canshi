@@ -143,6 +143,10 @@
   color: var(--color-record-shampoo);
 }
 
+.icon[data-record-type="brushing"] {
+  color: var(--color-record-brushing);
+}
+
 .icon[data-record-type="cleaning"] {
   color: var(--color-record-cleaning);
 }

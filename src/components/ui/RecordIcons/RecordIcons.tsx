@@ -310,6 +310,27 @@ export function ShampooIcon(props: RecordIconProps) {
   );
 }
 
+export function BrushingIcon(props: RecordIconProps) {
+  const catTransform = "translate(-1 8) scale(.85)";
+  // 毛先が猫の頭頂に触れるよう、斜めに傾けたブラシを頭の上に置く。
+  const brushTransform = "translate(10.5 5.2) rotate(25)";
+  const brushHead = "M1.5 0h6a1.5 1.5 0 0 1 0 3h-6a1.5 1.5 0 0 1 0-3Z";
+
+  return (
+    <RecordIcon {...props} fills={<CatFill transform={catTransform} />}>
+      <CatOutline transform={catTransform} />
+      {/* 動きを示す線。背景に直接描く。 */}
+      <path className={styles.line} d="m3 5.5 3 1m-3.5 2.5 2.5.5" />
+      <g transform={brushTransform}>
+        <path d="M1.75 3v2m2.75-2v2m2.75-2v2" />
+        <path className={styles.line} d="M4.5 0v-4" />
+        {/* ブラシの頭は手前に不透明で描き、後ろの耳の線を隠す。 */}
+        <path className={styles.foregroundFill} fill="#e99a70" d={brushHead} />
+      </g>
+    </RecordIcon>
+  );
+}
+
 export function MemoIcon(props: RecordIconProps) {
   const catTransform = "translate(2 0) scale(.83)";
   const note = "M4 12h16v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z";

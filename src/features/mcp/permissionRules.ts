@@ -16,6 +16,7 @@ export const MCP_PERMISSION_RECORD_TYPES = [
   "vomit",
   "water",
   "shampoo",
+  "brushing",
   "cleaning",
   "symptom",
   "medicationDose",

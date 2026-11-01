@@ -3,6 +3,7 @@
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  brushingRecords,
   cats,
   cleaningRecords,
   cleaningTargets,
@@ -189,6 +190,7 @@ export async function deleteCatAction(id: string): Promise<SubmitRedirect> {
     db.delete(vomitRecords).where(eq(vomitRecords.catId, id)),
     db.delete(waterRecords).where(eq(waterRecords.catId, id)),
     db.delete(shampooRecords).where(eq(shampooRecords.catId, id)),
+    db.delete(brushingRecords).where(eq(brushingRecords.catId, id)),
     db.delete(memoRecords).where(eq(memoRecords.catId, id)),
     // cleaning_records は cats・cleaning_targets の双方を参照するため、
     // cleaning_targets より先に削除する

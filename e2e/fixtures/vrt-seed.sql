@@ -210,6 +210,12 @@ INSERT INTO shampoo_records (id, cat_id, performed_at, created_at, updated_at)
 VALUES ('vrt-shampoo-1', 'vrt-cat-populated', strftime('%s', '2024-06-08 10:00:00'),
   strftime('%s', '2024-06-08 10:00:00'), strftime('%s', '2024-06-08 10:00:00'));
 
+-- ブラッシング: 任意の項目をすべて入力した記録（一覧のカードとタイムラインで項目の並びを撮る）
+INSERT INTO brushing_records (id, cat_id, performed_at, duration_minutes, shed_amount, has_mats, has_skin_issue, memo, created_at, updated_at)
+VALUES ('vrt-brushing-1', 'vrt-cat-populated', strftime('%s', '2024-06-16 20:00:00'), 10, 'more', 1, 0,
+  'お腹の毛玉をほぐした。',
+  strftime('%s', '2024-06-16 20:00:00'), strftime('%s', '2024-06-16 20:00:00'));
+
 INSERT INTO symptoms (id, cat_id, symptom_type, onset_at, status, created_at, updated_at)
 VALUES ('vrt-symptom-1', 'vrt-cat-populated', 'くしゃみ', strftime('%s', '2024-06-03 09:00:00'), 'resolved',
   strftime('%s', '2024-06-03 09:00:00'), strftime('%s', '2024-06-03 09:00:00'));

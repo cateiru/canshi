@@ -238,6 +238,8 @@ export function createCanshiMcpServer(
         "代わりに与えた量 givenAmountLevel（less=少なめ、normal=普通、more=多め）と" +
         "残した量 leftoverLevel（none=完食、little=少し残し、most=ほとんど残し）を持つ。" +
         "それぞれの日本語ラベルは modeLabel・givenAmountLevelLabel・leftoverLevelLabel に含まれる。" +
+        'ブラッシング記録（type="brushing"）の shedAmount（抜け毛の量）は less=少ない、' +
+        "usual=いつも通り、more=多い（未選択は null）。" +
         'メモ（type="memo"）は日付を残したものだけを含む。日付を残さないメモも読むときは list_memos を使う。' +
         "ユーザーが読み取りを許可していない種類の記録は含まれない。",
       inputSchema: {

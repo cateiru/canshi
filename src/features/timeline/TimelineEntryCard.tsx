@@ -4,6 +4,8 @@ import {
   CalorieIcon,
   FeedingIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
+import type { BrushingRecord } from "@/db/schema";
+import { SHED_AMOUNT_LABEL } from "@/features/brushing-records/labels";
 import { EXPENSE_CATEGORY_LABEL, formatYen } from "@/features/expenses/labels";
 import { sumFeedingTotals } from "@/features/feeding-records/calculations";
 import {
@@ -121,6 +123,8 @@ function getEditHref(catId: string, entry: TimelineEntry): string {
       return `/cats/${catId}/water-records/${entry.record.id}/edit`;
     case "shampoo":
       return `/cats/${catId}/shampoo-records/${entry.record.id}/edit`;
+    case "brushing":
+      return `/cats/${catId}/brushing-records/${entry.record.id}/edit`;
     case "cleaning":
       return `/cats/${catId}/cleaning/targets/${entry.record.cleaningTargetId}/records/${entry.record.id}/edit`;
     case "symptom":
@@ -282,6 +286,14 @@ function renderBody(
         </div>
       ) : null;
     }
+    case "brushing": {
+      const summary = formatBrushingSummary(entry.record);
+      return summary ? (
+        <div className={styles.body}>
+          <p>{summary}</p>
+        </div>
+      ) : null;
+    }
     case "cleaning": {
       const { record } = entry;
       return (
@@ -361,4 +373,17 @@ function renderBody(
       return exhaustiveCheck;
     }
   }
+}
+
+/** ブラッシング記録の入力された項目（チェックは付けたもの）を「・」でつなぐ */
+function formatBrushingSummary(record: BrushingRecord): string {
+  return [
+    record.durationMinutes != null ? `${record.durationMinutes}分` : null,
+    record.shedAmount ? `抜け毛${SHED_AMOUNT_LABEL[record.shedAmount]}` : null,
+    record.hasMats ? "毛玉やもつれあり" : null,
+    record.hasSkinIssue ? "皮膚の異常あり" : null,
+    record.memo,
+  ]
+    .filter(Boolean)
+    .join("・");
 }

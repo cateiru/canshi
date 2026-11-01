@@ -758,6 +758,11 @@ const FLAT_RECORD_LISTS: RecordListCase[] = [
     path: "shampoo-records",
     heading: "のシャンプー記録",
   },
+  {
+    label: "ブラッシング記録",
+    path: "brushing-records",
+    heading: "のブラッシング記録",
+  },
   { label: "症状記録", path: "symptoms", heading: "の症状記録" },
   { label: "服薬予定", path: "medications", heading: "の服薬予定" },
   { label: "メモ", path: "memo-records", heading: "のメモ" },
@@ -780,8 +785,9 @@ for (const { label, path, heading } of FLAT_RECORD_LISTS) {
       page.getByRole("heading", { name: `VRTテスト猫${heading}` }),
     ).toBeVisible();
 
-    if (path === "shampoo-records") {
-      // 経過日数だけを既存のベースライン撮影日 (2026-09-22) の値に揃える。
+    if (path === "shampoo-records" || path === "brushing-records") {
+      // 経過日数は撮影日で変わるため、固定の値に揃える（シャンプー記録の
+      // 既存のベースライン撮影日 (2026-09-22) の値）。
       const elapsedDays = page.locator('[class*="elapsed"] strong');
       await expect(elapsedDays).toHaveText(/^\d+$/);
       await elapsedDays.evaluate((element) => {
@@ -983,6 +989,11 @@ test.describe("記録追加ページ（日付欄あり）", () => {
       label: "シャンプー記録",
       path: "shampoo-records/new",
       heading: "シャンプーを記録する",
+    },
+    {
+      label: "ブラッシング記録",
+      path: "brushing-records/new",
+      heading: "ブラッシングを記録する",
     },
     { label: "症状記録", path: "symptoms/new", heading: "症状を記録する" },
     {

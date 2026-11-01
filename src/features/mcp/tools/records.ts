@@ -3,6 +3,8 @@ import { and, asc, eq } from "drizzle-orm";
 import { type ZodRawShape, z } from "zod";
 import { getDb } from "@/db/client";
 import {
+  BRUSHING_SHED_AMOUNTS,
+  brushingRecords,
   cleaningRecords,
   EXPENSE_CATEGORIES,
   expenseRecordCats,
@@ -22,6 +24,14 @@ import {
   waterRecords,
   weightRecords,
 } from "@/db/schema";
+import {
+  createBrushingRecord,
+  updateBrushingRecord,
+} from "@/features/brushing-records/mutations";
+import {
+  BRUSHING_DURATION_MAX_MINUTES,
+  brushingRecordFormSchema,
+} from "@/features/brushing-records/schema";
 import {
   createCleaningRecord,
   updateCleaningRecord,
@@ -462,6 +472,65 @@ const shampooRecordTool = defineRecordTool({
   }),
   update: async ({ ctx, cat, id, data }) =>
     (await updateShampooRecord(cat.id, id, data, ctx.env.DB))
+      ? { id }
+      : { error: RECORD_NOT_FOUND_ERROR },
+});
+
+const brushingRecordTool = defineRecordTool({
+  recordType: "brushing",
+  name: "brushing_record",
+  label: "ブラッシングの記録",
+  description:
+    "shedAmount（抜け毛の量）は less=少ない、usual=いつも通り、more=多い。",
+  fields: {
+    performedDate: dateField("実施日"),
+    performedTime: timeField("実施時刻"),
+    durationMinutes: z
+      .number()
+      .int()
+      .nullable()
+      .optional()
+      .describe(
+        `ブラッシングにかけた時間（分、1〜${BRUSHING_DURATION_MAX_MINUTES}）。null を指定すると空にする`,
+      ),
+    shedAmount: z
+      .enum(BRUSHING_SHED_AMOUNTS)
+      .nullable()
+      .optional()
+      .describe("抜け毛の量。null を指定すると未選択にする"),
+    hasMats: z.boolean().optional().describe("毛玉・もつれがあったか"),
+    hasSkinIssue: z
+      .boolean()
+      .optional()
+      .describe("皮膚の異常（赤み・フケ・かさぶたなど）があったか"),
+    memo: optionalText("備考", 500),
+  },
+  schema: brushingRecordFormSchema,
+  defaults: () => nowDateTimeValues("performedDate", "performedTime"),
+  async load(db, catId, id) {
+    const [row] = await db
+      .select()
+      .from(brushingRecords)
+      .where(and(eq(brushingRecords.id, id), eq(brushingRecords.catId, catId)))
+      .limit(1);
+    if (!row) return null;
+    return {
+      existing: null,
+      values: {
+        ...dateTimeValues("performedDate", "performedTime", row.performedAt),
+        durationMinutes: toOptionalValue(row.durationMinutes),
+        shedAmount: toOptionalValue(row.shedAmount),
+        hasMats: toCheckboxValue(row.hasMats),
+        hasSkinIssue: toCheckboxValue(row.hasSkinIssue),
+        memo: toOptionalValue(row.memo),
+      },
+    };
+  },
+  create: async ({ ctx, cat, data }) => ({
+    id: await createBrushingRecord(cat.id, data, ctx.env.DB),
+  }),
+  update: async ({ ctx, cat, id, data }) =>
+    (await updateBrushingRecord(cat.id, id, data, ctx.env.DB))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
@@ -1044,6 +1113,7 @@ const RECORD_TOOLS = [
   vomitRecordTool,
   waterRecordTool,
   shampooRecordTool,
+  brushingRecordTool,
   cleaningRecordTool,
   symptomTool,
   medicationDoseTool,
