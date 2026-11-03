@@ -45,5 +45,41 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "src/app/**",
+        "src/components/**",
+        "src/features/**/*.tsx",
+        "src/features/**/actions.ts",
+        "src/features/**/*Actions.ts",
+        "src/features/mcp/tools/**",
+        "!**/*.test.ts",
+        "!**/*.test.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@/db/client": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の queries / mutations を経由してください（AGENTS.md の「レイヤー構成」参照）",
+                  "@/db/batch": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の queries / mutations を経由してください（AGENTS.md の「レイヤー構成」参照）",
+                  "drizzle-orm": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の queries / mutations を経由してください（AGENTS.md の「レイヤー構成」参照）"
+                },
+                "patterns": [
+                  {
+                    "group": ["drizzle-orm/**"],
+                    "message": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の queries / mutations を経由してください（AGENTS.md の「レイヤー構成」参照）"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
