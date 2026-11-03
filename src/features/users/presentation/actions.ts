@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/features/auth/presentation/session";
 import { parseProfileImageChange } from "@/features/cats/domain/profileImageForm";
 import type { SubmitRedirect } from "@/features/navigation/types";
+import { renameUser } from "../application/profile";
 import {
   type UserProfileFormFieldErrors,
   userProfileFormSchema,
 } from "../domain/schema";
 import { applyUserIconChange } from "../infrastructure/applyUserIcon";
-import { renameUser } from "../infrastructure/profile";
 
 export type UserProfileFormState = SubmitRedirect & {
   fieldErrors?: UserProfileFormFieldErrors;

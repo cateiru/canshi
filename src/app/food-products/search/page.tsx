@@ -1,6 +1,11 @@
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/presentation/session";
+import { hasOpenCatalogFoodProductRequest } from "@/features/catalog-food-products/application/requests";
+import {
+  hasCatalogSearchCriteria,
+  toCatalogSearchQuery,
+} from "@/features/catalog-food-products/domain/catalogRequest";
 import {
   catalogPackageSizes,
   formatPackageSize,
@@ -16,11 +21,6 @@ import {
   listCatalogFoodProductImageUrls,
   searchCatalogFoodProducts,
 } from "@/features/catalog-food-products/infrastructure/queries";
-import {
-  hasCatalogSearchCriteria,
-  hasOpenCatalogFoodProductRequest,
-  toCatalogSearchQuery,
-} from "@/features/catalog-food-products/infrastructure/requests";
 import { AddCatalogFoodProductButton } from "@/features/catalog-food-products/presentation/AddCatalogFoodProductButton";
 import {
   addCatalogFoodProductAction,

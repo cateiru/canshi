@@ -7,6 +7,7 @@ import {
   replaceCatalogFoodProductImage,
   updateCatalogFoodProduct,
 } from "@/features/catalog-food-products/application/mutations";
+import { completeCatalogFoodProductRequest } from "@/features/catalog-food-products/application/requests";
 import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "@/features/catalog-food-products/domain/media";
 import { catalogPackageSizes } from "@/features/catalog-food-products/domain/packageSizes";
 import {
@@ -28,9 +29,8 @@ import {
 } from "@/features/catalog-food-products/infrastructure/queries";
 import {
   CATALOG_REQUEST_LIST_LIMIT,
-  completeCatalogFoodProductRequest,
   listCatalogFoodProductRequests,
-} from "@/features/catalog-food-products/infrastructure/requests";
+} from "@/features/catalog-food-products/infrastructure/requestQueries";
 import { MAX_DECODE_PIXELS } from "@/features/media/domain/thumbnailSize";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
 import { MediaUploadError } from "@/features/media/infrastructure/storage";

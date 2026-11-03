@@ -17,13 +17,17 @@ vi.mock("@/db/client", () => ({ getDb: () => db }));
 const {
   completeCatalogFoodProductRequest,
   createCatalogFoodProductRequest,
+  hasOpenCatalogFoodProductRequest,
+} = await import("./requests");
+const {
   formatCatalogSearchCriteria,
   hasCatalogSearchCriteria,
-  hasOpenCatalogFoodProductRequest,
-  listCatalogFoodProductRequests,
   MAX_OPEN_CATALOG_REQUESTS,
   toCatalogSearchQuery,
-} = await import("./requests");
+} = await import("../domain/catalogRequest");
+const { listCatalogFoodProductRequests } = await import(
+  "../infrastructure/requestQueries"
+);
 
 beforeEach(async () => {
   const SQL = await initSqlJs();

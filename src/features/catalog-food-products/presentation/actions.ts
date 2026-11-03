@@ -11,6 +11,8 @@ import {
 } from "@/features/media/infrastructure/storage";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { addCatalogFoodProductToHousehold } from "../application/mutations";
+import { createCatalogFoodProductRequest } from "../application/requests";
+import { MAX_OPEN_CATALOG_REQUESTS } from "../domain/catalogRequest";
 import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "../domain/media";
 import { parsePackageSizeValue } from "../domain/packageSizes";
 import { parseCatalogSearchParams } from "../domain/search";
@@ -18,10 +20,6 @@ import {
   getCatalogFoodProduct,
   listAddedCatalogFoodProductIds,
 } from "../infrastructure/queries";
-import {
-  createCatalogFoodProductRequest,
-  MAX_OPEN_CATALOG_REQUESTS,
-} from "../infrastructure/requests";
 
 /**
  * 追加できたら（追加済みのときも）`redirectTo` に家のごはん商品一覧を返し、クライアント
