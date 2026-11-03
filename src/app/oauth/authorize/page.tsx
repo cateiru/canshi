@@ -5,6 +5,7 @@ import { Alert, Button, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/presentation/session";
 import { getMcpPermissionTree } from "@/features/mcp/infrastructure/permissions";
+import { ConsentActionsHint } from "@/features/mcp/presentation/ConsentActionsHint";
 import { getMcpClientIcon } from "@/features/mcp/presentation/clientIcons";
 import {
   decodeMcpConsentRequest,
@@ -114,7 +115,7 @@ export default async function AuthorizePage({
             <p className={styles.afterNote}>
               許可したあとも、設定の「AIとの接続」で範囲の変更や接続の解除ができます。
             </p>
-            <div className={styles.actions}>
+            <div id="consent-actions" className={styles.actions}>
               <Button
                 type="submit"
                 variant="primary"
@@ -128,6 +129,7 @@ export default async function AuthorizePage({
               </Button>
             </div>
           </form>
+          <ConsentActionsHint targetId="consent-actions" />
         </>
       ) : (
         <Alert color="error">

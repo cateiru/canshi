@@ -1,0 +1,14 @@
+/* 画面の下の中央に浮かせる。内容より手前、モーダルの overlay（z-index: 100）より奥に重ねる */
+.container {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  transform: translateX(-50%);
+}
+
+.button {
+  border-radius: 999px;
+  box-shadow: 0 4px 16px var(--color-shadow);
+  white-space: nowrap;
+}
