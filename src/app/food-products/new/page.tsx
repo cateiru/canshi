@@ -1,18 +1,18 @@
 import { Breadcrumb } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireUser } from "@/features/auth/session";
+import { requireUser } from "@/features/auth/presentation/session";
 import {
   createFoodProductAction,
   updateFoodProductAction,
-} from "@/features/food-products/actions";
-import { FoodProductForm } from "@/features/food-products/FoodProductForm";
+} from "@/features/food-products/presentation/actions";
+import { FoodProductForm } from "@/features/food-products/presentation/FoodProductForm";
 import {
   foodProductsBreadcrumbItems,
   withHouseholdId,
-} from "@/features/food-products/paths";
-import { findFilterHousehold } from "@/features/households/householdFilter";
-import { listHouseholdsForUser } from "@/features/households/queries";
-import { resolveMediaLimits } from "@/features/media/limits";
+} from "@/features/food-products/presentation/paths";
+import { listHouseholdsForUser } from "@/features/households/infrastructure/queries";
+import { findFilterHousehold } from "@/features/households/presentation/householdFilter";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
 import { ReplaceNavigation } from "@/features/navigation/ReplaceNavigation";
 import { Surface } from "@/features/shared/Surface";
 import styles from "../page.module.css";

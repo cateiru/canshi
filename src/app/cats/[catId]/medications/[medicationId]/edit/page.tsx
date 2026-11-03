@@ -1,17 +1,17 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { listHospitalVisits } from "@/features/hospital-visits/queries";
-import { resolveMediaLimits } from "@/features/media/limits";
-import { listMediaAssetsByRecord } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
-import { updateMedicationAction } from "@/features/medications/actions";
-import { MedicationForm } from "@/features/medications/MedicationForm";
-import { MEDICATION_MEDIA_TYPE } from "@/features/medications/media";
-import { getMedicationById } from "@/features/medications/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecord } from "@/features/media/infrastructure/queries";
+import { MEDICATION_MEDIA_TYPE } from "@/features/medications/domain/media";
+import { getMedicationById } from "@/features/medications/infrastructure/queries";
+import { updateMedicationAction } from "@/features/medications/presentation/actions";
+import { MedicationForm } from "@/features/medications/presentation/MedicationForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { listSymptoms } from "@/features/symptoms/queries";
+import { listSymptoms } from "@/features/symptoms/infrastructure/queries";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";

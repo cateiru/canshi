@@ -1,15 +1,15 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb, ButtonLink, RecordEmptyState } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { listFeedingPresets } from "@/features/feeding-presets/queries";
-import { createFeedingRecordAction } from "@/features/feeding-records/actions";
-import { FeedingRecordForm } from "@/features/feeding-records/FeedingRecordForm";
-import { listRecentlyUsedFoodProductIds } from "@/features/feeding-records/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { listFeedingPresets } from "@/features/feeding-presets/infrastructure/queries";
+import { listRecentlyUsedFoodProductIds } from "@/features/feeding-records/infrastructure/queries";
+import { createFeedingRecordAction } from "@/features/feeding-records/presentation/actions";
+import { FeedingRecordForm } from "@/features/feeding-records/presentation/FeedingRecordForm";
 import {
   listFoodProductImageUrls,
   listFoodProducts,
-} from "@/features/food-products/queries";
+} from "@/features/food-products/infrastructure/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 

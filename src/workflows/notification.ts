@@ -7,25 +7,25 @@ import type { VapidKeys } from "@block65/webcrypto-web-push";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { notifications } from "@/db/schema";
-import { generateNotifications } from "@/features/notifications/generate";
+import { generateNotifications } from "@/features/notifications/application/generate";
+import {
+  buildPushAccessIndex,
+  selectPushTargets,
+} from "@/features/push/domain/targets";
 import {
   listCatAccessesOfSubscribers,
   listHouseholdAccessesOfSubscribers,
   listPushDeliveries,
   listPushSubscriptions,
   listUnpushedNotifications,
-} from "@/features/push/queries";
-import { sendPushToSubscription } from "@/features/push/sendPush";
+} from "@/features/push/infrastructure/queries";
+import { sendPushToSubscription } from "@/features/push/infrastructure/sendPush";
 import {
   listPushTestTargets,
   type PushTestTarget,
   sendTestPush,
-} from "@/features/push/sendTestPush";
-import {
-  buildPushAccessIndex,
-  selectPushTargets,
-} from "@/features/push/targets";
-import { getVapidKeys } from "@/features/push/vapid";
+} from "@/features/push/infrastructure/sendTestPush";
+import { getVapidKeys } from "@/features/push/infrastructure/vapid";
 
 function deliveryKey(notificationId: string, subscriptionId: string): string {
   return `${notificationId}:${subscriptionId}`;

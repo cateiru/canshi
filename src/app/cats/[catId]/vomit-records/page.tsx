@@ -10,10 +10,10 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { MediaGallery } from "@/features/media/MediaGallery";
-import { listMediaAssetsByRecords } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
+import { MediaGallery } from "@/features/media/presentation/MediaGallery";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import {
@@ -22,9 +22,9 @@ import {
   parsePageParam,
 } from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { deleteVomitRecordAction } from "@/features/vomit-records/actions";
-import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
-import { listVomitRecords } from "@/features/vomit-records/queries";
+import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/domain/media";
+import { listVomitRecords } from "@/features/vomit-records/infrastructure/queries";
+import { deleteVomitRecordAction } from "@/features/vomit-records/presentation/actions";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";

@@ -1,6 +1,10 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { type NextRequest, NextResponse } from "next/server";
-import { loginWithEmail } from "@/features/auth/login";
+import { loginWithEmail } from "@/features/auth/application/login";
+import {
+  SESSION_COOKIE_NAME,
+  sessionCookieOptions,
+} from "@/features/auth/domain/sessionToken";
 import {
   decodeOidcLoginState,
   exchangeAuthorizationCode,
@@ -9,11 +13,7 @@ import {
   OIDC_STATE_COOKIE_NAME,
   requireOidcConfig,
   verifyIdToken,
-} from "@/features/auth/oidc";
-import {
-  SESSION_COOKIE_NAME,
-  sessionCookieOptions,
-} from "@/features/auth/sessionToken";
+} from "@/features/auth/infrastructure/oidc";
 
 export const dynamic = "force-dynamic";
 

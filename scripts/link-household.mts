@@ -20,7 +20,10 @@
 // - `--remote` では実行前に確認する。`--yes` で確認を省略できる
 import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
-import { getEmailHashSalt, hashEmail } from "../src/features/auth/emailHash.ts";
+import {
+  getEmailHashSalt,
+  hashEmail,
+} from "../src/features/auth/domain/emailHash.ts";
 import {
   confirmOrExit,
   createExecutor,

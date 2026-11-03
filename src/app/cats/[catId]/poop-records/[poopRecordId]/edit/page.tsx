@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { resolveMediaLimits } from "@/features/media/limits";
-import { listMediaAssetsByRecord } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
-import { updatePoopRecordAction } from "@/features/poop-records/actions";
-import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
-import { PoopRecordForm } from "@/features/poop-records/PoopRecordForm";
-import { getPoopRecordById } from "@/features/poop-records/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecord } from "@/features/media/infrastructure/queries";
+import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/domain/media";
+import { getPoopRecordById } from "@/features/poop-records/infrastructure/queries";
+import { updatePoopRecordAction } from "@/features/poop-records/presentation/actions";
+import { PoopRecordForm } from "@/features/poop-records/presentation/PoopRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 

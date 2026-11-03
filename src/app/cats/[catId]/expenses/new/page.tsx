@@ -1,13 +1,16 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat, listCurrentUserCats } from "@/features/auth/session";
+import {
+  getAccessibleCat,
+  listCurrentUserCats,
+} from "@/features/auth/presentation/session";
 import {
   createExpenseAction,
   updateExpenseAction,
-} from "@/features/expenses/actions";
-import { ExpenseForm } from "@/features/expenses/ExpenseForm";
-import { resolveMediaLimits } from "@/features/media/limits";
+} from "@/features/expenses/presentation/actions";
+import { ExpenseForm } from "@/features/expenses/presentation/ExpenseForm";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 

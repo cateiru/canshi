@@ -8,15 +8,15 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { FeedingScheduleIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireHouseholdAccess } from "@/features/auth/session";
+import { requireHouseholdAccess } from "@/features/auth/presentation/session";
+import { listFeedingSchedules } from "@/features/feeding-schedules/infrastructure/queries";
 import {
   createFeedingScheduleAction,
   deleteFeedingScheduleAction,
   updateFeedingScheduleNotifyAction,
-} from "@/features/feeding-schedules/actions";
-import { FeedingScheduleForm } from "@/features/feeding-schedules/FeedingScheduleForm";
-import { listFeedingSchedules } from "@/features/feeding-schedules/queries";
-import { HouseholdMemberActionButton } from "@/features/households/HouseholdMemberActionButton";
+} from "@/features/feeding-schedules/presentation/actions";
+import { FeedingScheduleForm } from "@/features/feeding-schedules/presentation/FeedingScheduleForm";
+import { HouseholdMemberActionButton } from "@/features/households/presentation/HouseholdMemberActionButton";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";

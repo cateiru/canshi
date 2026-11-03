@@ -9,12 +9,12 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { CleaningRecordChart } from "@/features/cleaning/CleaningRecordChart";
-import { deleteCleaningRecordAction } from "@/features/cleaning/recordActions";
-import { toCleaningRecordCalendarData } from "@/features/cleaning/recordChart";
-import { listCleaningRecords } from "@/features/cleaning/recordQueries";
-import { getCleaningTargetById } from "@/features/cleaning/targetQueries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { listCleaningRecords } from "@/features/cleaning/infrastructure/recordQueries";
+import { getCleaningTargetById } from "@/features/cleaning/infrastructure/targetQueries";
+import { CleaningRecordChart } from "@/features/cleaning/presentation/CleaningRecordChart";
+import { deleteCleaningRecordAction } from "@/features/cleaning/presentation/recordActions";
+import { toCleaningRecordCalendarData } from "@/features/cleaning/presentation/recordChart";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {

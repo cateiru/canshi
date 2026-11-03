@@ -10,10 +10,10 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { deleteMedicationDoseAction } from "@/features/medications/doseActions";
-import { listMedicationDoses } from "@/features/medications/doseQueries";
-import { getMedicationById } from "@/features/medications/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { listMedicationDoses } from "@/features/medications/infrastructure/doseQueries";
+import { getMedicationById } from "@/features/medications/infrastructure/queries";
+import { deleteMedicationDoseAction } from "@/features/medications/presentation/doseActions";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import {

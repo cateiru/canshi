@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/ui";
 import { AppearanceSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { AppearanceSettings } from "@/features/appearance/AppearanceSettings";
-import { getAppearance } from "@/features/appearance/queries";
+import { getAppearance } from "@/features/appearance/infrastructure/queries";
+import { AppearanceSettings } from "@/features/appearance/presentation/AppearanceSettings";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 

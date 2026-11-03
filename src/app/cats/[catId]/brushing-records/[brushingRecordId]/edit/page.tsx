@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { BrushingIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { updateBrushingRecordAction } from "@/features/brushing-records/actions";
-import { BrushingRecordForm } from "@/features/brushing-records/BrushingRecordForm";
-import { getBrushingRecordById } from "@/features/brushing-records/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getBrushingRecordById } from "@/features/brushing-records/infrastructure/queries";
+import { updateBrushingRecordAction } from "@/features/brushing-records/presentation/actions";
+import { BrushingRecordForm } from "@/features/brushing-records/presentation/BrushingRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 

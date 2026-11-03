@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Cat } from "@/db/schema/cats";
-import { listCurrentUserCats } from "@/features/auth/session";
+import { listCurrentUserCats } from "@/features/auth/presentation/session";
 import RootPage from "./page";
 
-vi.mock("@/features/auth/session", () => ({
+vi.mock("@/features/auth/presentation/session", () => ({
   listCurrentUserCats: vi.fn(),
 }));
 

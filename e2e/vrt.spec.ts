@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 import {
   encodeMcpConsentRequest,
   MCP_CONSENT_HEADER,
-} from "../src/features/mcp/consent";
+} from "../src/features/mcp/presentation/consent";
 import { createPng } from "../src/features/media/testing/createPng";
 import { fillAndKeep } from "./helpers";
 import { expect, takeSnapshot, test } from "./vrt-snapshot";

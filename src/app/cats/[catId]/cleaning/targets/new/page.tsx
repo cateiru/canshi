@@ -2,14 +2,14 @@ import { notFound } from "next/navigation";
 import { TbPlus, TbStack2 } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { CleaningTargetForm } from "@/features/cleaning/CleaningTargetForm";
-import { CleaningTargetPresetButton } from "@/features/cleaning/CleaningTargetPresetButton";
-import { CLEANING_TARGET_PRESETS } from "@/features/cleaning/presets";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { CLEANING_TARGET_PRESETS } from "@/features/cleaning/domain/presets";
+import { CleaningTargetForm } from "@/features/cleaning/presentation/CleaningTargetForm";
+import { CleaningTargetPresetButton } from "@/features/cleaning/presentation/CleaningTargetPresetButton";
 import {
   createCleaningTargetAction,
   createCleaningTargetFromPresetAction,
-} from "@/features/cleaning/targetActions";
+} from "@/features/cleaning/presentation/targetActions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";

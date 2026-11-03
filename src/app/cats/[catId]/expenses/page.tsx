@@ -12,30 +12,33 @@ import {
   getAccessibleCat,
   listCurrentUserCats,
   requireUser,
-} from "@/features/auth/session";
+} from "@/features/auth/presentation/session";
 import {
   sumExpenseAmounts,
   sumExpenseAmountsByCategory,
-} from "@/features/expenses/calculations";
+} from "@/features/expenses/domain/calculations";
+import {
+  EXPENSE_CATEGORY_LABEL,
+  formatYen,
+} from "@/features/expenses/domain/labels";
+import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/domain/media";
+import {
+  listExpenseAmountsForMonthRange,
+  listExpensesForMonth,
+} from "@/features/expenses/infrastructure/queries";
 import {
   buildMonthlyExpenseChart,
   getExpenseChartRange,
-} from "@/features/expenses/chart";
-import { ExpenseChart } from "@/features/expenses/ExpenseChart";
-import { ExpenseList } from "@/features/expenses/ExpenseList";
+} from "@/features/expenses/presentation/chart";
+import { ExpenseChart } from "@/features/expenses/presentation/ExpenseChart";
+import { ExpenseList } from "@/features/expenses/presentation/ExpenseList";
 import {
   buildExpensesHref,
   type ExpenseScope,
   isExpenseScope,
-} from "@/features/expenses/href";
-import { EXPENSE_CATEGORY_LABEL, formatYen } from "@/features/expenses/labels";
-import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
-import {
-  listExpenseAmountsForMonthRange,
-  listExpensesForMonth,
-} from "@/features/expenses/queries";
-import { listHospitalVisitsByIds } from "@/features/hospital-visits/queries";
-import { listMediaAssetsByRecords } from "@/features/media/queries";
+} from "@/features/expenses/presentation/href";
+import { listHospitalVisitsByIds } from "@/features/hospital-visits/infrastructure/queries";
+import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";

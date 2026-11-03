@@ -1,22 +1,22 @@
 import { TbPencil, TbPlus } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { FeedingPresetIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireUser } from "@/features/auth/session";
-import { deleteFeedingPresetAction } from "@/features/feeding-presets/actions";
-import { DeleteFeedingPresetButton } from "@/features/feeding-presets/DeleteFeedingPresetButton";
-import { listFeedingPresetsForUser } from "@/features/feeding-presets/queries";
+import { requireUser } from "@/features/auth/presentation/session";
+import { listFeedingPresetsForUser } from "@/features/feeding-presets/infrastructure/queries";
+import { deleteFeedingPresetAction } from "@/features/feeding-presets/presentation/actions";
+import { DeleteFeedingPresetButton } from "@/features/feeding-presets/presentation/DeleteFeedingPresetButton";
 import {
   FEEDING_MODE_LABEL,
   GIVEN_AMOUNT_LEVEL_LABEL,
-} from "@/features/feeding-records/labels";
-import { FoodProductImage } from "@/features/food-products/FoodProductImage";
-import { groupByHousehold } from "@/features/households/groupCats";
-import { HouseholdSections } from "@/features/households/HouseholdSections";
+} from "@/features/feeding-records/domain/labels";
+import { FoodProductImage } from "@/features/food-products/presentation/FoodProductImage";
+import { listHouseholdsForUser } from "@/features/households/infrastructure/queries";
+import { groupByHousehold } from "@/features/households/presentation/groupCats";
+import { HouseholdSections } from "@/features/households/presentation/HouseholdSections";
 import {
   findFilterHousehold,
   householdSettingsBreadcrumbItems,
-} from "@/features/households/householdFilter";
-import { listHouseholdsForUser } from "@/features/households/queries";
+} from "@/features/households/presentation/householdFilter";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";

@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { NotificationSettingsForm } from "@/features/notifications/NotificationSettingsForm";
-import { updateCatNotificationSettingsAction } from "@/features/notifications/settingsActions";
-import { getCatNotificationSettingsPageData } from "@/features/notifications/settingsQueries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getCatNotificationSettingsPageData } from "@/features/notifications/infrastructure/settingsQueries";
+import { NotificationSettingsForm } from "@/features/notifications/presentation/NotificationSettingsForm";
+import { updateCatNotificationSettingsAction } from "@/features/notifications/presentation/settingsActions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 

@@ -1,13 +1,13 @@
 import { Breadcrumb, FilterTabs, Tabs } from "@/components/ui";
-import { requireUser } from "@/features/auth/session";
-import { listCatsForUser } from "@/features/households/queries";
-import { generateNotifications } from "@/features/notifications/generate";
-import { MarkNotificationsRead } from "@/features/notifications/MarkNotificationsRead";
-import { NotificationList } from "@/features/notifications/NotificationList";
+import { requireUser } from "@/features/auth/presentation/session";
+import { listCatsForUser } from "@/features/households/infrastructure/queries";
+import { generateNotifications } from "@/features/notifications/application/generate";
 import {
   listPendingNotifications,
   listResolvedNotifications,
-} from "@/features/notifications/queries";
+} from "@/features/notifications/infrastructure/queries";
+import { MarkNotificationsRead } from "@/features/notifications/presentation/MarkNotificationsRead";
+import { NotificationList } from "@/features/notifications/presentation/NotificationList";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";

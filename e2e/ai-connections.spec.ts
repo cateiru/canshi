@@ -1,10 +1,10 @@
 import { execFileSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
-import { DEVELOPMENT_LOGIN_EMAIL } from "../src/features/auth/developmentLogin";
 import {
   DEVELOPMENT_EMAIL_HASH_SALT,
   hashEmail,
-} from "../src/features/auth/emailHash";
+} from "../src/features/auth/domain/emailHash";
+import { DEVELOPMENT_LOGIN_EMAIL } from "../src/features/auth/infrastructure/developmentLogin";
 
 const CLIENT_ID = "e2e-client";
 const GRANT_ID = "e2eGrant";

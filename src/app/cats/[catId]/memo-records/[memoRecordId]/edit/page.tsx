@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { MemoIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { resolveMediaLimits } from "@/features/media/limits";
-import { listMediaAssetsByRecord } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
-import { updateMemoRecordAction } from "@/features/memo-records/actions";
-import { MemoRecordForm } from "@/features/memo-records/MemoRecordForm";
-import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/media";
-import { getMemoRecordById } from "@/features/memo-records/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecord } from "@/features/media/infrastructure/queries";
+import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/domain/media";
+import { getMemoRecordById } from "@/features/memo-records/infrastructure/queries";
+import { updateMemoRecordAction } from "@/features/memo-records/presentation/actions";
+import { MemoRecordForm } from "@/features/memo-records/presentation/MemoRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 

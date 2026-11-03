@@ -9,7 +9,7 @@ import {
   OIDC_STATE_COOKIE_NAME,
   OIDC_STATE_MAX_AGE_SECONDS,
   requireOidcConfig,
-} from "@/features/auth/oidc";
+} from "@/features/auth/infrastructure/oidc";
 
 export const dynamic = "force-dynamic";
 

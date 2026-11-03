@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { updateMedicationDoseAction } from "@/features/medications/doseActions";
-import { getMedicationDoseById } from "@/features/medications/doseQueries";
-import { MedicationDoseForm } from "@/features/medications/MedicationDoseForm";
-import { getMedicationById } from "@/features/medications/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getMedicationDoseById } from "@/features/medications/infrastructure/doseQueries";
+import { getMedicationById } from "@/features/medications/infrastructure/queries";
+import { updateMedicationDoseAction } from "@/features/medications/presentation/doseActions";
+import { MedicationDoseForm } from "@/features/medications/presentation/MedicationDoseForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 

@@ -1,16 +1,16 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { SymptomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { listHospitalVisits } from "@/features/hospital-visits/queries";
-import { resolveMediaLimits } from "@/features/media/limits";
-import { listMediaAssetsByRecord } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecord } from "@/features/media/infrastructure/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { updateSymptomAction } from "@/features/symptoms/actions";
-import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/media";
-import { getSymptomById } from "@/features/symptoms/queries";
-import { SymptomForm } from "@/features/symptoms/SymptomForm";
+import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/domain/media";
+import { getSymptomById } from "@/features/symptoms/infrastructure/queries";
+import { updateSymptomAction } from "@/features/symptoms/presentation/actions";
+import { SymptomForm } from "@/features/symptoms/presentation/SymptomForm";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";

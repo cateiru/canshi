@@ -1,10 +1,10 @@
-import { getCurrentUser } from "@/features/auth/session";
+import { getCurrentUser } from "@/features/auth/presentation/session";
+import { toMediaAssetView } from "@/features/media/domain/view";
 import {
   deleteStalePendingMediaAssets,
   MediaUploadError,
   storePendingMediaAsset,
-} from "@/features/media/storage";
-import { toMediaAssetView } from "@/features/media/view";
+} from "@/features/media/infrastructure/storage";
 
 export const dynamic = "force-dynamic";
 

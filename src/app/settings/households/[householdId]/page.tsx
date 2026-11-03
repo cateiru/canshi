@@ -13,7 +13,13 @@ import {
   FoodProductIcon,
   HouseholdIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireHouseholdAccess } from "@/features/auth/session";
+import { requireHouseholdAccess } from "@/features/auth/presentation/session";
+import { HOUSEHOLD_ROLE_LABEL } from "@/features/households/domain/labels";
+import {
+  HOUSEHOLD_INVITATION_MAX_AGE_SECONDS,
+  listPendingHouseholdInvitations,
+} from "@/features/households/infrastructure/invitations";
+import { listHouseholdMembers } from "@/features/households/infrastructure/queries";
 import {
   createHouseholdInvitationAction,
   leaveHouseholdAction,
@@ -21,20 +27,14 @@ import {
   revokeHouseholdInvitationAction,
   transferHouseholdOwnershipAction,
   updateHouseholdNameAction,
-} from "@/features/households/actions";
-import { HouseholdInvitationIssueButton } from "@/features/households/HouseholdInvitationIssueButton";
-import { HouseholdMemberActionButton } from "@/features/households/HouseholdMemberActionButton";
-import { HouseholdNameForm } from "@/features/households/HouseholdNameForm";
-import {
-  HOUSEHOLD_INVITATION_MAX_AGE_SECONDS,
-  listPendingHouseholdInvitations,
-} from "@/features/households/invitations";
-import { HOUSEHOLD_ROLE_LABEL } from "@/features/households/labels";
-import { listHouseholdMembers } from "@/features/households/queries";
+} from "@/features/households/presentation/actions";
+import { HouseholdInvitationIssueButton } from "@/features/households/presentation/HouseholdInvitationIssueButton";
+import { HouseholdMemberActionButton } from "@/features/households/presentation/HouseholdMemberActionButton";
+import { HouseholdNameForm } from "@/features/households/presentation/HouseholdNameForm";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
-import { UserAvatar } from "@/features/users/UserAvatar";
+import { UserAvatar } from "@/features/users/presentation/UserAvatar";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {

@@ -2,13 +2,13 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Alert, Button, FormField } from "@/components/ui";
-import { developmentLoginAction } from "@/features/auth/actions";
-import { sanitizeCallbackUrl } from "@/features/auth/callbackUrl";
+import { sanitizeCallbackUrl } from "@/features/auth/domain/callbackUrl";
 import {
   DEVELOPMENT_LOGIN_EMAIL,
   isDevelopmentLoginEnabled,
-} from "@/features/auth/developmentLogin";
-import { getCurrentUser } from "@/features/auth/session";
+} from "@/features/auth/infrastructure/developmentLogin";
+import { developmentLoginAction } from "@/features/auth/presentation/actions";
+import { getCurrentUser } from "@/features/auth/presentation/session";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {

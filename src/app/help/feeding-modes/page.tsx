@@ -5,7 +5,7 @@ import {
   FEEDING_MODE_LABEL,
   GIVEN_AMOUNT_LEVEL_LABEL,
   LEFTOVER_LEVEL_LABEL,
-} from "@/features/feeding-records/labels";
+} from "@/features/feeding-records/domain/labels";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";

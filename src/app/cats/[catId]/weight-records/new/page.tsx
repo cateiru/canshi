@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { createWeightRecordAction } from "@/features/weight-records/actions";
-import { WeightRecordForm } from "@/features/weight-records/WeightRecordForm";
+import { createWeightRecordAction } from "@/features/weight-records/presentation/actions";
+import { WeightRecordForm } from "@/features/weight-records/presentation/WeightRecordForm";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";

@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { WaterIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { updateWaterRecordAction } from "@/features/water-records/actions";
-import { getWaterRecordById } from "@/features/water-records/queries";
-import { WaterRecordForm } from "@/features/water-records/WaterRecordForm";
+import { getWaterRecordById } from "@/features/water-records/infrastructure/queries";
+import { updateWaterRecordAction } from "@/features/water-records/presentation/actions";
+import { WaterRecordForm } from "@/features/water-records/presentation/WaterRecordForm";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";

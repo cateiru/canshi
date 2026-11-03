@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { expect, test as setup } from "@playwright/test";
-import { DEVELOPMENT_LOGIN_EMAIL } from "../src/features/auth/developmentLogin";
+import { DEVELOPMENT_LOGIN_EMAIL } from "../src/features/auth/infrastructure/developmentLogin";
 
 /** ログイン済みのセッション（Cookie）を保存するファイル。各テストはこれを読み込んで開始する */
 export const AUTH_STORAGE_STATE = "e2e/.auth/user.json";

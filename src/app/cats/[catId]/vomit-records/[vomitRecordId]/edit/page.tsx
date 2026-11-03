@@ -1,15 +1,15 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { resolveMediaLimits } from "@/features/media/limits";
-import { listMediaAssetsByRecord } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecord } from "@/features/media/infrastructure/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { updateVomitRecordAction } from "@/features/vomit-records/actions";
-import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/media";
-import { getVomitRecordById } from "@/features/vomit-records/queries";
-import { VomitRecordForm } from "@/features/vomit-records/VomitRecordForm";
+import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/domain/media";
+import { getVomitRecordById } from "@/features/vomit-records/infrastructure/queries";
+import { updateVomitRecordAction } from "@/features/vomit-records/presentation/actions";
+import { VomitRecordForm } from "@/features/vomit-records/presentation/VomitRecordForm";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";

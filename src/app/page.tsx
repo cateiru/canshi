@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { listCurrentUserCats } from "@/features/auth/session";
+import { listCurrentUserCats } from "@/features/auth/presentation/session";
 
 export const dynamic = "force-dynamic";
 

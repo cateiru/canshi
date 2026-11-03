@@ -3,10 +3,10 @@
 import { notFound } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Card, FormField } from "@/components/ui";
-import { deleteMediaAssetAction } from "@/features/media/actions";
-import { DEV_MEDIA_RECORD_TYPE } from "@/features/media/recordTypes";
-import { uploadMedia } from "@/features/media/upload";
-import type { MediaAssetView } from "@/features/media/view";
+import { DEV_MEDIA_RECORD_TYPE } from "@/features/media/domain/recordTypes";
+import type { MediaAssetView } from "@/features/media/domain/view";
+import { deleteMediaAssetAction } from "@/features/media/presentation/actions";
+import { uploadMedia } from "@/features/media/presentation/upload";
 import styles from "./page.module.css";
 
 type UploadLog = {

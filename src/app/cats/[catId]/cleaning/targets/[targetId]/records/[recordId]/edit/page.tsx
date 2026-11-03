@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { CleaningRecordForm } from "@/features/cleaning/CleaningRecordForm";
-import { updateCleaningRecordAction } from "@/features/cleaning/recordActions";
-import { getCleaningRecordById } from "@/features/cleaning/recordQueries";
-import { getCleaningTargetById } from "@/features/cleaning/targetQueries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getCleaningRecordById } from "@/features/cleaning/infrastructure/recordQueries";
+import { getCleaningTargetById } from "@/features/cleaning/infrastructure/targetQueries";
+import { CleaningRecordForm } from "@/features/cleaning/presentation/CleaningRecordForm";
+import { updateCleaningRecordAction } from "@/features/cleaning/presentation/recordActions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 

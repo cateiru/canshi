@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { createShampooRecordAction } from "@/features/shampoo-records/actions";
-import { ShampooRecordForm } from "@/features/shampoo-records/ShampooRecordForm";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { createShampooRecordAction } from "@/features/shampoo-records/presentation/actions";
+import { ShampooRecordForm } from "@/features/shampoo-records/presentation/ShampooRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 

@@ -3,15 +3,15 @@ import { headers } from "next/headers";
 import { TbAlertTriangle, TbEye, TbUser } from "react-icons/tb";
 import { Alert, Button, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireUser } from "@/features/auth/session";
-import { getMcpClientIcon } from "@/features/mcp/clientIcons";
+import { requireUser } from "@/features/auth/presentation/session";
+import { getMcpPermissionTree } from "@/features/mcp/infrastructure/permissions";
+import { getMcpClientIcon } from "@/features/mcp/presentation/clientIcons";
 import {
   decodeMcpConsentRequest,
   formatRedirectUri,
   MCP_CONSENT_HEADER,
-} from "@/features/mcp/consent";
-import { McpPermissionTreeField } from "@/features/mcp/McpPermissionTreeField";
-import { getMcpPermissionTree } from "@/features/mcp/permissions";
+} from "@/features/mcp/presentation/consent";
+import { McpPermissionTreeField } from "@/features/mcp/presentation/McpPermissionTreeField";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { isPublicPath } from "@/features/auth/publicPaths";
-import { getSessionUser } from "@/features/auth/sessions";
-import { SESSION_COOKIE_NAME } from "@/features/auth/sessionToken";
+import { isPublicPath } from "@/features/auth/domain/publicPaths";
+import { SESSION_COOKIE_NAME } from "@/features/auth/domain/sessionToken";
+import { getSessionUser } from "@/features/auth/infrastructure/sessions";
 
 // Next.js 16 では `proxy.ts`（Node.js ランタイム固定）が推奨だが、OpenNext の
 // Cloudflare 向けビルドでは Node.js ランタイムのミドルウェアが実験的な扱いのため、

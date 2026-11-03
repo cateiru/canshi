@@ -10,12 +10,12 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { SymptomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
-import { listHospitalVisits } from "@/features/hospital-visits/queries";
-import { MediaGallery } from "@/features/media/MediaGallery";
-import { listMediaAssetsByRecords } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { hospitalVisitOptionLabel } from "@/features/hospital-visits/domain/labels";
+import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
+import { MediaGallery } from "@/features/media/presentation/MediaGallery";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import {
@@ -24,10 +24,10 @@ import {
   parsePageParam,
 } from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { deleteSymptomAction } from "@/features/symptoms/actions";
-import { STATUS_LABEL } from "@/features/symptoms/labels";
-import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/media";
-import { listSymptoms } from "@/features/symptoms/queries";
+import { STATUS_LABEL } from "@/features/symptoms/domain/labels";
+import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/domain/media";
+import { listSymptoms } from "@/features/symptoms/infrastructure/queries";
+import { deleteSymptomAction } from "@/features/symptoms/presentation/actions";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
