@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/features/auth/presentation/session";
-import { parseProfileImageChange } from "@/features/cats/presentation/profileImageForm";
+import { parseProfileImageChange } from "@/features/cats/domain/profileImageForm";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   type UserProfileFormFieldErrors,

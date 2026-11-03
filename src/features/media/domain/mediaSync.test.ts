@@ -3,8 +3,8 @@ import {
   MEDIA_ASSET_IDS_FIELD,
   MEDIA_FIELD_MARKER,
   parseMediaAssetIds,
-} from "../presentation/formFields";
-import { planMediaSync } from "./attach";
+} from "./formFields";
+import { planMediaSync } from "./mediaSync";
 
 describe("parseMediaAssetIds", () => {
   it("添付欄の印がないフォームでは null を返す（添付を変更しない）", () => {

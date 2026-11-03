@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CleaningTargetWithStatus } from "@/features/cleaning/infrastructure/targetQueries";
+import type { CleaningTargetWithStatus } from "@/features/cleaning/domain/cleaningTarget";
 import { evaluateCleaningDue } from "./cleaningDue";
 
 function makeTarget(

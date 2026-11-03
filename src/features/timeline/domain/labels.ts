@@ -17,7 +17,7 @@ import {
   WeightIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
 
-import type { TimelineRecordType } from "../infrastructure/queries";
+import type { TimelineRecordType } from "./timelineEntry";
 
 export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
   birthday: "誕生日",

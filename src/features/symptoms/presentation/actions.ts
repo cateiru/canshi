@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireCatAccess } from "@/features/auth/presentation/session";
-import { syncRecordMediaFromForm } from "@/features/media/application/attach";
+import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
 import {
   createSymptom,

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/features/auth/presentation/session";
-import { resolveHouseholdFeedingRecordPath } from "@/features/feeding-schedules/presentation/feedingRecordPath";
+import { resolveHouseholdFeedingRecordPath } from "@/features/feeding-schedules/domain/feedingRecordPath";
 import { listCatsForUser } from "@/features/households/infrastructure/queries";
 
 export const dynamic = "force-dynamic";

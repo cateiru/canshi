@@ -4,7 +4,7 @@ import { cats, mediaAssets } from "@/db/schema";
 import { PENDING_MEDIA_RECORD_TYPE } from "@/features/media/domain/recordTypes";
 import { deleteMediaAssetRows } from "@/features/media/infrastructure/storage";
 import { CAT_PROFILE_MEDIA_TYPE } from "../domain/media";
-import type { ProfileImageChange } from "../presentation/profileImageForm";
+import type { ProfileImageChange } from "../domain/profileImageForm";
 
 /**
  * 猫に紐付くプロフィール画像のうち、その時点で猫が参照していない画像（差し替え・削除前の古い画像）を

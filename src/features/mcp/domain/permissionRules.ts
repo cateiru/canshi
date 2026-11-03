@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { TimelineRecordType } from "@/features/timeline/infrastructure/queries";
+import type { TimelineRecordType } from "@/features/timeline/domain/timelineEntry";
 
 /**
  * AI との接続（MCP）で読み取りを許可するかを選べる記録の種類。タイムラインの記録の種類

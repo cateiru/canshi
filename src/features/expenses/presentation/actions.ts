@@ -7,7 +7,7 @@ import {
   type LinkableHospitalVisit,
   listHospitalVisitsOnDate,
 } from "@/features/hospital-visits/infrastructure/queries";
-import { syncRecordMediaFromForm } from "@/features/media/application/attach";
+import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
 import {
   createExpense,

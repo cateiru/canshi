@@ -36,7 +36,7 @@ import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "../domain/labels";
 import {
   isTimelineAnniversaryType,
   type TimelineEntry,
-} from "../infrastructure/queries";
+} from "../domain/timelineEntry";
 import styles from "./TimelineEntryCard.module.css";
 
 type TimelineEntryCardProps = {

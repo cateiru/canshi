@@ -1,7 +1,7 @@
 import { and, eq, exists, like, notExists } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { mediaAssets, users } from "@/db/schema";
-import type { ProfileImageChange } from "@/features/cats/presentation/profileImageForm";
+import type { ProfileImageChange } from "@/features/cats/domain/profileImageForm";
 import { PENDING_MEDIA_RECORD_TYPE } from "@/features/media/domain/recordTypes";
 import { deleteMediaAssetRows } from "@/features/media/infrastructure/storage";
 import { USER_ICON_MEDIA_TYPE } from "../domain/media";

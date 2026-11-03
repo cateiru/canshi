@@ -14,3 +14,11 @@ export type CleaningTargetSchedule = Pick<
   CleaningTarget,
   "id" | "frequencyValue" | "frequencyUnit" | "notifyTime"
 >;
+
+/** 掃除対象と、最後に掃除した日時から求めた次回予定日・期限切れか */
+export type CleaningTargetWithStatus = {
+  target: CleaningTarget;
+  lastPerformedAt: Date | null;
+  nextDueAt: Date | null;
+  isOverdue: boolean;
+};

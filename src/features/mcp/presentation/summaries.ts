@@ -5,7 +5,7 @@ import {
   GIVEN_AMOUNT_LEVEL_LABEL,
   LEFTOVER_LEVEL_LABEL,
 } from "@/features/feeding-records/domain/labels";
-import type { TimelineEntry } from "@/features/timeline/infrastructure/queries";
+import type { TimelineEntry } from "@/features/timeline/domain/timelineEntry";
 import {
   BCS_LABEL,
   isBodyConditionScore,

@@ -12,6 +12,7 @@ import {
 } from "../application/mutations";
 import type { SubmittedBirthDate } from "../domain/birthDate";
 import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "../domain/cat";
+import { parseProfileImageChange } from "../domain/profileImageForm";
 import {
   BIRTH_DATE_PRECISIONS,
   type CatFormFieldErrors,
@@ -19,7 +20,6 @@ import {
   resolveBirthDate,
 } from "../domain/schema";
 import { applyProfileImageChange } from "../infrastructure/applyProfileImage";
-import { parseProfileImageChange } from "./profileImageForm";
 
 export type CatFormState = SubmitRedirect & {
   fieldErrors?: CatFormFieldErrors;

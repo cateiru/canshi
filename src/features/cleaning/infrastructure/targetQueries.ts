@@ -2,13 +2,7 @@ import { asc, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { cleaningRecords, cleaningTargets } from "@/db/schema";
 import { calculateNextDueAt, isCleaningOverdue } from "../domain/calculations";
-
-export type CleaningTargetWithStatus = {
-  target: typeof cleaningTargets.$inferSelect;
-  lastPerformedAt: Date | null;
-  nextDueAt: Date | null;
-  isOverdue: boolean;
-};
+import type { CleaningTargetWithStatus } from "../domain/cleaningTarget";
 
 export async function listCleaningTargets(catId: string, d1?: D1Database) {
   const db = getDb(d1);

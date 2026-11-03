@@ -14,7 +14,7 @@ let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
-vi.mock("@/features/media/application/attach", () => ({
+vi.mock("@/features/media/presentation/attach", () => ({
   syncRecordMediaFromForm: async () => undefined,
 }));
 const { deleteMediaAssetsByRecord } = vi.hoisted(() => ({

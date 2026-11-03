@@ -1,4 +1,4 @@
-import type { CleaningTargetWithStatus } from "@/features/cleaning/infrastructure/targetQueries";
+import type { CleaningTargetWithStatus } from "@/features/cleaning/domain/cleaningTarget";
 import { NOTIFY_TIME } from "../defaults";
 import {
   compareLocalDate,

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isTimelineAnniversaryType,
   TIMELINE_RECORD_TYPES,
-} from "@/features/timeline/infrastructure/queries";
+} from "@/features/timeline/domain/timelineEntry";
 import {
   allowedMcpRecordTypes,
   buildMcpPermissionTree,

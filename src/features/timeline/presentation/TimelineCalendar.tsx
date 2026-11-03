@@ -5,7 +5,7 @@ import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "../domain/labels";
 import {
   TIMELINE_RECORD_TYPES,
   type TimelineRecordType,
-} from "../infrastructure/queries";
+} from "../domain/timelineEntry";
 import { CalendarSwipeArea } from "./CalendarSwipeArea";
 import { CALENDAR_TRANSITION_TYPE } from "./calendarTransition";
 import { buildTimelineHref } from "./href";

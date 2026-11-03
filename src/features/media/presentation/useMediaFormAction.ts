@@ -2,7 +2,10 @@
 
 import { useActionState, useRef, useState } from "react";
 import { useNavigateAfterSubmit } from "@/features/navigation/useNavigateAfterSubmit";
-import { MEDIA_ASSET_IDS_FIELD, MEDIA_FIELD_MARKER } from "./formFields";
+import {
+  MEDIA_ASSET_IDS_FIELD,
+  MEDIA_FIELD_MARKER,
+} from "../domain/formFields";
 import type { MediaAttachmentsController } from "./useMediaAttachments";
 
 /**

@@ -1,4 +1,4 @@
-import { householdFeedingRecordPath } from "@/features/feeding-schedules/presentation/feedingRecordPath";
+import { householdFeedingRecordPath } from "@/features/feeding-schedules/domain/feedingRecordPath";
 import type {
   HouseholdNotificationCandidate,
   NotificationCandidate,

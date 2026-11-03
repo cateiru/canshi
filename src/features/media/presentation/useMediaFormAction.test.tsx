@@ -1,7 +1,10 @@
 import { act, render, waitFor } from "@testing-library/react";
 import { startTransition } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MEDIA_ASSET_IDS_FIELD, MEDIA_FIELD_MARKER } from "./formFields";
+import {
+  MEDIA_ASSET_IDS_FIELD,
+  MEDIA_FIELD_MARKER,
+} from "../domain/formFields";
 import type {
   MediaAttachmentsController,
   MediaUploadSummary,

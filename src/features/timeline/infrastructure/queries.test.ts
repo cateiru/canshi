@@ -18,7 +18,8 @@ import {
   weightRecords,
 } from "@/db/schema";
 import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/domain/media";
-import { listTimelineForMonth, type TimelineEntry } from "./queries";
+import type { TimelineEntry } from "../domain/timelineEntry";
+import { listTimelineForMonth } from "./queries";
 
 function expectWeightRecord(entry: TimelineEntry) {
   if (entry.type !== "weight") {

@@ -3,8 +3,8 @@
 import { requireUser } from "@/features/auth/presentation/session";
 import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "@/features/cats/domain/cat";
 import { readFormHouseholdId } from "@/features/households/presentation/formHousehold";
-import { syncRecordMediaFromForm } from "@/features/media/application/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/infrastructure/storage";
+import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
 import {
   createFoodProduct,

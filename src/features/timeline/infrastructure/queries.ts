@@ -1,48 +1,30 @@
 import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
-  type BrushingRecord,
   brushingRecords,
-  type CleaningRecord,
   cats,
   cleaningRecords,
   cleaningTargets,
-  type ExpenseRecord,
   expenseRecordCats,
   expenseRecords,
-  type FeedingMode,
   feedingRecordItems,
   feedingRecords,
   foodProducts,
-  type GivenAmountLevel,
-  type HospitalVisit,
   hospitalVisits,
-  type LeftoverLevel,
-  type MedicationDose,
-  type MemoRecord,
   medicationDoses,
   medications,
   memoRecords,
-  type PoopRecord,
   poopRecords,
-  type ShampooRecord,
-  type Symptom,
   shampooRecords,
   symptoms,
-  type VomitRecord,
   vomitRecords,
-  type WaterRecord,
-  type WeightRecord,
   waterRecords,
   weightRecords,
 } from "@/db/schema";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/domain/media";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/domain/media";
 import type { MediaRecordType } from "@/features/media/domain/recordTypes";
-import {
-  type MediaAssetView,
-  toMediaAssetView,
-} from "@/features/media/domain/view";
+import { toMediaAssetView } from "@/features/media/domain/view";
 import {
   listMediaAssetsForRecords,
   mediaRecordKey,
@@ -53,44 +35,16 @@ import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { shiftYm, type YearMonth } from "@/features/shared/yearMonth";
 import { SYMPTOM_MEDIA_TYPE } from "@/features/symptoms/domain/media";
 import { VOMIT_RECORD_MEDIA_TYPE } from "@/features/vomit-records/domain/media";
+import { listAnniversariesForMonth } from "../domain/anniversaries";
 import {
-  listAnniversariesForMonth,
-  type TimelineAdoptionRecord,
-  type TimelineBirthdayRecord,
-} from "../domain/anniversaries";
-
-/**
- * 記録ではなく、猫の生年月日・お迎え日から求める記念日の種別。
- * カレンダーの1日のアイコンは表示数に上限があるため、記録より先に並べて必ず見えるようにする
- */
-const TIMELINE_ANNIVERSARY_TYPES = ["birthday", "adoption"] as const;
-
-type TimelineAnniversaryType = (typeof TIMELINE_ANNIVERSARY_TYPES)[number];
-
-export const TIMELINE_RECORD_TYPES = [
-  ...TIMELINE_ANNIVERSARY_TYPES,
-  "feeding",
-  "poop",
-  "weight",
-  "vomit",
-  "water",
-  "shampoo",
-  "brushing",
-  "cleaning",
-  "symptom",
-  "medicationDose",
-  "hospitalVisit",
-  "expense",
-  "memo",
-] as const;
-
-export type TimelineRecordType = (typeof TIMELINE_RECORD_TYPES)[number];
-
-export function isTimelineAnniversaryType(
-  type: TimelineRecordType,
-): type is TimelineAnniversaryType {
-  return (TIMELINE_ANNIVERSARY_TYPES as readonly string[]).includes(type);
-}
+  isTimelineAnniversaryType,
+  TIMELINE_ANNIVERSARY_TYPES,
+  TIMELINE_RECORD_TYPES,
+  type TimelineAnniversaryType,
+  type TimelineEntry,
+  type TimelineFeedingItem,
+  type TimelineRecordType,
+} from "../domain/timelineEntry";
 
 /**
  * タイムラインの記録種別と media_assets.record_type の対応。
@@ -107,57 +61,6 @@ const TIMELINE_MEDIA_RECORD_TYPES: Partial<
   expense: EXPENSE_MEDIA_TYPE,
   memo: MEMO_RECORD_MEDIA_TYPE,
 };
-
-type TimelineEntryOf<T extends TimelineRecordType, R> = {
-  id: string;
-  type: T;
-  occurredAt: Date;
-  record: R;
-  /** エントリに紐付く写真・動画（添付に対応していない種別は常に空） */
-  media: MediaAssetView[];
-};
-
-export type TimelineFeedingItem = {
-  id: string;
-  foodProductId: string;
-  foodProductName: string;
-  /** グラム単位の量・推定値。あいまいモードの記録では null */
-  givenAmountG: number | null;
-  leftoverAmountG: number | null;
-  estimatedIntakeG: number | null;
-  estimatedKcal: number | null;
-  /** 段階での量。厳格モードの記録では null */
-  givenAmountLevel: GivenAmountLevel | null;
-  leftoverLevel: LeftoverLevel | null;
-};
-
-export type TimelineFeedingRecord = {
-  id: string;
-  catId: string;
-  occurredAt: Date;
-  mode: FeedingMode;
-  items: TimelineFeedingItem[];
-};
-
-export type TimelineEntry =
-  | TimelineEntryOf<"birthday", TimelineBirthdayRecord>
-  | TimelineEntryOf<"adoption", TimelineAdoptionRecord>
-  | TimelineEntryOf<"feeding", TimelineFeedingRecord>
-  | TimelineEntryOf<"poop", PoopRecord>
-  | TimelineEntryOf<"weight", WeightRecord>
-  | TimelineEntryOf<"vomit", VomitRecord>
-  | TimelineEntryOf<"water", WaterRecord>
-  | TimelineEntryOf<"shampoo", ShampooRecord>
-  | TimelineEntryOf<"brushing", BrushingRecord>
-  | TimelineEntryOf<"cleaning", CleaningRecord & { cleaningTargetName: string }>
-  | TimelineEntryOf<"symptom", Symptom>
-  | TimelineEntryOf<
-      "medicationDose",
-      MedicationDose & { medicationName: string }
-    >
-  | TimelineEntryOf<"hospitalVisit", HospitalVisit>
-  | TimelineEntryOf<"expense", ExpenseRecord>
-  | TimelineEntryOf<"memo", MemoRecord & { recordedAt: Date }>;
 
 type DateRange = { start: Date; end: Date };
 

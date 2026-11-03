@@ -4,7 +4,7 @@ import type {
   NotificationKind,
   Symptom,
 } from "@/db/schema";
-import type { CleaningTargetWithStatus } from "@/features/cleaning/infrastructure/targetQueries";
+import type { CleaningTargetWithStatus } from "@/features/cleaning/domain/cleaningTarget";
 
 export type { NotificationKind };
 

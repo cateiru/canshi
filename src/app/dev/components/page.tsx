@@ -25,7 +25,7 @@ import {
   TIMELINE_TYPE_ICON,
   TIMELINE_TYPE_LABEL,
 } from "@/features/timeline/domain/labels";
-import type { TimelineRecordType } from "@/features/timeline/infrastructure/queries";
+import type { TimelineRecordType } from "@/features/timeline/domain/timelineEntry";
 import { TimelineCalendar } from "@/features/timeline/presentation/TimelineCalendar";
 import styles from "./page.module.css";
 

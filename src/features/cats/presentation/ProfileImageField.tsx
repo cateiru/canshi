@@ -7,16 +7,16 @@ import { Button, Modal } from "@/components/ui";
 import { getButtonClassName } from "@/components/ui/Button/buttonStyles";
 import { discardPendingMediaAction } from "@/features/media/presentation/actions";
 import { uploadPendingMedia } from "@/features/media/presentation/upload";
+import {
+  PROFILE_IMAGE_ACTION_FIELD,
+  PROFILE_IMAGE_ASSET_ID_FIELD,
+} from "../domain/profileImageForm";
 import { cropProfileImage } from "./cropProfileImage";
 import {
   ProfileCropEditor,
   type ProfileCropSelection,
 } from "./ProfileCropEditor";
 import styles from "./ProfileImageField.module.css";
-import {
-  PROFILE_IMAGE_ACTION_FIELD,
-  PROFILE_IMAGE_ASSET_ID_FIELD,
-} from "./profileImageForm";
 
 type ProfileImageFieldProps = {
   /** 保存済みの画像の asset ID（未設定なら null） */

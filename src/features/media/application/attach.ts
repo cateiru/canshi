@@ -1,79 +1,10 @@
-import { and, eq, inArray } from "drizzle-orm";
-import { chunkForBoundParameters } from "@/db/batch";
-import { getDb } from "@/db/client";
-import { type MediaAsset, mediaAssets } from "@/db/schema";
-import { requireUser } from "@/features/auth/presentation/session";
-import {
-  type MediaRecordType,
-  PENDING_MEDIA_RECORD_TYPE,
-} from "../domain/recordTypes";
+import { planMediaSync } from "../domain/mediaSync";
+import type { MediaRecordType } from "../domain/recordTypes";
+import { createMediaAssetRepository } from "../infrastructure/mediaAssetRepository";
 import { listMediaAssetsByRecord } from "../infrastructure/queries";
 import { resolveMediaRecordOwner } from "../infrastructure/recordOwner";
 import { deleteMediaAssetRows } from "../infrastructure/storage";
-import { parseMediaAssetIds } from "../presentation/formFields";
 import { canAccessMediaRecordOwner } from "./access";
-
-export type MediaSyncPlan = {
-  /** 送られた順に付け替える行（既存・下書きとも）と、その表示順 */
-  assign: { id: string; sortOrder: number; isPending: boolean }[];
-  /** フォームから外された既存の添付 */
-  remove: string[];
-  /** 見つからない ID（期限切れで削除された下書きなど）や、他の記録の添付の ID */
-  missing: string[];
-};
-
-/**
- * 送られた ID の並びと、記録に紐付く既存の添付・下書きから、付け替え・削除の内容を決める。
- * 他の記録に紐付いた添付の ID が送られても付け替えない（任意の ID で他の記録の添付を奪えないようにする）
- */
-export function planMediaSync({
-  submittedIds,
-  currentIds,
-  pendingIds,
-}: {
-  submittedIds: string[];
-  currentIds: string[];
-  pendingIds: string[];
-}): MediaSyncPlan {
-  const assign: MediaSyncPlan["assign"] = [];
-  const missing: string[] = [];
-  for (const id of submittedIds) {
-    if (currentIds.includes(id)) {
-      assign.push({ id, sortOrder: assign.length, isPending: false });
-    } else if (pendingIds.includes(id)) {
-      assign.push({ id, sortOrder: assign.length, isPending: true });
-    } else {
-      missing.push(id);
-    }
-  }
-  const remove = currentIds.filter((id) => !submittedIds.includes(id));
-  return { assign, remove, missing };
-}
-
-/** 指定した ID のうち、`userId` がアップロードした下書きだけを返す */
-async function listPendingAssets(
-  ids: string[],
-  userId: string,
-): Promise<MediaAsset[]> {
-  const db = getDb();
-  const rows: MediaAsset[] = [];
-  // recordType と uploadedByUserId の分を 2 個予約する
-  for (const chunk of chunkForBoundParameters(ids, 2)) {
-    rows.push(
-      ...(await db
-        .select()
-        .from(mediaAssets)
-        .where(
-          and(
-            eq(mediaAssets.recordType, PENDING_MEDIA_RECORD_TYPE),
-            eq(mediaAssets.uploadedByUserId, userId),
-            inArray(mediaAssets.id, chunk),
-          ),
-        )),
-    );
-  }
-  return rows;
-}
 
 export type SyncRecordMediaResult = { error?: string };
 
@@ -108,7 +39,8 @@ export async function syncRecordMedia(
   }
 
   const current = await listMediaAssetsByRecord(recordType, recordId);
-  const pending = await listPendingAssets(
+  const repository = createMediaAssetRepository();
+  const pending = await repository.listPendingForUser(
     assetIds.filter((id) => !current.some((asset) => asset.id === id)),
     userId,
   );
@@ -122,32 +54,13 @@ export async function syncRecordMedia(
     current.filter((asset) => plan.remove.includes(asset.id)),
   );
 
-  const db = getDb();
-  for (const item of plan.assign) {
-    await db
-      .update(mediaAssets)
-      .set(
-        item.isPending
-          ? {
-              recordType,
-              recordId,
-              catId: owner.catId,
-              sortOrder: item.sortOrder,
-            }
-          : { sortOrder: item.sortOrder },
-      )
-      .where(
-        and(
-          eq(mediaAssets.id, item.id),
-          // 同時に別の記録へ紐付けられていないことを条件にする
-          eq(
-            mediaAssets.recordType,
-            item.isPending ? PENDING_MEDIA_RECORD_TYPE : recordType,
-          ),
-          item.isPending ? eq(mediaAssets.uploadedByUserId, userId) : undefined,
-        ),
-      );
-  }
+  await repository.assign(
+    recordType,
+    recordId,
+    owner.catId,
+    plan.assign,
+    userId,
+  );
 
   if (plan.missing.length > 0) {
     return {
@@ -155,29 +68,4 @@ export async function syncRecordMedia(
     };
   }
   return {};
-}
-
-/**
- * Server Action から呼ぶ。フォームの添付を記録に反映し、失敗したらフォーム用のエラーメッセージを返す
- */
-export async function syncRecordMediaFromForm(
-  recordType: MediaRecordType,
-  recordId: string,
-  formData: FormData,
-): Promise<string | undefined> {
-  // 記録への認可は呼び出し元の Server Action と `syncRecordMedia` で行うため、ここではログイン中の
-  // ユーザーを引くだけ（requireUser は未ログイン時にリダイレクト＝例外にするため、try の外で呼ぶ）
-  const user = await requireUser();
-  try {
-    const result = await syncRecordMedia(
-      recordType,
-      recordId,
-      parseMediaAssetIds(formData),
-      user.id,
-    );
-    return result.error ? `記録は保存しましたが、${result.error}` : undefined;
-  } catch (error) {
-    console.error("添付の保存に失敗しました", error);
-    return "記録は保存しましたが、添付を保存できませんでした。もう一度保存してください";
-  }
 }
