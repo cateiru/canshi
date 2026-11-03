@@ -51,6 +51,9 @@ const ALWAYS_HIDDEN_SELECTORS = [
   // 0x0 の矩形を塗りつぶすだけで実際には効かない。ホストの display を none にすれば
   // shadow tree ごと確実に非表示にできる
   "nextjs-portal",
+  // 遷移中に画面の上端に出す進み具合のバー（NavigationProgress）。リンクのクリック直後に
+  // 撮影すると、消えるアニメーションの途中が写り込むことがある
+  ".bprogress",
 ];
 
 type VrtFixtures = {
