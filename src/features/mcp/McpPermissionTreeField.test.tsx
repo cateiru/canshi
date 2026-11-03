@@ -73,7 +73,7 @@ function writeCheckbox(catName: string, label: string) {
   ).getByRole("checkbox", { name: `${label}を書く` });
 }
 
-/** 家のごはん商品・プリセットの操作のチェックボックス */
+/** 家ごとの操作のチェックボックス */
 function operationCheckbox(
   householdName: string,
   group: string,

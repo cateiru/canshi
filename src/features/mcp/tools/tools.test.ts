@@ -11,21 +11,26 @@ import {
   catalogFoodProductRequests,
   catalogFoodProducts,
   cats,
+  cleaningTargets,
   expenseRecordCats,
   expenseRecords,
   feedingPresets,
   feedingRecordItems,
   feedingRecords,
+  feedingSchedules,
   foodProducts,
+  householdInvitations,
   householdMembers,
   households,
   mcpPermissions,
   medicationDoses,
   medications,
   memoRecords,
+  notificationSettings,
   notifications,
   poopRecords,
   users,
+  vomitRecords,
   weightRecords,
 } from "@/db/schema";
 import {
@@ -33,13 +38,21 @@ import {
   type McpHouseholdOperation,
 } from "../permissionRules";
 import type { McpToolContext } from "./context";
+import { MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
 
 // `src/features/symptoms/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
 // D1 専用の `db.batch` は順番に実行するだけの簡易実装で補う。商品画像の保存（R2）は
 // このテストの対象外のため差し替える（共通のごはん商品の画像の加工は差し替えずに行う）
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
-  getDb: () => db,
+  // MCP のツールは Next.js（OpenNext）の外で動き、`getCloudflareContext()` を使えないため、
+  // D1 を渡し忘れた呼び出しはテストでも失敗させる
+  getDb: (d1?: unknown) => {
+    if (d1 === undefined) {
+      throw new Error("getDb に D1 が渡されていません");
+    }
+    return db;
+  },
 }));
 const { storeMediaAsset, deleteMediaAssetRows } = vi.hoisted(() => ({
   storeMediaAsset: vi.fn(async () => ({ id: "asset-1" })),
@@ -69,6 +82,9 @@ const { registerFeedingPresetTools } = await import("./feedingPresets");
 const { registerCatalogFoodProductTools } = await import(
   "./catalogFoodProducts"
 );
+const { registerHouseholdTools } = await import("./households");
+const { registerCatTools } = await import("./cats");
+const { registerFeedingScheduleTools } = await import("./feedingSchedules");
 
 type ToolResult = {
   content: { type: "text"; text: string }[];
@@ -77,6 +93,11 @@ type ToolResult = {
 
 // biome-ignore lint/suspicious/noExplicitAny: ツールの引数はツールごとに異なる
 const handlers = new Map<string, (args: any) => Promise<ToolResult>>();
+/** ツールの登録時の設定（annotations など） */
+const configs = new Map<
+  string,
+  { annotations?: { idempotentHint?: boolean } }
+>();
 
 /** ツールを呼び、結果の JSON か、エラーのメッセージを返す */
 async function call(name: string, args: Record<string, unknown> = {}) {
@@ -155,17 +176,20 @@ beforeEach(async () => {
   ]);
 
   handlers.clear();
+  configs.clear();
   const server = {
     registerTool: (
       name: string,
-      _config: unknown,
+      config: { annotations?: { idempotentHint?: boolean } },
       handler: (args: unknown) => Promise<ToolResult>,
     ) => {
       handlers.set(name, handler);
+      configs.set(name, config);
     },
   } as unknown as McpServer;
   const ctx: McpToolContext = {
-    env: {} as Env,
+    env: { DB: {} } as unknown as Env,
+    origin: "https://canshi.example.com",
     resolveConnection: async () => ({
       userId: "user-1",
       clientId: "client-1",
@@ -175,6 +199,9 @@ beforeEach(async () => {
   registerFoodProductTools(server, ctx);
   registerFeedingPresetTools(server, ctx);
   registerCatalogFoodProductTools(server, ctx);
+  registerHouseholdTools(server, ctx);
+  registerCatTools(server, ctx);
+  registerFeedingScheduleTools(server, ctx);
 
   storeMediaAsset.mockClear();
   deleteMediaAssetRows.mockClear();
@@ -1461,5 +1488,653 @@ describe("共通のごはん商品のリクエスト", () => {
     expect(completed.value?.requests).toEqual([
       expect.objectContaining({ id: "request-1" }),
     ]);
+  });
+});
+
+describe("記録の画像", () => {
+  it("画像を添付できる記録は、保存した記録に画像を添付する", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    const result = await call("create_poop_record", {
+      catId: "cat-1",
+      consistency: "normal",
+      images: [PNG_BASE64, `data:image/png;base64,${PNG_BASE64}`],
+    });
+
+    const [record] = await db.select().from(poopRecords);
+    expect(result.value).toEqual({ id: record.id });
+    expect(storeMediaAsset).toHaveBeenCalledTimes(2);
+    expect(storeMediaAsset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recordType: "poop_record",
+        recordId: record.id,
+        catId: "cat-1",
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("支出の画像は、猫に紐付けずに添付する", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    const result = await call("create_expense", {
+      catId: "cat-1",
+      category: "food",
+      amountYen: 1200,
+      images: [PNG_BASE64],
+    });
+
+    const [record] = await db.select().from(expenseRecords);
+    expect(result.value).toEqual({ id: record.id });
+    expect(storeMediaAsset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recordType: "expense",
+        recordId: record.id,
+        catId: null,
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("編集で指定した画像は、今の画像の後ろに追加する", async () => {
+    await allow(WRITE_ALL_RECORDS);
+    const [record] = await db
+      .insert(poopRecords)
+      .values({
+        catId: "cat-1",
+        occurredAt: new Date("2026-10-01T08:00:00.000Z"),
+        consistency: "normal",
+      })
+      .returning();
+
+    const result = await call("update_poop_record", {
+      catId: "cat-1",
+      id: record.id,
+      images: [PNG_BASE64],
+    });
+
+    expect(result.value).toEqual({ id: record.id });
+    expect(storeMediaAsset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recordType: "poop_record",
+        recordId: record.id,
+      }),
+      expect.anything(),
+    );
+    expect(deleteMediaAssetRows).not.toHaveBeenCalled();
+  });
+
+  it("画像でないデータは、記録を保存する前に断る", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    const result = await call("create_memo", {
+      catId: "cat-1",
+      content: "メモ",
+      images: [PNG_BASE64, btoa("not an image")],
+    });
+
+    expect(result.error).toContain("images に画像");
+    expect(await db.select().from(memoRecords)).toEqual([]);
+    expect(storeMediaAsset).not.toHaveBeenCalled();
+  });
+
+  it("画像の合計が大きすぎるときは、記録を保存する前に断る", async () => {
+    await allow(WRITE_ALL_RECORDS);
+    const large = "A".repeat(MAX_IMAGE_BASE64_LENGTH / 2 + 1);
+
+    const result = await call("create_symptom", {
+      catId: "cat-1",
+      name: "くしゃみ",
+      images: [large, large],
+    });
+
+    expect(result.error).toContain("images の base64 の長さは合計");
+    expect(storeMediaAsset).not.toHaveBeenCalled();
+  });
+
+  it("画像を保存できなくても記録は保存し、理由を返す", async () => {
+    await allow(WRITE_ALL_RECORDS);
+    storeMediaAsset
+      .mockResolvedValueOnce({ id: "asset-1" })
+      .mockRejectedValueOnce(new Error("R2 に書き込めない"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await call("create_vomit_record", {
+      catId: "cat-1",
+      images: [PNG_BASE64, PNG_BASE64, PNG_BASE64],
+    });
+
+    const [record] = await db.select().from(vomitRecords);
+    expect(result.value).toEqual({
+      id: record.id,
+      imageError:
+        "1 枚目までは保存しましたが、2 枚目の画像を保存できませんでした。",
+    });
+    expect(storeMediaAsset).toHaveBeenCalledTimes(2);
+  });
+
+  it("画像を受け付ける編集のツールは、冪等なツールとして公開しない", () => {
+    expect(configs.get("update_poop_record")?.annotations?.idempotentHint).toBe(
+      false,
+    );
+    expect(
+      configs.get("update_weight_record")?.annotations?.idempotentHint,
+    ).toBe(true);
+  });
+
+  it("画面で画像を添付できない記録には添付しない", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    await call("create_weight_record", {
+      catId: "cat-1",
+      catWeightKg: 4.2,
+      images: [PNG_BASE64],
+    });
+
+    expect(await db.select().from(weightRecords)).toHaveLength(1);
+    expect(storeMediaAsset).not.toHaveBeenCalled();
+  });
+});
+
+describe("家", () => {
+  it("名前の変更は、許可した家でオーナーだけが行える", async () => {
+    await db
+      .insert(householdMembers)
+      .values({ householdId: "house-3", userId: "user-1", role: "member" });
+
+    expect(
+      (await call("update_household", { householdId: "house-1", name: "新" }))
+        .error,
+    ).toContain("家「家1」での「家の名前の編集」が許可されていません");
+
+    await allow({
+      householdOperations: {
+        "house-1": ["household:update"],
+        "house-3": ["household:update"],
+      },
+    });
+    expect(
+      (await call("update_household", { householdId: "house-1", name: " " }))
+        .error,
+    ).toContain("家の名前を入力してください");
+    expect(
+      (await call("update_household", { householdId: "house-3", name: "新" }))
+        .error,
+    ).toBe("家の名前を変えられるのはオーナーだけです");
+
+    const result = await call("update_household", {
+      householdId: "house-1",
+      name: "新しい家",
+    });
+
+    expect(result.value).toEqual({ id: "house-1", name: "新しい家" });
+    const rows = await db.select().from(households);
+    expect(rows.map(({ name }) => name)).toEqual([
+      "新しい家",
+      "家2",
+      "ほかの人の家",
+    ]);
+  });
+
+  it("所属していない家・読み取りを許可していない家は、存在しない家と区別しない", async () => {
+    await allow({
+      ...operations("householdMember:read"),
+      excludedHouseholdIds: ["house-2"],
+    });
+
+    for (const householdId of ["house-2", "house-3"]) {
+      expect(
+        (await call("list_household_members", { householdId })).error,
+      ).toBe(`householdId="${householdId}" の家が見つかりません`);
+    }
+  });
+
+  it("メンバーの一覧に、本人かどうかを含める", async () => {
+    await allow(operations("householdMember:read"));
+    await db
+      .insert(householdMembers)
+      .values({ householdId: "house-1", userId: "user-2", role: "member" });
+
+    const result = await call("list_household_members", {
+      householdId: "house-1",
+    });
+
+    expect(result.value?.members).toEqual([
+      expect.objectContaining({
+        userId: "user-1",
+        name: "ユーザー1",
+        role: "owner",
+        isMe: true,
+      }),
+      expect.objectContaining({
+        userId: "user-2",
+        name: "ユーザー2",
+        role: "member",
+        isMe: false,
+      }),
+    ]);
+  });
+
+  it("メンバーを外す・オーナーを移譲するには、メンバーの編集の許可がいる", async () => {
+    await db
+      .insert(householdMembers)
+      .values({ householdId: "house-1", userId: "user-2", role: "member" });
+    await allow(operations("householdMember:read"));
+
+    expect(
+      (
+        await call("remove_household_member", {
+          householdId: "house-1",
+          userId: "user-2",
+        })
+      ).error,
+    ).toContain("「家のメンバーの編集」が許可されていません");
+
+    await allow(operations("householdMember:update"));
+    const transferred = await call("transfer_household_ownership", {
+      householdId: "house-1",
+      userId: "user-2",
+    });
+    expect(transferred.value).toEqual({
+      householdId: "house-1",
+      ownerUserId: "user-2",
+    });
+    // オーナーでなくなったため、メンバーを外せない
+    expect(
+      (
+        await call("remove_household_member", {
+          householdId: "house-1",
+          userId: "user-2",
+        })
+      ).error,
+    ).toContain("メンバーを外せませんでした");
+  });
+
+  it("オーナーは家からメンバーを外せる", async () => {
+    await db
+      .insert(householdMembers)
+      .values({ householdId: "house-1", userId: "user-2", role: "member" });
+    await allow(operations("householdMember:update"));
+
+    const result = await call("remove_household_member", {
+      householdId: "house-1",
+      userId: "user-2",
+    });
+
+    expect(result.value).toEqual({
+      householdId: "house-1",
+      userId: "user-2",
+      removed: true,
+    });
+    const members = await db
+      .select()
+      .from(householdMembers)
+      .where(eq(householdMembers.householdId, "house-1"));
+    expect(members.map(({ userId }) => userId)).toEqual(["user-1"]);
+  });
+
+  it("招待 URL を発行し、一覧に含め、無効化できる", async () => {
+    await allow(
+      operations(
+        "householdInvitation:read",
+        "householdInvitation:create",
+        "householdInvitation:delete",
+      ),
+    );
+
+    const created = await call("create_household_invitation", {
+      householdId: "house-1",
+    });
+
+    expect(created.value?.url).toMatch(
+      /^https:\/\/canshi\.example\.com\/invitations\/.+$/,
+    );
+    const listed = await call("list_household_invitations", {
+      householdId: "house-1",
+    });
+    const invitations = listed.value?.invitations as { id: string }[];
+    expect(invitations).toEqual([
+      expect.objectContaining({ createdByName: "ユーザー1" }),
+    ]);
+
+    const revoked = await call("revoke_household_invitation", {
+      householdId: "house-1",
+      invitationId: invitations[0].id,
+    });
+    expect(revoked.value).toEqual({ id: invitations[0].id, revoked: true });
+    expect(await db.select().from(householdInvitations)).toEqual([]);
+  });
+
+  it("招待 URL の発行・一覧はオーナーでなければ行えない", async () => {
+    await db
+      .insert(householdMembers)
+      .values({ householdId: "house-3", userId: "user-1", role: "member" });
+    await allow({
+      householdOperations: {
+        "house-3": ["householdInvitation:read", "householdInvitation:create"],
+      },
+    });
+
+    const result = await call("create_household_invitation", {
+      householdId: "house-3",
+    });
+
+    expect(result.error).toBe("招待 URL を発行できるのはオーナーだけです");
+    expect(await db.select().from(householdInvitations)).toEqual([]);
+    expect(
+      (await call("list_household_invitations", { householdId: "house-3" }))
+        .error,
+    ).toBe("招待の一覧を見られるのはオーナーだけです");
+  });
+});
+
+describe("猫のプロフィール", () => {
+  it("猫の追加は、許可した家にだけ行える", async () => {
+    await allow({ householdOperations: { "house-1": ["cat:create"] } });
+
+    for (const householdId of ["house-2", "house-3"]) {
+      const result = await call("create_cat", {
+        householdId,
+        name: "ぶち",
+        sex: "male",
+      });
+      expect(result.error).toBeDefined();
+    }
+
+    const result = await call("create_cat", {
+      householdId: "house-1",
+      name: "ぶち",
+      sex: "male",
+      birthDate: "2020-05-01",
+      birthDatePrecision: "month",
+      breed: "雑種",
+    });
+
+    const [cat] = await db.select().from(cats).where(eq(cats.name, "ぶち"));
+    expect(result.value).toEqual({
+      id: cat.id,
+      householdId: "house-1",
+      name: "ぶち",
+      sex: "male",
+      birthDate: "2020-05-01",
+      birthDatePrecision: "month",
+      breed: "雑種",
+      adoptedAt: null,
+    });
+  });
+
+  it("フォームと同じ検証を通らなければ追加しない", async () => {
+    await allow(operations("cat:create"));
+
+    for (const args of [
+      { name: "", sex: "male" },
+      {
+        name: "ぶち",
+        sex: "male",
+        birthDate: "2020-5",
+        birthDatePrecision: "month",
+      },
+      { name: "ぶち", sex: "male", birthDate: "2020-13-01" },
+    ]) {
+      const result = await call("create_cat", {
+        householdId: "house-1",
+        ...args,
+      });
+      expect(result.error).toContain("入力が正しくありません");
+    }
+    expect(await db.select().from(cats)).toHaveLength(4);
+  });
+
+  it("編集では指定した項目だけを変え、null の項目は空にする", async () => {
+    await allow(operations("cat:update"));
+    await db
+      .update(cats)
+      .set({
+        birthDate: "2020-05-03",
+        breed: "三毛",
+        adoptedAt: "2020-08-01",
+      })
+      .where(eq(cats.id, "cat-1"));
+
+    const result = await call("update_cat", {
+      catId: "cat-1",
+      name: "たまこ",
+      birthDatePrecision: "year",
+      breed: null,
+    });
+
+    expect(result.value).toEqual({
+      id: "cat-1",
+      householdId: "house-1",
+      name: "たまこ",
+      sex: "female",
+      birthDate: "2020-01-01",
+      birthDatePrecision: "year",
+      breed: null,
+      adoptedAt: "2020-08-01",
+    });
+  });
+
+  it("読み取りを許可していない猫は、存在しない猫と区別しない", async () => {
+    await allow({ ...operations("cat:update"), excludedCatIds: ["cat-2"] });
+
+    for (const catId of ["cat-2", "cat-4"]) {
+      expect((await call("update_cat", { catId, name: "x" })).error).toBe(
+        `catId="${catId}" の猫が見つかりません`,
+      );
+    }
+  });
+
+  it("引っ越しは、引っ越し先の家でも編集を許可しているときだけ行える", async () => {
+    await allow({ householdOperations: { "house-1": ["cat:update"] } });
+
+    const denied = await call("update_cat", {
+      catId: "cat-1",
+      householdId: "house-2",
+    });
+    expect(denied.error).toContain(
+      "家「家2」での「猫のプロフィールの編集」が許可されていません",
+    );
+
+    await allow(operations("cat:update"));
+    const moved = await call("update_cat", {
+      catId: "cat-1",
+      householdId: "house-2",
+    });
+    expect(moved.value).toMatchObject({ id: "cat-1", householdId: "house-2" });
+  });
+});
+
+describe("猫の通知の設定", () => {
+  beforeEach(async () => {
+    await db.insert(cleaningTargets).values([
+      {
+        id: "target-1",
+        catId: "cat-1",
+        name: "トイレ",
+        frequencyValue: 1,
+        frequencyUnit: "days",
+      },
+      {
+        id: "target-2",
+        catId: "cat-2",
+        name: "給水器",
+        frequencyValue: 1,
+        frequencyUnit: "days",
+      },
+    ]);
+  });
+
+  it("保存していない猫は既定値を返す", async () => {
+    await allow(operations("catNotification:read"));
+
+    const result = await call("get_cat_notification_settings", {
+      catId: "cat-1",
+    });
+
+    expect(result.value).toEqual({
+      birthdayYearlyEnabled: true,
+      birthdayHalfYearEnabled: true,
+      daysMilestoneEnabled: true,
+      shampooElapsedEnabled: true,
+      shampooElapsedMonths: 2,
+      weightMeasurementEnabled: true,
+      weightMeasurementDays: 14,
+      symptomOngoingEnabled: true,
+      cleaningTargets: [
+        { cleaningTargetId: "target-1", name: "トイレ", enabled: true },
+      ],
+    });
+  });
+
+  it("指定した項目だけを変える", async () => {
+    await allow(operations("catNotification:update"));
+
+    const result = await call("update_cat_notification_settings", {
+      catId: "cat-1",
+      shampooElapsedMonths: 3,
+      daysMilestoneEnabled: false,
+      cleaningTargets: [{ cleaningTargetId: "target-1", enabled: false }],
+    });
+
+    expect(result.value).toMatchObject({
+      birthdayYearlyEnabled: true,
+      daysMilestoneEnabled: false,
+      shampooElapsedEnabled: true,
+      shampooElapsedMonths: 3,
+      weightMeasurementDays: 14,
+      cleaningTargets: [
+        { cleaningTargetId: "target-1", name: "トイレ", enabled: false },
+      ],
+    });
+  });
+
+  it("ほかの猫の掃除対象・不正な値は受け付けない", async () => {
+    await allow(operations("catNotification:update"));
+
+    const otherTarget = await call("update_cat_notification_settings", {
+      catId: "cat-1",
+      cleaningTargets: [{ cleaningTargetId: "target-2", enabled: false }],
+    });
+    expect(otherTarget.error).toBe(
+      'cleaningTargetId="target-2" の掃除対象が見つかりません',
+    );
+    const invalid = await call("update_cat_notification_settings", {
+      catId: "cat-1",
+      weightMeasurementDays: 0,
+    });
+    expect(invalid.error).toContain("体重測定の日数は0より大きい値");
+    expect(await db.select().from(notificationSettings)).toEqual([]);
+  });
+
+  it("読み取りだけを許可していれば、変更はできない", async () => {
+    await allow(operations("catNotification:read"));
+
+    const result = await call("update_cat_notification_settings", {
+      catId: "cat-1",
+      daysMilestoneEnabled: false,
+    });
+
+    expect(result.error).toContain(
+      "「猫の通知の設定の編集」が許可されていません",
+    );
+  });
+});
+
+describe("ごはんの時間", () => {
+  it("追加・一覧・編集・削除はそれぞれ許可した操作だけを行える", async () => {
+    await allow(operations("feedingSchedule:create"));
+
+    const created = await call("create_feeding_schedule", {
+      householdId: "house-1",
+      time: "07:00",
+      remindIfNotRecorded: false,
+    });
+    const id = created.value?.id as string;
+    expect(created.value).toEqual({
+      id,
+      householdId: "house-1",
+      time: "07:00",
+      notifyAtTime: true,
+      remindIfNotRecorded: false,
+    });
+    expect((await call("list_feeding_schedules")).error).toContain(
+      "「ごはんの時間の読み取り」が許可されていません",
+    );
+    expect(
+      (await call("update_feeding_schedule", { id, notifyAtTime: false }))
+        .error,
+    ).toContain("家「家1」での「ごはんの時間の編集」が許可されていません");
+
+    await allow(
+      operations(
+        "feedingSchedule:read",
+        "feedingSchedule:update",
+        "feedingSchedule:delete",
+      ),
+    );
+    expect(
+      (await call("update_feeding_schedule", { id, notifyAtTime: false }))
+        .value,
+    ).toMatchObject({ notifyAtTime: false, remindIfNotRecorded: false });
+    expect((await call("list_feeding_schedules")).value).toEqual({
+      feedingSchedules: [
+        {
+          id,
+          householdId: "house-1",
+          time: "07:00",
+          notifyAtTime: false,
+          remindIfNotRecorded: false,
+        },
+      ],
+    });
+    expect((await call("delete_feeding_schedule", { id })).value).toEqual({
+      id,
+      deleted: true,
+    });
+    expect(await db.select().from(feedingSchedules)).toEqual([]);
+  });
+
+  it("15 分刻みでない時刻・同じ時刻は追加しない", async () => {
+    await allow(operations("feedingSchedule:create"));
+
+    expect(
+      (
+        await call("create_feeding_schedule", {
+          householdId: "house-1",
+          time: "07:10",
+        })
+      ).error,
+    ).toContain("15分刻み");
+    await call("create_feeding_schedule", {
+      householdId: "house-1",
+      time: "07:00",
+    });
+    expect(
+      (
+        await call("create_feeding_schedule", {
+          householdId: "house-1",
+          time: "07:00",
+        })
+      ).error,
+    ).toBe("07:00はすでに追加されています");
+  });
+
+  it("ほかの人の家・読み取りを許可していない家のごはんの時間は、存在しないものと区別しない", async () => {
+    await allow({
+      ...operations("feedingSchedule:update", "feedingSchedule:delete"),
+      excludedHouseholdIds: ["house-2"],
+    });
+    await db.insert(feedingSchedules).values([
+      { id: "schedule-2", householdId: "house-2", time: "07:00" },
+      { id: "schedule-3", householdId: "house-3", time: "07:00" },
+    ]);
+
+    for (const id of ["schedule-2", "schedule-3", "missing"]) {
+      expect((await call("delete_feeding_schedule", { id })).error).toBe(
+        `id="${id}" のごはんの時間が見つかりません`,
+      );
+    }
+    expect(await db.select().from(feedingSchedules)).toHaveLength(2);
   });
 });

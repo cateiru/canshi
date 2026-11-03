@@ -35,8 +35,9 @@ export const MCP_ALWAYS_ALLOWED_TIMELINE_TYPES = [
 ] as const satisfies readonly TimelineRecordType[];
 
 /**
- * AI との接続に家ごとに許可するかを選べる、ごはん商品・プリセットの操作。
- * 読み取りの範囲とは逆に、許可したものだけを行える
+ * AI との接続に家ごとに許可するかを選べる操作（ごはん商品・プリセット、家の名前・メンバー・
+ * 招待、猫のプロフィール・通知の設定、ごはんの時間）。読み取りの範囲とは逆に、許可したものだけを
+ * 行える。猫のプロフィール・通知の設定は、その家の猫のうち読み取りを許可している猫だけを扱える
  */
 export const MCP_HOUSEHOLD_OPERATIONS = [
   "foodProduct:read",
@@ -46,6 +47,20 @@ export const MCP_HOUSEHOLD_OPERATIONS = [
   "feedingPreset:create",
   "feedingPreset:update",
   "feedingPreset:delete",
+  "household:update",
+  "householdMember:read",
+  "householdMember:update",
+  "householdInvitation:read",
+  "householdInvitation:create",
+  "householdInvitation:delete",
+  "cat:create",
+  "cat:update",
+  "catNotification:read",
+  "catNotification:update",
+  "feedingSchedule:read",
+  "feedingSchedule:create",
+  "feedingSchedule:update",
+  "feedingSchedule:delete",
 ] as const;
 
 export type McpHouseholdOperation = (typeof MCP_HOUSEHOLD_OPERATIONS)[number];
@@ -70,6 +85,48 @@ export const MCP_HOUSEHOLD_OPERATION_GROUPS: {
       { operation: "feedingPreset:create", label: "追加" },
       { operation: "feedingPreset:update", label: "編集" },
       { operation: "feedingPreset:delete", label: "削除" },
+    ],
+  },
+  {
+    label: "ごはんの時間",
+    operations: [
+      { operation: "feedingSchedule:read", label: "読む" },
+      { operation: "feedingSchedule:create", label: "追加" },
+      { operation: "feedingSchedule:update", label: "編集" },
+      { operation: "feedingSchedule:delete", label: "削除" },
+    ],
+  },
+  {
+    label: "猫のプロフィール",
+    operations: [
+      { operation: "cat:create", label: "追加" },
+      { operation: "cat:update", label: "編集" },
+    ],
+  },
+  {
+    label: "猫の通知の設定",
+    operations: [
+      { operation: "catNotification:read", label: "読む" },
+      { operation: "catNotification:update", label: "編集" },
+    ],
+  },
+  {
+    label: "家の名前",
+    operations: [{ operation: "household:update", label: "編集" }],
+  },
+  {
+    label: "家のメンバー",
+    operations: [
+      { operation: "householdMember:read", label: "読む" },
+      { operation: "householdMember:update", label: "編集" },
+    ],
+  },
+  {
+    label: "家への招待",
+    operations: [
+      { operation: "householdInvitation:read", label: "読む" },
+      { operation: "householdInvitation:create", label: "発行" },
+      { operation: "householdInvitation:delete", label: "無効化" },
     ],
   },
 ];
@@ -121,8 +178,8 @@ export const MCP_CATALOG_OPERATION_GROUPS: {
  *
  * - 読み取りは、家・猫・記録の種類のうち外したもの（拒否）だけを持ち、ここに無いものは
  *   すべて読み取れる
- * - 記録の書き込み（追加・編集）と、家のごはん商品・プリセットの操作、共通のごはん商品の操作は、
- *   許可したものだけを持つ
+ * - 記録の書き込み（追加・編集）と、家ごとの操作（ごはん商品・プリセット・家・猫など）、
+ *   共通のごはん商品の操作は、許可したものだけを持つ
  */
 export interface McpPermissions {
   excludedHouseholdIds: string[];
@@ -131,7 +188,7 @@ export interface McpPermissions {
   excludedRecordTypes: Record<string, McpPermissionRecordType[]>;
   /** 猫の ID ごとに、書き込み（追加・編集）を許可した記録の種類 */
   writableRecordTypes: Record<string, McpPermissionRecordType[]>;
-  /** 家の ID ごとに、許可したごはん商品・プリセットの操作 */
+  /** 家の ID ごとに、許可した操作（`MCP_HOUSEHOLD_OPERATIONS`） */
   householdOperations: Record<string, McpHouseholdOperation[]>;
   /** 許可した共通のごはん商品の操作。admin のユーザーだけが行える */
   catalogOperations: McpCatalogOperation[];
@@ -182,7 +239,7 @@ export function isHouseholdAllowedForMcp(
   return !permissions.excludedHouseholdIds.includes(householdId);
 }
 
-/** 家のごはん商品・プリセットの操作を行えるか。読み取りを許可している家に限る */
+/** 家ごとの操作を行えるか。読み取りを許可している家に限る */
 export function isHouseholdOperationAllowedForMcp(
   permissions: McpPermissions,
   householdId: string,
@@ -259,7 +316,7 @@ export interface McpPermissionTreeHousehold {
   id: string;
   name: string;
   checked: boolean;
-  /** 許可しているごはん商品・プリセットの操作 */
+  /** 許可している家ごとの操作 */
   operations: McpHouseholdOperation[];
   cats: McpPermissionTreeCat[];
 }

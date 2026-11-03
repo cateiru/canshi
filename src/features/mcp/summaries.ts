@@ -15,6 +15,7 @@ import {
 export function toCatSummary(cat: Cat) {
   return {
     id: cat.id,
+    householdId: cat.householdId,
     name: cat.name,
     sex: cat.sex,
     birthDate: cat.birthDate,
