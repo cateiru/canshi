@@ -1,7 +1,11 @@
 import { and, asc, eq, isNotNull, or, type SQL, sql } from "drizzle-orm";
 import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { getDb } from "@/db/client";
-import { catalogFoodProducts, foodProducts } from "@/db/schema";
+import {
+  type CatalogFoodProduct,
+  catalogFoodProducts,
+  foodProducts,
+} from "@/db/schema";
 import { listMediaAssetsByRecords } from "@/features/media/queries";
 import { mediaUrl } from "@/features/media/view";
 import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "./media";
@@ -83,6 +87,19 @@ export async function searchCatalogFoodProducts(
     items: rows.slice(0, CATALOG_SEARCH_LIMIT),
     hasMore: rows.length > CATALOG_SEARCH_LIMIT,
   };
+}
+
+/** 共通のごはん商品を ID で 1 件読む。見つからなければ null */
+export async function getCatalogFoodProduct(
+  id: string,
+  d1?: D1Database,
+): Promise<CatalogFoodProduct | null> {
+  const [product] = await getDb(d1)
+    .select()
+    .from(catalogFoodProducts)
+    .where(eq(catalogFoodProducts.id, id))
+    .limit(1);
+  return product ?? null;
 }
 
 /** 家にすでに追加した共通のごはん商品の ID（ユーザーが家に所属していることは呼び出し元で確認する） */

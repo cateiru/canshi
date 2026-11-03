@@ -1,16 +1,32 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  brushingRecords,
   cats,
+  cleaningRecords,
+  cleaningTargets,
   expenseRecordCats,
   expenseRecordHospitalVisits,
   expenseRecords,
+  feedingRecords,
   hospitalVisits,
   householdMembers,
+  medicationDoses,
+  medications,
+  memoRecords,
   type NewCat,
+  notificationSettings,
+  notifications,
+  poopRecords,
+  shampooRecords,
+  symptoms,
+  vomitRecords,
+  waterRecords,
+  weightRecords,
 } from "@/db/schema";
 import { dismissFeedingNotificationsOfCatlessHouseholds } from "@/features/feeding-schedules/mutations";
 import { getHouseholdForUser } from "@/features/households/queries";
+import { deleteMediaAssetsByCat } from "@/features/media/storage";
 
 /** フォームから保存する猫の項目。`householdId` は猫を飼っている家（登録先・引っ越し先） */
 export type CatValues = Pick<
@@ -148,4 +164,78 @@ export async function updateCatForUser(
     dismissFeedingNotificationsOfCatlessHouseholds(db, userId),
   ]);
   return updated.length === 0 ? "not-found" : "updated";
+}
+
+/**
+ * 猫を、紐付くメディア（R2 のオブジェクトと media_assets 行）・記録・通知ごと削除する。
+ * 支出記録は家計簿として残し、この猫との紐付けだけを外す。
+ * ユーザーが猫を参照できることは呼び出し側で確かめる
+ */
+export async function deleteCatForUser(
+  userId: string,
+  id: string,
+): Promise<void> {
+  const db = getDb();
+  // media_assets.cat_id が cats.id を参照しているため、猫に紐付くメディア（R2 のオブジェクトと行）を
+  // 先に削除する。R2 の削除に失敗した場合はここで例外になり、猫と記録は残る
+  await deleteMediaAssetsByCat(id);
+  // 各記録テーブルは cats.id への外部キー制約（ON DELETE no action）を持つため、
+  // 猫本体より先に紐づく記録を削除しておく。symptoms と hospital_visits は
+  // 互いを参照しうるため、削除前にまず双方の紐付け（hospital_visit_id /
+  // symptom_id）を解除して循環を断ち切る。medications.symptom_id が
+  // symptoms を参照しているため、medications（と、それに依存する
+  // medicationDoses）は symptoms より先に削除する。途中で失敗して猫だけ残る
+  // /一部の記録だけ消えるような中途半端な状態にならないよう、1つの
+  // db.batch でまとめて原子的に実行する
+  await db.batch([
+    db.delete(feedingRecords).where(eq(feedingRecords.catId, id)),
+    db.delete(poopRecords).where(eq(poopRecords.catId, id)),
+    db.delete(weightRecords).where(eq(weightRecords.catId, id)),
+    db.delete(vomitRecords).where(eq(vomitRecords.catId, id)),
+    db.delete(waterRecords).where(eq(waterRecords.catId, id)),
+    db.delete(shampooRecords).where(eq(shampooRecords.catId, id)),
+    db.delete(brushingRecords).where(eq(brushingRecords.catId, id)),
+    db.delete(memoRecords).where(eq(memoRecords.catId, id)),
+    // cleaning_records は cats・cleaning_targets の双方を参照するため、
+    // cleaning_targets より先に削除する
+    db.delete(cleaningRecords).where(eq(cleaningRecords.catId, id)),
+    db.delete(cleaningTargets).where(eq(cleaningTargets.catId, id)),
+    // 支出記録そのものはすべての猫で共通のため削除せず、この猫との紐付けだけを外す。
+    // 結果として関連する猫が 0 件になった支出は「どの猫にも紐付かない共通の支出」として残る
+    db.delete(expenseRecordCats).where(eq(expenseRecordCats.catId, id)),
+    db
+      .update(symptoms)
+      .set({ hospitalVisitId: null })
+      .where(eq(symptoms.catId, id)),
+    db
+      .update(medications)
+      .set({ hospitalVisitId: null })
+      .where(eq(medications.catId, id)),
+    db
+      .update(hospitalVisits)
+      .set({ symptomId: null })
+      .where(eq(hospitalVisits.catId, id)),
+    // expense_record_hospital_visits も hospital_visits を参照しているため、
+    // 通院記録を削除する前に紐付けを外す。支出記録そのものは家計簿として残す
+    db
+      .delete(expenseRecordHospitalVisits)
+      .where(
+        inArray(
+          expenseRecordHospitalVisits.hospitalVisitId,
+          db
+            .select({ id: hospitalVisits.id })
+            .from(hospitalVisits)
+            .where(eq(hospitalVisits.catId, id)),
+        ),
+      ),
+    db.delete(hospitalVisits).where(eq(hospitalVisits.catId, id)),
+    db.delete(medicationDoses).where(eq(medicationDoses.catId, id)),
+    db.delete(medications).where(eq(medications.catId, id)),
+    db.delete(symptoms).where(eq(symptoms.catId, id)),
+    db.delete(notifications).where(eq(notifications.catId, id)),
+    db.delete(notificationSettings).where(eq(notificationSettings.catId, id)),
+    db.delete(cats).where(eq(cats.id, id)),
+    // 最後の猫を削除して猫のいなくなった家に、ごはんの時間の通知を残さない
+    dismissFeedingNotificationsOfCatlessHouseholds(db, userId),
+  ]);
 }

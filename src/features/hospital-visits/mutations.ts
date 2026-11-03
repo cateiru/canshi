@@ -1,11 +1,19 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { expenseRecords, hospitalVisits, symptoms } from "@/db/schema";
+import {
+  expenseRecordHospitalVisits,
+  expenseRecords,
+  hospitalVisits,
+  medications,
+  symptoms,
+} from "@/db/schema";
 import { saveHospitalVisitWithExpense } from "@/features/expenses/hospitalVisitExpense";
+import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import {
   combineDateTimeUtc,
   splitDateTimeUtc,
 } from "@/features/shared/datetime";
+import { HOSPITAL_VISIT_MEDIA_TYPE } from "./media";
 import type { HospitalVisitFormInput } from "./schema";
 
 /*
@@ -172,4 +180,47 @@ export async function updateHospitalVisit(
     },
   );
   return { id };
+}
+
+/**
+ * 猫の通院記録を、紐付く写真（R2 のオブジェクトと media_assets 行）ごと削除する。
+ * 症状・投薬・支出記録からの紐付けは外し、それらの記録は残す。見つからなければ false
+ */
+export async function deleteHospitalVisit(
+  catId: string,
+  id: string,
+): Promise<boolean> {
+  const db = getDb();
+  const [existing] = await db
+    .select({ id: hospitalVisits.id })
+    .from(hospitalVisits)
+    .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
+    .limit(1);
+  if (!existing) return false;
+  // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
+  await deleteMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, id);
+  // symptoms.hospital_visit_id / medications.hospital_visit_id /
+  // expense_record_hospital_visits からの外部キー参照があるため、通院記録を
+  // 削除する前に紐付けを解除しておく。支出記録は家計簿として残す必要があるため、
+  // 紐付けだけ外して記録自体は削除しない。一連の操作は db.batch でまとめて
+  // 原子的に実行する
+  await db.batch([
+    db
+      .update(symptoms)
+      .set({ hospitalVisitId: null })
+      .where(and(eq(symptoms.hospitalVisitId, id), eq(symptoms.catId, catId))),
+    db
+      .update(medications)
+      .set({ hospitalVisitId: null })
+      .where(
+        and(eq(medications.hospitalVisitId, id), eq(medications.catId, catId)),
+      ),
+    db
+      .delete(expenseRecordHospitalVisits)
+      .where(eq(expenseRecordHospitalVisits.hospitalVisitId, id)),
+    db
+      .delete(hospitalVisits)
+      .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),
+  ]);
+  return true;
 }

@@ -9,12 +9,18 @@ import {
   hospitalVisits,
 } from "@/db/schema";
 import { householdCatIdsQuery } from "@/features/households/queries";
+import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import {
   combineDateTimeUtc,
   splitDateTimeUtc,
 } from "@/features/shared/datetime";
+import { EXPENSE_MEDIA_TYPE } from "./media";
 import type { ExpenseFormFieldErrors, ExpenseFormInput } from "./schema";
-import { insertExpenseCats, insertExpenseHospitalVisits } from "./storage";
+import {
+  deleteExpenseStatements,
+  insertExpenseCats,
+  insertExpenseHospitalVisits,
+} from "./storage";
 
 /*
  * 支出記録の保存。画面（`./actions.ts`）と AI との接続（MCP）の両方から使う。
@@ -220,4 +226,30 @@ export async function updateExpense(
     ...insertExpenseHospitalVisits(db, id, links.hospitalVisitIds),
   ]);
   return { id };
+}
+
+/**
+ * 家の支出記録を、紐付く写真（R2 のオブジェクトと media_assets 行）と猫・通院記録との
+ * 紐付けごと削除する。見つからなければ false
+ */
+export async function deleteExpense(
+  householdId: string,
+  id: string,
+): Promise<boolean> {
+  const db = getDb();
+  const [existing] = await db
+    .select({ id: expenseRecords.id })
+    .from(expenseRecords)
+    .where(
+      and(
+        eq(expenseRecords.id, id),
+        eq(expenseRecords.householdId, householdId),
+      ),
+    )
+    .limit(1);
+  if (!existing) return false;
+  // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
+  await deleteMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, id);
+  await db.batch(deleteExpenseStatements(db, id));
+  return true;
 }

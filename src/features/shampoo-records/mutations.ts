@@ -44,3 +44,16 @@ export async function updateShampooRecord(
     .returning({ id: shampooRecords.id });
   return result.length > 0;
 }
+
+/** 猫の記録を削除する。見つからなければ false */
+export async function deleteShampooRecord(
+  catId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<boolean> {
+  const result = await getDb(d1)
+    .delete(shampooRecords)
+    .where(and(eq(shampooRecords.id, id), eq(shampooRecords.catId, catId)))
+    .returning({ id: shampooRecords.id });
+  return result.length > 0;
+}

@@ -2,13 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getDb } from "@/db/client";
 import { requireCatAccess } from "@/features/auth/session";
 import {
   type CatNotificationSettingsFormFieldErrors,
   catNotificationSettingsFormSchema,
 } from "./settingsSchema";
-import { buildCatNotificationSettingsBatch } from "./settingsUpsert";
+import { saveCatNotificationSettings } from "./settingsUpsert";
 
 export type CatNotificationSettingsFormState = {
   fieldErrors?: CatNotificationSettingsFormFieldErrors;
@@ -23,7 +22,7 @@ export type CatNotificationSettingsFormState = {
  * それぞれを対象にした `onConflictDoUpdate` で保存できる（`buildCatNotificationSettingsBatch`
  * 参照）。読んでから更新／挿入を選ぶ方式と違い、同時保存でも重複行や更新の取りこぼしが
  * 起きない。複数項目の更新を1回の `db.batch` にまとめることで、途中失敗による
- * 一部項目だけの保存も防ぐ
+ * 一部項目だけの保存も防ぐ（`saveCatNotificationSettings`）
  */
 export async function updateCatNotificationSettingsAction(
   catId: string,
@@ -46,15 +45,12 @@ export async function updateCatNotificationSettingsAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
   const cleaningTargets = cleaningTargetIds.map((targetId) => ({
     id: targetId,
     isEnabled: formData.get(`cleaningEnabled_${targetId}`) === "on",
   }));
 
-  await db.batch(
-    buildCatNotificationSettingsBatch(db, catId, cleaningTargets, parsed.data),
-  );
+  await saveCatNotificationSettings(catId, cleaningTargets, parsed.data);
 
   revalidatePath(`/cats/${catId}/notification-settings`);
   redirect(`/cats/${catId}/notification-settings`, "replace");

@@ -48,3 +48,16 @@ export async function updateBrushingRecord(
     .returning({ id: brushingRecords.id });
   return result.length > 0;
 }
+
+/** 猫の記録を削除する。見つからなければ false */
+export async function deleteBrushingRecord(
+  catId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<boolean> {
+  const result = await getDb(d1)
+    .delete(brushingRecords)
+    .where(and(eq(brushingRecords.id, id), eq(brushingRecords.catId, catId)))
+    .returning({ id: brushingRecords.id });
+  return result.length > 0;
+}

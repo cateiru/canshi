@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import type { getDb } from "@/db/client";
+import { getDb } from "@/db/client";
 import type { NotificationKind } from "@/db/schema";
 import { notificationSettings } from "@/db/schema";
 import type { CatNotificationSettingsFormInput } from "./settingsSchema";
@@ -10,7 +10,7 @@ type KindSettingEntry = {
   params: { months?: number; days?: number } | null;
 };
 
-type CleaningTargetSetting = {
+export type CleaningTargetSetting = {
   id: string;
   isEnabled: boolean;
 };
@@ -113,4 +113,21 @@ export function buildCatNotificationSettingsBatch(
       | (typeof cleaningStatements)[number]
     )[],
   ];
+}
+
+/**
+ * 猫ごとの通知設定を保存する。複数項目の更新を1回の `db.batch` にまとめることで、
+ * 途中失敗による一部項目だけの保存を防ぐ（同時保存の扱いは `buildCatNotificationSettingsBatch` 参照）。
+ * 猫を参照できるかは呼び出し側で確かめる
+ */
+export async function saveCatNotificationSettings(
+  catId: string,
+  cleaningTargets: CleaningTargetSetting[],
+  data: CatNotificationSettingsFormInput,
+  d1?: D1Database,
+): Promise<void> {
+  const db = getDb(d1);
+  await db.batch(
+    buildCatNotificationSettingsBatch(db, catId, cleaningTargets, data),
+  );
 }

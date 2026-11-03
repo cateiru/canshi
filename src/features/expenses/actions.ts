@@ -1,26 +1,21 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getDb } from "@/db/client";
-import { expenseRecords } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import {
   type LinkableHospitalVisit,
   listHospitalVisitsOnDate,
 } from "@/features/hospital-visits/queries";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
-import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { EXPENSE_MEDIA_TYPE } from "./media";
-import { createExpense, updateExpense } from "./mutations";
+import { createExpense, deleteExpense, updateExpense } from "./mutations";
 import {
   type HospitalExpenseCandidate,
   listHospitalExpensesOnDate,
 } from "./queries";
 import { type ExpenseFormFieldErrors, expenseFormSchema } from "./schema";
-import { deleteExpenseStatements } from "./storage";
 
 /**
  * 保存に成功すると `savedRecordId` を返す。写真はフォームで選んだ時点で下書きとして
@@ -110,21 +105,7 @@ export async function deleteExpenseAction(
   id: string,
 ): Promise<void> {
   const householdId = await requireExpenseHousehold(catId);
-  const db = getDb();
-  const [existing] = await db
-    .select({ id: expenseRecords.id })
-    .from(expenseRecords)
-    .where(
-      and(
-        eq(expenseRecords.id, id),
-        eq(expenseRecords.householdId, householdId),
-      ),
-    )
-    .limit(1);
-  if (!existing) redirect(`/cats/${catId}/expenses`, "replace");
-  // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
-  await deleteMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, id);
-  await db.batch(deleteExpenseStatements(db, id));
+  await deleteExpense(householdId, id);
   redirect(`/cats/${catId}/expenses`, "replace");
 }
 

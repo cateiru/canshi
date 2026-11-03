@@ -1,12 +1,13 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { getDb } from "@/db/client";
-import { weightRecords } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
-import { createWeightRecord, updateWeightRecord } from "./mutations";
+import {
+  createWeightRecord,
+  deleteWeightRecord,
+  updateWeightRecord,
+} from "./mutations";
 import {
   type WeightRecordFormFieldErrors,
   weightRecordFormSchema,
@@ -71,9 +72,6 @@ export async function deleteWeightRecordAction(
   id: string,
 ): Promise<void> {
   await requireCatAccess(catId);
-  const db = getDb();
-  await db
-    .delete(weightRecords)
-    .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)));
+  await deleteWeightRecord(catId, id);
   redirect(`/cats/${catId}/weight-records`, "replace");
 }

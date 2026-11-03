@@ -1,6 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { getDb } from "@/db/client";
 import type { Cat } from "@/db/schema";
 import {
   type CatValues,
@@ -18,7 +17,7 @@ import { listCleaningTargets } from "@/features/cleaning/targetQueries";
 import { getCatForUser } from "@/features/households/queries";
 import { getResolvedSettingsForCat } from "@/features/notifications/queries";
 import { catNotificationSettingsFormSchema } from "@/features/notifications/settingsSchema";
-import { buildCatNotificationSettingsBatch } from "@/features/notifications/settingsUpsert";
+import { saveCatNotificationSettings } from "@/features/notifications/settingsUpsert";
 import {
   type FormValues,
   mergeFormValues,
@@ -423,21 +422,18 @@ export function registerCatTools(server: McpServer, ctx: McpToolContext) {
       if ("error" in parsed) {
         return errorResult(parsed.error);
       }
-      const db = getDb(ctx.env.DB);
-      await db.batch(
-        buildCatNotificationSettingsBatch(
-          db,
-          catId,
-          current.cleaningTargets.map((target) => ({
-            id: target.cleaningTargetId,
-            isEnabled:
-              targetArgs?.find(
-                ({ cleaningTargetId }) =>
-                  cleaningTargetId === target.cleaningTargetId,
-              )?.enabled ?? target.enabled,
-          })),
-          parsed.data,
-        ),
+      await saveCatNotificationSettings(
+        catId,
+        current.cleaningTargets.map((target) => ({
+          id: target.cleaningTargetId,
+          isEnabled:
+            targetArgs?.find(
+              ({ cleaningTargetId }) =>
+                cleaningTargetId === target.cleaningTargetId,
+            )?.enabled ?? target.enabled,
+        })),
+        parsed.data,
+        ctx.env.DB,
       );
       return jsonResult(await readNotificationSettings(ctx, catId));
     },

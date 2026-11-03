@@ -1,12 +1,13 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { getDb } from "@/db/client";
-import { medicationDoses } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
-import { createMedicationDose, updateMedicationDose } from "./doseMutations";
+import {
+  createMedicationDose,
+  deleteMedicationDose,
+  updateMedicationDose,
+} from "./doseMutations";
 import {
   type MedicationDoseFormFieldErrors,
   medicationDoseFormSchema,
@@ -73,15 +74,6 @@ export async function deleteMedicationDoseAction(
   id: string,
 ): Promise<void> {
   await requireCatAccess(catId);
-  const db = getDb();
-  await db
-    .delete(medicationDoses)
-    .where(
-      and(
-        eq(medicationDoses.id, id),
-        eq(medicationDoses.catId, catId),
-        eq(medicationDoses.medicationId, medicationId),
-      ),
-    );
+  await deleteMedicationDose(catId, medicationId, id);
   redirect(`/cats/${catId}/medications/${medicationId}/doses`, "replace");
 }
