@@ -5,6 +5,7 @@ import { Footer, IconButtonLink, ToastRegionRoot } from "@/components/ui";
 import { SettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAppearance } from "@/features/appearance/infrastructure/queries";
 import { getCurrentUser } from "@/features/auth/presentation/session";
+import { NavigationProgress } from "@/features/navigation/NavigationProgress";
 import { NavigationTracker } from "@/features/navigation/NavigationTracker";
 import { NotificationBadge } from "@/features/notifications/presentation/NotificationBadge";
 import { ServiceWorkerRegistration } from "@/features/pwa/ServiceWorkerRegistration";
@@ -79,6 +80,7 @@ export default async function RootLayout({
       data-font-size={fontSize}
     >
       <body>
+        <NavigationProgress />
         <header className={styles.header}>
           {/* 未ログイン（`/login`）では通知・設定へのリンクを出さない */}
           {user ? (
