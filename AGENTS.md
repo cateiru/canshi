@@ -76,14 +76,14 @@ DDD のレイヤードアーキテクチャにならい、外側の層から内�
 | 層 | 置き場所 | 役割 |
 | --- | --- | --- |
 | プレゼンテーション | `src/app/**`、`src/features/<機能>/*.tsx`、`actions.ts`・`*Actions.ts`（Server Action）、`src/features/mcp/tools/**`（MCP のツール） | ログイン・猫や家を参照できるかの確認、フォーム・ツールの引数の解析、遷移やエラーの文言 |
-| アプリケーション・インフラ | `queries.ts`・`*Queries.ts`（読み取り）、`mutations.ts`・`*Mutations.ts`（書き込み） | D1・R2 を読み書きする処理。画面と MCP の両方から使う |
+| アプリケーション・インフラ | `queries.ts`・`*Queries.ts`（読み取り）、`mutations.ts`・`*Mutations.ts`（書き込み）のほか、`requests.ts`・`management.ts`・`storage.ts` のように用途で名付けたファイル | D1・R2 を読み書きする処理。画面と MCP の両方から使う |
 | ドメイン | `schema.ts`（入力の規則）、`calculations.ts` などの純粋な関数、`src/db/schema`（テーブル定義・型・定数） | DB に触れない業務の規則 |
 
 守ること:
 
 - プレゼンテーション層から DB を直接扱わない。`@/db/client`・`@/db/batch`・`drizzle-orm`
   の import は Biome の `noRestrictedImports`（`biome.json` の `overrides`）で禁止している。
-  クエリが必要になったら、その機能の `queries.ts`・`mutations.ts` に関数を足して呼ぶ。
+  クエリが必要になったら、その機能の `queries.ts`・`mutations.ts`（または用途で名付けたファイル）に関数を足して呼ぶ。
 - `src/db/schema` の型・定数（`type Cat`・`EXPENSE_CATEGORIES` など）は、どの層から import してもよい。
 - `queries.ts`・`mutations.ts` の関数は、最後の引数で D1 を `d1?: D1Database` として受け取る。
   MCP のツールは `ctx.env.DB` を渡す。画面からは省略してよい。
