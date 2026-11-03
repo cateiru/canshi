@@ -16,11 +16,8 @@ import {
   notifications,
   users,
 } from "@/db/schema";
-import {
-  type CatValues,
-  createCatForUser,
-  updateCatForUser,
-} from "./mutations";
+import type { CatValues } from "../domain/cat";
+import { createCatForUser, updateCatForUser } from "./mutations";
 
 // `src/features/notifications/queries.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;

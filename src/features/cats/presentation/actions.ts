@@ -8,10 +8,10 @@ import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   createCatForUser,
   deleteCatForUser,
-  HOUSEHOLD_NOT_ALLOWED_ERROR,
   updateCatForUser,
 } from "../application/mutations";
 import type { SubmittedBirthDate } from "../domain/birthDate";
+import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "../domain/cat";
 import {
   BIRTH_DATE_PRECISIONS,
   type CatFormFieldErrors,

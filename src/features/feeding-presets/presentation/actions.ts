@@ -2,7 +2,7 @@
 
 import type { z } from "zod";
 import { requireUser } from "@/features/auth/presentation/session";
-import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "@/features/cats/application/mutations";
+import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "@/features/cats/domain/cat";
 import { readFormHouseholdId } from "@/features/households/presentation/formHousehold";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import {

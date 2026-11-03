@@ -2,11 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import type { Cat } from "@/db/schema";
 import {
-  type CatValues,
   createCatForUser,
-  HOUSEHOLD_NOT_ALLOWED_ERROR,
   updateCatForUser,
 } from "@/features/cats/application/mutations";
+import {
+  type CatValues,
+  HOUSEHOLD_NOT_ALLOWED_ERROR,
+} from "@/features/cats/domain/cat";
 import {
   BIRTH_DATE_PRECISIONS,
   type BirthDatePrecision,

@@ -1,4 +1,4 @@
-import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "@/features/cats/application/mutations";
+import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "@/features/cats/domain/cat";
 import { listFoodProductsByIds } from "@/features/food-products/infrastructure/queries";
 import {
   type FeedingPresetContent,
