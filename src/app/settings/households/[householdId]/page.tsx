@@ -14,12 +14,12 @@ import {
   HouseholdIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireHouseholdAccess } from "@/features/auth/presentation/session";
+import { HOUSEHOLD_INVITATION_MAX_AGE_SECONDS } from "@/features/households/domain/household";
 import { HOUSEHOLD_ROLE_LABEL } from "@/features/households/domain/labels";
 import {
-  HOUSEHOLD_INVITATION_MAX_AGE_SECONDS,
+  listHouseholdMembers,
   listPendingHouseholdInvitations,
-} from "@/features/households/infrastructure/invitations";
-import { listHouseholdMembers } from "@/features/households/infrastructure/queries";
+} from "@/features/households/infrastructure/queries";
 import {
   createHouseholdInvitationAction,
   leaveHouseholdAction,

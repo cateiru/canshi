@@ -7,22 +7,22 @@ import {
 } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import {
-  type HouseholdNameFormFieldErrors,
-  householdNameFormSchema,
-} from "../domain/schema";
-import {
   acceptHouseholdInvitation,
   createHouseholdInvitation,
-  householdInvitationPath,
   revokeHouseholdInvitation,
-} from "../infrastructure/invitations";
+} from "../application/invitations";
 import {
   createHousehold,
   leaveHousehold,
   removeHouseholdMember,
   renameHousehold,
-} from "../infrastructure/management";
-import { transferHouseholdOwnership } from "../infrastructure/ownership";
+} from "../application/management";
+import { transferHouseholdOwnership } from "../application/ownership";
+import { householdInvitationPath } from "../domain/household";
+import {
+  type HouseholdNameFormFieldErrors,
+  householdNameFormSchema,
+} from "../domain/schema";
 
 export type HouseholdNameFormState = {
   fieldErrors?: HouseholdNameFormFieldErrors;

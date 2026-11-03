@@ -1,7 +1,22 @@
-import { and, asc, desc, eq, type SQLWrapper, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  isNull,
+  type SQLWrapper,
+  sql,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { getDb } from "@/db/client";
-import { cats, householdMembers, households, users } from "@/db/schema";
+import {
+  cats,
+  householdInvitations,
+  householdMembers,
+  households,
+  users,
+} from "@/db/schema";
 
 /**
  * ユーザーが参照できる猫（所属する家の猫）の ID を返すサブクエリ。
@@ -219,4 +234,36 @@ export async function getCatForUser(
     .where(and(eq(cats.id, catId), eq(householdMembers.userId, userId)))
     .limit(1);
   return row?.cat ?? null;
+}
+
+/** 家の招待のうち、まだ使われておらず期限内のものを新しい順に返す（家の設定の一覧に使う） */
+export async function listPendingHouseholdInvitations(
+  householdId: string,
+  d1?: D1Database,
+) {
+  const db = getDb(d1);
+  return (
+    db
+      .select({
+        id: householdInvitations.id,
+        createdByName: users.name,
+        expiresAt: householdInvitations.expiresAt,
+        createdAt: householdInvitations.createdAt,
+      })
+      .from(householdInvitations)
+      .innerJoin(users, eq(householdInvitations.createdByUserId, users.id))
+      .where(
+        and(
+          eq(householdInvitations.householdId, householdId),
+          isNull(householdInvitations.acceptedByUserId),
+          gt(householdInvitations.expiresAt, new Date()),
+        ),
+      )
+      // `created_at` は秒単位のため、同じ秒に発行した招待は rowid（挿入順に増える）で
+      // 新しい順に並べる。`id` はランダムな UUID のため発行順にならない
+      .orderBy(
+        desc(householdInvitations.createdAt),
+        desc(sql`${householdInvitations}.rowid`),
+      )
+  );
 }

@@ -1,20 +1,20 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { householdNameFormSchema } from "@/features/households/domain/schema";
 import {
   createHouseholdInvitation,
-  householdInvitationPath,
-  listPendingHouseholdInvitations,
   revokeHouseholdInvitation,
-} from "@/features/households/infrastructure/invitations";
+} from "@/features/households/application/invitations";
 import {
   removeHouseholdMember,
   renameHousehold,
-} from "@/features/households/infrastructure/management";
-import { transferHouseholdOwnership } from "@/features/households/infrastructure/ownership";
+} from "@/features/households/application/management";
+import { transferHouseholdOwnership } from "@/features/households/application/ownership";
+import { householdInvitationPath } from "@/features/households/domain/household";
+import { householdNameFormSchema } from "@/features/households/domain/schema";
 import {
   getHouseholdForUser,
   listHouseholdMembers,
+  listPendingHouseholdInvitations,
 } from "@/features/households/infrastructure/queries";
 import { parseFormValues } from "../formValues";
 import {

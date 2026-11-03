@@ -11,12 +11,12 @@ import {
   households,
   users,
 } from "@/db/schema";
+import { HOUSEHOLD_INVITATION_MAX_AGE_SECONDS } from "../domain/household";
+import { listPendingHouseholdInvitations } from "../infrastructure/queries";
 import {
   acceptHouseholdInvitation,
   createHouseholdInvitation,
   getHouseholdInvitationPreview,
-  HOUSEHOLD_INVITATION_MAX_AGE_SECONDS,
-  listPendingHouseholdInvitations,
   revokeHouseholdInvitation,
 } from "./invitations";
 import { leaveHousehold, removeHouseholdMember } from "./management";
