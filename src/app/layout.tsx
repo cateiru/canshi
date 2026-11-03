@@ -80,6 +80,7 @@ export default async function RootLayout({
       data-font-size={fontSize}
     >
       <body>
+        <div className={styles.statusBarEdge} aria-hidden="true" />
         <NavigationProgress />
         <header className={styles.header}>
           {/* 未ログイン（`/login`）では通知・設定へのリンクを出さない */}

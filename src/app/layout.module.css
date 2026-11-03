@@ -4,6 +4,33 @@
   flex: 1;
 }
 
+/*
+ * ホーム画面から開いた iOS（26 以降）では、ステータスバーの下に重なる上端の内容に
+ * ぼかし（scroll edge effect）がかかり、ヘッダーのアイコンがぼやける。
+ * WebKit は、上端に画面幅いっぱいの position: fixed / sticky の要素があると、ぼかしの代わりに
+ * その要素の色でステータスバーの下を塗りつぶすため、ページの背景色の帯を上端に固定する。
+ * 高さはヘッダーの上の余白と同じにし、一番上までスクロールした状態の見た目を変えない。
+ * 上端から 4px の位置で要素を探すため、それより低くはしない
+ */
+.statusBarEdge {
+  display: none;
+}
+
+@media (display-mode: standalone) {
+  .statusBarEdge {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* 内容より手前、モーダルの overlay（z-index: 100）より奥に重ねる */
+    z-index: 50;
+    height: var(--space-2);
+    background-color: var(--color-bg);
+    pointer-events: none;
+  }
+}
+
 .header {
   display: flex;
   align-items: center;
