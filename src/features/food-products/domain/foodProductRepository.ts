@@ -1,3 +1,4 @@
+import type { CatalogPackageSize } from "@/db/schema";
 import type { FoodProductContent } from "./foodProduct";
 
 /**
@@ -11,6 +12,16 @@ export interface FoodProductRepository {
     userId: string,
     householdId: string,
     content: FoodProductContent,
+  ): Promise<string | null>;
+  /**
+   * 共通のごはん商品の内容を写して家の商品を追加し、その ID を返す。ユーザーが家のメンバーでない、
+   * 共通のごはん商品か選んだ内容量が見つからない、または同じ家にすでに追加済みのときは追加せずに null
+   */
+  addFromCatalogForMember(
+    userId: string,
+    householdId: string,
+    catalogFoodProductId: string,
+    packageSize: CatalogPackageSize,
   ): Promise<string | null>;
   /** ユーザーが所属する家の商品を書き換える。別の家の商品・見つからなければ false */
   updateForMember(

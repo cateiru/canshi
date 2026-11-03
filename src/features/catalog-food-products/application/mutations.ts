@@ -1,64 +1,34 @@
-import { and, eq, sql } from "drizzle-orm";
-import { getDb } from "@/db/client";
-import {
-  type CatalogPackageSize,
-  catalogFoodProducts,
-  foodProducts,
-  householdMembers,
-  mediaAssets,
-} from "@/db/schema";
+import type { CatalogPackageSize } from "@/db/schema";
+import { createFoodProductRepository } from "@/features/food-products/infrastructure/foodProductRepository";
 import {
   formatBytes,
   hasStorageCapacity,
   resolveMediaLimits,
 } from "@/features/media/domain/limits";
-import { buildObjectKey } from "@/features/media/domain/objectKey";
 import { sumMediaStorageBytes } from "@/features/media/infrastructure/queries";
 import {
   type MediaEnv,
   MediaUploadError,
 } from "@/features/media/infrastructure/storage";
-import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "../domain/media";
+import { toCatalogFoodProductContent } from "../domain/catalogFoodProduct";
+import type { CatalogFoodProductImageFile } from "../domain/catalogFoodProductRepository";
 import type { CatalogFoodProductInput } from "../domain/schema";
-import type { CatalogImage } from "../infrastructure/image";
+import { createCatalogFoodProductRepository } from "../infrastructure/catalogFoodProductRepository";
 
 /*
- * 共通のごはん商品の保存。AI との接続（MCP）から使う（管理画面は `packages/admin` で別に書く）。
- * admin のユーザーであることは呼び出し元で確かめる。MCP は Next.js（OpenNext）の外で動き
+ * 共通のごはん商品の保存（ユースケース）。AI との接続（MCP）から使う（管理画面は `packages/admin` で
+ * 別に書く）。admin のユーザーであることは呼び出し元で確かめる。MCP は Next.js（OpenNext）の外で動き
  * `getCloudflareContext()` を使えないため、D1・R2 は引数で受け取る
  */
-
-/**
- * 列に書く値。管理画面と同じく、`package_amount_g`・`package_unit` には先頭の候補を、
- * `package_sizes` には先頭を含むすべての候補を書く（`catalogPackageSizes` 参照）
- */
-function toColumns(values: CatalogFoodProductInput) {
-  const [first] = values.packageSizes;
-  return {
-    name: values.name,
-    manufacturer: values.manufacturer,
-    kcalPer100g: values.kcalPer100g,
-    packageAmountG: first.amountG,
-    packageUnit: first.unit,
-    packageSizes: values.packageSizes,
-    nutritionType: values.nutritionType,
-    textureType: values.textureType,
-    lifeStages: values.lifeStages,
-    targetBreed: values.targetBreed,
-    searchKeywords: values.searchKeywords,
-  };
-}
 
 /** 共通のごはん商品を登録し、ID を返す */
 export async function createCatalogFoodProduct(
   values: CatalogFoodProductInput,
   d1?: D1Database,
 ): Promise<string> {
-  const [created] = await getDb(d1)
-    .insert(catalogFoodProducts)
-    .values(toColumns(values))
-    .returning({ id: catalogFoodProducts.id });
-  return created.id;
+  return createCatalogFoodProductRepository(d1).add(
+    toCatalogFoodProductContent(values),
+  );
 }
 
 /**
@@ -70,119 +40,37 @@ export async function updateCatalogFoodProduct(
   values: CatalogFoodProductInput,
   d1?: D1Database,
 ): Promise<boolean> {
-  const updated = await getDb(d1)
-    .update(catalogFoodProducts)
-    .set({ ...toColumns(values), updatedAt: new Date() })
-    .where(eq(catalogFoodProducts.id, id))
-    .returning({ id: catalogFoodProducts.id });
-  return updated.length > 0;
-}
-
-function isProductImage(productId: string) {
-  return and(
-    eq(mediaAssets.recordType, CATALOG_FOOD_PRODUCT_MEDIA_TYPE),
-    eq(mediaAssets.recordId, productId),
+  return createCatalogFoodProductRepository(d1).update(
+    id,
+    toCatalogFoodProductContent(values),
   );
 }
 
 /**
- * 共通のごはん商品の画像を差し替える（画像は 1 商品に 1 枚）。管理画面の差し替え
- * （`packages/admin/src/db/catalogFoodProducts.ts`）と同じく、サムネイルは作らずに画像だけを置き、
- * 同じ batch の中でその時点の画像の行をすべて削除してから新しい行を追加する。
+ * 共通のごはん商品の画像を差し替える（画像は 1 商品に 1 枚）。
  * 保存容量の上限は、削除するこの商品の今の画像の分を差し引いた、差し替え後の使用容量で確かめ、
  * 超えるときは `MediaUploadError` を投げる。商品がなければ何も保存せずに false
  */
 export async function replaceCatalogFoodProductImage(
   productId: string,
-  image: CatalogImage,
+  image: CatalogFoodProductImageFile,
   env: MediaEnv,
 ): Promise<boolean> {
-  const db = getDb(env.DB);
+  const repository = createCatalogFoodProductRepository(
+    env.DB,
+    env.MEDIA_BUCKET,
+  );
   const limits = resolveMediaLimits();
-  const [current] = await db
-    .select({
-      total: sql<number>`coalesce(sum(${mediaAssets.sizeBytes}), 0) + coalesce(sum(${mediaAssets.thumbnailSizeBytes}), 0)`,
-    })
-    .from(mediaAssets)
-    .where(isProductImage(productId));
   const usedBytes =
-    (await sumMediaStorageBytes(env.DB)) - Number(current?.total ?? 0);
+    (await sumMediaStorageBytes(env.DB)) -
+    (await repository.sumImageBytes(productId));
   if (!hasStorageCapacity(usedBytes, image.bytes.byteLength, limits)) {
     throw new MediaUploadError(
       `保存容量の上限（${formatBytes(limits.storageLimitBytes)}）を超えるためアップロードできません`,
       507,
     );
   }
-
-  const assetId = crypto.randomUUID();
-  const objectKey = buildObjectKey(
-    CATALOG_FOOD_PRODUCT_MEDIA_TYPE,
-    productId,
-    assetId,
-  );
-  await env.MEDIA_BUCKET.put(objectKey, image.bytes, {
-    httpMetadata: { contentType: "image/jpeg" },
-  });
-
-  let removed: (typeof mediaAssets.$inferSelect)[];
-  let added: { id: string }[];
-  try {
-    // 画像の行は商品を外部キーで参照しないため、同時に商品が削除されていたら追加しない。
-    // INSERT ... SELECT では列の既定値が使われないため、列はすべてテーブル定義と同じ並びで書く
-    [removed, added] = await db.batch([
-      db.delete(mediaAssets).where(isProductImage(productId)).returning(),
-      db
-        .insert(mediaAssets)
-        .select((qb) =>
-          qb
-            .select({
-              id: sql`${assetId}`.as("id"),
-              catId: sql`NULL`.as("cat_id"),
-              uploadedByUserId: sql`NULL`.as("uploaded_by_user_id"),
-              recordType: sql`${CATALOG_FOOD_PRODUCT_MEDIA_TYPE}`.as(
-                "record_type",
-              ),
-              recordId: catalogFoodProducts.id,
-              objectKey: sql`${objectKey}`.as("object_key"),
-              thumbnailObjectKey: sql`NULL`.as("thumbnail_object_key"),
-              mimeType: sql`'image/jpeg'`.as("mime_type"),
-              sizeBytes: sql`${image.bytes.byteLength}`.as("size_bytes"),
-              thumbnailSizeBytes: sql`NULL`.as("thumbnail_size_bytes"),
-              width: sql`${image.size}`.as("width"),
-              height: sql`${image.size}`.as("height"),
-              sortOrder: sql`0`.as("sort_order"),
-              createdAt: sql`(unixepoch())`.as("created_at"),
-            })
-            .from(catalogFoodProducts)
-            .where(eq(catalogFoodProducts.id, productId)),
-        )
-        .returning({ id: mediaAssets.id }),
-    ]);
-  } catch (error) {
-    await env.MEDIA_BUCKET.delete(objectKey).catch(() => {});
-    throw error;
-  }
-
-  // 古い画像の行はもう無いため、R2 の削除に失敗しても参照先のない行は残らない。
-  // 失敗したときは R2 に使われないオブジェクトが残るだけなので、記録して続ける
-  const unusedKeys = removed.flatMap((asset) =>
-    asset.thumbnailObjectKey
-      ? [asset.objectKey, asset.thumbnailObjectKey]
-      : [asset.objectKey],
-  );
-  if (added.length === 0) {
-    unusedKeys.push(objectKey);
-  }
-  if (unusedKeys.length > 0) {
-    await env.MEDIA_BUCKET.delete(unusedKeys).catch((error: unknown) => {
-      console.error(
-        "使われない画像を R2 から削除できませんでした",
-        unusedKeys,
-        error,
-      );
-    });
-  }
-  return added.length > 0;
+  return repository.replaceImage(productId, image);
 }
 
 /**
@@ -197,60 +85,10 @@ export async function addCatalogFoodProductToHousehold(
   packageSize: CatalogPackageSize,
   d1?: D1Database,
 ): Promise<string | null> {
-  // 判定と追加の間に家から外された場合に追加が通らないよう、INSERT ... SELECT で
-  // 追加先の家のメンバーの行と共通のごはん商品があるときだけ 1 文で挿入する
-  // （`createFoodProduct` と同じ）。INSERT ... SELECT では列の既定値が使われないため
-  // ID はここで作り、列はテーブル定義と同じ並びにする。
-  // 選んだ内容量も、その時点の候補にあるときだけ挿入する（画面を開いてから管理画面で候補が
-  // 変わったときに、候補にない内容量を追加しない）。
-  // 同じ家に同じ共通のごはん商品は 1 件だけにする（一意インデックス）。古い画面から送られたり、
-  // 同時に追加されたりしたときは挿入せず、null を返し、呼び出し側で追加済みかを確かめる
-  const [created] = await getDb(d1)
-    .insert(foodProducts)
-    .select((qb) =>
-      qb
-        .select({
-          id: sql`${crypto.randomUUID()}`.as("id"),
-          householdId: householdMembers.householdId,
-          name: catalogFoodProducts.name,
-          manufacturer: catalogFoodProducts.manufacturer,
-          kcalPer100g: catalogFoodProducts.kcalPer100g,
-          packageAmountG: sql`${packageSize.amountG}`.as("package_amount_g"),
-          packageUnit: sql`${packageSize.unit}`.as("package_unit"),
-          nutritionType: catalogFoodProducts.nutritionType,
-          textureType: catalogFoodProducts.textureType,
-          lifeStages: catalogFoodProducts.lifeStages,
-          targetBreed: catalogFoodProducts.targetBreed,
-          catalogFoodProductId: catalogFoodProducts.id,
-          createdAt: sql`(unixepoch())`.as("created_at"),
-          updatedAt: sql`(unixepoch())`.as("updated_at"),
-        })
-        .from(catalogFoodProducts)
-        .innerJoin(
-          householdMembers,
-          and(
-            eq(householdMembers.householdId, householdId),
-            eq(householdMembers.userId, userId),
-          ),
-        )
-        .where(
-          and(
-            eq(catalogFoodProducts.id, catalogFoodProductId),
-            // 先頭の候補は package_amount_g・package_unit、2 件目以降は package_sizes から取る
-            // （`catalogPackageSizes` と同じ）
-            sql`((
-              ${catalogFoodProducts.packageAmountG} = ${packageSize.amountG}
-              AND ${catalogFoodProducts.packageUnit} IS ${packageSize.unit}
-            ) OR EXISTS (
-              SELECT 1 FROM json_each(${catalogFoodProducts.packageSizes})
-              WHERE json_each.key > 0
-                AND json_extract(json_each.value, '$.amountG') = ${packageSize.amountG}
-                AND json_extract(json_each.value, '$.unit') IS ${packageSize.unit}
-            ))`,
-          ),
-        ),
-    )
-    .onConflictDoNothing()
-    .returning({ id: foodProducts.id });
-  return created?.id ?? null;
+  return createFoodProductRepository(d1).addFromCatalogForMember(
+    userId,
+    householdId,
+    catalogFoodProductId,
+    packageSize,
+  );
 }

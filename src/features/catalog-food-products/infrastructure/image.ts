@@ -20,6 +20,7 @@ import {
   applyOrientation,
   ensurePhoton,
 } from "@/features/media/infrastructure/thumbnail";
+import type { CatalogFoodProductImageFile } from "../domain/catalogFoodProductRepository";
 
 /**
  * AI との接続（MCP）から登録する、共通のごはん商品の画像の加工。管理画面はブラウザで正方形に
@@ -34,11 +35,8 @@ export const CATALOG_IMAGE_MAX_EDGE = 800;
 /** JPEG の品質。管理画面の切り抜き（`canvas.toBlob` の 0.85）と揃える */
 const JPEG_QUALITY = 85;
 
-export type CatalogImage = {
-  bytes: Uint8Array;
-  /** 一辺の長さ（px） */
-  size: number;
-};
+/** 切り抜いた画像（`CatalogFoodProductImageFile`） */
+export type CatalogImage = CatalogFoodProductImageFile;
 
 /** 透明な部分を白で塗る（JPEG は透明を持てず、そのままでは黒くなる）。管理画面の切り抜きと同じ */
 function flattenOnWhite(pixels: Uint8Array) {
