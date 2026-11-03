@@ -70,28 +70,60 @@ PR のレビューコメント（インラインコメント・レビュー本�
 
 ## レイヤー構成
 
-機能ごとのコードは `src/features/<機能>/` にまとめ、ファイルの役割で次の層に分ける。
-DDD のレイヤードアーキテクチャにならい、外側の層から内側の層だけを呼ぶ。
+機能ごとのコードは `src/features/<機能>/` にまとめ、その中を DDD のレイヤードアーキテクチャにならって
+4 つのディレクトリに分ける。依存してよいのは外側から内側への向きだけ。
 
-| 層 | 置き場所 | 役割 |
-| --- | --- | --- |
-| プレゼンテーション | `src/app/**`、`src/features/<機能>/*.tsx`、`actions.ts`・`*Actions.ts`（Server Action）、`src/features/mcp/tools/**`（MCP のツール） | ログイン・猫や家を参照できるかの確認、フォーム・ツールの引数の解析、遷移やエラーの文言 |
-| アプリケーション・インフラ | `queries.ts`・`*Queries.ts`（読み取り）、`mutations.ts`・`*Mutations.ts`（書き込み）のほか、`requests.ts`・`management.ts`・`storage.ts` のように用途で名付けたファイル | D1・R2 を読み書きする処理。画面と MCP の両方から使う |
-| ドメイン | `schema.ts`（入力の規則）、`calculations.ts` などの純粋な関数、`src/db/schema`（テーブル定義・型・定数） | DB に触れない業務の規則 |
+- `presentation/`：画面のコンポーネント（`*.tsx`・CSS Modules）、Server Action（`actions.ts`・`*Actions.ts`）、
+  MCP のツール（`src/features/mcp/presentation/tools/**`）。ログイン・猫や家を参照できるかの確認、
+  フォーム・ツールの引数の解析、遷移やエラーの文言を受け持つ。`src/app/**`・`src/components/**` もこの層として扱う。
+  application・infrastructure・domain を使ってよい。
+- `application/`：ユースケース（`mutations.ts` など）。見つからない・無効などの判断をし、domain で中身を作って
+  infrastructure のリポジトリで保存する。domain・infrastructure を使ってよい。
+- `infrastructure/`：D1・R2 を読み書きする実装。リポジトリ（`<entity>Repository.ts`）と、画面・MCP 向けの
+  読み取り（`queries.ts`・`*Queries.ts`）を置く。domain だけを使ってよい。
+- `domain/`：DB に触れない業務の規則。エンティティ・値オブジェクト・リポジトリの interface・入力の規則
+  （`schema.ts`）・純粋な計算（`calculations.ts`）・表示名（`labels.ts`）を置く。ほかの層・DB・Next.js・React に依存しない。
 
-守ること:
+`shared`・`navigation`・`pwa`・`release-notes` は業務の規則を持たないため、層に分けずに置く。
+`src/db/schema`（テーブル定義・型・定数）は、どの層から import してもよい。
 
-- プレゼンテーション層から DB を直接扱わない。`@/db/client`・`@/db/batch`・`drizzle-orm`
-  の import は Biome の `noRestrictedImports`（`biome.json` の `overrides`）で禁止している。
-  クエリが必要になったら、その機能の `queries.ts`・`mutations.ts`（または用途で名付けたファイル）に関数を足して呼ぶ。
-- `src/db/schema` の型・定数（`type Cat`・`EXPENSE_CATEGORIES` など）は、どの層から import してもよい。
-- `queries.ts`・`mutations.ts` の関数は、最後の引数で D1 を `d1?: D1Database` として受け取る。
+### エンティティ・値オブジェクト・リポジトリ
+
+- エンティティは `domain/<entity>.ts` に置く（例：`water-records/domain/waterRecord.ts`）。型は
+  `@/db/schema` の行の型をそのまま使い、保存する中身の型（`WaterRecordContent`）と、入力から中身を作る
+  関数（`toWaterRecordContent`）を定義する。保存時に求める値（推定飲水量など）はこの関数で計算する。
+- 値オブジェクトは、ID を持たず値で比べる、規則を持つ値。readonly の型と、作る・計算する関数を同じモジュールに
+  置く（例：`waterAmount.ts`・`catWeight.ts`・`cleaningFrequency.ts`・`medicationPeriod.ts`）。
+  Server Component から Client Component へ渡せるよう、エンティティ・値オブジェクトは class にしない。
+  DB の列は平らなままにし、エンティティの関数の中で値オブジェクトを作って列に戻す。
+- リポジトリの interface は `domain/<entity>Repository.ts` に、D1 の実装は `infrastructure/<entity>Repository.ts`
+  に置き、`createXxxRepository(d1?)` で作る。
+- 複数のテーブルを同時に書き換える処理（従属する行の削除・参照の解除・通知の完了など）は、D1 では batch でしか
+  原子的にできないため、リポジトリのメソッドの中で 1 つの batch にする。家のメンバー・オーナーであることなど、
+  書き込みの直前に変わりうる条件も、リポジトリの文の中で確かめる（`addForMember`・`renameAsOwner` など）。
+- 読み取りはリポジトリに入れず、`infrastructure/queries.ts` に画面・MCP 向けの関数として置く。presentation は
+  読み取りでは queries を直接使ってよい。リポジトリに分けた書き込みは、必ず application を通す。
+
+### 守ること
+
+- 層の依存の向きは Biome の `noRestrictedImports`（`biome.json` の `overrides`）で禁止している。
+  - presentation から `@/db/client`・`@/db/batch`・`drizzle-orm` を import しない。
+  - application から DB と presentation を import しない。
+  - infrastructure から application・presentation を import しない。
+  - domain から DB・`next`・`react`・`@opennextjs/cloudflare` と、ほかの層を import しない。
+  - overrides は層ごとに対象が重ならないようにする（同じルールのオプションは、後の override で置き換わるため）。
+- application の関数（`mutations.ts` など）と queries の関数は、最後の引数で D1 を `d1?: D1Database` として受け取る。
   MCP のツールは `ctx.env.DB` を渡す。画面からは省略してよい。
   画像（R2）の削除を伴う関数（`deleteMedication` など）は、今は画面からだけ使うため受け取らない。
-- 認可（`requireCatAccess`、MCP の権限の確認）は、プレゼンテーション層で行う。
-  `queries.ts`・`mutations.ts` の関数には、確認済みの ID を渡す。
-  ただし、確認から書き込みまでの間に家から外された場合に備えて、文の中でも所属を確かめる場合がある
+- 認可（`requireCatAccess`、MCP の権限の確認）は、presentation で行う。application の関数には確認済みの ID を渡す。
+  ただし、確認から書き込みまでの間に家から外された場合に備えて、リポジトリの文の中でも所属を確かめる場合がある
   （`createFoodProduct` など）。
+- 次の処理は技術的な処理として infrastructure に置いたまま、リポジトリには分けていない。presentation から直接使ってよい。
+  - ログインとセッション（`auth/infrastructure/sessions.ts`・`users.ts`・`oidc.ts`）
+  - OAuth の KV・MCP の権限と利用状況（`mcp/infrastructure/**`）
+  - Push の送信（`push/infrastructure/sendPush.ts`・`sendTestPush.ts`）
+  - R2 への保存・配信（`media/infrastructure/storage.ts`・`serve.ts`）と、共通のごはん商品の画像の加工（`image.ts`）
+  - プロフィール画像の付け替え（`cats/infrastructure/applyProfileImage.ts`・`users/infrastructure/applyUserIcon.ts`）
 
 ## その他
 
