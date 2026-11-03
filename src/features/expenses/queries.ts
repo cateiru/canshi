@@ -326,3 +326,45 @@ export async function listHospitalExpensesOnDate(
     ),
   }));
 }
+
+/**
+ * 猫が関連する猫に含まれる支出記録を ID で 1 件読み、紐付く猫・通院記録の ID を添える
+ * （猫のタイムラインと同じく、その猫が関連する猫に含まれる支出の記録だけを読む）。
+ * 見つからなければ null
+ */
+export async function getExpenseRecordForCat(
+  catId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<{
+  record: ExpenseRecord;
+  catIds: string[];
+  hospitalVisitIds: string[];
+} | null> {
+  const db = getDb(d1);
+  const [row] = await db
+    .select({ record: expenseRecords })
+    .from(expenseRecords)
+    .innerJoin(
+      expenseRecordCats,
+      eq(expenseRecordCats.expenseRecordId, expenseRecords.id),
+    )
+    .where(and(eq(expenseRecords.id, id), eq(expenseRecordCats.catId, catId)))
+    .limit(1);
+  if (!row) return null;
+  const [catRows, visitRows] = await Promise.all([
+    db
+      .select({ catId: expenseRecordCats.catId })
+      .from(expenseRecordCats)
+      .where(eq(expenseRecordCats.expenseRecordId, id)),
+    db
+      .select({ id: expenseRecordHospitalVisits.hospitalVisitId })
+      .from(expenseRecordHospitalVisits)
+      .where(eq(expenseRecordHospitalVisits.expenseRecordId, id)),
+  ]);
+  return {
+    record: row.record,
+    catIds: catRows.map((linked) => linked.catId),
+    hospitalVisitIds: visitRows.map((visit) => visit.id),
+  };
+}

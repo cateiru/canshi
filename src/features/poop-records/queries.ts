@@ -1,6 +1,6 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { poopRecords } from "@/db/schema";
+import { type PoopRecord, poopRecords } from "@/db/schema";
 
 export async function listPoopRecords(catId: string) {
   const db = getDb();
@@ -17,6 +17,20 @@ export async function getPoopRecordById(id: string) {
     .select()
     .from(poopRecords)
     .where(eq(poopRecords.id, id))
+    .limit(1);
+  return record ?? null;
+}
+
+/** 猫のうんちの記録を ID で 1 件読む。別の猫の記録・見つからなければ null */
+export async function getPoopRecordForCat(
+  catId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<PoopRecord | null> {
+  const [record] = await getDb(d1)
+    .select()
+    .from(poopRecords)
+    .where(and(eq(poopRecords.id, id), eq(poopRecords.catId, catId)))
     .limit(1);
   return record ?? null;
 }

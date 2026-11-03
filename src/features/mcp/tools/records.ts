@@ -1,33 +1,16 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import { and, asc, eq } from "drizzle-orm";
 import { type ZodRawShape, z } from "zod";
-import { getDb } from "@/db/client";
 import {
   BRUSHING_SHED_AMOUNTS,
-  brushingRecords,
-  cleaningRecords,
   EXPENSE_CATEGORIES,
-  expenseRecordCats,
-  expenseRecordHospitalVisits,
-  expenseRecords,
-  feedingRecordItems,
-  feedingRecords,
   GIVEN_AMOUNT_LEVELS,
-  hospitalVisits,
   LEFTOVER_LEVELS,
-  medicationDoses,
-  memoRecords,
-  poopRecords,
-  shampooRecords,
-  symptoms,
-  vomitRecords,
-  waterRecords,
-  weightRecords,
 } from "@/db/schema";
 import {
   createBrushingRecord,
   updateBrushingRecord,
 } from "@/features/brushing-records/mutations";
+import { getBrushingRecordForCat } from "@/features/brushing-records/queries";
 import {
   BRUSHING_DURATION_MAX_MINUTES,
   brushingRecordFormSchema,
@@ -36,19 +19,26 @@ import {
   createCleaningRecord,
   updateCleaningRecord,
 } from "@/features/cleaning/recordMutations";
+import { getCleaningRecordForCat } from "@/features/cleaning/recordQueries";
 import { cleaningRecordFormSchema } from "@/features/cleaning/recordSchema";
 import { listCleaningTargets } from "@/features/cleaning/targetQueries";
 import { createExpense, updateExpense } from "@/features/expenses/mutations";
+import { getExpenseRecordForCat } from "@/features/expenses/queries";
 import { expenseFormSchema } from "@/features/expenses/schema";
 import {
   createFeedingRecord,
   updateFeedingRecord,
 } from "@/features/feeding-records/mutations";
+import {
+  getFeedingRecordRowForCat,
+  listFeedingRecordItemRows,
+} from "@/features/feeding-records/queries";
 import { feedingRecordFormSchema } from "@/features/feeding-records/schema";
 import {
   createHospitalVisit,
   updateHospitalVisit,
 } from "@/features/hospital-visits/mutations";
+import { getHospitalVisitWithExpenseAmountForCat } from "@/features/hospital-visits/queries";
 import { hospitalVisitFormSchema } from "@/features/hospital-visits/schema";
 import { getCatForUser, listCatsForUser } from "@/features/households/queries";
 import type { MediaRecordType } from "@/features/media/recordTypes";
@@ -58,13 +48,17 @@ import {
   createMedicationDose,
   updateMedicationDose,
 } from "@/features/medications/doseMutations";
+import { getMedicationDoseForCat } from "@/features/medications/doseQueries";
 import { medicationDoseFormSchema } from "@/features/medications/doseSchema";
 import { listMedications } from "@/features/medications/queries";
 import {
   createMemoRecord,
   updateMemoRecord,
 } from "@/features/memo-records/mutations";
-import { listMemoRecords } from "@/features/memo-records/queries";
+import {
+  getMemoRecordForCat,
+  listMemoRecords,
+} from "@/features/memo-records/queries";
 import {
   MEMO_CONTENT_MAX_LENGTH,
   memoRecordFormSchema,
@@ -73,30 +67,36 @@ import {
   createPoopRecord,
   updatePoopRecord,
 } from "@/features/poop-records/mutations";
+import { getPoopRecordForCat } from "@/features/poop-records/queries";
 import { poopRecordFormSchema } from "@/features/poop-records/schema";
 import {
   createShampooRecord,
   updateShampooRecord,
 } from "@/features/shampoo-records/mutations";
+import { getShampooRecordForCat } from "@/features/shampoo-records/queries";
 import { shampooRecordFormSchema } from "@/features/shampoo-records/schema";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { paginate } from "@/features/shared/pagination";
 import { createSymptom, updateSymptom } from "@/features/symptoms/mutations";
+import { getSymptomForCat } from "@/features/symptoms/queries";
 import { symptomFormSchema } from "@/features/symptoms/schema";
 import {
   createVomitRecord,
   updateVomitRecord,
 } from "@/features/vomit-records/mutations";
+import { getVomitRecordForCat } from "@/features/vomit-records/queries";
 import { vomitRecordFormSchema } from "@/features/vomit-records/schema";
 import {
   createWaterRecord,
   updateWaterRecord,
 } from "@/features/water-records/mutations";
+import { getWaterRecordForCat } from "@/features/water-records/queries";
 import { waterRecordFormSchema } from "@/features/water-records/schema";
 import {
   createWeightRecord,
   updateWeightRecord,
 } from "@/features/weight-records/mutations";
+import { getWeightRecordForCat } from "@/features/weight-records/queries";
 import { weightRecordFormSchema } from "@/features/weight-records/schema";
 import {
   dateTimeValues,
@@ -124,8 +124,6 @@ import {
   resolveWritableCat,
 } from "./context";
 import { decodeImageBase64, MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
-
-type Db = ReturnType<typeof getDb>;
 
 /** 書き込む猫。ユーザーが参照でき、この接続からの読み取りも許可している */
 type WritableCat = { id: string; householdId: string };
@@ -158,7 +156,7 @@ type RecordToolDefinition<TData, TExisting> = {
   defaults(): FormValues;
   /** 猫の記録を読み、フォームの値にする。見つからなければ null */
   load(
-    db: Db,
+    d1: D1Database,
     catId: string,
     id: string,
   ): Promise<{ values: FormValues; existing: TExisting } | null>;
@@ -244,12 +242,8 @@ const poopRecordTool = defineRecordTool({
   },
   schema: poopRecordFormSchema,
   defaults: () => nowDateTimeValues("occurredDate", "occurredTime"),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(poopRecords)
-      .where(and(eq(poopRecords.id, id), eq(poopRecords.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getPoopRecordForCat(catId, id, d1);
     if (!row) return null;
     return {
       existing: null,
@@ -294,12 +288,8 @@ const vomitRecordTool = defineRecordTool({
   },
   schema: vomitRecordFormSchema,
   defaults: () => nowDateTimeValues("occurredDate", "occurredTime"),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(vomitRecords)
-      .where(and(eq(vomitRecords.id, id), eq(vomitRecords.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getVomitRecordForCat(catId, id, d1);
     if (!row) return null;
     return {
       existing: null,
@@ -349,12 +339,8 @@ const waterRecordTool = defineRecordTool({
   },
   schema: waterRecordFormSchema,
   defaults: () => nowDateTimeValues("occurredDate", "occurredTime"),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(waterRecords)
-      .where(and(eq(waterRecords.id, id), eq(waterRecords.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getWaterRecordForCat(catId, id, d1);
     if (!row) return null;
     return {
       existing: null,
@@ -408,12 +394,8 @@ const weightRecordTool = defineRecordTool({
     ...nowDateTimeValues("occurredDate", "occurredTime"),
     inputMethod: "direct",
   }),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(weightRecords)
-      .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getWeightRecordForCat(catId, id, d1);
     if (!row) return null;
     return {
       existing: null,
@@ -463,12 +445,8 @@ const shampooRecordTool = defineRecordTool({
   },
   schema: shampooRecordFormSchema,
   defaults: () => nowDateTimeValues("performedDate", "performedTime"),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(shampooRecords)
-      .where(and(eq(shampooRecords.id, id), eq(shampooRecords.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getShampooRecordForCat(catId, id, d1);
     if (!row) return null;
     return {
       existing: null,
@@ -518,12 +496,8 @@ const brushingRecordTool = defineRecordTool({
   },
   schema: brushingRecordFormSchema,
   defaults: () => nowDateTimeValues("performedDate", "performedTime"),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(brushingRecords)
-      .where(and(eq(brushingRecords.id, id), eq(brushingRecords.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getBrushingRecordForCat(catId, id, d1);
     if (!row) return null;
     return {
       existing: null,
@@ -565,12 +539,8 @@ const cleaningRecordTool = defineRecordTool({
   nonFormKeys: ["cleaningTargetId"],
   schema: cleaningRecordFormSchema,
   defaults: () => nowDateTimeValues("performedDate", "performedTime"),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(cleaningRecords)
-      .where(and(eq(cleaningRecords.id, id), eq(cleaningRecords.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getCleaningRecordForCat(catId, id, d1);
     if (!row) return null;
     return {
       existing: { cleaningTargetId: row.cleaningTargetId },
@@ -634,12 +604,8 @@ const medicationDoseTool = defineRecordTool({
     // 画面のフォームと同じく、投薬できた状態から始める
     wasAdministered: "on",
   }),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(medicationDoses)
-      .where(and(eq(medicationDoses.id, id), eq(medicationDoses.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getMedicationDoseForCat(catId, id, d1);
     if (!row) return null;
     return {
       existing: { medicationId: row.medicationId },
@@ -705,12 +671,8 @@ const symptomTool = defineRecordTool({
   },
   schema: symptomFormSchema,
   defaults: () => nowDateTimeValues("onsetDate", "onsetTime"),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(symptoms)
-      .where(and(eq(symptoms.id, id), eq(symptoms.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getSymptomForCat(catId, id, d1);
     if (!row) return null;
     return {
       existing: null,
@@ -766,23 +728,8 @@ const hospitalVisitTool = defineRecordTool({
   },
   schema: hospitalVisitFormSchema,
   defaults: () => nowDateTimeValues("visitedDate", "visitedTime"),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select({
-        visit: hospitalVisits,
-        expenseAmountYen: expenseRecords.amountYen,
-      })
-      .from(hospitalVisits)
-      .leftJoin(
-        expenseRecordHospitalVisits,
-        eq(expenseRecordHospitalVisits.hospitalVisitId, hospitalVisits.id),
-      )
-      .leftJoin(
-        expenseRecords,
-        eq(expenseRecords.id, expenseRecordHospitalVisits.expenseRecordId),
-      )
-      .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getHospitalVisitWithExpenseAmountForCat(catId, id, d1);
     if (!row) return null;
     const { visit } = row;
     const nextVisit = visit.nextVisitAt
@@ -836,12 +783,8 @@ const memoTool = defineRecordTool({
     ...nowDateTimeValues("recordedDate", "recordedTime"),
     hasDate: "on",
   }),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(memoRecords)
-      .where(and(eq(memoRecords.id, id), eq(memoRecords.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getMemoRecordForCat(catId, id, d1);
     if (!row) return null;
     return {
       existing: null,
@@ -951,41 +894,23 @@ const expenseTool = defineRecordTool({
   defaults: () => ({
     spentDate: nowDateTimeValues("spentDate", "spentTime").spentDate,
   }),
-  async load(db, catId, id) {
+  async load(d1, catId, id) {
     // 猫のタイムラインと同じく、その猫が関連する猫に含まれる支出の記録だけを編集できる
-    const [row] = await db
-      .select({ record: expenseRecords })
-      .from(expenseRecords)
-      .innerJoin(
-        expenseRecordCats,
-        eq(expenseRecordCats.expenseRecordId, expenseRecords.id),
-      )
-      .where(and(eq(expenseRecords.id, id), eq(expenseRecordCats.catId, catId)))
-      .limit(1);
+    const row = await getExpenseRecordForCat(catId, id, d1);
     if (!row) return null;
-    const [catRows, visitRows] = await Promise.all([
-      db
-        .select({ catId: expenseRecordCats.catId })
-        .from(expenseRecordCats)
-        .where(eq(expenseRecordCats.expenseRecordId, id)),
-      db
-        .select({ id: expenseRecordHospitalVisits.hospitalVisitId })
-        .from(expenseRecordHospitalVisits)
-        .where(eq(expenseRecordHospitalVisits.expenseRecordId, id)),
-    ]);
-    const { record } = row;
+    const { record, catIds, hospitalVisitIds } = row;
     return {
       existing: {
         householdId: record.householdId,
-        catIds: catRows.map((linked) => linked.catId),
+        catIds,
       },
       values: {
         spentDate: splitDateTimeUtc(record.spentAt).date,
         amountYen: record.amountYen,
         category: record.category,
         memo: toOptionalValue(record.memo),
-        catIds: catRows.map((linked) => linked.catId),
-        hospitalVisitIds: visitRows.map((visit) => visit.id),
+        catIds,
+        hospitalVisitIds,
       },
     };
   },
@@ -1089,18 +1014,10 @@ const feedingRecordTool = defineRecordTool({
   },
   schema: feedingRecordFormSchema,
   defaults: () => nowDateTimeValues("occurredDate", "occurredTime"),
-  async load(db, catId, id) {
-    const [row] = await db
-      .select()
-      .from(feedingRecords)
-      .where(and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)))
-      .limit(1);
+  async load(d1, catId, id) {
+    const row = await getFeedingRecordRowForCat(catId, id, d1);
     if (!row) return null;
-    const items = await db
-      .select()
-      .from(feedingRecordItems)
-      .where(eq(feedingRecordItems.feedingRecordId, id))
-      .orderBy(asc(feedingRecordItems.sortOrder));
+    const items = await listFeedingRecordItemRows(id, d1);
     return {
       existing: null,
       values: {
@@ -1337,7 +1254,7 @@ function registerRecordTool<TData, TExisting>(
       if ("error" in decoded) {
         return errorResult(decoded.error);
       }
-      const loaded = await definition.load(getDb(ctx.env.DB), catId, id);
+      const loaded = await definition.load(ctx.env.DB, catId, id);
       if (!loaded) {
         return errorResult(`id="${id}" の${label}が見つかりません`);
       }

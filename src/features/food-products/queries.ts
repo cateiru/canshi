@@ -26,6 +26,27 @@ export async function listFoodProducts(householdId: string) {
 }
 
 /**
+ * 複数の家のごはん商品の一覧。新しく登録した順（ユーザーが家に所属していることは呼び出し元で確認する）
+ */
+export async function listFoodProductsByHouseholdIds(
+  householdIds: string[],
+  d1?: D1Database,
+): Promise<FoodProduct[]> {
+  const db = getDb(d1);
+  const products: FoodProduct[] = [];
+  // 家の ID は D1 のバインド上限に収まるよう分割し、まとめてから新しい順に並べる
+  for (const ids of chunkForBoundParameters(householdIds)) {
+    products.push(
+      ...(await db
+        .select()
+        .from(foodProducts)
+        .where(inArray(foodProducts.householdId, ids))),
+    );
+  }
+  return products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+/**
  * ユーザーが所属する家のごはん商品の一覧。新しく登録した順。
  * 商品一覧・プリセットの登録画面で、家ごとにまとめて表示するために使う
  */
@@ -44,8 +65,12 @@ export async function listFoodProductsForUser(userId: string) {
 }
 
 /** ユーザーが所属する家のごはん商品であれば返す。存在しない・別の家の商品なら null */
-export async function getFoodProductForUser(userId: string, id: string) {
-  const db = getDb();
+export async function getFoodProductForUser(
+  userId: string,
+  id: string,
+  d1?: D1Database,
+) {
+  const db = getDb(d1);
   const [row] = await db
     .select({ foodProduct: foodProducts })
     .from(foodProducts)
