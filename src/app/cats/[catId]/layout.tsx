@@ -1,4 +1,4 @@
-import { requireCatAccess } from "@/features/auth/session";
+import { requireCatAccess } from "@/features/auth/presentation/session";
 
 type CatLayoutProps = {
   children: React.ReactNode;

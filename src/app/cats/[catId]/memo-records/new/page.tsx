@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { MemoIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { resolveMediaLimits } from "@/features/media/limits";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
 import {
   createMemoRecordAction,
   updateMemoRecordAction,
-} from "@/features/memo-records/actions";
-import { MemoRecordForm } from "@/features/memo-records/MemoRecordForm";
+} from "@/features/memo-records/presentation/actions";
+import { MemoRecordForm } from "@/features/memo-records/presentation/MemoRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 

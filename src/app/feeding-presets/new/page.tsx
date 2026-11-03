@@ -1,12 +1,12 @@
 import { Breadcrumb, ButtonLink } from "@/components/ui";
-import { requireUser } from "@/features/auth/session";
-import { createFeedingPresetAction } from "@/features/feeding-presets/actions";
-import { FeedingPresetForm } from "@/features/feeding-presets/FeedingPresetForm";
+import { requireUser } from "@/features/auth/presentation/session";
+import { createFeedingPresetAction } from "@/features/feeding-presets/presentation/actions";
+import { FeedingPresetForm } from "@/features/feeding-presets/presentation/FeedingPresetForm";
 import {
   listFoodProductImageUrls,
   listFoodProductsForUser,
-} from "@/features/food-products/queries";
-import { listHouseholdsForUser } from "@/features/households/queries";
+} from "@/features/food-products/infrastructure/queries";
+import { listHouseholdsForUser } from "@/features/households/infrastructure/queries";
 import { Surface } from "@/features/shared/Surface";
 import styles from "../page.module.css";
 

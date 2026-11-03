@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { updateShampooRecordAction } from "@/features/shampoo-records/actions";
-import { getShampooRecordById } from "@/features/shampoo-records/queries";
-import { ShampooRecordForm } from "@/features/shampoo-records/ShampooRecordForm";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getShampooRecordById } from "@/features/shampoo-records/infrastructure/queries";
+import { updateShampooRecordAction } from "@/features/shampoo-records/presentation/actions";
+import { ShampooRecordForm } from "@/features/shampoo-records/presentation/ShampooRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 

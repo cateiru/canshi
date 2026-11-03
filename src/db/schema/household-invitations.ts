@@ -12,7 +12,7 @@ import { users } from "./users";
 /**
  * 家への招待 URL。URL に含めるトークンそのものは保存せず、そのハッシュ（SHA-256）を持つ。
  * 1 つの招待で家に参加できるのは 1 人だけで、参加したユーザーを `accepted_by_user_id` に残す。
- * 無効化した招待は行を削除する（`src/features/households/invitations.ts`）
+ * 無効化した招待は行を削除する（`src/features/households/application/invitations.ts`）
  */
 export const householdInvitations = sqliteTable(
   "household_invitations",
@@ -34,7 +34,7 @@ export const householdInvitations = sqliteTable(
     acceptedAt: integer("accepted_at", { mode: "timestamp" }),
     // 参加の処理ごとに発行する ID。招待を使用済みにする UPDATE と同じ batch の INSERT が、
     // その処理で使用済みにした招待からだけメンバーを作るための目印
-    // （`src/features/households/invitations.ts` の `acceptHouseholdInvitation`）
+    // （`src/features/households/application/invitations.ts` の `acceptHouseholdInvitation`）
     acceptanceId: text("acceptance_id"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()

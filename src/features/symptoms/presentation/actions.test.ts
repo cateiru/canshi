@@ -1,0 +1,170 @@
+// @vitest-environment node
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/sql-js";
+import { migrate } from "drizzle-orm/sql-js/migrator";
+import initSqlJs from "sql.js";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import type { getDb } from "@/db/client";
+import { cats, notifications, symptoms } from "@/db/schema";
+
+// `src/features/notifications/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
+// D1 専用の `db.batch` は順番に実行するだけの簡易実装で補う。写真・動画の同期（R2）と
+// リダイレクトはこのテストの対象外のため何もしないものに差し替える
+let db: ReturnType<typeof getDb>;
+vi.mock("@/db/client", () => ({
+  getDb: () => db,
+}));
+vi.mock("@/features/media/presentation/attach", () => ({
+  syncRecordMediaFromForm: async () => undefined,
+}));
+const { deleteMediaAssetsByRecord } = vi.hoisted(() => ({
+  deleteMediaAssetsByRecord: vi.fn(async () => {}),
+}));
+vi.mock("@/features/media/infrastructure/storage", () => ({
+  deleteMediaAssetsByRecord,
+}));
+// Next.js の redirect と同じく例外を投げ、以降の処理を止める
+vi.mock("next/navigation", () => ({
+  redirect: (url: string) => {
+    throw new Error(`REDIRECT:${url}`);
+  },
+}));
+// 猫の家による認可はこのテストの対象外のため、常に許可する
+vi.mock("@/features/auth/presentation/session", () => ({
+  requireCatAccess: async () => ({}),
+}));
+
+const { deleteSymptomAction, updateSymptomAction } = await import("./actions");
+
+beforeAll(async () => {
+  const SQL = await initSqlJs();
+  const raw = drizzle(new SQL.Database());
+  await migrate(raw, { migrationsFolder: "./drizzle" });
+  db = raw as unknown as ReturnType<typeof getDb>;
+  // biome-ignore lint/suspicious/noExplicitAny: テスト用に D1 の batch を簡易実装する
+  (db as any).batch = async (statements: PromiseLike<unknown>[]) => {
+    const results: unknown[] = [];
+    for (const statement of statements) {
+      results.push(await statement);
+    }
+    return results;
+  };
+});
+
+async function setup() {
+  const [cat] = await db
+    .insert(cats)
+    .values({ name: "たま", sex: "female" })
+    .returning();
+  const [symptom] = await db
+    .insert(symptoms)
+    .values({
+      catId: cat.id,
+      symptomType: "くしゃみ",
+      onsetAt: new Date("2026-08-01T09:00:00.000Z"),
+      status: "ongoing",
+    })
+    .returning();
+  const [notification] = await db
+    .insert(notifications)
+    .values({
+      catId: cat.id,
+      kind: "symptom_ongoing",
+      referenceId: symptom.id,
+      dedupeKey: `dedupe-${crypto.randomUUID()}`,
+      title: "たまの「くしゃみ」は解消しましたか？",
+      body: "「くしゃみ」の症状が「継続中」のまま1ヶ月が経過しました",
+      url: `/cats/${cat.id}/symptoms/${symptom.id}/edit`,
+      dueAt: new Date(),
+    })
+    .returning();
+  return { cat, symptom, notification };
+}
+
+function makeFormData(status: string) {
+  const formData = new FormData();
+  formData.set("symptomType", "くしゃみ");
+  formData.set("onsetDate", "2026-08-01");
+  formData.set("onsetTime", "09:00");
+  formData.set("status", status);
+  return formData;
+}
+
+async function findNotification(id: string) {
+  const [notification] = await db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.id, id));
+  return notification;
+}
+
+describe("updateSymptomAction", () => {
+  it("解消にすると、未対応の確認通知を完了にする", async () => {
+    const { cat, symptom, notification } = await setup();
+
+    const result = await updateSymptomAction(
+      cat.id,
+      symptom.id,
+      {},
+      makeFormData("resolved"),
+    );
+
+    expect(result.savedRecordId).toBe(symptom.id);
+    expect((await findNotification(notification.id)).status).toBe("done");
+  });
+
+  it("解消以外の状態で保存しても、確認通知はそのまま残す", async () => {
+    const { cat, symptom, notification } = await setup();
+
+    await updateSymptomAction(
+      cat.id,
+      symptom.id,
+      {},
+      makeFormData("improving"),
+    );
+
+    expect((await findNotification(notification.id)).status).toBe("pending");
+  });
+});
+
+describe("deleteSymptomAction", () => {
+  it("症状を削除すると、その症状の確認通知も削除する", async () => {
+    const { cat, symptom, notification } = await setup();
+
+    await expect(deleteSymptomAction(cat.id, symptom.id)).rejects.toThrow(
+      `REDIRECT:/cats/${cat.id}/symptoms`,
+    );
+
+    expect(deleteMediaAssetsByRecord).toHaveBeenCalledWith(
+      "symptom",
+      symptom.id,
+    );
+    expect(await findNotification(notification.id)).toBeUndefined();
+    const [deleted] = await db
+      .select()
+      .from(symptoms)
+      .where(eq(symptoms.id, symptom.id));
+    expect(deleted).toBeUndefined();
+  });
+
+  it("別の猫の症状 ID を渡しても、添付も症状も削除しない", async () => {
+    const { symptom } = await setup();
+    // 認可を通過する自分の猫（`requireCatAccess` はこのテストでは常に許可する）
+    const [ownCat] = await db
+      .insert(cats)
+      .values({ name: "ミケ", sex: "female" })
+      .returning();
+    deleteMediaAssetsByRecord.mockClear();
+
+    await expect(deleteSymptomAction(ownCat.id, symptom.id)).rejects.toThrow(
+      `REDIRECT:/cats/${ownCat.id}/symptoms`,
+    );
+
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
+    const [kept] = await db
+      .select()
+      .from(symptoms)
+      .where(eq(symptoms.id, symptom.id));
+    expect(kept).toBeDefined();
+  });
+});

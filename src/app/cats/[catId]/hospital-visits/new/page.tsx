@@ -1,15 +1,15 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
 import {
   createHospitalVisitAction,
   updateHospitalVisitAction,
-} from "@/features/hospital-visits/actions";
-import { HospitalVisitForm } from "@/features/hospital-visits/HospitalVisitForm";
-import { resolveMediaLimits } from "@/features/media/limits";
+} from "@/features/hospital-visits/presentation/actions";
+import { HospitalVisitForm } from "@/features/hospital-visits/presentation/HospitalVisitForm";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { listSymptoms } from "@/features/symptoms/queries";
+import { listSymptoms } from "@/features/symptoms/infrastructure/queries";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";

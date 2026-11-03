@@ -1,5 +1,5 @@
 import { deflateSync } from "node:zlib";
-import { buildPngChunk } from "../exif";
+import { buildPngChunk } from "../domain/exif";
 
 export type Rgba = [number, number, number, number];
 

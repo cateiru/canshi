@@ -16,7 +16,7 @@ import { users } from "./users";
  * `household_id`、ユーザーについての通知（共通のごはん商品のリクエストの完了など、本人だけに
  * 届けるもの）は `user_id` を持ち、どれか 1 つだけを必ず持つ（`notifications_target_check`）。
  * `cat_id` を持つが記録テーブルではなく、タイムライン（`14`）の対象外（`src/db/README.md` 参照）。`dedupe_key` の UNIQUE 制約により、同じ判定結果からの
- * 二重生成を防ぐ（`src/features/notifications/generate.ts` が `onConflictDoNothing` で insert する）
+ * 二重生成を防ぐ（`src/features/notifications/infrastructure/notificationGenerationRepository.ts` が `onConflictDoNothing` で insert する）
  */
 export const notifications = sqliteTable(
   "notifications",

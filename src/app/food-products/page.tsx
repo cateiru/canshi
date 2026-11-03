@@ -1,29 +1,29 @@
 import { TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireUser } from "@/features/auth/session";
-import { deleteFoodProductAction } from "@/features/food-products/actions";
-import { DeleteFoodProductButton } from "@/features/food-products/DeleteFoodProductButton";
-import { FoodProductImage } from "@/features/food-products/FoodProductImage";
+import { requireUser } from "@/features/auth/presentation/session";
 import {
   FOOD_PRODUCT_IN_USE_MESSAGE,
   formatFoodProductTarget,
   NUTRITION_TYPE_LABEL,
   packageAmountParts,
   TEXTURE_TYPE_LABEL,
-} from "@/features/food-products/labels";
+} from "@/features/food-products/domain/labels";
 import {
   listFoodProductImageUrls,
   listFoodProductsForUser,
   listFoodProductUsages,
-} from "@/features/food-products/queries";
-import { groupByHousehold } from "@/features/households/groupCats";
-import { HouseholdSections } from "@/features/households/HouseholdSections";
+} from "@/features/food-products/infrastructure/queries";
+import { deleteFoodProductAction } from "@/features/food-products/presentation/actions";
+import { DeleteFoodProductButton } from "@/features/food-products/presentation/DeleteFoodProductButton";
+import { FoodProductImage } from "@/features/food-products/presentation/FoodProductImage";
+import { listHouseholdsForUser } from "@/features/households/infrastructure/queries";
+import { groupByHousehold } from "@/features/households/presentation/groupCats";
+import { HouseholdSections } from "@/features/households/presentation/HouseholdSections";
 import {
   findFilterHousehold,
   householdSettingsBreadcrumbItems,
-} from "@/features/households/householdFilter";
-import { listHouseholdsForUser } from "@/features/households/queries";
+} from "@/features/households/presentation/householdFilter";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";

@@ -1,18 +1,18 @@
 import OAuthProvider from "@cloudflare/workers-oauth-provider";
-import { createCanshiMcpHandler } from "@/features/mcp/agent";
+import { withMcpClientId } from "@/features/mcp/infrastructure/clientId";
+import {
+  D1KvStore,
+  purgeExpiredOAuthKvEntries,
+} from "@/features/mcp/infrastructure/d1KvStore";
+import { purgeOrphanedMcpConnectionUsages } from "@/features/mcp/infrastructure/usages";
+import { createCanshiMcpHandler } from "@/features/mcp/presentation/agent";
 import {
   MCP_API_ROUTE,
   OAUTH_AUTHORIZE_PATH,
   OAUTH_REGISTER_PATH,
   OAUTH_TOKEN_PATH,
   withMcpAuthorize,
-} from "@/features/mcp/authorize";
-import { withMcpClientId } from "@/features/mcp/clientId";
-import {
-  D1KvStore,
-  purgeExpiredOAuthKvEntries,
-} from "@/features/mcp/d1KvStore";
-import { purgeOrphanedMcpConnectionUsages } from "@/features/mcp/usages";
+} from "@/features/mcp/presentation/authorize";
 
 // `.open-next/worker.js` は `opennextjs-cloudflare build`（`pnpm cf:build` 等）で
 // 生成される。ビルド前（`.open-next/` が無いクリーンな環境）は型解決できないため抑制する

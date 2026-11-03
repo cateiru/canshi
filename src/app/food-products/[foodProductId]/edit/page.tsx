@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { requireUser } from "@/features/auth/session";
-import { updateFoodProductAction } from "@/features/food-products/actions";
-import { FoodProductForm } from "@/features/food-products/FoodProductForm";
-import { FOOD_PRODUCT_MEDIA_TYPE } from "@/features/food-products/media";
-import { getFoodProductForUser } from "@/features/food-products/queries";
-import { resolveMediaLimits } from "@/features/media/limits";
-import { listMediaAssetsByRecord } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
+import { requireUser } from "@/features/auth/presentation/session";
+import { FOOD_PRODUCT_MEDIA_TYPE } from "@/features/food-products/domain/media";
+import { getFoodProductForUser } from "@/features/food-products/infrastructure/queries";
+import { updateFoodProductAction } from "@/features/food-products/presentation/actions";
+import { FoodProductForm } from "@/features/food-products/presentation/FoodProductForm";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecord } from "@/features/media/infrastructure/queries";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";

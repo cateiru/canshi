@@ -9,7 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { WaterIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import {
@@ -18,12 +18,12 @@ import {
   parsePageParam,
 } from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { deleteWaterRecordAction } from "@/features/water-records/actions";
 import {
   MEASUREMENT_METHOD_LABEL,
   SUBJECTIVE_AMOUNT_LABEL,
-} from "@/features/water-records/labels";
-import { listWaterRecords } from "@/features/water-records/queries";
+} from "@/features/water-records/domain/labels";
+import { listWaterRecords } from "@/features/water-records/infrastructure/queries";
+import { deleteWaterRecordAction } from "@/features/water-records/presentation/actions";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";

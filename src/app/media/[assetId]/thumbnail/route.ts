@@ -1,8 +1,8 @@
-import { getCurrentUser } from "@/features/auth/session";
-import { canAccessMediaAsset } from "@/features/media/access";
-import { THUMBNAIL_MIME_TYPE } from "@/features/media/mimeSniff";
-import { getMediaAssetById } from "@/features/media/queries";
-import { serveR2Object } from "@/features/media/serve";
+import { getCurrentUser } from "@/features/auth/presentation/session";
+import { canAccessMediaAsset } from "@/features/media/application/access";
+import { THUMBNAIL_MIME_TYPE } from "@/features/media/domain/mimeSniff";
+import { getMediaAssetById } from "@/features/media/infrastructure/queries";
+import { serveR2Object } from "@/features/media/infrastructure/serve";
 
 export const dynamic = "force-dynamic";
 

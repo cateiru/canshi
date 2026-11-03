@@ -7,25 +7,25 @@ import type { VapidKeys } from "@block65/webcrypto-web-push";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { notifications } from "@/db/schema";
-import { generateNotifications } from "@/features/notifications/generate";
+import { generateNotifications } from "@/features/notifications/application/generate";
+import {
+  buildPushAccessIndex,
+  selectPushTargets,
+} from "@/features/push/domain/targets";
 import {
   listCatAccessesOfSubscribers,
   listHouseholdAccessesOfSubscribers,
   listPushDeliveries,
   listPushSubscriptions,
   listUnpushedNotifications,
-} from "@/features/push/queries";
-import { sendPushToSubscription } from "@/features/push/sendPush";
+} from "@/features/push/infrastructure/queries";
+import { sendPushToSubscription } from "@/features/push/infrastructure/sendPush";
 import {
   listPushTestTargets,
   type PushTestTarget,
   sendTestPush,
-} from "@/features/push/sendTestPush";
-import {
-  buildPushAccessIndex,
-  selectPushTargets,
-} from "@/features/push/targets";
-import { getVapidKeys } from "@/features/push/vapid";
+} from "@/features/push/infrastructure/sendTestPush";
+import { getVapidKeys } from "@/features/push/infrastructure/vapid";
 
 function deliveryKey(notificationId: string, subscriptionId: string): string {
   return `${notificationId}:${subscriptionId}`;
@@ -198,7 +198,7 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
   }
 
   /**
-   * 予約されたテスト通知を送る（`src/features/push/sendTestPush.ts`）。テスト通知はステップの
+   * 予約されたテスト通知を送る（`src/features/push/infrastructure/sendTestPush.ts`）。テスト通知はステップの
    * リトライで待たず、送れなかった予約は残して次のスケジュール実行で送り直す。リトライで待つと、
    * 実行が次のスケジュール実行と重なって同じ予約を二重に送ることがあるため
    */

@@ -9,7 +9,7 @@ import { households } from "./households";
 
 /**
  * 家ごとの「ごはんの時間」。その家の猫について、時間になったときの通知と、時間の前後に
- * ごはん記録がないときのリマインダーを出す（`src/features/notifications/rules/feedingSchedule.ts`）
+ * ごはん記録がないときのリマインダーを出す（`src/features/notifications/domain/rules/feedingSchedule.ts`）
  */
 export const feedingSchedules = sqliteTable(
   "feeding_schedules",

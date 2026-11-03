@@ -14,7 +14,7 @@ export type CatalogListSearch = {
   query: string;
 };
 
-// メインアプリの `src/features/catalog-food-products/search.ts` と同じ上限
+// メインアプリの `src/features/catalog-food-products/domain/search.ts` と同じ上限
 const MAX_TEXT_LENGTH = 100;
 const MAX_KEYWORDS = 10;
 

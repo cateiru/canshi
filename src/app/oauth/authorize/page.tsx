@@ -3,15 +3,15 @@ import { headers } from "next/headers";
 import { TbAlertTriangle, TbEye, TbUser } from "react-icons/tb";
 import { Alert, Button, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireUser } from "@/features/auth/session";
-import { getMcpClientIcon } from "@/features/mcp/clientIcons";
+import { requireUser } from "@/features/auth/presentation/session";
+import { getMcpPermissionTree } from "@/features/mcp/infrastructure/permissions";
+import { getMcpClientIcon } from "@/features/mcp/presentation/clientIcons";
 import {
   decodeMcpConsentRequest,
   formatRedirectUri,
   MCP_CONSENT_HEADER,
-} from "@/features/mcp/consent";
-import { McpPermissionTreeField } from "@/features/mcp/McpPermissionTreeField";
-import { getMcpPermissionTree } from "@/features/mcp/permissions";
+} from "@/features/mcp/presentation/consent";
+import { McpPermissionTreeField } from "@/features/mcp/presentation/McpPermissionTreeField";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
@@ -32,7 +32,7 @@ type AuthorizePageProps = {
 /**
  * ChatGPT などの MCP クライアントを接続するときの同意画面。認可リクエストの検証と、
  * 「許可する」「許可しない」の送信先（`POST /oauth/authorize`）の処理は Worker
- * （`src/features/mcp/authorize.ts`）が行い、このページは検証済みの内容と、この接続で
+ * （`src/features/mcp/presentation/authorize.ts`）が行い、このページは検証済みの内容と、この接続で
  * 読み取り・書き込みを許可する範囲の選択を表示するだけ。
  * 未ログインのときは middleware がログイン画面へ送り、ログイン後にこのページへ戻る
  */

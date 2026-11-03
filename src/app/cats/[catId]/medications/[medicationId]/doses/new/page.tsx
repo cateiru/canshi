@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { createMedicationDoseAction } from "@/features/medications/doseActions";
-import { MedicationDoseForm } from "@/features/medications/MedicationDoseForm";
-import { getMedicationById } from "@/features/medications/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getMedicationById } from "@/features/medications/infrastructure/queries";
+import { createMedicationDoseAction } from "@/features/medications/presentation/doseActions";
+import { MedicationDoseForm } from "@/features/medications/presentation/MedicationDoseForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 

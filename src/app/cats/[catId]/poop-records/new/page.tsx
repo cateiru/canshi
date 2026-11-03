@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { resolveMediaLimits } from "@/features/media/limits";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
 import {
   createPoopRecordAction,
   updatePoopRecordAction,
-} from "@/features/poop-records/actions";
-import { PoopRecordForm } from "@/features/poop-records/PoopRecordForm";
+} from "@/features/poop-records/presentation/actions";
+import { PoopRecordForm } from "@/features/poop-records/presentation/PoopRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 

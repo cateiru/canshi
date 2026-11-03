@@ -1,20 +1,20 @@
 import { notFound } from "next/navigation";
 import { TbTimeline } from "react-icons/tb";
 import { Breadcrumb, Pagination } from "@/components/ui";
-import { getAccessibleCat } from "@/features/auth/session";
-import { listFoodProductImageUrls } from "@/features/food-products/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { listFoodProductImageUrls } from "@/features/food-products/infrastructure/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import { formatYm, parseYm, shiftYm } from "@/features/shared/yearMonth";
-import { buildTimelineHref } from "@/features/timeline/href";
 import {
   listTimelineForMonth,
   MAX_PAGE,
   normalizePositiveInt,
-} from "@/features/timeline/queries";
-import { TimelineCalendar } from "@/features/timeline/TimelineCalendar";
-import { TimelineEntryCard } from "@/features/timeline/TimelineEntryCard";
+} from "@/features/timeline/infrastructure/queries";
+import { buildTimelineHref } from "@/features/timeline/presentation/href";
+import { TimelineCalendar } from "@/features/timeline/presentation/TimelineCalendar";
+import { TimelineEntryCard } from "@/features/timeline/presentation/TimelineEntryCard";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";

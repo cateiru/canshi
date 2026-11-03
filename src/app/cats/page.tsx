@@ -8,24 +8,24 @@ import {
   IconButtonLink,
 } from "@/components/ui";
 import type { Cat } from "@/db/schema";
-import { requireUser } from "@/features/auth/session";
+import { requireUser } from "@/features/auth/presentation/session";
 import {
   calculateAge,
   calculateTimeSinceAdoption,
   formatAge,
   formatTimeSinceAdoption,
-} from "@/features/cats/age";
-import { BirthdayCelebration } from "@/features/cats/BirthdayCelebration";
-import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
-import { CatAvatar } from "@/features/cats/CatAvatar";
-import { CatIcon } from "@/features/cats/CatIcon";
-import { CatsAddMenu } from "@/features/cats/CatsAddMenu";
-import { SEX_LABEL } from "@/features/cats/labels";
-import { groupCatsByHousehold } from "@/features/households/groupCats";
+} from "@/features/cats/domain/age";
+import { toBirthdayCelebrationCat } from "@/features/cats/domain/birthday";
+import { SEX_LABEL } from "@/features/cats/domain/labels";
+import { BirthdayCelebration } from "@/features/cats/presentation/BirthdayCelebration";
+import { CatAvatar } from "@/features/cats/presentation/CatAvatar";
+import { CatIcon } from "@/features/cats/presentation/CatIcon";
+import { CatsAddMenu } from "@/features/cats/presentation/CatsAddMenu";
 import {
   listCatsForUser,
   listHouseholdsForUser,
-} from "@/features/households/queries";
+} from "@/features/households/infrastructure/queries";
+import { groupCatsByHousehold } from "@/features/households/presentation/groupCats";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";

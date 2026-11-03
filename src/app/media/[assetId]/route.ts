@@ -1,7 +1,7 @@
-import { getCurrentUser } from "@/features/auth/session";
-import { canAccessMediaAsset } from "@/features/media/access";
-import { getMediaAssetById } from "@/features/media/queries";
-import { serveR2Object } from "@/features/media/serve";
+import { getCurrentUser } from "@/features/auth/presentation/session";
+import { canAccessMediaAsset } from "@/features/media/application/access";
+import { getMediaAssetById } from "@/features/media/infrastructure/queries";
+import { serveR2Object } from "@/features/media/infrastructure/serve";
 
 export const dynamic = "force-dynamic";
 

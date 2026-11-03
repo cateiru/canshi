@@ -6,21 +6,21 @@ import {
   Collapsible,
   Heading,
 } from "@/components/ui";
-import { getAccessibleCat } from "@/features/auth/session";
-import { deleteCatAction } from "@/features/cats/actions";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
 import {
   calculateAge,
   calculateTimeSinceAdoption,
   formatAge,
   formatTimeSinceAdoption,
-} from "@/features/cats/age";
-import { BirthdayCelebration } from "@/features/cats/BirthdayCelebration";
-import { formatBirthDate } from "@/features/cats/birthDate";
-import { toBirthdayCelebrationCat } from "@/features/cats/birthday";
-import { CatAvatar } from "@/features/cats/CatAvatar";
-import { DeleteCatButton } from "@/features/cats/DeleteCatButton";
-import { SEX_LABEL } from "@/features/cats/labels";
-import { RecordNavGrid } from "@/features/cats/RecordNavGrid";
+} from "@/features/cats/domain/age";
+import { formatBirthDate } from "@/features/cats/domain/birthDate";
+import { toBirthdayCelebrationCat } from "@/features/cats/domain/birthday";
+import { SEX_LABEL } from "@/features/cats/domain/labels";
+import { deleteCatAction } from "@/features/cats/presentation/actions";
+import { BirthdayCelebration } from "@/features/cats/presentation/BirthdayCelebration";
+import { CatAvatar } from "@/features/cats/presentation/CatAvatar";
+import { DeleteCatButton } from "@/features/cats/presentation/DeleteCatButton";
+import { RecordNavGrid } from "@/features/cats/presentation/RecordNavGrid";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";

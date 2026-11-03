@@ -9,13 +9,13 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { MemoIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { MediaGallery } from "@/features/media/MediaGallery";
-import { listMediaAssetsByRecords } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
-import { deleteMemoRecordAction } from "@/features/memo-records/actions";
-import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/media";
-import { listMemoRecords } from "@/features/memo-records/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
+import { MediaGallery } from "@/features/media/presentation/MediaGallery";
+import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/domain/media";
+import { listMemoRecords } from "@/features/memo-records/infrastructure/queries";
+import { deleteMemoRecordAction } from "@/features/memo-records/presentation/actions";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import {

@@ -11,7 +11,7 @@ import { NOTIFICATION_KINDS } from "./notification-kinds";
 /**
  * 猫ごと・種類ごとの通知の有効／無効とパラメータ。
  * 行が無い組み合わせは既定値（すべて有効、シャンプー2ヶ月、体重測定14日）として扱う
- * （`src/features/notifications/queries.ts` の `getResolvedSettingsForCat` 参照）
+ * （`src/features/notifications/infrastructure/queries.ts` の `getResolvedSettingsForCat` 参照）
  */
 export const notificationSettings = sqliteTable(
   "notification_settings",

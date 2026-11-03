@@ -9,7 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {
@@ -18,15 +18,15 @@ import {
   parsePageParam,
 } from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { deleteWeightRecordAction } from "@/features/weight-records/actions";
-import { toWeightChartPoints } from "@/features/weight-records/chart";
 import {
   formatBcs,
   INPUT_METHOD_LABEL,
   isBodyConditionScore,
-} from "@/features/weight-records/labels";
-import { listWeightRecords } from "@/features/weight-records/queries";
-import { WeightChart } from "@/features/weight-records/WeightChart";
+} from "@/features/weight-records/domain/labels";
+import { listWeightRecords } from "@/features/weight-records/infrastructure/queries";
+import { deleteWeightRecordAction } from "@/features/weight-records/presentation/actions";
+import { toWeightChartPoints } from "@/features/weight-records/presentation/chart";
+import { WeightChart } from "@/features/weight-records/presentation/WeightChart";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";

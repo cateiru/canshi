@@ -10,16 +10,16 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { MediaGallery } from "@/features/media/MediaGallery";
-import { listMediaAssetsByRecords } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
-import { deletePoopRecordAction } from "@/features/poop-records/actions";
-import { toPoopChartPoints } from "@/features/poop-records/chart";
-import { CONSISTENCY_LABEL } from "@/features/poop-records/labels";
-import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/media";
-import { PoopRecordChart } from "@/features/poop-records/PoopRecordChart";
-import { listPoopRecords } from "@/features/poop-records/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
+import { MediaGallery } from "@/features/media/presentation/MediaGallery";
+import { CONSISTENCY_LABEL } from "@/features/poop-records/domain/labels";
+import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/domain/media";
+import { listPoopRecords } from "@/features/poop-records/infrastructure/queries";
+import { deletePoopRecordAction } from "@/features/poop-records/presentation/actions";
+import { toPoopChartPoints } from "@/features/poop-records/presentation/chart";
+import { PoopRecordChart } from "@/features/poop-records/presentation/PoopRecordChart";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {

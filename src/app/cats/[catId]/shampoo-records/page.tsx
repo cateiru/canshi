@@ -9,10 +9,10 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { deleteShampooRecordAction } from "@/features/shampoo-records/actions";
-import { calculateElapsedDays } from "@/features/shampoo-records/calculations";
-import { listShampooRecords } from "@/features/shampoo-records/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { calculateElapsedDays } from "@/features/shampoo-records/domain/calculations";
+import { listShampooRecords } from "@/features/shampoo-records/infrastructure/queries";
+import { deleteShampooRecordAction } from "@/features/shampoo-records/presentation/actions";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {

@@ -11,17 +11,17 @@ import {
   TableActionHeader,
 } from "@/components/ui";
 import { AccountSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { logoutAction } from "@/features/auth/actions";
-import { formatDeviceName } from "@/features/auth/deviceName";
-import { LogoutAllDevicesButton } from "@/features/auth/LogoutAllDevicesButton";
-import { SessionLogoutButton } from "@/features/auth/SessionLogoutButton";
-import { requireUser } from "@/features/auth/session";
-import { listUserSessions } from "@/features/auth/sessions";
-import { SESSION_COOKIE_NAME } from "@/features/auth/sessionToken";
+import { formatDeviceName } from "@/features/auth/domain/deviceName";
+import { SESSION_COOKIE_NAME } from "@/features/auth/domain/sessionToken";
+import { listUserSessions } from "@/features/auth/infrastructure/sessions";
+import { logoutAction } from "@/features/auth/presentation/actions";
+import { LogoutAllDevicesButton } from "@/features/auth/presentation/LogoutAllDevicesButton";
+import { SessionLogoutButton } from "@/features/auth/presentation/SessionLogoutButton";
+import { requireUser } from "@/features/auth/presentation/session";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
-import { UserAvatar } from "@/features/users/UserAvatar";
+import { UserAvatar } from "@/features/users/presentation/UserAvatar";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {

@@ -9,18 +9,18 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { formatYen } from "@/features/expenses/labels";
-import { listExpensesByHospitalVisitIds } from "@/features/expenses/queries";
-import { deleteHospitalVisitAction } from "@/features/hospital-visits/actions";
-import { toHospitalVisitCalendarData } from "@/features/hospital-visits/chart";
-import { HospitalVisitChart } from "@/features/hospital-visits/HospitalVisitChart";
-import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
-import { listHospitalVisits } from "@/features/hospital-visits/queries";
-import { MediaGallery } from "@/features/media/MediaGallery";
-import { listMediaAssetsByRecords } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
-import { listMedicationsByHospitalVisitIds } from "@/features/medications/queries";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { formatYen } from "@/features/expenses/domain/labels";
+import { listExpensesByHospitalVisitIds } from "@/features/expenses/infrastructure/queries";
+import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/domain/media";
+import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
+import { deleteHospitalVisitAction } from "@/features/hospital-visits/presentation/actions";
+import { toHospitalVisitCalendarData } from "@/features/hospital-visits/presentation/chart";
+import { HospitalVisitChart } from "@/features/hospital-visits/presentation/HospitalVisitChart";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
+import { MediaGallery } from "@/features/media/presentation/MediaGallery";
+import { listMedicationsByHospitalVisitIds } from "@/features/medications/infrastructure/queries";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {
@@ -29,7 +29,7 @@ import {
   parsePageParam,
 } from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { listSymptoms } from "@/features/symptoms/queries";
+import { listSymptoms } from "@/features/symptoms/infrastructure/queries";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";

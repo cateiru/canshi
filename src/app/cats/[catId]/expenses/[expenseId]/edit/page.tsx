@@ -1,15 +1,18 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat, listCurrentUserCats } from "@/features/auth/session";
-import { updateExpenseAction } from "@/features/expenses/actions";
-import { ExpenseForm } from "@/features/expenses/ExpenseForm";
-import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/media";
-import { getExpenseById } from "@/features/expenses/queries";
-import { listHospitalVisitsOnDate } from "@/features/hospital-visits/queries";
-import { resolveMediaLimits } from "@/features/media/limits";
-import { listMediaAssetsByRecord } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
+import {
+  getAccessibleCat,
+  listCurrentUserCats,
+} from "@/features/auth/presentation/session";
+import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/domain/media";
+import { getExpenseById } from "@/features/expenses/infrastructure/queries";
+import { updateExpenseAction } from "@/features/expenses/presentation/actions";
+import { ExpenseForm } from "@/features/expenses/presentation/ExpenseForm";
+import { listHospitalVisitsOnDate } from "@/features/hospital-visits/infrastructure/queries";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecord } from "@/features/media/infrastructure/queries";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";

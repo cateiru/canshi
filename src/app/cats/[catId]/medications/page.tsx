@@ -10,28 +10,28 @@ import {
 } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { Medication } from "@/db/schema";
-import { getAccessibleCat } from "@/features/auth/session";
-import { hospitalVisitOptionLabel } from "@/features/hospital-visits/labels";
-import { listHospitalVisits } from "@/features/hospital-visits/queries";
-import { MediaGallery } from "@/features/media/MediaGallery";
-import { listMediaAssetsByRecords } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
-import {
-  archiveMedicationAction,
-  deleteMedicationAction,
-  unarchiveMedicationAction,
-} from "@/features/medications/actions";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { hospitalVisitOptionLabel } from "@/features/hospital-visits/domain/labels";
+import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
+import { MediaGallery } from "@/features/media/presentation/MediaGallery";
 import {
   getMedicationToday,
   isMedicationEnded,
   partitionMedications,
-} from "@/features/medications/history";
-import { MedicationHistoryButton } from "@/features/medications/MedicationHistoryButton";
-import { MEDICATION_MEDIA_TYPE } from "@/features/medications/media";
-import { listMedications } from "@/features/medications/queries";
+} from "@/features/medications/domain/history";
+import { MEDICATION_MEDIA_TYPE } from "@/features/medications/domain/media";
+import { listMedications } from "@/features/medications/infrastructure/queries";
+import {
+  archiveMedicationAction,
+  deleteMedicationAction,
+  unarchiveMedicationAction,
+} from "@/features/medications/presentation/actions";
+import { MedicationHistoryButton } from "@/features/medications/presentation/MedicationHistoryButton";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { listSymptoms } from "@/features/symptoms/queries";
+import { listSymptoms } from "@/features/symptoms/infrastructure/queries";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";

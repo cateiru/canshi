@@ -33,7 +33,7 @@ import {
   TrashIcon,
 } from "./icons";
 
-// メインアプリの `src/features/food-products/labels.ts` と同じ表記にする
+// メインアプリの `src/features/food-products/domain/labels.ts` と同じ表記にする
 const NUTRITION_TYPE_LABEL: Record<NutritionType, string> = {
   complete: "総合栄養食",
   general: "一般食",

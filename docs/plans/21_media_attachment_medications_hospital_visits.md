@@ -28,7 +28,7 @@
 
 - `src/features/medications/`・`src/features/hospital-visits/` のフォーム・アクション・クエリの更新
 - `src/app/cats/[catId]/medications/`・`hospital-visits/` の一覧ページの更新
-- `src/features/media/MediaGallery.tsx` の等倍表示モードの追加
+- `src/features/media/presentation/MediaGallery.tsx` の等倍表示モードの追加
 
 ## DB マイグレーション
 

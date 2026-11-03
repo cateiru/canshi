@@ -38,7 +38,7 @@ export const feedingRecords = sqliteTable(
   },
   (table) => [
     // ごはんの時間の通知で、猫ごとに直近の記録を期間で絞って読むため
-    // （`src/features/notifications/generate.ts`）
+    // （`src/features/notifications/infrastructure/notificationGenerationRepository.ts`）
     index("feeding_records_cat_id_occurred_at_idx").on(
       table.catId,
       table.occurredAt,

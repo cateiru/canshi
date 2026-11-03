@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { resolveMediaLimits } from "@/features/media/limits";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import {
   createVomitRecordAction,
   updateVomitRecordAction,
-} from "@/features/vomit-records/actions";
-import { VomitRecordForm } from "@/features/vomit-records/VomitRecordForm";
+} from "@/features/vomit-records/presentation/actions";
+import { VomitRecordForm } from "@/features/vomit-records/presentation/VomitRecordForm";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";

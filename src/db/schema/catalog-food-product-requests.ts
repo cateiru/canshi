@@ -17,7 +17,7 @@ import { users } from "./users";
  * 検索条件は、検索ページの URL のクエリ（`search_query`、追加先の家を除いて正規化したもの）で持ち、
  * 完了の通知から同じ条件の検索ページを開けるようにする。表示用の要約（`label`）はリクエストした
  * 時点でメインアプリが作って保存し、管理画面はそれをそのまま表示する
- * （`src/features/catalog-food-products/requests.ts`）
+ * （`src/features/catalog-food-products/application/requests.ts`）
  */
 export const catalogFoodProductRequests = sqliteTable(
   "catalog_food_product_requests",

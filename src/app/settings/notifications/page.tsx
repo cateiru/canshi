@@ -1,10 +1,10 @@
 import { TbClock, TbDeviceMobile, TbPaw } from "react-icons/tb";
 import { Alert, Breadcrumb, ButtonLink, NavCard } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { listCurrentUserCats } from "@/features/auth/session";
-import { CatAvatar } from "@/features/cats/CatAvatar";
-import { CatIcon } from "@/features/cats/CatIcon";
-import { PushSubscriptionToggle } from "@/features/push/PushSubscriptionToggle";
+import { listCurrentUserCats } from "@/features/auth/presentation/session";
+import { CatAvatar } from "@/features/cats/presentation/CatAvatar";
+import { CatIcon } from "@/features/cats/presentation/CatIcon";
+import { PushSubscriptionToggle } from "@/features/push/presentation/PushSubscriptionToggle";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";

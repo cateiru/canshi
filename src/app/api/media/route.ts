@@ -1,12 +1,15 @@
-import { getCurrentUser } from "@/features/auth/session";
-import { canAccessMediaRecordOwner } from "@/features/media/access";
-import { resolveMediaRecordOwner } from "@/features/media/recordOwner";
+import { getCurrentUser } from "@/features/auth/presentation/session";
+import { canAccessMediaRecordOwner } from "@/features/media/application/access";
 import {
   DEV_MEDIA_RECORD_TYPE,
   isMediaRecordType,
-} from "@/features/media/recordTypes";
-import { MediaUploadError, storeMediaAsset } from "@/features/media/storage";
-import { toMediaAssetView } from "@/features/media/view";
+} from "@/features/media/domain/recordTypes";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { resolveMediaRecordOwner } from "@/features/media/infrastructure/recordOwner";
+import {
+  MediaUploadError,
+  storeMediaAsset,
+} from "@/features/media/infrastructure/storage";
 
 export const dynamic = "force-dynamic";
 

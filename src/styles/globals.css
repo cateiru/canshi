@@ -53,7 +53,7 @@ a {
 }
 
 /*
- * タイムラインのカレンダーの月送り（src/features/timeline/CalendarSwipeArea.tsx）。
+ * タイムラインのカレンダーの月送り（src/features/timeline/presentation/CalendarSwipeArea.tsx）。
  * カードの幅で切り取ったまま、前の月は左から、次の月は右から入れ替わるようにスライドさせる。
  * CSS Modules では ::view-transition-* をクラスなしで書けないため、ここに置く
  */

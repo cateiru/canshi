@@ -1,0 +1,41 @@
+import type { WaterRecord } from "@/db/schema";
+import { combineDateTimeUtc } from "@/features/shared/datetime";
+import type { WaterRecordFormInput } from "./schema";
+import { estimatedIntakeMl, waterAmount } from "./waterAmount";
+
+/** 飲水の記録（エンティティ）。ID で区別し、猫（`catId`）に属する */
+export type { WaterRecord };
+
+/** 記録の中身。ID・猫・作成日時など、保存のたびに変わらない項目を除いたもの */
+export type WaterRecordContent = Pick<
+  WaterRecord,
+  | "occurredAt"
+  | "measurementMethod"
+  | "suppliedAmountMl"
+  | "remainingAmountMl"
+  | "estimatedIntakeMl"
+  | "hasSpill"
+  | "wasWaterChanged"
+  | "subjectiveAmount"
+  | "memo"
+>;
+
+/**
+ * 入力から記録の中身を作る。推定飲水量は、商品改定などの影響を受けないよう保存時に計算して持つ
+ */
+export function toWaterRecordContent(
+  data: WaterRecordFormInput,
+): WaterRecordContent {
+  const amount = waterAmount(data.suppliedAmountMl, data.remainingAmountMl);
+  return {
+    occurredAt: combineDateTimeUtc(data.occurredDate, data.occurredTime),
+    measurementMethod: data.measurementMethod,
+    suppliedAmountMl: amount.suppliedMl,
+    remainingAmountMl: amount.remainingMl,
+    estimatedIntakeMl: estimatedIntakeMl(amount),
+    hasSpill: data.hasSpill,
+    wasWaterChanged: data.wasWaterChanged,
+    subjectiveAmount: data.subjectiveAmount ?? null,
+    memo: data.memo ?? null,
+  };
+}

@@ -1,45 +1,45 @@
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireUser } from "@/features/auth/session";
-import { AddCatalogFoodProductButton } from "@/features/catalog-food-products/AddCatalogFoodProductButton";
+import { requireUser } from "@/features/auth/presentation/session";
+import { hasOpenCatalogFoodProductRequest } from "@/features/catalog-food-products/application/requests";
 import {
-  addCatalogFoodProductAction,
-  requestCatalogFoodProductAction,
-} from "@/features/catalog-food-products/actions";
-import { CatalogSearchForm } from "@/features/catalog-food-products/CatalogSearchForm";
+  hasCatalogSearchCriteria,
+  toCatalogSearchQuery,
+} from "@/features/catalog-food-products/domain/catalogRequest";
 import {
   catalogPackageSizes,
   formatPackageSize,
   toPackageSizeValue,
-} from "@/features/catalog-food-products/packageSizes";
+} from "@/features/catalog-food-products/domain/packageSizes";
+import {
+  hasAdvancedCriteria,
+  parseCatalogSearchParams,
+} from "@/features/catalog-food-products/domain/search";
 import {
   CATALOG_SEARCH_LIMIT,
   listAddedCatalogFoodProductIds,
   listCatalogFoodProductImageUrls,
   searchCatalogFoodProducts,
-} from "@/features/catalog-food-products/queries";
-import { RequestCatalogFoodProductButton } from "@/features/catalog-food-products/RequestCatalogFoodProductButton";
+} from "@/features/catalog-food-products/infrastructure/queries";
+import { AddCatalogFoodProductButton } from "@/features/catalog-food-products/presentation/AddCatalogFoodProductButton";
 import {
-  hasCatalogSearchCriteria,
-  hasOpenCatalogFoodProductRequest,
-  toCatalogSearchQuery,
-} from "@/features/catalog-food-products/requests";
-import {
-  hasAdvancedCriteria,
-  parseCatalogSearchParams,
-} from "@/features/catalog-food-products/search";
-import { FoodProductImage } from "@/features/food-products/FoodProductImage";
+  addCatalogFoodProductAction,
+  requestCatalogFoodProductAction,
+} from "@/features/catalog-food-products/presentation/actions";
+import { CatalogSearchForm } from "@/features/catalog-food-products/presentation/CatalogSearchForm";
+import { RequestCatalogFoodProductButton } from "@/features/catalog-food-products/presentation/RequestCatalogFoodProductButton";
 import {
   formatFoodProductTarget,
   NUTRITION_TYPE_LABEL,
   TEXTURE_TYPE_LABEL,
-} from "@/features/food-products/labels";
+} from "@/features/food-products/domain/labels";
+import { FoodProductImage } from "@/features/food-products/presentation/FoodProductImage";
 import {
   foodProductsBreadcrumbItems,
   withHouseholdId,
-} from "@/features/food-products/paths";
-import { findFilterHousehold } from "@/features/households/householdFilter";
-import { listHouseholdsForUser } from "@/features/households/queries";
+} from "@/features/food-products/presentation/paths";
+import { listHouseholdsForUser } from "@/features/households/infrastructure/queries";
+import { findFilterHousehold } from "@/features/households/presentation/householdFilter";
 import { ReplaceNavigation } from "@/features/navigation/ReplaceNavigation";
 import { Surface } from "@/features/shared/Surface";
 import listStyles from "../page.module.css";

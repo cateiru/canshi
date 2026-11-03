@@ -12,7 +12,7 @@ import { users } from "./users";
 /**
  * 家とユーザーの多対多の紐付け。`role` が家の中での権限で、オーナー（`owner`）は
  * 家ごとに 1 名以上いる。今はオーナーを 1 名で運用している（移譲は
- * `src/features/households/ownership.ts`）が、複数のオーナーも持てる
+ * `src/features/households/application/ownership.ts`）が、複数のオーナーも持てる
  */
 export const householdMembers = sqliteTable(
   "household_members",

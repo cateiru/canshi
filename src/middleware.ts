@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { isPublicPath } from "@/features/auth/publicPaths";
-import { getSessionUser } from "@/features/auth/sessions";
-import { SESSION_COOKIE_NAME } from "@/features/auth/sessionToken";
+import { isPublicPath } from "@/features/auth/domain/publicPaths";
+import { SESSION_COOKIE_NAME } from "@/features/auth/domain/sessionToken";
+import { getSessionUser } from "@/features/auth/infrastructure/sessions";
 
 // Next.js 16 では `proxy.ts`（Node.js ランタイム固定）が推奨だが、OpenNext の
 // Cloudflare 向けビルドでは Node.js ランタイムのミドルウェアが実験的な扱いのため、
 // Edge ランタイムで動く `middleware.ts` を使う。
 //
 // ここでは Cookie のセッショントークンが D1 の有効なセッションに対応するかだけを確認し、
-// 猫ごとの認可はページ・Server Action 側で行う（`src/features/auth/session.ts`）。
+// 猫ごとの認可はページ・Server Action 側で行う（`src/features/auth/presentation/session.ts`）。
 // 家に関係しないページ（ごはん商品など）はページ側でユーザーを確認しないため、
 // Cookie があるかどうかだけで通さず、必ず DB のセッションと照合する
 export default async function middleware(request: NextRequest) {

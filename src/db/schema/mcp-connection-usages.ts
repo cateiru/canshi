@@ -9,7 +9,7 @@ import { users } from "./users";
 /**
  * AI との接続（MCP）を最後に使った日時。設定の「AIとの接続」に表示する。ユーザーが
  * 同意した接続（OAuth の grant）ごとに 1 行で、`/mcp` へのリクエストのたびに
- * 更新する（`src/features/mcp/usages.ts`）。この機能の導入前から使っている接続や、
+ * 更新する（`src/features/mcp/infrastructure/usages.ts`）。この機能の導入前から使っている接続や、
  * 接続してからまだ使っていない接続には行が無い。
  *
  * 一覧に表示する接続と同じく grant の ID で見分ける。クライアントの ID では、

@@ -10,11 +10,11 @@ import {
 } from "@/components/ui";
 import { BrushingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { BrushingRecord } from "@/db/schema";
-import { getAccessibleCat } from "@/features/auth/session";
-import { deleteBrushingRecordAction } from "@/features/brushing-records/actions";
-import { SHED_AMOUNT_LABEL } from "@/features/brushing-records/labels";
-import { listBrushingRecords } from "@/features/brushing-records/queries";
-import { calculateElapsedDays } from "@/features/shampoo-records/calculations";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { SHED_AMOUNT_LABEL } from "@/features/brushing-records/domain/labels";
+import { listBrushingRecords } from "@/features/brushing-records/infrastructure/queries";
+import { deleteBrushingRecordAction } from "@/features/brushing-records/presentation/actions";
+import { calculateElapsedDays } from "@/features/shampoo-records/domain/calculations";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {

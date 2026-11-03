@@ -13,19 +13,19 @@ import {
   CalorieIcon,
   FeedingIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { deleteFeedingRecordAction } from "@/features/feeding-records/actions";
-import { sumFeedingTotals } from "@/features/feeding-records/calculations";
-import { toFeedingChartPoints } from "@/features/feeding-records/chart";
-import { FeedingChart } from "@/features/feeding-records/FeedingChart";
-import { groupRecordsByDate } from "@/features/feeding-records/groupByDate";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { sumFeedingTotals } from "@/features/feeding-records/domain/calculations";
 import {
   FEEDING_MODE_LABEL,
   formatFeedingItemAmounts,
-} from "@/features/feeding-records/labels";
-import { listFeedingRecords } from "@/features/feeding-records/queries";
-import { FoodProductImage } from "@/features/food-products/FoodProductImage";
-import { listFoodProductImageUrls } from "@/features/food-products/queries";
+} from "@/features/feeding-records/domain/labels";
+import { listFeedingRecords } from "@/features/feeding-records/infrastructure/queries";
+import { deleteFeedingRecordAction } from "@/features/feeding-records/presentation/actions";
+import { toFeedingChartPoints } from "@/features/feeding-records/presentation/chart";
+import { FeedingChart } from "@/features/feeding-records/presentation/FeedingChart";
+import { groupRecordsByDate } from "@/features/feeding-records/presentation/groupByDate";
+import { listFoodProductImageUrls } from "@/features/food-products/infrastructure/queries";
+import { FoodProductImage } from "@/features/food-products/presentation/FoodProductImage";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import {
   formatDateHeadingUtc,

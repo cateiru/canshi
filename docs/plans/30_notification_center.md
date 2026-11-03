@@ -30,7 +30,7 @@
 ## 変更・追加内容
 
 - `src/app/notifications/page.tsx`
-- `src/features/notifications/NotificationList.tsx`、`NotificationActions.tsx`、`NotificationBadge.tsx`
+- `src/features/notifications/presentation/NotificationList.tsx`、`NotificationActions.tsx`、`NotificationBadge.tsx`
 - `src/app/layout.tsx`（ヘッダーへのバッジ追加）
 - `e2e/notification-center.spec.ts`
 

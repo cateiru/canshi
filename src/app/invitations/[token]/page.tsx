@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { ButtonLink } from "@/components/ui";
 import { HouseholdIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireUser } from "@/features/auth/session";
-import { acceptHouseholdInvitationAction } from "@/features/households/actions";
-import { HouseholdInvitationAcceptButton } from "@/features/households/HouseholdInvitationAcceptButton";
-import { getHouseholdInvitationPreview } from "@/features/households/invitations";
+import { requireUser } from "@/features/auth/presentation/session";
+import { getHouseholdInvitationPreview } from "@/features/households/application/invitations";
+import { acceptHouseholdInvitationAction } from "@/features/households/presentation/actions";
+import { HouseholdInvitationAcceptButton } from "@/features/households/presentation/HouseholdInvitationAcceptButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";

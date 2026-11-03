@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 import {
   encodeMcpConsentRequest,
   MCP_CONSENT_HEADER,
-} from "../src/features/mcp/consent";
+} from "../src/features/mcp/presentation/consent";
 import { createPng } from "../src/features/media/testing/createPng";
 import { fillAndKeep } from "./helpers";
 import { expect, takeSnapshot, test } from "./vrt-snapshot";
@@ -317,7 +317,7 @@ test("AIとの接続の読み取る範囲ページの見た目", async ({ page }
 });
 
 test("MCP の同意画面の見た目", async ({ page }, testInfo) => {
-  // 同意画面は、Worker（src/features/mcp/authorize.ts）が認可リクエストを検証して付ける
+  // 同意画面は、Worker（src/features/mcp/presentation/authorize.ts）が認可リクエストを検証して付ける
   // ヘッダーが無いと表示できない。VRT は Worker を通らない `next dev` に対して実行するため、
   // e2e/fixtures/vrt-seed.sql の接続と同じクライアントとしてヘッダーを付けて開く
   // （本番では Worker が外部から付けられたこのヘッダーを取り除く）

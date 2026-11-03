@@ -1,0 +1,90 @@
+import { and, eq } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import {
+  expenseRecordHospitalVisits,
+  hospitalVisits,
+  medications,
+  symptoms,
+} from "@/db/schema";
+import { saveHospitalVisitWithExpense } from "@/features/expenses/infrastructure/hospitalVisitExpense";
+import type { HospitalVisitRepository } from "../domain/hospitalVisitRepository";
+
+/** D1 に保存する `HospitalVisitRepository`。`d1` を省略すると Next.js のリクエストの D1 を使う */
+export function createHospitalVisitRepository(
+  d1?: D1Database,
+): HospitalVisitRepository {
+  const db = getDb(d1);
+  const byId = (catId: string, id: string) =>
+    and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId));
+
+  return {
+    async existsForCat(catId, id) {
+      const [row] = await db
+        .select({ id: hospitalVisits.id })
+        .from(hospitalVisits)
+        .where(byId(catId, id))
+        .limit(1);
+      return row != null;
+    },
+
+    async add(catId, content, expense) {
+      const id = crypto.randomUUID();
+      await saveHospitalVisitWithExpense(
+        db,
+        db.insert(hospitalVisits).values({ id, catId, ...content }),
+        {
+          hospitalVisitId: id,
+          catId,
+          visitedAt: content.visitedAt,
+          ...expense,
+        },
+      );
+      return id;
+    },
+
+    async update(catId, id, content, expense) {
+      await saveHospitalVisitWithExpense(
+        db,
+        db
+          .update(hospitalVisits)
+          .set({ ...content, updatedAt: new Date() })
+          .where(byId(catId, id)),
+        {
+          hospitalVisitId: id,
+          catId,
+          visitedAt: content.visitedAt,
+          ...expense,
+        },
+      );
+    },
+
+    async remove(catId, id) {
+      // symptoms.hospital_visit_id / medications.hospital_visit_id /
+      // expense_record_hospital_visits からの外部キー参照があるため、通院記録を
+      // 削除する前に紐付けを解除しておく。支出記録は家計簿として残す必要があるため、
+      // 紐付けだけ外して記録自体は削除しない。一連の操作は db.batch でまとめて
+      // 原子的に実行する
+      await db.batch([
+        db
+          .update(symptoms)
+          .set({ hospitalVisitId: null })
+          .where(
+            and(eq(symptoms.hospitalVisitId, id), eq(symptoms.catId, catId)),
+          ),
+        db
+          .update(medications)
+          .set({ hospitalVisitId: null })
+          .where(
+            and(
+              eq(medications.hospitalVisitId, id),
+              eq(medications.catId, catId),
+            ),
+          ),
+        db
+          .delete(expenseRecordHospitalVisits)
+          .where(eq(expenseRecordHospitalVisits.hospitalVisitId, id)),
+        db.delete(hospitalVisits).where(byId(catId, id)),
+      ]);
+    },
+  };
+}

@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { requireUser } from "@/features/auth/session";
-import { updateFeedingPresetAction } from "@/features/feeding-presets/actions";
-import { FeedingPresetForm } from "@/features/feeding-presets/FeedingPresetForm";
-import { getFeedingPresetForUser } from "@/features/feeding-presets/queries";
+import { requireUser } from "@/features/auth/presentation/session";
+import { getFeedingPresetForUser } from "@/features/feeding-presets/infrastructure/queries";
+import { updateFeedingPresetAction } from "@/features/feeding-presets/presentation/actions";
+import { FeedingPresetForm } from "@/features/feeding-presets/presentation/FeedingPresetForm";
 import {
   listFoodProductImageUrls,
   listFoodProducts,
-} from "@/features/food-products/queries";
+} from "@/features/food-products/infrastructure/queries";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";

@@ -3,7 +3,7 @@ import {
   ReleaseNotesIcon,
   SettingsIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
-import { CatIcon } from "@/features/cats/CatIcon";
+import { CatIcon } from "@/features/cats/presentation/CatIcon";
 import styles from "./page.module.css";
 
 export default function Home() {

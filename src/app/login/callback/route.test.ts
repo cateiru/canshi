@@ -2,11 +2,11 @@
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { NextRequest } from "next/server";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { SESSION_COOKIE_NAME } from "@/features/auth/domain/sessionToken";
 import {
   createCodeChallenge,
   OIDC_STATE_COOKIE_NAME,
-} from "@/features/auth/oidc";
-import { SESSION_COOKIE_NAME } from "@/features/auth/sessionToken";
+} from "@/features/auth/infrastructure/oidc";
 import { GET as start } from "../start/route";
 import { GET as callback } from "./route";
 
@@ -26,7 +26,7 @@ vi.mock("@opennextjs/cloudflare", () => ({
 }));
 
 const loginWithEmail = vi.fn();
-vi.mock("@/features/auth/login", () => ({
+vi.mock("@/features/auth/application/login", () => ({
   loginWithEmail: (...args: unknown[]) => loginWithEmail(...args),
 }));
 

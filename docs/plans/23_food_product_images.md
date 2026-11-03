@@ -24,10 +24,10 @@
 
 ## 変更・追加内容
 
-- `src/features/media/MediaAttachmentField.tsx` の 1 枚制限モード（`maxCount`）の追加
+- `src/features/media/presentation/MediaAttachmentField.tsx` の 1 枚制限モード（`maxCount`）の追加
 - `src/features/food-products/` のフォーム・アクション・クエリの更新
 - `src/app/food-products/` の一覧ページの更新
-- `src/features/feeding-records/FeedingRecordForm.tsx`・`src/features/feeding-presets/` の商品表示の更新
+- `src/features/feeding-records/presentation/FeedingRecordForm.tsx`・`src/features/feeding-presets/` の商品表示の更新
 
 ## DB マイグレーション
 

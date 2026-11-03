@@ -54,7 +54,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 ## ログインと家（ユーザー・猫の紐付け）
 
 ログインセッションは D1 の `sessions` テーブルで管理する。Cookie（`canshi-session`）にはランダムな
-セッショントークンだけを保存し、DB にはそのハッシュを保存する（`src/features/auth/sessions.ts`）。
+セッショントークンだけを保存し、DB にはそのハッシュを保存する（`src/features/auth/infrastructure/sessions.ts`）。
 `src/middleware.ts` はリクエストごとに Cookie のトークンを D1 のセッションと照合し、有効なセッションが
 なければ `/login` へリダイレクトする（API・メディアは 401）。
 猫は「家」に所属し、ユーザーは所属する家の猫だけを参照できる（テーブル設計は
@@ -64,12 +64,12 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 
 `/login` のログインボタンは `/login/start` から Cloudflare Access の SaaS OIDC アプリへ
 リダイレクトし、Access でログインすると `/login/callback` に戻る（認可コードフロー + PKCE、
-`src/features/auth/oidc.ts`）。メールアドレス・パスワードでのログインは持たない。
+`src/features/auth/infrastructure/oidc.ts`）。メールアドレス・パスワードでのログインは持たない。
 
 - 要求するスコープは `openid email` だけで、ID トークンからはメールアドレスだけを使う
 - DB にはメールアドレスそのものを保存しない。SALT（`EMAIL_HASH_SALT`）を使って argon2id で
   ハッシュにした値を `users.email_hash` に保存し、同じユーザーかどうかもこの値で判定する
-  （`src/features/auth/emailHash.ts`）。ハッシュの計算に CPU を 200 ms 以上使うため、計算は
+  （`src/features/auth/domain/emailHash.ts`）。ハッシュの計算に CPU を 200 ms 以上使うため、計算は
   ログイン時だけ行う（Workers の Paid プランが前提）
 - 初めてログインしたメールアドレスでは、ユーザーを新しく作る（家には所属しない。家への招待 URL で
   参加する）。ユーザーが 1 件もないときに最初にログインしたユーザーは管理者になる
@@ -115,7 +115,7 @@ Redirect URL は登録したホスト名でしか使えないため、Workers Bu
 未設定なら開発用の SALT を使う（VRT の seed はこの SALT を前提にしている）。`.dev.vars` に
 `ACCESS_*` を設定すれば、ローカルでも Access でのログインを確認できる（Redirect URL に
 `http://localhost:3000/login/callback` を追加する）。開発用のログインは本番ビルドでは使えない
-（`src/features/auth/developmentLogin.ts`）。
+（`src/features/auth/infrastructure/developmentLogin.ts`）。
 
 ### OIDC でのログインの導入手順
 
@@ -222,7 +222,7 @@ Cloudflare ダッシュボードの Workers & Pages で、Workers 全体を保�
 
 メインアプリ（Worker 名 `canshi`）は、Worker 単位の設定で本番のカスタムドメイン（`canshi.cateiru.dev`）だけを Access の対象から外している（2026-10 時点）。本番ドメインでの利用者の制限は、アプリのログイン（Access の SaaS OIDC アプリ。「ログインと家」節を参照）で行う。
 
-- `src/middleware.ts` が、`src/features/auth/publicPaths.ts` に挙げたパス（`/login`、PWA の manifest・アイコンなど）以外のすべてのリクエストで、D1 のログインセッションを確認する
+- `src/middleware.ts` が、`src/features/auth/domain/publicPaths.ts` に挙げたパス（`/login`、PWA の manifest・アイコンなど）以外のすべてのリクエストで、D1 のログインセッションを確認する
 - ログインできるのは、SaaS OIDC アプリのポリシーで許可された人だけになる。初めてログインしたメールアドレスではユーザーが作られるため、このポリシーが「誰が CANSHI を使えるか」を決める
 - プレビュー URL は、引き続き Workers 全体の Access で保護する。プレビュービルドは本番と同じ D1・R2 に接続するため、レビュー前のコードを本番データ付きで公開しないためである
 - `workers.dev` は無効にしている
@@ -304,7 +304,7 @@ CANSHI のデータを参照できる MCP サーバーを、メインアプリ�
 - `/oauth/authorize` は同意画面。Worker が認可リクエストを検証してから Next.js のページ
   （`src/app/oauth/authorize/page.tsx`）を表示する。未ログインならログイン画面へ送り、ログイン後に
   同意画面へ戻る。「許可する」を押すと、ログイン中のユーザーの ID をトークンに保存して認可を完了する
-  （`src/features/mcp/authorize.ts`）。DCR は誰でも呼べるため、一度許可したクライアントでも
+  （`src/features/mcp/presentation/authorize.ts`）。DCR は誰でも呼べるため、一度許可したクライアントでも
   毎回同意画面を表示する
 - クライアントの登録は、MCP の 2026-07-28 版で推奨される Client ID Metadata Document（CIMD、
   クライアントの情報を置いた HTTPS の URL を `client_id` にする方式）と、従来の Dynamic Client
@@ -318,10 +318,10 @@ CANSHI のデータを参照できる MCP サーバーを、メインアプリ�
 - MCP のツールは、トークンに保存したユーザーの家の猫だけを返す
 - クライアント登録・認可・トークンは D1 の `oauth_kv_entries` テーブルに保存する。
   `@cloudflare/workers-oauth-provider` は Workers KV（`env.OAUTH_KV`）に保存する作りのため、
-  KV と同じ操作を D1 で実装したもの（`src/features/mcp/d1KvStore.ts`）を `OAUTH_KV` として渡している。
+  KV と同じ操作を D1 で実装したもの（`src/features/mcp/infrastructure/d1KvStore.ts`）を `OAUTH_KV` として渡している。
   期限切れの行は定期実行（15 分ごとの `scheduled`）で削除する
 - MCP サーバーは MCP の 2026-07-28 版の仕様に沿ってセッションを持たず、リクエストごとに
-  作り直して応答する（`src/features/mcp/agent.ts`、MCP の SDK v2 と `agents` の
+  作り直して応答する（`src/features/mcp/presentation/agent.ts`、MCP の SDK v2 と `agents` の
   `createMcpHandler()`）。2025-11-25 版など `initialize` で始めるそれより前の版のクライアントにも、
   同じくセッションを持たずに応答する
 - 以前はセッション状態を Durable Object（`CanshiMcp`、バインディング名 `MCP_OBJECT`）に

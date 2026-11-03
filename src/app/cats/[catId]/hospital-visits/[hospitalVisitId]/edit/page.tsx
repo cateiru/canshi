@@ -1,17 +1,17 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/session";
-import { getExpenseByHospitalVisitId } from "@/features/expenses/queries";
-import { updateHospitalVisitAction } from "@/features/hospital-visits/actions";
-import { HospitalVisitForm } from "@/features/hospital-visits/HospitalVisitForm";
-import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/media";
-import { getHospitalVisitById } from "@/features/hospital-visits/queries";
-import { resolveMediaLimits } from "@/features/media/limits";
-import { listMediaAssetsByRecord } from "@/features/media/queries";
-import { toMediaAssetView } from "@/features/media/view";
+import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getExpenseByHospitalVisitId } from "@/features/expenses/infrastructure/queries";
+import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/domain/media";
+import { getHospitalVisitById } from "@/features/hospital-visits/infrastructure/queries";
+import { updateHospitalVisitAction } from "@/features/hospital-visits/presentation/actions";
+import { HospitalVisitForm } from "@/features/hospital-visits/presentation/HospitalVisitForm";
+import { resolveMediaLimits } from "@/features/media/domain/limits";
+import { toMediaAssetView } from "@/features/media/domain/view";
+import { listMediaAssetsByRecord } from "@/features/media/infrastructure/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { listSymptoms } from "@/features/symptoms/queries";
+import { listSymptoms } from "@/features/symptoms/infrastructure/queries";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";

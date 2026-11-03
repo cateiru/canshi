@@ -3,7 +3,7 @@ import type { AdminDb } from "./queries";
 /**
  * 共通のごはん商品のリクエスト（`catalog_food_product_requests`）の一覧と、完了の処理。
  * メインアプリのスキーマは import しないため（`queries.ts` の冒頭を参照）、生の SQL で書く。
- * 完了の処理はメインアプリの MCP（`src/features/catalog-food-products/requests.ts` の
+ * 完了の処理はメインアプリの MCP（`src/features/catalog-food-products/application/requests.ts` の
  * `completeCatalogFoodProductRequest`）と同じ通知を作るため、文言・重複を防ぐキーを揃えること
  */
 
@@ -78,7 +78,7 @@ export async function listCatalogFoodProductRequests(db: AdminDb): Promise<{
 
 /**
  * リクエストを完了にしたときに、リクエストしたユーザーへ送る通知の文言と URL。メインアプリの
- * `catalogRequestCompletedMessage`（`src/features/catalog-food-products/requests.ts`）と同じにする
+ * `catalogRequestCompletedMessage`（`src/features/catalog-food-products/application/requests.ts`）と同じにする
  */
 export function completedNotificationMessage(request: {
   searchQuery: string;

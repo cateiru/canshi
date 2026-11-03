@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/ui";
 import { AccountSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireUser } from "@/features/auth/session";
+import { requireUser } from "@/features/auth/presentation/session";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
-import { updateUserProfileAction } from "@/features/users/actions";
-import { UserProfileForm } from "@/features/users/UserProfileForm";
+import { updateUserProfileAction } from "@/features/users/presentation/actions";
+import { UserProfileForm } from "@/features/users/presentation/UserProfileForm";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {

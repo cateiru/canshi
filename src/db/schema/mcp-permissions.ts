@@ -13,7 +13,7 @@ import { users } from "./users";
  *
  * 接続は OAuth のクライアントの ID で見分ける。同じユーザーが同じクライアントに
  * もう一度同意すると、ライブラリが古い grant を解除するため、クライアントの ID ごとの
- * grant は 1 つになる（`src/features/mcp/permissions.ts` 参照）。クライアントは
+ * grant は 1 つになる（`src/features/mcp/infrastructure/permissions.ts` 参照）。クライアントは
  * `oauth_kv_entries` に保存されているため外部キーにはしない。
  *
  * 後から作った家・登録した猫・追加した記録の種類も既定で読み取れるよう、許可した

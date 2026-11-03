@@ -1,6 +1,6 @@
 import { webcrypto } from "node:crypto";
 
-// `@block65/webcrypto-web-push` が期待する形式に合わせる（`src/features/push/vapid.ts` 参照）：
+// `@block65/webcrypto-web-push` が期待する形式に合わせる（`src/features/push/infrastructure/vapid.ts` 参照）：
 // - 公開鍵：生の EC ポイント（0x04 + X + Y の 65 バイト）を base64url にしたもの
 // - 秘密鍵：JWK の `d`（32 バイトのスカラー値）。JWK エクスポートの時点で base64url なのでそのまま使う
 const keyPair = await webcrypto.subtle.generateKey(

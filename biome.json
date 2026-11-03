@@ -51,10 +51,10 @@
       "includes": [
         "src/app/**",
         "src/components/**",
-        "src/features/**/*.tsx",
-        "src/features/**/actions.ts",
-        "src/features/**/*Actions.ts",
-        "src/features/mcp/tools/**",
+        "src/features/*/presentation/**",
+        "src/features/shared/**/*.tsx",
+        "src/features/navigation/**/*.tsx",
+        "src/features/pwa/**/*.tsx",
         "!**/*.test.ts",
         "!**/*.test.tsx"
       ],
@@ -65,14 +65,122 @@
               "level": "error",
               "options": {
                 "paths": {
-                  "@/db/client": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の queries / mutations を経由してください（AGENTS.md の「レイヤー構成」参照）",
-                  "@/db/batch": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の queries / mutations を経由してください（AGENTS.md の「レイヤー構成」参照）",
-                  "drizzle-orm": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の queries / mutations を経由してください（AGENTS.md の「レイヤー構成」参照）"
+                  "@/db/client": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の application（書き込み）・infrastructure の queries（読み取り）を経由してください（AGENTS.md の「レイヤー構成」参照）",
+                  "@/db/batch": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の application（書き込み）・infrastructure の queries（読み取り）を経由してください（AGENTS.md の「レイヤー構成」参照）",
+                  "drizzle-orm": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の application（書き込み）・infrastructure の queries（読み取り）を経由してください（AGENTS.md の「レイヤー構成」参照）"
                 },
                 "patterns": [
                   {
                     "group": ["drizzle-orm/**"],
-                    "message": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の queries / mutations を経由してください（AGENTS.md の「レイヤー構成」参照）"
+                    "message": "画面（page・コンポーネント・Server Action）と MCP のツールから DB を直接扱わず、各機能の application（書き込み）・infrastructure の queries（読み取り）を経由してください（AGENTS.md の「レイヤー構成」参照）"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/features/*/application/**",
+        "!**/*.test.ts",
+        "!**/*.test.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@/db/client": "application（ユースケース）から DB を直接扱わず、infrastructure のリポジトリを経由してください（AGENTS.md の「レイヤー構成」参照）",
+                  "@/db/batch": "application（ユースケース）から DB を直接扱わず、infrastructure のリポジトリを経由してください（AGENTS.md の「レイヤー構成」参照）",
+                  "drizzle-orm": "application（ユースケース）から DB を直接扱わず、infrastructure のリポジトリを経由してください（AGENTS.md の「レイヤー構成」参照）"
+                },
+                "patterns": [
+                  {
+                    "group": ["drizzle-orm/**"],
+                    "message": "application（ユースケース）から DB を直接扱わず、infrastructure のリポジトリを経由してください（AGENTS.md の「レイヤー構成」参照）"
+                  },
+                  {
+                    "group": [
+                      "@/features/*/presentation/**",
+                      "**/presentation/**"
+                    ],
+                    "message": "application から presentation を参照しないでください（AGENTS.md の「レイヤー構成」参照）"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/features/*/infrastructure/**",
+        "!**/*.test.ts",
+        "!**/*.test.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {},
+                "patterns": [
+                  {
+                    "group": [
+                      "@/features/*/application/**",
+                      "**/application/**",
+                      "@/features/*/presentation/**",
+                      "**/presentation/**"
+                    ],
+                    "message": "infrastructure から application・presentation を参照しないでください。内側の domain だけに依存します（AGENTS.md の「レイヤー構成」参照）"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/features/*/domain/**",
+        "!**/*.test.ts",
+        "!**/*.test.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@/db/client": "domain は DB・Next.js・React や、application・infrastructure・presentation に依存しない純粋なコードにしてください（AGENTS.md の「レイヤー構成」参照）",
+                  "@/db/batch": "domain は DB・Next.js・React や、application・infrastructure・presentation に依存しない純粋なコードにしてください（AGENTS.md の「レイヤー構成」参照）",
+                  "drizzle-orm": "domain は DB・Next.js・React や、application・infrastructure・presentation に依存しない純粋なコードにしてください（AGENTS.md の「レイヤー構成」参照）",
+                  "react": "domain は DB・Next.js・React や、application・infrastructure・presentation に依存しない純粋なコードにしてください（AGENTS.md の「レイヤー構成」参照）",
+                  "@opennextjs/cloudflare": "domain は DB・Next.js・React や、application・infrastructure・presentation に依存しない純粋なコードにしてください（AGENTS.md の「レイヤー構成」参照）"
+                },
+                "patterns": [
+                  {
+                    "group": ["drizzle-orm/**", "next", "next/**"],
+                    "message": "domain は DB・Next.js・React や、application・infrastructure・presentation に依存しない純粋なコードにしてください（AGENTS.md の「レイヤー構成」参照）"
+                  },
+                  {
+                    "group": [
+                      "@/features/*/application/**",
+                      "**/application/**",
+                      "@/features/*/infrastructure/**",
+                      "**/infrastructure/**",
+                      "@/features/*/presentation/**",
+                      "**/presentation/**"
+                    ],
+                    "message": "domain は DB・Next.js・React や、application・infrastructure・presentation に依存しない純粋なコードにしてください（AGENTS.md の「レイヤー構成」参照）"
                   }
                 ]
               }

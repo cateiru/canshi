@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
 import { TbBell } from "react-icons/tb";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
-import { getAccessibleCat, requireUser } from "@/features/auth/session";
-import { updateCatAction } from "@/features/cats/actions";
-import { CatForm } from "@/features/cats/CatForm";
-import { CatIcon } from "@/features/cats/CatIcon";
-import { listHouseholdsForUser } from "@/features/households/queries";
+import {
+  getAccessibleCat,
+  requireUser,
+} from "@/features/auth/presentation/session";
+import { updateCatAction } from "@/features/cats/presentation/actions";
+import { CatForm } from "@/features/cats/presentation/CatForm";
+import { CatIcon } from "@/features/cats/presentation/CatIcon";
+import { listHouseholdsForUser } from "@/features/households/infrastructure/queries";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 

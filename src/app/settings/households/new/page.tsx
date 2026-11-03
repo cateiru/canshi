@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/ui";
 import { HouseholdIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireUser } from "@/features/auth/session";
-import { createHouseholdAction } from "@/features/households/actions";
-import { HouseholdCreateForm } from "@/features/households/HouseholdCreateForm";
+import { requireUser } from "@/features/auth/presentation/session";
+import { createHouseholdAction } from "@/features/households/presentation/actions";
+import { HouseholdCreateForm } from "@/features/households/presentation/HouseholdCreateForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
