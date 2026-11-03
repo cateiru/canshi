@@ -3,11 +3,14 @@
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db/client";
-import { cleaningRecords, cleaningTargets } from "@/db/schema";
+import { cleaningRecords } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
-import { getNaiveUtcNow } from "@/features/shared/datetime";
-import { createCleaningRecord, updateCleaningRecord } from "./recordMutations";
+import {
+  createCleaningRecord,
+  createCleaningRecordNow,
+  updateCleaningRecord,
+} from "./recordMutations";
 import {
   type CleaningRecordFormFieldErrors,
   cleaningRecordFormSchema,
@@ -103,30 +106,8 @@ export async function quickCreateCleaningRecordAction(
   _formData: FormData,
 ): Promise<void> {
   await requireCatAccess(catId);
-  const db = getDb();
-  // 無効化済みの掃除対象は編集・記録閲覧のみが仕様のため新規登録は拒否する
-  const [target] = await db
-    .select({ id: cleaningTargets.id })
-    .from(cleaningTargets)
-    .where(
-      and(
-        eq(cleaningTargets.id, cleaningTargetId),
-        eq(cleaningTargets.catId, catId),
-        eq(cleaningTargets.isActive, true),
-      ),
-    )
-    .limit(1);
-
-  if (target) {
-    await db.insert(cleaningRecords).values({
-      catId,
-      cleaningTargetId,
-      // 手入力（combineDateTimeUtc）と同じ「naive UTC」の時刻モデルに揃える。
-      // サーバー側の new Date() は実際のUTCのため、そのまま保存すると
-      // JSTの時計とずれた時刻で記録されてしまう
-      performedAt: getNaiveUtcNow(),
-    });
-  }
+  // 無効化済みの掃除対象は編集・記録閲覧のみが仕様のため、記録せずに一覧へ戻す
+  await createCleaningRecordNow(catId, cleaningTargetId);
 
   redirect(`/cats/${catId}/cleaning`, "replace");
 }
