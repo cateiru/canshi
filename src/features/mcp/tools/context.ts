@@ -24,6 +24,11 @@ export type McpConnection = { userId: string; clientId: string };
  */
 export interface McpToolContext {
   env: Env;
+  /**
+   * MCP サーバーを公開しているオリジン（`https://canshi.example.com` など）。
+   * 招待 URL のように、アプリの URL を返すときに使う
+   */
+  origin: string;
   /** ツールを呼んだユーザーと接続を求める。求められなければ AI に返すエラーメッセージ */
   resolveConnection(): Promise<McpConnection | { error: string }>;
 }
@@ -51,6 +56,20 @@ const OPERATION_LABEL: Record<
   "feedingPreset:create": "ごはんのプリセットの追加",
   "feedingPreset:update": "ごはんのプリセットの編集",
   "feedingPreset:delete": "ごはんのプリセットの削除",
+  "household:update": "家の名前の編集",
+  "householdMember:read": "家のメンバーの読み取り",
+  "householdMember:update": "家のメンバーの編集",
+  "householdInvitation:read": "家への招待の読み取り",
+  "householdInvitation:create": "家への招待の発行",
+  "householdInvitation:delete": "家への招待の無効化",
+  "cat:create": "猫の追加",
+  "cat:update": "猫のプロフィールの編集",
+  "catNotification:read": "猫の通知の設定の読み取り",
+  "catNotification:update": "猫の通知の設定の編集",
+  "feedingSchedule:read": "ごはんの時間の読み取り",
+  "feedingSchedule:create": "ごはんの時間の追加",
+  "feedingSchedule:update": "ごはんの時間の編集",
+  "feedingSchedule:delete": "ごはんの時間の削除",
   "catalogFoodProduct:read": "共通のごはん商品の読み取り",
   "catalogFoodProduct:create": "共通のごはん商品の追加",
   "catalogFoodProduct:update": "共通のごはん商品の編集",
@@ -146,7 +165,7 @@ export function householdNotFoundMessage(householdId: string) {
 
 /**
  * ユーザーが所属し、この接続からの読み取りも許可している家の一覧。
- * ごはん商品・プリセットは、この家のものだけを扱える
+ * 家ごとの操作は、この家でだけ行える
  */
 export async function listAllowedHouseholds(
   ctx: McpToolContext,
@@ -210,6 +229,51 @@ export async function resolveHouseholdOperation(
     operation,
   );
   return error ? { error } : resolved;
+}
+
+/**
+ * 猫について家ごとの操作（猫のプロフィール・通知の設定）を行えるときだけ、接続と範囲、猫を返す。
+ * ユーザーが参照でき、この接続からの読み取りも許可している猫で、猫の今の家でその操作も
+ * 許可しているときに限る。読み取りを許可していない猫は、存在しない猫と区別しない
+ */
+export async function resolveCatOperation(
+  ctx: McpToolContext,
+  catId: string,
+  operation: McpHouseholdOperation,
+): Promise<
+  | {
+      connection: McpConnection;
+      permissions: McpPermissions;
+      cat: Cat & { householdId: string };
+    }
+  | { error: string }
+> {
+  const resolved = await resolvePermissions(ctx);
+  if ("error" in resolved) {
+    return resolved;
+  }
+  const cat = await getCatForUser(
+    resolved.connection.userId,
+    catId,
+    ctx.env.DB,
+  );
+  if (
+    !cat ||
+    cat.householdId === null ||
+    !isCatAllowedForMcp(resolved.permissions, cat)
+  ) {
+    return { error: catNotFoundMessage(catId) };
+  }
+  const error = await checkHouseholdOperation(
+    ctx,
+    resolved,
+    cat.householdId,
+    operation,
+  );
+  if (error) {
+    return { error };
+  }
+  return { ...resolved, cat: { ...cat, householdId: cat.householdId } };
 }
 
 /**

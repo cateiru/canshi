@@ -51,6 +51,9 @@ import {
 } from "@/features/hospital-visits/mutations";
 import { hospitalVisitFormSchema } from "@/features/hospital-visits/schema";
 import { getCatForUser, listCatsForUser } from "@/features/households/queries";
+import type { MediaRecordType } from "@/features/media/recordTypes";
+import { MediaUploadError, storeMediaAsset } from "@/features/media/storage";
+import { MAX_DECODE_PIXELS } from "@/features/media/thumbnailSize";
 import {
   createMedicationDose,
   updateMedicationDose,
@@ -120,6 +123,7 @@ import {
   type McpToolContext,
   resolveWritableCat,
 } from "./context";
+import { decodeImageBase64, MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
 
 type Db = ReturnType<typeof getDb>;
 
@@ -144,6 +148,11 @@ type RecordToolDefinition<TData, TExisting> = {
   fields: ZodRawShape;
   /** フォームの値に含めない引数（掃除対象の ID など） */
   nonFormKeys?: string[];
+  /**
+   * 画面で画像を添付できる記録の、添付の種類（`media_assets.record_type`）。指定すると、
+   * 追加・編集のツールで画像（`images`）を受け付ける
+   */
+  mediaRecordType?: MediaRecordType;
   schema: z.ZodType<TData>;
   /** 追加するときの既定値。日時の項目は現在時刻にする */
   defaults(): FormValues;
@@ -216,6 +225,7 @@ const COMMON_DESCRIPTION =
 
 const poopRecordTool = defineRecordTool({
   recordType: "poop",
+  mediaRecordType: "poop_record",
   name: "poop_record",
   label: "うんちの記録",
   description:
@@ -267,6 +277,7 @@ const poopRecordTool = defineRecordTool({
 
 const vomitRecordTool = defineRecordTool({
   recordType: "vomit",
+  mediaRecordType: "vomit_record",
   name: "vomit_record",
   label: "嘔吐の記録",
   description: "",
@@ -670,6 +681,7 @@ const medicationDoseTool = defineRecordTool({
 
 const symptomTool = defineRecordTool({
   recordType: "symptom",
+  mediaRecordType: "symptom",
   name: "symptom",
   label: "症状の記録",
   description:
@@ -721,6 +733,7 @@ const symptomTool = defineRecordTool({
 
 const hospitalVisitTool = defineRecordTool({
   recordType: "hospitalVisit",
+  mediaRecordType: "hospital_visit",
   name: "hospital_visit",
   label: "通院の記録",
   description:
@@ -799,6 +812,7 @@ const hospitalVisitTool = defineRecordTool({
 
 const memoTool = defineRecordTool({
   recordType: "memo",
+  mediaRecordType: "memo_record",
   name: "memo",
   label: "メモ",
   description:
@@ -906,6 +920,7 @@ async function resolveExpenseCatIds(
 
 const expenseTool = defineRecordTool({
   recordType: "expense",
+  mediaRecordType: "expense",
   name: "expense",
   label: "支出の記録",
   description:
@@ -1127,11 +1142,76 @@ function formArgs(
   args: Record<string, unknown>,
   nonFormKeys: string[] = [],
 ): Record<string, unknown> {
-  const { catId: _catId, id: _id, ...rest } = args;
+  const { catId: _catId, id: _id, images: _images, ...rest } = args;
   for (const key of nonFormKeys) {
     delete rest[key];
   }
   return rest;
+}
+
+/** 記録に 1 回で添付できる画像の数 */
+const MAX_RECORD_IMAGES = 4;
+
+const RECORD_IMAGES_DESCRIPTION =
+  `記録に添付する画像（JPEG・PNG・WebP・GIF）を base64 で ${MAX_RECORD_IMAGES} 枚まで指定する` +
+  "（data URL の形式も可）。サムネイルをサーバーで作るため、画素数は " +
+  `${MAX_DECODE_PIXELS / 1_000_000} 百万画素以下にする（長辺 2000px 程度に縮小してから送る）。` +
+  "編集で指定すると、今の画像の後ろに追加する（今の画像は消えない）。" +
+  "画像を保存できなかったときも記録は保存し、imageError に理由を返す。";
+
+const INVALID_IMAGES_ERROR =
+  "images に画像（JPEG・PNG・WebP・GIF）の base64 でないものが含まれています";
+
+/** 引数の画像（base64）を読む。画像でないものが含まれていれば null */
+function decodeImages(value: unknown): Uint8Array<ArrayBuffer>[] | null {
+  const images: Uint8Array<ArrayBuffer>[] = [];
+  for (const base64 of (value as string[] | undefined) ?? []) {
+    const image = decodeImageBase64(base64);
+    if (!image) {
+      return null;
+    }
+    images.push(image);
+  }
+  return images;
+}
+
+/**
+ * 保存した記録に画像を添付する（画面で添付したときと同じく、記録の後ろに並べる）。
+ * 保存できなかった画像があれば、AI に返すメッセージ
+ */
+async function attachRecordImages(
+  ctx: McpToolContext,
+  input: {
+    recordType: MediaRecordType;
+    recordId: string;
+    catId: string | null;
+    images: Uint8Array<ArrayBuffer>[];
+  },
+): Promise<string | null> {
+  for (const [index, image] of input.images.entries()) {
+    try {
+      await storeMediaAsset(
+        {
+          file: new Blob([image]),
+          recordType: input.recordType,
+          recordId: input.recordId,
+          catId: input.catId,
+        },
+        ctx.env,
+      );
+    } catch (error) {
+      if (!(error instanceof MediaUploadError)) {
+        console.error("記録の画像の保存に失敗しました", error);
+      }
+      const reason =
+        error instanceof MediaUploadError
+          ? error.message
+          : "画像を保存できませんでした";
+      const saved = index > 0 ? `${index} 枚目までは保存しましたが、` : "";
+      return `${saved}${index + 1} 枚目の画像を保存できませんでした。${reason}`;
+    }
+  }
+  return null;
 }
 
 function registerRecordTool<TData, TExisting>(
@@ -1139,8 +1219,17 @@ function registerRecordTool<TData, TExisting>(
   ctx: McpToolContext,
   definition: RecordToolDefinition<TData, TExisting>,
 ) {
-  const { recordType, label } = definition;
+  const { recordType, label, mediaRecordType } = definition;
   const catIdField = z.string().describe("猫の ID（list_cats で取得できる）");
+  const imageFields: ZodRawShape = mediaRecordType
+    ? {
+        images: z
+          .array(z.string().max(MAX_IMAGE_BASE64_LENGTH))
+          .max(MAX_RECORD_IMAGES)
+          .optional()
+          .describe(RECORD_IMAGES_DESCRIPTION),
+      }
+    : {};
 
   server.registerTool(
     `create_${definition.name}`,
@@ -1151,7 +1240,7 @@ function registerRecordTool<TData, TExisting>(
         "日時を省略すると今の日時で記録する。" +
         COMMON_DESCRIPTION +
         definition.description,
-      inputSchema: { catId: catIdField, ...definition.fields },
+      inputSchema: { catId: catIdField, ...definition.fields, ...imageFields },
       annotations: { readOnlyHint: false, destructiveHint: false },
     },
     async (args: Record<string, unknown>) => {
@@ -1159,6 +1248,10 @@ function registerRecordTool<TData, TExisting>(
       const resolved = await resolveWritableCat(ctx, catId, recordType, label);
       if ("error" in resolved) {
         return errorResult(resolved.error);
+      }
+      const images = decodeImages(args.images);
+      if (!images) {
+        return errorResult(INVALID_IMAGES_ERROR);
       }
       const values = mergeFormValues(
         definition.defaults(),
@@ -1182,7 +1275,17 @@ function registerRecordTool<TData, TExisting>(
       if ("error" in saved) {
         return errorResult(saved.error);
       }
-      return jsonResult({ id: saved.id });
+      const imageError =
+        mediaRecordType &&
+        (await attachRecordImages(ctx, {
+          recordType: mediaRecordType,
+          recordId: saved.id,
+          catId: mediaRecordType === "expense" ? null : resolved.cat.id,
+          images,
+        }));
+      return jsonResult(
+        imageError ? { id: saved.id, imageError } : { id: saved.id },
+      );
     },
   );
 
@@ -1198,6 +1301,7 @@ function registerRecordTool<TData, TExisting>(
         catId: catIdField,
         id: z.string().describe("記録の ID"),
         ...definition.fields,
+        ...imageFields,
       },
       annotations: {
         readOnlyHint: false,
@@ -1211,6 +1315,10 @@ function registerRecordTool<TData, TExisting>(
       const resolved = await resolveWritableCat(ctx, catId, recordType, label);
       if ("error" in resolved) {
         return errorResult(resolved.error);
+      }
+      const images = decodeImages(args.images);
+      if (!images) {
+        return errorResult(INVALID_IMAGES_ERROR);
       }
       const loaded = await definition.load(getDb(ctx.env.DB), catId, id);
       if (!loaded) {
@@ -1240,7 +1348,17 @@ function registerRecordTool<TData, TExisting>(
       if ("error" in saved) {
         return errorResult(saved.error);
       }
-      return jsonResult({ id: saved.id });
+      const imageError =
+        mediaRecordType &&
+        (await attachRecordImages(ctx, {
+          recordType: mediaRecordType,
+          recordId: saved.id,
+          catId: mediaRecordType === "expense" ? null : resolved.cat.id,
+          images,
+        }));
+      return jsonResult(
+        imageError ? { id: saved.id, imageError } : { id: saved.id },
+      );
     },
   );
 }

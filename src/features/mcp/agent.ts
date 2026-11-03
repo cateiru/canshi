@@ -13,6 +13,7 @@ import {
   isCatAllowedForMcp,
   isHouseholdAllowedForMcp,
   MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
+  MCP_HOUSEHOLD_OPERATIONS,
 } from "./permissionRules";
 import { getMcpPermissions } from "./permissions";
 import {
@@ -24,9 +25,12 @@ import {
 } from "./props";
 import { toCatSummary, toTimelineEntrySummary } from "./summaries";
 import { registerCatalogFoodProductTools } from "./tools/catalogFoodProducts";
+import { registerCatTools } from "./tools/cats";
 import { errorResult, jsonResult, type McpToolContext } from "./tools/context";
 import { registerFeedingPresetTools } from "./tools/feedingPresets";
+import { registerFeedingScheduleTools } from "./tools/feedingSchedules";
 import { registerFoodProductTools } from "./tools/foodProducts";
+import { registerHouseholdTools } from "./tools/households";
 import { registerRecordTools } from "./tools/records";
 
 /** 猫のプロフィールを返すツールの説明に添える、生年月日の精度の補足 */
@@ -48,7 +52,8 @@ export function createCanshiMcpHandler(route: string) {
   return {
     fetch(request, env, ctx) {
       const props = ctx.props as McpProps | undefined;
-      return createMcpHandler(() => createCanshiMcpServer(env, props), {
+      const { origin } = new URL(request.url);
+      return createMcpHandler(() => createCanshiMcpServer(env, props, origin), {
         route,
       }).fetch(request);
     },
@@ -103,15 +108,16 @@ async function resolveAllowedCat(
 
 /**
  * CANSHI の MCP サーバー本体（`/mcp`）。猫のプロフィール・タイムラインを読み取るツールと、
- * 記録の追加・編集、ごはん商品・プリセット・共通のごはん商品を扱うツール（`./tools/`）を公開する
+ * 記録の追加・編集、ごはん商品・プリセット・共通のごはん商品、家の名前・メンバー・招待、
+ * 猫のプロフィール・通知の設定、ごはんの時間を扱うツール（`./tools/`）を公開する
  * （docs/plans/32_mcp_oidc_overview.md 参照）。リクエストごとに作る（`createCanshiMcpHandler`）。
  *
  * 各ツールはトークンに保存した CANSHI のユーザー ID（`props.userId`、
  * `/oauth/authorize` で同意したときにログインしていたユーザー）の家の猫のうち、
  * そのユーザーがこの接続（`props.clientId`）に読み取りを許可した家・猫・記録の種類
  * （`./permissions.ts`）だけを参照する。
- * 許可していない猫は、存在しない猫と区別しない。記録の書き込みやごはん商品・プリセットの
- * 操作は、接続に許可した操作だけを、読み取りを許可した範囲の中で行える。共通のごはん商品は、
+ * 許可していない猫は、存在しない猫と区別しない。記録の書き込みや家ごとの操作（ごはん商品・
+ * プリセット・家・猫など）は、接続に許可した操作だけを、読み取りを許可した範囲の中で行える。共通のごはん商品は、
  * admin のユーザーが接続に許可した操作だけを行える。
  * Next.js（OpenNext）の外で動くため、D1 は `getCloudflareContext()` ではなく
  * `env.DB` を明示的に渡す
@@ -119,6 +125,7 @@ async function resolveAllowedCat(
 export function createCanshiMcpServer(
   env: Env,
   props: McpProps | undefined,
+  origin: string,
 ): McpServer {
   const server = new McpServer({
     name: "CANSHI MCP Server",
@@ -126,6 +133,7 @@ export function createCanshiMcpServer(
   });
   const ctx: McpToolContext = {
     env,
+    origin,
     resolveConnection: () => resolveConnection(env, props),
   };
 
@@ -134,10 +142,11 @@ export function createCanshiMcpServer(
     {
       title: "家の一覧を取得",
       description:
-        "ユーザーが所属している家の一覧を取得する。ごはん商品・プリセットは家ごとに登録する。" +
-        "operations は、その家でこの接続に許可されているごはん商品・プリセットの操作" +
-        "（foodProduct:read・foodProduct:create・foodProduct:update・feedingPreset:read・" +
-        "feedingPreset:create・feedingPreset:update・feedingPreset:delete）。" +
+        "ユーザーが所属している家の一覧を取得する。ごはん商品・プリセット・ごはんの時間は家ごとに登録する。" +
+        "role はユーザーの家での役割（owner=オーナー、member=メンバー）。" +
+        "operations は、その家でこの接続に許可されている操作" +
+        `（${MCP_HOUSEHOLD_OPERATIONS.join("・")}）。` +
+        "cat:update・catNotification:read・catNotification:update はその家の猫について行える。" +
         "ユーザーが読み取りを許可していない家は含まれない。",
       annotations: { readOnlyHint: true },
     },
@@ -158,6 +167,7 @@ export function createCanshiMcpServer(
           .map((household) => ({
             id: household.id,
             name: household.name,
+            role: household.role,
             operations: permissions.householdOperations[household.id] ?? [],
           })),
       });
@@ -292,5 +302,8 @@ export function createCanshiMcpServer(
   registerFoodProductTools(server, ctx);
   registerFeedingPresetTools(server, ctx);
   registerCatalogFoodProductTools(server, ctx);
+  registerHouseholdTools(server, ctx);
+  registerCatTools(server, ctx);
+  registerFeedingScheduleTools(server, ctx);
   return server;
 }
