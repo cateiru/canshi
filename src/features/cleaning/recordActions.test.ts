@@ -227,6 +227,18 @@ describe("quickCreateCleaningRecordAction の掃除の通知", () => {
     );
     expect(await statusOf("toilet")).toBe("done");
   });
+
+  it("秒の途中で記録しても、今すぐ掃除したと記録したら通知を完了にする", async () => {
+    // 日本時間 2026-09-21 07:30:45.500
+    vi.setSystemTime(new Date("2026-09-20T22:30:45.500Z"));
+    await addNotification("toilet", "tama", "toilet");
+
+    await expect(
+      quickCreateCleaningRecordAction("tama", "toilet", new FormData()),
+    ).rejects.toThrow("REDIRECT:/cats/tama/cleaning");
+
+    expect(await statusOf("toilet")).toBe("done");
+  });
 });
 
 describe("updateCleaningRecordAction の掃除の通知", () => {

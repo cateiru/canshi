@@ -22,6 +22,8 @@ type CleaningTargetForRecord = Pick<
   "id" | "frequencyValue" | "frequencyUnit" | "notifyTime"
 >;
 
+const MS_PER_MINUTE = 60 * 1000;
+
 const targetColumns = {
   id: cleaningTargets.id,
   frequencyValue: cleaningTargets.frequencyValue,
@@ -79,8 +81,10 @@ function completeCleaningNotifications(
   target: CleaningTargetForRecord,
   performedAt: Date,
 ) {
+  // `getNaiveLocalNow` は分単位で切り捨てるため、記録の日時も分単位にそろえて比べる。
+  // 「今すぐ掃除した」の記録（`getNaiveUtcNow`）は秒を持ち、そのまま比べると先の日時になる
   if (
-    performedAt.getTime() >
+    Math.floor(performedAt.getTime() / MS_PER_MINUTE) * MS_PER_MINUTE >
     getNaiveLocalNow(new Date(), NOTIFY_TIMEZONE).getTime()
   ) {
     return [];
