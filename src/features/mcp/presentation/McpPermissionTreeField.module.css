@@ -33,28 +33,108 @@
 .cats {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-1);
 }
 
 .cat {
   min-width: 0;
 }
 
-.householdCheckbox,
-.catCheckbox {
-  width: 100%;
+/* 家・猫・記録の種類の行。左に名前、右に「読む」「書く」を並べる */
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-2);
 }
 
 .name {
   min-width: 0;
 }
 
-.householdCheckbox {
+.householdName {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
   font-weight: var(--font-weight-bold);
   font-size: var(--text-md);
 }
 
-.catCheckbox {
+/* 開閉のボタン。ボタンの既定の見た目をなくし、押せる高さを 44px 確保する */
+.detailsTrigger,
+.catTrigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  margin-inline: calc(-1 * var(--space-2));
+  border: none;
+  border-radius: var(--radius-base);
+  background: transparent;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: background-color var(--transition-base);
+}
+
+.detailsTrigger[data-hovered],
+.catTrigger[data-hovered] {
+  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
+}
+
+.detailsTrigger[data-focus-visible],
+.catTrigger[data-focus-visible] {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+.detailsTrigger {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.catTrigger {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--text-sm);
+}
+
+.caret {
+  flex-shrink: 0;
+  transform: rotate(90deg);
+  transition: transform var(--transition-base);
+}
+
+[data-expanded] > .detailsTrigger .caret,
+[data-expanded] > .row .caret {
+  transform: rotate(180deg);
+}
+
+.details {
+  margin-top: var(--space-1);
+}
+
+.detailsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-top: var(--space-3);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.sectionLabel {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
 }
 
@@ -63,7 +143,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 17em), 1fr));
   column-gap: var(--space-6);
-  margin-top: var(--space-2);
+  margin-top: var(--space-1);
+  margin-bottom: var(--space-3);
 }
 
 /* fieldset の既定の枠・余白をなくし、名前を読み上げられるまとまりにする */
@@ -75,6 +156,11 @@
   margin-bottom: 0;
   padding: 0;
   border: 0;
+}
+
+/* 猫の名前の下に入れ子として見えるよう、左に余白を空ける */
+.records {
+  padding-left: var(--space-6);
 }
 
 .record {
@@ -119,14 +205,6 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0 var(--space-3);
-}
-
-.operations {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin-top: var(--space-3);
-  margin-bottom: var(--space-6);
 }
 
 /* 共通のごはん商品の操作は家に属さないため、家の一覧の後ろに別の枠で並べる */

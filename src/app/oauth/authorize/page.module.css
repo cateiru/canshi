@@ -8,7 +8,6 @@
   gap: var(--space-2);
 }
 
-.description,
 .note,
 .afterNote {
   color: var(--color-ink-muted);
@@ -40,6 +39,14 @@
 
 .appIdentity {
   min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 名前（太字）に続けて、少し小さく添える */
+.appRequest {
+  margin-left: var(--space-1);
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-regular);
 }
 
 .details {
@@ -67,21 +74,8 @@
   gap: var(--space-2);
 }
 
-.account svg,
-.caution svg {
+.account svg {
   flex-shrink: 0;
-}
-
-.caution {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  color: var(--color-ink-muted);
-}
-
-.caution svg {
-  margin-top: var(--space-1);
-  color: var(--color-warning-strong);
 }
 
 .form {

@@ -316,6 +316,29 @@ test("AIとの接続の読み取る範囲ページの見た目", async ({ page }
   await takeSnapshot(page, testInfo);
 });
 
+test("AIとの接続の読み取る範囲ページ（詳細な設定を開いたケース）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/settings/ai-connections/vrtGrant");
+  const details = page.getByRole("button", { name: "VRTの家の詳細な設定" });
+  // ハイドレーションの前に押すと開かないため、開くまで押し直す
+  await expect(async () => {
+    if ((await details.getAttribute("aria-expanded")) !== "true") {
+      await details.click();
+    }
+    await expect(details).toHaveAttribute("aria-expanded", "true", {
+      timeout: 1_000,
+    });
+  }).toPass();
+  await page.getByRole("button", { name: "VRTテスト猫", exact: true }).click();
+  await expect(
+    page.getByRole("group", { name: "VRTテスト猫の記録" }),
+  ).toBeVisible();
+  // クリックしたままだと開閉ボタンにホバーの背景が付くかどうかが実行ごとに変わるため、マウスを外す
+  await page.mouse.move(0, 0);
+  await takeSnapshot(page, testInfo);
+});
+
 test("MCP の同意画面の見た目", async ({ page }, testInfo) => {
   // 同意画面は、Worker（src/features/mcp/presentation/authorize.ts）が認可リクエストを検証して付ける
   // ヘッダーが無いと表示できない。VRT は Worker を通らない `next dev` に対して実行するため、
@@ -333,6 +356,32 @@ test("MCP の同意画面の見た目", async ({ page }, testInfo) => {
   );
   await expect(page.getByRole("button", { name: "許可する" })).toBeVisible();
   await takeSnapshot(page, testInfo);
+});
+
+test.describe("MCP の同意画面（許可するボタンが画面より下にあるケース）", () => {
+  // 許可する範囲がどれだけあっても許可するボタンが画面より下になるよう、狭い画面で撮る
+  test.use({ viewport: { width: 390, height: 600 } });
+
+  test("MCP の同意画面（許可するボタンへの案内）の見た目", async ({
+    page,
+  }, testInfo) => {
+    await page.setExtraHTTPHeaders({
+      [MCP_CONSENT_HEADER]: encodeMcpConsentRequest({
+        clientId: "vrt-client",
+        clientName: "ChatGPT",
+        redirectUri: "https://chatgpt.com/connector/oauth/callback",
+      }),
+    });
+    await page.goto(
+      "/oauth/authorize?response_type=code&client_id=vrt-client&redirect_uri=https%3A%2F%2Fchatgpt.com%2Fconnector%2Foauth%2Fcallback&state=vrt",
+    );
+    // 案内はハイドレーションの後に表示する。家・猫が多いと dev サーバーでは数秒かかるため長めに待つ
+    await expect(
+      page.getByRole("button", { name: "許可するボタンへ" }),
+    ).toBeVisible({ timeout: 20_000 });
+    // 画面に見えている範囲だけを撮る（全体を撮ると許可するボタンが画面に入り、案内が消える）
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
 });
 
 test("プロフィールの編集ページの見た目", async ({ page }, testInfo) => {

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { expect, test } from "@playwright/test";
+import { expect, type Locator, test } from "@playwright/test";
 import {
   DEVELOPMENT_EMAIL_HASH_SALT,
   hashEmail,
@@ -77,6 +77,31 @@ test("AIとの接続ごとに、読み取り・書き込みを許可する範囲
   ).toBeVisible();
 
   const permissions = page.getByRole("region", { name: "許可する範囲" });
+  // 記録の種類ごとの選択は、家の「詳細な設定」と猫の名前を押すと開く中にある（既定では閉じる）。
+  // 猫がどの家にいるかはほかのテストに左右されるため、すべての家の詳細な設定を開く
+  // ハイドレーションの前に押すと開かないため、開くまで押し直す
+  const expand = async (trigger: Locator) => {
+    await expect(async () => {
+      if ((await trigger.getAttribute("aria-expanded")) !== "true") {
+        await trigger.click();
+      }
+      await expect(trigger).toHaveAttribute("aria-expanded", "true", {
+        timeout: 1_000,
+      });
+    }).toPass();
+  };
+  const expandCat = async () => {
+    const triggers = permissions.getByRole("button", {
+      name: /の詳細な設定$/,
+    });
+    for (const trigger of await triggers.all()) {
+      await expand(trigger);
+    }
+    await expand(
+      permissions.getByRole("button", { name: CAT_NAME, exact: true }),
+    );
+  };
+  await expandCat();
   // ほかのテストで残った猫に影響されないよう、beforeEach で追加した猫の記録を操作する
   const records = permissions.getByRole("group", { name: `${CAT_NAME}の記録` });
   // Checkbox の実体（input）は視覚的に隠れておりクリック不可のため、
@@ -105,6 +130,7 @@ test("AIとの接続ごとに、読み取り・書き込みを許可する範囲
   await expect(page.getByText("許可する範囲を保存しました")).toBeVisible();
 
   await page.reload();
+  await expandCat();
   await expect(readPoop).not.toBeChecked();
   await expect(checkboxIn("ごはんを読む")).toBeChecked();
   await expect(writeFeeding).toBeChecked();

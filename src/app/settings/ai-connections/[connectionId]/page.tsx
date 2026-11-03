@@ -100,10 +100,7 @@ export default async function AiConnectionPage({
         gap="sm"
       >
         <p className={styles.description}>
-          「読む」のチェックを外した家・猫・記録は、このアプリから読み取れなくなります。「書く」にチェックした記録は、このアプリから追加・編集できます。ごはん商品・プリセットは、家ごとに許可する操作を選べます。ほかのアプリとの接続には影響しません。
-        </p>
-        <p className={styles.description}>
-          あとから登録した猫や、新しく参加した家は、読み取れますが書き込めません。
+          チェックを入れた権限に対してAIが操作できるようになります。
         </p>
         <McpPermissionsForm
           action={updateMcpPermissionsAction.bind(null, connection.id)}
