@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Disclosure, DisclosurePanel } from "react-aria-components";
+import { TbTriangleFilled } from "react-icons/tb";
 import { Checkbox } from "@/components/ui";
 import {
   FoodProductIcon,
@@ -57,6 +59,12 @@ type CheckedState = {
  * input（`mcpPermissions`）に JSON で入れる。設定画面（Server Action）と同意画面
  * （Worker への POST）で共通に使う。
  *
+ * チェックボックスの数が多いため、家と猫の行には記録の「読む」「書く」をまとめて選ぶチェックボックス
+ * だけを出す。家ごとの操作と猫の一覧は家の「詳細な設定」に、記録の種類ごとの選択は猫の名前を
+ * 押すと開く中にしまい、どちらも既定では閉じる。
+ *
+ * - 家・猫の「書く」を付けると、その家の猫（その猫）のすべての記録の種類の「読む」「書く」に付く。
+ *   外すと書き込みだけが外れ、読み取りは残る。家の「書く」は記録だけで、家ごとの操作には付けない
  * - 親のチェックを外すと、子のチェック（書き込み・操作を含む）もすべて外れる
  * - 親にチェックを付けると、子の読み取りにすべてチェックが付く（書き込みには付けない）
  * - 子にチェックを付けると、親にもチェックが付く
@@ -125,171 +133,189 @@ export function McpPermissionTreeField({
                 checked.cats.has(cat.id) &&
                 isAllRecordsChecked(checked, cat.id),
             );
+            const allCatsWritable =
+              household.cats.length > 0 &&
+              household.cats.every((cat) =>
+                isAllRecordsWritable(checked, cat.id),
+              );
+            const someCatsWritable = household.cats.some(
+              (cat) => (checked.writes.get(cat.id)?.size ?? 0) > 0,
+            );
             const operations = checked.operations.get(household.id);
             return (
               <li key={household.id} className={styles.household}>
-                <Checkbox
-                  className={styles.householdCheckbox}
-                  isSelected={householdChecked && allCatsFull}
-                  isIndeterminate={householdChecked && !allCatsFull}
-                  onChange={(value) =>
-                    update((draft) => {
-                      toggle(draft.households, household.id, value);
-                      for (const cat of household.cats) {
-                        setCat(draft, cat.id, value);
+                <div className={styles.row}>
+                  <span className={styles.householdName}>
+                    <HouseholdIcon
+                      className={styles.icon}
+                      size={20}
+                      aria-hidden="true"
+                    />
+                    <span className={styles.name}>{household.name}</span>
+                  </span>
+                  <span className={styles.choices}>
+                    <Checkbox
+                      aria-label={`${household.name}の記録を読む`}
+                      isSelected={householdChecked && allCatsFull}
+                      isIndeterminate={householdChecked && !allCatsFull}
+                      onChange={(value) =>
+                        update((draft) => {
+                          toggle(draft.households, household.id, value);
+                          for (const cat of household.cats) {
+                            setCat(draft, cat.id, value);
+                          }
+                          if (!value) {
+                            draft.operations.set(household.id, new Set());
+                          }
+                        })
                       }
-                      if (!value) {
-                        draft.operations.set(household.id, new Set());
-                      }
-                    })
-                  }
-                >
-                  <HouseholdIcon
-                    className={styles.icon}
-                    size={20}
-                    aria-hidden="true"
-                  />
-                  <span className={styles.name}>{household.name}</span>
-                </Checkbox>
-                <div className={styles.operations}>
-                  {MCP_HOUSEHOLD_OPERATION_GROUPS.map((group) => (
-                    <fieldset
-                      key={group.label}
-                      aria-label={`${household.name}の${group.label}`}
-                      className={styles.operationGroup}
                     >
-                      <span className={styles.operationLabel}>
-                        {group.label}
-                      </span>
-                      <span className={styles.operationChoices}>
-                        {group.operations.map(({ operation, label }) => (
-                          <Checkbox
-                            key={operation}
-                            aria-label={`${group.label}を${label}`}
-                            isSelected={operations?.has(operation) ?? false}
-                            onChange={(value) =>
-                              update((draft) => {
-                                const set =
-                                  draft.operations.get(household.id) ??
-                                  new Set();
-                                toggle(set, operation, value);
-                                draft.operations.set(household.id, set);
-                                if (value) {
-                                  draft.households.add(household.id);
-                                }
-                              })
-                            }
-                          >
-                            {label}
-                          </Checkbox>
-                        ))}
-                      </span>
-                    </fieldset>
-                  ))}
+                      読む
+                    </Checkbox>
+                    <Checkbox
+                      aria-label={`${household.name}の記録を書く`}
+                      isSelected={allCatsWritable}
+                      isIndeterminate={!allCatsWritable && someCatsWritable}
+                      isDisabled={household.cats.length === 0}
+                      onChange={(value) =>
+                        update((draft) => {
+                          for (const cat of household.cats) {
+                            setCatWrites(draft, cat.id, value);
+                          }
+                          if (value) {
+                            draft.households.add(household.id);
+                          }
+                        })
+                      }
+                    >
+                      書く
+                    </Checkbox>
+                  </span>
                 </div>
-                {household.cats.length === 0 ? (
-                  <p className={styles.noCats}>この家には猫がいません。</p>
-                ) : (
-                  <ul className={styles.cats}>
-                    {household.cats.map((cat) => {
-                      const catChecked = checked.cats.has(cat.id);
-                      const allRecords = isAllRecordsChecked(checked, cat.id);
-                      const recordTypes = checked.records.get(cat.id);
-                      const writeTypes = checked.writes.get(cat.id);
-                      return (
-                        <li key={cat.id} className={styles.cat}>
-                          <Checkbox
-                            className={styles.catCheckbox}
-                            isSelected={catChecked && allRecords}
-                            isIndeterminate={catChecked && !allRecords}
-                            onChange={(value) =>
-                              update((draft) => {
-                                setCat(draft, cat.id, value);
-                                if (value) {
-                                  draft.households.add(household.id);
-                                }
-                              })
-                            }
-                          >
-                            <CatIcon
-                              className={styles.icon}
-                              size={20}
-                              aria-hidden="true"
-                            />
-                            <span className={styles.name}>{cat.name}</span>
-                          </Checkbox>
+                <Disclosure className={styles.details}>
+                  <Button
+                    slot="trigger"
+                    className={styles.detailsTrigger}
+                    aria-label={`${household.name}の詳細な設定`}
+                  >
+                    <TbTriangleFilled
+                      aria-hidden="true"
+                      size={10}
+                      className={styles.caret}
+                    />
+                    詳細な設定
+                  </Button>
+                  <DisclosurePanel>
+                    <div className={styles.detailsPanel}>
+                      <section
+                        aria-label={`${household.name}の操作`}
+                        className={styles.section}
+                      >
+                        <span className={styles.sectionLabel}>
+                          ごはん商品・家・猫などの操作
+                        </span>
+                        {MCP_HOUSEHOLD_OPERATION_GROUPS.map((group) => (
                           <fieldset
-                            aria-label={`${cat.name}の記録`}
-                            className={styles.records}
+                            key={group.label}
+                            aria-label={`${household.name}の${group.label}`}
+                            className={styles.operationGroup}
                           >
-                            {MCP_PERMISSION_RECORD_TYPES.map((type) => {
-                              const Icon = TIMELINE_TYPE_ICON[type];
-                              const label = TIMELINE_TYPE_LABEL[type];
-                              return (
-                                <fieldset
-                                  key={type}
-                                  className={styles.record}
-                                  aria-label={`${cat.name}の${label}`}
+                            <span className={styles.operationLabel}>
+                              {group.label}
+                            </span>
+                            <span className={styles.operationChoices}>
+                              {group.operations.map(({ operation, label }) => (
+                                <Checkbox
+                                  key={operation}
+                                  aria-label={`${group.label}を${label}`}
+                                  isSelected={
+                                    operations?.has(operation) ?? false
+                                  }
+                                  onChange={(value) =>
+                                    update((draft) => {
+                                      const set =
+                                        draft.operations.get(household.id) ??
+                                        new Set();
+                                      toggle(set, operation, value);
+                                      draft.operations.set(household.id, set);
+                                      if (value) {
+                                        draft.households.add(household.id);
+                                      }
+                                    })
+                                  }
                                 >
-                                  <span className={styles.recordLabel}>
-                                    <Icon
-                                      className={styles.icon}
-                                      size={18}
-                                      aria-hidden="true"
-                                    />
-                                    {label}
-                                  </span>
-                                  <span className={styles.choices}>
-                                    <Checkbox
-                                      aria-label={`${label}を読む`}
-                                      isSelected={
-                                        recordTypes?.has(type) ?? false
-                                      }
-                                      onChange={(value) =>
-                                        update((draft) => {
-                                          setRead(draft, cat.id, type, value);
-                                          if (value) {
-                                            draft.cats.add(cat.id);
-                                            draft.households.add(household.id);
-                                          }
-                                        })
-                                      }
-                                    >
-                                      読む
-                                    </Checkbox>
-                                    <Checkbox
-                                      aria-label={`${label}を書く`}
-                                      isSelected={
-                                        writeTypes?.has(type) ?? false
-                                      }
-                                      onChange={(value) =>
-                                        update((draft) => {
-                                          const writes =
-                                            draft.writes.get(cat.id) ??
-                                            new Set();
-                                          toggle(writes, type, value);
-                                          draft.writes.set(cat.id, writes);
-                                          // 書き込みは読み取りを含む
-                                          if (value) {
-                                            setRead(draft, cat.id, type, true);
-                                            draft.cats.add(cat.id);
-                                            draft.households.add(household.id);
-                                          }
-                                        })
-                                      }
-                                    >
-                                      書く
-                                    </Checkbox>
-                                  </span>
-                                </fieldset>
-                              );
-                            })}
+                                  {label}
+                                </Checkbox>
+                              ))}
+                            </span>
                           </fieldset>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
+                        ))}
+                      </section>
+                      <section
+                        aria-label={`${household.name}の猫ごとの記録`}
+                        className={styles.section}
+                      >
+                        <span className={styles.sectionLabel}>
+                          猫ごとの記録
+                        </span>
+                        {household.cats.length === 0 ? (
+                          <p className={styles.noCats}>
+                            この家には猫がいません。
+                          </p>
+                        ) : (
+                          <ul className={styles.cats}>
+                            {household.cats.map((cat) => (
+                              <CatPermissionItem
+                                key={cat.id}
+                                cat={cat}
+                                checked={checked}
+                                onCatChange={(value) =>
+                                  update((draft) => {
+                                    setCat(draft, cat.id, value);
+                                    if (value) {
+                                      draft.households.add(household.id);
+                                    }
+                                  })
+                                }
+                                onCatWritesChange={(value) =>
+                                  update((draft) => {
+                                    setCatWrites(draft, cat.id, value);
+                                    if (value) {
+                                      draft.households.add(household.id);
+                                    }
+                                  })
+                                }
+                                onReadChange={(type, value) =>
+                                  update((draft) => {
+                                    setRead(draft, cat.id, type, value);
+                                    if (value) {
+                                      draft.cats.add(cat.id);
+                                      draft.households.add(household.id);
+                                    }
+                                  })
+                                }
+                                onWriteChange={(type, value) =>
+                                  update((draft) => {
+                                    const writes =
+                                      draft.writes.get(cat.id) ?? new Set();
+                                    toggle(writes, type, value);
+                                    draft.writes.set(cat.id, writes);
+                                    // 書き込みは読み取りを含む
+                                    if (value) {
+                                      setRead(draft, cat.id, type, true);
+                                      draft.cats.add(cat.id);
+                                      draft.households.add(household.id);
+                                    }
+                                  })
+                                }
+                              />
+                            ))}
+                          </ul>
+                        )}
+                      </section>
+                    </div>
+                  </DisclosurePanel>
+                </Disclosure>
               </li>
             );
           })}
@@ -337,6 +363,121 @@ export function McpPermissionTreeField({
       ) : null}
     </div>
   );
+}
+
+type CatPermissionItemProps = {
+  cat: McpPermissionTreeHousehold["cats"][number];
+  checked: CheckedState;
+  onCatChange: (value: boolean) => void;
+  onCatWritesChange: (value: boolean) => void;
+  onReadChange: (type: McpPermissionRecordType, value: boolean) => void;
+  onWriteChange: (type: McpPermissionRecordType, value: boolean) => void;
+};
+
+/**
+ * 猫の行。猫の名前を押すと、記録の種類ごとの「読む」「書く」を開閉する（既定では閉じる）。
+ * 猫の「読む」「書く」は開閉のボタンの外に置き、閉じたままでもまとめて選べるようにする
+ */
+function CatPermissionItem({
+  cat,
+  checked,
+  onCatChange,
+  onCatWritesChange,
+  onReadChange,
+  onWriteChange,
+}: CatPermissionItemProps) {
+  const catChecked = checked.cats.has(cat.id);
+  const allRecords = isAllRecordsChecked(checked, cat.id);
+  const allWritable = isAllRecordsWritable(checked, cat.id);
+  const recordTypes = checked.records.get(cat.id);
+  const writeTypes = checked.writes.get(cat.id);
+  return (
+    <li className={styles.cat}>
+      <Disclosure>
+        <div className={styles.row}>
+          <Button slot="trigger" className={styles.catTrigger}>
+            <TbTriangleFilled
+              aria-hidden="true"
+              size={10}
+              className={styles.caret}
+            />
+            <CatIcon className={styles.icon} size={20} aria-hidden="true" />
+            <span className={styles.name}>{cat.name}</span>
+          </Button>
+          <span className={styles.choices}>
+            <Checkbox
+              aria-label={`${cat.name}の記録を読む`}
+              isSelected={catChecked && allRecords}
+              isIndeterminate={catChecked && !allRecords}
+              onChange={onCatChange}
+            >
+              読む
+            </Checkbox>
+            <Checkbox
+              aria-label={`${cat.name}の記録を書く`}
+              isSelected={allWritable}
+              isIndeterminate={!allWritable && (writeTypes?.size ?? 0) > 0}
+              onChange={onCatWritesChange}
+            >
+              書く
+            </Checkbox>
+          </span>
+        </div>
+        <DisclosurePanel>
+          <fieldset aria-label={`${cat.name}の記録`} className={styles.records}>
+            {MCP_PERMISSION_RECORD_TYPES.map((type) => {
+              const Icon = TIMELINE_TYPE_ICON[type];
+              const label = TIMELINE_TYPE_LABEL[type];
+              return (
+                <fieldset
+                  key={type}
+                  className={styles.record}
+                  aria-label={`${cat.name}の${label}`}
+                >
+                  <span className={styles.recordLabel}>
+                    <Icon
+                      className={styles.icon}
+                      size={18}
+                      aria-hidden="true"
+                    />
+                    {label}
+                  </span>
+                  <span className={styles.choices}>
+                    <Checkbox
+                      aria-label={`${label}を読む`}
+                      isSelected={recordTypes?.has(type) ?? false}
+                      onChange={(value) => onReadChange(type, value)}
+                    >
+                      読む
+                    </Checkbox>
+                    <Checkbox
+                      aria-label={`${label}を書く`}
+                      isSelected={writeTypes?.has(type) ?? false}
+                      onChange={(value) => onWriteChange(type, value)}
+                    >
+                      書く
+                    </Checkbox>
+                  </span>
+                </fieldset>
+              );
+            })}
+          </fieldset>
+        </DisclosurePanel>
+      </Disclosure>
+    </li>
+  );
+}
+
+/**
+ * 猫のすべての記録の種類の書き込みを変える。書き込みは読み取りを含むため、付けるときは
+ * 猫とすべての記録の種類の読み取りにも付ける。外すときは書き込みだけを外し、読み取りは残す
+ */
+function setCatWrites(draft: CheckedState, catId: string, value: boolean) {
+  if (value) {
+    draft.cats.add(catId);
+    draft.records.set(catId, new Set(MCP_PERMISSION_RECORD_TYPES));
+  }
+  draft.writes.set(catId, new Set(value ? MCP_PERMISSION_RECORD_TYPES : []));
 }
 
 /** 記録の種類の読み取りのチェックを変える。読み取りを外すと、書き込みも外す */
@@ -389,6 +530,12 @@ function initialState(
 function isAllRecordsChecked(state: CheckedState, catId: string) {
   return (
     (state.records.get(catId)?.size ?? 0) === MCP_PERMISSION_RECORD_TYPES.length
+  );
+}
+
+function isAllRecordsWritable(state: CheckedState, catId: string) {
+  return (
+    (state.writes.get(catId)?.size ?? 0) === MCP_PERMISSION_RECORD_TYPES.length
   );
 }
 
