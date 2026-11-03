@@ -1164,6 +1164,7 @@ const RECORD_IMAGES_DESCRIPTION =
   `${MAX_DECODE_PIXELS / 1_000_000} 百万画素以下にする（長辺 2000px 程度に縮小してから送る）。` +
   `base64 の長さは合計 ${MAX_RECORD_IMAGES_BASE64_LENGTH} 文字まで。` +
   "編集で指定すると、今の画像の後ろに追加する（今の画像は消えない）。" +
+  "呼ぶたびに追加するため、同じ画像を指定して呼び直さない。" +
   "画像を保存できなかったときも記録は保存し、imageError に理由を返す。";
 
 const INVALID_IMAGES_ERROR =
@@ -1321,7 +1322,8 @@ function registerRecordTool<TData, TExisting>(
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
-        idempotentHint: true,
+        // 画像は指定するたびに追加するため、同じ引数で呼び直すと同じ画像が重なる
+        idempotentHint: !mediaRecordType,
       },
     },
     async (args: Record<string, unknown>) => {

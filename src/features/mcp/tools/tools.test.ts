@@ -93,6 +93,11 @@ type ToolResult = {
 
 // biome-ignore lint/suspicious/noExplicitAny: ツールの引数はツールごとに異なる
 const handlers = new Map<string, (args: any) => Promise<ToolResult>>();
+/** ツールの登録時の設定（annotations など） */
+const configs = new Map<
+  string,
+  { annotations?: { idempotentHint?: boolean } }
+>();
 
 /** ツールを呼び、結果の JSON か、エラーのメッセージを返す */
 async function call(name: string, args: Record<string, unknown> = {}) {
@@ -171,13 +176,15 @@ beforeEach(async () => {
   ]);
 
   handlers.clear();
+  configs.clear();
   const server = {
     registerTool: (
       name: string,
-      _config: unknown,
+      config: { annotations?: { idempotentHint?: boolean } },
       handler: (args: unknown) => Promise<ToolResult>,
     ) => {
       handlers.set(name, handler);
+      configs.set(name, config);
     },
   } as unknown as McpServer;
   const ctx: McpToolContext = {
@@ -1604,6 +1611,15 @@ describe("記録の画像", () => {
         "1 枚目までは保存しましたが、2 枚目の画像を保存できませんでした。",
     });
     expect(storeMediaAsset).toHaveBeenCalledTimes(2);
+  });
+
+  it("画像を受け付ける編集のツールは、冪等なツールとして公開しない", () => {
+    expect(configs.get("update_poop_record")?.annotations?.idempotentHint).toBe(
+      false,
+    );
+    expect(
+      configs.get("update_weight_record")?.annotations?.idempotentHint,
+    ).toBe(true);
   });
 
   it("画面で画像を添付できない記録には添付しない", async () => {
