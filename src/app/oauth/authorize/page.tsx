@@ -109,7 +109,7 @@ export default async function AuthorizePage({
               gap="sm"
             >
               <p className={styles.note}>
-                このアプリに公開する家の記録を「読む」で選んでください。チェックを外した情報は読み取れません。記録の追加・編集を許可するときは「書く」にチェックしてください。猫や記録の種類ごとの設定と、ごはん商品・プリセットなどの家ごとの操作は「詳細な設定」で選べます。
+                チェックを入れた権限に対してAIが操作できるようになります。
               </p>
               <McpPermissionTreeField
                 tree={permissionTree.households}
