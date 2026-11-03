@@ -111,7 +111,7 @@ PR のレビューコメント（インラインコメント・レビュー本�
   - application から DB と presentation を import しない。
   - infrastructure から application・presentation を import しない。
   - domain から DB・`next`・`react`・`@opennextjs/cloudflare` と、ほかの層を import しない。
-  - overrides は層ごとに対象が重ならないようにする（同じルールのオプションは、後の override で置き換わるため）。
+  - overrides は層ごとに対象が重ならないようにする。
 - application の関数（`mutations.ts` など）と queries の関数は、最後の引数で D1 を `d1?: D1Database` として受け取る。
   MCP のツールは `ctx.env.DB` を渡す。画面からは省略してよい。
   画像（R2）の削除を伴う関数（`deleteMedication` など）は、今は画面からだけ使うため受け取らない。
