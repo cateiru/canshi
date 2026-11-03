@@ -24,7 +24,7 @@ import {
   waterRecords,
   weightRecords,
 } from "@/db/schema";
-import { dismissFeedingNotificationsOfCatlessHouseholds } from "@/features/feeding-schedules/application/mutations";
+import { dismissFeedingNotificationsOfCatlessHouseholds } from "@/features/feeding-schedules/infrastructure/feedingScheduleRepository";
 import { getHouseholdForUser } from "@/features/households/infrastructure/queries";
 import { deleteMediaAssetsByCat } from "@/features/media/infrastructure/storage";
 

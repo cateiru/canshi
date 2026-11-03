@@ -1,11 +1,10 @@
-import { and, eq, isNull, or } from "drizzle-orm";
-import { getDb } from "@/db/client";
-import { pushSubscriptions } from "@/db/schema";
+import { toPushSubscriptionKeys } from "../domain/pushSubscription";
+import type { RequestTestPushResult } from "../domain/pushSubscriptionRepository";
 import type { PushSubscribeInput } from "../domain/subscriptionSchema";
-import { requestTestPush } from "../infrastructure/sendTestPush";
+import { createPushSubscriptionRepository } from "../infrastructure/pushSubscriptionRepository";
 
 /*
- * Push 購読の登録・解除。ユーザーはログイン中のユーザー（呼び出し側で確かめる）
+ * Push 購読の登録・解除（ユースケース）。ユーザーはログイン中のユーザー（呼び出し側で確かめる）
  */
 
 /**
@@ -17,26 +16,10 @@ export async function subscribeToPush(
   input: PushSubscribeInput,
   d1?: D1Database,
 ): Promise<void> {
-  await getDb(d1)
-    .insert(pushSubscriptions)
-    .values({
-      userId,
-      endpoint: input.endpoint,
-      p256dh: input.p256dh,
-      auth: input.auth,
-      userAgent: input.userAgent ?? null,
-    })
-    .onConflictDoUpdate({
-      target: pushSubscriptions.endpoint,
-      // 同じ端末で別のユーザーが購読し直した場合は、そのユーザーの購読にする
-      set: {
-        userId,
-        p256dh: input.p256dh,
-        auth: input.auth,
-        userAgent: input.userAgent ?? null,
-        failureCount: 0,
-      },
-    });
+  await createPushSubscriptionRepository(d1).saveForUser(
+    userId,
+    toPushSubscriptionKeys(input),
+  );
 }
 
 /** ユーザーの購読（とユーザーに紐付く前の購読）だけを解除する */
@@ -45,24 +28,14 @@ export async function unsubscribeFromPush(
   endpoint: string,
   d1?: D1Database,
 ): Promise<void> {
-  await getDb(d1)
-    .delete(pushSubscriptions)
-    .where(
-      and(
-        eq(pushSubscriptions.endpoint, endpoint),
-        or(
-          eq(pushSubscriptions.userId, userId),
-          isNull(pushSubscriptions.userId),
-        ),
-      ),
-    );
+  await createPushSubscriptionRepository(d1).removeForUser(userId, endpoint);
 }
 
-/** この端末（`endpoint`）へのテスト通知を予約する（`requestTestPush`） */
+/** この端末（`endpoint`）へのテスト通知を予約する */
 export function requestTestPushForUser(
   userId: string,
   endpoint: string,
   d1?: D1Database,
-) {
-  return requestTestPush(getDb(d1), userId, endpoint);
+): Promise<RequestTestPushResult> {
+  return createPushSubscriptionRepository(d1).requestTestPush(userId, endpoint);
 }

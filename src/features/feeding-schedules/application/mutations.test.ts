@@ -14,11 +14,11 @@ import {
   notifications,
   users,
 } from "@/db/schema";
+import { dismissFeedingNotificationsOfCatlessHouseholds } from "../infrastructure/feedingScheduleRepository";
 import { listFeedingSchedules } from "../infrastructure/queries";
 import {
   createFeedingSchedule,
   deleteFeedingSchedule,
-  dismissFeedingNotificationsOfCatlessHouseholds,
   updateFeedingScheduleNotify,
 } from "./mutations";
 

@@ -1,13 +1,11 @@
-import { and, eq, sql } from "drizzle-orm";
-import { getDb } from "@/db/client";
-import { foodProducts, householdMembers } from "@/db/schema";
-import { isHouseholdMemberCondition } from "@/features/households/infrastructure/queries";
+import { toFoodProductContent } from "../domain/foodProduct";
 import type { FoodProductFormInput } from "../domain/schema";
+import { createFoodProductRepository } from "../infrastructure/foodProductRepository";
 
 /*
- * ごはん商品の保存。画面（`./actions.ts`）と AI との接続（MCP）の両方から使う。
- * 家のメンバーであることは文の中で確かめる。MCP は Next.js（OpenNext）の外で動き
- * `getCloudflareContext()` を使えないため、D1 は引数で受け取る
+ * ごはん商品の保存（ユースケース）。画面（`../presentation/actions.ts`）と AI との接続（MCP）の
+ * 両方から使う。家のメンバーであることはリポジトリの文の中で確かめる。MCP は Next.js（OpenNext）の
+ * 外で動き `getCloudflareContext()` を使えないため、D1 は引数で受け取る
  */
 
 /**
@@ -22,48 +20,15 @@ export async function createFoodProduct(
   values: FoodProductFormInput,
   d1?: D1Database,
 ): Promise<string | null> {
-  // 判定と登録の間に家から外された場合に登録が通らないよう、INSERT ... SELECT で
-  // 登録先の家のメンバーの行があるときだけ 1 文で挿入する（`createCatForUser` と同じ）。
-  // INSERT ... SELECT では列の既定値が使われないため ID はここで作り、列はテーブル定義と同じ並びにする
-  const [created] = await getDb(d1)
-    .insert(foodProducts)
-    .select((qb) =>
-      qb
-        .select({
-          id: sql`${crypto.randomUUID()}`.as("id"),
-          householdId: householdMembers.householdId,
-          name: sql`${values.name}`.as("name"),
-          manufacturer: sql`${values.manufacturer}`.as("manufacturer"),
-          kcalPer100g: sql`${values.kcalPer100g}`.as("kcal_per_100g"),
-          packageAmountG: sql`${values.packageAmountG}`.as("package_amount_g"),
-          packageUnit: sql`${values.packageUnit}`.as("package_unit"),
-          nutritionType: sql`${values.nutritionType}`.as("nutrition_type"),
-          textureType: sql`${values.textureType}`.as("texture_type"),
-          // sql`` には列の型変換がかからないため、JSON 列は文字列にして渡す
-          lifeStages: sql`${JSON.stringify(values.lifeStages)}`.as(
-            "life_stages",
-          ),
-          targetBreed: sql`${values.targetBreed}`.as("target_breed"),
-          // 手動で登録した商品は、共通のごはん商品の追加元を持たない
-          catalogFoodProductId: sql`NULL`.as("catalog_food_product_id"),
-          createdAt: sql`(unixepoch())`.as("created_at"),
-          updatedAt: sql`(unixepoch())`.as("updated_at"),
-        })
-        .from(householdMembers)
-        .where(
-          and(
-            eq(householdMembers.householdId, householdId),
-            eq(householdMembers.userId, userId),
-          ),
-        ),
-    )
-    .returning({ id: foodProducts.id });
-  return created?.id ?? null;
+  return createFoodProductRepository(d1).addForMember(
+    userId,
+    householdId,
+    toFoodProductContent(values),
+  );
 }
 
 /**
- * ユーザーが所属する家の商品を更新する。別の家の商品は、存在しない商品と区別せずに false。
- * 判定と更新の間に家から外された場合に更新が通らないよう、所属の確認は UPDATE の WHERE に含める
+ * ユーザーが所属する家の商品を更新する。別の家の商品は、存在しない商品と区別せずに false
  */
 export async function updateFoodProduct(
   userId: string,
@@ -71,18 +36,11 @@ export async function updateFoodProduct(
   values: FoodProductFormInput,
   d1?: D1Database,
 ): Promise<boolean> {
-  const db = getDb(d1);
-  const updated = await db
-    .update(foodProducts)
-    .set({ ...values, updatedAt: new Date() })
-    .where(
-      and(
-        eq(foodProducts.id, id),
-        isHouseholdMemberCondition(foodProducts.householdId, userId),
-      ),
-    )
-    .returning({ id: foodProducts.id });
-  return updated.length > 0;
+  return createFoodProductRepository(d1).updateForMember(
+    userId,
+    id,
+    toFoodProductContent(values),
+  );
 }
 
 /**
@@ -94,15 +52,5 @@ export async function deleteFoodProductForUser(
   id: string,
   d1?: D1Database,
 ): Promise<boolean> {
-  // 呼び出し側の確認の後に家から外された場合に削除が通らないよう、所属の確認は DELETE の WHERE にも含める
-  const deleted = await getDb(d1)
-    .delete(foodProducts)
-    .where(
-      and(
-        eq(foodProducts.id, id),
-        isHouseholdMemberCondition(foodProducts.householdId, userId),
-      ),
-    )
-    .returning({ id: foodProducts.id });
-  return deleted.length > 0;
+  return createFoodProductRepository(d1).removeForMember(userId, id);
 }
