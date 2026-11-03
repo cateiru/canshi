@@ -38,13 +38,21 @@ import {
   type McpHouseholdOperation,
 } from "../permissionRules";
 import type { McpToolContext } from "./context";
+import { MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
 
 // `src/features/symptoms/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
 // D1 専用の `db.batch` は順番に実行するだけの簡易実装で補う。商品画像の保存（R2）は
 // このテストの対象外のため差し替える（共通のごはん商品の画像の加工は差し替えずに行う）
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
-  getDb: () => db,
+  // MCP のツールは Next.js（OpenNext）の外で動き、`getCloudflareContext()` を使えないため、
+  // D1 を渡し忘れた呼び出しはテストでも失敗させる
+  getDb: (d1?: unknown) => {
+    if (d1 === undefined) {
+      throw new Error("getDb に D1 が渡されていません");
+    }
+    return db;
+  },
 }));
 const { storeMediaAsset, deleteMediaAssetRows } = vi.hoisted(() => ({
   storeMediaAsset: vi.fn(async () => ({ id: "asset-1" })),
@@ -173,7 +181,7 @@ beforeEach(async () => {
     },
   } as unknown as McpServer;
   const ctx: McpToolContext = {
-    env: {} as Env,
+    env: { DB: {} } as unknown as Env,
     origin: "https://canshi.example.com",
     resolveConnection: async () => ({
       userId: "user-1",
@@ -1563,6 +1571,20 @@ describe("記録の画像", () => {
     expect(storeMediaAsset).not.toHaveBeenCalled();
   });
 
+  it("画像の合計が大きすぎるときは、記録を保存する前に断る", async () => {
+    await allow(WRITE_ALL_RECORDS);
+    const large = "A".repeat(MAX_IMAGE_BASE64_LENGTH / 2 + 1);
+
+    const result = await call("create_symptom", {
+      catId: "cat-1",
+      name: "くしゃみ",
+      images: [large, large],
+    });
+
+    expect(result.error).toContain("images の base64 の長さは合計");
+    expect(storeMediaAsset).not.toHaveBeenCalled();
+  });
+
   it("画像を保存できなくても記録は保存し、理由を返す", async () => {
     await allow(WRITE_ALL_RECORDS);
     storeMediaAsset
@@ -1579,7 +1601,7 @@ describe("記録の画像", () => {
     expect(result.value).toEqual({
       id: record.id,
       imageError:
-        "1 枚目までは保存しましたが、2 枚目の画像を保存できませんでした。画像を保存できませんでした",
+        "1 枚目までは保存しましたが、2 枚目の画像を保存できませんでした。",
     });
     expect(storeMediaAsset).toHaveBeenCalledTimes(2);
   });

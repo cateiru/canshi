@@ -1152,27 +1152,45 @@ function formArgs(
 /** 記録に 1 回で添付できる画像の数 */
 const MAX_RECORD_IMAGES = 4;
 
+/**
+ * 1 回で添付できる画像の base64 の長さの合計。引数の文字列と復号した画像を同時にメモリに置くため、
+ * 枚数にかかわらず 1 枚の画像の上限（既定 10MB）までにする
+ */
+const MAX_RECORD_IMAGES_BASE64_LENGTH = MAX_IMAGE_BASE64_LENGTH;
+
 const RECORD_IMAGES_DESCRIPTION =
   `記録に添付する画像（JPEG・PNG・WebP・GIF）を base64 で ${MAX_RECORD_IMAGES} 枚まで指定する` +
   "（data URL の形式も可）。サムネイルをサーバーで作るため、画素数は " +
   `${MAX_DECODE_PIXELS / 1_000_000} 百万画素以下にする（長辺 2000px 程度に縮小してから送る）。` +
+  `base64 の長さは合計 ${MAX_RECORD_IMAGES_BASE64_LENGTH} 文字まで。` +
   "編集で指定すると、今の画像の後ろに追加する（今の画像は消えない）。" +
   "画像を保存できなかったときも記録は保存し、imageError に理由を返す。";
 
 const INVALID_IMAGES_ERROR =
   "images に画像（JPEG・PNG・WebP・GIF）の base64 でないものが含まれています";
 
-/** 引数の画像（base64）を読む。画像でないものが含まれていれば null */
-function decodeImages(value: unknown): Uint8Array<ArrayBuffer>[] | null {
+const TOO_LARGE_IMAGES_ERROR =
+  `images の base64 の長さは合計 ${MAX_RECORD_IMAGES_BASE64_LENGTH} 文字までにしてください。` +
+  "画像を縮小するか、数回に分けて編集で追加してください";
+
+/** 引数の画像（base64）を読む。読めなければ AI に返すメッセージ */
+function decodeImages(
+  value: unknown,
+): { images: Uint8Array<ArrayBuffer>[] } | { error: string } {
+  const values = (value as string[] | undefined) ?? [];
+  const totalLength = values.reduce((sum, base64) => sum + base64.length, 0);
+  if (totalLength > MAX_RECORD_IMAGES_BASE64_LENGTH) {
+    return { error: TOO_LARGE_IMAGES_ERROR };
+  }
   const images: Uint8Array<ArrayBuffer>[] = [];
-  for (const base64 of (value as string[] | undefined) ?? []) {
+  for (const base64 of values) {
     const image = decodeImageBase64(base64);
     if (!image) {
-      return null;
+      return { error: INVALID_IMAGES_ERROR };
     }
     images.push(image);
   }
-  return images;
+  return { images };
 }
 
 /**
@@ -1203,11 +1221,8 @@ async function attachRecordImages(
       if (!(error instanceof MediaUploadError)) {
         console.error("記録の画像の保存に失敗しました", error);
       }
-      const reason =
-        error instanceof MediaUploadError
-          ? error.message
-          : "画像を保存できませんでした";
       const saved = index > 0 ? `${index} 枚目までは保存しましたが、` : "";
+      const reason = error instanceof MediaUploadError ? error.message : "";
       return `${saved}${index + 1} 枚目の画像を保存できませんでした。${reason}`;
     }
   }
@@ -1249,9 +1264,9 @@ function registerRecordTool<TData, TExisting>(
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
-      const images = decodeImages(args.images);
-      if (!images) {
-        return errorResult(INVALID_IMAGES_ERROR);
+      const decoded = decodeImages(args.images);
+      if ("error" in decoded) {
+        return errorResult(decoded.error);
       }
       const values = mergeFormValues(
         definition.defaults(),
@@ -1281,7 +1296,7 @@ function registerRecordTool<TData, TExisting>(
           recordType: mediaRecordType,
           recordId: saved.id,
           catId: mediaRecordType === "expense" ? null : resolved.cat.id,
-          images,
+          images: decoded.images,
         }));
       return jsonResult(
         imageError ? { id: saved.id, imageError } : { id: saved.id },
@@ -1316,9 +1331,9 @@ function registerRecordTool<TData, TExisting>(
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
-      const images = decodeImages(args.images);
-      if (!images) {
-        return errorResult(INVALID_IMAGES_ERROR);
+      const decoded = decodeImages(args.images);
+      if ("error" in decoded) {
+        return errorResult(decoded.error);
       }
       const loaded = await definition.load(getDb(ctx.env.DB), catId, id);
       if (!loaded) {
@@ -1354,7 +1369,7 @@ function registerRecordTool<TData, TExisting>(
           recordType: mediaRecordType,
           recordId: saved.id,
           catId: mediaRecordType === "expense" ? null : resolved.cat.id,
-          images,
+          images: decoded.images,
         }));
       return jsonResult(
         imageError ? { id: saved.id, imageError } : { id: saved.id },
