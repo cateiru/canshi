@@ -44,7 +44,7 @@ invocation_logs = true
 # `wrangler versions upload`（プレビュー）では適用できない。
 # 以前は MCP サーバー本体（`CanshiMcp`, `agents` パッケージの `McpAgent`）がセッション状態を
 # Durable Object に保持していた。MCP の 2026-07-28 版の仕様に合わせてセッションを持たない
-# 作り（`src/features/mcp/agent.ts`）にしたため、v2 で Durable Object ごと削除する。
+# 作り（`src/features/mcp/presentation/agent.ts`）にしたため、v2 で Durable Object ごと削除する。
 # 適用済みのマイグレーションは消さずに残す
 [[migrations]]
 tag = "v1"

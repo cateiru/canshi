@@ -42,7 +42,7 @@ export interface McpConnection {
  * `grant:{userId}:{grantId}`・`client:{clientId}`）を直接読む。
  * ライブラリを更新したときは、キーの形式が変わっていないか確かめること。
  * CIMD のクライアントは `client:{clientId}` が無いため、同意したときに grant に残した
- * 名前（`./authorize.ts`）を使う
+ * 名前（`../presentation/authorize.ts`）を使う
  */
 export async function listUserMcpConnections(
   userId: string,
@@ -193,7 +193,7 @@ interface StoredGrant {
   /** unix 秒。grant の有効期限を設定していない場合は無い */
   expiresAt?: number;
   redirectUri?: string;
-  /** 同意したときに残したクライアントの名前（`metadata.clientName`、`./authorize.ts`） */
+  /** 同意したときに残したクライアントの名前（`metadata.clientName`、`../presentation/authorize.ts`） */
   clientName?: string;
 }
 

@@ -27,7 +27,7 @@ vi.mock("@/db/client", () => ({
 
 /**
  * 延期（`snoozeNotificationAction`）は `status: "snoozed"`・`snoozedUntil` を設定し、
- * `readAt`・`pushedAt` を null に戻す（`src/features/notifications/actions.ts` 参照）。
+ * `readAt`・`pushedAt` を null に戻す（`src/features/notifications/presentation/actions.ts` 参照）。
  * この状態遷移が、期日到来の前後で「未対応一覧から消える／到来後に再び未対応・未読として
  * 扱われる」という受け入れ条件を満たすことを、`now` を制御して検証する
  * （PR #41・#35 レビュー対応）

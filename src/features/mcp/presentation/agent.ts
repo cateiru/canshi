@@ -45,7 +45,7 @@ const BIRTH_DATE_PRECISION_DESCRIPTION =
  * `createCanshiMcpServer()` で MCP サーバーを作り直して応答する。`initialize` で始める
  * それより前の版（2025-11-25 など）のクライアントにも、同じくリクエストごとに作り直した
  * サーバーで、セッションを持たずに応答する（`agents` の `createMcpHandler()`）。
- * ユーザーと接続は、リクエストごとの `ctx.props`（`./clientId.ts` の `withMcpClientId` が
+ * ユーザーと接続は、リクエストごとの `ctx.props`（`../infrastructure/clientId.ts` の `withMcpClientId` が
  * 接続の ID を入れたもの）から求める
  */
 export function createCanshiMcpHandler(route: string) {
@@ -63,7 +63,7 @@ export function createCanshiMcpHandler(route: string) {
 /**
  * ツールを呼んだユーザーの ID と、接続（OAuth のクライアント）の ID。読み取りの範囲は
  * 接続ごとに設定する。ユーザー ID を持たないトークンや、削除されたユーザーのトークン、
- * 接続を求められなかったリクエスト（`./clientId.ts`）では、ツールの結果として返す
+ * 接続を求められなかったリクエスト（`../infrastructure/clientId.ts`）では、ツールの結果として返す
  * エラーメッセージを返す。接続が分からないまま範囲を決めると、制限した範囲を
  * 読み取れてしまうため、読み取りを断る
  */
@@ -115,7 +115,7 @@ async function resolveAllowedCat(
  * 各ツールはトークンに保存した CANSHI のユーザー ID（`props.userId`、
  * `/oauth/authorize` で同意したときにログインしていたユーザー）の家の猫のうち、
  * そのユーザーがこの接続（`props.clientId`）に読み取りを許可した家・猫・記録の種類
- * （`./permissions.ts`）だけを参照する。
+ * （`../infrastructure/permissions.ts`）だけを参照する。
  * 許可していない猫は、存在しない猫と区別しない。記録の書き込みや家ごとの操作（ごはん商品・
  * プリセット・家・猫など）は、接続に許可した操作だけを、読み取りを許可した範囲の中で行える。共通のごはん商品は、
  * admin のユーザーが接続に許可した操作だけを行える。

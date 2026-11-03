@@ -32,7 +32,7 @@
 
 ## 変更・追加内容
 
-- `src/features/media/MediaAttachmentField.tsx`、`MediaGallery.tsx`、`MediaThumbnailStrip.tsx`
+- `src/features/media/presentation/MediaAttachmentField.tsx`、`MediaGallery.tsx`、`MediaThumbnailStrip.tsx`
 - `src/features/poop-records/`・`src/features/vomit-records/` のフォーム・アクション・クエリの更新
 - `src/app/cats/[catId]/poop-records/`・`vomit-records/` の一覧ページの更新
 - `src/features/timeline/` のクエリ・カードコンポーネントの更新

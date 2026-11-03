@@ -35,7 +35,7 @@
 - `cleaning_targets`・`cleaning_records` テーブル
 - `src/app/cats/[catId]/cleaning/` 配下のページ（掃除対象の一覧・設定、実施記録の一覧・新規作成・編集）
 - `src/features/cleaning/`（次回予定日・期限超過の計算ロジック）
-- `src/features/cats/recordNav.ts`・`src/features/timeline/` の更新
+- `src/features/cats/presentation/recordNav.ts`・`src/features/timeline/` の更新
 - `src/db/README.md` の発生日時列の対応表の更新
 
 ## DB マイグレーション

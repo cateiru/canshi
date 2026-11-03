@@ -29,7 +29,7 @@
 - `shampoo_records` テーブル
 - `src/app/cats/[catId]/shampoo-records/` 配下のページ
 - `src/features/shampoo-records/`（経過日数の計算ロジック）
-- `src/features/cats/recordNav.ts`・`src/features/timeline/` の更新
+- `src/features/cats/presentation/recordNav.ts`・`src/features/timeline/` の更新
 - `src/db/README.md` の発生日時列の対応表の更新
 
 ## DB マイグレーション

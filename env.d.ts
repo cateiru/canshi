@@ -6,10 +6,10 @@ interface Env {
   VAPID_SUBJECT?: string;
   NEXT_PUBLIC_VAPID_PUBLIC_KEY?: string;
   VAPID_PRIVATE_KEY?: string;
-  // ログインに使う Cloudflare Access の SaaS OIDC アプリ（`src/features/auth/oidc.ts`）
+  // ログインに使う Cloudflare Access の SaaS OIDC アプリ（`src/features/auth/infrastructure/oidc.ts`）
   ACCESS_DISCOVERY_URL?: string;
   ACCESS_CLIENT_ID?: string;
   ACCESS_CLIENT_SECRET?: string;
-  // メールアドレスをハッシュにするときの SALT（`src/features/auth/emailHash.ts`）
+  // メールアドレスをハッシュにするときの SALT（`src/features/auth/domain/emailHash.ts`）
   EMAIL_HASH_SALT?: string;
 }

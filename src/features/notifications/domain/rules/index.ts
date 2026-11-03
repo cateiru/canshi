@@ -16,7 +16,7 @@ export * from "./types";
 
 /**
  * 1匹の猫について、今日発火すべき通知の候補を判定する純粋関数。DB アクセスは持たない
- * （`src/features/notifications/generate.ts` が DB から入力を集めて呼び出す）。
+ * （`src/features/notifications/infrastructure/notificationGenerationRepository.ts` が DB から入力を集めて呼び出す）。
  *
  * 掃除以外の通知は全体の通知時刻（18:00）を過ぎるまで生成しない。掃除の通知は対象ごとに
  * 通知時刻を指定できるため、時刻の判定は `evaluateCleaningDue` 側で行う

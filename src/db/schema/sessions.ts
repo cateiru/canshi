@@ -5,7 +5,7 @@ import { users } from "./users";
 /**
  * ログインセッション。Cookie にはランダムなセッショントークンだけを保存し、
  * DB にはそのハッシュ（SHA-256）を持つ。DB が漏れてもトークンを復元できないようにする
- * （`src/features/auth/sessions.ts`）。ログアウトで行を削除すると、そのセッションは
+ * （`src/features/auth/infrastructure/sessions.ts`）。ログアウトで行を削除すると、そのセッションは
  * 直ちに使えなくなる
  */
 export const sessions = sqliteTable(

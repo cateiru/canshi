@@ -46,9 +46,9 @@
 
 - `src/db/schema/notifications.ts`、`notification-settings.ts`、`notification-preferences.ts`
 - `src/features/notifications/rules/`（種類ごとの判定関数と `evaluateNotificationRules`）
-- `src/features/notifications/generate.ts`（`generateNotifications`）
-- `src/features/notifications/messages.ts`（通知文言）
-- `src/features/notifications/queries.ts`、`actions.ts`（状態遷移）
+- `src/features/notifications/infrastructure/notificationGenerationRepository.ts`（`generateNotifications`）
+- `src/features/notifications/domain/messages.ts`（通知文言）
+- `src/features/notifications/infrastructure/queries.ts`、`actions.ts`（状態遷移）
 - `src/db/README.md` への通知テーブルの節の追加（`cat_id` を持つが記録テーブルではなく、タイムラインの対象外であることを明記）
 
 ## DB マイグレーション

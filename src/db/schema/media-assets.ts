@@ -17,7 +17,7 @@ export const mediaAssets = sqliteTable(
     // ごはん商品画像など猫に紐付かないメディアを許容するため nullable
     catId: text("cat_id").references(() => cats.id),
     // アップロードしたユーザー。記録に紐付く前の下書き（`record_type = 'pending'`）は、
-    // このユーザーだけが参照・削除・添付できる（`src/features/media/access.ts`）。
+    // このユーザーだけが参照・削除・添付できる（`src/features/media/application/access.ts`）。
     // ユーザーの導入（`0036`）より前のメディアは NULL
     uploadedByUserId: text("uploaded_by_user_id").references(() => users.id),
     recordType: text("record_type").notNull(),

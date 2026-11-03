@@ -1,6 +1,6 @@
 /**
  * `/oauth/authorize` の同意画面（`src/app/oauth/authorize/page.tsx`）に、Worker
- * （`src/features/mcp/authorize.ts`）が検証済みの認可リクエストの内容を渡すヘッダー。
+ * （`src/features/mcp/presentation/authorize.ts`）が検証済みの認可リクエストの内容を渡すヘッダー。
  *
  * 同意画面は Next.js のページだが、OAuth の処理（`@cloudflare/workers-oauth-provider`）は
  * `cloudflare:workers` に依存し Next.js のバンドルに含められないため、Worker 側で

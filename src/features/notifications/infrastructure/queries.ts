@@ -79,7 +79,7 @@ export type NotificationFilter = {
 
 /**
  * 未対応（`pending`、または `snoozed` で `snoozedUntil` が到来済み）の通知一覧。
- * `src/features/notifications/status.ts` の `isNotificationPending` と同じ判定を SQL で行う
+ * `src/features/notifications/domain/status.ts` の `isNotificationPending` と同じ判定を SQL で行う
  */
 export async function listPendingNotifications(
   now: Date,

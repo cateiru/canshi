@@ -8,7 +8,7 @@ import { getSessionUser } from "@/features/auth/infrastructure/sessions";
 // Edge ランタイムで動く `middleware.ts` を使う。
 //
 // ここでは Cookie のセッショントークンが D1 の有効なセッションに対応するかだけを確認し、
-// 猫ごとの認可はページ・Server Action 側で行う（`src/features/auth/session.ts`）。
+// 猫ごとの認可はページ・Server Action 側で行う（`src/features/auth/presentation/session.ts`）。
 // 家に関係しないページ（ごはん商品など）はページ側でユーザーを確認しないため、
 // Cookie があるかどうかだけで通さず、必ず DB のセッションと照合する
 export default async function middleware(request: NextRequest) {

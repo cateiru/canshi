@@ -178,7 +178,7 @@ async function handleAuthorizePost(
   }
 
   // 読み取り・書き込みを許可する範囲はトークンには持たせず、接続（クライアント）ごとに保存して、
-  // ツールが呼ばれるたびに読む（`./permissions.ts`）。範囲の項目が無いフォーム
+  // ツールが呼ばれるたびに読む（`../infrastructure/permissions.ts`）。範囲の項目が無いフォーム
   // （範囲の選択を追加する前に開いた同意画面）からの送信では、今の範囲のままにする
   if (
     formData.has(MCP_PERMISSIONS_FIELD_NAME) &&
@@ -197,7 +197,7 @@ async function handleAuthorizePost(
 
   // クライアントの名前は grant にも残し、設定の「AIとの接続」に表示する。CIMD のクライアントは
   // 登録の情報（`client:{clientId}`）を保存しないため、ここで残さないと名前がわからない
-  // （`./connections.ts`）
+  // （`../infrastructure/connections.ts`）
   const client = await helpers.lookupClient(authRequest.clientId);
   const props: McpProps = { userId: user.id };
   const { redirectTo } = await helpers.completeAuthorization({

@@ -48,7 +48,7 @@ export const catalogFoodProducts = sqliteTable(
      * 内容量の候補の JSON 配列（#346）。家に追加するときに 1 つ選び、管理画面で並べた順に表示する。
      * 先頭の候補は `packageAmountG`・`packageUnit` から読み、この列からは 2 件目以降だけを使う。
      * 候補を追加する前の管理画面で登録された商品は空配列になる
-     * （`src/features/catalog-food-products/packageSizes.ts`）
+     * （`src/features/catalog-food-products/domain/packageSizes.ts`）
      */
     packageSizes: text("package_sizes", { mode: "json" })
       .$type<CatalogPackageSize[]>()

@@ -3,7 +3,7 @@
 // Cloudflare Access の OIDC でのログインを導入する前から使っていたユーザーは、メールアドレスの
 // ハッシュ（users.email_hash）を持たない。そのままログインすると、同じ人でも別の新しいユーザーが
 // 作られてしまうため、導入前にこのスクリプトで紐付ける（docs/deploy.md 参照）。
-// メールアドレスそのものは保存せず、アプリと同じ方法（`src/features/auth/emailHash.ts`）で
+// メールアドレスそのものは保存せず、アプリと同じ方法（`src/features/auth/domain/emailHash.ts`）で
 // ハッシュにした値だけを保存する。
 //
 // 使い方:

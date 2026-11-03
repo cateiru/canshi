@@ -25,8 +25,8 @@
 
 ## 変更・追加内容
 
-- `src/features/media/MediaAttachmentField.tsx` の動画対応（`accept` の切り替え、サムネイル生成）
-- `src/features/media/MediaGallery.tsx` の動画再生対応
+- `src/features/media/presentation/MediaAttachmentField.tsx` の動画対応（`accept` の切り替え、サムネイル生成）
+- `src/features/media/presentation/MediaGallery.tsx` の動画再生対応
 - `src/features/symptoms/` のフォーム・アクション・クエリの更新
 - `src/app/cats/[catId]/symptoms/` の一覧ページの更新
 

@@ -183,5 +183,5 @@ Alert はバッジと異なり、状態色（info・success・warning・error）
 記録画面の実装例:
 
 - [ごはん記録の一覧](../../src/app/cats/%5BcatId%5D/feeding-records/page.tsx)・[一覧のスタイル](../../src/app/cats/%5BcatId%5D/feeding-records/page.module.css)
-- [ごはん記録のフォーム](../../src/features/feeding-records/FeedingRecordForm.tsx)・[フォームのスタイル](../../src/features/feeding-records/FeedingRecordForm.module.css)
+- [ごはん記録のフォーム](../../src/features/feeding-records/presentation/FeedingRecordForm.tsx)・[フォームのスタイル](../../src/features/feeding-records/FeedingRecordForm.module.css)
 - [削除確認とアイコン表示](../../src/features/shared/DeleteRecordButton.tsx)

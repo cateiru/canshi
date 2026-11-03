@@ -33,8 +33,8 @@
 - `src/app/settings/notifications/page.tsx` の更新
 - `src/app/cats/[catId]/notification-settings/page.tsx`
 - `src/features/notifications/NotificationPreferencesForm.tsx`、`NotificationSettingsForm.tsx`
-- `src/features/notifications/settingsActions.ts`、`settingsQueries.ts`
-- `src/features/cats/recordNav.ts` もしくは猫詳細ページへの導線の追加
+- `src/features/notifications/presentation/settingsActions.ts`、`settingsQueries.ts`
+- `src/features/cats/presentation/recordNav.ts` もしくは猫詳細ページへの導線の追加
 - `e2e/notification-settings.spec.ts`
 
 ## DB マイグレーション

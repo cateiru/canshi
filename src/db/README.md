@@ -52,23 +52,23 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - アプリの利用者（`users`）と、猫を飼っている「家」（`households`）を表す。家には 1 名以上のユーザー
   （`household_members`、`household_id` + `user_id` の複合主キー）と複数の猫（`cats.household_id`）が所属する
 - ユーザーは所属する家の猫だけを参照・編集できる。ページ・Server Action・Route Handler・MCP のツール
-  （`src/features/mcp/agent.ts`）は、いずれも `src/features/households/queries.ts` の
+  （`src/features/mcp/presentation/agent.ts`）は、いずれも `src/features/households/infrastructure/queries.ts` の
   `getCatForUser`・`listCatsForUser`・`accessibleCatIdsQuery` で絞り込む（認可の入口は
-  `src/features/auth/session.ts` の `requireUser`・`requireCatAccess`）。MCP のツールはさらに、
+  `src/features/auth/presentation/session.ts` の `requireUser`・`requireCatAccess`）。MCP のツールはさらに、
   ユーザーが接続ごとに許可した読み取り範囲（`mcp_permissions`）で絞り込む
   - 猫に紐付くテーブル（記録・通知など）は `cat_id` 経由で家に紐付くため、家の列は持たない
   - 支出記録は猫ではなく家に属するため `expense_records.household_id` を持つ（「支出記録」の節を参照）
   - ごはん商品・ごはんプリセットも猫ではなく家に属するため `food_products.household_id`・
     `feeding_presets.household_id` を持つ（「ごはん記録」の節を参照）
   - Web Push の購読（`push_subscriptions.user_id`）は購読したユーザーを持ち、通知はその猫の家のメンバーの
-    購読にだけ送る（`src/features/push/targets.ts`）。ユーザーの導入前の購読（NULL）には送らない
+    購読にだけ送る（`src/features/push/domain/targets.ts`）。ユーザーの導入前の購読（NULL）には送らない
   - 通知設定の「テスト通知を送る」は、ユーザー自身の購読へのテスト通知を `push_test_requests` に予約し、
-    次のスケジュール実行で送って行を削除する（`src/features/push/sendTestPush.ts`）。予約は購読ごとに 1 件
+    次のスケジュール実行で送って行を削除する（`src/features/push/infrastructure/sendTestPush.ts`）。予約は購読ごとに 1 件
     （`subscription_id` が一意）で、通知（`notifications`）は作らない
 - ログインは Cloudflare Access の OIDC で行い、ID トークンのメールアドレスだけを受け取る。DB には
   メールアドレスそのものを保存せず、環境変数の SALT（`EMAIL_HASH_SALT`）を使って argon2id で
   ハッシュにした値を `users.email_hash`（一意）に保存し、同じユーザーかどうかもこの値で判定する
-  （`src/features/auth/emailHash.ts`・`src/features/auth/users.ts`）
+  （`src/features/auth/domain/emailHash.ts`・`src/features/auth/infrastructure/users.ts`）
   - 初めてログインしたメールアドレスでは、ユーザーを新しく作る。名前はメールアドレスから作らず、
     既定の名前にする
   - OIDC の導入前に作られたユーザーは `email_hash` が NULL のため、`pnpm user:link-email` で紐付ける
@@ -77,12 +77,12 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - `users.name`・`users.icon_media_asset_id` は本人がアカウント設定の「プロフィールを編集する」（`/settings/account/profile`）で変えられる。
   アイコン画像は同じ家のメンバーにも表示する（詳細は「画像・動画」の節）
 - 家の中での権限は `household_members.role`（`owner`・`member`）で持つ。今はオーナーを 1 名で運用し、
-  移譲は 2 人のロールを 1 つの UPDATE 文で入れ替える（`src/features/households/ownership.ts`）。
+  移譲は 2 人のロールを 1 つの UPDATE 文で入れ替える（`src/features/households/application/ownership.ts`）。
   将来オーナーを複数にできるよう、オーナーの人数はスキーマでは制限しない
 - 家の名前の変更とメンバーを家から外す操作はオーナーだけができ、オーナーは家から抜けられない
-  （`src/features/households/management.ts`）。オーナーかどうかの判定は UPDATE・DELETE の WHERE に
+  （`src/features/households/application/management.ts`）。オーナーかどうかの判定は UPDATE・DELETE の WHERE に
   含め、移譲と同時に操作されても元のオーナーの操作が通らないようにする
-- 家への招待は `household_invitations` に保存する（`src/features/households/invitations.ts`）
+- 家への招待は `household_invitations` に保存する（`src/features/households/application/invitations.ts`）
   - 招待 URL（`/invitations/{トークン}`）のトークンそのものは保存せず、`sessions` と同じく SHA-256 の
     ハッシュ（`token_hash`）だけを持つ。そのため URL を表示できるのは発行したときだけ
   - 発行・無効化はオーナーだけができる。オーナーかどうかの判定は INSERT・DELETE の WHERE に含める。
@@ -96,10 +96,10 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - `created_at` は秒単位のため、未使用の招待の一覧は同じ秒に発行したものを rowid（挿入順）で新しい順に並べる
 - ログインセッションは `sessions` に保存する。主キーはセッショントークンの SHA-256（`token_hash`）で、
   トークンそのものは Cookie にだけ持つ。ログアウトで行を削除し、期限切れの行は同じユーザーが次に
-  ログインしたときに削除する（`src/features/auth/sessions.ts`）
+  ログインしたときに削除する（`src/features/auth/infrastructure/sessions.ts`）
   - アカウント設定（`/settings/account`）の「ログイン中の端末」の一覧のため、ログインしたブラウザの
     User-Agent（`user_agent`、512 文字までに切り詰める）を保存する。生の値を保存し、表示するときに
-    「iPhone・Safari」のような端末名に変換する（`src/features/auth/deviceName.ts`）。`0042` より前の
+    「iPhone・Safari」のような端末名に変換する（`src/features/auth/domain/deviceName.ts`）。`0042` より前の
     セッションは NULL で、「不明な端末」と表示する
   - 端末を指定してログアウトするときは、`token_hash` を画面に出さず、画面用の ID（`id`、一意）で指す。
     `id` は DB 側の既定値（`lower(hex(randomblob(16)))`）で振るため、既存の行にも値が入る。削除は
@@ -122,14 +122,14 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - ごはん商品（`food_products`）とプリセット（`feeding_presets`）は家（`household_id`）に属し、その家の
   猫で共通のため `cat_id` を持たない
   - 商品・プリセットは登録時に選んだ家に属し、登録後に家は変えない。一覧は所属する家ごとにまとめて表示し、
-    参照・編集・削除はその家のメンバーだけができる（`src/features/food-products/queries.ts`・
-    `src/features/feeding-presets/queries.ts`）
+    参照・編集・削除はその家のメンバーだけができる（`src/features/food-products/infrastructure/queries.ts`・
+    `src/features/feeding-presets/infrastructure/queries.ts`）
   - プリセットの明細の商品は、プリセットと同じ家の商品に限る。ごはん記録の明細の商品は、猫の家の商品に限る
-    （`src/features/feeding-presets/actions.ts`・`src/features/feeding-records/actions.ts`）
+    （`src/features/feeding-presets/presentation/actions.ts`・`src/features/feeding-records/presentation/actions.ts`）
   - 猫が別の家へ引っ越したときは、ごはん記録は猫と一緒に移り、商品・プリセットは元の家に残る。引っ越す前の
     記録の編集では、その記録ですでに使っている元の家の商品をそのまま選べる
   - 商品画像（`media_assets`、`record_type = "food_product"`）は、商品の家のメンバーだけが参照できる
-    （`src/features/media/access.ts`）
+    （`src/features/media/application/access.ts`）
   - `household_id` は、家に紐付けられなかった導入前の商品・プリセットを残すため nullable（`0040` では
     紐付けない）。NULL の商品・プリセットはどのユーザーからも見えないため、`scripts/link-household.mts`
     （`pnpm household:link`）で家に紐付ける
@@ -139,7 +139,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   絞り込める形で持つ
   - `life_stages` は `kitten`・`adult`・`senior`・`care`（療養）の JSON 配列で、複数を選べる。空配列は未設定。
     `src/db/schema/food-products.ts` の `FOOD_PRODUCT_LIFE_STAGES` の順に並べて保存し、検索では `json_each` で絞り込む
-  - `target_breed` は `cats.breed` と同じく猫種の候補（`src/features/cats/breeds.ts`）から選ぶか自由に入力し、
+  - `target_breed` は `cats.breed` と同じく猫種の候補（`src/features/cats/domain/breeds.ts`）から選ぶか自由に入力し、
     NULL はすべての猫種向けを表す。`manufacturer` も NULL は未入力
 
 ## 共通のごはん商品（`catalog_food_products`）
@@ -148,12 +148,12 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   管理画面（`packages/admin`）が登録・編集・削除する。列は `food_products` から `household_id` を除き、
   内容量の候補（`package_sizes`）と検索キーワード（`search_keywords`）を足したもの
   - `users.role` が `admin` のユーザーは、AI との接続（MCP）からも検索・登録・編集できる（#363、
-    `src/features/mcp/tools/catalogFoodProducts.ts`）。接続に許可した操作（`mcp_permissions.catalog_operations`）
+    `src/features/mcp/presentation/tools/catalogFoodProducts.ts`）。接続に許可した操作（`mcp_permissions.catalog_operations`）
     だけを行え、権限はツールが呼ばれるたびに DB で確かめる。画像の登録と削除は管理画面だけで行う
   - 内容量は管理画面と同じく、`package_amount_g`・`package_unit` に先頭の候補を、`package_sizes` に先頭を含む
-    すべての候補を書く（`src/features/catalog-food-products/mutations.ts`）。入力の規則は管理画面の
-    `packages/admin/src/catalog/form.ts` と `src/features/catalog-food-products/schema.ts` で揃える
-- 家に追加するときは、内容を写した `food_products` の行を作る（`src/features/catalog-food-products/actions.ts`）。
+    すべての候補を書く（`src/features/catalog-food-products/application/mutations.ts`）。入力の規則は管理画面の
+    `packages/admin/src/catalog/form.ts` と `src/features/catalog-food-products/domain/schema.ts` で揃える
+- 家に追加するときは、内容を写した `food_products` の行を作る（`src/features/catalog-food-products/presentation/actions.ts`）。
   追加した商品は手動で登録した商品と同じく家ごとに自由に編集でき、共通のごはん商品の変更・削除は反映しない
   - 追加は、共通のごはん商品と追加先の家のメンバーの行を結合した `INSERT ... SELECT` の 1 文で行い、
     判定と追加の間に家から外された場合や商品が削除された場合は追加しない
@@ -163,18 +163,18 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     家の商品は残る（drizzle-kit は `ALTER TABLE ... ADD` の `ON DELETE` を出力しないため、`0047` に手で追記した）
 - 検索は商品名・メーカー名・検索キーワードのキーワード（空白で区切ったすべての語を、どれかの項目に含む）と、
   メーカー名・種類・区分・対象の猫（`json_each`）・対象の猫種で絞り込む。LIKE に渡す入力の `%`・`_` は
-  エスケープする（`src/features/catalog-food-products/queries.ts`）
+  エスケープする（`src/features/catalog-food-products/infrastructure/queries.ts`）
   - 検索キーワード（`search_keywords`、#366・`0056`）は、商品名・メーカー名とは別の呼び方（「CIAO ちゅ〜る」に
     対する「ちゅーる」など）を持つ文字列の JSON 配列。空配列は未設定。どれかのキーワードに語が部分一致すれば
     よく、`json_each` の各要素に LIKE をかける（JSON の文字列そのものに LIKE をかけると、区切りの `","` にも
     一致するため）
   - 管理画面では 1 行 1 語で入力する。前後の空白を除き、空の語と重複した語は保存しない（20 件・1 語 50 文字まで）。
-    規則は `packages/admin/src/catalog/form.ts` と `src/features/catalog-food-products/schema.ts` で揃える
+    規則は `packages/admin/src/catalog/form.ts` と `src/features/catalog-food-products/domain/schema.ts` で揃える
   - 家に追加するときには写さない（`food_products` は検索の対象ではないため）
 - 画像は `media_assets`（`record_type = "catalog_food_product"`・`cat_id` と `uploaded_by_user_id` は NULL）に
   1 枚だけ持つ。管理画面はブラウザで縮小した画像（長辺 800px 以下・メタデータのない JPEG であることをサーバーでも
   確かめる）だけを保存し、サムネイルは作らない（`thumbnail_object_key` は NULL）
-  - ログイン中のユーザーなら誰でも参照できるが、メインアプリからは削除できない（`src/features/media/access.ts`）。
+  - ログイン中のユーザーなら誰でも参照できるが、メインアプリからは削除できない（`src/features/media/application/access.ts`）。
     メインアプリから添付先として選べないよう、`MEDIA_RECORD_TYPES` には含めない
   - 家に追加するときは、R2 から元データを読み出して通常のアップロードと同じ経路（`storeMediaAsset`）で
     家の商品の画像として保存し直す。家の商品の画像の差し替え・削除で共通のごはん商品の画像を消さないよう、
@@ -189,10 +189,10 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     候補を書き続ける（後で削除する）。`0050` を適用してから管理画面をデプロイするまでの間は、古い管理画面が
     `package_amount_g`・`package_unit` だけを登録・更新する（`package_sizes` は空か、`0050` で埋めた値のまま残る）。
     その更新も反映するため、読む側は先頭の候補を `package_amount_g`・`package_unit` から取り、`package_sizes` からは
-    2 件目以降だけを使う（`src/features/catalog-food-products/packageSizes.ts`）
+    2 件目以降だけを使う（`src/features/catalog-food-products/domain/packageSizes.ts`）
 - 検索結果の並び順のため `(manufacturer, name)` のインデックスを設定する
 - 共通のごはん商品のリクエスト（`catalog_food_product_requests`、#355・`0059`）は、検索して見つからなかったユーザーが
-  その検索条件で商品の追加をお願いするもの（`src/features/catalog-food-products/requests.ts`）。共通のごはん商品に
+  その検索条件で商品の追加をお願いするもの（`src/features/catalog-food-products/application/requests.ts`）。共通のごはん商品に
   追加するのは管理者で、リクエストから自動では追加しない
   - 検索条件は、検索ページの URL のクエリ（`search_query`）で持つ。項目の順番を固定し、未指定の条件と追加先の家は
     含めないため、同じ条件は同じ文字列になる。表示用の要約（`label`）はリクエストした時点でメインアプリが作って
@@ -215,18 +215,18 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   「共通カラム規約」の例外として `cat_id` を持たない。関連する猫は `expense_record_cats`
   （`expense_record_id` + `cat_id` の複合主キー）で多対多に紐付ける
   - 支出記録の一覧・グラフは、表示中の猫の家の支出を表示する。記録したページの猫の家を支出の家にし、
-    家はクライアントから受け取らない（`src/features/expenses/actions.ts`）
+    家はクライアントから受け取らない（`src/features/expenses/presentation/actions.ts`）
   - 関連する猫・病院代として紐付ける通院記録は、支出と同じ家の猫のものに限る
   - 猫が別の家へ引っ越したときは、支出記録は元の家に残し、引っ越した猫とその通院記録との紐付けだけを
-    猫の更新と同じ `db.batch` で外す（`src/features/cats/mutations.ts`）
+    猫の更新と同じ `db.batch` で外す（`src/features/cats/application/mutations.ts`）
   - 支出の添付（`media_assets`、`record_type = "expense"`）は、支出の家のメンバーだけが参照できる
-    （`src/features/media/access.ts`）
+    （`src/features/media/application/access.ts`）
   - `household_id` は、家に紐付けられなかった導入前の支出記録を残すため nullable（`0039` で、関連する猫の家、
     家が 1 つだけならその家に紐付けた）。NULL の支出記録はどのユーザーからも見えないため、
     `scripts/link-household.mts`（`pnpm household:link`）で家に紐付ける
   - 猫のタイムライン（`14`）と一覧の「{猫名}のみ」の絞り込みは、この中間テーブル経由で解決する
   - 紐付けが 0 件の支出記録も「どの猫にも紐付かない共通の支出」として許容する。猫を削除したときは
-    中間テーブルの行だけを削除し、支出記録自体は残す（`src/features/cats/actions.ts`）
+    中間テーブルの行だけを削除し、支出記録自体は残す（`src/features/cats/presentation/actions.ts`）
 - `spent_at` は支出日。フォームの入力は日付のみで、時刻は `00:00`（UTC）として保存する
 - 病院代としての通院記録との紐付けは `expense_record_hospital_visits`（`expense_record_id` +
   `hospital_visit_id` の複合主キー）で持つ。一度の通院で複数の猫を診てもらい、まとめて支払うことが
@@ -238,12 +238,12 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 通院記録・支出記録のどちらを削除するときも、この中間テーブルの行だけを削除し、相手の記録は残す
   - 通院記録と病院代の作成・更新・削除は、同じ `db.batch` にまとめる
   - 複数の通院記録で共有している支出は、通院記録の病院代を空にしても支出記録を削除せずその通院記録との
-    紐付けだけを外し、受診日を変えても支出日を変えない（`src/features/expenses/hospitalVisitExpense.ts`）
+    紐付けだけを外し、受診日を変えても支出日を変えない（`src/features/expenses/infrastructure/hospitalVisitExpense.ts`）
 - 家ごとの月別検索用に `(household_id, spent_at)` のインデックスを設定する
 
 ## 服薬予定と服薬歴（`medications`）
 
-- 服薬予定の一覧は、服用中のものと、折りたたんで表示する「服薬歴」に分ける（`src/features/medications/history.ts`）
+- 服薬予定の一覧は、服用中のものと、折りたたんで表示する「服薬歴」に分ける（`src/features/medications/domain/history.ts`）
 - 次のどちらかに当てはまるものを服薬歴にする
   - 終了予定日（`end_date`）を過ぎたもの（自動）。終了予定日の当日はまだ服用中として扱い、「今日」は JST で判定する
   - 「服薬歴に移す」で手動で移したもの。移した日時を `archived_at`（`0051`）に持ち、「服薬予定に戻す」で null に戻す
@@ -252,23 +252,23 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 ## 画像・動画（`media_assets`）
 
 - 画像・動画は個別の記録テーブルにカラムを持たせず、`media_assets` テーブルで一元管理する
-- `recordType`（例: `"poop_record"`）+ `recordId` の polymorphic な組で対象レコードに紐付ける。使える `recordType` は `src/features/media/recordTypes.ts` で管理する
+- `recordType`（例: `"poop_record"`）+ `recordId` の polymorphic な組で対象レコードに紐付ける。使える `recordType` は `src/features/media/domain/recordTypes.ts` で管理する
 - `catId` は猫に紐付かないメディア（ごはん商品画像など）を許容するため nullable
-- 書き込み実装済み（`docs/plans/18_media_upload_foundation.md`）。R2 との連携・行の作成・削除は `src/features/media/storage.ts` に集約し、Route Handler・各記録の削除アクションはこれを通して操作する
+- 書き込み実装済み（`docs/plans/18_media_upload_foundation.md`）。R2 との連携・行の作成・削除は `src/features/media/infrastructure/storage.ts` に集約し、Route Handler・各記録の削除アクションはこれを通して操作する
   - `objectKey`・`thumbnailObjectKey`：R2 のオブジェクトキー（`{recordType}/{recordId}/{assetId}` と `...{assetId}.thumb.webp`。フォームから先にアップロードした下書きは `pending/{assetId}` で、記録に紐付けた後もキーは変えない）
   - `mimeType`：先頭バイトで判定した形式（`Content-Type` ヘッダは信用しない）
   - `sizeBytes`・`thumbnailSizeBytes`：容量集計用。保存容量の上限判定は両者の `SUM` で行う
   - `width`・`height`：画像本体、または動画サムネイルの寸法（EXIF の回転を適用後）
   - `sortOrder`：同一レコード内の表示順
   - `(record_type, record_id)` にインデックス
-- 記録フォームでは、ファイルを選んだ時点で `POST /api/media/uploads` が記録に紐付かない下書き（`recordType = "pending"`・`recordId` は自身の ID・`catId` は null）として保存する。フォームの保存時は asset ID だけを送り、各記録の保存アクションが `syncRecordMedia`（`src/features/media/attach.ts`）で下書きの紐付け・外された添付の削除・表示順の振り直しを行う
+- 記録フォームでは、ファイルを選んだ時点で `POST /api/media/uploads` が記録に紐付かない下書き（`recordType = "pending"`・`recordId` は自身の ID・`catId` は null）として保存する。フォームの保存時は asset ID だけを送り、各記録の保存アクションが `syncRecordMedia`（`src/features/media/application/attach.ts`）で下書きの紐付け・外された添付の削除・表示順の振り直しを行う
   - 紐付かないまま 24 時間を過ぎた下書きは、次回以降のアップロード時に削除する（下書きも保存容量に数える）
-  - 下書きにはアップロードしたユーザー（`uploaded_by_user_id`）を保存し、本人だけが取得・削除・記録への紐付けをできる（`src/features/media/access.ts`・`attach.ts`）。asset ID を知っていても、別のユーザーの下書きは扱えない
+  - 下書きにはアップロードしたユーザー（`uploaded_by_user_id`）を保存し、本人だけが取得・削除・記録への紐付けをできる（`src/features/media/application/access.ts`・`attach.ts`）。asset ID を知っていても、別のユーザーの下書きは扱えない
 - 記録を削除するときは、レコード本体より先に `deleteMediaAssetsByRecord(recordType, recordId)` を呼んで R2 のオブジェクトと行をまとめて削除する
-- `cats.profile_media_asset_id` はプロフィール画像として使う `media_assets` 行（`recordType = "cat_profile"`・`recordId` と `catId` は猫の ID）への参照（nullable）。猫の編集画面でブラウザ側で正方形に切り抜いた画像を下書きとしてアップロードし、保存時に付け替える（`src/features/cats/applyProfileImage.ts`）。下書きの紐付けと猫の参照の更新は同じ `db.batch` で行い、差し替え・削除時はその時点で猫が参照していない古い画像だけを削除する（同時に別のリクエストが設定した画像を消さないため）。`cats` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/cats/profileImage.ts`）
-- `users.icon_media_asset_id` はアイコン画像として使う `media_assets` 行（`recordType = "user_icon"`・`recordId` はユーザーの ID・`catId` は null）への参照（nullable）。猫のプロフィール画像と同じく、切り抜いた画像を下書きとしてアップロードし、アカウント設定でプロフィールを保存するときに同じ `db.batch` で付け替え、ユーザーが参照していない古い画像だけを削除する（`src/features/users/applyUserIcon.ts`）。`users` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/users/iconImage.ts`）
+- `cats.profile_media_asset_id` はプロフィール画像として使う `media_assets` 行（`recordType = "cat_profile"`・`recordId` と `catId` は猫の ID）への参照（nullable）。猫の編集画面でブラウザ側で正方形に切り抜いた画像を下書きとしてアップロードし、保存時に付け替える（`src/features/cats/infrastructure/applyProfileImage.ts`）。下書きの紐付けと猫の参照の更新は同じ `db.batch` で行い、差し替え・削除時はその時点で猫が参照していない古い画像だけを削除する（同時に別のリクエストが設定した画像を消さないため）。`cats` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/cats/infrastructure/profileImage.ts`）
+- `users.icon_media_asset_id` はアイコン画像として使う `media_assets` 行（`recordType = "user_icon"`・`recordId` はユーザーの ID・`catId` は null）への参照（nullable）。猫のプロフィール画像と同じく、切り抜いた画像を下書きとしてアップロードし、アカウント設定でプロフィールを保存するときに同じ `db.batch` で付け替え、ユーザーが参照していない古い画像だけを削除する（`src/features/users/infrastructure/applyUserIcon.ts`）。`users` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/users/infrastructure/iconImage.ts`）
   - `user_icon` は記録への添付ではないため `MEDIA_RECORD_TYPES` に含めず、`POST /api/media` から直接アップロードさせない
-  - 参照できるのは本人と同じ家のメンバー、削除できるのは本人だけ（`src/features/media/access.ts`）
+  - 参照できるのは本人と同じ家のメンバー、削除できるのは本人だけ（`src/features/media/application/access.ts`）
 
 ## 通知（`notifications`・`notification_settings`・`notification_preferences`）
 
@@ -279,10 +279,10 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - ユーザーについての通知は、今は共通のごはん商品のリクエストの完了（`catalog_request_completed`）だけ
     （「共通のごはん商品」の節を参照）
   - 一覧・操作は、ユーザーの家の猫の通知と、ユーザーが所属する家の通知、ユーザー本人宛ての通知に限る
-    （`src/features/notifications/access.ts`）。通知センターで猫を選んで絞り込んだときは、家・ユーザーについての
+    （`src/features/notifications/infrastructure/access.ts`）。通知センターで猫を選んで絞り込んだときは、家・ユーザーについての
     通知は表示しない
   - Push は、猫についての通知はその猫の家のメンバー、家についての通知はその家のメンバー、ユーザーについての通知は
-    そのユーザー本人の購読にだけ送る（`src/features/push/targets.ts`）
+    そのユーザー本人の購読にだけ送る（`src/features/push/domain/targets.ts`）
   - `0044` で `cat_id` の NOT NULL を外すため、`0059` で `user_id` を足して CHECK 制約を変えるためにテーブルを
     作り直した。D1 では外部キー制約を無効にできず、DROP TABLE の暗黙の DELETE で `push_deliveries` の行が
     CASCADE で消えるため、退避してから戻している
@@ -291,18 +291,18 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 掃除対象ごとの通知時刻は `cleaning_targets.notify_time`（`HH:MM`、15 分刻み、nullable）で持つ。NULL の場合は 18:00 に通知する
 - ごはんの時間は家ごとに `feeding_schedules`（`household_id`・`time`（`HH:MM`、15 分刻み、日本時間））で持ち、
   同じ家に同じ時刻は 1 つだけ（`(household_id, time)` の一意インデックス）。家のメンバーなら誰でも追加・変更・削除でき、
-  メンバーかどうかの判定は INSERT ... SELECT・UPDATE・DELETE の WHERE に含める（`src/features/feeding-schedules/mutations.ts`）
+  メンバーかどうかの判定は INSERT ... SELECT・UPDATE・DELETE の WHERE に含める（`src/features/feeding-schedules/application/mutations.ts`）
   - 通知は猫ごとではなく、家についての通知（`notifications.household_id`）として家に 1 件生成する。種類は
     `feeding_time`・`feeding_not_recorded`、`reference_id` は `feeding_schedules.id`。`notify_at_time`・
     `remind_if_not_recorded` で時間ごとにそれぞれの通知を出すかを持つ。猫のいない家には出さない
   - 各時刻の前後の範囲は、前の時刻との中間から次の時刻との中間まで（時刻が 1 つなら前後 12 時間）。
     範囲は始まりを含み終わりを含まない半開区間で、1 件の記録が隣り合う 2 つの時刻の両方に数えられない。
     家のどれかの猫のごはん記録の `occurred_at`（naive UTC）が範囲内にあれば記録があるとみなす
-    （`src/features/notifications/rules/feedingSchedule.ts`）
+    （`src/features/notifications/domain/rules/feedingSchedule.ts`）
   - 記録がないときのリマインダーは、時刻の 1 時間後か次の時刻との中間の早いほうに出す。範囲の始まりから
     判定する時刻（範囲の終わりを越えない）までの記録を数える
   - 通知の INSERT は、ごはんの時間がまだ有効で範囲内に記録がないことを確かめる `INSERT ... SELECT` にし、
-    判定してから INSERT するまでに記録・削除・オフにされた場合は作らない（`src/features/notifications/generate.ts`）。
+    判定してから INSERT するまでに記録・削除・オフにされた場合は作らない（`src/features/notifications/infrastructure/notificationGenerationRepository.ts`）。
     記録は判定した時刻ではなく INSERT する時点までのものを数え、スケジュール実行が遅れても判定後の記録を見落とさない
   - 直近の記録を猫ごとに期間で絞って読むため、`feeding_records` に `(cat_id, occurred_at)` のインデックスを設定する
   - ごはん記録を追加したときは、猫の家の未対応のごはんの通知を同じ `db.batch` で完了にする
@@ -315,7 +315,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - MCP の OAuth 認可サーバー（`@cloudflare/workers-oauth-provider`）のクライアント登録・認可・トークンを
   保存する。ライブラリは Workers KV に保存する作りのため、キーと値（JSON の文字列）をそのまま持つ
-  KV と同じ形のテーブルにし、`src/features/mcp/d1KvStore.ts` で KV の操作を実装している
+  KV と同じ形のテーブルにし、`src/features/mcp/infrastructure/d1KvStore.ts` で KV の操作を実装している
 - キー・値の形式はライブラリが決めるため、アプリのコードから直接読み書きしない
 - `expires_at` を過ぎた行は無いものとして扱い、定期実行で削除する
 
@@ -323,12 +323,12 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - MCP のツールから読み取れる家・猫・記録の種類を、ユーザーが許可した接続ごとに 1 行で持つ
   （`user_id` + `client_id` の複合主キー）。範囲はトークン（OAuth の `props`）には持たせず、ツールが
-  呼ばれるたびに読む（`src/features/mcp/permissions.ts`）。設定の「AIとの接続」の接続ごとのページ
+  呼ばれるたびに読む（`src/features/mcp/infrastructure/permissions.ts`）。設定の「AIとの接続」の接続ごとのページ
   （`/settings/ai-connections/[connectionId]`）と同意画面（`/oauth/authorize`）で変えられる
   - `client_id`: OAuth のクライアントの ID。クライアント・grant は `oauth_kv_entries` にあるため外部キーに
     しない。同じクライアントにもう一度同意すると古い grant は解除されるため、ユーザーの接続の中で
     クライアントの ID は重ならない。ツールは、リクエストごとにアクセストークンの grant から求めた
-    クライアントの ID（`src/features/mcp/clientId.ts`）で行を選ぶ。求められないときは読み取りを断る
+    クライアントの ID（`src/features/mcp/infrastructure/clientId.ts`）で行を選ぶ。求められないときは読み取りを断る
   - 接続を設定の「AIとの接続」から解除すると、その接続の行も消す
 - 後から作った家・登録した猫も既定で読み取れるよう、許可したものではなく外したもの（拒否）を持つ。
   行が無い接続は、すべて読み取れる
@@ -347,7 +347,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - 設定の「AIとの接続」に表示する「最終接続日時」を、ユーザーが同意した接続（OAuth の grant）ごとに 1 行で持つ
   （`user_id` + `grant_id` の複合主キー、`0049`）。`/mcp` へのリクエストのうち、アクセストークンから
-  grant を求められたものごとに更新する（`src/features/mcp/clientId.ts`・`src/features/mcp/usages.ts`）
+  grant を求められたものごとに更新する（`src/features/mcp/infrastructure/clientId.ts`・`src/features/mcp/infrastructure/usages.ts`）
   - D1 への書き込みを減らすため、前回の記録から 60 秒以内のリクエストでは更新しない。判定は UPSERT の
     `ON CONFLICT DO UPDATE ... WHERE` に含め、1 文で行う。記録は `ctx.waitUntil` で行い、失敗しても MCP の
     応答には影響させない

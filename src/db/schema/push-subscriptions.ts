@@ -19,7 +19,7 @@ export const pushSubscriptions = sqliteTable("push_subscriptions", {
   auth: text("auth").notNull(),
   userAgent: text("user_agent"),
   // 送信失敗のたびに加算する。一定回数を超えたら購読を削除する
-  // （`src/features/push/defaults.ts` の `MAX_PUSH_FAILURE_COUNT`）
+  // （`src/features/push/domain/defaults.ts` の `MAX_PUSH_FAILURE_COUNT`）
   failureCount: integer("failure_count").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()

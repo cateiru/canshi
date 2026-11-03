@@ -32,7 +32,7 @@ type AuthorizePageProps = {
 /**
  * ChatGPT などの MCP クライアントを接続するときの同意画面。認可リクエストの検証と、
  * 「許可する」「許可しない」の送信先（`POST /oauth/authorize`）の処理は Worker
- * （`src/features/mcp/authorize.ts`）が行い、このページは検証済みの内容と、この接続で
+ * （`src/features/mcp/presentation/authorize.ts`）が行い、このページは検証済みの内容と、この接続で
  * 読み取り・書き込みを許可する範囲の選択を表示するだけ。
  * 未ログインのときは middleware がログイン画面へ送り、ログイン後にこのページへ戻る
  */

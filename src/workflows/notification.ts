@@ -198,7 +198,7 @@ export class NotificationWorkflow extends WorkflowEntrypoint<
   }
 
   /**
-   * 予約されたテスト通知を送る（`src/features/push/sendTestPush.ts`）。テスト通知はステップの
+   * 予約されたテスト通知を送る（`src/features/push/infrastructure/sendTestPush.ts`）。テスト通知はステップの
    * リトライで待たず、送れなかった予約は残して次のスケジュール実行で送り直す。リトライで待つと、
    * 実行が次のスケジュール実行と重なって同じ予約を二重に送ることがあるため
    */

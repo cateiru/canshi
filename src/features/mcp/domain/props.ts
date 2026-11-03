@@ -1,15 +1,15 @@
 /**
  * MCP の認可（`/oauth/authorize` の同意）で `completeAuthorization()` の `props` に
  * 渡す値と対応する。トークンに暗号化して保存され、リクエストごとの `ctx.props` から
- * ツール実装に渡す（`./agent.ts`）
+ * ツール実装に渡す（`../presentation/agent.ts`）
  */
 export interface McpProps extends Record<string, unknown> {
   /** 同意したときにログインしていた CANSHI のユーザー ID */
   userId?: string;
   /**
    * アクセストークンの OAuth のクライアントの ID。接続ごとの読み取りの範囲
-   * （`./permissions.ts`）を見分けるのに使う。トークンには保存せず、リクエストごとに
-   * grant から求めて入れる（`./clientId.ts` の `withMcpClientId`）
+   * （`../infrastructure/permissions.ts`）を見分けるのに使う。トークンには保存せず、リクエストごとに
+   * grant から求めて入れる（`../infrastructure/clientId.ts` の `withMcpClientId`）
    */
   clientId?: string;
 }

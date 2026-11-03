@@ -10,8 +10,8 @@ import { recordMcpConnectionUsage } from "./usages";
  * クライアントの ID は同意したときの `props` には入れず、リクエストごとに grant から求める。
  * `props` に入れると、範囲の設定を追加する前に発行されたトークンには無く、トークンを
  * 更新するまで範囲が効かないため。MCP のサーバーはセッションを持たず、リクエストごとに
- * この `props` で作り直す（`./agent.ts`）ため、デプロイの直後から効く。
- * 求められなければ `clientId` を入れず、ツールは読み取りを断る（`./agent.ts`）。
+ * この `props` で作り直す（`../presentation/agent.ts`）ため、デプロイの直後から効く。
+ * 求められなければ `clientId` を入れず、ツールは読み取りを断る（`../presentation/agent.ts`）。
  *
  * 求められたときは、設定の「AIとの接続」に表示するため、接続を使った日時も記録する
  * （`./usages.ts`）。記録は応答を待たせないよう `ctx.waitUntil` で行い、失敗しても

@@ -90,7 +90,7 @@ export async function listPushDeliveries(
 
 /**
  * まだ Push 送信していない（`pushed_at` が NULL）未対応の通知一覧。
- * `src/features/notifications/queries.ts` の `listPendingNotifications` と同じ
+ * `src/features/notifications/infrastructure/queries.ts` の `listPendingNotifications` と同じ
  * 未対応判定に、送信済みかどうかの条件を加えたもの
  */
 export async function listUnpushedNotifications(now: Date, d1?: D1Database) {

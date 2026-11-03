@@ -26,7 +26,7 @@ export async function getCleaningTargetById(id: string) {
 /**
  * 猫の掃除対象一覧に、対象ごとの前回実施日・次回予定日・期限超過を付与して返す。
  * 個人利用規模の D1 を前提に、対象一覧と記録一覧を別々に取得して JS 側で結合する
- * （`src/features/timeline/queries.ts` と同じ方針）
+ * （`src/features/timeline/infrastructure/queries.ts` と同じ方針）
  */
 export async function listCleaningTargetsWithStatus(
   catId: string,

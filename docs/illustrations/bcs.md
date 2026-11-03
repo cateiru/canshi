@@ -98,6 +98,6 @@ BCS 3 の上面図は、[参考画像の BCS 3](https://storage.googleapis.com/s
 
 1. 生成した画像を上の表のファイル名で `public/images/bcs/` に置く。
 2. 必要に応じて WebP に変換する（その場合は拡張子を `.webp` にそろえる）。
-3. `src/features/weight-records/bcsIllustrations.ts` の `BCS_ILLUSTRATION_EXT` を `"png"`（または `"webp"`）に変更する。
+3. `src/features/weight-records/presentation/bcsIllustrations.ts` の `BCS_ILLUSTRATION_EXT` を `"png"`（または `"webp"`）に変更する。
 4. 形式を変更した場合は、使わなくなった旧画像を削除する。
 5. 体重記録フォーム（`/cats/{catId}/weight-records/new`）を開き、スマートフォン幅と PC 幅で表示を確認する。

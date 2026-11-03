@@ -128,7 +128,7 @@ const CIMD_CLIENT_ID = "https://claude.ai/oauth/mcp-oauth-client-metadata";
 
 /**
  * CIMD のクライアントの grant。`client:{clientId}` は保存されず、名前は同意したときに
- * `metadata.clientName` に残す（`./authorize.ts`）
+ * `metadata.clientName` に残す（`../presentation/authorize.ts`）
  */
 function cimdGrant(id: string, redirectUri: string) {
   return {
