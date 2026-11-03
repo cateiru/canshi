@@ -1051,6 +1051,12 @@ test.describe("記録追加ページ（日付欄あり）", () => {
     await expect(
       page.getByText("日付を残さないメモは、タイムラインには表示されません。"),
     ).toBeVisible();
+    // クリックしたままだとチェックボックスの枠にホバーの色が付くかどうかが実行ごとに変わるため、
+    // マウスを外し、ホバーが外れたことを確認してから撮る
+    await page.mouse.move(0, 0);
+    await expect(
+      page.locator("label", { hasText: "日付を残す" }),
+    ).not.toHaveAttribute("data-hovered");
     await takeSnapshot(page, testInfo);
   });
 
