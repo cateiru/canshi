@@ -4,6 +4,37 @@
   flex: 1;
 }
 
+/*
+ * ホーム画面から開いた iOS では、上端の内容にぼかし（scroll edge effect）がかかり、
+ * ヘッダーのアイコンがぼやける。WebKit は、上端に画面幅いっぱいの position: fixed / sticky の
+ * 要素があると、ぼかしの代わりにその要素の background-color でステータスバーの下を塗りつぶすため、
+ * 見えない固定要素を上端に置く（https://qiita.com/na-trium-144/items/0add98a80ca2391e3f17）。
+ * - 高さは 10px より大きくする。10px 以下だと background-color が使われず、描画結果から色を
+ *   読み取る処理に回り、読み取れないとぼかしが残る
+ * - background-clip: text で、文字のないこの要素の背景を描画しない。opacity: 0・visibility: hidden・
+ *   display: none で隠すと、WebKit の判定から外れてぼかしが戻る
+ */
+.statusBarEdge {
+  display: none;
+}
+
+@media (display-mode: standalone) {
+  .statusBarEdge {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* 内容より手前、モーダルの overlay（z-index: 100）より奥に重ねる */
+    z-index: 50;
+    height: 11px;
+    background-color: var(--color-bg);
+    -webkit-background-clip: text;
+    background-clip: text;
+    pointer-events: none;
+  }
+}
+
 .header {
   display: flex;
   align-items: center;
