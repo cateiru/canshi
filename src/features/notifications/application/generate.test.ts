@@ -20,11 +20,9 @@ vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
 
-const {
-  generateNotifications,
-  insertHouseholdNotification,
-  insertSymptomOngoingNotification,
-} = await import("./generate");
+const { generateNotifications } = await import("./generate");
+const { insertHouseholdNotification, insertSymptomOngoingNotification } =
+  await import("../infrastructure/notificationGenerationRepository");
 
 /**
  * 症状の確認通知（`symptom_ongoing`）について、`generateNotifications` が DB から集める

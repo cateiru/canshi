@@ -7,7 +7,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { getDb } from "@/db/client";
 import { cats, cleaningTargets, notificationSettings } from "@/db/schema";
 import type { CatNotificationSettingsFormInput } from "../domain/settingsSchema";
-import { buildCatNotificationSettingsBatch } from "./settingsUpsert";
+import { buildCatNotificationSettingsBatch } from "./notificationSettingsRepository";
 
 /**
  * sql.js の drizzle インスタンスは D1 専用の `db.batch` を持たないため、テストでは
