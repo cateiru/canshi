@@ -1,18 +1,14 @@
-import { and, eq } from "drizzle-orm";
-import { getDb } from "@/db/client";
-import {
-  hospitalVisits,
-  medicationDoses,
-  medications,
-  symptoms,
-} from "@/db/schema";
+import { createHospitalVisitRepository } from "@/features/hospital-visits/infrastructure/hospitalVisitRepository";
 import { deleteMediaAssetsByRecord } from "@/features/media/infrastructure/storage";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
+import { createSymptomRepository } from "@/features/symptoms/infrastructure/symptomRepository";
 import { MEDICATION_MEDIA_TYPE } from "../domain/media";
+import { toMedicationContent } from "../domain/medication";
 import type { MedicationFormInput } from "../domain/schema";
+import { createMedicationRepository } from "../infrastructure/medicationRepository";
 
 /*
- * 服薬予定の保存。猫を参照できるかは呼び出し側で確かめる。
+ * 服薬予定の保存（ユースケース）。猫を参照できるかは呼び出し側で確かめる。
  * ほかの記録の mutations と揃えて、D1 は引数でも受け取れるようにする
  */
 
@@ -22,48 +18,26 @@ export const MEDICATION_REFERENCE_NOT_FOUND_ERROR =
 export type SaveMedicationResult = { id: string } | { error: string };
 
 async function verifyReferencesBelongToCat(
-  db: ReturnType<typeof getDb>,
   refs: { symptomId?: string; hospitalVisitId?: string },
   catId: string,
+  d1?: D1Database,
 ): Promise<boolean> {
-  if (refs.symptomId != null) {
-    const [row] = await db
-      .select({ id: symptoms.id })
-      .from(symptoms)
-      .where(and(eq(symptoms.id, refs.symptomId), eq(symptoms.catId, catId)))
-      .limit(1);
-    if (!row) {
-      return false;
-    }
+  if (
+    refs.symptomId != null &&
+    !(await createSymptomRepository(d1).existsForCat(catId, refs.symptomId))
+  ) {
+    return false;
   }
-  if (refs.hospitalVisitId != null) {
-    const [row] = await db
-      .select({ id: hospitalVisits.id })
-      .from(hospitalVisits)
-      .where(
-        and(
-          eq(hospitalVisits.id, refs.hospitalVisitId),
-          eq(hospitalVisits.catId, catId),
-        ),
-      )
-      .limit(1);
-    if (!row) {
-      return false;
-    }
+  if (
+    refs.hospitalVisitId != null &&
+    !(await createHospitalVisitRepository(d1).existsForCat(
+      catId,
+      refs.hospitalVisitId,
+    ))
+  ) {
+    return false;
   }
   return true;
-}
-
-function toValues(data: MedicationFormInput) {
-  return {
-    symptomId: data.symptomId ?? null,
-    name: data.name,
-    doseAmount: data.doseAmount,
-    dosesPerDay: data.dosesPerDay,
-    startDate: data.startDate,
-    endDate: data.endDate ?? null,
-    hospitalVisitId: data.hospitalVisitId ?? null,
-  };
 }
 
 /**
@@ -75,16 +49,14 @@ export async function createMedication(
   data: MedicationFormInput,
   d1?: D1Database,
 ): Promise<SaveMedicationResult> {
-  const db = getDb(d1);
-  if (!(await verifyReferencesBelongToCat(db, data, catId))) {
+  if (!(await verifyReferencesBelongToCat(data, catId, d1))) {
     return { error: MEDICATION_REFERENCE_NOT_FOUND_ERROR };
   }
-
-  const [created] = await db
-    .insert(medications)
-    .values({ catId, ...toValues(data) })
-    .returning({ id: medications.id });
-  return { id: created.id };
+  const id = await createMedicationRepository(d1).add(
+    catId,
+    toMedicationContent(data),
+  );
+  return { id };
 }
 
 /**
@@ -97,17 +69,15 @@ export async function updateMedication(
   data: MedicationFormInput,
   d1?: D1Database,
 ): Promise<SaveMedicationResult | null> {
-  const db = getDb(d1);
-  if (!(await verifyReferencesBelongToCat(db, data, catId))) {
+  if (!(await verifyReferencesBelongToCat(data, catId, d1))) {
     return { error: MEDICATION_REFERENCE_NOT_FOUND_ERROR };
   }
-
-  const result = await db
-    .update(medications)
-    .set({ ...toValues(data), updatedAt: new Date() })
-    .where(and(eq(medications.id, id), eq(medications.catId, catId)))
-    .returning({ id: medications.id });
-  return result.length > 0 ? { id } : null;
+  const updated = await createMedicationRepository(d1).update(
+    catId,
+    id,
+    toMedicationContent(data),
+  );
+  return updated ? { id } : null;
 }
 
 /**
@@ -118,32 +88,13 @@ export async function deleteMedication(
   catId: string,
   id: string,
 ): Promise<boolean> {
-  const db = getDb();
+  const repository = createMedicationRepository();
   // 添付の削除は記録 ID だけで行うため、先に記録がこの猫のものであることを確かめる。
   // 確かめないと、自分の猫の catId と別の家の記録 ID を渡して添付を消せてしまう
-  const [existing] = await db
-    .select({ id: medications.id })
-    .from(medications)
-    .where(and(eq(medications.id, id), eq(medications.catId, catId)))
-    .limit(1);
-  if (!existing) return false;
+  if (!(await repository.existsForCat(catId, id))) return false;
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(MEDICATION_MEDIA_TYPE, id);
-  // medication_doses から medications への外部キー制約があるため投薬実績も同時に削除する。
-  // 2つの delete の間に別リクエストが割り込まないよう、D1 の batch で原子的に実行する
-  await db.batch([
-    db
-      .delete(medicationDoses)
-      .where(
-        and(
-          eq(medicationDoses.medicationId, id),
-          eq(medicationDoses.catId, catId),
-        ),
-      ),
-    db
-      .delete(medications)
-      .where(and(eq(medications.id, id), eq(medications.catId, catId))),
-  ]);
+  await repository.remove(catId, id);
   return true;
 }
 
@@ -157,9 +108,9 @@ export async function setMedicationArchived(
   d1?: D1Database,
 ): Promise<void> {
   // 発生日時と同じく、JST の見た目の数字を UTC として保存する（src/features/shared/datetime.ts）
-  const archivedAt = archived ? getNaiveUtcNow() : null;
-  await getDb(d1)
-    .update(medications)
-    .set({ archivedAt, updatedAt: new Date() })
-    .where(and(eq(medications.id, id), eq(medications.catId, catId)));
+  await createMedicationRepository(d1).setArchivedAt(
+    catId,
+    id,
+    archived ? getNaiveUtcNow() : null,
+  );
 }

@@ -1,0 +1,59 @@
+import { and, eq } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import { medicationDoses, medications } from "@/db/schema";
+import type { MedicationRepository } from "../domain/medicationRepository";
+
+/** D1 に保存する `MedicationRepository`。`d1` を省略すると Next.js のリクエストの D1 を使う */
+export function createMedicationRepository(
+  d1?: D1Database,
+): MedicationRepository {
+  const db = getDb(d1);
+  const byId = (catId: string, id: string) =>
+    and(eq(medications.id, id), eq(medications.catId, catId));
+  return {
+    async existsForCat(catId, id) {
+      const [row] = await db
+        .select({ id: medications.id })
+        .from(medications)
+        .where(byId(catId, id))
+        .limit(1);
+      return row != null;
+    },
+    async add(catId, content) {
+      const [created] = await db
+        .insert(medications)
+        .values({ catId, ...content })
+        .returning({ id: medications.id });
+      return created.id;
+    },
+    async update(catId, id, content) {
+      const result = await db
+        .update(medications)
+        .set({ ...content, updatedAt: new Date() })
+        .where(byId(catId, id))
+        .returning({ id: medications.id });
+      return result.length > 0;
+    },
+    async remove(catId, id) {
+      // medication_doses から medications への外部キー制約があるため投薬実績も同時に削除する。
+      // 2つの delete の間に別リクエストが割り込まないよう、D1 の batch で原子的に実行する
+      await db.batch([
+        db
+          .delete(medicationDoses)
+          .where(
+            and(
+              eq(medicationDoses.medicationId, id),
+              eq(medicationDoses.catId, catId),
+            ),
+          ),
+        db.delete(medications).where(byId(catId, id)),
+      ]);
+    },
+    async setArchivedAt(catId, id, archivedAt) {
+      await db
+        .update(medications)
+        .set({ archivedAt, updatedAt: new Date() })
+        .where(byId(catId, id));
+    },
+  };
+}

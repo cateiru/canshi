@@ -1,24 +1,15 @@
-import { and, eq } from "drizzle-orm";
-import { getDb } from "@/db/client";
-import {
-  expenseRecordHospitalVisits,
-  expenseRecords,
-  hospitalVisits,
-  medications,
-  symptoms,
-} from "@/db/schema";
-import { saveHospitalVisitWithExpense } from "@/features/expenses/infrastructure/hospitalVisitExpense";
+import { isLinkableToHospitalVisit } from "@/features/expenses/domain/expenseRecord";
+import { createExpenseRecordRepository } from "@/features/expenses/infrastructure/expenseRecordRepository";
 import { deleteMediaAssetsByRecord } from "@/features/media/infrastructure/storage";
-import {
-  combineDateTimeUtc,
-  splitDateTimeUtc,
-} from "@/features/shared/datetime";
+import { createSymptomRepository } from "@/features/symptoms/infrastructure/symptomRepository";
+import { toHospitalVisitContent } from "../domain/hospitalVisit";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "../domain/media";
 import type { HospitalVisitFormInput } from "../domain/schema";
+import { createHospitalVisitRepository } from "../infrastructure/hospitalVisitRepository";
 
 /*
- * 通院記録の保存。画面（`./actions.ts`）と AI との接続（MCP）の両方から使う。
- * 猫を参照できるかは呼び出し側で確かめる。MCP は Next.js（OpenNext）の外で動き
+ * 通院記録の保存（ユースケース）。画面（`../presentation/actions.ts`）と AI との接続（MCP）の
+ * 両方から使う。猫を参照できるかは呼び出し側で確かめる。MCP は Next.js（OpenNext）の外で動き
  * `getCloudflareContext()` を使えないため、D1 は引数で受け取る
  */
 
@@ -28,19 +19,14 @@ export type SaveHospitalVisitResult = { id: string } | { error: string };
 type HospitalVisitCat = { id: string; householdId: string };
 
 async function verifySymptomBelongsToCat(
-  db: ReturnType<typeof getDb>,
   symptomId: string | undefined,
   catId: string,
+  d1?: D1Database,
 ): Promise<boolean> {
   if (symptomId == null) {
     return true;
   }
-  const [row] = await db
-    .select({ id: symptoms.id })
-    .from(symptoms)
-    .where(and(eq(symptoms.id, symptomId), eq(symptoms.catId, catId)))
-    .limit(1);
-  return row != null;
+  return createSymptomRepository(d1).existsForCat(catId, symptomId);
 }
 
 /**
@@ -48,48 +34,19 @@ async function verifySymptomBelongsToCat(
  * カテゴリ「病院」の支出記録であることを確かめる
  */
 async function verifyLinkableExpense(
-  db: ReturnType<typeof getDb>,
   householdId: string,
   expenseRecordId: string | undefined,
   visitedDate: string,
+  d1?: D1Database,
 ): Promise<boolean> {
   if (expenseRecordId == null) {
     return true;
   }
-  const [row] = await db
-    .select({
-      category: expenseRecords.category,
-      spentAt: expenseRecords.spentAt,
-    })
-    .from(expenseRecords)
-    .where(
-      and(
-        eq(expenseRecords.id, expenseRecordId),
-        eq(expenseRecords.householdId, householdId),
-      ),
-    )
-    .limit(1);
-  return (
-    row != null &&
-    row.category === "hospital" &&
-    splitDateTimeUtc(row.spentAt).date === visitedDate
+  const expense = await createExpenseRecordRepository(d1).findForHousehold(
+    householdId,
+    expenseRecordId,
   );
-}
-
-function buildValues(data: HospitalVisitFormInput) {
-  return {
-    symptomId: data.symptomId ?? null,
-    visitedAt: combineDateTimeUtc(data.visitedDate, data.visitedTime),
-    reason: data.reason,
-    diagnosis: data.diagnosis ?? null,
-    examinationResults: data.examinationResults ?? null,
-    treatment: data.treatment ?? null,
-    nextVisitAt:
-      data.nextVisitDate != null && data.nextVisitTime != null
-        ? combineDateTimeUtc(data.nextVisitDate, data.nextVisitTime)
-        : null,
-    memo: data.memo ?? null,
-  };
+  return expense != null && isLinkableToHospitalVisit(expense, visitedDate);
 }
 
 /** 通院記録を追加する。病院代を入力した場合は支出記録も作る */
@@ -98,9 +55,7 @@ export async function createHospitalVisit(
   data: HospitalVisitFormInput,
   d1?: D1Database,
 ): Promise<SaveHospitalVisitResult> {
-  const db = getDb(d1);
-  const catId = cat.id;
-  if (!(await verifySymptomBelongsToCat(db, data.symptomId, catId))) {
+  if (!(await verifySymptomBelongsToCat(data.symptomId, cat.id, d1))) {
     return { error: "関連する症状が見つかりませんでした" };
   }
   // 病院代を入力した場合は新しい支出記録を作るため、既存の支出記録には紐付けない
@@ -108,10 +63,10 @@ export async function createHospitalVisit(
     data.expenseAmountYen == null ? data.linkExpenseRecordId : undefined;
   if (
     !(await verifyLinkableExpense(
-      db,
       cat.householdId,
       linkExpenseRecordId,
       data.visitedDate,
+      d1,
     ))
   ) {
     return {
@@ -119,16 +74,11 @@ export async function createHospitalVisit(
     };
   }
 
-  const values = buildValues(data);
-  const id = crypto.randomUUID();
-  await saveHospitalVisitWithExpense(
-    db,
-    db.insert(hospitalVisits).values({ id, catId, ...values }),
+  const id = await createHospitalVisitRepository(d1).add(
+    cat.id,
+    toHospitalVisitContent(data),
     {
-      hospitalVisitId: id,
-      catId,
       householdId: cat.householdId,
-      visitedAt: values.visitedAt,
       amountYen: data.expenseAmountYen ?? null,
       linkExpenseRecordId,
     },
@@ -146,39 +96,21 @@ export async function updateHospitalVisit(
   data: HospitalVisitFormInput,
   d1?: D1Database,
 ): Promise<SaveHospitalVisitResult> {
-  const db = getDb(d1);
-  const catId = cat.id;
-  if (!(await verifySymptomBelongsToCat(db, data.symptomId, catId))) {
+  if (!(await verifySymptomBelongsToCat(data.symptomId, cat.id, d1))) {
     return { error: "関連する症状が見つかりませんでした" };
   }
 
-  const [existing] = await db
-    .select({ id: hospitalVisits.id })
-    .from(hospitalVisits)
-    .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
-    .limit(1);
-
-  if (!existing) {
+  const repository = createHospitalVisitRepository(d1);
+  if (!(await repository.existsForCat(cat.id, id))) {
     return { error: "通院記録が見つかりませんでした" };
   }
 
-  const values = buildValues(data);
-  await saveHospitalVisitWithExpense(
-    db,
-    db
-      .update(hospitalVisits)
-      .set({ ...values, updatedAt: new Date() })
-      .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),
-    {
-      hospitalVisitId: id,
-      catId,
-      householdId: cat.householdId,
-      visitedAt: values.visitedAt,
-      amountYen: data.expenseAmountYen ?? null,
-      // 既存の支出記録へ紐付けて作成した後の再送信では、紐付けた支出記録を削除せずに残す
-      keepLinkedExpenseRecordId: data.linkExpenseRecordId,
-    },
-  );
+  await repository.update(cat.id, id, toHospitalVisitContent(data), {
+    householdId: cat.householdId,
+    amountYen: data.expenseAmountYen ?? null,
+    // 既存の支出記録へ紐付けて作成した後の再送信では、紐付けた支出記録を削除せずに残す
+    keepLinkedExpenseRecordId: data.linkExpenseRecordId,
+  });
   return { id };
 }
 
@@ -190,37 +122,10 @@ export async function deleteHospitalVisit(
   catId: string,
   id: string,
 ): Promise<boolean> {
-  const db = getDb();
-  const [existing] = await db
-    .select({ id: hospitalVisits.id })
-    .from(hospitalVisits)
-    .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
-    .limit(1);
-  if (!existing) return false;
+  const repository = createHospitalVisitRepository();
+  if (!(await repository.existsForCat(catId, id))) return false;
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, id);
-  // symptoms.hospital_visit_id / medications.hospital_visit_id /
-  // expense_record_hospital_visits からの外部キー参照があるため、通院記録を
-  // 削除する前に紐付けを解除しておく。支出記録は家計簿として残す必要があるため、
-  // 紐付けだけ外して記録自体は削除しない。一連の操作は db.batch でまとめて
-  // 原子的に実行する
-  await db.batch([
-    db
-      .update(symptoms)
-      .set({ hospitalVisitId: null })
-      .where(and(eq(symptoms.hospitalVisitId, id), eq(symptoms.catId, catId))),
-    db
-      .update(medications)
-      .set({ hospitalVisitId: null })
-      .where(
-        and(eq(medications.hospitalVisitId, id), eq(medications.catId, catId)),
-      ),
-    db
-      .delete(expenseRecordHospitalVisits)
-      .where(eq(expenseRecordHospitalVisits.hospitalVisitId, id)),
-    db
-      .delete(hospitalVisits)
-      .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId))),
-  ]);
+  await repository.remove(catId, id);
   return true;
 }

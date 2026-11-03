@@ -1,33 +1,20 @@
-import { and, eq, inArray } from "drizzle-orm";
-import { chunkForBoundParameters } from "@/db/batch";
-import { getDb } from "@/db/client";
-import {
-  cats,
-  expenseRecordCats,
-  expenseRecordHospitalVisits,
-  expenseRecords,
-  hospitalVisits,
-} from "@/db/schema";
-import { householdCatIdsQuery } from "@/features/households/infrastructure/queries";
 import { deleteMediaAssetsByRecord } from "@/features/media/infrastructure/storage";
 import {
-  combineDateTimeUtc,
-  splitDateTimeUtc,
-} from "@/features/shared/datetime";
+  hospitalVisitIdsToLink,
+  type ResolvedExpenseLinks,
+  resolveExpenseLinks,
+  toExpenseRecordContent,
+} from "../domain/expenseRecord";
 import { EXPENSE_MEDIA_TYPE } from "../domain/media";
 import type {
   ExpenseFormFieldErrors,
   ExpenseFormInput,
 } from "../domain/schema";
-import {
-  deleteExpenseStatements,
-  insertExpenseCats,
-  insertExpenseHospitalVisits,
-} from "../infrastructure/storage";
+import { createExpenseRecordRepository } from "../infrastructure/expenseRecordRepository";
 
 /*
- * 支出記録の保存。画面（`./actions.ts`）と AI との接続（MCP）の両方から使う。
- * 支出の家を参照できるかは呼び出し側で確かめる。MCP は Next.js（OpenNext）の外で動き
+ * 支出記録の保存（ユースケース）。画面（`../presentation/actions.ts`）と AI との接続（MCP）の
+ * 両方から使う。支出の家を参照できるかは呼び出し側で確かめる。MCP は Next.js（OpenNext）の外で動き
  * `getCloudflareContext()` を使えないため、D1 は引数で受け取る
  */
 
@@ -36,106 +23,30 @@ export type SaveExpenseResult =
   | { fieldErrors: ExpenseFormFieldErrors }
   | { formError: string };
 
-/** 関連する猫がすべて存在し、支出の家の猫であることを確認する */
-async function verifyCatsExist(
-  db: ReturnType<typeof getDb>,
-  householdId: string,
-  catIds: string[],
-): Promise<boolean> {
-  // householdId の分を 1 個予約する
-  for (const ids of chunkForBoundParameters(catIds, 1)) {
-    const rows = await db
-      .select({ id: cats.id })
-      .from(cats)
-      .where(and(inArray(cats.id, ids), eq(cats.householdId, householdId)));
-    if (rows.length !== ids.length) return false;
-  }
-  return true;
-}
-
-type ExpenseFormData = ExpenseFormInput;
-
-type ResolvedLinks =
-  | { ok: true; catIds: string[]; hospitalVisitIds: string[] }
-  | { ok: false; fieldErrors: ExpenseFormFieldErrors };
-
 /**
- * 紐付ける通院記録と関連する猫を確定する。通院記録を紐付けられるのはカテゴリ「病院」のときだけで、
- * それ以外のカテゴリでは紐付けを外す。通院記録は支出の家の猫の、支出日と同じ日のもので、
- * 他の支出記録に紐付いていないものに限る。通院した猫は関連する猫にも含める
+ * 紐付ける通院記録と関連する猫を確定する（`resolveExpenseLinks`）。通院記録・関連する猫は
+ * 支出の家の猫のものに限る
  */
 async function resolveLinks(
-  db: ReturnType<typeof getDb>,
+  repository: ReturnType<typeof createExpenseRecordRepository>,
   householdId: string,
-  data: ExpenseFormData,
+  data: ExpenseFormInput,
   expenseId: string | null,
-): Promise<ResolvedLinks> {
-  const hospitalVisitIds =
-    data.category === "hospital" ? data.hospitalVisitIds : [];
-  const visitCatIds: string[] = [];
-  // householdId の分を 1 個予約する
-  for (const ids of chunkForBoundParameters(hospitalVisitIds, 1)) {
-    const rows = await db
-      .select({
-        catId: hospitalVisits.catId,
-        visitedAt: hospitalVisits.visitedAt,
-        expenseRecordId: expenseRecordHospitalVisits.expenseRecordId,
-      })
-      .from(hospitalVisits)
-      .leftJoin(
-        expenseRecordHospitalVisits,
-        eq(expenseRecordHospitalVisits.hospitalVisitId, hospitalVisits.id),
-      )
-      .where(
-        and(
-          inArray(hospitalVisits.id, ids),
-          inArray(hospitalVisits.catId, householdCatIdsQuery(db, householdId)),
-        ),
-      );
-    if (rows.length !== ids.length) {
-      return {
-        ok: false,
-        fieldErrors: {
-          hospitalVisitIds: [
-            "通院記録が見つかりませんでした。選び直してください",
-          ],
-        },
-      };
-    }
-    for (const row of rows) {
-      // すでにこの支出に紐付いている通院記録は、共有中に受診日が変わって日付がずれていることがあるため
-      // そのまま残せるようにする
-      const alreadyLinked =
-        expenseId != null && row.expenseRecordId === expenseId;
-      if (
-        !alreadyLinked &&
-        splitDateTimeUtc(row.visitedAt).date !== data.spentDate
-      ) {
-        return {
-          ok: false,
-          fieldErrors: {
-            hospitalVisitIds: [
-              "支出日と同じ日の通院記録だけを紐付けられます。選び直してください",
-            ],
-          },
-        };
-      }
-      if (row.expenseRecordId != null && row.expenseRecordId !== expenseId) {
-        return {
-          ok: false,
-          fieldErrors: {
-            hospitalVisitIds: [
-              "ほかの支出記録に紐付いている通院記録があります。選び直してください",
-            ],
-          },
-        };
-      }
-      visitCatIds.push(row.catId);
-    }
+): Promise<ResolvedExpenseLinks> {
+  const hospitalVisitIds = hospitalVisitIdsToLink(data);
+  const links = resolveExpenseLinks(
+    data,
+    expenseId,
+    hospitalVisitIds,
+    await repository.findHospitalVisitLinkCandidates(
+      householdId,
+      hospitalVisitIds,
+    ),
+  );
+  if (!links.ok) {
+    return links;
   }
-
-  const catIds = [...new Set([...data.catIds, ...visitCatIds])];
-  if (!(await verifyCatsExist(db, householdId, catIds))) {
+  if (!(await repository.allCatsInHousehold(householdId, links.catIds))) {
     return {
       ok: false,
       fieldErrors: {
@@ -143,17 +54,7 @@ async function resolveLinks(
       },
     };
   }
-  return { ok: true, catIds, hospitalVisitIds };
-}
-
-function buildValues(data: ExpenseFormData) {
-  return {
-    // 支出は日付だけを入力するため、時刻は 00:00（UTC）で固定する
-    spentAt: combineDateTimeUtc(data.spentDate, "00:00"),
-    amountYen: data.amountYen,
-    category: data.category,
-    memo: data.memo ?? null,
-  };
+  return links;
 }
 
 /** 家の支出記録を追加する。関連する猫・通院記録は同じ家のものに限る */
@@ -162,22 +63,16 @@ export async function createExpense(
   data: ExpenseFormInput,
   d1?: D1Database,
 ): Promise<SaveExpenseResult> {
-  const db = getDb(d1);
-  const links = await resolveLinks(db, householdId, data, null);
+  const repository = createExpenseRecordRepository(d1);
+  const links = await resolveLinks(repository, householdId, data, null);
   if (!links.ok) {
     return { fieldErrors: links.fieldErrors };
   }
-
-  const id = crypto.randomUUID();
-  const insertRecord = db
-    .insert(expenseRecords)
-    .values({ id, householdId, ...buildValues(data) });
-
-  await db.batch([
-    insertRecord,
-    ...insertExpenseCats(db, id, links.catIds),
-    ...insertExpenseHospitalVisits(db, id, links.hospitalVisitIds),
-  ]);
+  const id = await repository.add(
+    householdId,
+    toExpenseRecordContent(data),
+    links,
+  );
   return { id };
 }
 
@@ -188,46 +83,17 @@ export async function updateExpense(
   data: ExpenseFormInput,
   d1?: D1Database,
 ): Promise<SaveExpenseResult> {
-  const db = getDb(d1);
-  const inHousehold = and(
-    eq(expenseRecords.id, id),
-    eq(expenseRecords.householdId, householdId),
-  );
-  const [existing] = await db
-    .select({ id: expenseRecords.id })
-    .from(expenseRecords)
-    .where(inHousehold)
-    .limit(1);
-
-  if (!existing) {
+  const repository = createExpenseRecordRepository(d1);
+  if (!(await repository.findForHousehold(householdId, id))) {
     return { formError: "支出記録が見つかりませんでした" };
   }
 
-  const links = await resolveLinks(db, householdId, data, id);
+  const links = await resolveLinks(repository, householdId, data, id);
   if (!links.ok) {
     return { fieldErrors: links.fieldErrors };
   }
 
-  // 紐付く猫・通院記録は差分更新せず、いったん削除してから選択されたものを入れ直す。
-  // 紐付けられるのは支出と同じ家の猫・通院記録だけのため、すべてフォームの選択肢に含まれる
-  const updateRecord = db
-    .update(expenseRecords)
-    .set({ ...buildValues(data), updatedAt: new Date() })
-    .where(inHousehold);
-  const deleteCatLinks = db
-    .delete(expenseRecordCats)
-    .where(eq(expenseRecordCats.expenseRecordId, id));
-  const deleteHospitalVisitLinks = db
-    .delete(expenseRecordHospitalVisits)
-    .where(eq(expenseRecordHospitalVisits.expenseRecordId, id));
-
-  await db.batch([
-    updateRecord,
-    deleteCatLinks,
-    deleteHospitalVisitLinks,
-    ...insertExpenseCats(db, id, links.catIds),
-    ...insertExpenseHospitalVisits(db, id, links.hospitalVisitIds),
-  ]);
+  await repository.update(householdId, id, toExpenseRecordContent(data), links);
   return { id };
 }
 
@@ -239,20 +105,10 @@ export async function deleteExpense(
   householdId: string,
   id: string,
 ): Promise<boolean> {
-  const db = getDb();
-  const [existing] = await db
-    .select({ id: expenseRecords.id })
-    .from(expenseRecords)
-    .where(
-      and(
-        eq(expenseRecords.id, id),
-        eq(expenseRecords.householdId, householdId),
-      ),
-    )
-    .limit(1);
-  if (!existing) return false;
+  const repository = createExpenseRecordRepository();
+  if (!(await repository.findForHousehold(householdId, id))) return false;
   // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
   await deleteMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, id);
-  await db.batch(deleteExpenseStatements(db, id));
+  await repository.remove(id);
   return true;
 }

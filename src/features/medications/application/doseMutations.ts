@@ -1,22 +1,13 @@
-import { and, eq } from "drizzle-orm";
-import { getDb } from "@/db/client";
-import { medicationDoses, medications } from "@/db/schema";
-import { combineDateTimeUtc } from "@/features/shared/datetime";
 import type { MedicationDoseFormInput } from "../domain/doseSchema";
+import { toMedicationDoseContent } from "../domain/medicationDose";
+import { createMedicationDoseRepository } from "../infrastructure/medicationDoseRepository";
+import { createMedicationRepository } from "../infrastructure/medicationRepository";
 
 /*
- * 投薬実績の保存。画面（`./doseActions.ts`）と AI との接続（MCP）の両方から使う。
- * 猫を参照できるかは呼び出し側で確かめる。MCP は Next.js（OpenNext）の外で動き
+ * 投薬実績の保存（ユースケース）。画面（`../presentation/doseActions.ts`）と AI との接続（MCP）の
+ * 両方から使う。猫を参照できるかは呼び出し側で確かめる。MCP は Next.js（OpenNext）の外で動き
  * `getCloudflareContext()` を使えないため、D1 は引数で受け取る
  */
-
-function toValues(data: MedicationDoseFormInput) {
-  return {
-    occurredAt: combineDateTimeUtc(data.occurredDate, data.occurredTime),
-    wasAdministered: data.wasAdministered,
-    memo: data.memo ?? null,
-  };
-}
 
 /**
  * 投薬実績を追加し、その ID を返す。服薬予定が猫のものでなければ null。
@@ -29,21 +20,16 @@ export async function createMedicationDose(
   data: MedicationDoseFormInput,
   d1?: D1Database,
 ): Promise<string | null> {
-  const db = getDb(d1);
-  const [medication] = await db
-    .select({ id: medications.id })
-    .from(medications)
-    .where(and(eq(medications.id, medicationId), eq(medications.catId, catId)))
-    .limit(1);
-  if (!medication) {
+  if (
+    !(await createMedicationRepository(d1).existsForCat(catId, medicationId))
+  ) {
     return null;
   }
-
-  const [created] = await db
-    .insert(medicationDoses)
-    .values({ catId, medicationId, ...toValues(data) })
-    .returning({ id: medicationDoses.id });
-  return created.id;
+  return createMedicationDoseRepository(d1).add(
+    catId,
+    medicationId,
+    toMedicationDoseContent(data),
+  );
 }
 
 /** 猫の服薬予定の投薬実績を更新する。見つからなければ false */
@@ -54,18 +40,12 @@ export async function updateMedicationDose(
   data: MedicationDoseFormInput,
   d1?: D1Database,
 ): Promise<boolean> {
-  const result = await getDb(d1)
-    .update(medicationDoses)
-    .set({ ...toValues(data), updatedAt: new Date() })
-    .where(
-      and(
-        eq(medicationDoses.id, id),
-        eq(medicationDoses.catId, catId),
-        eq(medicationDoses.medicationId, medicationId),
-      ),
-    )
-    .returning({ id: medicationDoses.id });
-  return result.length > 0;
+  return createMedicationDoseRepository(d1).update(
+    catId,
+    medicationId,
+    id,
+    toMedicationDoseContent(data),
+  );
 }
 
 /** 薬の投薬記録を削除する。見つからなければ false */
@@ -75,15 +55,5 @@ export async function deleteMedicationDose(
   id: string,
   d1?: D1Database,
 ): Promise<boolean> {
-  const result = await getDb(d1)
-    .delete(medicationDoses)
-    .where(
-      and(
-        eq(medicationDoses.id, id),
-        eq(medicationDoses.catId, catId),
-        eq(medicationDoses.medicationId, medicationId),
-      ),
-    )
-    .returning({ id: medicationDoses.id });
-  return result.length > 0;
+  return createMedicationDoseRepository(d1).remove(catId, medicationId, id);
 }
