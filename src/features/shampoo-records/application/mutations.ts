@@ -1,21 +1,12 @@
-import { and, eq } from "drizzle-orm";
-import { getDb } from "@/db/client";
-import { shampooRecords } from "@/db/schema";
-import { combineDateTimeUtc } from "@/features/shared/datetime";
 import type { ShampooRecordFormInput } from "../domain/schema";
+import { toShampooRecordContent } from "../domain/shampooRecord";
+import { createShampooRecordRepository } from "../infrastructure/shampooRecordRepository";
 
 /*
- * 記録の保存。画面（`./actions.ts`）と AI との接続（MCP）の両方から使う。
+ * 記録の保存（ユースケース）。画面（`../presentation/actions.ts`）と AI との接続（MCP）の両方から使う。
  * 猫を参照できるかは呼び出し側で確かめる。MCP は Next.js（OpenNext）の外で動き
  * `getCloudflareContext()` を使えないため、D1 は引数で受け取る
  */
-
-function toValues(data: ShampooRecordFormInput) {
-  return {
-    performedAt: combineDateTimeUtc(data.performedDate, data.performedTime),
-    memo: data.memo ?? null,
-  };
-}
 
 /** 記録を追加し、その ID を返す */
 export async function createShampooRecord(
@@ -23,11 +14,10 @@ export async function createShampooRecord(
   data: ShampooRecordFormInput,
   d1?: D1Database,
 ): Promise<string> {
-  const [created] = await getDb(d1)
-    .insert(shampooRecords)
-    .values({ catId, ...toValues(data) })
-    .returning({ id: shampooRecords.id });
-  return created.id;
+  return createShampooRecordRepository(d1).add(
+    catId,
+    toShampooRecordContent(data),
+  );
 }
 
 /** 猫の記録を更新する。見つからなければ false */
@@ -37,12 +27,11 @@ export async function updateShampooRecord(
   data: ShampooRecordFormInput,
   d1?: D1Database,
 ): Promise<boolean> {
-  const result = await getDb(d1)
-    .update(shampooRecords)
-    .set({ ...toValues(data), updatedAt: new Date() })
-    .where(and(eq(shampooRecords.id, id), eq(shampooRecords.catId, catId)))
-    .returning({ id: shampooRecords.id });
-  return result.length > 0;
+  return createShampooRecordRepository(d1).update(
+    catId,
+    id,
+    toShampooRecordContent(data),
+  );
 }
 
 /** 猫の記録を削除する。見つからなければ false */
@@ -51,9 +40,5 @@ export async function deleteShampooRecord(
   id: string,
   d1?: D1Database,
 ): Promise<boolean> {
-  const result = await getDb(d1)
-    .delete(shampooRecords)
-    .where(and(eq(shampooRecords.id, id), eq(shampooRecords.catId, catId)))
-    .returning({ id: shampooRecords.id });
-  return result.length > 0;
+  return createShampooRecordRepository(d1).remove(catId, id);
 }
