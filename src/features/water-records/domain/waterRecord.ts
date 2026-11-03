@@ -1,7 +1,7 @@
 import type { WaterRecord } from "@/db/schema";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
-import { calculateEstimatedIntakeMl } from "./calculations";
 import type { WaterRecordFormInput } from "./schema";
+import { estimatedIntakeMl, waterAmount } from "./waterAmount";
 
 /** 飲水の記録（エンティティ）。ID で区別し、猫（`catId`）に属する */
 export type { WaterRecord };
@@ -26,15 +26,13 @@ export type WaterRecordContent = Pick<
 export function toWaterRecordContent(
   data: WaterRecordFormInput,
 ): WaterRecordContent {
+  const amount = waterAmount(data.suppliedAmountMl, data.remainingAmountMl);
   return {
     occurredAt: combineDateTimeUtc(data.occurredDate, data.occurredTime),
     measurementMethod: data.measurementMethod,
-    suppliedAmountMl: data.suppliedAmountMl,
-    remainingAmountMl: data.remainingAmountMl ?? null,
-    estimatedIntakeMl: calculateEstimatedIntakeMl(
-      data.suppliedAmountMl,
-      data.remainingAmountMl,
-    ),
+    suppliedAmountMl: amount.suppliedMl,
+    remainingAmountMl: amount.remainingMl,
+    estimatedIntakeMl: estimatedIntakeMl(amount),
     hasSpill: data.hasSpill,
     wasWaterChanged: data.wasWaterChanged,
     subjectiveAmount: data.subjectiveAmount ?? null,

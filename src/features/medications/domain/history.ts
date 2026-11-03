@@ -1,5 +1,6 @@
 import type { Medication } from "@/db/schema";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
+import { isPeriodEnded } from "./medicationPeriod";
 
 type MedicationHistoryFields = Pick<Medication, "endDate" | "archivedAt">;
 
@@ -16,7 +17,7 @@ export function isMedicationEnded(
   medication: Pick<Medication, "endDate">,
   today: string,
 ): boolean {
-  return medication.endDate != null && medication.endDate < today;
+  return isPeriodEnded(medication, today);
 }
 
 /**

@@ -1,6 +1,6 @@
 import type { WeightRecord } from "@/db/schema";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
-import { calculateCatWeightKg } from "./calculations";
+import { catWeightKg, catWeightMeasurementFrom } from "./catWeight";
 import type { WeightRecordFormInput } from "./schema";
 
 /** 体重の記録（エンティティ）。ID で区別し、猫（`catId`）に属する */
@@ -17,17 +17,6 @@ export type WeightRecordContent = Pick<
   | "bcs"
 >;
 
-function resolveCatWeightKg(data: WeightRecordFormInput): number {
-  if (data.inputMethod === "auto") {
-    // フォームのバリデーションで両方の値が存在することを保証済み
-    return calculateCatWeightKg(
-      data.combinedWeightKg as number,
-      data.humanWeightKg as number,
-    );
-  }
-  return data.catWeightKg as number;
-}
-
 /** 入力から記録の中身を作る */
 export function toWeightRecordContent(
   data: WeightRecordFormInput,
@@ -37,7 +26,7 @@ export function toWeightRecordContent(
     inputMethod: data.inputMethod,
     combinedWeightKg: data.combinedWeightKg ?? null,
     humanWeightKg: data.humanWeightKg ?? null,
-    catWeightKg: resolveCatWeightKg(data),
+    catWeightKg: catWeightKg(catWeightMeasurementFrom(data)),
     bcs: data.bcs ?? null,
   };
 }

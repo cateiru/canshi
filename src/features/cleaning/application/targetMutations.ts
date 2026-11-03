@@ -1,4 +1,7 @@
-import type { CleaningTargetContent } from "../domain/cleaningTarget";
+import {
+  type CleaningTargetContent,
+  toCleaningTargetContent,
+} from "../domain/cleaningTarget";
 import type { CleaningTargetFormInput } from "../domain/targetSchema";
 import { createCleaningTargetRepository } from "../infrastructure/cleaningTargetRepository";
 
@@ -14,13 +17,10 @@ export async function createCleaningTarget(
     Partial<Pick<CleaningTargetContent, "notifyTime">>,
   d1?: D1Database,
 ): Promise<void> {
-  await createCleaningTargetRepository(d1).add(catId, {
-    name: data.name,
-    frequencyValue: data.frequencyValue,
-    frequencyUnit: data.frequencyUnit,
-    isActive: data.isActive,
-    notifyTime: data.notifyTime ?? null,
-  });
+  await createCleaningTargetRepository(d1).add(
+    catId,
+    toCleaningTargetContent(data),
+  );
 }
 
 /** 猫の掃除対象を更新する。見つからなければ false */
@@ -30,13 +30,11 @@ export async function updateCleaningTarget(
   data: CleaningTargetFormInput,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createCleaningTargetRepository(d1).update(catId, id, {
-    name: data.name,
-    frequencyValue: data.frequencyValue,
-    frequencyUnit: data.frequencyUnit,
-    isActive: data.isActive,
-    notifyTime: data.notifyTime ?? null,
-  });
+  return createCleaningTargetRepository(d1).update(
+    catId,
+    id,
+    toCleaningTargetContent(data),
+  );
 }
 
 /** 猫の掃除対象を、実施記録・通知・通知設定ごと削除する */

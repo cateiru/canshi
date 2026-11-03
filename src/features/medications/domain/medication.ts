@@ -1,4 +1,5 @@
 import type { Medication } from "@/db/schema";
+import { medicationPeriod } from "./medicationPeriod";
 import type { MedicationFormInput } from "./schema";
 
 /** 服薬予定（エンティティ）。ID で区別し、猫（`catId`）に属する。投薬実績（`MedicationDose`）を持つ */
@@ -20,13 +21,14 @@ export type MedicationContent = Pick<
 export function toMedicationContent(
   data: MedicationFormInput,
 ): MedicationContent {
+  const period = medicationPeriod(data.startDate, data.endDate);
   return {
     symptomId: data.symptomId ?? null,
     name: data.name,
     doseAmount: data.doseAmount,
     dosesPerDay: data.dosesPerDay,
-    startDate: data.startDate,
-    endDate: data.endDate ?? null,
+    startDate: period.startDate,
+    endDate: period.endDate,
     hospitalVisitId: data.hospitalVisitId ?? null,
   };
 }

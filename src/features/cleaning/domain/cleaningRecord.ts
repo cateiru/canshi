@@ -6,7 +6,7 @@ import {
   localDateToUtcMidnight,
 } from "@/features/notifications/domain/rules/localDate";
 import { combineDateTimeUtc } from "@/features/shared/datetime";
-import { calculateNextDueAt } from "./calculations";
+import { cleaningFrequencyOf, nextDueAfter } from "./cleaningFrequency";
 import type { CleaningTargetSchedule } from "./cleaningTarget";
 import type { CleaningRecordFormInput } from "./recordSchema";
 
@@ -60,14 +60,10 @@ export function cleaningNotificationsDueBefore(
   ) {
     return null;
   }
-  const nextDueAt = calculateNextDueAt(
+  const nextDueAt = nextDueAfter(
+    cleaningFrequencyOf(target),
     performedAt,
-    target.frequencyValue,
-    target.frequencyUnit,
     target.notifyTime,
   );
-  if (nextDueAt == null) {
-    return null;
-  }
   return localDateToUtcMidnight(getNaiveLocalDateParts(nextDueAt));
 }
