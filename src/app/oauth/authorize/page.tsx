@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { TbAlertTriangle, TbEye, TbUser } from "react-icons/tb";
+import { TbEye, TbUser } from "react-icons/tb";
 import { Alert, Button, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/presentation/session";
@@ -55,9 +55,6 @@ export default async function AuthorizePage({
         <RecordPageHeading icon={AiConnectionIcon}>
           AIとの接続
         </RecordPageHeading>
-        <p className={styles.description}>
-          接続するアプリと、許可する範囲を確認してください。
-        </p>
       </header>
 
       {consent && permissionTree ? (
@@ -70,13 +67,15 @@ export default async function AuthorizePage({
               <span className={styles.appIcon}>
                 <ClientIcon size={28} aria-hidden="true" />
               </span>
-              <div className={styles.appIdentity}>
-                <p className={styles.note}>接続をリクエストしているアプリ</p>
-                <Heading level={2} size="lg" id="connecting-app">
-                  {consent.clientName ?? "（名前がありません）"}
-                </Heading>
-                <p className={styles.note}>アプリ自身が申告した名前です。</p>
-              </div>
+              <Heading
+                level={2}
+                size="lg"
+                id="connecting-app"
+                className={styles.appIdentity}
+              >
+                {consent.clientName ?? "（名前がありません）"}
+                <span className={styles.appRequest}>が接続を求めています</span>
+              </Heading>
             </div>
             <dl className={styles.details}>
               <div>
@@ -92,10 +91,6 @@ export default async function AuthorizePage({
               </div>
             </dl>
           </Surface>
-          <p className={styles.caution}>
-            <TbAlertTriangle size={20} aria-hidden="true" />
-            自分で接続を始めたのでなければ、許可しないでください。
-          </p>
           <form
             method="post"
             action={`/oauth/authorize?${toQueryString(await searchParams)}`}
@@ -115,9 +110,6 @@ export default async function AuthorizePage({
                 tree={permissionTree.households}
                 catalogOperations={permissionTree.catalogOperations}
               />
-              <p className={styles.note}>
-                あとから登録した猫や、新しく参加した家は、読み取れますが書き込めません。
-              </p>
             </Surface>
             <p className={styles.afterNote}>
               許可したあとも、設定の「AIとの接続」で範囲の変更や接続の解除ができます。
