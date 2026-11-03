@@ -68,6 +68,31 @@
 PR のレビューコメント（インラインコメント・レビュー本文・サマリーを含む）は、
 コードやエラーメッセージの引用を除き、必ず日本語で書くこと。
 
+## レイヤー構成
+
+機能ごとのコードは `src/features/<機能>/` にまとめ、ファイルの役割で次の層に分ける。
+DDD のレイヤードアーキテクチャにならい、外側の層から内側の層だけを呼ぶ。
+
+| 層 | 置き場所 | 役割 |
+| --- | --- | --- |
+| プレゼンテーション | `src/app/**`、`src/features/<機能>/*.tsx`、`actions.ts`・`*Actions.ts`（Server Action）、`src/features/mcp/tools/**`（MCP のツール） | ログイン・猫や家を参照できるかの確認、フォーム・ツールの引数の解析、遷移やエラーの文言 |
+| アプリケーション・インフラ | `queries.ts`・`*Queries.ts`（読み取り）、`mutations.ts`・`*Mutations.ts`（書き込み）のほか、`requests.ts`・`management.ts`・`storage.ts` のように用途で名付けたファイル | D1・R2 を読み書きする処理。画面と MCP の両方から使う |
+| ドメイン | `schema.ts`（入力の規則）、`calculations.ts` などの純粋な関数、`src/db/schema`（テーブル定義・型・定数） | DB に触れない業務の規則 |
+
+守ること:
+
+- プレゼンテーション層から DB を直接扱わない。`@/db/client`・`@/db/batch`・`drizzle-orm`
+  の import は Biome の `noRestrictedImports`（`biome.json` の `overrides`）で禁止している。
+  クエリが必要になったら、その機能の `queries.ts`・`mutations.ts`（または用途で名付けたファイル）に関数を足して呼ぶ。
+- `src/db/schema` の型・定数（`type Cat`・`EXPENSE_CATEGORIES` など）は、どの層から import してもよい。
+- `queries.ts`・`mutations.ts` の関数は、最後の引数で D1 を `d1?: D1Database` として受け取る。
+  MCP のツールは `ctx.env.DB` を渡す。画面からは省略してよい。
+  画像（R2）の削除を伴う関数（`deleteMedication` など）は、今は画面からだけ使うため受け取らない。
+- 認可（`requireCatAccess`、MCP の権限の確認）は、プレゼンテーション層で行う。
+  `queries.ts`・`mutations.ts` の関数には、確認済みの ID を渡す。
+  ただし、確認から書き込みまでの間に家から外された場合に備えて、文の中でも所属を確かめる場合がある
+  （`createFoodProduct` など）。
+
 ## その他
 
 - 開発コマンド・ディレクトリ構成は [`README.md`](README.md) を参照。

@@ -1,10 +1,12 @@
 "use server";
 
-import { and, eq, isNull, or } from "drizzle-orm";
-import { getDb } from "@/db/client";
-import { pushSubscriptions } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
-import { nextScheduledRunAt, requestTestPush } from "./sendTestPush";
+import {
+  requestTestPushForUser,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "./mutations";
+import { nextScheduledRunAt } from "./sendTestPush";
 import { pushSubscribeSchema } from "./subscriptionSchema";
 
 export type PushSubscriptionActionResult = { error?: string };
@@ -24,27 +26,7 @@ export async function subscribeToPushAction(
   }
 
   try {
-    const db = getDb();
-    await db
-      .insert(pushSubscriptions)
-      .values({
-        userId: user.id,
-        endpoint: parsed.data.endpoint,
-        p256dh: parsed.data.p256dh,
-        auth: parsed.data.auth,
-        userAgent: parsed.data.userAgent ?? null,
-      })
-      .onConflictDoUpdate({
-        target: pushSubscriptions.endpoint,
-        // 同じ端末で別のユーザーが購読し直した場合は、そのユーザーの購読にする
-        set: {
-          userId: user.id,
-          p256dh: parsed.data.p256dh,
-          auth: parsed.data.auth,
-          userAgent: parsed.data.userAgent ?? null,
-          failureCount: 0,
-        },
-      });
+    await subscribeToPush(user.id, parsed.data);
     return {};
   } catch (error) {
     console.error("Push購読の登録に失敗しました", error);
@@ -58,18 +40,7 @@ export async function unsubscribeFromPushAction(
 ): Promise<PushSubscriptionActionResult> {
   const user = await requireUser();
   try {
-    const db = getDb();
-    await db
-      .delete(pushSubscriptions)
-      .where(
-        and(
-          eq(pushSubscriptions.endpoint, endpoint),
-          or(
-            eq(pushSubscriptions.userId, user.id),
-            isNull(pushSubscriptions.userId),
-          ),
-        ),
-      );
+    await unsubscribeFromPush(user.id, endpoint);
     return {};
   } catch (error) {
     console.error("Push購読の解除に失敗しました", error);
@@ -91,7 +62,7 @@ export async function requestTestPushAction(
 ): Promise<TestPushActionResult> {
   const user = await requireUser();
   try {
-    const result = await requestTestPush(getDb(), user.id, endpoint);
+    const result = await requestTestPushForUser(user.id, endpoint);
     if (result.outcome === "not-subscribed") {
       return {
         error:

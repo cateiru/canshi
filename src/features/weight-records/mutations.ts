@@ -60,3 +60,16 @@ export async function updateWeightRecord(
     .returning({ id: weightRecords.id });
   return result.length > 0;
 }
+
+/** 猫の記録を削除する。見つからなければ false */
+export async function deleteWeightRecord(
+  catId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<boolean> {
+  const result = await getDb(d1)
+    .delete(weightRecords)
+    .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)))
+    .returning({ id: weightRecords.id });
+  return result.length > 0;
+}

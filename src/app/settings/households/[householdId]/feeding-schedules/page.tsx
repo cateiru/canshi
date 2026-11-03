@@ -15,7 +15,7 @@ import {
   updateFeedingScheduleNotifyAction,
 } from "@/features/feeding-schedules/actions";
 import { FeedingScheduleForm } from "@/features/feeding-schedules/FeedingScheduleForm";
-import { listFeedingSchedules } from "@/features/feeding-schedules/mutations";
+import { listFeedingSchedules } from "@/features/feeding-schedules/queries";
 import { HouseholdMemberActionButton } from "@/features/households/HouseholdMemberActionButton";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";

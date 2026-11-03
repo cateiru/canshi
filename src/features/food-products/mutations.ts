@@ -84,3 +84,25 @@ export async function updateFoodProduct(
     .returning({ id: foodProducts.id });
   return updated.length > 0;
 }
+
+/**
+ * 家の商品を削除する。ユーザーが家のメンバーでない、または見つからなければ false。
+ * 画像の削除と、記録・プリセットで使われていないかの確認は呼び出し側で行う
+ */
+export async function deleteFoodProductForUser(
+  userId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<boolean> {
+  // 呼び出し側の確認の後に家から外された場合に削除が通らないよう、所属の確認は DELETE の WHERE にも含める
+  const deleted = await getDb(d1)
+    .delete(foodProducts)
+    .where(
+      and(
+        eq(foodProducts.id, id),
+        isHouseholdMemberCondition(foodProducts.householdId, userId),
+      ),
+    )
+    .returning({ id: foodProducts.id });
+  return deleted.length > 0;
+}

@@ -1,15 +1,15 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { getDb } from "@/db/client";
-import { memoRecords } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
-import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { MEMO_RECORD_MEDIA_TYPE } from "./media";
-import { createMemoRecord, updateMemoRecord } from "./mutations";
+import {
+  createMemoRecord,
+  deleteMemoRecord,
+  updateMemoRecord,
+} from "./mutations";
 import { type MemoRecordFormFieldErrors, memoRecordFormSchema } from "./schema";
 
 /**
@@ -82,19 +82,6 @@ export async function deleteMemoRecordAction(
   id: string,
 ): Promise<void> {
   await requireCatAccess(catId);
-  const db = getDb();
-  // 添付の削除は記録 ID だけで行うため、先に記録がこの猫のものであることを確かめる。
-  // 確かめないと、自分の猫の catId と別の家の記録 ID を渡して添付を消せてしまう
-  const [existing] = await db
-    .select({ id: memoRecords.id })
-    .from(memoRecords)
-    .where(and(eq(memoRecords.id, id), eq(memoRecords.catId, catId)))
-    .limit(1);
-  if (!existing) redirect(`/cats/${catId}/memo-records`, "replace");
-  // 紐付く画像（R2 のオブジェクトと media_assets 行）を先に削除する
-  await deleteMediaAssetsByRecord(MEMO_RECORD_MEDIA_TYPE, id);
-  await db
-    .delete(memoRecords)
-    .where(and(eq(memoRecords.id, id), eq(memoRecords.catId, catId)));
+  await deleteMemoRecord(catId, id);
   redirect(`/cats/${catId}/memo-records`, "replace");
 }

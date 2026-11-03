@@ -67,3 +67,23 @@ export async function updateMedicationDose(
     .returning({ id: medicationDoses.id });
   return result.length > 0;
 }
+
+/** 薬の投薬記録を削除する。見つからなければ false */
+export async function deleteMedicationDose(
+  catId: string,
+  medicationId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<boolean> {
+  const result = await getDb(d1)
+    .delete(medicationDoses)
+    .where(
+      and(
+        eq(medicationDoses.id, id),
+        eq(medicationDoses.catId, catId),
+        eq(medicationDoses.medicationId, medicationId),
+      ),
+    )
+    .returning({ id: medicationDoses.id });
+  return result.length > 0;
+}

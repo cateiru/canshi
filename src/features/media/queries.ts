@@ -20,8 +20,9 @@ export async function getMediaAssetById(
 export async function listMediaAssetsByRecord(
   recordType: string,
   recordId: string,
+  d1?: D1Database,
 ): Promise<MediaAsset[]> {
-  const db = getDb();
+  const db = getDb(d1);
   return db
     .select()
     .from(mediaAssets)
@@ -71,6 +72,32 @@ export async function listMediaAssetsByRecords(
 }
 
 /** 元データとサムネイルを合わせた現在の使用容量（バイト） */
+/** 指定したレコードのうち、メディアが 1 件以上あるレコードの ID */
+export async function listRecordIdsWithMedia(
+  recordType: string,
+  recordIds: string[],
+  d1?: D1Database,
+): Promise<Set<string>> {
+  const db = getDb(d1);
+  const withMedia = new Set<string>();
+  // recordType の分を 1 個予約し、ID は D1 のバインド上限に収まるよう分割する
+  for (const ids of chunkForBoundParameters(recordIds, 1)) {
+    const rows = await db
+      .selectDistinct({ recordId: mediaAssets.recordId })
+      .from(mediaAssets)
+      .where(
+        and(
+          eq(mediaAssets.recordType, recordType),
+          inArray(mediaAssets.recordId, ids),
+        ),
+      );
+    for (const row of rows) {
+      withMedia.add(row.recordId);
+    }
+  }
+  return withMedia;
+}
+
 export async function sumMediaStorageBytes(d1?: D1Database): Promise<number> {
   const db = getDb(d1);
   const [row] = await db

@@ -222,3 +222,23 @@ export async function updateCleaningRecord(
   ]);
   return updated.length > 0;
 }
+
+/** 掃除対象の記録を削除する。見つからなければ false */
+export async function deleteCleaningRecord(
+  catId: string,
+  cleaningTargetId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<boolean> {
+  const result = await getDb(d1)
+    .delete(cleaningRecords)
+    .where(
+      and(
+        eq(cleaningRecords.id, id),
+        eq(cleaningRecords.catId, catId),
+        eq(cleaningRecords.cleaningTargetId, cleaningTargetId),
+      ),
+    )
+    .returning({ id: cleaningRecords.id });
+  return result.length > 0;
+}

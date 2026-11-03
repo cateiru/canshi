@@ -1,18 +1,18 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
-import { getDb } from "@/db/client";
-import { foodProducts } from "@/db/schema";
 import { requireUser } from "@/features/auth/session";
 import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "@/features/cats/mutations";
 import { readFormHouseholdId } from "@/features/households/formHousehold";
-import { isHouseholdMemberCondition } from "@/features/households/queries";
 import { syncRecordMediaFromForm } from "@/features/media/attach";
 import { deleteMediaAssetsByRecord } from "@/features/media/storage";
 import type { MediaFormState } from "@/features/media/useMediaFormAction";
 import { FOOD_PRODUCT_IN_USE_MESSAGE } from "./labels";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "./media";
-import { createFoodProduct, updateFoodProduct } from "./mutations";
+import {
+  createFoodProduct,
+  deleteFoodProductForUser,
+  updateFoodProduct,
+} from "./mutations";
 import { getFoodProductForUser, listFoodProductUsages } from "./queries";
 import {
   type FoodProductFormFieldErrors,
@@ -126,18 +126,8 @@ export async function deleteFoodProductAction(
   // 商品が残る。R2 の削除は D1 のトランザクションに含められないため、孤立した画像を作らないことを
   // 優先した（`syncRecordMedia` と同じく、PR #257 のレビューで見送った）
   await deleteMediaAssetsByRecord(FOOD_PRODUCT_MEDIA_TYPE, id);
-  const db = getDb();
-  // 最初の確認の後に家から外された場合に削除が通らないよう、所属の確認は DELETE の WHERE にも含める
-  const deleted = await db
-    .delete(foodProducts)
-    .where(
-      and(
-        eq(foodProducts.id, id),
-        isHouseholdMemberCondition(foodProducts.householdId, user.id),
-      ),
-    )
-    .returning({ id: foodProducts.id });
-  if (deleted.length === 0) {
+  // 最初の確認の後に家から外された場合に削除が通らないよう、所属は削除の文の中でも確かめる
+  if (!(await deleteFoodProductForUser(user.id, id))) {
     return { error: "商品が見つかりませんでした" };
   }
   return {};

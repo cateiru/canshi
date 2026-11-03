@@ -1,12 +1,13 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { getDb } from "@/db/client";
-import { brushingRecords } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
-import { createBrushingRecord, updateBrushingRecord } from "./mutations";
+import {
+  createBrushingRecord,
+  deleteBrushingRecord,
+  updateBrushingRecord,
+} from "./mutations";
 import {
   type BrushingRecordFormFieldErrors,
   brushingRecordFormSchema,
@@ -71,9 +72,6 @@ export async function deleteBrushingRecordAction(
   id: string,
 ): Promise<void> {
   await requireCatAccess(catId);
-  const db = getDb();
-  await db
-    .delete(brushingRecords)
-    .where(and(eq(brushingRecords.id, id), eq(brushingRecords.catId, catId)));
+  await deleteBrushingRecord(catId, id);
   redirect(`/cats/${catId}/brushing-records`, "replace");
 }

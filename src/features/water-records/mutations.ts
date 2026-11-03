@@ -55,3 +55,16 @@ export async function updateWaterRecord(
     .returning({ id: waterRecords.id });
   return result.length > 0;
 }
+
+/** 猫の記録を削除する。見つからなければ false */
+export async function deleteWaterRecord(
+  catId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<boolean> {
+  const result = await getDb(d1)
+    .delete(waterRecords)
+    .where(and(eq(waterRecords.id, id), eq(waterRecords.catId, catId)))
+    .returning({ id: waterRecords.id });
+  return result.length > 0;
+}

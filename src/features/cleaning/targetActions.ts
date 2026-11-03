@@ -1,16 +1,13 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
-import { getDb } from "@/db/client";
-import {
-  type CleaningTarget,
-  cleaningRecords,
-  cleaningTargets,
-  notificationSettings,
-  notifications,
-} from "@/db/schema";
+import type { CleaningTarget } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
+import {
+  createCleaningTarget,
+  deleteCleaningTarget,
+  updateCleaningTarget,
+} from "./targetMutations";
 import {
   type CleaningTargetFormFieldErrors,
   cleaningTargetFormSchema,
@@ -31,17 +28,6 @@ function parseFormData(formData: FormData) {
   });
 }
 
-async function nextSortOrder(catId: string): Promise<number> {
-  const db = getDb();
-  const [row] = await db
-    .select({
-      maxSortOrder: sql<number | null>`max(${cleaningTargets.sortOrder})`,
-    })
-    .from(cleaningTargets)
-    .where(eq(cleaningTargets.catId, catId));
-  return row?.maxSortOrder == null ? 0 : Number(row.maxSortOrder) + 1;
-}
-
 export async function createCleaningTargetAction(
   catId: string,
   _prevState: CleaningTargetFormState,
@@ -54,16 +40,7 @@ export async function createCleaningTargetAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  await db.insert(cleaningTargets).values({
-    catId,
-    name: parsed.data.name,
-    frequencyValue: parsed.data.frequencyValue,
-    frequencyUnit: parsed.data.frequencyUnit,
-    isActive: parsed.data.isActive,
-    notifyTime: parsed.data.notifyTime,
-    sortOrder: await nextSortOrder(catId),
-  });
+  await createCleaningTarget(catId, parsed.data);
 
   return { redirectTo: `/cats/${catId}/cleaning` };
 }
@@ -78,14 +55,11 @@ export async function createCleaningTargetFromPresetAction(
   frequencyUnit: CleaningTarget["frequencyUnit"],
 ): Promise<SubmitRedirect> {
   await requireCatAccess(catId);
-  const db = getDb();
-  await db.insert(cleaningTargets).values({
-    catId,
+  await createCleaningTarget(catId, {
     name,
     frequencyValue,
     frequencyUnit,
     isActive: true,
-    sortOrder: await nextSortOrder(catId),
   });
 
   return { redirectTo: `/cats/${catId}/cleaning` };
@@ -104,21 +78,7 @@ export async function updateCleaningTargetAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const db = getDb();
-  const result = await db
-    .update(cleaningTargets)
-    .set({
-      name: parsed.data.name,
-      frequencyValue: parsed.data.frequencyValue,
-      frequencyUnit: parsed.data.frequencyUnit,
-      isActive: parsed.data.isActive,
-      notifyTime: parsed.data.notifyTime,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(cleaningTargets.id, id), eq(cleaningTargets.catId, catId)))
-    .returning({ id: cleaningTargets.id });
-
-  if (result.length === 0) {
+  if (!(await updateCleaningTarget(catId, id, parsed.data))) {
     return { formError: "掃除対象が見つかりませんでした" };
   }
 
@@ -130,41 +90,6 @@ export async function deleteCleaningTargetAction(
   id: string,
 ): Promise<SubmitRedirect> {
   await requireCatAccess(catId);
-  const db = getDb();
-  // cleaning_records から cleaning_targets への外部キー制約があるため実施記録も同時に削除する。
-  // notifications・notification_settings の reference_id もこの対象を指しうるため
-  // （`28`）、同じ batch でまとめて削除する。3つの delete の間に別リクエストが
-  // 割り込まないよう、D1 の batch で原子的に実行する
-  await db.batch([
-    db
-      .delete(cleaningRecords)
-      .where(
-        and(
-          eq(cleaningRecords.cleaningTargetId, id),
-          eq(cleaningRecords.catId, catId),
-        ),
-      ),
-    db
-      .delete(notifications)
-      .where(
-        and(
-          eq(notifications.kind, "cleaning_due"),
-          eq(notifications.referenceId, id),
-          eq(notifications.catId, catId),
-        ),
-      ),
-    db
-      .delete(notificationSettings)
-      .where(
-        and(
-          eq(notificationSettings.kind, "cleaning_due"),
-          eq(notificationSettings.referenceId, id),
-          eq(notificationSettings.catId, catId),
-        ),
-      ),
-    db
-      .delete(cleaningTargets)
-      .where(and(eq(cleaningTargets.id, id), eq(cleaningTargets.catId, catId))),
-  ]);
+  await deleteCleaningTarget(catId, id);
   return { redirectTo: `/cats/${catId}/cleaning` };
 }

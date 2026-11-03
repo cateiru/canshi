@@ -1,6 +1,6 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { memoRecords } from "@/db/schema";
+import { type MemoRecord, memoRecords } from "@/db/schema";
 
 /**
  * 猫のメモを、日付を残さないメモ（新しく作った順）、日付を残したメモ（新しい日付順）の
@@ -25,6 +25,20 @@ export async function getMemoRecordById(id: string) {
     .select()
     .from(memoRecords)
     .where(eq(memoRecords.id, id))
+    .limit(1);
+  return record ?? null;
+}
+
+/** 猫のメモの記録を ID で 1 件読む。別の猫の記録・見つからなければ null */
+export async function getMemoRecordForCat(
+  catId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<MemoRecord | null> {
+  const [record] = await getDb(d1)
+    .select()
+    .from(memoRecords)
+    .where(and(eq(memoRecords.id, id), eq(memoRecords.catId, catId)))
     .limit(1);
   return record ?? null;
 }

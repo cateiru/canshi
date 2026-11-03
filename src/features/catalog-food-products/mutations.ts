@@ -1,6 +1,12 @@
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { catalogFoodProducts, mediaAssets } from "@/db/schema";
+import {
+  type CatalogPackageSize,
+  catalogFoodProducts,
+  foodProducts,
+  householdMembers,
+  mediaAssets,
+} from "@/db/schema";
 import {
   formatBytes,
   hasStorageCapacity,
@@ -174,4 +180,74 @@ export async function replaceCatalogFoodProductImage(
     });
   }
   return added.length > 0;
+}
+
+/**
+ * 共通のごはん商品の内容を写して、家のごはん商品を追加し、その ID を返す。
+ * ユーザーが家のメンバーでない、共通のごはん商品か選んだ内容量が見つからない、
+ * または同じ家にすでに追加済みのときは追加せずに null（画面の「家に追加」から使う）
+ */
+export async function addCatalogFoodProductToHousehold(
+  userId: string,
+  householdId: string,
+  catalogFoodProductId: string,
+  packageSize: CatalogPackageSize,
+  d1?: D1Database,
+): Promise<string | null> {
+  // 判定と追加の間に家から外された場合に追加が通らないよう、INSERT ... SELECT で
+  // 追加先の家のメンバーの行と共通のごはん商品があるときだけ 1 文で挿入する
+  // （`createFoodProduct` と同じ）。INSERT ... SELECT では列の既定値が使われないため
+  // ID はここで作り、列はテーブル定義と同じ並びにする。
+  // 選んだ内容量も、その時点の候補にあるときだけ挿入する（画面を開いてから管理画面で候補が
+  // 変わったときに、候補にない内容量を追加しない）。
+  // 同じ家に同じ共通のごはん商品は 1 件だけにする（一意インデックス）。古い画面から送られたり、
+  // 同時に追加されたりしたときは挿入せず、null を返し、呼び出し側で追加済みかを確かめる
+  const [created] = await getDb(d1)
+    .insert(foodProducts)
+    .select((qb) =>
+      qb
+        .select({
+          id: sql`${crypto.randomUUID()}`.as("id"),
+          householdId: householdMembers.householdId,
+          name: catalogFoodProducts.name,
+          manufacturer: catalogFoodProducts.manufacturer,
+          kcalPer100g: catalogFoodProducts.kcalPer100g,
+          packageAmountG: sql`${packageSize.amountG}`.as("package_amount_g"),
+          packageUnit: sql`${packageSize.unit}`.as("package_unit"),
+          nutritionType: catalogFoodProducts.nutritionType,
+          textureType: catalogFoodProducts.textureType,
+          lifeStages: catalogFoodProducts.lifeStages,
+          targetBreed: catalogFoodProducts.targetBreed,
+          catalogFoodProductId: catalogFoodProducts.id,
+          createdAt: sql`(unixepoch())`.as("created_at"),
+          updatedAt: sql`(unixepoch())`.as("updated_at"),
+        })
+        .from(catalogFoodProducts)
+        .innerJoin(
+          householdMembers,
+          and(
+            eq(householdMembers.householdId, householdId),
+            eq(householdMembers.userId, userId),
+          ),
+        )
+        .where(
+          and(
+            eq(catalogFoodProducts.id, catalogFoodProductId),
+            // 先頭の候補は package_amount_g・package_unit、2 件目以降は package_sizes から取る
+            // （`catalogPackageSizes` と同じ）
+            sql`((
+              ${catalogFoodProducts.packageAmountG} = ${packageSize.amountG}
+              AND ${catalogFoodProducts.packageUnit} IS ${packageSize.unit}
+            ) OR EXISTS (
+              SELECT 1 FROM json_each(${catalogFoodProducts.packageSizes})
+              WHERE json_each.key > 0
+                AND json_extract(json_each.value, '$.amountG') = ${packageSize.amountG}
+                AND json_extract(json_each.value, '$.unit') IS ${packageSize.unit}
+            ))`,
+          ),
+        ),
+    )
+    .onConflictDoNothing()
+    .returning({ id: foodProducts.id });
+  return created?.id ?? null;
 }

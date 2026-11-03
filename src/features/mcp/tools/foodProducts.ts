@@ -1,21 +1,20 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import { and, eq, inArray, ne } from "drizzle-orm";
 import { z } from "zod";
-import { chunkForBoundParameters } from "@/db/batch";
-import { getDb } from "@/db/client";
-import {
-  FOOD_PRODUCT_LIFE_STAGES,
-  type FoodProduct,
-  foodProducts,
-  householdMembers,
-  mediaAssets,
-} from "@/db/schema";
+import { FOOD_PRODUCT_LIFE_STAGES, type FoodProduct } from "@/db/schema";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "@/features/food-products/media";
 import {
   createFoodProduct,
   updateFoodProduct,
 } from "@/features/food-products/mutations";
+import {
+  getFoodProductForUser,
+  listFoodProductsByHouseholdIds,
+} from "@/features/food-products/queries";
 import { foodProductFormSchema } from "@/features/food-products/schema";
+import {
+  listMediaAssetsByRecord,
+  listRecordIdsWithMedia,
+} from "@/features/media/queries";
 import {
   deleteMediaAssetRows,
   MediaUploadError,
@@ -155,16 +154,13 @@ async function replaceFoodProductImage(
     }
     throw error;
   }
-  const previous = await getDb(ctx.env.DB)
-    .select()
-    .from(mediaAssets)
-    .where(
-      and(
-        eq(mediaAssets.recordType, FOOD_PRODUCT_MEDIA_TYPE),
-        eq(mediaAssets.recordId, productId),
-        ne(mediaAssets.id, asset.id),
-      ),
-    );
+  const previous = (
+    await listMediaAssetsByRecord(
+      FOOD_PRODUCT_MEDIA_TYPE,
+      productId,
+      ctx.env.DB,
+    )
+  ).filter(({ id }) => id !== asset.id);
   await deleteMediaAssetRows(previous, ctx.env);
   return null;
 }
@@ -203,37 +199,15 @@ export function registerFoodProductTools(
         return errorResult(resolved.error);
       }
       const { householdIds } = resolved;
-      const db = getDb(ctx.env.DB);
-      const products: FoodProduct[] = [];
-      // 家の ID は D1 のバインド上限に収まるよう分割し、まとめてから新しい順に並べる
-      for (const ids of chunkForBoundParameters(householdIds)) {
-        products.push(
-          ...(await db
-            .select()
-            .from(foodProducts)
-            .where(inArray(foodProducts.householdId, ids))),
-        );
-      }
-      products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      const withImage = new Set<string>();
-      // recordType の分を 1 個予約し、ID は D1 のバインド上限に収まるよう分割する
-      for (const ids of chunkForBoundParameters(
+      const products = await listFoodProductsByHouseholdIds(
+        householdIds,
+        ctx.env.DB,
+      );
+      const withImage = await listRecordIdsWithMedia(
+        FOOD_PRODUCT_MEDIA_TYPE,
         products.map((product) => product.id),
-        1,
-      )) {
-        const images = await db
-          .selectDistinct({ recordId: mediaAssets.recordId })
-          .from(mediaAssets)
-          .where(
-            and(
-              eq(mediaAssets.recordType, FOOD_PRODUCT_MEDIA_TYPE),
-              inArray(mediaAssets.recordId, ids),
-            ),
-          );
-        for (const image of images) {
-          withImage.add(image.recordId);
-        }
-      }
+        ctx.env.DB,
+      );
       return jsonResult({
         foodProducts: products.map((product) =>
           toFoodProductSummary(product, withImage.has(product.id)),
@@ -320,21 +294,11 @@ export function registerFoodProductTools(
         return errorResult(resolved.error);
       }
       const notFound = `id="${args.id}" のごはん商品が見つかりません`;
-      const [row] = await getDb(ctx.env.DB)
-        .select({ foodProduct: foodProducts })
-        .from(foodProducts)
-        .innerJoin(
-          householdMembers,
-          eq(foodProducts.householdId, householdMembers.householdId),
-        )
-        .where(
-          and(
-            eq(foodProducts.id, args.id),
-            eq(householdMembers.userId, resolved.connection.userId),
-          ),
-        )
-        .limit(1);
-      const product = row?.foodProduct;
+      const product = await getFoodProductForUser(
+        resolved.connection.userId,
+        args.id,
+        ctx.env.DB,
+      );
       if (
         !product?.householdId ||
         !isHouseholdAllowedForMcp(resolved.permissions, product.householdId)

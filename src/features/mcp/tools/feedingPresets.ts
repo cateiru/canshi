@@ -1,21 +1,16 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import { and, asc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { chunkForBoundParameters } from "@/db/batch";
-import { getDb } from "@/db/client";
-import {
-  type FeedingPreset,
-  feedingPresetItems,
-  feedingPresets,
-  foodProducts,
-  GIVEN_AMOUNT_LEVELS,
-  householdMembers,
-} from "@/db/schema";
+import { type FeedingPreset, GIVEN_AMOUNT_LEVELS } from "@/db/schema";
 import {
   createFeedingPreset,
   deleteFeedingPreset,
   updateFeedingPreset,
 } from "@/features/feeding-presets/mutations";
+import {
+  getFeedingPresetRowForUser,
+  listFeedingPresetItemSummaries,
+  listFeedingPresetsByHouseholdIds,
+} from "@/features/feeding-presets/queries";
 import { feedingPresetFormSchema } from "@/features/feeding-presets/schema";
 import {
   type FormValues,
@@ -66,41 +61,6 @@ const presetFields = {
     .optional(),
 };
 
-type PresetItemRow = {
-  presetId: string;
-  foodProductId: string;
-  foodProductName: string;
-  givenAmountG: number | null;
-  givenAmountLevel: (typeof GIVEN_AMOUNT_LEVELS)[number] | null;
-};
-
-async function listPresetItems(
-  db: ReturnType<typeof getDb>,
-  presetIds: string[],
-): Promise<PresetItemRow[]> {
-  const rows: PresetItemRow[] = [];
-  for (const ids of chunkForBoundParameters(presetIds)) {
-    rows.push(
-      ...(await db
-        .select({
-          presetId: feedingPresetItems.presetId,
-          foodProductId: feedingPresetItems.foodProductId,
-          foodProductName: foodProducts.name,
-          givenAmountG: feedingPresetItems.givenAmountG,
-          givenAmountLevel: feedingPresetItems.givenAmountLevel,
-        })
-        .from(feedingPresetItems)
-        .innerJoin(
-          foodProducts,
-          eq(feedingPresetItems.foodProductId, foodProducts.id),
-        )
-        .where(inArray(feedingPresetItems.presetId, ids))
-        .orderBy(asc(feedingPresetItems.sortOrder))),
-    );
-  }
-  return rows;
-}
-
 /**
  * ユーザーが所属し、読み取りを許可している家のプリセットで、その家で操作も許可しているときに
  * プリセットを読む。行えなければ AI に返すエラーメッセージ
@@ -117,21 +77,12 @@ async function resolvePreset(
   if ("error" in resolved) {
     return resolved;
   }
-  const [row] = await getDb(ctx.env.DB)
-    .select({ preset: feedingPresets })
-    .from(feedingPresets)
-    .innerJoin(
-      householdMembers,
-      eq(feedingPresets.householdId, householdMembers.householdId),
-    )
-    .where(
-      and(
-        eq(feedingPresets.id, id),
-        eq(householdMembers.userId, resolved.connection.userId),
-      ),
-    )
-    .limit(1);
-  const householdId = row?.preset.householdId;
+  const preset = await getFeedingPresetRowForUser(
+    resolved.connection.userId,
+    id,
+    ctx.env.DB,
+  );
+  const householdId = preset?.householdId;
   if (
     !householdId ||
     !isHouseholdAllowedForMcp(resolved.permissions, householdId)
@@ -147,7 +98,7 @@ async function resolvePreset(
   if (operationError) {
     return { error: operationError };
   }
-  return { connection: resolved.connection, preset: row.preset, householdId };
+  return { connection: resolved.connection, preset, householdId };
 }
 
 /** フォームの値に含めない引数を除く */
@@ -190,21 +141,13 @@ export function registerFeedingPresetTools(
         return errorResult(resolved.error);
       }
       const { householdIds } = resolved;
-      const db = getDb(ctx.env.DB);
-      const presets: FeedingPreset[] = [];
-      // 家の ID は D1 のバインド上限に収まるよう分割し、まとめてから新しい順に並べる
-      for (const ids of chunkForBoundParameters(householdIds)) {
-        presets.push(
-          ...(await db
-            .select()
-            .from(feedingPresets)
-            .where(inArray(feedingPresets.householdId, ids))),
-        );
-      }
-      presets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      const items = await listPresetItems(
-        db,
+      const presets = await listFeedingPresetsByHouseholdIds(
+        householdIds,
+        ctx.env.DB,
+      );
+      const items = await listFeedingPresetItemSummaries(
         presets.map((preset) => preset.id),
+        ctx.env.DB,
       );
       return jsonResult({
         feedingPresets: presets.map((preset) => ({
@@ -299,8 +242,7 @@ export function registerFeedingPresetTools(
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
-      const db = getDb(ctx.env.DB);
-      const items = await listPresetItems(db, [args.id]);
+      const items = await listFeedingPresetItemSummaries([args.id], ctx.env.DB);
       const current: FormValues = {
         name: resolved.preset.name,
         mode: resolved.preset.mode,

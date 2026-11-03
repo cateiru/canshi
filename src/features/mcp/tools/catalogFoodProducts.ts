@@ -1,12 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { getDb } from "@/db/client";
-import {
-  type CatalogFoodProduct,
-  catalogFoodProducts,
-  FOOD_PRODUCT_LIFE_STAGES,
-} from "@/db/schema";
+import { type CatalogFoodProduct, FOOD_PRODUCT_LIFE_STAGES } from "@/db/schema";
 import { getUserById } from "@/features/auth/users";
 import {
   CATALOG_IMAGE_MAX_EDGE,
@@ -22,6 +16,7 @@ import {
 import { catalogPackageSizes } from "@/features/catalog-food-products/packageSizes";
 import {
   CATALOG_SEARCH_LIMIT,
+  getCatalogFoodProduct,
   searchCatalogFoodProducts,
 } from "@/features/catalog-food-products/queries";
 import {
@@ -380,11 +375,7 @@ export function registerCatalogFoodProductTools(
         return errorResult(resolved.error);
       }
       const notFound = `id="${args.id}" の共通のごはん商品が見つかりません`;
-      const [product] = await getDb(ctx.env.DB)
-        .select()
-        .from(catalogFoodProducts)
-        .where(eq(catalogFoodProducts.id, args.id))
-        .limit(1);
+      const product = await getCatalogFoodProduct(args.id, ctx.env.DB);
       if (!product) {
         return errorResult(notFound);
       }

@@ -1,14 +1,16 @@
 import type { McpServer } from "@modelcontextprotocol/server";
-import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { chunkForBoundParameters } from "@/db/batch";
-import { getDb } from "@/db/client";
-import { type FeedingSchedule, feedingSchedules } from "@/db/schema";
+import type { FeedingSchedule } from "@/db/schema";
 import {
   createFeedingSchedule,
   deleteFeedingSchedule,
   updateFeedingScheduleNotify,
 } from "@/features/feeding-schedules/mutations";
+import {
+  getFeedingSchedule,
+  getFeedingScheduleByTime,
+  listFeedingSchedulesByHouseholdIds,
+} from "@/features/feeding-schedules/queries";
 import {
   feedingScheduleFormSchema,
   feedingScheduleNotifyFormSchema,
@@ -79,11 +81,7 @@ async function resolveSchedule(
   if ("error" in resolved) {
     return resolved;
   }
-  const [schedule] = await getDb(ctx.env.DB)
-    .select()
-    .from(feedingSchedules)
-    .where(eq(feedingSchedules.id, id))
-    .limit(1);
+  const schedule = await getFeedingSchedule(id, ctx.env.DB);
   // ほかの人の家・読み取りを許可していない家のごはんの時間は、存在しないものと区別しない
   const households = schedule
     ? await listAllowedHouseholds(
@@ -144,20 +142,9 @@ export function registerFeedingScheduleTools(
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
-      const db = getDb(ctx.env.DB);
-      const schedules: FeedingSchedule[] = [];
-      for (const ids of chunkForBoundParameters(resolved.householdIds)) {
-        schedules.push(
-          ...(await db
-            .select()
-            .from(feedingSchedules)
-            .where(inArray(feedingSchedules.householdId, ids))),
-        );
-      }
-      schedules.sort(
-        (a, b) =>
-          a.householdId.localeCompare(b.householdId) ||
-          a.time.localeCompare(b.time),
+      const schedules = await listFeedingSchedulesByHouseholdIds(
+        resolved.householdIds,
+        ctx.env.DB,
       );
       return jsonResult({ feedingSchedules: schedules.map(toScheduleSummary) });
     },
@@ -217,16 +204,11 @@ export function registerFeedingScheduleTools(
       if (!result.ok) {
         return errorResult(result.error);
       }
-      const [created] = await getDb(ctx.env.DB)
-        .select()
-        .from(feedingSchedules)
-        .where(
-          and(
-            eq(feedingSchedules.householdId, args.householdId),
-            eq(feedingSchedules.time, parsed.data.time),
-          ),
-        )
-        .limit(1);
+      const created = await getFeedingScheduleByTime(
+        args.householdId,
+        parsed.data.time,
+        ctx.env.DB,
+      );
       return jsonResult(created ? toScheduleSummary(created) : {});
     },
   );

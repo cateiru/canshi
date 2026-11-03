@@ -18,9 +18,9 @@ import {
   createFeedingSchedule,
   deleteFeedingSchedule,
   dismissFeedingNotificationsOfCatlessHouseholds,
-  listFeedingSchedules,
   updateFeedingScheduleNotify,
 } from "./mutations";
+import { listFeedingSchedules } from "./queries";
 
 // `src/features/households/management.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;

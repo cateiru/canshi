@@ -1,8 +1,10 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
   type FeedingMode,
+  type FeedingRecord,
+  type FeedingRecordItem,
   feedingRecordItems,
   feedingRecords,
   foodProducts,
@@ -194,4 +196,30 @@ export async function listFoodProductsOfFeedingRecord(feedingRecordId: string) {
     )
     .where(eq(feedingRecordItems.feedingRecordId, feedingRecordId));
   return rows.map((row) => row.foodProduct);
+}
+
+/** 猫のごはんの記録（明細を含まない行）を ID で 1 件読む。別の猫の記録・見つからなければ null */
+export async function getFeedingRecordRowForCat(
+  catId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<FeedingRecord | null> {
+  const [record] = await getDb(d1)
+    .select()
+    .from(feedingRecords)
+    .where(and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)))
+    .limit(1);
+  return record ?? null;
+}
+
+/** ごはんの記録の明細（商品名・画像を含まない行）。並び順のとおり */
+export async function listFeedingRecordItemRows(
+  feedingRecordId: string,
+  d1?: D1Database,
+): Promise<FeedingRecordItem[]> {
+  return getDb(d1)
+    .select()
+    .from(feedingRecordItems)
+    .where(eq(feedingRecordItems.feedingRecordId, feedingRecordId))
+    .orderBy(asc(feedingRecordItems.sortOrder));
 }

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   cats,
@@ -17,19 +17,6 @@ export type FeedingScheduleMutationResult =
   | { ok: false; error: string };
 
 const NOT_MEMBER_ERROR = "この家のメンバーではないため変更できませんでした";
-
-/** 家のごはんの時間の一覧。時刻順 */
-export async function listFeedingSchedules(
-  householdId: string,
-  d1?: D1Database,
-) {
-  const db = getDb(d1);
-  return db
-    .select()
-    .from(feedingSchedules)
-    .where(eq(feedingSchedules.householdId, householdId))
-    .orderBy(asc(feedingSchedules.time));
-}
 
 /**
  * 家にごはんの時間を追加する。家のメンバーなら誰でも追加できる。同じ家に同じ時刻は

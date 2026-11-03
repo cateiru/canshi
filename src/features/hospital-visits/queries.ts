@@ -4,6 +4,7 @@ import { getDb } from "@/db/client";
 import {
   cats,
   expenseRecordHospitalVisits,
+  expenseRecords,
   type HospitalVisit,
   hospitalVisits,
 } from "@/db/schema";
@@ -119,4 +120,32 @@ export async function listHospitalVisitsOnDate(
       asc(cats.createdAt),
       asc(hospitalVisits.id),
     );
+}
+
+/**
+ * 猫の通院記録を ID で 1 件読み、病院代として紐付く支出記録の金額を添える。
+ * 別の猫の記録・見つからなければ null
+ */
+export async function getHospitalVisitWithExpenseAmountForCat(
+  catId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<{ visit: HospitalVisit; expenseAmountYen: number | null } | null> {
+  const [row] = await getDb(d1)
+    .select({
+      visit: hospitalVisits,
+      expenseAmountYen: expenseRecords.amountYen,
+    })
+    .from(hospitalVisits)
+    .leftJoin(
+      expenseRecordHospitalVisits,
+      eq(expenseRecordHospitalVisits.hospitalVisitId, hospitalVisits.id),
+    )
+    .leftJoin(
+      expenseRecords,
+      eq(expenseRecords.id, expenseRecordHospitalVisits.expenseRecordId),
+    )
+    .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
+    .limit(1);
+  return row ?? null;
 }

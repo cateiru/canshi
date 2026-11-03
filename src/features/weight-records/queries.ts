@@ -1,6 +1,6 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { weightRecords } from "@/db/schema";
+import { type WeightRecord, weightRecords } from "@/db/schema";
 
 export async function listWeightRecords(catId: string) {
   const db = getDb();
@@ -17,6 +17,20 @@ export async function getWeightRecordById(id: string) {
     .select()
     .from(weightRecords)
     .where(eq(weightRecords.id, id))
+    .limit(1);
+  return record ?? null;
+}
+
+/** 猫の体重の記録を ID で 1 件読む。別の猫の記録・見つからなければ null */
+export async function getWeightRecordForCat(
+  catId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<WeightRecord | null> {
+  const [record] = await getDb(d1)
+    .select()
+    .from(weightRecords)
+    .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)))
     .limit(1);
   return record ?? null;
 }

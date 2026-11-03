@@ -1,12 +1,13 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { getDb } from "@/db/client";
-import { waterRecords } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
-import { createWaterRecord, updateWaterRecord } from "./mutations";
+import {
+  createWaterRecord,
+  deleteWaterRecord,
+  updateWaterRecord,
+} from "./mutations";
 import {
   type WaterRecordFormFieldErrors,
   waterRecordFormSchema,
@@ -73,9 +74,6 @@ export async function deleteWaterRecordAction(
   id: string,
 ): Promise<void> {
   await requireCatAccess(catId);
-  const db = getDb();
-  await db
-    .delete(waterRecords)
-    .where(and(eq(waterRecords.id, id), eq(waterRecords.catId, catId)));
+  await deleteWaterRecord(catId, id);
   redirect(`/cats/${catId}/water-records`, "replace");
 }

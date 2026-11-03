@@ -1,13 +1,14 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import type { z } from "zod";
-import { getDb } from "@/db/client";
-import { feedingRecordItems, feedingRecords } from "@/db/schema";
 import { requireCatAccess } from "@/features/auth/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
-import { createFeedingRecord, updateFeedingRecord } from "./mutations";
+import {
+  createFeedingRecord,
+  deleteFeedingRecord,
+  updateFeedingRecord,
+} from "./mutations";
 import {
   type FeedingRecordFormFieldErrors,
   type FeedingRecordItemFieldName,
@@ -133,24 +134,6 @@ export async function deleteFeedingRecordAction(
   id: string,
 ): Promise<void> {
   await requireCatAccess(catId);
-  const db = getDb();
-  // 明細は記録 ID で紐付くため、この猫の記録の明細だけを消すよう親の記録で絞り込む。
-  // 絞り込まないと、自分の猫の catId と別の家の記録 ID を渡して明細だけを消せてしまう
-  await db.batch([
-    db.delete(feedingRecordItems).where(
-      inArray(
-        feedingRecordItems.feedingRecordId,
-        db
-          .select({ id: feedingRecords.id })
-          .from(feedingRecords)
-          .where(
-            and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)),
-          ),
-      ),
-    ),
-    db
-      .delete(feedingRecords)
-      .where(and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId))),
-  ]);
+  await deleteFeedingRecord(catId, id);
   redirect(`/cats/${catId}/feeding-records`, "replace");
 }
