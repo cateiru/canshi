@@ -263,7 +263,7 @@ export default function ComponentsPreviewPage() {
           label="追加する"
           variant="primary"
           items={[
-            { id: "cat", label: "猫を登録する", href: "/cats/new" },
+            { id: "cat", label: "ねこを登録する", href: "/cats/new" },
             {
               id: "household",
               label: "家を作成する",
@@ -316,7 +316,7 @@ export default function ComponentsPreviewPage() {
 
       <section>
         <h2>Tabs</h2>
-        <Tabs aria-label="猫の記録" items={TAB_ITEMS} />
+        <Tabs aria-label="ねこの記録" items={TAB_ITEMS} />
       </section>
 
       <section>

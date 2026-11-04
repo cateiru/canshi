@@ -50,7 +50,7 @@ async function resolveLinks(
     return {
       ok: false,
       fieldErrors: {
-        catIds: ["関連する猫が見つかりませんでした。選び直してください"],
+        catIds: ["関連するねこが見つかりませんでした。選び直してください"],
       },
     };
   }

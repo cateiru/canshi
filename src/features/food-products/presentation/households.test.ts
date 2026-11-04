@@ -550,7 +550,7 @@ describe("ごはん記録の商品", () => {
         .where(eq(cats.id, "tama"));
     };
     const error =
-      "猫の家が変わったため保存できませんでした。もう一度やり直してください";
+      "ねこの家が変わったため保存できませんでした。もう一度やり直してください";
 
     await expect(
       createFeedingRecordAction("tama", {}, recordForm("food-1")),

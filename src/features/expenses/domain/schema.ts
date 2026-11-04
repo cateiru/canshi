@@ -24,7 +24,7 @@ export const expenseFormSchema = z.object({
     error: "カテゴリを選択してください",
   }),
   catIds: z
-    .array(z.string().trim().min(1, "関連する猫を選び直してください"))
+    .array(z.string().trim().min(1, "関連するねこを選び直してください"))
     .default([])
     .transform((ids) => [...new Set(ids)]),
   // カテゴリ「病院」のときに病院代として紐付ける、支出日と同じ日の通院記録

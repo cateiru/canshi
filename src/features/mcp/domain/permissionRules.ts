@@ -97,14 +97,14 @@ export const MCP_HOUSEHOLD_OPERATION_GROUPS: {
     ],
   },
   {
-    label: "猫のプロフィール",
+    label: "ねこのプロフィール",
     operations: [
       { operation: "cat:create", label: "追加" },
       { operation: "cat:update", label: "編集" },
     ],
   },
   {
-    label: "猫の通知の設定",
+    label: "ねこの通知の設定",
     operations: [
       { operation: "catNotification:read", label: "読む" },
       { operation: "catNotification:update", label: "編集" },

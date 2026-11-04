@@ -18,7 +18,7 @@ function candidateLabel(candidate: HospitalExpenseCandidate): string {
   const cats =
     candidate.catNames.length > 0
       ? candidate.catNames.join("、")
-      : "関連する猫なし";
+      : "関連するねこなし";
   return `${formatYen(candidate.amountYen)}（${cats}）${candidate.memo ? ` ${candidate.memo}` : ""}`;
 }
 
@@ -46,7 +46,7 @@ export function ExpenseLinkConfirmModal({
       onClose={onCancel}
     >
       <p>
-        同じ日に「病院」の支出記録があります。この通院記録の病院代として紐付けると、支出記録の関連する猫にもこの猫が追加されます。
+        同じ日に「病院」の支出記録があります。この通院記録の病院代として紐付けると、支出記録の関連するねこにもこのねこが追加されます。
       </p>
       {candidates != null && candidates.length > 1 ? (
         <RadioGroup

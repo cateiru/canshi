@@ -349,7 +349,7 @@ test("家に所属しているユーザーも、猫一覧の追加メニュー�
     await expect(menuItem).toBeVisible({ timeout: 1000 });
   }).toPass();
   await expect(
-    page.getByRole("menuitem", { name: "猫を登録する" }),
+    page.getByRole("menuitem", { name: "ねこを登録する" }),
   ).toBeVisible();
   await menuItem.click();
   await expect(page).toHaveURL(/\/settings\/households\/new\?from=cats$/);
@@ -389,9 +389,9 @@ test("家に所属していないユーザーは、猫一覧から家を作成�
 
     await expect(page.getByText("所属している家がありません。")).toBeVisible();
     // 家がないうちは猫を登録できないため、追加メニューを出さない
-    await expect(page.getByRole("link", { name: "猫を登録する" })).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByRole("link", { name: "ねこを登録する" }),
+    ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "追加する" })).toHaveCount(0);
 
     await page.getByRole("link", { name: "家を作成する" }).click();
@@ -409,7 +409,7 @@ test("家に所属していないユーザーは、猫一覧から家を作成�
       }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "最初の猫を登録する" }),
+      page.getByRole("link", { name: "最初のねこを登録する" }),
     ).toBeVisible();
     await expect(page.getByText("所属している家がありません。")).toHaveCount(0);
   } finally {

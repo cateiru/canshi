@@ -24,7 +24,7 @@ export const weightRecordFormSchema = z
     }),
     combinedWeightKg: optionalPositiveNumber("人間を含んだ体重"),
     humanWeightKg: optionalPositiveNumber("人間だけの体重"),
-    catWeightKg: optionalPositiveNumber("猫の体重"),
+    catWeightKg: optionalPositiveNumber("ねこの体重"),
     // BCS は任意項目。「未設定」を選ぶと空文字が送られるため undefined として扱う
     bcs: z.preprocess(
       emptyToUndefined,
@@ -57,7 +57,7 @@ export const weightRecordFormSchema = z
     },
   )
   .refine((data) => data.inputMethod !== "direct" || data.catWeightKg != null, {
-    message: "猫の体重を入力してください",
+    message: "ねこの体重を入力してください",
     path: ["catWeightKg"],
   });
 

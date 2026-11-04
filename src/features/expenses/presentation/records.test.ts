@@ -175,7 +175,7 @@ describe("支出の保存と月別表示", () => {
     );
 
     expect(result.fieldErrors?.catIds).toEqual([
-      "関連する猫が見つかりませんでした。選び直してください",
+      "関連するねこが見つかりませんでした。選び直してください",
     ]);
     expect(await db.select().from(expenseRecords)).toEqual([]);
   });

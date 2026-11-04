@@ -47,7 +47,7 @@ export default async function CatNotificationSettingsPage({
         {cat.name}の通知設定
       </RecordPageHeading>
       <p>
-        この猫の記念日や、お手入れのタイミング、長引いている症状をお知らせします。
+        このねこの記念日や、お手入れのタイミング、長引いている症状をお知らせします。
       </p>
 
       <NotificationSettingsForm

@@ -48,7 +48,7 @@ export default async function NotificationsPage({
       <h1>通知センター</h1>
 
       <FilterTabs
-        aria-label="猫で絞り込む"
+        aria-label="ねこで絞り込む"
         selectedKey={catId ?? ""}
         items={[
           { key: "", href: "/notifications", label: "すべて" },

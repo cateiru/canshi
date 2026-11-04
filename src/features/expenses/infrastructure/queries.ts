@@ -322,7 +322,7 @@ export async function listHospitalExpensesOnDate(
     amountYen: record.amountYen,
     memo: record.memo,
     catNames: (catIdsByRecord.get(record.id) ?? []).map(
-      (catId) => catNameById.get(catId) ?? "不明な猫",
+      (catId) => catNameById.get(catId) ?? "不明なねこ",
     ),
   }));
 }

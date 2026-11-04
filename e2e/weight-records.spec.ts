@@ -19,8 +19,8 @@ test("体重記録の登録・編集・削除ができる", async ({ page }) => 
   await page.getByLabel("記録日").fill("2026-09-07");
   await page.getByLabel("記録時刻").fill("08:00");
   // Radio の実体（input）は視覚的に隠れておりクリック不可のため、表示テキストをクリックする
-  await page.getByText("猫の体重を直接入力").click();
-  await page.getByLabel("猫の体重（kg）").fill("4.20");
+  await page.getByText("ねこの体重を直接入力").click();
+  await page.getByLabel("ねこの体重（kg）").fill("4.20");
   await page.getByText("やや肥満", { exact: true }).click();
   await page.getByRole("button", { name: "記録する" }).click();
 
@@ -31,11 +31,11 @@ test("体重記録の登録・編集・削除ができる", async ({ page }) => 
   await expect(record.getByText("BCS 4（やや肥満）")).toBeVisible();
 
   await page.getByRole("link", { name: "編集する" }).click();
-  await expect(page.getByLabel("猫の体重（kg）")).toHaveValue("4.2");
+  await expect(page.getByLabel("ねこの体重（kg）")).toHaveValue("4.2");
   await expect(
     page.getByRole("radio", { name: "BCS 4 やや肥満" }),
   ).toBeChecked();
-  await page.getByLabel("猫の体重（kg）").fill("4.35");
+  await page.getByLabel("ねこの体重（kg）").fill("4.35");
   // BCS は「未設定」に戻せる
   await page.getByText("未設定", { exact: true }).click();
   await page.getByRole("button", { name: "更新する" }).click();

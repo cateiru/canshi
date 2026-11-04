@@ -122,7 +122,7 @@ test("猫一覧ページの見た目", async ({ page }, testInfo) => {
 test("猫登録ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/cats/new");
   await expect(
-    page.getByRole("heading", { name: "猫を登録する" }),
+    page.getByRole("heading", { name: "ねこを登録する" }),
   ).toBeVisible();
   await takeSnapshot(page, testInfo);
 });

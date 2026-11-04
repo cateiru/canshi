@@ -62,7 +62,7 @@ export function TimelineEntryCard({
     : formatDateTimeUtc(entry.occurredAt);
   // 記念日は猫の生年月日・お迎え日から求めるため、編集先は猫のプロフィールになる
   const editLabel = isTimelineAnniversaryType(entry.type)
-    ? "猫のプロフィールを編集する"
+    ? "ねこのプロフィールを編集する"
     : "編集する";
 
   return (
