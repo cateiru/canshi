@@ -12,6 +12,11 @@
   outline: none;
 }
 
+/* 選択中と hover 中の候補が隣り合っても、背景・枠がくっついて見えないよう間を空ける */
+.option + .option {
+  margin-top: var(--space-1);
+}
+
 /* どれかを選んでいるときは、選んでいない候補の文字を控えめにして選択中を目立たせる */
 [role="listbox"]:has([data-selected])
   .option:not([data-selected], [data-hovered], [data-focused]) {
