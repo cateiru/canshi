@@ -135,7 +135,7 @@ export default async function HouseholdSettingsPage({
                         <HouseholdMemberActionButton
                           label="家から外す"
                           title="メンバーを外す"
-                          description={`「${member.name}」を家から外しますか？外したメンバーは、この家の猫を見られなくなり、通知も届かなくなります。`}
+                          description={`「${member.name}」を家から外しますか？外したメンバーは、この家のねこを見られなくなり、通知も届かなくなります。`}
                           variant="danger"
                           successMessage={`「${member.name}」を家から外しました`}
                           action={removeHouseholdMemberAction.bind(
@@ -150,7 +150,7 @@ export default async function HouseholdSettingsPage({
                       <HouseholdMemberActionButton
                         label="家から抜ける"
                         title="家から抜ける"
-                        description={`「${household.name}」から抜けますか？この家の猫を見られなくなり、通知も届かなくなります。`}
+                        description={`「${household.name}」から抜けますか？この家のねこを見られなくなり、通知も届かなくなります。`}
                         variant="danger"
                         successMessage={`「${household.name}」から抜けました`}
                         action={leaveHouseholdAction.bind(null, household.id)}

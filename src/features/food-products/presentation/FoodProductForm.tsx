@@ -180,7 +180,7 @@ export function FoodProductForm({
       />
 
       <FormGroup
-        legend="対象の猫（任意）"
+        legend="対象のねこ（任意）"
         description="複数選択できます。"
         errorMessage={state.fieldErrors?.lifeStages?.[0]}
         isDisabled={isPending}

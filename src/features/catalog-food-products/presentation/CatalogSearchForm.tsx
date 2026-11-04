@@ -168,7 +168,7 @@ export function CatalogSearchForm({
             />
             <Select
               name="lifeStage"
-              label="対象の猫"
+              label="対象のねこ"
               options={LIFE_STAGE_OPTIONS}
               defaultSelectedKey={defaultValues.lifeStage ?? ANY}
             />

@@ -20,7 +20,7 @@ export async function fillAndKeep(locator: Locator, value: string) {
  */
 export async function openCatRegistration(page: Page) {
   await page.goto("/cats");
-  const menuItem = page.getByRole("menuitem", { name: "猫を登録する" });
+  const menuItem = page.getByRole("menuitem", { name: "ねこを登録する" });
   await expect(async () => {
     if (!(await menuItem.isVisible())) {
       await page.getByRole("button", { name: "追加する" }).click();

@@ -41,7 +41,7 @@ export default async function EditPoopRecordPage({
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
+          { label: "ねこ一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "うんち記録", href: `/cats/${catId}/poop-records` },
           { label: "編集する" },

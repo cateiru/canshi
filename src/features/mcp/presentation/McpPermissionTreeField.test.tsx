@@ -114,7 +114,7 @@ describe("McpPermissionTreeField", () => {
     expect(recordCheckbox("たま", "ごはん")).toBeChecked();
     expect(writeCheckbox("たま", "ごはん")).not.toBeChecked();
     expect(operationCheckbox("家1", "ごはん商品", "読む")).not.toBeChecked();
-    expect(screen.getByText("この家には猫がいません。")).toBeInTheDocument();
+    expect(screen.getByText("この家にはねこがいません。")).toBeInTheDocument();
     expect(value()).toEqual({
       excludedHouseholdIds: [],
       excludedCatIds: [],

@@ -39,7 +39,7 @@ export default async function NewMedicationPage({
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
+          { label: "ねこ一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "服薬予定", href: `/cats/${catId}/medications` },
           { label: "登録する" },

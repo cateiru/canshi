@@ -32,9 +32,9 @@ export function DeleteCatButton({ action, catName }: DeleteCatButtonProps) {
       <Button variant="danger" onPress={() => setOpen(true)}>
         削除する
       </Button>
-      <Modal open={open} title="猫の削除" onClose={close}>
+      <Modal open={open} title="ねこの削除" onClose={close}>
         <p>
-          {`「${catName}」を削除しますか？この猫の記録と写真もすべて削除され、この操作は取り消せません。`}
+          {`「${catName}」を削除しますか？このねこの記録と写真もすべて削除され、この操作は取り消せません。`}
         </p>
         <form
           className={styles.form}

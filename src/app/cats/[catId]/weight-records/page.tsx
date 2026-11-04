@@ -60,7 +60,7 @@ export default async function WeightRecordsPage({
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
+          { label: "ねこ一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "体重記録" },
         ]}

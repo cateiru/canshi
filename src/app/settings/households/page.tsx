@@ -50,7 +50,7 @@ export default async function HouseholdsSettingsPage() {
           <HouseholdIcon aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>
-            猫を登録するには家が必要です。「家を作成する」から家を作成してください。
+            ねこを登録するには家が必要です。「家を作成する」から家を作成してください。
           </p>
         </Surface>
       ) : (
@@ -62,7 +62,7 @@ export default async function HouseholdsSettingsPage() {
                 icon={HouseholdIcon}
                 title={household.name}
                 titleAs="h2"
-                description={`メンバー${household.memberCount}人・猫${household.catCount}匹（あなたは${HOUSEHOLD_ROLE_LABEL[household.role]}）`}
+                description={`メンバー${household.memberCount}人・ねこ${household.catCount}匹（あなたは${HOUSEHOLD_ROLE_LABEL[household.role]}）`}
               />
             </li>
           ))}

@@ -89,11 +89,11 @@ export default async function CatsPage() {
     <main className={styles.main}>
       <BirthdayCelebration cats={catList.map(toBirthdayCelebrationCat)} />
       <Breadcrumb
-        items={[{ label: "トップ", href: "/home" }, { label: "猫一覧" }]}
+        items={[{ label: "トップ", href: "/home" }, { label: "ねこ一覧" }]}
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={CatIcon}>猫一覧</RecordPageHeading>
+        <RecordPageHeading icon={CatIcon}>ねこ一覧</RecordPageHeading>
         {/* 家がないと猫を登録できないため、家を作成するまでは下の案内から家を作成してもらう */}
         {householdList.length > 0 ? <CatsAddMenu /> : null}
       </div>
@@ -103,8 +103,8 @@ export default async function CatsPage() {
           <CatIcon aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>
-            猫を登録するには家が必要です。家を作成するか、家族から届いた招待 URL
-            を開いて家に参加してください。
+            ねこを登録するには家が必要です。家を作成するか、家族から届いた招待
+            URL を開いて家に参加してください。
           </p>
           <ButtonLink
             href="/settings/households/new?from=cats"
@@ -132,13 +132,13 @@ export default async function CatsPage() {
             >
               {cats.length === 0 ? (
                 <div className={styles.householdEmpty}>
-                  <p>この家にはまだ猫が登録されていません。</p>
+                  <p>この家にはまだねこが登録されていません。</p>
                   {/* 登録画面でこの家を最初から選んでおく */}
                   <ButtonLink
                     href={`/cats/new?householdId=${encodeURIComponent(household.id)}`}
                     variant="primary"
                   >
-                    最初の猫を登録する
+                    最初のねこを登録する
                   </ButtonLink>
                 </div>
               ) : (

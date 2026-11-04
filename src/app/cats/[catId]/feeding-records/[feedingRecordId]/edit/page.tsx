@@ -67,7 +67,7 @@ export default async function EditFeedingRecordPage({
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
+          { label: "ねこ一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "ごはん記録", href: `/cats/${catId}/feeding-records` },
           { label: "編集する" },

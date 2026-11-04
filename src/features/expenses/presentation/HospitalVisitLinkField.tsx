@@ -91,7 +91,7 @@ export function HospitalVisitLinkField({
   return (
     <FormGroup
       legend="関連する通院記録"
-      description="支出日と同じ日の通院記録を紐付けられます。一度に複数の猫を診てもらった場合は、まとめて選んでください。選んだ通院記録の猫は関連する猫にも追加され、金額は通院記録の病院代として表示されます。"
+      description="支出日と同じ日の通院記録を紐付けられます。一度に複数のねこを診てもらった場合は、まとめて選んでください。選んだ通院記録のねこは関連するねこにも追加され、金額は通院記録の病院代として表示されます。"
       errorMessage={errorMessage}
       isDisabled={isDisabled}
       aria-busy={visitsState.status === "loading"}

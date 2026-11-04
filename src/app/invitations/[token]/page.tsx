@@ -41,7 +41,7 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
           <p>
             {preview.createdByName}さんから「
             <strong>{preview.householdName}</strong>
-            」に招待されています。参加すると、この家の猫の記録を見たり書いたりできるようになります。
+            」に招待されています。参加すると、この家のねこの記録を見たり書いたりできるようになります。
           </p>
           <p className={styles.note}>
             有効期限: {formatDateTimeUtc(getNaiveUtcNow(preview.expiresAt))}

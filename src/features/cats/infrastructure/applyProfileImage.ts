@@ -119,13 +119,13 @@ export async function applyProfileImageChange(
         .returning({ id: cats.id }),
     ]);
     if (referenced.length === 0) {
-      return "猫の情報は保存しましたが、プロフィール画像が見つかりませんでした。もう一度画像を選び直してから保存してください";
+      return "ねこの情報は保存しましたが、プロフィール画像が見つかりませんでした。もう一度画像を選び直してから保存してください";
     }
     // 新しい画像へ付け替えた後に古い画像を消す（途中で失敗しても画像なしにならないように）
     await deleteReplacedProfileAssets(catId);
     return undefined;
   } catch (error) {
     console.error("プロフィール画像の保存に失敗しました", error);
-    return "猫の情報は保存しましたが、プロフィール画像を保存できませんでした。もう一度保存してください";
+    return "ねこの情報は保存しましたが、プロフィール画像を保存できませんでした。もう一度保存してください";
   }
 }

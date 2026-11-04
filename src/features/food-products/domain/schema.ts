@@ -60,7 +60,7 @@ export const foodProductFormSchema = z.object({
   lifeStages: z
     .array(
       z.enum(FOOD_PRODUCT_LIFE_STAGES, {
-        error: "対象の猫を選び直してください",
+        error: "対象のねこを選び直してください",
       }),
     )
     .default([])

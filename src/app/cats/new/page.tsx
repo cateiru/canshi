@@ -29,17 +29,17 @@ export default async function NewCatPage({ searchParams }: NewCatPageProps) {
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
-          { label: "猫を登録する" },
+          { label: "ねこ一覧", href: "/cats" },
+          { label: "ねこを登録する" },
         ]}
       />
 
-      <RecordPageHeading icon={CatIcon}>猫を登録する</RecordPageHeading>
+      <RecordPageHeading icon={CatIcon}>ねこを登録する</RecordPageHeading>
       {households.length === 0 ? (
         <Surface className={styles.emptyState}>
           <CatIcon aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
-          <p>猫を登録するには家が必要です。先に家を作成してください。</p>
+          <p>ねこを登録するには家が必要です。先に家を作成してください。</p>
           <ButtonLink
             href="/settings/households/new?from=cats"
             variant="primary"

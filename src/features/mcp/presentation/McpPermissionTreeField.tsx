@@ -212,7 +212,7 @@ export function McpPermissionTreeField({
                         className={styles.section}
                       >
                         <span className={styles.sectionLabel}>
-                          ごはん商品・家・猫などの操作
+                          ごはん商品・家・ねこなどの操作
                         </span>
                         {MCP_HOUSEHOLD_OPERATION_GROUPS.map((group) => (
                           <fieldset
@@ -252,15 +252,15 @@ export function McpPermissionTreeField({
                         ))}
                       </section>
                       <section
-                        aria-label={`${household.name}の猫ごとの記録`}
+                        aria-label={`${household.name}のねこごとの記録`}
                         className={styles.section}
                       >
                         <span className={styles.sectionLabel}>
-                          猫ごとの記録
+                          ねこごとの記録
                         </span>
                         {household.cats.length === 0 ? (
                           <p className={styles.noCats}>
-                            この家には猫がいません。
+                            この家にはねこがいません。
                           </p>
                         ) : (
                           <ul className={styles.cats}>

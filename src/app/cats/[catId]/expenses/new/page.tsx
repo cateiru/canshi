@@ -36,7 +36,7 @@ export default async function NewExpensePage({ params }: NewExpensePageProps) {
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
+          { label: "ねこ一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "支出記録", href: `/cats/${catId}/expenses` },
           { label: "記録する" },

@@ -18,7 +18,7 @@ export type SaveFeedingRecordResult = { id: string } | { error: string };
 type FeedingRecordCat = { id: string; householdId: string | null };
 
 const HOUSEHOLD_CHANGED_ERROR =
-  "猫の家が変わったため保存できませんでした。もう一度やり直してください";
+  "ねこの家が変わったため保存できませんでした。もう一度やり直してください";
 
 /** 記録を追加する。明細の商品は猫の家の商品に限る */
 export async function createFeedingRecord(

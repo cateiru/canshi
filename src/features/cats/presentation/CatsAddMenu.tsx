@@ -13,7 +13,12 @@ export function CatsAddMenu() {
       variant="primary"
       leftIcon={TbPlus}
       items={[
-        { id: "cat", label: "猫を登録する", href: "/cats/new", icon: CatIcon },
+        {
+          id: "cat",
+          label: "ねこを登録する",
+          href: "/cats/new",
+          icon: CatIcon,
+        },
         {
           id: "household",
           // 作成後は猫一覧へ戻す

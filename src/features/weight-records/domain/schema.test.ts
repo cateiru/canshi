@@ -62,7 +62,7 @@ describe("weightRecordFormSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.catWeightKg?.[0]).toBe(
-        "猫の体重は0より大きい値を入力してください",
+        "ねこの体重は0より大きい値を入力してください",
       );
     }
   });

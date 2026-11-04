@@ -8,21 +8,21 @@ describe("Breadcrumb", () => {
       <Breadcrumb
         items={[
           { label: "トップ", href: "/" },
-          { label: "猫一覧", href: "/cats" },
+          { label: "ねこ一覧", href: "/cats" },
           { label: "ミケ" },
         ]}
       />,
     );
 
     expect(screen.getByText("トップ")).toBeInTheDocument();
-    expect(screen.getByText("猫一覧")).toBeInTheDocument();
+    expect(screen.getByText("ねこ一覧")).toBeInTheDocument();
     expect(screen.getByText("ミケ")).toBeInTheDocument();
   });
 
   it("href を持つ item はリンクになる", () => {
     render(
       <Breadcrumb
-        items={[{ label: "トップ", href: "/" }, { label: "猫一覧" }]}
+        items={[{ label: "トップ", href: "/" }, { label: "ねこ一覧" }]}
       />,
     );
 

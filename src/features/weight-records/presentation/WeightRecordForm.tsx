@@ -66,7 +66,7 @@ export function WeightRecordForm({
         onChange={(value) => setInputMethod(value as "auto" | "direct")}
       >
         <Radio value="auto">人間込みの体重から自動算出</Radio>
-        <Radio value="direct">猫の体重を直接入力</Radio>
+        <Radio value="direct">ねこの体重を直接入力</Radio>
       </RadioGroup>
 
       {inputMethod === "auto" ? (
@@ -93,7 +93,7 @@ export function WeightRecordForm({
       ) : (
         <FormField
           name="catWeightKg"
-          label="猫の体重（kg）"
+          label="ねこの体重（kg）"
           type="number"
           inputMode="decimal"
           defaultValue={weightRecord?.catWeightKg?.toString()}

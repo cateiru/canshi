@@ -181,13 +181,13 @@ export function ExpenseForm({
       ) : null}
 
       <FormGroup
-        legend="関連する猫"
-        description="複数選択できます。選んだ猫のタイムラインに表示され、どの猫も選ばない場合は共通の支出として保存されます。"
+        legend="関連するねこ"
+        description="複数選択できます。選んだねこのタイムラインに表示され、どのねこも選ばない場合は共通の支出として保存されます。"
         errorMessage={catError}
         isDisabled={isPending}
       >
         {cats.length === 0 ? (
-          <p className={styles.hint}>関連付けられる猫がいません。</p>
+          <p className={styles.hint}>関連付けられるねこがいません。</p>
         ) : (
           <div className={styles.catList}>
             {cats.map((cat) => (

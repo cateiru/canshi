@@ -29,7 +29,7 @@ export default async function NotificationSettingsPage() {
           通知設定
         </RecordPageHeading>
         <p className={styles.description}>
-          この端末での受け取り方と、猫ごとのお知らせを設定できます。
+          この端末での受け取り方と、ねこごとのお知らせを設定できます。
         </p>
       </header>
 
@@ -68,19 +68,19 @@ export default async function NotificationSettingsPage() {
         title={
           <span className={styles.sectionTitle}>
             <CatIcon className={styles.sectionIcon} aria-hidden="true" />
-            猫ごとの通知設定
+            ねこごとの通知設定
           </span>
         }
       >
         <p className={styles.sectionDescription}>
-          記念日やお手入れのお知らせを、猫ごとに設定できます。
+          記念日やお手入れのお知らせを、ねこごとに設定できます。
         </p>
         {cats.length === 0 ? (
           <div className={styles.emptyState}>
             <TbPaw size={32} aria-hidden="true" />
-            <p>まだ猫が登録されていません。</p>
+            <p>まだねこが登録されていません。</p>
             <ButtonLink href="/cats/new" variant="secondary">
-              猫を登録する
+              ねこを登録する
             </ButtonLink>
           </div>
         ) : (

@@ -116,7 +116,7 @@ export function BirthdayCelebration({
               : `今日で${cat.name}は${age}になりました。`}
           </p>
           <div className={styles.trivia}>
-            <p>猫の{age}は、人間に換算すると</p>
+            <p>ねこの{age}は、人間に換算すると</p>
             <p className={styles.humanAge}>約{toHumanAge(milestone)}歳</p>
             <p>{getLifeStageMessage(milestone)}</p>
             <p className={styles.note}>

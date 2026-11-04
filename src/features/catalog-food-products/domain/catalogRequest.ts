@@ -69,7 +69,7 @@ export function formatCatalogSearchCriteria(
     parts.push(`区分：${NUTRITION_TYPE_LABEL[criteria.nutritionType]}`);
   }
   if (criteria.lifeStage) {
-    parts.push(`対象の猫：${LIFE_STAGE_LABEL[criteria.lifeStage]}`);
+    parts.push(`対象のねこ：${LIFE_STAGE_LABEL[criteria.lifeStage]}`);
   }
   if (criteria.targetBreed) {
     parts.push(`対象の猫種：${criteria.targetBreed}`);

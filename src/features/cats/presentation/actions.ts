@@ -133,7 +133,7 @@ export async function updateCatAction(
     };
   }
   if (result === "not-found") {
-    return { formError: "猫が見つかりませんでした" };
+    return { formError: "ねこが見つかりませんでした" };
   }
 
   const profileImageError = await applyProfileImageChange(
