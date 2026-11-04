@@ -141,6 +141,7 @@ Web フォントは読み込まず、システムフォントのみを使用す�
 - 入力欄の通常の枠線とフォーカスリングは分けて扱う。共通の FormField・Textarea は hover 時に `--color-info` を使うが、ごはん記録のように淡い枠線を保つ場合も、キーボード操作時にはアクセント色のフォーカスリングを表示する。エラー状態は hover 時も `--color-error` を維持する
 - 入力欄以外のインタラクティブ要素（Checkbox・Radio・Select・Tabs など）の hover・選択時の強調色は `--color-accent` を使う
 - Checkbox・Radio は、選択中の塗り（チェックの箱・ラジオの点と枠）を `--color-accent-strong` にする。背景との差が 4.5:1 以上あるため、見た目設定のアクセントカラー・テーマに関わらず選択状態が読み取れる
+- Select・ComboBox の候補（共通の ListBoxOption）は、選択中を `color-mix(in srgb, var(--color-accent) 18%, var(--color-bg))` の背景・`--color-accent-strong` の 2px の枠とチェック・太字で示し、どれかを選んでいるときはほかの候補を `--color-ink-muted` にする。hover・キーボードで移動中の候補（DropdownMenu の項目も）は `color-mix(in srgb, var(--color-ink) 7%, var(--color-bg))` の背景で示し、文字色の差だけに頼らない
 - `prefers-reduced-motion: reduce` の環境では `--transition-base` を `0ms` にしてトランジションを無効化する（`globals.css` でグローバルに対応済み）
 
 ## バッジ
