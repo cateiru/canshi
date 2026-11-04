@@ -2,6 +2,8 @@
 
 import { cookies } from "next/headers";
 import {
+  ACCENT_COOKIE_NAME,
+  ACCENTS,
   APPEARANCE_COOKIE_MAX_AGE_SECONDS,
   CONTRAST_COOKIE_NAME,
   CONTRASTS,
@@ -26,6 +28,13 @@ async function saveAppearanceCookie(name: string, value: string) {
 export async function saveThemeAction(value: unknown): Promise<void> {
   if (typeof value === "string" && isOneOf(THEMES, value)) {
     await saveAppearanceCookie(THEME_COOKIE_NAME, value);
+  }
+}
+
+/** この端末のアクセントカラーを保存する。不正な値は保存しない */
+export async function saveAccentAction(value: unknown): Promise<void> {
+  if (typeof value === "string" && isOneOf(ACCENTS, value)) {
+    await saveAppearanceCookie(ACCENT_COOKIE_NAME, value);
   }
 }
 

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseContrast, parseFontSize, parseTheme } from "./preferences";
+import {
+  parseAccent,
+  parseContrast,
+  parseFontSize,
+  parseTheme,
+} from "./preferences";
 
 describe("parseTheme", () => {
   it.each(["light", "dark", "system"] as const)(
@@ -13,6 +18,22 @@ describe("parseTheme", () => {
     "未設定・不正な値（%s）はシステムにする",
     (value) => {
       expect(parseTheme(value)).toBe("system");
+    },
+  );
+});
+
+describe("parseAccent", () => {
+  it.each(["orange", "blue", "green", "pink", "purple"] as const)(
+    "%s はそのまま使う",
+    (value) => {
+      expect(parseAccent(value)).toBe(value);
+    },
+  );
+
+  it.each([undefined, "", "Blue", "red"])(
+    "未設定・不正な値（%s）はオレンジにする",
+    (value) => {
+      expect(parseAccent(value)).toBe("orange");
     },
   );
 });

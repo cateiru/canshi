@@ -4,6 +4,7 @@ const { set } = vi.hoisted(() => ({ set: vi.fn() }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ set }) }));
 
 import {
+  saveAccentAction,
   saveContrastAction,
   saveFontSizeAction,
   saveThemeAction,
@@ -23,6 +24,16 @@ describe("見た目設定の保存", () => {
       expect.objectContaining({ path: "/", sameSite: "lax" }),
     );
     expect(set.mock.calls[0][2].maxAge).toBeGreaterThan(60 * 60 * 24 * 365);
+  });
+
+  it("アクセントカラーを端末の cookie に保存する", async () => {
+    await saveAccentAction("blue");
+
+    expect(set).toHaveBeenCalledWith(
+      "canshi-accent",
+      "blue",
+      expect.anything(),
+    );
   });
 
   it("コントラストを端末の cookie に保存する", async () => {
@@ -48,6 +59,7 @@ describe("見た目設定の保存", () => {
   it.each([
     { label: "テーマ", action: saveThemeAction, value: "sepia" },
     { label: "テーマ", action: saveThemeAction, value: 1 },
+    { label: "アクセントカラー", action: saveAccentAction, value: "red" },
     { label: "コントラスト", action: saveContrastAction, value: "high" },
     { label: "文字サイズ", action: saveFontSizeAction, value: "huge" },
   ])("不正な$label（$value）は保存しない", async ({ action, value }) => {

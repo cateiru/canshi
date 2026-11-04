@@ -1,8 +1,10 @@
 import { cookies } from "next/headers";
 import {
+  ACCENT_COOKIE_NAME,
   type Appearance,
   CONTRAST_COOKIE_NAME,
   FONT_SIZE_COOKIE_NAME,
+  parseAccent,
   parseContrast,
   parseFontSize,
   parseTheme,
@@ -15,6 +17,7 @@ export async function getAppearance(): Promise<Appearance> {
 
   return {
     theme: parseTheme(cookieStore.get(THEME_COOKIE_NAME)?.value),
+    accent: parseAccent(cookieStore.get(ACCENT_COOKIE_NAME)?.value),
     contrast: parseContrast(cookieStore.get(CONTRAST_COOKIE_NAME)?.value),
     fontSize: parseFontSize(cookieStore.get(FONT_SIZE_COOKIE_NAME)?.value),
   };

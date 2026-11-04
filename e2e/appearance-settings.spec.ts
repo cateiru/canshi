@@ -7,7 +7,7 @@ function bodyBackground(page: import("@playwright/test").Page) {
   return page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 }
 
-test("見た目設定でテーマとコントラストを切り替えると、再読み込み後も保たれる", async ({
+test("見た目設定でテーマ・コントラスト・アクセントカラーを切り替えると、再読み込み後も保たれる", async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
@@ -34,6 +34,12 @@ test("見た目設定でテーマとコントラストを切り替えると、�
   await page.getByRole("radio", { name: "上げる" }).click();
   await expect(html).toHaveAttribute("data-contrast", "more");
 
+  await page
+    .getByRole("radiogroup", { name: "アクセントカラー" })
+    .getByTitle("ブルー")
+    .click();
+  await expect(html).toHaveAttribute("data-accent", "blue");
+
   // cookie の保存（Server Action）が終わってから再読み込みする
   await expect
     .poll(async () =>
@@ -42,12 +48,18 @@ test("見た目設定でテーマとコントラストを切り替えると、�
       ),
     )
     .toEqual(
-      expect.arrayContaining(["canshi-theme=dark", "canshi-contrast=more"]),
+      expect.arrayContaining([
+        "canshi-theme=dark",
+        "canshi-contrast=more",
+        "canshi-accent=blue",
+      ]),
     );
   await page.reload();
   await expect(html).toHaveAttribute("data-theme", "dark");
   await expect(html).toHaveAttribute("data-contrast", "more");
+  await expect(html).toHaveAttribute("data-accent", "blue");
   await expect(page.getByRole("radio", { name: "ダーク" })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "ブルー" })).toBeChecked();
   await expect(page.getByRole("radio", { name: "上げる" })).toBeChecked();
   expect(await bodyBackground(page)).toBe(DARK_BG);
 
