@@ -1,0 +1,69 @@
+.option {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  cursor: pointer;
+  outline: none;
+}
+
+/* 選択中と hover 中の候補が隣り合っても、背景・枠がくっついて見えないよう間を空ける */
+.option + .option {
+  margin-top: var(--space-1);
+}
+
+/* どれかを選んでいるときは、選んでいない候補の文字を控えめにして選択中を目立たせる */
+[role="listbox"]:has([data-selected])
+  .option:not([data-selected], [data-hovered], [data-focused]) {
+  color: var(--color-ink-muted);
+}
+
+/* hover・キーボードで移動中の候補は背景で示し、選択中（アクセントカラー）と見分けられるようにする */
+.option[data-hovered],
+.option[data-focused] {
+  background-color: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
+  color: var(--color-ink);
+}
+
+/* 背景の差だけに頼らず、太字・枠・チェックでも選択中を示す */
+.option[data-selected] {
+  background-color: color-mix(
+    in srgb,
+    var(--color-accent) 18%,
+    var(--color-bg)
+  );
+  box-shadow: inset 0 0 0 2px var(--color-accent-strong);
+  color: var(--color-ink);
+  font-weight: var(--font-weight-bold);
+}
+
+.option[data-selected][data-hovered],
+.option[data-selected][data-focused] {
+  background-color: color-mix(
+    in srgb,
+    var(--color-accent) 26%,
+    var(--color-bg)
+  );
+}
+
+.option[data-focus-visible] {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+.label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.selectedMark {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--color-accent-strong);
+}

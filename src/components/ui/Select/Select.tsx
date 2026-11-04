@@ -8,11 +8,11 @@ import {
   FieldError,
   Label,
   ListBox,
-  ListBoxItem,
   Popover,
   SelectValue,
 } from "react-aria-components";
 import { FieldDescription } from "../FormField/FieldDescription";
+import { ListBoxOption } from "../ListBoxOption/ListBoxOption";
 import styles from "./Select.module.css";
 
 export type SelectOption = {
@@ -49,15 +49,7 @@ export function Select({
       </Button>
       <Popover className={styles.popover}>
         <ListBox items={options} className={styles.listbox}>
-          {(option) => (
-            <ListBoxItem
-              id={option.value}
-              textValue={option.label}
-              className={styles.option}
-            >
-              {option.label}
-            </ListBoxItem>
-          )}
+          {(option) => <ListBoxOption id={option.value} label={option.label} />}
         </ListBox>
       </Popover>
       {description ? <FieldDescription>{description}</FieldDescription> : null}

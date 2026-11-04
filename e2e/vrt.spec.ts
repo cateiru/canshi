@@ -71,6 +71,44 @@ test("コンポーネントプレビューページの見た目", async ({ page 
   await takeSnapshot(page, testInfo, { waitForLoaded: false });
 });
 
+// Select の候補を開き、選択中・hover 中・未選択の候補が並んだ状態にする。
+// 一度「オス」を選んでから開き直し、「メス」にマウスを乗せる。
+// 候補のポップオーバーはページの途中に開くため、Select を表示領域に入れてから表示領域だけを撮る
+async function openSelectWithSelection(page: Page) {
+  await page.goto("/dev/components");
+  await expect(
+    page.getByRole("heading", { name: "コンポーネントプレビュー" }),
+  ).toBeVisible();
+  const trigger = page.getByRole("button", { name: /性別/ });
+  await trigger.scrollIntoViewIfNeeded();
+  await trigger.click();
+  await page.getByRole("option", { name: "オス" }).click();
+  await expect(trigger).toContainText("オス");
+  await trigger.click();
+  await expect(page.getByRole("option", { name: "オス" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await page.getByRole("option", { name: "メス" }).hover();
+}
+
+test("Select の候補を開いた見た目", async ({ page }, testInfo) => {
+  await openSelectWithSelection(page);
+  await takeSnapshot(page, testInfo, { fullPage: false, waitForLoaded: false });
+});
+
+test("DropdownMenu を開いた見た目", async ({ page }, testInfo) => {
+  await page.goto("/dev/components");
+  await expect(
+    page.getByRole("heading", { name: "コンポーネントプレビュー" }),
+  ).toBeVisible();
+  const trigger = page.getByRole("button", { name: "追加する" });
+  await trigger.scrollIntoViewIfNeeded();
+  await trigger.click();
+  await page.getByRole("menuitem", { name: "家を作成する" }).hover();
+  await takeSnapshot(page, testInfo, { fullPage: false, waitForLoaded: false });
+});
+
 test("オフラインページの見た目", async ({ page }, testInfo) => {
   await page.goto("/offline");
   await expect(
@@ -623,7 +661,7 @@ for (const { label, theme, contrast } of [
 }
 
 // アクセントカラーは、ボタン・チェックボックス・ラジオ・タブなどアクセントカラーを使う部品が
-// 並ぶコンポーネントプレビューで代表して確認する。標準のオレンジは上の各スナップショットで撮れているため除く。
+// 並ぶコンポーネントプレビューと、選択中の候補にアクセントカラーを使う Select の候補で代表して確認する。標準のオレンジは上の各スナップショットで撮れているため除く。
 // --color-accent-strong はライトとダークで値が違うため、両方のテーマで撮る
 for (const accent of ["blue", "green", "pink", "purple"] as const) {
   for (const { label, theme } of [
@@ -652,6 +690,20 @@ for (const accent of ["blue", "green", "pink", "purple"] as const) {
         // タイムラインの読み込み中のスケルトンを撮るため、aria-busy の要素が残ったまま撮影する
         await expect(page.getByText("記録を読み込んでいます")).toBeAttached();
         await takeSnapshot(page, testInfo, { waitForLoaded: false });
+      });
+
+      test(`Select の候補を開いた見た目（${accent}・${label}）`, async ({
+        page,
+      }, testInfo) => {
+        await openSelectWithSelection(page);
+        await expect(page.locator("html")).toHaveAttribute(
+          "data-accent",
+          accent,
+        );
+        await takeSnapshot(page, testInfo, {
+          fullPage: false,
+          waitForLoaded: false,
+        });
       });
     });
   }

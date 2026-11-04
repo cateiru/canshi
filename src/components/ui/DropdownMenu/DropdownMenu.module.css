@@ -32,8 +32,13 @@
   flex-shrink: 0;
 }
 
+/*
+ * hover・キーボードで移動中の項目は文字色だけでなく背景でも示す。
+ * アクセントカラーによっては文字色の差だけでは、どの項目を指しているか分かりづらいため
+ */
 .item[data-hovered],
 .item[data-focused] {
+  background-color: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
   color: var(--color-accent-strong);
 }
 
