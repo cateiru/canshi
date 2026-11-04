@@ -29,7 +29,7 @@ export default async function NewCatPage({ searchParams }: NewCatPageProps) {
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
+          { label: "ねこ一覧", href: "/cats" },
           { label: "猫を登録する" },
         ]}
       />

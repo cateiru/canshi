@@ -44,7 +44,7 @@ export default async function EditHospitalVisitPage({
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
+          { label: "ねこ一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "通院記録", href: `/cats/${catId}/hospital-visits` },
           { label: "編集する" },

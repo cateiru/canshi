@@ -41,7 +41,7 @@ export default async function EditCleaningRecordPage({
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
+          { label: "ねこ一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "掃除記録", href: `/cats/${catId}/cleaning` },
           {

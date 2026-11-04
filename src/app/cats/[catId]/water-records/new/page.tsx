@@ -28,7 +28,7 @@ export default async function NewWaterRecordPage({
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
-          { label: "猫一覧", href: "/cats" },
+          { label: "ねこ一覧", href: "/cats" },
           { label: cat.name, href: `/cats/${catId}` },
           { label: "水の記録", href: `/cats/${catId}/water-records` },
           { label: "記録する" },

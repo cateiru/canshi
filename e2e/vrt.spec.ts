@@ -96,7 +96,7 @@ test("ホームページの見た目", async ({ page }, testInfo) => {
 
 test("猫一覧ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/cats");
-  await expect(page.getByRole("heading", { name: "猫一覧" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ねこ一覧" })).toBeVisible();
 
   // 固定フィクスチャの年齢とお迎えからの期間は撮影日で変わる。
   // 既存のベースラインを撮影した 2026-09-22 の表示に揃える。

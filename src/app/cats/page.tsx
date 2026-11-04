@@ -89,11 +89,11 @@ export default async function CatsPage() {
     <main className={styles.main}>
       <BirthdayCelebration cats={catList.map(toBirthdayCelebrationCat)} />
       <Breadcrumb
-        items={[{ label: "トップ", href: "/home" }, { label: "猫一覧" }]}
+        items={[{ label: "トップ", href: "/home" }, { label: "ねこ一覧" }]}
       />
 
       <div className={styles.header}>
-        <RecordPageHeading icon={CatIcon}>猫一覧</RecordPageHeading>
+        <RecordPageHeading icon={CatIcon}>ねこ一覧</RecordPageHeading>
         {/* 家がないと猫を登録できないため、家を作成するまでは下の案内から家を作成してもらう */}
         {householdList.length > 0 ? <CatsAddMenu /> : null}
       </div>

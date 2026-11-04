@@ -26,7 +26,7 @@ export default function Home() {
         </p>
         <ButtonLink href="/cats" variant="primary">
           <CatIcon aria-hidden="true" size={24} monochrome />
-          猫一覧を見る
+          ねこ一覧を見る
         </ButtonLink>
       </section>
       <nav aria-label="ホームメニュー" className={styles.menu}>
