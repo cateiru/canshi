@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { MonthNav } from "@/components/ui";
 import { shiftYm } from "@/features/shared/yearMonth";
@@ -10,9 +12,11 @@ import { CalendarSwipeArea } from "./CalendarSwipeArea";
 import { CALENDAR_TRANSITION_TYPE } from "./calendarTransition";
 import { buildTimelineHref } from "./href";
 import styles from "./TimelineCalendar.module.css";
+import { useLatestResolved } from "./useLatestResolved";
 
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 const MAX_VISIBLE_ICONS = 4;
+const EMPTY_DATES_BY_DAY: ReadonlyMap<string, TimelineRecordType[]> = new Map();
 /** 「前の月」「次の月」で移動したときも、ドラッグしたときと同じ向きにカレンダーをスライドさせる */
 const MONTH_NAV_TRANSITION_TYPES = {
   prev: [CALENDAR_TRANSITION_TYPE.prev],
@@ -30,7 +34,14 @@ type TimelineCalendarProps = {
   year: number;
   month: number; // 1-12
   ym: string;
-  datesByDay: Map<string, TimelineRecordType[]>;
+  /**
+   * 記録がある日付ごとの記録種別一覧。Promise を渡すと、解決を待たずに月の枠だけを先に描き、
+   * 解決したらアイコンを表示する。解決するまでは、直前に解決した一覧（前後の月を含む）を
+   * 使い続けるため、月を送った直後や日付を選んだ直後もアイコンが消えない
+   */
+  datesByDay:
+    | ReadonlyMap<string, TimelineRecordType[]>
+    | Promise<ReadonlyMap<string, TimelineRecordType[]>>;
   /** 今日にあたる日付キー（YYYY-MM-DD）。表示中の月に含まれない場合はどのセルにも一致しない */
   todayKey: string;
   /** 選択中の日付キー（YYYY-MM-DD）。未選択なら null */
@@ -46,7 +57,7 @@ function pad2(n: number): string {
 function buildWeeks(
   year: number,
   month: number,
-  datesByDay: Map<string, TimelineRecordType[]>,
+  datesByDay: ReadonlyMap<string, TimelineRecordType[]>,
 ): (CalendarCell | null)[][] {
   const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -75,12 +86,16 @@ export function TimelineCalendar({
   year,
   month,
   ym,
-  datesByDay,
+  datesByDay: datesByDaySource,
   todayKey,
   selectedDate,
   prevHref,
   nextHref,
 }: TimelineCalendarProps) {
+  const { value: datesByDay, pending } = useLatestResolved(
+    datesByDaySource,
+    EMPTY_DATES_BY_DAY,
+  );
   const prevMonth = shiftYm({ year, month }, -1);
   const nextMonth = shiftYm({ year, month }, 1);
 
@@ -128,6 +143,7 @@ export function TimelineCalendar({
           datesByDay={datesByDay}
           todayKey={todayKey}
           selectedDate={selectedDate}
+          busy={pending}
         />
       </CalendarSwipeArea>
 
@@ -157,9 +173,11 @@ type CalendarGridProps = {
   month: number;
   /** 指定すると日付を選べるリンクにする。省略すると、スワイプ中に見せるだけの前後の月として描く */
   ym?: string;
-  datesByDay: Map<string, TimelineRecordType[]>;
+  datesByDay: ReadonlyMap<string, TimelineRecordType[]>;
   todayKey: string;
   selectedDate: string | null;
+  /** 記録の有無（アイコン）を読み込んでいるあいだ true にする */
+  busy?: boolean;
 };
 
 function CalendarGrid({
@@ -170,11 +188,12 @@ function CalendarGrid({
   datesByDay,
   todayKey,
   selectedDate,
+  busy = false,
 }: CalendarGridProps) {
   const weeks = buildWeeks(year, month, datesByDay);
 
   return (
-    <table className={styles.grid}>
+    <table className={styles.grid} aria-busy={busy || undefined}>
       <caption className={styles.srOnly}>
         {year}年{month}月のタイムラインカレンダー
       </caption>

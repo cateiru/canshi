@@ -104,6 +104,10 @@ export async function takeSnapshot(
     page.locator(selector),
   );
 
+  // 読み込みを待たずに描画する部分（タイムラインの記録の一覧・カレンダーのアイコンなど）は
+  // aria-busy="true" を付けている。読み込み途中の見た目を撮らないよう、終わるまで待つ
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+
   await page.addStyleTag({
     content: `${ALWAYS_HIDDEN_SELECTORS.join(", ")} { display: none !important; }`,
   });
