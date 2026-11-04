@@ -48,7 +48,7 @@ export async function updateMedicationDose(
   );
 }
 
-/** 薬の投薬記録を削除する。見つからなければ false */
+/** 薬の投薬記録を論理削除する（削除日時を入れ、一覧・タイムラインから除く）。見つからなければ false */
 export async function deleteMedicationDose(
   catId: string,
   medicationId: string,

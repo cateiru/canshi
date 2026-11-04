@@ -18,6 +18,6 @@ export interface MedicationDoseRepository {
     id: string,
     content: MedicationDoseContent,
   ): Promise<boolean>;
-  /** 投薬実績を削除する。見つからなければ false */
+  /** 投薬実績を論理削除する。見つからない・削除済みなら false */
   remove(catId: string, medicationId: string, id: string): Promise<boolean>;
 }

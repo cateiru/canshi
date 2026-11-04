@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   expenseRecordHospitalVisits,
@@ -15,7 +15,11 @@ export function createHospitalVisitRepository(
 ): HospitalVisitRepository {
   const db = getDb(d1);
   const byId = (catId: string, id: string) =>
-    and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId));
+    and(
+      eq(hospitalVisits.id, id),
+      eq(hospitalVisits.catId, catId),
+      isNull(hospitalVisits.deletedAt),
+    );
 
   return {
     async existsForCat(catId, id) {
@@ -59,9 +63,9 @@ export function createHospitalVisitRepository(
     },
 
     async remove(catId, id) {
-      // symptoms.hospital_visit_id / medications.hospital_visit_id /
-      // expense_record_hospital_visits からの外部キー参照があるため、通院記録を
-      // 削除する前に紐付けを解除しておく。支出記録は家計簿として残す必要があるため、
+      // 通院記録は論理削除する。症状・投薬・支出記録から削除済みの通院記録を指したままにしないよう、
+      // それらからの紐付け（symptoms.hospital_visit_id / medications.hospital_visit_id /
+      // expense_record_hospital_visits）は外す。支出記録は家計簿として残す必要があるため、
       // 紐付けだけ外して記録自体は削除しない。一連の操作は db.batch でまとめて
       // 原子的に実行する
       await db.batch([
@@ -83,7 +87,10 @@ export function createHospitalVisitRepository(
         db
           .delete(expenseRecordHospitalVisits)
           .where(eq(expenseRecordHospitalVisits.hospitalVisitId, id)),
-        db.delete(hospitalVisits).where(byId(catId, id)),
+        db
+          .update(hospitalVisits)
+          .set({ deletedAt: new Date() })
+          .where(byId(catId, id)),
       ]);
     },
   };

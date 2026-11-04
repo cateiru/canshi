@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import type { getDb } from "@/db/client";
 import {
@@ -6,12 +6,10 @@ import {
   expenseRecordHospitalVisits,
   expenseRecords,
 } from "@/db/schema";
-import { deleteMediaAssetsByRecord } from "@/features/media/infrastructure/storage";
 import {
   combineDateTimeUtc,
   splitDateTimeUtc,
 } from "@/features/shared/datetime";
-import { EXPENSE_MEDIA_TYPE } from "../domain/media";
 import { deleteExpenseStatements } from "./storage";
 
 export type SyncHospitalVisitExpenseParams = {
@@ -21,7 +19,7 @@ export type SyncHospitalVisitExpenseParams = {
   householdId: string;
   /** 通院記録の受診日時。支出日は同じ日付の 00:00 に揃える */
   visitedAt: Date;
-  /** 病院代。null のときは紐付く支出記録を削除する（他の通院記録と共有していれば紐付けだけ外す） */
+  /** 病院代。null のときは紐付く支出記録を論理削除する（他の通院記録と共有していれば紐付けだけ外す） */
   amountYen: number | null;
   /**
    * 病院代を入力せずに、既存の支出記録（同じ日の「病院」）へ紐付けるときの支出記録 ID。
@@ -93,8 +91,7 @@ export async function saveHospitalVisitWithExpense(
           ),
       );
     } else if (existing != null) {
-      // メディアは DB 外にあるため、既存の削除規約に従って先に片付ける。
-      await deleteMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, existing.id);
+      // 支出記録を論理削除する。添付の写真は残す
       statements.push(...deleteExpenseStatements(db, existing.id));
     } else if (linkExpenseRecordId != null) {
       statements.push(
@@ -124,7 +121,12 @@ export async function saveHospitalVisitWithExpense(
             ? { amountYen, updatedAt: new Date() }
             : { amountYen, spentAt, updatedAt: new Date() },
         )
-        .where(eq(expenseRecords.id, existing.id)),
+        .where(
+          and(
+            eq(expenseRecords.id, existing.id),
+            isNull(expenseRecords.deletedAt),
+          ),
+        ),
     );
   } else {
     const id = crypto.randomUUID();

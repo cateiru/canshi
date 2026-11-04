@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { medicationDoses } from "@/db/schema";
 import type { MedicationDoseRepository } from "../domain/medicationDoseRepository";
@@ -13,6 +13,7 @@ export function createMedicationDoseRepository(
       eq(medicationDoses.id, id),
       eq(medicationDoses.catId, catId),
       eq(medicationDoses.medicationId, medicationId),
+      isNull(medicationDoses.deletedAt),
     );
   return {
     async add(catId, medicationId, content) {
@@ -32,7 +33,9 @@ export function createMedicationDoseRepository(
     },
     async remove(catId, medicationId, id) {
       const result = await db
-        .delete(medicationDoses)
+        .update(medicationDoses)
+        // 論理削除。削除済みの記録は読み取り・更新から除く
+        .set({ deletedAt: new Date() })
         .where(byId(catId, medicationId, id))
         .returning({ id: medicationDoses.id });
       return result.length > 0;

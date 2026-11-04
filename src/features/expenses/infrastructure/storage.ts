@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { chunk, D1_MAX_BOUND_PARAMETERS } from "@/db/batch";
 import type { getDb } from "@/db/client";
 import {
@@ -38,16 +38,19 @@ export function insertExpenseHospitalVisits(
   );
 }
 
-/** 呼び出し元で添付メディアを削除した後、同じ batch 内で実行する。 */
+/**
+ * 支出記録を論理削除する文。同じ batch 内で実行する。
+ * 関連する猫（`expense_record_cats`）と添付の写真は記録の中身として残し、
+ * 通院記録とは病院代としての紐付けだけを外す（通院記録は残す）
+ */
 export function deleteExpenseStatements(db: Db, id: string) {
   return [
     db
-      .delete(expenseRecordCats)
-      .where(eq(expenseRecordCats.expenseRecordId, id)),
-    // 通院記録は残し、病院代としての紐付けだけを外す
-    db
       .delete(expenseRecordHospitalVisits)
       .where(eq(expenseRecordHospitalVisits.expenseRecordId, id)),
-    db.delete(expenseRecords).where(eq(expenseRecords.id, id)),
+    db
+      .update(expenseRecords)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(expenseRecords.id, id), isNull(expenseRecords.deletedAt))),
   ] as const;
 }

@@ -114,7 +114,7 @@ PR のレビューコメント（インラインコメント・レビュー本�
   - overrides は層ごとに対象が重ならないようにする。
 - application の関数（`mutations.ts` など）と queries の関数は、最後の引数で D1 を `d1?: D1Database` として受け取る。
   MCP のツールは `ctx.env.DB` を渡す。画面からは省略してよい。
-  画像（R2）の削除を伴う関数（`deleteMedication` など）は、今は画面からだけ使うため受け取らない。
+  画像（R2）の削除を伴う関数（`deleteCatForUser` など）は、今は画面からだけ使うため受け取らない。
 - 認可（`requireCatAccess`、MCP の権限の確認）は、presentation で行う。application の関数には確認済みの ID を渡す。
   ただし、確認から書き込みまでの間に家から外された場合に備えて、リポジトリの文の中でも所属を確かめる場合がある
   （`createFoodProduct` など）。

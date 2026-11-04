@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lt } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
@@ -82,7 +82,12 @@ export async function listHospitalVisitIdsByExpenseRecords(
         hospitalVisits,
         eq(expenseRecordHospitalVisits.hospitalVisitId, hospitalVisits.id),
       )
-      .where(inArray(expenseRecordHospitalVisits.expenseRecordId, ids))
+      .where(
+        and(
+          inArray(expenseRecordHospitalVisits.expenseRecordId, ids),
+          isNull(hospitalVisits.deletedAt),
+        ),
+      )
       .orderBy(asc(hospitalVisits.visitedAt), asc(hospitalVisits.id));
     for (const row of rows) {
       const list = grouped.get(row.expenseRecordId) ?? [];
@@ -127,6 +132,7 @@ export async function listExpensesForMonth(
   const range = getMonthRangeUtc(year, month);
   const inMonth = and(
     eq(expenseRecords.householdId, householdId),
+    isNull(expenseRecords.deletedAt),
     gte(expenseRecords.spentAt, range.start),
     lt(expenseRecords.spentAt, range.end),
   );
@@ -190,6 +196,7 @@ export async function listExpenseAmountsForMonthRange(
     .where(
       and(
         eq(expenseRecords.householdId, householdId),
+        isNull(expenseRecords.deletedAt),
         gte(expenseRecords.spentAt, start),
         lt(expenseRecords.spentAt, end),
         forCat,
@@ -210,6 +217,7 @@ export async function getExpenseById(
       and(
         eq(expenseRecords.id, id),
         eq(expenseRecords.householdId, householdId),
+        isNull(expenseRecords.deletedAt),
       ),
     )
     .limit(1);
@@ -254,7 +262,12 @@ export async function listExpensesByHospitalVisitIds(
           expenseRecords,
           eq(expenseRecordHospitalVisits.expenseRecordId, expenseRecords.id),
         )
-        .where(inArray(expenseRecordHospitalVisits.hospitalVisitId, ids))),
+        .where(
+          and(
+            inArray(expenseRecordHospitalVisits.hospitalVisitId, ids),
+            isNull(expenseRecords.deletedAt),
+          ),
+        )),
     );
   }
   const uniqueRecords = [
@@ -298,6 +311,7 @@ export async function listHospitalExpensesOnDate(
       and(
         eq(expenseRecords.householdId, householdId),
         eq(expenseRecords.category, "hospital"),
+        isNull(expenseRecords.deletedAt),
         gte(expenseRecords.spentAt, start),
         lt(expenseRecords.spentAt, end),
       ),
@@ -349,7 +363,13 @@ export async function getExpenseRecordForCat(
       expenseRecordCats,
       eq(expenseRecordCats.expenseRecordId, expenseRecords.id),
     )
-    .where(and(eq(expenseRecords.id, id), eq(expenseRecordCats.catId, catId)))
+    .where(
+      and(
+        eq(expenseRecords.id, id),
+        eq(expenseRecordCats.catId, catId),
+        isNull(expenseRecords.deletedAt),
+      ),
+    )
     .limit(1);
   if (!row) return null;
   const [catRows, visitRows] = await Promise.all([

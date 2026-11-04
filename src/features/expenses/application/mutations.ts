@@ -1,11 +1,9 @@
-import { deleteMediaAssetsByRecord } from "@/features/media/infrastructure/storage";
 import {
   hospitalVisitIdsToLink,
   type ResolvedExpenseLinks,
   resolveExpenseLinks,
   toExpenseRecordContent,
 } from "../domain/expenseRecord";
-import { EXPENSE_MEDIA_TYPE } from "../domain/media";
 import type {
   ExpenseFormFieldErrors,
   ExpenseFormInput,
@@ -98,17 +96,16 @@ export async function updateExpense(
 }
 
 /**
- * 家の支出記録を、紐付く写真（R2 のオブジェクトと media_assets 行）と猫・通院記録との
- * 紐付けごと削除する。見つからなければ false
+ * 家の支出記録を論理削除する（削除日時を入れ、一覧・集計から除く）。通院記録との紐付けは外す。
+ * 紐付く写真（R2 のオブジェクトと media_assets 行）は消さずに残す。見つからなければ false
  */
 export async function deleteExpense(
   householdId: string,
   id: string,
+  d1?: D1Database,
 ): Promise<boolean> {
-  const repository = createExpenseRecordRepository();
+  const repository = createExpenseRecordRepository(d1);
   if (!(await repository.findForHousehold(householdId, id))) return false;
-  // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
-  await deleteMediaAssetsByRecord(EXPENSE_MEDIA_TYPE, id);
   await repository.remove(id);
   return true;
 }

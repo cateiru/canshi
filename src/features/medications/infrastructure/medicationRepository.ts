@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { medicationDoses, medications } from "@/db/schema";
 import type { MedicationRepository } from "../domain/medicationRepository";
@@ -9,7 +9,11 @@ export function createMedicationRepository(
 ): MedicationRepository {
   const db = getDb(d1);
   const byId = (catId: string, id: string) =>
-    and(eq(medications.id, id), eq(medications.catId, catId));
+    and(
+      eq(medications.id, id),
+      eq(medications.catId, catId),
+      isNull(medications.deletedAt),
+    );
   return {
     async existsForCat(catId, id) {
       const [row] = await db
@@ -35,18 +39,21 @@ export function createMedicationRepository(
       return result.length > 0;
     },
     async remove(catId, id) {
-      // medication_doses から medications への外部キー制約があるため投薬実績も同時に削除する。
-      // 2つの delete の間に別リクエストが割り込まないよう、D1 の batch で原子的に実行する
+      // 服薬予定と、その投薬実績をまとめて論理削除する。2つの更新の間に別リクエストが
+      // 割り込まないよう、D1 の batch で原子的に実行する
+      const deletedAt = new Date();
       await db.batch([
         db
-          .delete(medicationDoses)
+          .update(medicationDoses)
+          .set({ deletedAt })
           .where(
             and(
               eq(medicationDoses.medicationId, id),
               eq(medicationDoses.catId, catId),
+              isNull(medicationDoses.deletedAt),
             ),
           ),
-        db.delete(medications).where(byId(catId, id)),
+        db.update(medications).set({ deletedAt }).where(byId(catId, id)),
       ]);
     },
     async setArchivedAt(catId, id, archivedAt) {

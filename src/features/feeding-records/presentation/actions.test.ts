@@ -84,18 +84,17 @@ async function itemsOf(feedingRecordId: string) {
 }
 
 describe("deleteFeedingRecordAction", () => {
-  it("記録と明細を削除する", async () => {
+  it("記録を論理削除し、明細は残す", async () => {
     await expect(
       deleteFeedingRecordAction("tama", "tama-meal"),
     ).rejects.toThrow("REDIRECT:/cats/tama/feeding-records");
 
-    expect(await itemsOf("tama-meal")).toEqual([]);
-    expect(
-      await db
-        .select()
-        .from(feedingRecords)
-        .where(eq(feedingRecords.id, "tama-meal")),
-    ).toEqual([]);
+    expect(await itemsOf("tama-meal")).toHaveLength(1);
+    const [record] = await db
+      .select()
+      .from(feedingRecords)
+      .where(eq(feedingRecords.id, "tama-meal"));
+    expect(record.deletedAt).toBeInstanceOf(Date);
   });
 
   it("別の猫の記録 ID を渡しても、記録も明細も削除しない", async () => {

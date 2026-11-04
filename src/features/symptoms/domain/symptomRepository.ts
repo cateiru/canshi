@@ -12,7 +12,7 @@ export interface SymptomRepository {
   /** 記録を書き換える。見つからなければ false */
   update(catId: string, id: string, content: SymptomContent): Promise<boolean>;
   /**
-   * 記録を削除する。投薬・通院記録からの紐付けは外してそれらの記録は残し、
+   * 記録を論理削除する。投薬・通院記録からの紐付けは外してそれらの記録は残し、
    * この症状の確認通知（`symptom_ongoing`）は削除する
    */
   remove(catId: string, id: string): Promise<void>;

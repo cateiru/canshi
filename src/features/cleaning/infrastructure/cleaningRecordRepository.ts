@@ -1,4 +1,4 @@
-import { and, eq, inArray, lt } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { cleaningRecords, notifications } from "@/db/schema";
 import type { CleaningRecordRepository } from "../domain/cleaningRecordRepository";
@@ -13,6 +13,7 @@ export function createCleaningRecordRepository(
       eq(cleaningRecords.id, id),
       eq(cleaningRecords.catId, catId),
       eq(cleaningRecords.cleaningTargetId, cleaningTargetId),
+      isNull(cleaningRecords.deletedAt),
     );
 
   /** 掃除対象の未対応の掃除の通知のうち、`dueBefore` より前の予定日のものを完了にする文 */
@@ -91,7 +92,9 @@ export function createCleaningRecordRepository(
     },
     async remove(catId, cleaningTargetId, id) {
       const result = await db
-        .delete(cleaningRecords)
+        .update(cleaningRecords)
+        // 論理削除。削除済みの記録は読み取り・更新から除く
+        .set({ deletedAt: new Date() })
         .where(byId(catId, cleaningTargetId, id))
         .returning({ id: cleaningRecords.id });
       return result.length > 0;

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   brushingRecords,
@@ -81,6 +81,7 @@ async function fetchFeedingEntries(
     .where(
       and(
         eq(feedingRecords.catId, catId),
+        isNull(feedingRecords.deletedAt),
         gte(feedingRecords.occurredAt, range.start),
         lt(feedingRecords.occurredAt, range.end),
       ),
@@ -118,6 +119,7 @@ async function fetchFeedingEntries(
     .where(
       and(
         eq(feedingRecords.catId, catId),
+        isNull(feedingRecords.deletedAt),
         gte(feedingRecords.occurredAt, range.start),
         lt(feedingRecords.occurredAt, range.end),
       ),
@@ -165,6 +167,7 @@ async function fetchPoopEntries(
     .where(
       and(
         eq(poopRecords.catId, catId),
+        isNull(poopRecords.deletedAt),
         gte(poopRecords.occurredAt, range.start),
         lt(poopRecords.occurredAt, range.end),
       ),
@@ -192,6 +195,7 @@ async function fetchWeightEntries(
     .where(
       and(
         eq(weightRecords.catId, catId),
+        isNull(weightRecords.deletedAt),
         gte(weightRecords.occurredAt, range.start),
         lt(weightRecords.occurredAt, range.end),
       ),
@@ -219,6 +223,7 @@ async function fetchVomitEntries(
     .where(
       and(
         eq(vomitRecords.catId, catId),
+        isNull(vomitRecords.deletedAt),
         gte(vomitRecords.occurredAt, range.start),
         lt(vomitRecords.occurredAt, range.end),
       ),
@@ -246,6 +251,7 @@ async function fetchWaterEntries(
     .where(
       and(
         eq(waterRecords.catId, catId),
+        isNull(waterRecords.deletedAt),
         gte(waterRecords.occurredAt, range.start),
         lt(waterRecords.occurredAt, range.end),
       ),
@@ -273,6 +279,7 @@ async function fetchShampooEntries(
     .where(
       and(
         eq(shampooRecords.catId, catId),
+        isNull(shampooRecords.deletedAt),
         gte(shampooRecords.performedAt, range.start),
         lt(shampooRecords.performedAt, range.end),
       ),
@@ -300,6 +307,7 @@ async function fetchBrushingEntries(
     .where(
       and(
         eq(brushingRecords.catId, catId),
+        isNull(brushingRecords.deletedAt),
         gte(brushingRecords.performedAt, range.start),
         lt(brushingRecords.performedAt, range.end),
       ),
@@ -328,6 +336,7 @@ async function fetchMemoEntries(
     .where(
       and(
         eq(memoRecords.catId, catId),
+        isNull(memoRecords.deletedAt),
         gte(memoRecords.recordedAt, range.start),
         lt(memoRecords.recordedAt, range.end),
       ),
@@ -367,6 +376,7 @@ async function fetchCleaningEntries(
       memo: cleaningRecords.memo,
       createdAt: cleaningRecords.createdAt,
       updatedAt: cleaningRecords.updatedAt,
+      deletedAt: cleaningRecords.deletedAt,
     })
     .from(cleaningRecords)
     .innerJoin(
@@ -376,6 +386,7 @@ async function fetchCleaningEntries(
     .where(
       and(
         eq(cleaningRecords.catId, catId),
+        isNull(cleaningRecords.deletedAt),
         gte(cleaningRecords.performedAt, range.start),
         lt(cleaningRecords.performedAt, range.end),
       ),
@@ -403,6 +414,7 @@ async function fetchSymptomEntries(
     .where(
       and(
         eq(symptoms.catId, catId),
+        isNull(symptoms.deletedAt),
         gte(symptoms.onsetAt, range.start),
         lt(symptoms.onsetAt, range.end),
       ),
@@ -435,12 +447,15 @@ async function fetchMedicationDoseEntries(
       memo: medicationDoses.memo,
       createdAt: medicationDoses.createdAt,
       updatedAt: medicationDoses.updatedAt,
+      deletedAt: medicationDoses.deletedAt,
     })
     .from(medicationDoses)
     .innerJoin(medications, eq(medicationDoses.medicationId, medications.id))
     .where(
       and(
         eq(medicationDoses.catId, catId),
+        isNull(medicationDoses.deletedAt),
+        isNull(medications.deletedAt),
         gte(medicationDoses.occurredAt, range.start),
         lt(medicationDoses.occurredAt, range.end),
       ),
@@ -468,6 +483,7 @@ async function fetchHospitalVisitEntries(
     .where(
       and(
         eq(hospitalVisits.catId, catId),
+        isNull(hospitalVisits.deletedAt),
         gte(hospitalVisits.visitedAt, range.start),
         lt(hospitalVisits.visitedAt, range.end),
       ),
@@ -504,6 +520,7 @@ async function fetchExpenseEntries(
     .where(
       and(
         eq(expenseRecordCats.catId, catId),
+        isNull(expenseRecords.deletedAt),
         eq(
           expenseRecords.householdId,
           db

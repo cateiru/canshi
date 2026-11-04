@@ -29,6 +29,6 @@ export interface CleaningRecordRepository {
     content: CleaningRecordContent,
     completeNotificationsDueBefore: Date | null,
   ): Promise<boolean>;
-  /** 実施記録を削除する。見つからなければ false */
+  /** 実施記録を論理削除する。見つからない・削除済みなら false */
   remove(catId: string, cleaningTargetId: string, id: string): Promise<boolean>;
 }

@@ -1,8 +1,6 @@
 import { createHospitalVisitRepository } from "@/features/hospital-visits/infrastructure/hospitalVisitRepository";
-import { deleteMediaAssetsByRecord } from "@/features/media/infrastructure/storage";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
 import { createSymptomRepository } from "@/features/symptoms/infrastructure/symptomRepository";
-import { MEDICATION_MEDIA_TYPE } from "../domain/media";
 import { toMedicationContent } from "../domain/medication";
 import type { MedicationFormInput } from "../domain/schema";
 import { createMedicationRepository } from "../infrastructure/medicationRepository";
@@ -81,19 +79,16 @@ export async function updateMedication(
 }
 
 /**
- * 猫の服薬予定を、投薬実績と紐付く写真（R2 のオブジェクトと media_assets 行）ごと削除する。
- * 見つからなければ false
+ * 猫の服薬予定を、投薬実績ごと論理削除する（削除日時を入れ、一覧・タイムラインから除く）。
+ * 紐付く写真（R2 のオブジェクトと media_assets 行）は消さずに残す。見つからなければ false
  */
 export async function deleteMedication(
   catId: string,
   id: string,
+  d1?: D1Database,
 ): Promise<boolean> {
-  const repository = createMedicationRepository();
-  // 添付の削除は記録 ID だけで行うため、先に記録がこの猫のものであることを確かめる。
-  // 確かめないと、自分の猫の catId と別の家の記録 ID を渡して添付を消せてしまう
+  const repository = createMedicationRepository(d1);
   if (!(await repository.existsForCat(catId, id))) return false;
-  // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
-  await deleteMediaAssetsByRecord(MEDICATION_MEDIA_TYPE, id);
   await repository.remove(catId, id);
   return true;
 }

@@ -24,7 +24,7 @@ export interface HospitalVisitRepository {
     expense: HospitalVisitExpenseChange,
   ): Promise<void>;
   /**
-   * 通院記録を削除する。症状・投薬・支出記録からの紐付けは外し、それらの記録は残す
+   * 通院記録を論理削除する。症状・投薬・支出記録からの紐付けは外し、それらの記録は残す
    */
   remove(catId: string, id: string): Promise<void>;
 }

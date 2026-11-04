@@ -15,7 +15,7 @@ export interface MedicationRepository {
     id: string,
     content: MedicationContent,
   ): Promise<boolean>;
-  /** 服薬予定を、投薬実績ごと削除する */
+  /** 服薬予定を、投薬実績ごと論理削除する */
   remove(catId: string, id: string): Promise<void>;
   /** 服薬歴へ移した日時を設定する。null なら服薬予定に戻す */
   setArchivedAt(

@@ -100,7 +100,7 @@ export async function updateFeedingRecord(
   return { id };
 }
 
-/** 猫のごはん記録を明細ごと削除する。見つからなければ false */
+/** 猫のごはん記録を論理削除する（削除日時を入れ、一覧・タイムライン・集計から除く。明細は残す）。見つからなければ false */
 export async function deleteFeedingRecord(
   catId: string,
   id: string,

@@ -345,6 +345,69 @@ describe("listTimelineForMonth", () => {
     });
   });
 
+  it("論理削除した記録は含めない", async () => {
+    await db.insert(households).values({ id: "deleted-home", name: "わが家" });
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "しろ", sex: "female", householdId: "deleted-home" })
+      .returning();
+    const [food] = await db
+      .insert(foodProducts)
+      .values({
+        name: "ウェット",
+        kcalPer100g: 80,
+        packageAmountG: 70,
+        nutritionType: "complete",
+        textureType: "wet",
+      })
+      .returning();
+    const deletedAt = new Date("2026-07-20T00:00:00.000Z");
+    await db.insert(poopRecords).values([
+      {
+        id: "deleted-poop-live",
+        catId: cat.id,
+        occurredAt: new Date("2026-07-10T00:00:00.000Z"),
+        consistency: "normal",
+      },
+      {
+        id: "deleted-poop-deleted",
+        catId: cat.id,
+        occurredAt: new Date("2026-07-11T00:00:00.000Z"),
+        consistency: "soft",
+        deletedAt,
+      },
+    ]);
+    await db.insert(feedingRecords).values({
+      id: "deleted-meal",
+      catId: cat.id,
+      occurredAt: new Date("2026-07-12T00:00:00.000Z"),
+      deletedAt,
+    });
+    await db.insert(feedingRecordItems).values({
+      feedingRecordId: "deleted-meal",
+      foodProductId: food.id,
+      givenAmountG: 30,
+    });
+    await db.insert(expenseRecords).values({
+      id: "deleted-expense",
+      householdId: "deleted-home",
+      spentAt: new Date("2026-07-13T00:00:00.000Z"),
+      amountYen: 3000,
+      category: "food",
+      deletedAt,
+    });
+    await db
+      .insert(expenseRecordCats)
+      .values({ expenseRecordId: "deleted-expense", catId: cat.id });
+
+    const result = await listTimelineForMonth(cat.id, 2026, 7);
+
+    expect(result.entries.map((entry) => entry.id)).toEqual([
+      "deleted-poop-live",
+    ]);
+    expect([...result.datesByDay.keys()]).toEqual(["2026-07-10"]);
+  });
+
   it("ごはんの記録が多くても、明細を D1 のバインドパラメーターの上限内で取得する", async () => {
     const [cat] = await db
       .insert(cats)

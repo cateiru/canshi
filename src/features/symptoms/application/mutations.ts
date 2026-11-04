@@ -1,7 +1,5 @@
 import { createHospitalVisitRepository } from "@/features/hospital-visits/infrastructure/hospitalVisitRepository";
-import { deleteMediaAssetsByRecord } from "@/features/media/infrastructure/storage";
 import { createNotificationRepository } from "@/features/notifications/infrastructure/notificationRepository";
-import { SYMPTOM_MEDIA_TYPE } from "../domain/media";
 import type { SymptomFormInput } from "../domain/schema";
 import { toSymptomContent } from "../domain/symptom";
 import { createSymptomRepository } from "../infrastructure/symptomRepository";
@@ -83,19 +81,17 @@ export async function updateSymptom(
 }
 
 /**
- * 猫の症状の記録を、紐付く写真・動画（R2 のオブジェクトと media_assets 行）と確認通知ごと削除する。
- * 投薬・通院記録からの紐付けは外し、それらの記録は残す。見つからなければ false
+ * 猫の症状の記録を論理削除し（削除日時を入れ、一覧・タイムラインから除く）、確認通知を削除する。
+ * 投薬・通院記録からの紐付けは外し、それらの記録は残す。
+ * 紐付く写真・動画（R2 のオブジェクトと media_assets 行）は消さずに残す。見つからなければ false
  */
 export async function deleteSymptom(
   catId: string,
   id: string,
+  d1?: D1Database,
 ): Promise<boolean> {
-  const repository = createSymptomRepository();
-  // 添付の削除は記録 ID だけで行うため、先に記録がこの猫のものであることを確かめる。
-  // 確かめないと、自分の猫の catId と別の家の記録 ID を渡して添付を消せてしまう
+  const repository = createSymptomRepository(d1);
   if (!(await repository.existsForCat(catId, id))) return false;
-  // 紐付く写真・動画（R2 のオブジェクトと media_assets 行）を先に削除する
-  await deleteMediaAssetsByRecord(SYMPTOM_MEDIA_TYPE, id);
   await repository.remove(catId, id);
   return true;
 }

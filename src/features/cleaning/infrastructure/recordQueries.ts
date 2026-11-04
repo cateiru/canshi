@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { type CleaningRecord, cleaningRecords } from "@/db/schema";
 
@@ -7,7 +7,12 @@ export async function listCleaningRecords(cleaningTargetId: string) {
   return db
     .select()
     .from(cleaningRecords)
-    .where(eq(cleaningRecords.cleaningTargetId, cleaningTargetId))
+    .where(
+      and(
+        eq(cleaningRecords.cleaningTargetId, cleaningTargetId),
+        isNull(cleaningRecords.deletedAt),
+      ),
+    )
     .orderBy(desc(cleaningRecords.performedAt));
 }
 
@@ -16,7 +21,7 @@ export async function getCleaningRecordById(id: string) {
   const [record] = await db
     .select()
     .from(cleaningRecords)
-    .where(eq(cleaningRecords.id, id))
+    .where(and(eq(cleaningRecords.id, id), isNull(cleaningRecords.deletedAt)))
     .limit(1);
   return record ?? null;
 }
@@ -30,7 +35,13 @@ export async function getCleaningRecordForCat(
   const [record] = await getDb(d1)
     .select()
     .from(cleaningRecords)
-    .where(and(eq(cleaningRecords.id, id), eq(cleaningRecords.catId, catId)))
+    .where(
+      and(
+        eq(cleaningRecords.id, id),
+        eq(cleaningRecords.catId, catId),
+        isNull(cleaningRecords.deletedAt),
+      ),
+    )
     .limit(1);
   return record ?? null;
 }

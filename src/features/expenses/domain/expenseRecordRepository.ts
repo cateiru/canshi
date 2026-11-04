@@ -35,6 +35,6 @@ export interface ExpenseRecordRepository {
     content: ExpenseRecordContent,
     links: ExpenseLinks,
   ): Promise<void>;
-  /** 支出記録を、猫・通院記録との紐付けごと削除する。通院記録は残す */
+  /** 支出記録を論理削除する。通院記録との紐付けは外し、通院記録は残す。関連する猫と写真は残す */
   remove(id: string): Promise<void>;
 }

@@ -1,9 +1,7 @@
 import { isLinkableToHospitalVisit } from "@/features/expenses/domain/expenseRecord";
 import { createExpenseRecordRepository } from "@/features/expenses/infrastructure/expenseRecordRepository";
-import { deleteMediaAssetsByRecord } from "@/features/media/infrastructure/storage";
 import { createSymptomRepository } from "@/features/symptoms/infrastructure/symptomRepository";
 import { toHospitalVisitContent } from "../domain/hospitalVisit";
-import { HOSPITAL_VISIT_MEDIA_TYPE } from "../domain/media";
 import type { HospitalVisitFormInput } from "../domain/schema";
 import { createHospitalVisitRepository } from "../infrastructure/hospitalVisitRepository";
 
@@ -115,17 +113,17 @@ export async function updateHospitalVisit(
 }
 
 /**
- * 猫の通院記録を、紐付く写真（R2 のオブジェクトと media_assets 行）ごと削除する。
- * 症状・投薬・支出記録からの紐付けは外し、それらの記録は残す。見つからなければ false
+ * 猫の通院記録を論理削除する（削除日時を入れ、一覧・タイムラインから除く）。
+ * 症状・投薬・支出記録からの紐付けは外し、それらの記録は残す。
+ * 紐付く写真（R2 のオブジェクトと media_assets 行）は消さずに残す。見つからなければ false
  */
 export async function deleteHospitalVisit(
   catId: string,
   id: string,
+  d1?: D1Database,
 ): Promise<boolean> {
-  const repository = createHospitalVisitRepository();
+  const repository = createHospitalVisitRepository(d1);
   if (!(await repository.existsForCat(catId, id))) return false;
-  // 紐付く写真（R2 のオブジェクトと media_assets 行）を先に削除する
-  await deleteMediaAssetsByRecord(HOSPITAL_VISIT_MEDIA_TYPE, id);
   await repository.remove(catId, id);
   return true;
 }

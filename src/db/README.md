@@ -43,6 +43,22 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - ごはん記録の明細（`feeding_record_items`）は、記録ごとにまとめて読むため `feeding_record_id` にインデックスを設定する
     （`0061` で、商品がごはん記録に使われているかを調べるため `food_product_id` にもインデックスを追加した）
 
+- 記録テーブル（上の一覧の 12 テーブルと `medications`・`expense_records`）は `deleted_at`（nullable の timestamp、`0063`）を持ち、
+  記録の削除は行を消さずに `deleted_at` に削除日時を入れる論理削除にする
+  - `deleted_at` が NULL でない行は削除済みとして、一覧・タイムライン・集計・通知の判定・MCP・写真の参照の権限確認
+    （`src/features/media/infrastructure/recordOwner.ts`）など、すべての読み取りと更新から除く。記録テーブルを読む・
+    更新するクエリを追加するときは、必ず `isNull(<table>.deletedAt)` を条件に含める
+  - 削除済みの記録を見る画面・復元する操作は持たない
+  - 記録の中身として持つ行（ごはん記録の明細 `feeding_record_items`、支出記録の関連する猫 `expense_record_cats`）と
+    添付の写真（`media_assets` と R2 のオブジェクト）は消さずに残す。写真は削除済みの記録の分も保存容量に数える
+  - ほかの記録との紐付け（症状・投薬・通院記録の相互の参照、通院記録と支出記録の `expense_record_hospital_visits`）と、
+    記録に対する通知（症状の確認通知など）は、削除済みの記録を指したままにしないよう削除時に外す・削除する
+  - 服薬予定（`medications`）を削除したときは、その投薬実績（`medication_doses`）も同じ削除日時で論理削除する
+  - ごはん商品を削除するときは、論理削除したごはん記録の明細だけを物理削除してから商品を削除する
+    （明細が商品を外部キーで参照しているため）。削除していない記録で使っている商品は、これまでどおり削除できない
+  - 猫を削除したとき（`src/features/cats/infrastructure/catRepository.ts`）と、掃除対象を削除したときは、
+    削除済みの記録も含めて物理削除する
+
 - 日付のみを表す列（生年月日・お迎え日など時刻を持たない情報）は `text` 型で ISO8601 の日付文字列（`YYYY-MM-DD`）として保持する
   - 生年月日（`cats.birth_date`）は年のみ・年月のみの入力も受け付ける。その場合も未入力の月・日を 1月・1日で補完した `YYYY-MM-DD` で保持し、わかっている範囲は `cats.birth_date_precision`（`year`・`month`・`day`）で別に持つ。年齢・誕生日の判定は補完した日付をそのまま使い、表示やフォームの初期値だけが精度を参照する
 - 発生日時・作成日時・更新日時など時刻を持つ列は `integer("...", { mode: "timestamp" })`（unix タイムスタンプ）で保持する
@@ -235,7 +251,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     `hospital_visit_id` に一意インデックスを設定する
   - 通院記録を紐付けられるのはカテゴリ「病院」の支出で、支出日と同じ日の通院記録に限る。
     カテゴリを「病院」以外にしたときは紐付けを外す。紐付けた通院記録の猫は `expense_record_cats` にも追加する
-  - 通院記録・支出記録のどちらを削除するときも、この中間テーブルの行だけを削除し、相手の記録は残す
+  - 通院記録・支出記録のどちらを（論理）削除するときも、この中間テーブルの行だけを削除し、相手の記録は残す
   - 通院記録と病院代の作成・更新・削除は、同じ `db.batch` にまとめる
   - 複数の通院記録で共有している支出は、通院記録の病院代を空にしても支出記録を削除せずその通院記録との
     紐付けだけを外し、受診日を変えても支出日を変えない（`src/features/expenses/infrastructure/hospitalVisitExpense.ts`）
@@ -264,7 +280,11 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 記録フォームでは、ファイルを選んだ時点で `POST /api/media/uploads` が記録に紐付かない下書き（`recordType = "pending"`・`recordId` は自身の ID・`catId` は null）として保存する。フォームの保存時は asset ID だけを送り、各記録の保存アクションが `syncRecordMedia`（`src/features/media/application/attach.ts`）で下書きの紐付け・外された添付の削除・表示順の振り直しを行う
   - 紐付かないまま 24 時間を過ぎた下書きは、次回以降のアップロード時に削除する（下書きも保存容量に数える）
   - 下書きにはアップロードしたユーザー（`uploaded_by_user_id`）を保存し、本人だけが取得・削除・記録への紐付けをできる（`src/features/media/application/access.ts`・`attach.ts`）。asset ID を知っていても、別のユーザーの下書きは扱えない
-- 記録を削除するときは、レコード本体より先に `deleteMediaAssetsByRecord(recordType, recordId)` を呼んで R2 のオブジェクトと行をまとめて削除する
+- 記録の削除は論理削除のため、記録に添付した写真・動画（R2 のオブジェクトと行）は削除せずに残す（「共通カラム規約」の論理削除を参照）。
+  削除済みの記録には、アップロード・紐付けの確認（`resolveMediaRecordOwner`）で記録が見つからないため新しく添付できない。
+  残した写真は画面に表示しないが、猫に紐付く写真は猫を参照できるユーザーなら asset の URL で取得できる（支出の写真は取得できない）。
+  ごはん商品の画像など、記録以外の対象を削除するときは、対象より先に `deleteMediaAssetsByRecord(recordType, recordId)` を呼んで
+  R2 のオブジェクトと行をまとめて削除する
 - `cats.profile_media_asset_id` はプロフィール画像として使う `media_assets` 行（`recordType = "cat_profile"`・`recordId` と `catId` は猫の ID）への参照（nullable）。猫の編集画面でブラウザ側で正方形に切り抜いた画像を下書きとしてアップロードし、保存時に付け替える（`src/features/cats/infrastructure/applyProfileImage.ts`）。下書きの紐付けと猫の参照の更新は同じ `db.batch` で行い、差し替え・削除時はその時点で猫が参照していない古い画像だけを削除する（同時に別のリクエストが設定した画像を消さないため）。`cats` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/cats/infrastructure/profileImage.ts`）
 - `users.icon_media_asset_id` はアイコン画像として使う `media_assets` 行（`recordType = "user_icon"`・`recordId` はユーザーの ID・`catId` は null）への参照（nullable）。猫のプロフィール画像と同じく、切り抜いた画像を下書きとしてアップロードし、アカウント設定でプロフィールを保存するときに同じ `db.batch` で付け替え、ユーザーが参照していない古い画像だけを削除する（`src/features/users/infrastructure/applyUserIcon.ts`）。`users` ⇄ `media_assets` が互いを参照するため、メディアの削除時は先に参照を外す（`src/features/users/infrastructure/iconImage.ts`）
   - `user_icon` は記録への添付ではないため `MEDIA_RECORD_TYPES` に含めず、`POST /api/media` から直接アップロードさせない

@@ -360,6 +360,53 @@ describe("使われているごはん商品", () => {
       expect.arrayContaining(["food-record", "food-preset", "food-both"]),
     );
   });
+
+  it("論理削除したごはん記録だけで使っている商品は、その明細ごと削除できる", async () => {
+    await addProduct("food-deleted-only", "household-1");
+    await db.insert(feedingRecords).values([
+      {
+        id: "deleted-meal",
+        catId: "tama",
+        occurredAt: new Date("2026-10-02T08:00:00Z"),
+        deletedAt: new Date("2026-10-03T00:00:00Z"),
+      },
+    ]);
+    await db.insert(feedingRecordItems).values([
+      {
+        id: "deleted-meal-only",
+        feedingRecordId: "deleted-meal",
+        foodProductId: "food-deleted-only",
+        sortOrder: 0,
+      },
+      {
+        id: "deleted-meal-record",
+        feedingRecordId: "deleted-meal",
+        foodProductId: "food-record",
+        sortOrder: 1,
+      },
+    ]);
+
+    // 削除済みの記録の明細は「使っている」に数えない
+    expect(
+      Object.fromEntries(
+        await listFoodProductUsages(["food-deleted-only", "food-record"]),
+      ),
+    ).toEqual({ "food-record": "feedingRecord" });
+
+    expect(await deleteFoodProductAction("food-deleted-only")).toEqual({});
+    expect(
+      (await listFoodProducts("household-1")).map((product) => product.id),
+    ).not.toContain("food-deleted-only");
+    // 削除した商品の明細だけを消し、同じ記録のほかの明細は残す
+    expect(
+      (
+        await db
+          .select({ id: feedingRecordItems.id })
+          .from(feedingRecordItems)
+          .where(eq(feedingRecordItems.feedingRecordId, "deleted-meal"))
+      ).map((item) => item.id),
+    ).toEqual(["deleted-meal-record"]);
+  });
 });
 
 describe("ごはんプリセット", () => {

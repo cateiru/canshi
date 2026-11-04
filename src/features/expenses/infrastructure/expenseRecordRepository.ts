@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
@@ -23,7 +23,11 @@ export function createExpenseRecordRepository(
 ): ExpenseRecordRepository {
   const db = getDb(d1);
   const inHousehold = (householdId: string, id: string) =>
-    and(eq(expenseRecords.id, id), eq(expenseRecords.householdId, householdId));
+    and(
+      eq(expenseRecords.id, id),
+      eq(expenseRecords.householdId, householdId),
+      isNull(expenseRecords.deletedAt),
+    );
 
   return {
     async findForHousehold(householdId, id) {
@@ -57,6 +61,7 @@ export function createExpenseRecordRepository(
           .where(
             and(
               inArray(hospitalVisits.id, ids),
+              isNull(hospitalVisits.deletedAt),
               inArray(
                 hospitalVisits.catId,
                 householdCatIdsQuery(db, householdId),

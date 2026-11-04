@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { type Medication, medications } from "@/db/schema";
 
@@ -7,7 +7,7 @@ export async function listMedications(catId: string, d1?: D1Database) {
   return db
     .select()
     .from(medications)
-    .where(eq(medications.catId, catId))
+    .where(and(eq(medications.catId, catId), isNull(medications.deletedAt)))
     .orderBy(desc(medications.startDate));
 }
 
@@ -53,7 +53,7 @@ export async function getMedicationById(id: string) {
   const [medication] = await db
     .select()
     .from(medications)
-    .where(eq(medications.id, id))
+    .where(and(eq(medications.id, id), isNull(medications.deletedAt)))
     .limit(1);
   return medication ?? null;
 }

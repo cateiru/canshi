@@ -321,7 +321,7 @@ describe("支出の保存と月別表示", () => {
     ]);
   });
 
-  it("削除すると添付メディアと猫への関連付けも削除する", async () => {
+  it("削除すると論理削除し、一覧からは消えるが添付メディアと猫への関連付けは残す", async () => {
     const { savedRecordId: id } = await createExpenseAction(
       "tama",
       {},
@@ -330,9 +330,26 @@ describe("支出の保存と月別表示", () => {
     await expect(deleteExpenseAction("tama", id as string)).rejects.toThrow(
       "redirect:/cats/tama/expenses",
     );
-    expect(deleteMediaAssetsByRecord).toHaveBeenCalledWith("expense", id);
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
     expect(await getExpenseById("household-1", id as string)).toBeNull();
-    expect(await db.select().from(expenseRecordCats)).toEqual([]);
+    expect(await listExpensesForMonth("household-1", 2026, 9)).toEqual([]);
+    const [row] = await db
+      .select({ deletedAt: expenseRecords.deletedAt })
+      .from(expenseRecords)
+      .where(eq(expenseRecords.id, id as string));
+    expect(row.deletedAt).toBeInstanceOf(Date);
+    expect(await db.select().from(expenseRecordCats)).toEqual([
+      { expenseRecordId: id, catId: "tama" },
+    ]);
+    // 削除済みの支出は、もう一度削除・更新できない
+    expect(
+      await updateExpenseAction(
+        "tama",
+        id as string,
+        {},
+        expenseForm({ catIds: ["tama"] }),
+      ),
+    ).toHaveProperty("formError");
   });
 });
 
@@ -477,7 +494,7 @@ describe("通院記録と病院代の連携", () => {
     expect(await db.select().from(expenseRecords)).toHaveLength(1);
   });
 
-  it("0円の病院代は保存し、空欄にした場合は支出だけ削除する", async () => {
+  it("0円の病院代は保存し、空欄にした場合は支出だけ論理削除する", async () => {
     const { savedRecordId: id } = await createHospitalVisitAction(
       "tama",
       {},
@@ -492,10 +509,12 @@ describe("通院記録と病院代の連携", () => {
       visitForm({ expenseAmountYen: "" }),
     );
     expect(await getExpenseByHospitalVisitId(id as string)).toBeNull();
-    expect(deleteMediaAssetsByRecord).toHaveBeenCalledWith(
-      "expense",
-      expense?.id,
-    );
+    expect(
+      await getExpenseById("household-1", expense?.id as string),
+    ).toBeNull();
+    // 添付の写真は残す
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
+    expect(await db.select().from(expenseRecords)).toHaveLength(1);
     expect(await db.select().from(hospitalVisits)).toHaveLength(1);
   });
 

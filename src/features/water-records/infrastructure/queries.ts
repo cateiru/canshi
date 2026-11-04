@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { type WaterRecord, waterRecords } from "@/db/schema";
 
@@ -7,7 +7,7 @@ export async function listWaterRecords(catId: string) {
   return db
     .select()
     .from(waterRecords)
-    .where(eq(waterRecords.catId, catId))
+    .where(and(eq(waterRecords.catId, catId), isNull(waterRecords.deletedAt)))
     .orderBy(desc(waterRecords.occurredAt));
 }
 
@@ -16,7 +16,7 @@ export async function getWaterRecordById(id: string) {
   const [record] = await db
     .select()
     .from(waterRecords)
-    .where(eq(waterRecords.id, id))
+    .where(and(eq(waterRecords.id, id), isNull(waterRecords.deletedAt)))
     .limit(1);
   return record ?? null;
 }
@@ -30,7 +30,13 @@ export async function getWaterRecordForCat(
   const [record] = await getDb(d1)
     .select()
     .from(waterRecords)
-    .where(and(eq(waterRecords.id, id), eq(waterRecords.catId, catId)))
+    .where(
+      and(
+        eq(waterRecords.id, id),
+        eq(waterRecords.catId, catId),
+        isNull(waterRecords.deletedAt),
+      ),
+    )
     .limit(1);
   return record ?? null;
 }

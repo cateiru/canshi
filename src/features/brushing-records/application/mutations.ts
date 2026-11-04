@@ -34,7 +34,7 @@ export async function updateBrushingRecord(
   );
 }
 
-/** 猫の記録を削除する。見つからなければ false */
+/** 猫の記録を論理削除する（削除日時を入れ、一覧・タイムライン・集計から除く）。見つからなければ false */
 export async function deleteBrushingRecord(
   catId: string,
   id: string,

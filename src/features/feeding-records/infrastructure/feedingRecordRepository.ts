@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   cats,
@@ -119,7 +119,13 @@ export function createFeedingRecordRepository(
       const [row] = await db
         .select({ occurredAt: feedingRecords.occurredAt })
         .from(feedingRecords)
-        .where(and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)))
+        .where(
+          and(
+            eq(feedingRecords.id, id),
+            eq(feedingRecords.catId, catId),
+            isNull(feedingRecords.deletedAt),
+          ),
+        )
         .limit(1);
       return row?.occurredAt ?? null;
     },
@@ -154,6 +160,7 @@ export function createFeedingRecordRepository(
                 mode: sql`${content.mode}`.as("mode"),
                 createdAt: sql`(unixepoch())`.as("created_at"),
                 updatedAt: sql`(unixepoch())`.as("updated_at"),
+                deletedAt: sql`null`.as("deleted_at"),
               })
               .from(cats)
               .where(catInHouseholdRow(catId, householdId)),
@@ -188,6 +195,7 @@ export function createFeedingRecordRepository(
           .where(
             and(
               eq(feedingRecords.id, id),
+              isNull(feedingRecords.deletedAt),
               catInHouseholdCondition(catId, householdId),
             ),
           )
@@ -211,27 +219,18 @@ export function createFeedingRecordRepository(
     },
 
     async remove(catId, id) {
-      // 明細は記録 ID で紐付くため、この猫の記録の明細だけを消すよう親の記録で絞り込む。
-      // 絞り込まないと、自分の猫の catId と別の家の記録 ID を渡して明細だけを消せてしまう
-      const [, deleted] = await db.batch([
-        db.delete(feedingRecordItems).where(
-          inArray(
-            feedingRecordItems.feedingRecordId,
-            db
-              .select({ id: feedingRecords.id })
-              .from(feedingRecords)
-              .where(
-                and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)),
-              ),
+      // 論理削除。明細は記録の中身として残す（削除済みの記録の明細は、記録と一緒に読み取りから除く）
+      const deleted = await db
+        .update(feedingRecords)
+        .set({ deletedAt: new Date() })
+        .where(
+          and(
+            eq(feedingRecords.id, id),
+            eq(feedingRecords.catId, catId),
+            isNull(feedingRecords.deletedAt),
           ),
-        ),
-        db
-          .delete(feedingRecords)
-          .where(
-            and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)),
-          )
-          .returning({ id: feedingRecords.id }),
-      ]);
+        )
+        .returning({ id: feedingRecords.id });
       return deleted.length > 0;
     },
   };
