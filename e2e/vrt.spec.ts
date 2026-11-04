@@ -66,7 +66,9 @@ test("コンポーネントプレビューページの見た目", async ({ page 
   await expect(
     page.getByRole("heading", { name: "コンポーネントプレビュー" }),
   ).toBeVisible();
-  await takeSnapshot(page, testInfo);
+  // タイムラインの読み込み中のスケルトンを撮るため、aria-busy の要素が残ったまま撮影する
+  await expect(page.getByText("記録を読み込んでいます")).toBeAttached();
+  await takeSnapshot(page, testInfo, { waitForLoaded: false });
 });
 
 test("オフラインページの見た目", async ({ page }, testInfo) => {
@@ -613,7 +615,9 @@ for (const { label, theme, contrast } of [
       await expect(
         page.getByRole("heading", { name: "コンポーネントプレビュー" }),
       ).toBeVisible();
-      await takeSnapshot(page, testInfo);
+      // タイムラインの読み込み中のスケルトンを撮るため、aria-busy の要素が残ったまま撮影する
+      await expect(page.getByText("記録を読み込んでいます")).toBeAttached();
+      await takeSnapshot(page, testInfo, { waitForLoaded: false });
     });
   });
 }

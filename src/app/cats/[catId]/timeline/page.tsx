@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { TbTimeline } from "react-icons/tb";
-import { Breadcrumb, Pagination } from "@/components/ui";
+import { Breadcrumb } from "@/components/ui";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
-import { listFoodProductImageUrls } from "@/features/food-products/infrastructure/queries";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -14,7 +14,8 @@ import {
 } from "@/features/timeline/infrastructure/queries";
 import { buildTimelineHref } from "@/features/timeline/presentation/href";
 import { TimelineCalendar } from "@/features/timeline/presentation/TimelineCalendar";
-import { TimelineEntryCard } from "@/features/timeline/presentation/TimelineEntryCard";
+import { TimelineEntryList } from "@/features/timeline/presentation/TimelineEntryList";
+import { TimelineEntryListSkeleton } from "@/features/timeline/presentation/TimelineEntryListSkeleton";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -86,18 +87,17 @@ export default async function TimelinePage({
       ? nowDateKey
       : parseSelectedDate(dateParam, ym);
 
-  const { entries, page, totalPages, datesByDay } = await listTimelineForMonth(
-    catId,
-    year,
-    month,
-    {
-      page: requestedPage,
-      pageSize: PAGE_SIZE,
-      date: selectedDate ?? undefined,
-      // カレンダーをスワイプしているあいだに、前後の月の記録のアイコンも見せる
-      includeAdjacentMonths: true,
-    },
-  );
+  // 記録の読み込みには時間がかかるため、ここでは待たずに読み込みを始めるだけにする。
+  // ページの枠（パンくず・見出し・カレンダーの月の枠）を先に返して遷移をすぐに終え、
+  // 記録の一覧は Suspense の中で、カレンダーのアイコンは解決したときに表示する
+  const timeline = listTimelineForMonth(catId, year, month, {
+    page: requestedPage,
+    pageSize: PAGE_SIZE,
+    date: selectedDate ?? undefined,
+    // カレンダーをスワイプしているあいだに、前後の月の記録のアイコンも見せる
+    includeAdjacentMonths: true,
+  });
+  const datesByDay = timeline.then((result) => result.datesByDay);
 
   const prevMonth = shiftYm({ year, month }, -1);
   const nextMonth = shiftYm({ year, month }, 1);
@@ -111,19 +111,6 @@ export default async function TimelinePage({
     page: 1,
     ym: formatYm(nextMonth),
   });
-
-  const foodProductImageUrls = await listFoodProductImageUrls(
-    [
-      ...new Set(
-        entries
-          .filter((entry) => entry.type === "feeding")
-          .flatMap((entry) =>
-            entry.record.items.map((item) => item.foodProductId),
-          ),
-      ),
-    ],
-    { householdId: cat.householdId },
-  );
 
   const emptyMessage = selectedDate
     ? `${selectedDate.slice(0, 4)}年${Number.parseInt(selectedDate.slice(5, 7), 10)}月${Number.parseInt(selectedDate.slice(8, 10), 10)}日の記録がありません。`
@@ -166,37 +153,21 @@ export default async function TimelinePage({
         </p>
       ) : null}
 
-      {entries.length === 0 ? (
-        <Surface>
-          <p>{emptyMessage}</p>
-        </Surface>
-      ) : (
-        <ul className={styles.list}>
-          {entries.map((entry, index) => (
-            <li key={`${entry.type}-${entry.id}`}>
-              <TimelineEntryCard
-                catId={catId}
-                entry={entry}
-                isFirst={index === 0}
-                isLast={index === entries.length - 1}
-                foodProductImageUrls={foodProductImageUrls}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        getHref={(target) =>
-          buildTimelineHref(catId, {
-            page: target,
-            ym,
-            date: selectedDate ?? undefined,
-          })
-        }
-      />
+      <Suspense
+        // 月・日付・ページを切り替えるたびに別の Suspense にする。同じ Suspense のままだと、
+        // 遷移のあいだは表示済みの一覧を残して読み込みを待つため、スケルトンが出ず遷移も遅れる
+        key={`${ym}:${selectedDate ?? ""}:${requestedPage}`}
+        fallback={<TimelineEntryListSkeleton />}
+      >
+        <TimelineEntryList
+          catId={catId}
+          householdId={cat.householdId}
+          ym={ym}
+          selectedDate={selectedDate}
+          emptyMessage={emptyMessage}
+          timeline={timeline}
+        />
+      </Suspense>
     </main>
   );
 }

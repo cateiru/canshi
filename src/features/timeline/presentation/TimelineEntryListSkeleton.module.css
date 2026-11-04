@@ -1,0 +1,109 @@
+/* 並びと寸法は TimelineEntryCard.module.css に合わせ、読み込み後に一覧へ置き換わったときに
+   ずれが小さくなるようにする */
+
+.skeleton {
+  display: block;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.list {
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: var(--space-8) minmax(0, 1fr);
+  column-gap: var(--space-3);
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.railLine {
+  width: var(--border-width);
+  flex: 1 0 var(--space-2);
+  background-color: var(--color-border);
+}
+
+.railLine[data-hidden="true"] {
+  background-color: transparent;
+}
+
+.dot {
+  flex-shrink: 0;
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: 50%;
+  border: var(--border-width) solid var(--color-border);
+  background-color: var(--color-bg);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: var(--space-2) 0;
+  padding: var(--space-6);
+  border-radius: 16px;
+  background-color: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.bone {
+  display: block;
+  height: 1em;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--color-ink) 10%, var(--color-bg));
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.badge {
+  width: 4.5em;
+  height: 1.5em;
+}
+
+.time {
+  width: 8em;
+}
+
+.line {
+  width: 80%;
+}
+
+.lineShort {
+  width: 50%;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+  }
+}
