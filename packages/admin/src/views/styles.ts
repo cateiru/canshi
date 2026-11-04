@@ -516,7 +516,7 @@ fieldset.group legend {
 }
 button.with-icon { gap: var(--space-2); }
 .checkboxes { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
-/* メインアプリの Checkbox と同じく、--color-ink の枠と塗りつぶしで選択を示す */
+/* メインアプリの Checkbox と同じく、--color-accent-strong の枠と塗りつぶしで選択を示す */
 label.checkbox {
   display: inline-flex;
   align-items: center;
@@ -551,10 +551,12 @@ label.checkbox input::before {
   opacity: 0;
   transition: opacity var(--transition-base);
 }
-label.checkbox input:checked { background-color: var(--color-ink); }
+label.checkbox input:checked {
+  border-color: var(--color-accent-strong);
+  background-color: var(--color-accent-strong);
+}
 label.checkbox input:checked::before { opacity: 1; }
 label.checkbox:hover input { border-color: var(--color-accent-strong); }
-label.checkbox input:checked:hover { border-color: var(--color-ink); }
 
 /* 商品画像の選択欄（メインアプリの画像の選択欄）。透明なファイル入力欄を点線の枠に重ねる */
 .image-field { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }

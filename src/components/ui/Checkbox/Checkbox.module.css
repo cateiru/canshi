@@ -43,8 +43,10 @@
 
 .checkbox[data-selected] .box,
 .checkbox[data-indeterminate] .box {
-  border-color: var(--color-ink);
-  background-color: var(--color-ink);
+  /* 選択中はアクセントカラーで塗る。--color-accent-strong は背景（チェックの線の色）との差が
+     4.5:1 以上あるため、ライト・ダークどちらのテーマでもチェックが読み取れる */
+  border-color: var(--color-accent-strong);
+  background-color: var(--color-accent-strong);
 }
 
 .checkbox[data-selected] .mark,
