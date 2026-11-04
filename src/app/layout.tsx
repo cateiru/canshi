@@ -67,7 +67,7 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   // 見た目設定は src/styles/tokens.css が <html> の data 属性で切り替える
-  const [{ theme, contrast, fontSize }, user] = await Promise.all([
+  const [{ theme, accent, contrast, fontSize }, user] = await Promise.all([
     getAppearance(),
     getCurrentUser(),
   ]);
@@ -76,6 +76,7 @@ export default async function RootLayout({
     <html
       lang="ja"
       data-theme={theme}
+      data-accent={accent}
       data-contrast={contrast}
       data-font-size={fontSize}
     >

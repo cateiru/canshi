@@ -2,16 +2,21 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppearanceSettings } from "./AppearanceSettings";
 
-const { saveThemeAction, saveContrastAction, saveFontSizeAction } = vi.hoisted(
-  () => ({
-    saveThemeAction: vi.fn().mockResolvedValue(undefined),
-    saveContrastAction: vi.fn().mockResolvedValue(undefined),
-    saveFontSizeAction: vi.fn().mockResolvedValue(undefined),
-  }),
-);
+const {
+  saveThemeAction,
+  saveAccentAction,
+  saveContrastAction,
+  saveFontSizeAction,
+} = vi.hoisted(() => ({
+  saveThemeAction: vi.fn().mockResolvedValue(undefined),
+  saveAccentAction: vi.fn().mockResolvedValue(undefined),
+  saveContrastAction: vi.fn().mockResolvedValue(undefined),
+  saveFontSizeAction: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock("./actions", () => ({
   saveThemeAction,
+  saveAccentAction,
   saveContrastAction,
   saveFontSizeAction,
 }));
@@ -19,9 +24,11 @@ vi.mock("./actions", () => ({
 describe("AppearanceSettings", () => {
   afterEach(() => {
     saveThemeAction.mockClear();
+    saveAccentAction.mockClear();
     saveContrastAction.mockClear();
     saveFontSizeAction.mockClear();
     delete document.documentElement.dataset.theme;
+    delete document.documentElement.dataset.accent;
     delete document.documentElement.dataset.contrast;
     delete document.documentElement.dataset.fontSize;
   });
@@ -31,6 +38,7 @@ describe("AppearanceSettings", () => {
       <AppearanceSettings
         initialAppearance={{
           theme: "system",
+          accent: "green",
           contrast: "more",
           fontSize: "large",
         }}
@@ -39,6 +47,8 @@ describe("AppearanceSettings", () => {
 
     expect(screen.getByRole("radio", { name: "システム" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "ライト" })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: "グリーン" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "オレンジ" })).not.toBeChecked();
     expect(screen.getByRole("radio", { name: "上げる" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "大" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "中" })).not.toBeChecked();
@@ -54,6 +64,7 @@ describe("AppearanceSettings", () => {
       <AppearanceSettings
         initialAppearance={{
           theme: "system",
+          accent: "orange",
           contrast: "default",
           fontSize: "medium",
         }}
@@ -68,11 +79,32 @@ describe("AppearanceSettings", () => {
     expect(screen.getByText("暗い背景で表示します。")).toBeInTheDocument();
   });
 
+  it("アクセントカラーを選ぶと保存し、表示中のページにもすぐ反映する", () => {
+    render(
+      <AppearanceSettings
+        initialAppearance={{
+          theme: "light",
+          accent: "orange",
+          contrast: "default",
+          fontSize: "medium",
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: "パープル" }));
+
+    expect(screen.getByRole("radio", { name: "パープル" })).toBeChecked();
+    expect(saveAccentAction).toHaveBeenCalledWith("purple");
+    expect(document.documentElement.dataset.accent).toBe("purple");
+    expect(saveThemeAction).not.toHaveBeenCalled();
+  });
+
   it("コントラストを選ぶと保存し、表示中のページにもすぐ反映する", () => {
     render(
       <AppearanceSettings
         initialAppearance={{
           theme: "light",
+          accent: "orange",
           contrast: "default",
           fontSize: "medium",
         }}
@@ -92,6 +124,7 @@ describe("AppearanceSettings", () => {
       <AppearanceSettings
         initialAppearance={{
           theme: "light",
+          accent: "orange",
           contrast: "default",
           fontSize: "medium",
         }}

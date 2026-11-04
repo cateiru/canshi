@@ -1,9 +1,13 @@
 "use client";
 
 import { useId, useState } from "react";
+import { Radio, RadioGroup } from "react-aria-components";
 import { SegmentedControl } from "@/components/ui";
 import { Surface } from "@/features/shared/Surface";
 import {
+  ACCENT_LABEL,
+  ACCENTS,
+  type Accent,
   type Appearance,
   CONTRAST_LABEL,
   CONTRASTS,
@@ -17,6 +21,7 @@ import {
 } from "../domain/preferences";
 import styles from "./AppearanceSettings.module.css";
 import {
+  saveAccentAction,
   saveContrastAction,
   saveFontSizeAction,
   saveThemeAction,
@@ -39,6 +44,56 @@ const FONT_SIZE_DESCRIPTION: Record<FontSize, string> = {
   large: "文字を大きくして読みやすくします。",
   xlarge: "文字をさらに大きくして、はっきり読めるようにします。",
 };
+
+/**
+ * 選択肢に表示する色見本。tokens.css の data-accent のブロックと同じ色にする
+ * （選んでいない色も見本として見せるため、トークンではなく値を直接持つ）
+ */
+const ACCENT_SWATCH: Record<Accent, string> = {
+  orange: "#ec995a",
+  blue: "#6fb3e0",
+  green: "#7cc48a",
+  pink: "#ef9ab8",
+  purple: "#b39ddb",
+};
+
+/** 色見本つきのアクセントカラーの選択肢 */
+function AccentOption({
+  value,
+  onChange,
+}: {
+  value: Accent;
+  onChange: (value: Accent) => void;
+}) {
+  const descriptionId = useId();
+
+  return (
+    <div className={styles.control}>
+      <RadioGroup
+        className={styles.accentGroup}
+        orientation="horizontal"
+        aria-label="アクセントカラー"
+        aria-describedby={descriptionId}
+        value={value}
+        onChange={(next) => onChange(next as Accent)}
+      >
+        {ACCENTS.map((accent) => (
+          <Radio key={accent} value={accent} className={styles.accentOption}>
+            <span
+              className={styles.swatch}
+              style={{ backgroundColor: ACCENT_SWATCH[accent] }}
+              aria-hidden="true"
+            />
+            {ACCENT_LABEL[accent]}
+          </Radio>
+        ))}
+      </RadioGroup>
+      <p id={descriptionId} className={styles.description}>
+        ボタンや選択中の項目などに使う色を変えます。
+      </p>
+    </div>
+  );
+}
 
 type AppearanceOptionProps<T extends string> = {
   label: string;
@@ -74,7 +129,7 @@ function AppearanceOption<T extends string>({
 }
 
 /**
- * テーマ・コントラスト・文字サイズの切り替え。表示中のページには <html> の data 属性を直接書き換えて
+ * テーマ・アクセントカラー・コントラスト・文字サイズの切り替え。表示中のページには <html> の data 属性を直接書き換えて
  * すぐに反映し、選んだ値は Server Action で cookie に保存する（以降のサーバー描画で
  * RootLayout が <html> に出力する）。
  */
@@ -84,6 +139,7 @@ export function AppearanceSettings({
   initialAppearance: Appearance;
 }) {
   const [theme, setTheme] = useState(initialAppearance.theme);
+  const [accent, setAccent] = useState(initialAppearance.accent);
   const [contrast, setContrast] = useState(initialAppearance.contrast);
   const [fontSize, setFontSize] = useState(initialAppearance.fontSize);
 
@@ -100,6 +156,17 @@ export function AppearanceSettings({
             document.documentElement.dataset.theme = next;
             setTheme(next);
             void saveThemeAction(next);
+          }}
+        />
+      </Surface>
+
+      <Surface title="アクセントカラー">
+        <AccentOption
+          value={accent}
+          onChange={(next) => {
+            document.documentElement.dataset.accent = next;
+            setAccent(next);
+            void saveAccentAction(next);
           }}
         />
       </Surface>

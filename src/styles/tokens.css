@@ -1,6 +1,7 @@
 /*
- * 見た目設定（src/features/appearance）で選んだテーマ・コントラスト・文字サイズは、
- * <html> の data-theme（light / dark / system）・data-contrast（default / more）・
+ * 見た目設定（src/features/appearance）で選んだテーマ・アクセントカラー・コントラスト・文字サイズは、
+ * <html> の data-theme（light / dark / system）・
+ * data-accent（orange / blue / green / pink / purple）・data-contrast（default / more）・
  * data-font-size（small / medium / large / xlarge）に出力される。
  * 色と文字サイズはこのファイルのトークンだけで切り替え、各コンポーネントはトークン経由で参照すること。
  */
@@ -26,7 +27,14 @@
   --color-warning-strong: #806000;
   --color-error-strong: #bd3528;
   --color-info-strong: #245da8;
-  --color-accent-strong: #9a4b13;
+  --color-accent-strong: var(--accent-strong-light);
+  /*
+   * アクセントカラーごとの --color-accent-strong の値。ライトテーマでは白背景との差が 4.5:1 以上の
+   * 濃い色、ダークテーマでは暗い背景との差が 4.5:1 以上の明るい色を使う。
+   * 下の data-accent のブロックが上書きし、テーマのブロックはどちらを使うかだけを切り替える
+   */
+  --accent-strong-light: #9a4b13;
+  --accent-strong-dark: #ec995a;
   /*
    * 白文字を載せる warning の面（Alert の背景）。ダークテーマの --color-warning-strong は
    * 明るく白文字が読めないため、ダークテーマでは白文字と 4.5:1 以上の差がある色にする
@@ -178,7 +186,7 @@
   --color-warning-strong: #f2d14b;
   --color-error-strong: #f25c4b;
   --color-info-strong: #4f87db;
-  --color-accent-strong: #ec995a;
+  --color-accent-strong: var(--accent-strong-dark);
   --color-warning-fill: #8f7200;
 
   --color-illustration-line: #a6a9b8;
@@ -214,7 +222,7 @@
     --color-warning-strong: #f2d14b;
     --color-error-strong: #f25c4b;
     --color-info-strong: #4f87db;
-    --color-accent-strong: #ec995a;
+    --color-accent-strong: var(--accent-strong-dark);
     --color-warning-fill: #8f7200;
 
     --color-illustration-line: #a6a9b8;
@@ -238,6 +246,34 @@
     --color-record-expense: #d9b44a;
     --color-record-memo: #cbd5e1;
   }
+}
+
+/*
+ * アクセントカラー。「オレンジ」（orange）が標準で、:root の値をそのまま使う。
+ * --color-accent は面の色で、--color-on-accent（濃い文字）との差が 4.5:1 以上になる明るい色にする。
+ */
+:root[data-accent="blue"] {
+  --color-accent: #6fb3e0;
+  --accent-strong-light: #1f5f8f;
+  --accent-strong-dark: #6fb3e0;
+}
+
+:root[data-accent="green"] {
+  --color-accent: #7cc48a;
+  --accent-strong-light: #2e6b38;
+  --accent-strong-dark: #7cc48a;
+}
+
+:root[data-accent="pink"] {
+  --color-accent: #ef9ab8;
+  --accent-strong-light: #a3325b;
+  --accent-strong-dark: #ef9ab8;
+}
+
+:root[data-accent="purple"] {
+  --color-accent: #b39ddb;
+  --accent-strong-light: #5e3f9e;
+  --accent-strong-dark: #b39ddb;
 }
 
 /*

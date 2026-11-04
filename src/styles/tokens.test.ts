@@ -59,6 +59,25 @@ describe("ダークテーマのトークン", () => {
   });
 });
 
+describe("アクセントカラーのトークン", () => {
+  it.each([
+    'root[data-accent="blue"]',
+    'root[data-accent="green"]',
+    'root[data-accent="pink"]',
+    'root[data-accent="purple"]',
+  ])(":%s はアクセントカラーの値だけを上書きする", (selector) => {
+    const names = declarationsOf(`:${selector}`).map(
+      (declaration) => declaration.split(":")[0],
+    );
+
+    expect(names).toEqual([
+      "--color-accent",
+      "--accent-strong-light",
+      "--accent-strong-dark",
+    ]);
+  });
+});
+
 describe("文字サイズのトークン", () => {
   it.each([
     'root[data-font-size="small"]',

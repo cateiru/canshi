@@ -7,3 +7,49 @@
 .description {
   color: var(--color-ink-muted);
 }
+
+/* アクセントカラーの選択肢。狭い画面では折り返す */
+.accentGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.accentOption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  cursor: pointer;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition:
+    background-color var(--transition-base),
+    box-shadow var(--transition-base),
+    outline-color var(--transition-base);
+}
+
+.accentOption[data-hovered]:not([data-selected]) {
+  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
+}
+
+.accentOption[data-selected] {
+  box-shadow: inset 0 0 0 2px var(--color-ink);
+}
+
+.accentOption[data-focus-visible] {
+  outline-color: var(--color-focus-ring);
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-illustration-outline);
+}
