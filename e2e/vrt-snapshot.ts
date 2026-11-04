@@ -92,12 +92,17 @@ export type TakeSnapshotOptions = {
    * モーダルを撮るときは false にして表示領域だけを撮影する
    */
   fullPage?: boolean;
+  /**
+   * aria-busy="true" の要素（読み込み中の部分）がなくなるまで待ってから撮影するか（既定は true）。
+   * 読み込み中の見た目そのものを撮るページ（コンポーネントプレビューのスケルトンなど）では false にする
+   */
+  waitForLoaded?: boolean;
 };
 
 export async function takeSnapshot(
   page: Page,
   testInfo: TestInfo,
-  { fullPage = true }: TakeSnapshotOptions = {},
+  { fullPage = true, waitForLoaded = true }: TakeSnapshotOptions = {},
 ) {
   const ignoreSelectors = ignoreSelectorsByPage.get(page) ?? [];
   const mask: Locator[] = ignoreSelectors.map((selector) =>
@@ -106,7 +111,9 @@ export async function takeSnapshot(
 
   // 読み込みを待たずに描画する部分（タイムラインの記録の一覧・カレンダーのアイコンなど）は
   // aria-busy="true" を付けている。読み込み途中の見た目を撮らないよう、終わるまで待つ
-  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+  if (waitForLoaded) {
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+  }
 
   await page.addStyleTag({
     content: `${ALWAYS_HIDDEN_SELECTORS.join(", ")} { display: none !important; }`,

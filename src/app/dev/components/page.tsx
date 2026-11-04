@@ -27,6 +27,7 @@ import {
 } from "@/features/timeline/domain/labels";
 import type { TimelineRecordType } from "@/features/timeline/domain/timelineEntry";
 import { TimelineCalendar } from "@/features/timeline/presentation/TimelineCalendar";
+import { TimelineEntryListSkeleton } from "@/features/timeline/presentation/TimelineEntryListSkeleton";
 import styles from "./page.module.css";
 
 const COLOR_TOKENS = [
@@ -124,6 +125,11 @@ export default function ComponentsPreviewPage() {
             ])
           }
         />
+      </section>
+
+      <section>
+        <h2>タイムラインの読み込み中</h2>
+        <TimelineEntryListSkeleton />
       </section>
 
       <section>
