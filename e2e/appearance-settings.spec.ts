@@ -36,7 +36,7 @@ test("見た目設定でテーマ・コントラスト・アクセントカラ�
 
   await page
     .getByRole("radiogroup", { name: "アクセントカラー" })
-    .getByText("ブルー", { exact: true })
+    .getByTitle("ブルー")
     .click();
   await expect(html).toHaveAttribute("data-accent", "blue");
 

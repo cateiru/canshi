@@ -57,7 +57,7 @@ const ACCENT_SWATCH: Record<Accent, string> = {
   purple: "#b39ddb",
 };
 
-/** 色見本つきのアクセントカラーの選択肢 */
+/** アクセントカラーの選択肢。色の名前は文字で出さず、title と aria-label で伝える */
 function AccentOption({
   value,
   onChange,
@@ -65,33 +65,29 @@ function AccentOption({
   value: Accent;
   onChange: (value: Accent) => void;
 }) {
-  const descriptionId = useId();
-
   return (
-    <div className={styles.control}>
-      <RadioGroup
-        className={styles.accentGroup}
-        orientation="horizontal"
-        aria-label="アクセントカラー"
-        aria-describedby={descriptionId}
-        value={value}
-        onChange={(next) => onChange(next as Accent)}
-      >
-        {ACCENTS.map((accent) => (
-          <Radio key={accent} value={accent} className={styles.accentOption}>
-            <span
-              className={styles.swatch}
-              style={{ backgroundColor: ACCENT_SWATCH[accent] }}
-              aria-hidden="true"
-            />
-            {ACCENT_LABEL[accent]}
-          </Radio>
-        ))}
-      </RadioGroup>
-      <p id={descriptionId} className={styles.description}>
-        ボタンや選択中の項目などに使う色を変えます。
-      </p>
-    </div>
+    <RadioGroup
+      className={styles.accentGroup}
+      orientation="horizontal"
+      aria-label="アクセントカラー"
+      value={value}
+      onChange={(next) => onChange(next as Accent)}
+    >
+      {ACCENTS.map((accent) => (
+        <Radio
+          key={accent}
+          value={accent}
+          aria-label={ACCENT_LABEL[accent]}
+          className={styles.accentOption}
+        >
+          <span
+            className={styles.swatch}
+            style={{ backgroundColor: ACCENT_SWATCH[accent] }}
+            title={ACCENT_LABEL[accent]}
+          />
+        </Radio>
+      ))}
+    </RadioGroup>
   );
 }
 

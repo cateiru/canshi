@@ -30,11 +30,29 @@ function rootDeclarations() {
   return declarations;
 }
 
+/**
+ * 管理画面にないトークン（アクセントカラーの切り替え用の --accent-strong-light など）を参照している値は、
+ * 参照先の値に置き換える。管理画面にあるトークンへの参照（var(--color-accent-strong) など）はそのまま比べる
+ */
+function resolve(declarations: Map<string, string>, value: string | undefined) {
+  const reference = value?.match(/^var\((--[\w-]+)\)$/)?.[1];
+  if (!reference || reference in TOKENS) {
+    return value;
+  }
+  return resolve(declarations, declarations.get(reference));
+}
+
 describe("STYLES", () => {
   it("メインアプリの tokens.css と同じ値のトークンを使う", () => {
     const declarations = rootDeclarations();
     for (const [name, value] of Object.entries(TOKENS)) {
-      expect({ name, value: declarations.get(name) }).toEqual({ name, value });
+      expect({
+        name,
+        value: resolve(declarations, declarations.get(name)),
+      }).toEqual({
+        name,
+        value,
+      });
     }
   });
 
