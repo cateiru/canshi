@@ -51,9 +51,14 @@
   height: 8px;
   margin: 4px;
   border-radius: 50%;
-  background-color: var(--color-ink);
+  /* 選択中の点はアクセントカラーにする。--color-accent-strong は背景との差が 4.5:1 以上ある */
+  background-color: var(--color-accent-strong);
   opacity: 0;
   transition: opacity var(--transition-base);
+}
+
+.radio[data-selected] .dot {
+  border-color: var(--color-accent-strong);
 }
 
 .radio[data-selected] .dot::before {

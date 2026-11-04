@@ -140,6 +140,7 @@ Web フォントは読み込まず、システムフォントのみを使用す�
 - フォーカスリングは `--focus-ring-width`（太さ）・`--focus-ring-offset`（要素との余白）・`--color-accent`（色）で統一する
 - 入力欄の通常の枠線とフォーカスリングは分けて扱う。共通の FormField・Textarea は hover 時に `--color-info` を使うが、ごはん記録のように淡い枠線を保つ場合も、キーボード操作時にはアクセント色のフォーカスリングを表示する。エラー状態は hover 時も `--color-error` を維持する
 - 入力欄以外のインタラクティブ要素（Checkbox・Radio・Select・Tabs など）の hover・選択時の強調色は `--color-accent` を使う
+- Checkbox・Radio は、選択中の塗り（チェックの箱・ラジオの点と枠）を `--color-accent-strong` にする。背景との差が 4.5:1 以上あるため、見た目設定のアクセントカラー・テーマに関わらず選択状態が読み取れる
 - `prefers-reduced-motion: reduce` の環境では `--transition-base` を `0ms` にしてトランジションを無効化する（`globals.css` でグローバルに対応済み）
 
 ## バッジ

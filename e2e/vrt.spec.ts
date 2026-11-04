@@ -622,6 +622,41 @@ for (const { label, theme, contrast } of [
   });
 }
 
+// アクセントカラーは、ボタン・チェックボックス・ラジオ・タブなどアクセントカラーを使う部品が
+// 並ぶコンポーネントプレビューで代表して確認する。標準のオレンジは上の各スナップショットで撮れているため除く。
+// --color-accent-strong はライトとダークで値が違うため、両方のテーマで撮る
+for (const accent of ["blue", "green", "pink", "purple"] as const) {
+  for (const { label, theme } of [
+    { label: "ライト", theme: "light" },
+    { label: "ダーク", theme: "dark" },
+  ] as const) {
+    test.describe(`アクセントカラー（${accent}・${label}）の見た目`, () => {
+      test.beforeEach(async ({ page, baseURL }) => {
+        await page.context().addCookies([
+          { name: "canshi-theme", value: theme, url: baseURL },
+          { name: "canshi-accent", value: accent, url: baseURL },
+        ]);
+      });
+
+      test(`コンポーネントプレビュー（${accent}・${label}）`, async ({
+        page,
+      }, testInfo) => {
+        await page.goto("/dev/components");
+        await expect(page.locator("html")).toHaveAttribute(
+          "data-accent",
+          accent,
+        );
+        await expect(
+          page.getByRole("heading", { name: "コンポーネントプレビュー" }),
+        ).toBeVisible();
+        // タイムラインの読み込み中のスケルトンを撮るため、aria-busy の要素が残ったまま撮影する
+        await expect(page.getByText("記録を読み込んでいます")).toBeAttached();
+        await takeSnapshot(page, testInfo, { waitForLoaded: false });
+      });
+    });
+  }
+}
+
 test("更新情報ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/release-notes");
   await expect(page.getByRole("heading", { name: "更新情報" })).toBeVisible();
