@@ -1,0 +1,75 @@
+name: E2E (/e2e comment)
+
+# PR に `/e2e` とだけ書いたコメントが投稿されたら、そのコメントに 👀 を付けて
+# PR の最新のコミットで e2e を実行する。一度 `/e2e` とコメントされた PR では、
+# 以降のコミットでも ci.yml の e2e が実行される（ci.yml の e2e-requested 参照）。
+# issue_comment のワークフローはデフォルトブランチ（main）にあるものが使われる
+on:
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  accept:
+    # PR へのコメントで、リポジトリのオーナー・メンバー・コラボレーターが書いたものだけを受け付ける。
+    # 誰でもコメントできるため、それ以外の人のコメントでは PR のコードを実行しない
+    if: >-
+      ${{
+        github.event.issue.pull_request &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      # コメントへのリアクションの付与
+      issues: write
+      # PR の最新のコミットの取得
+      pull-requests: read
+    outputs:
+      accepted: ${{ steps.command.outputs.accepted }}
+      sha: ${{ steps.pr.outputs.sha }}
+    steps:
+      # 前後の空白・改行を除いて `/e2e` だけのコメントかを確かめる。
+      # コメントの本文は式に直接埋め込まず、環境変数で渡す
+      - name: Check the comment is /e2e
+        id: command
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          # ci.yml の e2e-requested と同じ判定にする
+          BODY="$(jq -rn 'env.COMMENT_BODY | gsub("^\\s+|\\s+$"; "")')"
+          if [ "$BODY" = "/e2e" ]; then
+            echo "accepted=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "accepted=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: React to the comment with eyes
+        if: ${{ steps.command.outputs.accepted == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}/reactions" \
+            -f content=eyes
+
+      - name: Get the head commit of the pull request
+        id: pr
+        if: ${{ steps.command.outputs.accepted == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          SHA="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')"
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+
+  e2e:
+    needs: accept
+    if: ${{ needs.accept.outputs.accepted == 'true' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/e2e.yml
+    with:
+      ref: ${{ needs.accept.outputs.sha }}

@@ -39,51 +39,45 @@ jobs:
       - name: Build
         run: pnpm build
 
-  e2e:
+  # e2e を実行するかを決める。PR ごとに毎回実行すると Actions の使用量が大きくなるため、
+  # main への push では毎回実行し、PR ではその PR に一度でも `/e2e` とだけ書いたコメントが
+  # 投稿されていれば（以降のコミットでも）実行する。コメントされた時点の実行は e2e-comment.yml が行う。
+  # 誰でもコメントできるため、e2e-comment.yml と同じくリポジトリのオーナー・メンバー・
+  # コラボレーターのコメントだけを数える
+  e2e-requested:
     runs-on: ubuntu-latest
-    # PR ごとに実行すると Actions の使用量が大きくなるため、壊れたことに気付ければよい
-    # という前提で main への push のときだけ実行する
-    if: ${{ github.event_name == 'push' }}
-    # e2e は next dev に対して直列で実行しており、next dev はページをコンパイルするたびに
-    # メモリを使い続ける。1 つのランナーで全件を流すとメモリが上限に達してランナーごと
-    # 停止するため、テストを分割して dev サーバー 1 つあたりの担当ページを減らす
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
-    # アプリは日付判定に Asia/Tokyo を使うため、UTC の CI ランナーのまま実行すると
-    # 日付境界をまたいだタイミングで「今日」の判定がテストとアプリでずれて flaky になる
-    env:
-      TZ: Asia/Tokyo
+    permissions:
+      issues: read
+      pull-requests: read
+    outputs:
+      requested: ${{ steps.check.outputs.requested }}
     steps:
-      - uses: actions/checkout@v7
+      - name: Check whether e2e was requested with a /e2e comment
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+            echo "requested=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          COMMENT_IDS="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --jq '.[]
+              | select(.author_association == "OWNER" or .author_association == "MEMBER" or .author_association == "COLLABORATOR")
+              | select((.body | gsub("^\\s+|\\s+$"; "")) == "/e2e")
+              | .id')"
+          if [ -n "$COMMENT_IDS" ]; then
+            echo "requested=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "requested=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: ".node-version"
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Apply local D1 migrations
-        run: pnpm db:migrate:local
-
-      - name: E2E test
-        run: pnpm e2e --shard=${{ matrix.shard }}/2
-
-      - name: Upload Playwright report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report-${{ matrix.shard }}
-          path: playwright-report/
-          retention-days: 7
+  e2e:
+    needs: e2e-requested
+    if: ${{ needs.e2e-requested.outputs.requested == 'true' }}
+    uses: ./.github/workflows/e2e.yml
 
   vrt:
     runs-on: ubuntu-latest
