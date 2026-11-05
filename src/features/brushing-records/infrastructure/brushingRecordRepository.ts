@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { brushingRecords } from "@/db/schema";
 import type { BrushingRecordRepository } from "../domain/brushingRecordRepository";
@@ -21,16 +21,26 @@ export function createBrushingRecordRepository(
         .update(brushingRecords)
         .set({ ...content, updatedAt: new Date() })
         .where(
-          and(eq(brushingRecords.id, id), eq(brushingRecords.catId, catId)),
+          and(
+            eq(brushingRecords.id, id),
+            eq(brushingRecords.catId, catId),
+            isNull(brushingRecords.deletedAt),
+          ),
         )
         .returning({ id: brushingRecords.id });
       return result.length > 0;
     },
     async remove(catId, id) {
       const result = await db
-        .delete(brushingRecords)
+        .update(brushingRecords)
+        // 論理削除。削除済みの記録は読み取り・更新から除く
+        .set({ deletedAt: new Date() })
         .where(
-          and(eq(brushingRecords.id, id), eq(brushingRecords.catId, catId)),
+          and(
+            eq(brushingRecords.id, id),
+            eq(brushingRecords.catId, catId),
+            isNull(brushingRecords.deletedAt),
+          ),
         )
         .returning({ id: brushingRecords.id });
       return result.length > 0;

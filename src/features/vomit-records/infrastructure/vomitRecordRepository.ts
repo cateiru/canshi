@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { vomitRecords } from "@/db/schema";
 import type { VomitRecordRepository } from "../domain/vomitRecordRepository";
@@ -9,14 +9,6 @@ export function createVomitRecordRepository(
 ): VomitRecordRepository {
   const db = getDb(d1);
   return {
-    async existsForCat(catId, id) {
-      const [row] = await db
-        .select({ id: vomitRecords.id })
-        .from(vomitRecords)
-        .where(and(eq(vomitRecords.id, id), eq(vomitRecords.catId, catId)))
-        .limit(1);
-      return row != null;
-    },
     async add(catId, content) {
       const [created] = await db
         .insert(vomitRecords)
@@ -28,14 +20,28 @@ export function createVomitRecordRepository(
       const result = await db
         .update(vomitRecords)
         .set({ ...content, updatedAt: new Date() })
-        .where(and(eq(vomitRecords.id, id), eq(vomitRecords.catId, catId)))
+        .where(
+          and(
+            eq(vomitRecords.id, id),
+            eq(vomitRecords.catId, catId),
+            isNull(vomitRecords.deletedAt),
+          ),
+        )
         .returning({ id: vomitRecords.id });
       return result.length > 0;
     },
     async remove(catId, id) {
       const result = await db
-        .delete(vomitRecords)
-        .where(and(eq(vomitRecords.id, id), eq(vomitRecords.catId, catId)))
+        .update(vomitRecords)
+        // 論理削除。削除済みの記録は読み取り・更新から除く
+        .set({ deletedAt: new Date() })
+        .where(
+          and(
+            eq(vomitRecords.id, id),
+            eq(vomitRecords.catId, catId),
+            isNull(vomitRecords.deletedAt),
+          ),
+        )
         .returning({ id: vomitRecords.id });
       return result.length > 0;
     },

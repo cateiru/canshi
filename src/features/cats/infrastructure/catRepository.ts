@@ -8,6 +8,7 @@ import {
   expenseRecordCats,
   expenseRecordHospitalVisits,
   expenseRecords,
+  feedingRecordItems,
   feedingRecords,
   hospitalVisits,
   householdMembers,
@@ -137,8 +138,20 @@ export function createCatRepository(d1?: D1Database): CatRepository {
       // symptoms を参照しているため、medications（と、それに依存する
       // medicationDoses）は symptoms より先に削除する。途中で失敗して猫だけ残る
       // /一部の記録だけ消えるような中途半端な状態にならないよう、1つの
-      // db.batch でまとめて原子的に実行する
+      // db.batch でまとめて原子的に実行する。記録は論理削除したものも含めてすべて物理削除する
       await db.batch([
+        // feeding_record_items は feeding_records を参照するため、記録より先に明細を削除する
+        db
+          .delete(feedingRecordItems)
+          .where(
+            inArray(
+              feedingRecordItems.feedingRecordId,
+              db
+                .select({ id: feedingRecords.id })
+                .from(feedingRecords)
+                .where(eq(feedingRecords.catId, id)),
+            ),
+          ),
         db.delete(feedingRecords).where(eq(feedingRecords.catId, id)),
         db.delete(poopRecords).where(eq(poopRecords.catId, id)),
         db.delete(weightRecords).where(eq(weightRecords.catId, id)),

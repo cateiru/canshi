@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
@@ -15,6 +15,7 @@ import {
   deleteExpenseStatements,
   insertExpenseCats,
   insertExpenseHospitalVisits,
+  liveExpenseCondition,
 } from "./storage";
 
 /** D1 に保存する `ExpenseRecordRepository`。`d1` を省略すると Next.js のリクエストの D1 を使う */
@@ -23,7 +24,11 @@ export function createExpenseRecordRepository(
 ): ExpenseRecordRepository {
   const db = getDb(d1);
   const inHousehold = (householdId: string, id: string) =>
-    and(eq(expenseRecords.id, id), eq(expenseRecords.householdId, householdId));
+    and(
+      eq(expenseRecords.id, id),
+      eq(expenseRecords.householdId, householdId),
+      isNull(expenseRecords.deletedAt),
+    );
 
   return {
     async findForHousehold(householdId, id) {
@@ -57,6 +62,7 @@ export function createExpenseRecordRepository(
           .where(
             and(
               inArray(hospitalVisits.id, ids),
+              isNull(hospitalVisits.deletedAt),
               inArray(
                 hospitalVisits.catId,
                 householdCatIdsQuery(db, householdId),
@@ -98,12 +104,23 @@ export function createExpenseRecordRepository(
           .update(expenseRecords)
           .set({ ...content, updatedAt: new Date() })
           .where(inHousehold(householdId, id)),
+        // 支出が確認の後に論理削除された場合は、紐付けも入れ直さない
         db
           .delete(expenseRecordCats)
-          .where(eq(expenseRecordCats.expenseRecordId, id)),
+          .where(
+            and(
+              eq(expenseRecordCats.expenseRecordId, id),
+              liveExpenseCondition(id),
+            ),
+          ),
         db
           .delete(expenseRecordHospitalVisits)
-          .where(eq(expenseRecordHospitalVisits.expenseRecordId, id)),
+          .where(
+            and(
+              eq(expenseRecordHospitalVisits.expenseRecordId, id),
+              liveExpenseCondition(id),
+            ),
+          ),
         ...insertExpenseCats(db, id, links.catIds),
         ...insertExpenseHospitalVisits(db, id, links.hospitalVisitIds),
       ]);

@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { type WeightRecord, weightRecords } from "@/db/schema";
 
@@ -7,7 +7,7 @@ export async function listWeightRecords(catId: string) {
   return db
     .select()
     .from(weightRecords)
-    .where(eq(weightRecords.catId, catId))
+    .where(and(eq(weightRecords.catId, catId), isNull(weightRecords.deletedAt)))
     .orderBy(desc(weightRecords.occurredAt));
 }
 
@@ -16,7 +16,7 @@ export async function getWeightRecordById(id: string) {
   const [record] = await db
     .select()
     .from(weightRecords)
-    .where(eq(weightRecords.id, id))
+    .where(and(eq(weightRecords.id, id), isNull(weightRecords.deletedAt)))
     .limit(1);
   return record ?? null;
 }
@@ -30,7 +30,13 @@ export async function getWeightRecordForCat(
   const [record] = await getDb(d1)
     .select()
     .from(weightRecords)
-    .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)))
+    .where(
+      and(
+        eq(weightRecords.id, id),
+        eq(weightRecords.catId, catId),
+        isNull(weightRecords.deletedAt),
+      ),
+    )
     .limit(1);
   return record ?? null;
 }

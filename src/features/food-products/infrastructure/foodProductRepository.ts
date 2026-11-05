@@ -1,7 +1,9 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, exists, inArray, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   catalogFoodProducts,
+  feedingRecordItems,
+  feedingRecords,
   foodProducts,
   householdMembers,
 } from "@/db/schema";
@@ -138,10 +140,36 @@ export function createFoodProductRepository(
     },
 
     async removeForMember(userId, id) {
-      const deleted = await db
-        .delete(foodProducts)
-        .where(ofMember(userId, id))
-        .returning({ id: foodProducts.id });
+      // 論理削除したごはん記録の明細は商品を参照したまま残るため、外部キー制約で商品を削除できるよう、
+      // その明細だけを先に物理削除する（削除済みの記録は表示しないため、明細が減っても画面は変わらない）。
+      // 削除していない記録で使っている商品は、呼び出し元で削除前に断る。
+      // 所属の確認は商品の削除と同じ条件で行い、別の家の商品の明細には触れない
+      const [, deleted] = await db.batch([
+        db
+          .delete(feedingRecordItems)
+          .where(
+            and(
+              eq(feedingRecordItems.foodProductId, id),
+              inArray(
+                feedingRecordItems.feedingRecordId,
+                db
+                  .select({ id: feedingRecords.id })
+                  .from(feedingRecords)
+                  .where(isNotNull(feedingRecords.deletedAt)),
+              ),
+              exists(
+                db
+                  .select({ id: foodProducts.id })
+                  .from(foodProducts)
+                  .where(ofMember(userId, id)),
+              ),
+            ),
+          ),
+        db
+          .delete(foodProducts)
+          .where(ofMember(userId, id))
+          .returning({ id: foodProducts.id }),
+      ]);
       return deleted.length > 0;
     },
   };

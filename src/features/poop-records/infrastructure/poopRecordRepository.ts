@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { poopRecords } from "@/db/schema";
 import type { PoopRecordRepository } from "../domain/poopRecordRepository";
@@ -9,14 +9,6 @@ export function createPoopRecordRepository(
 ): PoopRecordRepository {
   const db = getDb(d1);
   return {
-    async existsForCat(catId, id) {
-      const [row] = await db
-        .select({ id: poopRecords.id })
-        .from(poopRecords)
-        .where(and(eq(poopRecords.id, id), eq(poopRecords.catId, catId)))
-        .limit(1);
-      return row != null;
-    },
     async add(catId, content) {
       const [created] = await db
         .insert(poopRecords)
@@ -28,14 +20,28 @@ export function createPoopRecordRepository(
       const result = await db
         .update(poopRecords)
         .set({ ...content, updatedAt: new Date() })
-        .where(and(eq(poopRecords.id, id), eq(poopRecords.catId, catId)))
+        .where(
+          and(
+            eq(poopRecords.id, id),
+            eq(poopRecords.catId, catId),
+            isNull(poopRecords.deletedAt),
+          ),
+        )
         .returning({ id: poopRecords.id });
       return result.length > 0;
     },
     async remove(catId, id) {
       const result = await db
-        .delete(poopRecords)
-        .where(and(eq(poopRecords.id, id), eq(poopRecords.catId, catId)))
+        .update(poopRecords)
+        // 論理削除。削除済みの記録は読み取り・更新から除く
+        .set({ deletedAt: new Date() })
+        .where(
+          and(
+            eq(poopRecords.id, id),
+            eq(poopRecords.catId, catId),
+            isNull(poopRecords.deletedAt),
+          ),
+        )
         .returning({ id: poopRecords.id });
       return result.length > 0;
     },

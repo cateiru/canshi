@@ -33,6 +33,9 @@ vi.mock("@/features/auth/presentation/session", () => ({
   },
 }));
 
+const { createCleaningRecordRepository } = await import(
+  "../infrastructure/cleaningRecordRepository"
+);
 const {
   createCleaningRecordAction,
   quickCreateCleaningRecordAction,
@@ -266,6 +269,28 @@ describe("updateCleaningRecordAction の掃除の通知", () => {
     });
 
     expect(await statusOf("toilet")).toBe("done");
+  });
+
+  it("確認の後に記録が論理削除された場合は、記録も通知も更新しない", async () => {
+    // 保存前の確認の後、更新の batch より先に別の端末から削除された状態
+    await db.insert(cleaningRecords).values({
+      id: "record",
+      catId: "tama",
+      cleaningTargetId: "toilet",
+      performedAt: new Date("2026-09-21T08:00:00.000Z"),
+      deletedAt: new Date(),
+    });
+
+    const updated = await createCleaningRecordRepository().update(
+      "tama",
+      "toilet",
+      "record",
+      { performedAt: new Date("2026-09-21T07:30:00.000Z"), memo: null },
+      new Date("2026-09-22T00:00:00.000Z"),
+    );
+
+    expect(updated).toBe(false);
+    expect(await statusOf("toilet")).toBe("pending");
   });
 
   it("実施日時を変えずにメモだけを直しても完了にしない", async () => {

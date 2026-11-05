@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { type MemoRecord, memoRecords } from "@/db/schema";
 
@@ -11,7 +11,7 @@ export async function listMemoRecords(catId: string, d1?: D1Database) {
   return getDb(d1)
     .select()
     .from(memoRecords)
-    .where(eq(memoRecords.catId, catId))
+    .where(and(eq(memoRecords.catId, catId), isNull(memoRecords.deletedAt)))
     .orderBy(
       sql`${memoRecords.recordedAt} is not null`,
       desc(memoRecords.recordedAt),
@@ -24,7 +24,7 @@ export async function getMemoRecordById(id: string) {
   const [record] = await db
     .select()
     .from(memoRecords)
-    .where(eq(memoRecords.id, id))
+    .where(and(eq(memoRecords.id, id), isNull(memoRecords.deletedAt)))
     .limit(1);
   return record ?? null;
 }
@@ -38,7 +38,13 @@ export async function getMemoRecordForCat(
   const [record] = await getDb(d1)
     .select()
     .from(memoRecords)
-    .where(and(eq(memoRecords.id, id), eq(memoRecords.catId, catId)))
+    .where(
+      and(
+        eq(memoRecords.id, id),
+        eq(memoRecords.catId, catId),
+        isNull(memoRecords.deletedAt),
+      ),
+    )
     .limit(1);
   return record ?? null;
 }

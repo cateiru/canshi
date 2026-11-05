@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
@@ -107,7 +107,9 @@ export async function listFeedingRecords(
       mode: feedingRecords.mode,
     })
     .from(feedingRecords)
-    .where(eq(feedingRecords.catId, catId))
+    .where(
+      and(eq(feedingRecords.catId, catId), isNull(feedingRecords.deletedAt)),
+    )
     .orderBy(desc(feedingRecords.occurredAt));
 
   return attachItems(headers);
@@ -125,7 +127,7 @@ export async function getFeedingRecordById(
       mode: feedingRecords.mode,
     })
     .from(feedingRecords)
-    .where(eq(feedingRecords.id, id))
+    .where(and(eq(feedingRecords.id, id), isNull(feedingRecords.deletedAt)))
     .limit(1);
 
   if (!header) {
@@ -165,6 +167,7 @@ export async function listRecentlyUsedFoodProductIds(
     .where(
       and(
         eq(feedingRecords.catId, catId),
+        isNull(feedingRecords.deletedAt),
         eq(foodProducts.householdId, householdId),
       ),
     )
@@ -207,7 +210,13 @@ export async function getFeedingRecordRowForCat(
   const [record] = await getDb(d1)
     .select()
     .from(feedingRecords)
-    .where(and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)))
+    .where(
+      and(
+        eq(feedingRecords.id, id),
+        eq(feedingRecords.catId, catId),
+        isNull(feedingRecords.deletedAt),
+      ),
+    )
     .limit(1);
   return record ?? null;
 }

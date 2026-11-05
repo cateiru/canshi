@@ -25,7 +25,7 @@ export type HospitalVisitContent = Pick<
 export type HospitalVisitExpenseChange = {
   /** 通院した猫の家。病院代の支出記録を新しく作るときは、この家の支出にする */
   householdId: string;
-  /** 病院代。null のときは紐付く支出記録を削除する（他の通院記録と共有していれば紐付けだけ外す） */
+  /** 病院代。null のときは紐付く支出記録を論理削除する（他の通院記録と共有していれば紐付けだけ外す） */
   amountYen: number | null;
   /** 病院代を入力せずに、既存の支出記録へ紐付けるときの支出記録 ID */
   linkExpenseRecordId?: string | null;

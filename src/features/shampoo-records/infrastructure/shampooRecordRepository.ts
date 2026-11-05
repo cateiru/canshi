@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { shampooRecords } from "@/db/schema";
 import type { ShampooRecordRepository } from "../domain/shampooRecordRepository";
@@ -20,14 +20,28 @@ export function createShampooRecordRepository(
       const result = await db
         .update(shampooRecords)
         .set({ ...content, updatedAt: new Date() })
-        .where(and(eq(shampooRecords.id, id), eq(shampooRecords.catId, catId)))
+        .where(
+          and(
+            eq(shampooRecords.id, id),
+            eq(shampooRecords.catId, catId),
+            isNull(shampooRecords.deletedAt),
+          ),
+        )
         .returning({ id: shampooRecords.id });
       return result.length > 0;
     },
     async remove(catId, id) {
       const result = await db
-        .delete(shampooRecords)
-        .where(and(eq(shampooRecords.id, id), eq(shampooRecords.catId, catId)))
+        .update(shampooRecords)
+        // 論理削除。削除済みの記録は読み取り・更新から除く
+        .set({ deletedAt: new Date() })
+        .where(
+          and(
+            eq(shampooRecords.id, id),
+            eq(shampooRecords.catId, catId),
+            isNull(shampooRecords.deletedAt),
+          ),
+        )
         .returning({ id: shampooRecords.id });
       return result.length > 0;
     },

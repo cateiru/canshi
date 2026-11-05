@@ -1,4 +1,4 @@
-import { and, eq, inArray, lt } from "drizzle-orm";
+import { and, eq, exists, inArray, isNull, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { cleaningRecords, notifications } from "@/db/schema";
 import type { CleaningRecordRepository } from "../domain/cleaningRecordRepository";
@@ -13,12 +13,18 @@ export function createCleaningRecordRepository(
       eq(cleaningRecords.id, id),
       eq(cleaningRecords.catId, catId),
       eq(cleaningRecords.cleaningTargetId, cleaningTargetId),
+      isNull(cleaningRecords.deletedAt),
     );
 
-  /** 掃除対象の未対応の掃除の通知のうち、`dueBefore` より前の予定日のものを完了にする文 */
+  /**
+   * 掃除対象の未対応の掃除の通知のうち、`dueBefore` より前の予定日のものを完了にする文。
+   * 実施記録が削除されずにあるときだけ完了にし、確認の後に記録が論理削除された場合は通知に触れない
+   * （記録の追加では、同じ batch の先頭で挿入した記録を見る）
+   */
   function completeNotifications(
     catId: string,
     cleaningTargetId: string,
+    cleaningRecordId: string,
     dueBefore: Date | null,
   ) {
     if (dueBefore == null) {
@@ -35,6 +41,12 @@ export function createCleaningRecordRepository(
             eq(notifications.referenceId, cleaningTargetId),
             inArray(notifications.status, ["pending", "snoozed"]),
             lt(notifications.dueAt, dueBefore),
+            exists(
+              db
+                .select({ id: cleaningRecords.id })
+                .from(cleaningRecords)
+                .where(byId(catId, cleaningTargetId, cleaningRecordId)),
+            ),
           ),
         ),
     ];
@@ -63,6 +75,7 @@ export function createCleaningRecordRepository(
         ...completeNotifications(
           catId,
           cleaningTargetId,
+          id,
           completeNotificationsDueBefore,
         ),
       ]);
@@ -84,6 +97,7 @@ export function createCleaningRecordRepository(
         ...completeNotifications(
           catId,
           cleaningTargetId,
+          id,
           completeNotificationsDueBefore,
         ),
       ]);
@@ -91,7 +105,9 @@ export function createCleaningRecordRepository(
     },
     async remove(catId, cleaningTargetId, id) {
       const result = await db
-        .delete(cleaningRecords)
+        .update(cleaningRecords)
+        // 論理削除。削除済みの記録は読み取り・更新から除く
+        .set({ deletedAt: new Date() })
         .where(byId(catId, cleaningTargetId, id))
         .returning({ id: cleaningRecords.id });
       return result.length > 0;

@@ -128,23 +128,20 @@ describe("updateSymptomAction", () => {
 });
 
 describe("deleteSymptomAction", () => {
-  it("症状を削除すると、その症状の確認通知も削除する", async () => {
+  it("症状を論理削除し、その症状の確認通知は削除する。添付は残す", async () => {
     const { cat, symptom, notification } = await setup();
 
     await expect(deleteSymptomAction(cat.id, symptom.id)).rejects.toThrow(
       `REDIRECT:/cats/${cat.id}/symptoms`,
     );
 
-    expect(deleteMediaAssetsByRecord).toHaveBeenCalledWith(
-      "symptom",
-      symptom.id,
-    );
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
     expect(await findNotification(notification.id)).toBeUndefined();
     const [deleted] = await db
       .select()
       .from(symptoms)
       .where(eq(symptoms.id, symptom.id));
-    expect(deleted).toBeUndefined();
+    expect(deleted.deletedAt).toBeInstanceOf(Date);
   });
 
   it("別の猫の症状 ID を渡しても、添付も症状も削除しない", async () => {
@@ -165,6 +162,6 @@ describe("deleteSymptomAction", () => {
       .select()
       .from(symptoms)
       .where(eq(symptoms.id, symptom.id));
-    expect(kept).toBeDefined();
+    expect(kept.deletedAt).toBeNull();
   });
 });

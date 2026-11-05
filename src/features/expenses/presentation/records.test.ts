@@ -321,7 +321,7 @@ describe("支出の保存と月別表示", () => {
     ]);
   });
 
-  it("削除すると添付メディアと猫への関連付けも削除する", async () => {
+  it("削除すると論理削除し、一覧からは消えるが添付メディアと猫への関連付けは残す", async () => {
     const { savedRecordId: id } = await createExpenseAction(
       "tama",
       {},
@@ -330,9 +330,26 @@ describe("支出の保存と月別表示", () => {
     await expect(deleteExpenseAction("tama", id as string)).rejects.toThrow(
       "redirect:/cats/tama/expenses",
     );
-    expect(deleteMediaAssetsByRecord).toHaveBeenCalledWith("expense", id);
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
     expect(await getExpenseById("household-1", id as string)).toBeNull();
-    expect(await db.select().from(expenseRecordCats)).toEqual([]);
+    expect(await listExpensesForMonth("household-1", 2026, 9)).toEqual([]);
+    const [row] = await db
+      .select({ deletedAt: expenseRecords.deletedAt })
+      .from(expenseRecords)
+      .where(eq(expenseRecords.id, id as string));
+    expect(row.deletedAt).toBeInstanceOf(Date);
+    expect(await db.select().from(expenseRecordCats)).toEqual([
+      { expenseRecordId: id, catId: "tama" },
+    ]);
+    // 削除済みの支出は、もう一度削除・更新できない
+    expect(
+      await updateExpenseAction(
+        "tama",
+        id as string,
+        {},
+        expenseForm({ catIds: ["tama"] }),
+      ),
+    ).toHaveProperty("formError");
   });
 });
 
@@ -477,7 +494,7 @@ describe("通院記録と病院代の連携", () => {
     expect(await db.select().from(expenseRecords)).toHaveLength(1);
   });
 
-  it("0円の病院代は保存し、空欄にした場合は支出だけ削除する", async () => {
+  it("0円の病院代は保存し、空欄にした場合は支出だけ論理削除する", async () => {
     const { savedRecordId: id } = await createHospitalVisitAction(
       "tama",
       {},
@@ -492,10 +509,12 @@ describe("通院記録と病院代の連携", () => {
       visitForm({ expenseAmountYen: "" }),
     );
     expect(await getExpenseByHospitalVisitId(id as string)).toBeNull();
-    expect(deleteMediaAssetsByRecord).toHaveBeenCalledWith(
-      "expense",
-      expense?.id,
-    );
+    expect(
+      await getExpenseById("household-1", expense?.id as string),
+    ).toBeNull();
+    // 添付の写真は残す
+    expect(deleteMediaAssetsByRecord).not.toHaveBeenCalled();
+    expect(await db.select().from(expenseRecords)).toHaveLength(1);
     expect(await db.select().from(hospitalVisits)).toHaveLength(1);
   });
 
@@ -955,5 +974,140 @@ describe("通院記録の作成時に同じ日の支出記録へ紐付ける", (
       ).toHaveProperty("formError");
     }
     expect(await db.select().from(hospitalVisits)).toEqual([]);
+  });
+});
+
+describe("確認の後に記録が論理削除された場合", () => {
+  const visitContent = {
+    symptomId: null,
+    visitedAt: new Date("2026-09-15T10:00:00.000Z"),
+    reason: "健診",
+    diagnosis: null,
+    examinationResults: null,
+    treatment: null,
+    nextVisitAt: null,
+    memo: null,
+  };
+
+  it("支出の更新で、削除時に外した通院記録との紐付けを入れ直さない", async () => {
+    const tamaVisit = await addVisit("tama");
+    const { savedRecordId } = await createExpenseAction(
+      "tama",
+      {},
+      expenseForm({
+        category: "hospital",
+        amountYen: "5500",
+        catIds: ["tama"],
+        hospitalVisitIds: [tamaVisit],
+      }),
+    );
+    const id = savedRecordId as string;
+    // 保存前の確認の後、更新の batch より先に別の端末から削除された状態
+    await expect(deleteExpenseAction("tama", id)).rejects.toThrow("redirect:");
+    const { createExpenseRecordRepository } = await import(
+      "../infrastructure/expenseRecordRepository"
+    );
+
+    await createExpenseRecordRepository().update(
+      "household-1",
+      id,
+      {
+        spentAt: new Date("2026-09-15T00:00:00.000Z"),
+        amountYen: 6000,
+        category: "hospital",
+        memo: null,
+      },
+      { catIds: ["tama", "mike"], hospitalVisitIds: [tamaVisit] },
+    );
+
+    expect(await db.select().from(expenseRecordHospitalVisits)).toEqual([]);
+    expect(await db.select().from(expenseRecordCats)).toEqual([
+      { expenseRecordId: id, catId: "tama" },
+    ]);
+    const [row] = await db
+      .select({ amountYen: expenseRecords.amountYen })
+      .from(expenseRecords)
+      .where(eq(expenseRecords.id, id));
+    expect(row.amountYen).toBe(5500);
+  });
+
+  it("通院記録の更新で、病院代の支出を追加しない", async () => {
+    const tamaVisit = await addVisit("tama");
+    await expect(deleteHospitalVisitAction("tama", tamaVisit)).rejects.toThrow(
+      "redirect:",
+    );
+    const { createHospitalVisitRepository } = await import(
+      "@/features/hospital-visits/infrastructure/hospitalVisitRepository"
+    );
+
+    await createHospitalVisitRepository().update(
+      "tama",
+      tamaVisit,
+      visitContent,
+      {
+        householdId: "household-1",
+        amountYen: 3000,
+      },
+    );
+
+    expect(await db.select().from(expenseRecords)).toEqual([]);
+    expect(await db.select().from(expenseRecordHospitalVisits)).toEqual([]);
+    expect(await db.select().from(expenseRecordCats)).toEqual([]);
+  });
+
+  it("通院記録の更新で、病院代の支出を変更・削除しない", async () => {
+    const tamaVisit = await addVisit("tama", { expenseAmountYen: "5500" });
+    const expense = await getExpenseByHospitalVisitId(tamaVisit);
+    // 削除時に紐付けは外れるため、外れる前の状態（通院記録だけが削除済み）を直接作る
+    await db
+      .update(hospitalVisits)
+      .set({ deletedAt: new Date() })
+      .where(eq(hospitalVisits.id, tamaVisit));
+    const { createHospitalVisitRepository } = await import(
+      "@/features/hospital-visits/infrastructure/hospitalVisitRepository"
+    );
+    const repository = createHospitalVisitRepository();
+
+    await repository.update("tama", tamaVisit, visitContent, {
+      householdId: "household-1",
+      amountYen: 8000,
+    });
+    await repository.update("tama", tamaVisit, visitContent, {
+      householdId: "household-1",
+      amountYen: null,
+    });
+
+    const [row] = await db
+      .select()
+      .from(expenseRecords)
+      .where(eq(expenseRecords.id, expense?.id as string));
+    expect(row).toMatchObject({ amountYen: 5500, deletedAt: null });
+    expect(await db.select().from(expenseRecordHospitalVisits)).toHaveLength(1);
+  });
+
+  it("通院記録の作成で既存の支出に紐付けるとき、支出が削除済みなら紐付けない", async () => {
+    const { savedRecordId } = await createExpenseAction(
+      "tama",
+      {},
+      expenseForm({ category: "hospital", amountYen: "5500", catIds: [] }),
+    );
+    const expenseId = savedRecordId as string;
+    await db
+      .update(expenseRecords)
+      .set({ deletedAt: new Date() })
+      .where(eq(expenseRecords.id, expenseId));
+    const { createHospitalVisitRepository } = await import(
+      "@/features/hospital-visits/infrastructure/hospitalVisitRepository"
+    );
+
+    await createHospitalVisitRepository().add("tama", visitContent, {
+      householdId: "household-1",
+      amountYen: null,
+      linkExpenseRecordId: expenseId,
+    });
+
+    expect(await db.select().from(hospitalVisits)).toHaveLength(1);
+    expect(await db.select().from(expenseRecordHospitalVisits)).toEqual([]);
+    expect(await db.select().from(expenseRecordCats)).toEqual([]);
   });
 });

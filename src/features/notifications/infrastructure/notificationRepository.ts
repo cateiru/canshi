@@ -1,4 +1,4 @@
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
@@ -69,6 +69,7 @@ export function createNotificationRepository(
               memo: sql`null`.as("memo"),
               createdAt: sql`(unixepoch())`.as("createdAt"),
               updatedAt: sql`(unixepoch())`.as("updatedAt"),
+              deletedAt: sql`null`.as("deletedAt"),
             })
             .from(notifications)
             .innerJoin(
@@ -104,6 +105,7 @@ export function createNotificationRepository(
               eq(symptoms.id, symptomId),
               eq(symptoms.catId, catId),
               ne(symptoms.status, "resolved"),
+              isNull(symptoms.deletedAt),
             ),
           ),
         db

@@ -13,6 +13,6 @@ export interface BrushingRecordRepository {
     id: string,
     content: BrushingRecordContent,
   ): Promise<boolean>;
-  /** 記録を削除する。見つからなければ false */
+  /** 記録を論理削除する（削除日時を入れる）。見つからない・削除済みなら false */
   remove(catId: string, id: string): Promise<boolean>;
 }
