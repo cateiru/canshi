@@ -52,6 +52,10 @@ function parseFormData(formData: FormData) {
     birthMonth: formData.get("birthMonth"),
     breed: formData.get("breed"),
     adoptedAt: formData.get("adoptedAt"),
+    neuterStatus: formData.get("neuterStatus"),
+    coatColor: formData.get("coatColor"),
+    coatPattern: formData.get("coatPattern"),
+    coatWhite: formData.get("coatWhite"),
     householdId: formData.get("householdId"),
   });
   if (!parsed.success) {
@@ -80,6 +84,10 @@ function parseFormData(formData: FormData) {
       birthDatePrecision: birth.data.birthDatePrecision,
       breed: parsed.data.breed ?? null,
       adoptedAt: parsed.data.adoptedAt ?? null,
+      neuterStatus: parsed.data.neuterStatus ?? null,
+      coatColor: parsed.data.coatColor ?? null,
+      coatPattern: parsed.data.coatPattern ?? null,
+      coatWhite: parsed.data.coatWhite ?? null,
       householdId: parsed.data.householdId,
     },
   };

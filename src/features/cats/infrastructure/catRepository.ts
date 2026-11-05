@@ -48,6 +48,14 @@ export function createCatRepository(d1?: D1Database): CatRepository {
               ),
               breed: sql`${values.breed ?? null}`.as("breed"),
               adoptedAt: sql`${values.adoptedAt ?? null}`.as("adopted_at"),
+              neuterStatus: sql`${values.neuterStatus ?? null}`.as(
+                "neuter_status",
+              ),
+              coatColor: sql`${values.coatColor ?? null}`.as("coat_color"),
+              coatPattern: sql`${values.coatPattern ?? null}`.as(
+                "coat_pattern",
+              ),
+              coatWhite: sql`${values.coatWhite ?? null}`.as("coat_white"),
               profileMediaAssetId: sql`NULL`.as("profile_media_asset_id"),
               createdAt: sql`(unixepoch())`.as("created_at"),
               updatedAt: sql`(unixepoch())`.as("updated_at"),

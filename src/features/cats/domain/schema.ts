@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  CAT_COAT_COLORS,
+  CAT_COAT_PATTERNS,
+  CAT_COAT_WHITE_AMOUNTS,
+  CAT_NEUTER_STATUSES,
+} from "@/db/schema";
 
 export const BIRTH_DATE_PRECISIONS = ["day", "month", "year"] as const;
 
@@ -54,6 +60,28 @@ export const catFormSchema = z.object({
   adoptedAt: z.preprocess(
     emptyToUndefined,
     z.string().date("お迎え日の形式が正しくありません").optional(),
+  ),
+  neuterStatus: z.preprocess(
+    emptyToUndefined,
+    z
+      .enum(CAT_NEUTER_STATUSES, {
+        error: "避妊・去勢の状況を選択してください",
+      })
+      .optional(),
+  ),
+  coatColor: z.preprocess(
+    emptyToUndefined,
+    z.enum(CAT_COAT_COLORS, { error: "ベース色を選択してください" }).optional(),
+  ),
+  coatPattern: z.preprocess(
+    emptyToUndefined,
+    z.enum(CAT_COAT_PATTERNS, { error: "柄を選択してください" }).optional(),
+  ),
+  coatWhite: z.preprocess(
+    emptyToUndefined,
+    z
+      .enum(CAT_COAT_WHITE_AMOUNTS, { error: "白い毛の割合を選択してください" })
+      .optional(),
   ),
   // 猫を飼っている家。所属している家かどうかはサーバー側で確認する
   householdId: z.preprocess(

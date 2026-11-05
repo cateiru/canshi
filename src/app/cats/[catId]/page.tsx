@@ -15,10 +15,16 @@ import {
 } from "@/features/cats/domain/age";
 import { formatBirthDate } from "@/features/cats/domain/birthDate";
 import { toBirthdayCelebrationCat } from "@/features/cats/domain/birthday";
-import { SEX_LABEL } from "@/features/cats/domain/labels";
+import { formatCoat } from "@/features/cats/domain/coat";
+import {
+  NEUTER_STATUS_LABEL,
+  NEUTER_TERM,
+  SEX_LABEL,
+} from "@/features/cats/domain/labels";
 import { deleteCatAction } from "@/features/cats/presentation/actions";
 import { BirthdayCelebration } from "@/features/cats/presentation/BirthdayCelebration";
 import { CatAvatar } from "@/features/cats/presentation/CatAvatar";
+import { CoatSwatch } from "@/features/cats/presentation/CoatSwatch";
 import { DeleteCatButton } from "@/features/cats/presentation/DeleteCatButton";
 import { RecordNavGrid } from "@/features/cats/presentation/RecordNavGrid";
 import styles from "./page.module.css";
@@ -37,6 +43,7 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
     notFound();
   }
 
+  const coatLabel = formatCoat(cat);
   const timeSinceAdoption = cat.adoptedAt
     ? calculateTimeSinceAdoption(cat.adoptedAt)
     : null;
@@ -75,6 +82,23 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
           </dd>
           <dt>猫種</dt>
           <dd>{cat.breed ?? "未設定"}</dd>
+          <dt>{NEUTER_TERM[cat.sex]}</dt>
+          <dd>
+            {cat.neuterStatus
+              ? NEUTER_STATUS_LABEL[cat.neuterStatus]
+              : "未設定"}
+          </dd>
+          <dt>毛色・柄</dt>
+          <dd className={coatLabel ? styles.coat : undefined}>
+            {coatLabel ? (
+              <>
+                <CoatSwatch coat={cat} />
+                <span>{coatLabel}</span>
+              </>
+            ) : (
+              "未設定"
+            )}
+          </dd>
           <dt>お迎え日</dt>
           <dd>
             {cat.adoptedAt ?? "未設定"}

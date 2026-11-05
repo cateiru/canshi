@@ -1,0 +1,24 @@
+/* 白い毛色も背景と見分けられるよう、色見本（見た目設定のアクセントカラー）と同じく輪郭を描く */
+.swatch {
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-illustration-outline);
+  background-repeat: repeat;
+  background-position: center;
+}
+
+.sm {
+  width: 24px;
+  height: 24px;
+}
+
+.lg {
+  width: 64px;
+  height: 64px;
+}
+
+.empty {
+  box-shadow: none;
+  border: var(--border-width) dashed var(--color-border-input);
+}

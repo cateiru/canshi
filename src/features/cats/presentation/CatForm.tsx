@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { TbCalendar, TbCheck } from "react-icons/tb";
+import { TbCalendar, TbCheck, TbPalette } from "react-icons/tb";
 import {
   Button,
   ButtonLink,
   ComboBox,
   FormField,
+  Radio,
+  RadioGroup,
   Select,
 } from "@/components/ui";
 import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
@@ -14,11 +16,13 @@ import type { Cat } from "@/db/schema";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { Surface } from "@/features/shared/Surface";
 import { CAT_BREEDS, matchesBreed } from "../domain/breeds";
+import { NEUTER_STATUS_LABEL, NEUTER_TERM } from "../domain/labels";
 import type { CatFormState } from "./actions";
 import { BirthDateField } from "./BirthDateField";
 import { CatAvatar } from "./CatAvatar";
 import styles from "./CatForm.module.css";
 import { CatIcon } from "./CatIcon";
+import { CoatField } from "./CoatField";
 import { ProfileImageField } from "./ProfileImageField";
 
 type CatFormProps = {
@@ -56,6 +60,8 @@ export function CatForm({
     initialState,
   );
   const [isProfileImageBusy, setIsProfileImageBusy] = useState(false);
+  // 避妊・去勢の呼び方を性別に合わせて切り替えるため、選んでいる性別を持つ
+  const [sex, setSex] = useState<Cat["sex"]>(cat?.sex ?? "unknown");
 
   return (
     <form action={formAction} className={styles.form}>
@@ -78,9 +84,33 @@ export function CatForm({
           name="sex"
           label="性別"
           options={SEX_OPTIONS}
-          defaultSelectedKey={cat?.sex ?? "unknown"}
+          selectedKey={sex}
+          onSelectionChange={(key) => {
+            if (key !== null) {
+              setSex(key as Cat["sex"]);
+            }
+          }}
           errorMessage={state.fieldErrors?.sex?.[0]}
         />
+
+        <div className={styles.radioField}>
+          <RadioGroup
+            name="neuterStatus"
+            label={NEUTER_TERM[sex]}
+            defaultValue={cat?.neuterStatus ?? ""}
+            isInvalid={state.fieldErrors?.neuterStatus !== undefined}
+            optionsClassName={styles.inlineOptions}
+          >
+            <Radio value="">未設定</Radio>
+            <Radio value="intact">{NEUTER_STATUS_LABEL.intact}</Radio>
+            <Radio value="neutered">{NEUTER_STATUS_LABEL.neutered}</Radio>
+          </RadioGroup>
+          {state.fieldErrors?.neuterStatus ? (
+            <p className={styles.errorMessage}>
+              {state.fieldErrors.neuterStatus[0]}
+            </p>
+          ) : null}
+        </div>
 
         <ComboBox
           name="breed"
@@ -109,6 +139,18 @@ export function CatForm({
           }
           errorMessage={state.fieldErrors?.householdId?.[0]}
         />
+      </Surface>
+      <Surface
+        titleId="cat-coat-heading"
+        title="毛色・柄"
+        titleSize="lg"
+        icon={<TbPalette aria-hidden="true" size={20} />}
+        gap="md"
+      >
+        <p className={styles.description}>
+          近いものを選んでください。わからない項目は未設定のままで大丈夫です。
+        </p>
+        <CoatField cat={cat} fieldErrors={state.fieldErrors} />
       </Surface>
       {cat ? (
         <Surface

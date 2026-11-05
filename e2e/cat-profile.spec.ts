@@ -14,6 +14,19 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
   await page.getByLabel("名前").fill(catName);
   await page.getByLabel("性別").click();
   await page.getByRole("option", { name: "メス" }).click();
+  // 性別がメスなら、避妊・去勢の欄は「避妊」になる。ラジオボタンは見えない input のため、ラベルの文字を押す
+  await page
+    .getByRole("radiogroup", { name: "避妊", exact: true })
+    .getByText("済", { exact: true })
+    .click();
+  await page
+    .getByRole("radiogroup", { name: "ベース色" })
+    .getByText("茶（レッド）", { exact: true })
+    .click();
+  await page
+    .getByRole("radiogroup", { name: "柄" })
+    .getByText("縞（トラ）", { exact: true })
+    .click();
   await page.getByLabel("生年月日", { exact: true }).fill("2020-04-01");
   // ひらがなで途中まで入力すると、カタカナの猫種が候補に出る。
   // 入力欄を画面に入れるためのスクロールが候補の表示より後に起きると、react-aria が候補を
@@ -33,6 +46,9 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();
   await expect(page.getByText("メス")).toBeVisible();
   await expect(page.getByText("マンチカン")).toBeVisible();
+  await expect(page.getByText("避妊", { exact: true })).toBeVisible();
+  await expect(page.getByText("済", { exact: true })).toBeVisible();
+  await expect(page.getByText("茶（レッド）・縞（トラ）")).toBeVisible();
   await expect(page.getByText(/歳/)).toBeVisible();
   await expect(page.getByText(/（お迎えから\d+年(?:\d+ヶ月)?）/)).toBeVisible();
 
