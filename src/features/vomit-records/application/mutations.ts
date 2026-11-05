@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type { VomitRecordFormInput } from "../domain/schema";
 import { toVomitRecordContent } from "../domain/vomitRecord";
 import { createVomitRecordRepository } from "../infrastructure/vomitRecordRepository";
@@ -12,9 +13,14 @@ import { createVomitRecordRepository } from "../infrastructure/vomitRecordReposi
 export async function createVomitRecord(
   catId: string,
   data: VomitRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string> {
-  return createVomitRecordRepository(d1).add(catId, toVomitRecordContent(data));
+  return createVomitRecordRepository(d1).add(
+    catId,
+    toVomitRecordContent(data),
+    actor,
+  );
 }
 
 /** 猫の記録を更新する。見つからなければ false */
@@ -22,12 +28,14 @@ export async function updateVomitRecord(
   catId: string,
   id: string,
   data: VomitRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   return createVomitRecordRepository(d1).update(
     catId,
     id,
     toVomitRecordContent(data),
+    actor,
   );
 }
 
@@ -38,7 +46,8 @@ export async function updateVomitRecord(
 export async function deleteVomitRecord(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createVomitRecordRepository(d1).remove(catId, id);
+  return createVomitRecordRepository(d1).remove(catId, id, actor);
 }

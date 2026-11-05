@@ -1,6 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { insertWhere, liveRowCondition } from "@/db/conditionalInsert";
+import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import {
   expenseRecordHospitalVisits,
   hospitalVisits,
@@ -37,7 +38,7 @@ export function createHospitalVisitRepository(
       return row != null;
     },
 
-    async add(catId, content, expense) {
+    async add(catId, content, expense, actor) {
       const id = crypto.randomUUID();
       const saved = await saveHospitalVisitWithExpense(
         db,
@@ -47,18 +48,30 @@ export function createHospitalVisitRepository(
           { id, catId, ...content },
           symptomIsLive(catId, content.symptomId),
         ).returning({ id: hospitalVisits.id }),
+        // 挿入が断られたときは履歴も追加しない
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "hospital_visit",
+            recordId: id,
+            action: "create",
+            actor,
+          },
+          liveRowCondition(hospitalVisits, catId, id),
+        ),
         {
           hospitalVisitId: id,
           catId,
           visitedAt: content.visitedAt,
           ...expense,
+          actor,
         },
         symptomIsLive(catId, content.symptomId),
       );
       return saved ? id : null;
     },
 
-    async update(catId, id, content, expense) {
+    async update(catId, id, content, expense, actor) {
       return saveHospitalVisitWithExpense(
         db,
         db
@@ -66,23 +79,48 @@ export function createHospitalVisitRepository(
           .set({ ...content, updatedAt: new Date() })
           .where(and(byId(catId, id), symptomIsLive(catId, content.symptomId)))
           .returning({ id: hospitalVisits.id }),
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "hospital_visit",
+            recordId: id,
+            action: "update",
+            actor,
+          },
+          and(
+            liveRowCondition(hospitalVisits, catId, id),
+            symptomIsLive(catId, content.symptomId),
+          ),
+        ),
         {
           hospitalVisitId: id,
           catId,
           visitedAt: content.visitedAt,
           ...expense,
+          actor,
         },
         symptomIsLive(catId, content.symptomId),
       );
     },
 
-    async remove(catId, id) {
+    async remove(catId, id, actor) {
       // 通院記録は論理削除する。症状・投薬・支出記録から削除済みの通院記録を指したままにしないよう、
       // それらからの紐付け（symptoms.hospital_visit_id / medications.hospital_visit_id /
       // expense_record_hospital_visits）は外す。支出記録は家計簿として残す必要があるため、
       // 紐付けだけ外して記録自体は削除しない。一連の操作は db.batch でまとめて
-      // 原子的に実行する
+      // 原子的に実行する。ほかの記録の紐付けを外すことは、ほかの記録の編集としては履歴に残さない。
+      // 削除の後は通院記録が条件に一致しないため、履歴を先に追加する
       await db.batch([
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "hospital_visit",
+            recordId: id,
+            action: "delete",
+            actor,
+          },
+          liveRowCondition(hospitalVisits, catId, id),
+        ),
         db
           .update(symptoms)
           .set({ hospitalVisitId: null })

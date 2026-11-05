@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import { createHospitalVisitRepository } from "@/features/hospital-visits/infrastructure/hospitalVisitRepository";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
 import { createSymptomRepository } from "@/features/symptoms/infrastructure/symptomRepository";
@@ -45,6 +46,7 @@ async function verifyReferencesBelongToCat(
 export async function createMedication(
   catId: string,
   data: MedicationFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveMedicationResult> {
   if (!(await verifyReferencesBelongToCat(data, catId, d1))) {
@@ -53,6 +55,7 @@ export async function createMedication(
   const id = await createMedicationRepository(d1).add(
     catId,
     toMedicationContent(data),
+    actor,
   );
   // 確認の後に関連する症状・通院記録が削除された場合は、追加の文の中で断られる
   return id == null ? { error: MEDICATION_REFERENCE_NOT_FOUND_ERROR } : { id };
@@ -66,6 +69,7 @@ export async function updateMedication(
   catId: string,
   id: string,
   data: MedicationFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveMedicationResult | null> {
   if (!(await verifyReferencesBelongToCat(data, catId, d1))) {
@@ -75,6 +79,7 @@ export async function updateMedication(
     catId,
     id,
     toMedicationContent(data),
+    actor,
   );
   return updated ? { id } : null;
 }
@@ -86,11 +91,12 @@ export async function updateMedication(
 export async function deleteMedication(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   const repository = createMedicationRepository(d1);
   if (!(await repository.existsForCat(catId, id))) return false;
-  await repository.remove(catId, id);
+  await repository.remove(catId, id, actor);
   return true;
 }
 
@@ -101,6 +107,7 @@ export async function setMedicationArchived(
   catId: string,
   id: string,
   archived: boolean,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<void> {
   // 発生日時と同じく、JST の見た目の数字を UTC として保存する（src/features/shared/datetime.ts）
@@ -108,5 +115,6 @@ export async function setMedicationArchived(
     catId,
     id,
     archived ? getNaiveUtcNow() : null,
+    actor,
   );
 }

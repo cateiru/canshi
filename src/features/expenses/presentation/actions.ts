@@ -9,6 +9,7 @@ import {
 } from "@/features/hospital-visits/infrastructure/queries";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createExpense,
   deleteExpense,
@@ -48,10 +49,10 @@ function parseFormData(formData: FormData) {
  * 導線になっている猫にログイン中のユーザーがアクセスできることを確認し、その猫の家の ID を返す。
  * 支出は家に属し、記録したページの猫の家の支出として扱うため、家はクライアントから受け取らない
  */
-async function requireExpenseHousehold(catId: string): Promise<string> {
-  const { cat } = await requireCatAccess(catId);
+async function requireExpenseHousehold(catId: string) {
+  const { user, cat } = await requireCatAccess(catId);
   // ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照）
-  return cat.householdId as string;
+  return { user, householdId: cat.householdId as string };
 }
 
 /** `catId` は記録したページの猫。支出はその猫の家に属する */
@@ -60,14 +61,14 @@ export async function createExpenseAction(
   _prevState: ExpenseFormState,
   formData: FormData,
 ): Promise<ExpenseFormState> {
-  const householdId = await requireExpenseHousehold(catId);
+  const { user, householdId } = await requireExpenseHousehold(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const saved = await createExpense(householdId, parsed.data);
+  const saved = await createExpense(householdId, parsed.data, userActor(user));
   if (!("id" in saved)) {
     return saved;
   }
@@ -87,14 +88,19 @@ export async function updateExpenseAction(
   _prevState: ExpenseFormState,
   formData: FormData,
 ): Promise<ExpenseFormState> {
-  const householdId = await requireExpenseHousehold(catId);
+  const { user, householdId } = await requireExpenseHousehold(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const saved = await updateExpense(householdId, id, parsed.data);
+  const saved = await updateExpense(
+    householdId,
+    id,
+    parsed.data,
+    userActor(user),
+  );
   if (!("id" in saved)) {
     return saved;
   }
@@ -111,8 +117,8 @@ export async function deleteExpenseAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  const householdId = await requireExpenseHousehold(catId);
-  await deleteExpense(householdId, id);
+  const { user, householdId } = await requireExpenseHousehold(catId);
+  await deleteExpense(householdId, id, userActor(user));
   redirect(`/cats/${catId}/expenses`, "replace");
 }
 
@@ -128,7 +134,7 @@ export async function listLinkableHospitalVisitsAction(
   date: string,
   expenseRecordId?: string,
 ): Promise<LinkableHospitalVisit[]> {
-  const householdId = await requireExpenseHousehold(catId);
+  const { householdId } = await requireExpenseHousehold(catId);
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];
@@ -144,7 +150,7 @@ export async function listSameDayHospitalExpensesAction(
   catId: string,
   date: string,
 ): Promise<HospitalExpenseCandidate[]> {
-  const householdId = await requireExpenseHousehold(catId);
+  const { householdId } = await requireExpenseHousehold(catId);
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];

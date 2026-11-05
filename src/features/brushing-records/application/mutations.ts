@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import { toBrushingRecordContent } from "../domain/brushingRecord";
 import type { BrushingRecordFormInput } from "../domain/schema";
 import { createBrushingRecordRepository } from "../infrastructure/brushingRecordRepository";
@@ -12,11 +13,13 @@ import { createBrushingRecordRepository } from "../infrastructure/brushingRecord
 export async function createBrushingRecord(
   catId: string,
   data: BrushingRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string> {
   return createBrushingRecordRepository(d1).add(
     catId,
     toBrushingRecordContent(data),
+    actor,
   );
 }
 
@@ -25,12 +28,14 @@ export async function updateBrushingRecord(
   catId: string,
   id: string,
   data: BrushingRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   return createBrushingRecordRepository(d1).update(
     catId,
     id,
     toBrushingRecordContent(data),
+    actor,
   );
 }
 
@@ -38,7 +43,8 @@ export async function updateBrushingRecord(
 export async function deleteBrushingRecord(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createBrushingRecordRepository(d1).remove(catId, id);
+  return createBrushingRecordRepository(d1).remove(catId, id, actor);
 }

@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import {
   hospitalVisitIdsToLink,
   type ResolvedExpenseLinks,
@@ -59,6 +60,7 @@ async function resolveLinks(
 export async function createExpense(
   householdId: string,
   data: ExpenseFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveExpenseResult> {
   const repository = createExpenseRecordRepository(d1);
@@ -70,6 +72,7 @@ export async function createExpense(
     householdId,
     toExpenseRecordContent(data),
     links,
+    actor,
   );
   return { id };
 }
@@ -79,6 +82,7 @@ export async function updateExpense(
   householdId: string,
   id: string,
   data: ExpenseFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveExpenseResult> {
   const repository = createExpenseRecordRepository(d1);
@@ -91,7 +95,13 @@ export async function updateExpense(
     return { fieldErrors: links.fieldErrors };
   }
 
-  await repository.update(householdId, id, toExpenseRecordContent(data), links);
+  await repository.update(
+    householdId,
+    id,
+    toExpenseRecordContent(data),
+    links,
+    actor,
+  );
   return { id };
 }
 
@@ -102,10 +112,11 @@ export async function updateExpense(
 export async function deleteExpense(
   householdId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   const repository = createExpenseRecordRepository(d1);
   if (!(await repository.findForHousehold(householdId, id))) return false;
-  await repository.remove(id);
+  await repository.remove(id, actor);
   return true;
 }

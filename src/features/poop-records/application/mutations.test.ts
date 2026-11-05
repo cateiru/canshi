@@ -16,6 +16,9 @@ import {
 } from "../infrastructure/queries";
 import { deletePoopRecord, updatePoopRecord } from "./mutations";
 
+/** 記録を操作した人（履歴の確認以外では中身を問わない） */
+const actor = { userId: "user-1", mcpClientId: null };
+
 // `src/features/households/application/management.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
@@ -28,6 +31,15 @@ beforeEach(async () => {
   await migrate(db as unknown as ReturnType<typeof drizzle>, {
     migrationsFolder: "./drizzle",
   });
+  // sql.js は `db.batch`（D1 専用）を持たないため、順番に実行するだけの簡易実装で補う
+  // biome-ignore lint/suspicious/noExplicitAny: テスト用に D1 の batch を簡易実装する
+  (db as any).batch = async (statements: PromiseLike<unknown>[]) => {
+    const results: unknown[] = [];
+    for (const statement of statements) {
+      results.push(await statement);
+    }
+    return results;
+  };
   await db.insert(cats).values([
     { id: "tama", name: "たま", sex: "female" },
     { id: "kuro", name: "くろ", sex: "male" },
@@ -66,7 +78,7 @@ const form: PoopRecordFormInput = {
 
 describe("deletePoopRecord", () => {
   it("記録を論理削除し、一覧・詳細から除く。添付の写真は残す", async () => {
-    expect(await deletePoopRecord("tama", "poop-1")).toBe(true);
+    expect(await deletePoopRecord("tama", "poop-1", actor)).toBe(true);
 
     expect((await listPoopRecords("tama")).map((row) => row.id)).toEqual([
       "poop-2",
@@ -90,14 +102,14 @@ describe("deletePoopRecord", () => {
   });
 
   it("削除済みの記録は、更新・もう一度の削除ができない", async () => {
-    await deletePoopRecord("tama", "poop-1");
+    await deletePoopRecord("tama", "poop-1", actor);
 
-    expect(await deletePoopRecord("tama", "poop-1")).toBe(false);
-    expect(await updatePoopRecord("tama", "poop-1", form)).toBe(false);
+    expect(await deletePoopRecord("tama", "poop-1", actor)).toBe(false);
+    expect(await updatePoopRecord("tama", "poop-1", form, actor)).toBe(false);
   });
 
   it("別の猫の記録は削除しない", async () => {
-    expect(await deletePoopRecord("kuro", "poop-1")).toBe(false);
+    expect(await deletePoopRecord("kuro", "poop-1", actor)).toBe(false);
     expect((await listPoopRecords("tama")).map((row) => row.id)).toEqual([
       "poop-2",
       "poop-1",

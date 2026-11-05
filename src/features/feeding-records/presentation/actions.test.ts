@@ -14,6 +14,9 @@ import {
   notifications,
 } from "@/db/schema";
 
+/** 記録を操作した人（履歴の確認以外では中身を問わない） */
+const actor = { userId: "user-1", mcpClientId: null };
+
 // `src/features/symptoms/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
 // D1 専用の `db.batch` は順番に実行するだけの簡易実装で補う
 let db: ReturnType<typeof getDb>;
@@ -30,7 +33,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/features/auth/presentation/session", () => ({
   requireCatAccess: async (catId: string) => {
     const [cat] = await db.select().from(cats).where(eq(cats.id, catId));
-    return { cat };
+    return { user: { id: "user-1" }, cat };
   },
 }));
 
@@ -255,6 +258,7 @@ describe("createFeedingRecordAction・updateFeedingRecordAction のごはんの�
           ],
         },
         true,
+        actor,
       );
 
     expect(updated).toBe(false);

@@ -1,10 +1,12 @@
 import { and, eq, isNull, type SQL, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import type { getDb } from "@/db/client";
+import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import {
   expenseRecordCats,
   expenseRecordHospitalVisits,
   expenseRecords,
+  type RecordActor,
 } from "@/db/schema";
 import {
   combineDateTimeUtc,
@@ -47,12 +49,15 @@ export type SyncHospitalVisitExpenseParams = {
    * 現在の紐付けと一致しないときは使わない
    */
   keepLinkedExpenseRecordId?: string | null;
+  /** 通院記録を保存した人。病院代の支出記録を作成・更新・論理削除した人としても履歴に残す */
+  actor: RecordActor;
 };
 
 /**
  * 通院記録と病院代を同じ batch で保存し、片方だけが保存されることを防ぐ。
  * `visitStatement` は `.returning()` を付けた通院記録の INSERT・UPDATE で、通院記録が保存されたか
  * （保存されなかった場合は、病院代の文も通院記録が見つからず何もしない）を返す。
+ * `visitLogStatement` は通院記録の履歴を追加する文で、`visitStatement` の直後に実行する。
  * 金額を入力したら作成、変更したら更新、空にしたら削除する。
  * メモ・関連する猫は支出記録側で自由に変更できるため、
  * 既存の支出記録を更新するときは金額と支出日だけを上書きする。
@@ -65,6 +70,7 @@ export type SyncHospitalVisitExpenseParams = {
 export async function saveHospitalVisitWithExpense(
   db: ReturnType<typeof getDb>,
   visitStatement: BatchItem<"sqlite">,
+  visitLogStatement: BatchItem<"sqlite">,
   {
     hospitalVisitId,
     catId,
@@ -73,6 +79,7 @@ export async function saveHospitalVisitWithExpense(
     amountYen,
     linkExpenseRecordId,
     keepLinkedExpenseRecordId,
+    actor,
   }: SyncHospitalVisitExpenseParams,
   visitCondition?: SQL,
 ): Promise<boolean> {
@@ -92,6 +99,7 @@ export async function saveHospitalVisitWithExpense(
     ).length > 1;
   const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
     visitStatement,
+    visitLogStatement,
   ];
   // 病院代の文は、通院記録が削除されずにあるときだけ実行する。確認の後に通院記録が論理削除された場合に、
   // 通院記録の更新は通らないのに支出だけが追加・変更されることを防ぐ
@@ -119,7 +127,9 @@ export async function saveHospitalVisitWithExpense(
       );
     } else if (existing != null) {
       // 支出記録を論理削除する。添付の写真は残す
-      statements.push(...deleteExpenseStatements(db, existing.id, visitIsLive));
+      statements.push(
+        ...deleteExpenseStatements(db, existing.id, actor, visitIsLive),
+      );
     } else if (linkExpenseRecordId != null) {
       // 紐付ける支出が確認の後に論理削除された場合も、紐付けない
       const bothAreLive = sql`${visitIsLive} AND ${liveExpenseCondition(linkExpenseRecordId)}`;
@@ -159,6 +169,16 @@ export async function saveHospitalVisitWithExpense(
             visitIsLive,
           ),
         ),
+      insertRecordChangeLog(
+        db,
+        {
+          recordType: "expense",
+          recordId: existing.id,
+          action: "update",
+          actor,
+        },
+        sql`${liveExpenseCondition(existing.id)} AND ${visitIsLive}`,
+      ),
     );
   } else {
     const id = crypto.randomUUID();
@@ -171,6 +191,12 @@ export async function saveHospitalVisitWithExpense(
         sql`SELECT ${id}, ${householdId}, ${toUnixSeconds(spentAt)}, ${amountYen}, 'hospital',
             NULL, unixepoch(), unixepoch(), NULL
             WHERE ${visitIsLive}`,
+      ),
+      // 通院記録が保存されず支出が挿入されなかったときは、履歴も追加しない
+      insertRecordChangeLog(
+        db,
+        { recordType: "expense", recordId: id, action: "create", actor },
+        liveExpenseCondition(id),
       ),
       db
         .insert(expenseRecordHospitalVisits)

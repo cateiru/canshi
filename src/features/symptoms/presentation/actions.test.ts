@@ -5,7 +5,7 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { cats, notifications, symptoms } from "@/db/schema";
+import { cats, notifications, recordChangeLogs, symptoms } from "@/db/schema";
 
 // `src/features/notifications/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
 // D1 専用の `db.batch` は順番に実行するだけの簡易実装で補う。写真・動画の同期（R2）と
@@ -31,7 +31,7 @@ vi.mock("next/navigation", () => ({
 }));
 // 猫の家による認可はこのテストの対象外のため、常に許可する
 vi.mock("@/features/auth/presentation/session", () => ({
-  requireCatAccess: async () => ({}),
+  requireCatAccess: async () => ({ user: { id: "user-1" } }),
 }));
 
 const { deleteSymptomAction, updateSymptomAction } = await import("./actions");
@@ -142,6 +142,27 @@ describe("deleteSymptomAction", () => {
       .from(symptoms)
       .where(eq(symptoms.id, symptom.id));
     expect(deleted.deletedAt).toBeInstanceOf(Date);
+  });
+
+  it("履歴に、ログイン中のユーザーを画面からの操作として残す", async () => {
+    const { cat, symptom } = await setup();
+
+    await expect(deleteSymptomAction(cat.id, symptom.id)).rejects.toThrow(
+      `REDIRECT:/cats/${cat.id}/symptoms`,
+    );
+
+    const logs = await db
+      .select()
+      .from(recordChangeLogs)
+      .where(eq(recordChangeLogs.recordId, symptom.id));
+    expect(logs).toEqual([
+      expect.objectContaining({
+        recordType: "symptom",
+        action: "delete",
+        userId: "user-1",
+        mcpClientId: null,
+      }),
+    ]);
   });
 
   it("別の猫の症状 ID を渡しても、添付も症状も削除しない", async () => {

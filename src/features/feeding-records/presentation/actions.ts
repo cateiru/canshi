@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { z } from "zod";
 import { requireCatAccess } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createFeedingRecord,
   deleteFeedingRecord,
@@ -93,14 +94,14 @@ export async function createFeedingRecordAction(
   _prevState: FeedingRecordFormState,
   formData: FormData,
 ): Promise<FeedingRecordFormState> {
-  const { cat } = await requireCatAccess(catId);
+  const { user, cat } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: mapZodErrors(parsed.error) };
   }
 
-  const saved = await createFeedingRecord(cat, parsed.data);
+  const saved = await createFeedingRecord(cat, parsed.data, userActor(user));
   if ("error" in saved) {
     return { formError: saved.error };
   }
@@ -114,14 +115,19 @@ export async function updateFeedingRecordAction(
   _prevState: FeedingRecordFormState,
   formData: FormData,
 ): Promise<FeedingRecordFormState> {
-  const { cat } = await requireCatAccess(catId);
+  const { user, cat } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: mapZodErrors(parsed.error) };
   }
 
-  const saved = await updateFeedingRecord(cat, id, parsed.data);
+  const saved = await updateFeedingRecord(
+    cat,
+    id,
+    parsed.data,
+    userActor(user),
+  );
   if ("error" in saved) {
     return { formError: saved.error };
   }
@@ -133,7 +139,7 @@ export async function deleteFeedingRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
-  await deleteFeedingRecord(catId, id);
+  const { user } = await requireCatAccess(catId);
+  await deleteFeedingRecord(catId, id, userActor(user));
   redirect(`/cats/${catId}/feeding-records`, "replace");
 }

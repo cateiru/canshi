@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import { createHospitalVisitRepository } from "@/features/hospital-visits/infrastructure/hospitalVisitRepository";
 import { createNotificationRepository } from "@/features/notifications/infrastructure/notificationRepository";
 import type { SymptomFormInput } from "../domain/schema";
@@ -32,6 +33,7 @@ async function verifyHospitalVisitBelongsToCat(
 export async function createSymptom(
   catId: string,
   data: SymptomFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveSymptomResult> {
   if (
@@ -42,6 +44,7 @@ export async function createSymptom(
   const id = await createSymptomRepository(d1).add(
     catId,
     toSymptomContent(data),
+    actor,
   );
   // 確認の後に関連する通院記録が削除された場合は、追加の文の中で断られる
   return id == null
@@ -54,6 +57,7 @@ export async function updateSymptom(
   catId: string,
   id: string,
   data: SymptomFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveSymptomResult> {
   if (
@@ -67,6 +71,7 @@ export async function updateSymptom(
       catId,
       id,
       toSymptomContent(data),
+      actor,
     ))
   ) {
     return { error: SYMPTOM_NOT_FOUND_ERROR };
@@ -91,10 +96,11 @@ export async function updateSymptom(
 export async function deleteSymptom(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   const repository = createSymptomRepository(d1);
   if (!(await repository.existsForCat(catId, id))) return false;
-  await repository.remove(catId, id);
+  await repository.remove(catId, id, actor);
   return true;
 }

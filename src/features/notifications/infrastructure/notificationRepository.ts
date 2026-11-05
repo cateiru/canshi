@@ -1,6 +1,7 @@
-import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, exists, inArray, isNull, ne, sql } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
+import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import {
   cleaningRecords,
   cleaningTargets,
@@ -49,17 +50,18 @@ export function createNotificationRepository(
         .where(accessibleNotification(userId, id));
     },
 
-    async completeWithCleaningRecord(id, performedAt) {
+    async completeWithCleaningRecord(id, performedAt, actor) {
       // 完了の判定は呼び出し側のバッチ外の読み取りのため、別タブ・別端末から同じ通知を同時に完了すると
       // 両方が未完了と判断しうる。記録の追加を「通知が未完了なら」という条件付きの
       // INSERT ... SELECT にし、完了への更新と同じバッチ（D1 では 1 トランザクション）で
       // 実行することで、後から実行されたバッチでは記録が追加されないようにする。
       // INSERT ... SELECT では `$defaultFn` が効かないため、全カラムの値を明示する
+      const cleaningRecordId = crypto.randomUUID();
       await db.batch([
         db.insert(cleaningRecords).select(
           db
             .select({
-              id: sql`${crypto.randomUUID()}`.as("id"),
+              id: sql`${cleaningRecordId}`.as("id"),
               catId: notifications.catId,
               cleaningTargetId: cleaningTargets.id,
               performedAt:
@@ -87,6 +89,22 @@ export function createNotificationRepository(
               ),
             ),
         ),
+        // 完了済みの通知などで記録が追加されなかったときは、履歴も追加しない
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "cleaning_record",
+            recordId: cleaningRecordId,
+            action: "create",
+            actor,
+          },
+          exists(
+            db
+              .select({ id: cleaningRecords.id })
+              .from(cleaningRecords)
+              .where(eq(cleaningRecords.id, cleaningRecordId)),
+          ),
+        ),
         db
           .update(notifications)
           .set({ status: "done", updatedAt: new Date() })
@@ -94,20 +112,32 @@ export function createNotificationRepository(
       ]);
     },
 
-    async completeWithSymptomResolved(id, catId, symptomId) {
-      // 2つの更新は同じバッチ（D1 では 1 トランザクション）で実行し、片方だけが反映されないようにする
+    async completeWithSymptomResolved(id, catId, symptomId, actor) {
+      const isUnresolved = and(
+        eq(symptoms.id, symptomId),
+        eq(symptoms.catId, catId),
+        ne(symptoms.status, "resolved"),
+        isNull(symptoms.deletedAt),
+      );
+      // 2つの更新は同じバッチ（D1 では 1 トランザクション）で実行し、片方だけが反映されないようにする。
+      // 更新の後は「未解消」の条件が偽になるため、履歴を先に追加する
       await db.batch([
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "symptom",
+            recordId: symptomId,
+            action: "update",
+            actor,
+          },
+          exists(
+            db.select({ id: symptoms.id }).from(symptoms).where(isUnresolved),
+          ),
+        ),
         db
           .update(symptoms)
           .set({ status: "resolved", updatedAt: new Date() })
-          .where(
-            and(
-              eq(symptoms.id, symptomId),
-              eq(symptoms.catId, catId),
-              ne(symptoms.status, "resolved"),
-              isNull(symptoms.deletedAt),
-            ),
-          ),
+          .where(isUnresolved),
         db
           .update(notifications)
           .set({ status: "done", updatedAt: new Date() })

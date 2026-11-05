@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type { CleaningRecordContent } from "./cleaningRecord";
 
 /**
@@ -20,6 +21,7 @@ export interface CleaningRecordRepository {
     cleaningTargetId: string,
     content: CleaningRecordContent,
     completeNotificationsDueBefore: Date | null,
+    actor: RecordActor,
   ): Promise<string>;
   /** 実施記録を書き換える。見つからなければ false。通知の扱いは `add` と同じ */
   update(
@@ -28,7 +30,13 @@ export interface CleaningRecordRepository {
     id: string,
     content: CleaningRecordContent,
     completeNotificationsDueBefore: Date | null,
+    actor: RecordActor,
   ): Promise<boolean>;
   /** 実施記録を論理削除する。見つからない・削除済みなら false */
-  remove(catId: string, cleaningTargetId: string, id: string): Promise<boolean>;
+  remove(
+    catId: string,
+    cleaningTargetId: string,
+    id: string,
+    actor: RecordActor,
+  ): Promise<boolean>;
 }

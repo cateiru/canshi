@@ -1,6 +1,7 @@
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, exists, inArray, isNull } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
+import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import {
   cats,
   expenseRecordCats,
@@ -86,17 +87,23 @@ export function createExpenseRecordRepository(
       return true;
     },
 
-    async add(householdId, content, links) {
+    async add(householdId, content, links, actor) {
       const id = crypto.randomUUID();
       await db.batch([
         db.insert(expenseRecords).values({ id, householdId, ...content }),
+        insertRecordChangeLog(db, {
+          recordType: "expense",
+          recordId: id,
+          action: "create",
+          actor,
+        }),
         ...insertExpenseCats(db, id, links.catIds),
         ...insertExpenseHospitalVisits(db, id, links.hospitalVisitIds),
       ]);
       return id;
     },
 
-    async update(householdId, id, content, links) {
+    async update(householdId, id, content, links, actor) {
       // 紐付く猫・通院記録は差分更新せず、いったん削除してから選択されたものを入れ直す。
       // 紐付けられるのは支出と同じ家の猫・通院記録だけのため、すべてフォームの選択肢に含まれる
       await db.batch([
@@ -104,6 +111,16 @@ export function createExpenseRecordRepository(
           .update(expenseRecords)
           .set({ ...content, updatedAt: new Date() })
           .where(inHousehold(householdId, id)),
+        insertRecordChangeLog(
+          db,
+          { recordType: "expense", recordId: id, action: "update", actor },
+          exists(
+            db
+              .select({ id: expenseRecords.id })
+              .from(expenseRecords)
+              .where(inHousehold(householdId, id)),
+          ),
+        ),
         // 支出が確認の後に論理削除された場合は、紐付けも入れ直さない
         db
           .delete(expenseRecordCats)
@@ -126,8 +143,8 @@ export function createExpenseRecordRepository(
       ]);
     },
 
-    async remove(id) {
-      await db.batch(deleteExpenseStatements(db, id));
+    async remove(id, actor) {
+      await db.batch(deleteExpenseStatements(db, id, actor));
     },
   };
 }

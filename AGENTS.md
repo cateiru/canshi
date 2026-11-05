@@ -101,6 +101,9 @@ PR のレビューコメント（インラインコメント・レビュー本�
 - 複数のテーブルを同時に書き換える処理（従属する行の削除・参照の解除・通知の完了など）は、D1 では batch でしか
   原子的にできないため、リポジトリのメソッドの中で 1 つの batch にする。家のメンバー・オーナーであることなど、
   書き込みの直前に変わりうる条件も、リポジトリの文の中で確かめる（`addForMember`・`renameAsOwner` など）。
+- 記録（`src/db/README.md` の 14 テーブル）を書き込むリポジトリのメソッドは、操作した人（`RecordActor`）を受け取り、
+  `src/db/recordChangeLog.ts` の `insertRecordChangeLog` を同じ batch に並べて履歴を残す。presentation で画面なら
+  `userActor(user)`、MCP なら `mcpActor(connection)` を作って渡す。
 - 読み取りはリポジトリに入れず、`infrastructure/queries.ts` に画面・MCP 向けの関数として置く。presentation は
   読み取りでは queries を直接使ってよい。リポジトリに分けた書き込みは、必ず application を通す。
 

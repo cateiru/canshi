@@ -1,4 +1,4 @@
-import type { Cat } from "@/db/schema";
+import type { Cat, RecordActor } from "@/db/schema";
 import {
   getCatForUser,
   listHouseholdsForUser,
@@ -17,6 +17,11 @@ import { getMcpPermissions } from "../../infrastructure/permissions";
 
 /** ツールを呼んだユーザーと、接続（OAuth のクライアント） */
 export type McpConnection = { userId: string; clientId: string };
+
+/** AI との接続からの操作の、記録を操作した人。接続を許可したユーザーと接続の両方を残す */
+export function mcpActor(connection: McpConnection): RecordActor {
+  return { userId: connection.userId, mcpClientId: connection.clientId };
+}
 
 /**
  * ツールの実装に渡す、MCP サーバー（`createCanshiMcpServer()`）の環境。Next.js（OpenNext）の

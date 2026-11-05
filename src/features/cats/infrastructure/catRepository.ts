@@ -1,5 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { deleteRecordChangeLogsOf } from "@/db/recordChangeLog";
 import {
   brushingRecords,
   cats,
@@ -140,6 +141,86 @@ export function createCatRepository(d1?: D1Database): CatRepository {
       // /一部の記録だけ消えるような中途半端な状態にならないよう、1つの
       // db.batch でまとめて原子的に実行する。記録は論理削除したものも含めてすべて物理削除する
       await db.batch([
+        // 記録を物理削除するため、その履歴も消す。記録を消すと対象を選べなくなるため先に消す。
+        // 支出記録は猫を削除しても残すため、履歴も残す
+        deleteRecordChangeLogsOf(
+          db,
+          "feeding_record",
+          feedingRecords,
+          eq(feedingRecords.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "poop_record",
+          poopRecords,
+          eq(poopRecords.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "weight_record",
+          weightRecords,
+          eq(weightRecords.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "vomit_record",
+          vomitRecords,
+          eq(vomitRecords.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "water_record",
+          waterRecords,
+          eq(waterRecords.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "shampoo_record",
+          shampooRecords,
+          eq(shampooRecords.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "brushing_record",
+          brushingRecords,
+          eq(brushingRecords.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "memo_record",
+          memoRecords,
+          eq(memoRecords.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "cleaning_record",
+          cleaningRecords,
+          eq(cleaningRecords.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "hospital_visit",
+          hospitalVisits,
+          eq(hospitalVisits.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "medication_dose",
+          medicationDoses,
+          eq(medicationDoses.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "medication",
+          medications,
+          eq(medications.catId, id),
+        ),
+        deleteRecordChangeLogsOf(
+          db,
+          "symptom",
+          symptoms,
+          eq(symptoms.catId, id),
+        ),
         // feeding_record_items は feeding_records を参照するため、記録より先に明細を削除する
         db
           .delete(feedingRecordItems)

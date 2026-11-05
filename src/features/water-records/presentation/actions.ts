@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireCatAccess } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createWaterRecord,
   deleteWaterRecord,
@@ -37,14 +38,14 @@ export async function createWaterRecordAction(
   _prevState: WaterRecordFormState,
   formData: FormData,
 ): Promise<WaterRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  await createWaterRecord(catId, parsed.data);
+  await createWaterRecord(catId, parsed.data, userActor(user));
 
   return { redirectTo: `/cats/${catId}/water-records` };
 }
@@ -55,14 +56,14 @@ export async function updateWaterRecordAction(
   _prevState: WaterRecordFormState,
   formData: FormData,
 ): Promise<WaterRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  if (!(await updateWaterRecord(catId, id, parsed.data))) {
+  if (!(await updateWaterRecord(catId, id, parsed.data, userActor(user)))) {
     return { formError: "記録が見つかりませんでした" };
   }
 
@@ -73,7 +74,7 @@ export async function deleteWaterRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
-  await deleteWaterRecord(catId, id);
+  const { user } = await requireCatAccess(catId);
+  await deleteWaterRecord(catId, id, userActor(user));
   redirect(`/cats/${catId}/water-records`, "replace");
 }

@@ -1,5 +1,6 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import {
   cats,
   feedingRecordItems,
@@ -164,6 +165,7 @@ export function createFeedingRecordRepository(
       householdId,
       content,
       completeNotificationsOnSave,
+      actor,
     ) {
       const feedingRecordId = crypto.randomUUID();
       // 記録も明細と同じく、猫が確認した時点の家にいるときだけ挿入する
@@ -187,6 +189,16 @@ export function createFeedingRecordRepository(
               .where(catInHouseholdRow(catId, householdId)),
           )
           .returning({ id: feedingRecords.id }),
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "feeding_record",
+            recordId: feedingRecordId,
+            action: "create",
+            actor,
+          },
+          liveRecordCondition(catId, feedingRecordId),
+        ),
         ...insertItems(feedingRecordId, catId, householdId, content.items),
         ...completeNotifications(
           catId,
@@ -204,6 +216,7 @@ export function createFeedingRecordRepository(
       id,
       content,
       completeNotificationsOnSave,
+      actor,
     ) {
       // 更新・明細の削除と挿入・通知の完了のいずれも、猫が確認した時点の家にいて、
       // 記録が削除されていないときだけ行う
@@ -223,6 +236,19 @@ export function createFeedingRecordRepository(
             ),
           )
           .returning({ id: feedingRecords.id }),
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "feeding_record",
+            recordId: id,
+            action: "update",
+            actor,
+          },
+          and(
+            catInHouseholdCondition(catId, householdId),
+            liveRecordCondition(catId, id),
+          ),
+        ),
         db
           .delete(feedingRecordItems)
           .where(
@@ -243,19 +269,32 @@ export function createFeedingRecordRepository(
       return updated.length > 0;
     },
 
-    async remove(catId, id) {
-      // 論理削除。明細は記録の中身として残す（削除済みの記録の明細は、記録と一緒に読み取りから除く）
-      const deleted = await db
-        .update(feedingRecords)
-        .set({ deletedAt: new Date() })
-        .where(
-          and(
-            eq(feedingRecords.id, id),
-            eq(feedingRecords.catId, catId),
-            isNull(feedingRecords.deletedAt),
-          ),
-        )
-        .returning({ id: feedingRecords.id });
+    async remove(catId, id, actor) {
+      // 論理削除。明細は記録の中身として残す（削除済みの記録の明細は、記録と一緒に読み取りから除く）。
+      // 削除の後は記録が条件に一致しないため、履歴を先に追加する
+      const [, deleted] = await db.batch([
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "feeding_record",
+            recordId: id,
+            action: "delete",
+            actor,
+          },
+          liveRecordCondition(catId, id),
+        ),
+        db
+          .update(feedingRecords)
+          .set({ deletedAt: new Date() })
+          .where(
+            and(
+              eq(feedingRecords.id, id),
+              eq(feedingRecords.catId, catId),
+              isNull(feedingRecords.deletedAt),
+            ),
+          )
+          .returning({ id: feedingRecords.id }),
+      ]);
       return deleted.length > 0;
     },
   };

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireCatAccess } from "@/features/auth/presentation/session";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createHospitalVisit,
   deleteHospitalVisit,
@@ -46,7 +47,7 @@ export async function createHospitalVisitAction(
   _prevState: HospitalVisitFormState,
   formData: FormData,
 ): Promise<HospitalVisitFormState> {
-  const { cat } = await requireCatAccess(catId);
+  const { user, cat } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -57,6 +58,7 @@ export async function createHospitalVisitAction(
   const saved = await createHospitalVisit(
     { id: catId, householdId: cat.householdId as string },
     parsed.data,
+    userActor(user),
   );
   if ("error" in saved) {
     return { formError: saved.error };
@@ -76,7 +78,7 @@ export async function updateHospitalVisitAction(
   _prevState: HospitalVisitFormState,
   formData: FormData,
 ): Promise<HospitalVisitFormState> {
-  const { cat } = await requireCatAccess(catId);
+  const { user, cat } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -88,6 +90,7 @@ export async function updateHospitalVisitAction(
     { id: catId, householdId: cat.householdId as string },
     id,
     parsed.data,
+    userActor(user),
   );
   if ("error" in saved) {
     return { formError: saved.error };
@@ -105,7 +108,7 @@ export async function deleteHospitalVisitAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
-  await deleteHospitalVisit(catId, id);
+  const { user } = await requireCatAccess(catId);
+  await deleteHospitalVisit(catId, id, userActor(user));
   redirect(`/cats/${catId}/hospital-visits`, "replace");
 }

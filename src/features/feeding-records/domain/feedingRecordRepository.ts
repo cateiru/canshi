@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type {
   FeedingRecordContent,
   FeedingRecordFoodProduct,
@@ -26,6 +27,7 @@ export interface FeedingRecordRepository {
     householdId: string,
     content: FeedingRecordContent,
     completeNotifications: boolean,
+    actor: RecordActor,
   ): Promise<string | null>;
   /** 記録を書き換え、明細を入れ直す。猫が `householdId` の家にいなければ false */
   updateWhileCatInHousehold(
@@ -34,7 +36,8 @@ export interface FeedingRecordRepository {
     id: string,
     content: FeedingRecordContent,
     completeNotifications: boolean,
+    actor: RecordActor,
   ): Promise<boolean>;
   /** 猫の記録を論理削除する（明細は残す）。見つからない・削除済みなら false */
-  remove(catId: string, id: string): Promise<boolean>;
+  remove(catId: string, id: string, actor: RecordActor): Promise<boolean>;
 }

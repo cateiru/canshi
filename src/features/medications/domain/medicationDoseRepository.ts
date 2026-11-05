@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type { MedicationDoseContent } from "./medicationDose";
 
 /**
@@ -13,6 +14,7 @@ export interface MedicationDoseRepository {
     catId: string,
     medicationId: string,
     content: MedicationDoseContent,
+    actor: RecordActor,
   ): Promise<string | null>;
   /** 投薬実績を書き換える。見つからなければ false */
   update(
@@ -20,7 +22,13 @@ export interface MedicationDoseRepository {
     medicationId: string,
     id: string,
     content: MedicationDoseContent,
+    actor: RecordActor,
   ): Promise<boolean>;
   /** 投薬実績を論理削除する。見つからない・削除済みなら false */
-  remove(catId: string, medicationId: string, id: string): Promise<boolean>;
+  remove(
+    catId: string,
+    medicationId: string,
+    id: string,
+    actor: RecordActor,
+  ): Promise<boolean>;
 }

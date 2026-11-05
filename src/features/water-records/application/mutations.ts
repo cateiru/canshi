@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type { WaterRecordFormInput } from "../domain/schema";
 import { toWaterRecordContent } from "../domain/waterRecord";
 import { createWaterRecordRepository } from "../infrastructure/waterRecordRepository";
@@ -12,9 +13,14 @@ import { createWaterRecordRepository } from "../infrastructure/waterRecordReposi
 export async function createWaterRecord(
   catId: string,
   data: WaterRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string> {
-  return createWaterRecordRepository(d1).add(catId, toWaterRecordContent(data));
+  return createWaterRecordRepository(d1).add(
+    catId,
+    toWaterRecordContent(data),
+    actor,
+  );
 }
 
 /** 猫の記録を更新する。見つからなければ false */
@@ -22,12 +28,14 @@ export async function updateWaterRecord(
   catId: string,
   id: string,
   data: WaterRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   return createWaterRecordRepository(d1).update(
     catId,
     id,
     toWaterRecordContent(data),
+    actor,
   );
 }
 
@@ -35,7 +43,8 @@ export async function updateWaterRecord(
 export async function deleteWaterRecord(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createWaterRecordRepository(d1).remove(catId, id);
+  return createWaterRecordRepository(d1).remove(catId, id, actor);
 }

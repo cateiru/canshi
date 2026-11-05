@@ -133,6 +133,7 @@ import {
   jsonResult,
   type McpConnection,
   type McpToolContext,
+  mcpActor,
   resolveWritableCat,
 } from "./context";
 import { decodeImageBase64, MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
@@ -272,11 +273,11 @@ const poopRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, cat, data }) => ({
-    id: await createPoopRecord(cat.id, data, ctx.env.DB),
+  create: async ({ ctx, connection, cat, data }) => ({
+    id: await createPoopRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
   }),
-  update: async ({ ctx, cat, id, data }) =>
-    (await updatePoopRecord(cat.id, id, data, ctx.env.DB))
+  update: async ({ ctx, connection, cat, id, data }) =>
+    (await updatePoopRecord(cat.id, id, data, mcpActor(connection), ctx.env.DB))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
@@ -317,11 +318,17 @@ const vomitRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, cat, data }) => ({
-    id: await createVomitRecord(cat.id, data, ctx.env.DB),
+  create: async ({ ctx, connection, cat, data }) => ({
+    id: await createVomitRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
   }),
-  update: async ({ ctx, cat, id, data }) =>
-    (await updateVomitRecord(cat.id, id, data, ctx.env.DB))
+  update: async ({ ctx, connection, cat, id, data }) =>
+    (await updateVomitRecord(
+      cat.id,
+      id,
+      data,
+      mcpActor(connection),
+      ctx.env.DB,
+    ))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
@@ -368,11 +375,17 @@ const waterRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, cat, data }) => ({
-    id: await createWaterRecord(cat.id, data, ctx.env.DB),
+  create: async ({ ctx, connection, cat, data }) => ({
+    id: await createWaterRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
   }),
-  update: async ({ ctx, cat, id, data }) =>
-    (await updateWaterRecord(cat.id, id, data, ctx.env.DB))
+  update: async ({ ctx, connection, cat, id, data }) =>
+    (await updateWaterRecord(
+      cat.id,
+      id,
+      data,
+      mcpActor(connection),
+      ctx.env.DB,
+    ))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
@@ -436,11 +449,22 @@ const weightRecordTool = defineRecordTool({
     }
     return values;
   },
-  create: async ({ ctx, cat, data }) => ({
-    id: await createWeightRecord(cat.id, data, ctx.env.DB),
+  create: async ({ ctx, connection, cat, data }) => ({
+    id: await createWeightRecord(
+      cat.id,
+      data,
+      mcpActor(connection),
+      ctx.env.DB,
+    ),
   }),
-  update: async ({ ctx, cat, id, data }) =>
-    (await updateWeightRecord(cat.id, id, data, ctx.env.DB))
+  update: async ({ ctx, connection, cat, id, data }) =>
+    (await updateWeightRecord(
+      cat.id,
+      id,
+      data,
+      mcpActor(connection),
+      ctx.env.DB,
+    ))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
@@ -468,11 +492,22 @@ const shampooRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, cat, data }) => ({
-    id: await createShampooRecord(cat.id, data, ctx.env.DB),
+  create: async ({ ctx, connection, cat, data }) => ({
+    id: await createShampooRecord(
+      cat.id,
+      data,
+      mcpActor(connection),
+      ctx.env.DB,
+    ),
   }),
-  update: async ({ ctx, cat, id, data }) =>
-    (await updateShampooRecord(cat.id, id, data, ctx.env.DB))
+  update: async ({ ctx, connection, cat, id, data }) =>
+    (await updateShampooRecord(
+      cat.id,
+      id,
+      data,
+      mcpActor(connection),
+      ctx.env.DB,
+    ))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
@@ -523,11 +558,22 @@ const brushingRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, cat, data }) => ({
-    id: await createBrushingRecord(cat.id, data, ctx.env.DB),
+  create: async ({ ctx, connection, cat, data }) => ({
+    id: await createBrushingRecord(
+      cat.id,
+      data,
+      mcpActor(connection),
+      ctx.env.DB,
+    ),
   }),
-  update: async ({ ctx, cat, id, data }) =>
-    (await updateBrushingRecord(cat.id, id, data, ctx.env.DB))
+  update: async ({ ctx, connection, cat, id, data }) =>
+    (await updateBrushingRecord(
+      cat.id,
+      id,
+      data,
+      mcpActor(connection),
+      ctx.env.DB,
+    ))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
@@ -562,7 +608,7 @@ const cleaningRecordTool = defineRecordTool({
       },
     };
   },
-  async create({ ctx, cat, data, args }) {
+  async create({ ctx, connection, cat, data, args }) {
     if (typeof args.cleaningTargetId !== "string") {
       return { error: "cleaningTargetId を指定してください" };
     }
@@ -570,6 +616,7 @@ const cleaningRecordTool = defineRecordTool({
       cat.id,
       args.cleaningTargetId,
       data,
+      mcpActor(connection),
       ctx.env.DB,
     );
     return id
@@ -579,12 +626,13 @@ const cleaningRecordTool = defineRecordTool({
             "掃除対象が見つかりませんでした。list_cleaning_targets で有効な掃除対象を確かめてください",
         };
   },
-  update: async ({ ctx, cat, id, data, existing }) =>
+  update: async ({ ctx, connection, cat, id, data, existing }) =>
     (await updateCleaningRecord(
       cat.id,
       existing.cleaningTargetId,
       id,
       data,
+      mcpActor(connection),
       ctx.env.DB,
     ))
       ? { id }
@@ -628,7 +676,7 @@ const medicationDoseTool = defineRecordTool({
       },
     };
   },
-  async create({ ctx, cat, data, args }) {
+  async create({ ctx, connection, cat, data, args }) {
     if (typeof args.medicationId !== "string") {
       return { error: "medicationId を指定してください" };
     }
@@ -636,6 +684,7 @@ const medicationDoseTool = defineRecordTool({
       cat.id,
       args.medicationId,
       data,
+      mcpActor(connection),
       ctx.env.DB,
     );
     return id
@@ -645,12 +694,13 @@ const medicationDoseTool = defineRecordTool({
             "服薬予定が見つかりませんでした。list_medications で服薬予定を確かめてください",
         };
   },
-  update: async ({ ctx, cat, id, data, existing }) =>
+  update: async ({ ctx, connection, cat, id, data, existing }) =>
     (await updateMedicationDose(
       cat.id,
       existing.medicationId,
       id,
       data,
+      mcpActor(connection),
       ctx.env.DB,
     ))
       ? { id }
@@ -700,9 +750,10 @@ const symptomTool = defineRecordTool({
       },
     };
   },
-  create: ({ ctx, cat, data }) => createSymptom(cat.id, data, ctx.env.DB),
-  update: ({ ctx, cat, id, data }) =>
-    updateSymptom(cat.id, id, data, ctx.env.DB),
+  create: ({ ctx, connection, cat, data }) =>
+    createSymptom(cat.id, data, mcpActor(connection), ctx.env.DB),
+  update: ({ ctx, connection, cat, id, data }) =>
+    updateSymptom(cat.id, id, data, mcpActor(connection), ctx.env.DB),
 });
 
 const hospitalVisitTool = defineRecordTool({
@@ -764,9 +815,10 @@ const hospitalVisitTool = defineRecordTool({
       },
     };
   },
-  create: ({ ctx, cat, data }) => createHospitalVisit(cat, data, ctx.env.DB),
-  update: ({ ctx, cat, id, data }) =>
-    updateHospitalVisit(cat, id, data, ctx.env.DB),
+  create: ({ ctx, connection, cat, data }) =>
+    createHospitalVisit(cat, data, mcpActor(connection), ctx.env.DB),
+  update: ({ ctx, connection, cat, id, data }) =>
+    updateHospitalVisit(cat, id, data, mcpActor(connection), ctx.env.DB),
 });
 
 const memoTool = defineRecordTool({
@@ -820,11 +872,11 @@ const memoTool = defineRecordTool({
     }
     return values;
   },
-  create: async ({ ctx, cat, data }) => ({
-    id: await createMemoRecord(cat.id, data, ctx.env.DB),
+  create: async ({ ctx, connection, cat, data }) => ({
+    id: await createMemoRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
   }),
-  update: async ({ ctx, cat, id, data }) =>
-    (await updateMemoRecord(cat.id, id, data, ctx.env.DB))
+  update: async ({ ctx, connection, cat, id, data }) =>
+    (await updateMemoRecord(cat.id, id, data, mcpActor(connection), ctx.env.DB))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
@@ -938,6 +990,7 @@ const expenseTool = defineRecordTool({
     const saved = await createExpense(
       cat.householdId,
       { ...data, catIds: resolved.catIds, hospitalVisitIds: [] },
+      mcpActor(connection),
       ctx.env.DB,
     );
     return toSaveResult(saved);
@@ -975,6 +1028,7 @@ const expenseTool = defineRecordTool({
       cat.householdId,
       id,
       { ...data, catIds },
+      mcpActor(connection),
       ctx.env.DB,
     );
     return toSaveResult(saved);
@@ -1045,9 +1099,10 @@ const feedingRecordTool = defineRecordTool({
       },
     };
   },
-  create: ({ ctx, cat, data }) => createFeedingRecord(cat, data, ctx.env.DB),
-  update: ({ ctx, cat, id, data }) =>
-    updateFeedingRecord(cat, id, data, ctx.env.DB),
+  create: ({ ctx, connection, cat, data }) =>
+    createFeedingRecord(cat, data, mcpActor(connection), ctx.env.DB),
+  update: ({ ctx, connection, cat, id, data }) =>
+    updateFeedingRecord(cat, id, data, mcpActor(connection), ctx.env.DB),
 });
 
 const RECORD_TOOLS = [
