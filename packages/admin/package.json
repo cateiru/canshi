@@ -17,7 +17,7 @@
     "@types/node": "^24.19.1",
     "@types/sql.js": "^1.4.11",
     "sql.js": "^1.14.2",
-    "typescript": "^5",
+    "typescript": "^7.0.0",
     "vitest": "^5.0.0",
     "wrangler": "^4.129.0"
   },
