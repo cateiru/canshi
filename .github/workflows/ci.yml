@@ -45,7 +45,8 @@ jobs:
   # 誰でもコメントできるため、e2e-comment.yml と同じくリポジトリのオーナー・メンバー・
   # コラボレーターのコメントだけを数える
   e2e-requested:
-    runs-on: ubuntu-latest
+    # GitHub API を呼ぶだけなので、軽量な 1 vCPU のランナーで十分
+    runs-on: ubuntu-slim
     permissions:
       issues: read
       pull-requests: read

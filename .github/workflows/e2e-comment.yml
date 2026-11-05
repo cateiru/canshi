@@ -19,7 +19,8 @@ jobs:
         github.event.issue.pull_request &&
         contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
       }}
-    runs-on: ubuntu-latest
+    # GitHub API を呼ぶだけなので、軽量な 1 vCPU のランナーで十分
+    runs-on: ubuntu-slim
     permissions:
       # コメントへのリアクションの付与
       issues: write
