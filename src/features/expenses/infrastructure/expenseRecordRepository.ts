@@ -15,6 +15,7 @@ import {
   deleteExpenseStatements,
   insertExpenseCats,
   insertExpenseHospitalVisits,
+  liveExpenseCondition,
 } from "./storage";
 
 /** D1 に保存する `ExpenseRecordRepository`。`d1` を省略すると Next.js のリクエストの D1 を使う */
@@ -103,12 +104,23 @@ export function createExpenseRecordRepository(
           .update(expenseRecords)
           .set({ ...content, updatedAt: new Date() })
           .where(inHousehold(householdId, id)),
+        // 支出が確認の後に論理削除された場合は、紐付けも入れ直さない
         db
           .delete(expenseRecordCats)
-          .where(eq(expenseRecordCats.expenseRecordId, id)),
+          .where(
+            and(
+              eq(expenseRecordCats.expenseRecordId, id),
+              liveExpenseCondition(id),
+            ),
+          ),
         db
           .delete(expenseRecordHospitalVisits)
-          .where(eq(expenseRecordHospitalVisits.expenseRecordId, id)),
+          .where(
+            and(
+              eq(expenseRecordHospitalVisits.expenseRecordId, id),
+              liveExpenseCondition(id),
+            ),
+          ),
         ...insertExpenseCats(db, id, links.catIds),
         ...insertExpenseHospitalVisits(db, id, links.hospitalVisitIds),
       ]);

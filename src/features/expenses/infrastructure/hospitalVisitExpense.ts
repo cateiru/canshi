@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import type { getDb } from "@/db/client";
 import {
@@ -10,7 +10,16 @@ import {
   combineDateTimeUtc,
   splitDateTimeUtc,
 } from "@/features/shared/datetime";
-import { deleteExpenseStatements } from "./storage";
+import {
+  deleteExpenseStatements,
+  liveExpenseCondition,
+  liveHospitalVisitCondition,
+} from "./storage";
+
+/** `timestamp` 列に INSERT ... SELECT で入れる値（UNIX 秒） */
+function toUnixSeconds(date: Date) {
+  return Math.floor(date.getTime() / 1000);
+}
 
 export type SyncHospitalVisitExpenseParams = {
   hospitalVisitId: string;
@@ -75,6 +84,10 @@ export async function saveHospitalVisitWithExpense(
   const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
     visitStatement,
   ];
+  // 病院代の文は、通院記録が削除されずにあるときだけ実行する。確認の後に通院記録が論理削除された場合に、
+  // 通院記録の更新は通らないのに支出だけが追加・変更されることを防ぐ
+  // （通院記録の追加では、同じ batch の先頭で挿入した通院記録を見る）
+  const visitIsLive = liveHospitalVisitCondition(hospitalVisitId);
 
   if (amountYen == null) {
     if (existing != null && existing.id === keepLinkedExpenseRecordId) {
@@ -87,22 +100,28 @@ export async function saveHospitalVisitWithExpense(
             and(
               eq(expenseRecordHospitalVisits.expenseRecordId, existing.id),
               eq(expenseRecordHospitalVisits.hospitalVisitId, hospitalVisitId),
+              visitIsLive,
             ),
           ),
       );
     } else if (existing != null) {
       // 支出記録を論理削除する。添付の写真は残す
-      statements.push(...deleteExpenseStatements(db, existing.id));
+      statements.push(...deleteExpenseStatements(db, existing.id, visitIsLive));
     } else if (linkExpenseRecordId != null) {
+      // 紐付ける支出が確認の後に論理削除された場合も、紐付けない
+      const bothAreLive = sql`${visitIsLive} AND ${liveExpenseCondition(linkExpenseRecordId)}`;
       statements.push(
-        db.insert(expenseRecordHospitalVisits).values({
-          expenseRecordId: linkExpenseRecordId,
-          hospitalVisitId,
-        }),
+        db
+          .insert(expenseRecordHospitalVisits)
+          .select(
+            sql`SELECT ${linkExpenseRecordId}, ${hospitalVisitId} WHERE ${bothAreLive}`,
+          ),
         // 支出記録の「{猫名}のみ」の絞り込みやタイムラインに出るよう、通院した猫も関連付ける
         db
           .insert(expenseRecordCats)
-          .values({ expenseRecordId: linkExpenseRecordId, catId })
+          .select(
+            sql`SELECT ${linkExpenseRecordId}, ${catId} WHERE ${bothAreLive}`,
+          )
           .onConflictDoNothing(),
       );
     }
@@ -125,25 +144,28 @@ export async function saveHospitalVisitWithExpense(
           and(
             eq(expenseRecords.id, existing.id),
             isNull(expenseRecords.deletedAt),
+            visitIsLive,
           ),
         ),
     );
   } else {
     const id = crypto.randomUUID();
+    // INSERT ... SELECT では列の既定値が使われないため、列はテーブル定義と同じ並びにすべて書く。
+    // 支出が挿入されなかった場合は、紐付けも支出が見つからないため挿入されない
+    const bothAreLive = sql`${visitIsLive} AND ${liveExpenseCondition(id)}`;
     statements.push(
-      db.insert(expenseRecords).values({
-        id,
-        householdId,
-        spentAt,
-        amountYen,
+      db.insert(expenseRecords).select(
         // 通院由来の支出は既定で「病院」。支出記録の編集で後から変更できる
-        category: "hospital",
-      }),
-      db.insert(expenseRecordHospitalVisits).values({
-        expenseRecordId: id,
-        hospitalVisitId,
-      }),
-      db.insert(expenseRecordCats).values({ expenseRecordId: id, catId }),
+        sql`SELECT ${id}, ${householdId}, ${toUnixSeconds(spentAt)}, ${amountYen}, 'hospital',
+            NULL, unixepoch(), unixepoch(), NULL
+            WHERE ${visitIsLive}`,
+      ),
+      db
+        .insert(expenseRecordHospitalVisits)
+        .select(sql`SELECT ${id}, ${hospitalVisitId} WHERE ${bothAreLive}`),
+      db
+        .insert(expenseRecordCats)
+        .select(sql`SELECT ${id}, ${catId} WHERE ${bothAreLive}`),
     );
   }
   await db.batch(statements);
