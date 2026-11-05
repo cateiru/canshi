@@ -6,7 +6,6 @@ import {
   CAT_COAT_COLORS,
   CAT_COAT_PATTERNS,
   CAT_COAT_WHITE_AMOUNTS,
-  type Cat,
   type CatCoatColor,
   type CatCoatPattern,
   type CatCoatWhiteAmount,
@@ -22,7 +21,8 @@ import styles from "./CoatField.module.css";
 import { CoatSwatch } from "./CoatSwatch";
 
 type CoatFieldProps = {
-  cat?: Cat;
+  /** 最初に選んでおく毛色・柄（保存済みの値、入力エラーで戻したときは送信した値） */
+  initialCoat?: Coat;
   fieldErrors?: CatFormFieldErrors;
 };
 
@@ -33,12 +33,16 @@ const UNSET = "";
  * 毛色・柄の入力欄。ベース色・柄・白い毛の割合をそれぞれプリセットから選び、
  * 選んだ組み合わせを見本で表示する。選択肢の見本も、ほかの項目で選んでいるものに合わせて描く
  */
-export function CoatField({ cat, fieldErrors }: CoatFieldProps) {
-  const [coatColor, setCoatColor] = useState<string>(cat?.coatColor ?? UNSET);
-  const [coatPattern, setCoatPattern] = useState<string>(
-    cat?.coatPattern ?? UNSET,
+export function CoatField({ initialCoat, fieldErrors }: CoatFieldProps) {
+  const [coatColor, setCoatColor] = useState<string>(
+    initialCoat?.coatColor ?? UNSET,
   );
-  const [coatWhite, setCoatWhite] = useState<string>(cat?.coatWhite ?? UNSET);
+  const [coatPattern, setCoatPattern] = useState<string>(
+    initialCoat?.coatPattern ?? UNSET,
+  );
+  const [coatWhite, setCoatWhite] = useState<string>(
+    initialCoat?.coatWhite ?? UNSET,
+  );
 
   const coat: Coat = {
     coatColor: (coatColor || null) as CatCoatColor | null,

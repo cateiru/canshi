@@ -184,19 +184,38 @@ test("生年月日を年のみ・年月のみでも登録・編集できる", as
   await expect(birthDateDetail()).toHaveText(/^2020年（\d+歳/);
 
   // 年月のみに変えると、月が未選択の場合は保存できない。
-  // 入力エラーで戻っても、変更した生まれた年は保存済みの値に戻らない
+  // 入力エラーで戻っても、変更した生まれた年・性別・避妊・去勢・毛色・柄は保存済みの値に戻らない
   await page.goto(`${detailUrl}/edit`);
   await choosePrecision("年月のみ");
   await page.getByLabel("生まれた年（西暦）").fill("2018");
+  await page.getByLabel("性別").click();
+  await page.getByRole("option", { name: "オス" }).click();
+  const neuterGroup = page.getByRole("radiogroup", {
+    name: "去勢",
+    exact: true,
+  });
+  const coatColorGroup = page.getByRole("radiogroup", { name: "ベース色" });
+  await neuterGroup.getByText("済", { exact: true }).click();
+  await coatColorGroup.getByText("茶（レッド）", { exact: true }).click();
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page.getByText("生まれた月を選択してください")).toBeVisible();
   await expect(page.getByLabel("生まれた年（西暦）")).toHaveValue("2018");
+  await expect(page.getByLabel("性別")).toContainText("オス");
+  await expect(neuterGroup.getByRole("radio", { name: "済" })).toBeChecked();
+  await expect(
+    coatColorGroup.getByRole("radio", { name: "茶（レッド）" }),
+  ).toBeChecked();
 
   await page.getByLabel("生まれた月").click();
   await page.getByRole("option", { name: "4月", exact: true }).click();
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page).toHaveURL(detailUrl);
   await expect(birthDateDetail()).toHaveText(/^2018年4月（\d+歳/);
+  // エラーのあとに選び直していなくても、エラー前の選択が保存される
+  await expect(page.getByText("オス")).toBeVisible();
+  await expect(page.getByText("去勢", { exact: true })).toBeVisible();
+  await expect(page.getByText("済", { exact: true })).toBeVisible();
+  await expect(page.getByText("茶（レッド）")).toBeVisible();
 
   await page.goto(`${detailUrl}/edit`);
   await expect(page.getByLabel("生まれた年（西暦）")).toHaveValue("2018");

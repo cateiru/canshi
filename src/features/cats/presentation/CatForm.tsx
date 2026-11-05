@@ -17,6 +17,8 @@ import { useSubmitActionState } from "@/features/navigation/useSubmitActionState
 import { Surface } from "@/features/shared/Surface";
 import { CAT_BREEDS, matchesBreed } from "../domain/breeds";
 import { NEUTER_STATUS_LABEL, NEUTER_TERM } from "../domain/labels";
+import type { CatFormFieldErrors } from "../domain/schema";
+import type { SubmittedCatChoices } from "../domain/submittedChoices";
 import type { CatFormState } from "./actions";
 import { BirthDateField } from "./BirthDateField";
 import { CatAvatar } from "./CatAvatar";
@@ -48,6 +50,58 @@ const BREED_OPTIONS = CAT_BREEDS.map((breed) => ({
   label: breed.name,
 }));
 
+type SexAndNeuterFieldsProps = {
+  cat?: Cat;
+  submitted?: SubmittedCatChoices;
+  fieldErrors?: CatFormFieldErrors;
+};
+
+/** 性別と避妊・去勢の入力欄。避妊・去勢の呼び方は、選んでいる性別に合わせて切り替える */
+function SexAndNeuterFields({
+  cat,
+  submitted,
+  fieldErrors,
+}: SexAndNeuterFieldsProps) {
+  const [sex, setSex] = useState<Cat["sex"]>(
+    submitted?.sex ?? cat?.sex ?? "unknown",
+  );
+  const neuterStatus = submitted ? submitted.neuterStatus : cat?.neuterStatus;
+
+  return (
+    <>
+      <Select
+        name="sex"
+        label="性別"
+        options={SEX_OPTIONS}
+        selectedKey={sex}
+        onSelectionChange={(key) => {
+          if (key !== null) {
+            setSex(key as Cat["sex"]);
+          }
+        }}
+        errorMessage={fieldErrors?.sex?.[0]}
+      />
+
+      <div className={styles.radioField}>
+        <RadioGroup
+          name="neuterStatus"
+          label={NEUTER_TERM[sex]}
+          defaultValue={neuterStatus ?? ""}
+          isInvalid={fieldErrors?.neuterStatus !== undefined}
+          optionsClassName={styles.inlineOptions}
+        >
+          <Radio value="">未設定</Radio>
+          <Radio value="intact">{NEUTER_STATUS_LABEL.intact}</Radio>
+          <Radio value="neutered">{NEUTER_STATUS_LABEL.neutered}</Radio>
+        </RadioGroup>
+        {fieldErrors?.neuterStatus ? (
+          <p className={styles.errorMessage}>{fieldErrors.neuterStatus[0]}</p>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
 export function CatForm({
   action,
   cat,
@@ -60,8 +114,9 @@ export function CatForm({
     initialState,
   );
   const [isProfileImageBusy, setIsProfileImageBusy] = useState(false);
-  // 避妊・去勢の呼び方を性別に合わせて切り替えるため、選んでいる性別を持つ
-  const [sex, setSex] = useState<Cat["sex"]>(cat?.sex ?? "unknown");
+  // 送信後にフォームがリセットされると、入力欄はマウント時の値に戻る（value で制御している欄も同じ）。
+  // 入力エラーで戻したときは送信した値で作り直し、選んだものを保持する
+  const submittedChoicesKey = JSON.stringify(state.submittedChoices ?? null);
 
   return (
     <form action={formAction} className={styles.form}>
@@ -80,37 +135,12 @@ export function CatForm({
           isRequired
         />
 
-        <Select
-          name="sex"
-          label="性別"
-          options={SEX_OPTIONS}
-          selectedKey={sex}
-          onSelectionChange={(key) => {
-            if (key !== null) {
-              setSex(key as Cat["sex"]);
-            }
-          }}
-          errorMessage={state.fieldErrors?.sex?.[0]}
+        <SexAndNeuterFields
+          key={submittedChoicesKey}
+          cat={cat}
+          submitted={state.submittedChoices}
+          fieldErrors={state.fieldErrors}
         />
-
-        <div className={styles.radioField}>
-          <RadioGroup
-            name="neuterStatus"
-            label={NEUTER_TERM[sex]}
-            defaultValue={cat?.neuterStatus ?? ""}
-            isInvalid={state.fieldErrors?.neuterStatus !== undefined}
-            optionsClassName={styles.inlineOptions}
-          >
-            <Radio value="">未設定</Radio>
-            <Radio value="intact">{NEUTER_STATUS_LABEL.intact}</Radio>
-            <Radio value="neutered">{NEUTER_STATUS_LABEL.neutered}</Radio>
-          </RadioGroup>
-          {state.fieldErrors?.neuterStatus ? (
-            <p className={styles.errorMessage}>
-              {state.fieldErrors.neuterStatus[0]}
-            </p>
-          ) : null}
-        </div>
 
         <ComboBox
           name="breed"
@@ -150,7 +180,11 @@ export function CatForm({
         <p className={styles.description}>
           近いものを選んでください。わからない項目は未設定のままで大丈夫です。
         </p>
-        <CoatField cat={cat} fieldErrors={state.fieldErrors} />
+        <CoatField
+          key={submittedChoicesKey}
+          initialCoat={state.submittedChoices ?? cat}
+          fieldErrors={state.fieldErrors}
+        />
       </Surface>
       {cat ? (
         <Surface

@@ -1,12 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { Cat } from "@/db/schema";
+import type { Coat } from "../domain/coat";
 import { CoatField } from "./CoatField";
 
-function renderInForm(cat?: Partial<Cat>) {
+function renderInForm(initialCoat?: Coat) {
   const { container } = render(
     <form>
-      <CoatField cat={cat as Cat | undefined} />
+      <CoatField initialCoat={initialCoat} />
     </form>,
   );
   const form = container.querySelector("form") as HTMLFormElement;
