@@ -32,6 +32,7 @@ export async function listMedicationsByHospitalVisitIds(
       and(
         eq(medications.catId, catId),
         inArray(medications.hospitalVisitId, hospitalVisitIds),
+        isNull(medications.deletedAt),
       ),
     )
     .orderBy(desc(medications.startDate));

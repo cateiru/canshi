@@ -5,10 +5,18 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { cats, medicationDoses, medications } from "@/db/schema";
+import {
+  cats,
+  hospitalVisits,
+  medicationDoses,
+  medications,
+} from "@/db/schema";
 import { listTimelineForMonth } from "@/features/timeline/infrastructure/queries";
 import { listMedicationDoses } from "../infrastructure/doseQueries";
-import { listMedications } from "../infrastructure/queries";
+import {
+  listMedications,
+  listMedicationsByHospitalVisitIds,
+} from "../infrastructure/queries";
 import {
   createMedicationDose,
   deleteMedicationDose,
@@ -122,6 +130,26 @@ describe("deleteMedication", () => {
     expect(await findDeletedAt("dose-1")).toEqual(medication.deletedAt);
     expect(await findDeletedAt("dose-2")).toEqual(medication.deletedAt);
     expect(await findDeletedAt("other-dose")).toBeNull();
+  });
+
+  it("通院記録に紐付いた処方薬の一覧からも除く", async () => {
+    await db.insert(hospitalVisits).values({
+      id: "visit",
+      catId: "tama",
+      visitedAt: new Date("2026-07-01T10:00:00Z"),
+      reason: "皮膚炎",
+    });
+    await db
+      .update(medications)
+      .set({ hospitalVisitId: "visit" })
+      .where(eq(medications.catId, "tama"));
+
+    await deleteMedication("tama", "med");
+
+    const byVisitId = await listMedicationsByHospitalVisitIds("tama", [
+      "visit",
+    ]);
+    expect(byVisitId.get("visit")?.map((row) => row.id)).toEqual(["other-med"]);
   });
 
   it("削除済みの服薬予定は、更新・もう一度の削除・投薬実績の追加ができない", async () => {
