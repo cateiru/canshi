@@ -23,6 +23,20 @@ function catInHouseholdCondition(catId: string, householdId: string) {
   )`;
 }
 
+/**
+ * 猫の記録が削除されずにあるときだけ真になる条件。記録の更新と同じ batch に並べる明細・通知の文に含め、
+ * 確認の後に記録が論理削除された場合に、明細の入れ直しや通知の完了だけが通らないようにする
+ * （記録の追加では、同じ batch の先頭で挿入した記録を見る）
+ */
+function liveRecordCondition(catId: string, feedingRecordId: string) {
+  return sql`EXISTS (
+    SELECT 1 FROM ${feedingRecords}
+    WHERE ${feedingRecords.id} = ${feedingRecordId}
+      AND ${feedingRecords.catId} = ${catId}
+      AND ${feedingRecords.deletedAt} IS NULL
+  )`;
+}
+
 /** `timestamp` 列に INSERT ... SELECT で入れる値（UNIX 秒） */
 function toUnixSeconds(date: Date) {
   return Math.floor(date.getTime() / 1000);
@@ -71,7 +85,12 @@ export function createFeedingRecordRepository(
             sortOrder: sql`${item.sortOrder ?? 0}`.as("sort_order"),
           })
           .from(cats)
-          .where(catInHouseholdRow(catId, householdId)),
+          .where(
+            and(
+              catInHouseholdRow(catId, householdId),
+              liveRecordCondition(catId, feedingRecordId),
+            ),
+          ),
       ),
     );
   }
@@ -80,6 +99,7 @@ export function createFeedingRecordRepository(
   function completeNotifications(
     catId: string,
     householdId: string,
+    feedingRecordId: string,
     complete: boolean,
   ) {
     if (!complete) {
@@ -98,6 +118,7 @@ export function createFeedingRecordRepository(
             ]),
             inArray(notifications.status, ["pending", "snoozed"]),
             catInHouseholdCondition(catId, householdId),
+            liveRecordCondition(catId, feedingRecordId),
           ),
         ),
     ];
@@ -170,6 +191,7 @@ export function createFeedingRecordRepository(
         ...completeNotifications(
           catId,
           householdId,
+          feedingRecordId,
           completeNotificationsOnSave,
         ),
       ]);
@@ -183,7 +205,8 @@ export function createFeedingRecordRepository(
       content,
       completeNotificationsOnSave,
     ) {
-      // 更新・明細の削除と挿入のいずれも、猫が確認した時点の家にいるときだけ行う
+      // 更新・明細の削除と挿入・通知の完了のいずれも、猫が確認した時点の家にいて、
+      // 記録が削除されていないときだけ行う
       const [updated] = await db.batch([
         db
           .update(feedingRecords)
@@ -206,12 +229,14 @@ export function createFeedingRecordRepository(
             and(
               eq(feedingRecordItems.feedingRecordId, id),
               catInHouseholdCondition(catId, householdId),
+              liveRecordCondition(catId, id),
             ),
           ),
         ...insertItems(id, catId, householdId, content.items),
         ...completeNotifications(
           catId,
           householdId,
+          id,
           completeNotificationsOnSave,
         ),
       ]);

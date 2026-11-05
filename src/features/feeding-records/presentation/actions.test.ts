@@ -34,6 +34,9 @@ vi.mock("@/features/auth/presentation/session", () => ({
   },
 }));
 
+const { createFeedingRecordRepository } = await import(
+  "../infrastructure/feedingRecordRepository"
+);
 const {
   createFeedingRecordAction,
   deleteFeedingRecordAction,
@@ -220,6 +223,45 @@ describe("createFeedingRecordAction・updateFeedingRecordAction のごはんの�
     expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
 
     expect(await statusOf("time")).toBe("done");
+  });
+
+  it("確認の後に記録が論理削除された場合は、明細も通知も書き換えない", async () => {
+    await addNotification("time", { householdId: "home" }, "feeding_time");
+    // 保存前の確認（`findOccurredAtForCat`）の後、更新の batch より先に別の端末から削除された状態
+    await db
+      .update(feedingRecords)
+      .set({ deletedAt: new Date() })
+      .where(eq(feedingRecords.id, "tama-meal"));
+
+    const updated =
+      await createFeedingRecordRepository().updateWhileCatInHousehold(
+        "tama",
+        "home",
+        "tama-meal",
+        {
+          occurredAt: new Date("2026-09-21T07:30:00.000Z"),
+          mode: "strict",
+          items: [
+            {
+              foodProductId: "food",
+              givenAmountG: 50,
+              leftoverAmountG: 0,
+              estimatedIntakeG: 50,
+              estimatedKcal: 190,
+              givenAmountLevel: null,
+              leftoverLevel: null,
+              sortOrder: 0,
+            },
+          ],
+        },
+        true,
+      );
+
+    expect(updated).toBe(false);
+    expect(
+      (await itemsOf("tama-meal")).map((item) => item.givenAmountG),
+    ).toEqual([30]);
+    expect(await statusOf("time")).toBe("pending");
   });
 
   it("記録の日時を変えずに量などだけを直しても、ごはんの通知は完了にしない", async () => {
