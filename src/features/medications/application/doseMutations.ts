@@ -1,7 +1,6 @@
 import type { MedicationDoseFormInput } from "../domain/doseSchema";
 import { toMedicationDoseContent } from "../domain/medicationDose";
 import { createMedicationDoseRepository } from "../infrastructure/medicationDoseRepository";
-import { createMedicationRepository } from "../infrastructure/medicationRepository";
 
 /*
  * 投薬実績の保存（ユースケース）。画面（`../presentation/doseActions.ts`）と AI との接続（MCP）の
@@ -10,9 +9,10 @@ import { createMedicationRepository } from "../infrastructure/medicationReposito
  */
 
 /**
- * 投薬実績を追加し、その ID を返す。服薬予定が猫のものでなければ null。
+ * 投薬実績を追加し、その ID を返す。服薬予定が猫のものでない・削除済みなら null。
  * 服薬予定の ID は URL・AI から任意の値を渡せるため、他猫の服薬予定に投薬実績が
- * 紐付いてしまうのを防ぐ
+ * 紐付いてしまうのを防ぐ。確かめるのは挿入の文の中（`medicationDoseRepository.add`）で、
+ * 確認の後に服薬予定が論理削除された場合も追加しない
  */
 export async function createMedicationDose(
   catId: string,
@@ -20,11 +20,6 @@ export async function createMedicationDose(
   data: MedicationDoseFormInput,
   d1?: D1Database,
 ): Promise<string | null> {
-  if (
-    !(await createMedicationRepository(d1).existsForCat(catId, medicationId))
-  ) {
-    return null;
-  }
   return createMedicationDoseRepository(d1).add(
     catId,
     medicationId,

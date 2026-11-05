@@ -166,6 +166,52 @@ describe("deleteMedication", () => {
   });
 });
 
+describe("createMedicationDose", () => {
+  it("服薬予定に投薬実績を追加する", async () => {
+    const id = await createMedicationDose("tama", "med", {
+      ...doseForm,
+      wasAdministered: false,
+      memo: "吐き出した",
+    });
+
+    const [row] = await db
+      .select()
+      .from(medicationDoses)
+      .where(eq(medicationDoses.id, id as string));
+    expect(row).toMatchObject({
+      catId: "tama",
+      medicationId: "med",
+      occurredAt: new Date("2026-07-04T08:00:00.000Z"),
+      wasAdministered: false,
+      memo: "吐き出した",
+      deletedAt: null,
+    });
+  });
+
+  it("別の猫の服薬予定や、確認の後に論理削除された服薬予定には追加しない", async () => {
+    await db
+      .update(medications)
+      .set({ deletedAt: new Date() })
+      .where(eq(medications.id, "med"));
+    const { createMedicationDoseRepository } = await import(
+      "../infrastructure/medicationDoseRepository"
+    );
+    const content = {
+      occurredAt: new Date("2026-07-04T08:00:00.000Z"),
+      wasAdministered: true,
+      memo: null,
+    };
+
+    expect(
+      await createMedicationDoseRepository().add("tama", "med", content),
+    ).toBeNull();
+    expect(
+      await createMedicationDoseRepository().add("kuro", "other-med", content),
+    ).toBeNull();
+    expect(await db.select().from(medicationDoses)).toHaveLength(3);
+  });
+});
+
 describe("deleteMedicationDose", () => {
   it("投薬実績を論理削除し、削除済みの実績は更新・もう一度の削除ができない", async () => {
     expect(await deleteMedicationDose("tama", "med", "dose-1")).toBe(true);

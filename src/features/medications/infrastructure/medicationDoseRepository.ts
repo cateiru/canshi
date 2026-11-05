@@ -1,6 +1,6 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { medicationDoses } from "@/db/schema";
+import { medicationDoses, medications } from "@/db/schema";
 import type { MedicationDoseRepository } from "../domain/medicationDoseRepository";
 
 /** D1 に保存する `MedicationDoseRepository`。`d1` を省略すると Next.js のリクエストの D1 を使う */
@@ -17,11 +17,22 @@ export function createMedicationDoseRepository(
     );
   return {
     async add(catId, medicationId, content) {
+      // 服薬予定がこの猫のもので削除されていないときだけ、INSERT ... SELECT で 1 文で挿入する。
+      // INSERT ... SELECT では列の既定値が使われないため ID はここで作り、列はテーブル定義と同じ並びにする
       const [created] = await db
         .insert(medicationDoses)
-        .values({ catId, medicationId, ...content })
+        .select(
+          sql`SELECT ${crypto.randomUUID()}, ${medications.catId}, ${medications.id},
+            ${Math.floor(content.occurredAt.getTime() / 1000)},
+            ${content.wasAdministered ? 1 : 0}, ${content.memo},
+            unixepoch(), unixepoch(), NULL
+          FROM ${medications}
+          WHERE ${medications.id} = ${medicationId}
+            AND ${medications.catId} = ${catId}
+            AND ${medications.deletedAt} IS NULL`,
+        )
         .returning({ id: medicationDoses.id });
-      return created.id;
+      return created?.id ?? null;
     },
     async update(catId, medicationId, id, content) {
       const result = await db
