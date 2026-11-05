@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   cats,
@@ -38,7 +38,7 @@ export async function resolveMediaRecordOwner(
       const [row] = await db
         .select({ catId: poopRecords.catId })
         .from(poopRecords)
-        .where(eq(poopRecords.id, recordId))
+        .where(and(eq(poopRecords.id, recordId), isNull(poopRecords.deletedAt)))
         .limit(1);
       return row ?? null;
     }
@@ -46,7 +46,9 @@ export async function resolveMediaRecordOwner(
       const [row] = await db
         .select({ catId: vomitRecords.catId })
         .from(vomitRecords)
-        .where(eq(vomitRecords.id, recordId))
+        .where(
+          and(eq(vomitRecords.id, recordId), isNull(vomitRecords.deletedAt)),
+        )
         .limit(1);
       return row ?? null;
     }
@@ -54,7 +56,7 @@ export async function resolveMediaRecordOwner(
       const [row] = await db
         .select({ catId: symptoms.catId })
         .from(symptoms)
-        .where(eq(symptoms.id, recordId))
+        .where(and(eq(symptoms.id, recordId), isNull(symptoms.deletedAt)))
         .limit(1);
       return row ?? null;
     }
@@ -62,7 +64,7 @@ export async function resolveMediaRecordOwner(
       const [row] = await db
         .select({ catId: medications.catId })
         .from(medications)
-        .where(eq(medications.id, recordId))
+        .where(and(eq(medications.id, recordId), isNull(medications.deletedAt)))
         .limit(1);
       return row ?? null;
     }
@@ -70,7 +72,12 @@ export async function resolveMediaRecordOwner(
       const [row] = await db
         .select({ catId: hospitalVisits.catId })
         .from(hospitalVisits)
-        .where(eq(hospitalVisits.id, recordId))
+        .where(
+          and(
+            eq(hospitalVisits.id, recordId),
+            isNull(hospitalVisits.deletedAt),
+          ),
+        )
         .limit(1);
       return row ?? null;
     }
@@ -78,7 +85,7 @@ export async function resolveMediaRecordOwner(
       const [row] = await db
         .select({ catId: memoRecords.catId })
         .from(memoRecords)
-        .where(eq(memoRecords.id, recordId))
+        .where(and(eq(memoRecords.id, recordId), isNull(memoRecords.deletedAt)))
         .limit(1);
       return row ?? null;
     }
@@ -96,7 +103,12 @@ export async function resolveMediaRecordOwner(
       const [row] = await db
         .select({ householdId: expenseRecords.householdId })
         .from(expenseRecords)
-        .where(eq(expenseRecords.id, recordId))
+        .where(
+          and(
+            eq(expenseRecords.id, recordId),
+            isNull(expenseRecords.deletedAt),
+          ),
+        )
         .limit(1);
       return row ? { catId: null, householdId: row.householdId } : null;
     }

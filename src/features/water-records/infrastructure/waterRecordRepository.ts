@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { waterRecords } from "@/db/schema";
 import type { WaterRecordRepository } from "../domain/waterRecordRepository";
@@ -20,14 +20,28 @@ export function createWaterRecordRepository(
       const result = await db
         .update(waterRecords)
         .set({ ...content, updatedAt: new Date() })
-        .where(and(eq(waterRecords.id, id), eq(waterRecords.catId, catId)))
+        .where(
+          and(
+            eq(waterRecords.id, id),
+            eq(waterRecords.catId, catId),
+            isNull(waterRecords.deletedAt),
+          ),
+        )
         .returning({ id: waterRecords.id });
       return result.length > 0;
     },
     async remove(catId, id) {
       const result = await db
-        .delete(waterRecords)
-        .where(and(eq(waterRecords.id, id), eq(waterRecords.catId, catId)))
+        .update(waterRecords)
+        // 論理削除。削除済みの記録は読み取り・更新から除く
+        .set({ deletedAt: new Date() })
+        .where(
+          and(
+            eq(waterRecords.id, id),
+            eq(waterRecords.catId, catId),
+            isNull(waterRecords.deletedAt),
+          ),
+        )
         .returning({ id: waterRecords.id });
       return result.length > 0;
     },

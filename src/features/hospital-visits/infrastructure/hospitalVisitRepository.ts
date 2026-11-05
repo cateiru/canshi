@@ -1,5 +1,6 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { insertWhere, liveRowCondition } from "@/db/conditionalInsert";
 import {
   expenseRecordHospitalVisits,
   hospitalVisits,
@@ -15,7 +16,16 @@ export function createHospitalVisitRepository(
 ): HospitalVisitRepository {
   const db = getDb(d1);
   const byId = (catId: string, id: string) =>
-    and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId));
+    and(
+      eq(hospitalVisits.id, id),
+      eq(hospitalVisits.catId, catId),
+      isNull(hospitalVisits.deletedAt),
+    );
+
+  // 関連する症状が、この猫のもので削除されていないこと。確認の後に論理削除された場合に、
+  // 削除済みの記録を指したまま保存しないよう、書き込みの文の中でも確かめる
+  const symptomIsLive = (catId: string, symptomId: string | null) =>
+    liveRowCondition(symptoms, catId, symptomId);
 
   return {
     async existsForCat(catId, id) {
@@ -29,39 +39,47 @@ export function createHospitalVisitRepository(
 
     async add(catId, content, expense) {
       const id = crypto.randomUUID();
-      await saveHospitalVisitWithExpense(
+      const saved = await saveHospitalVisitWithExpense(
         db,
-        db.insert(hospitalVisits).values({ id, catId, ...content }),
+        insertWhere(
+          db,
+          hospitalVisits,
+          { id, catId, ...content },
+          symptomIsLive(catId, content.symptomId),
+        ).returning({ id: hospitalVisits.id }),
         {
           hospitalVisitId: id,
           catId,
           visitedAt: content.visitedAt,
           ...expense,
         },
+        symptomIsLive(catId, content.symptomId),
       );
-      return id;
+      return saved ? id : null;
     },
 
     async update(catId, id, content, expense) {
-      await saveHospitalVisitWithExpense(
+      return saveHospitalVisitWithExpense(
         db,
         db
           .update(hospitalVisits)
           .set({ ...content, updatedAt: new Date() })
-          .where(byId(catId, id)),
+          .where(and(byId(catId, id), symptomIsLive(catId, content.symptomId)))
+          .returning({ id: hospitalVisits.id }),
         {
           hospitalVisitId: id,
           catId,
           visitedAt: content.visitedAt,
           ...expense,
         },
+        symptomIsLive(catId, content.symptomId),
       );
     },
 
     async remove(catId, id) {
-      // symptoms.hospital_visit_id / medications.hospital_visit_id /
-      // expense_record_hospital_visits からの外部キー参照があるため、通院記録を
-      // 削除する前に紐付けを解除しておく。支出記録は家計簿として残す必要があるため、
+      // 通院記録は論理削除する。症状・投薬・支出記録から削除済みの通院記録を指したままにしないよう、
+      // それらからの紐付け（symptoms.hospital_visit_id / medications.hospital_visit_id /
+      // expense_record_hospital_visits）は外す。支出記録は家計簿として残す必要があるため、
       // 紐付けだけ外して記録自体は削除しない。一連の操作は db.batch でまとめて
       // 原子的に実行する
       await db.batch([
@@ -83,7 +101,10 @@ export function createHospitalVisitRepository(
         db
           .delete(expenseRecordHospitalVisits)
           .where(eq(expenseRecordHospitalVisits.hospitalVisitId, id)),
-        db.delete(hospitalVisits).where(byId(catId, id)),
+        db
+          .update(hospitalVisits)
+          .set({ deletedAt: new Date() })
+          .where(byId(catId, id)),
       ]);
     },
   };

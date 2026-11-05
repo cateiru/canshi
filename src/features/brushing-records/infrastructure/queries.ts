@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { type BrushingRecord, brushingRecords } from "@/db/schema";
 
@@ -7,7 +7,9 @@ export async function listBrushingRecords(catId: string) {
   return db
     .select()
     .from(brushingRecords)
-    .where(eq(brushingRecords.catId, catId))
+    .where(
+      and(eq(brushingRecords.catId, catId), isNull(brushingRecords.deletedAt)),
+    )
     .orderBy(desc(brushingRecords.performedAt));
 }
 
@@ -16,7 +18,7 @@ export async function getBrushingRecordById(id: string) {
   const [record] = await db
     .select()
     .from(brushingRecords)
-    .where(eq(brushingRecords.id, id))
+    .where(and(eq(brushingRecords.id, id), isNull(brushingRecords.deletedAt)))
     .limit(1);
   return record ?? null;
 }
@@ -30,7 +32,13 @@ export async function getBrushingRecordForCat(
   const [record] = await getDb(d1)
     .select()
     .from(brushingRecords)
-    .where(and(eq(brushingRecords.id, id), eq(brushingRecords.catId, catId)))
+    .where(
+      and(
+        eq(brushingRecords.id, id),
+        eq(brushingRecords.catId, catId),
+        isNull(brushingRecords.deletedAt),
+      ),
+    )
     .limit(1);
   return record ?? null;
 }

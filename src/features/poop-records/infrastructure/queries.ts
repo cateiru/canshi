@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { type PoopRecord, poopRecords } from "@/db/schema";
 
@@ -7,7 +7,7 @@ export async function listPoopRecords(catId: string) {
   return db
     .select()
     .from(poopRecords)
-    .where(eq(poopRecords.catId, catId))
+    .where(and(eq(poopRecords.catId, catId), isNull(poopRecords.deletedAt)))
     .orderBy(desc(poopRecords.occurredAt));
 }
 
@@ -16,7 +16,7 @@ export async function getPoopRecordById(id: string) {
   const [record] = await db
     .select()
     .from(poopRecords)
-    .where(eq(poopRecords.id, id))
+    .where(and(eq(poopRecords.id, id), isNull(poopRecords.deletedAt)))
     .limit(1);
   return record ?? null;
 }
@@ -30,7 +30,13 @@ export async function getPoopRecordForCat(
   const [record] = await getDb(d1)
     .select()
     .from(poopRecords)
-    .where(and(eq(poopRecords.id, id), eq(poopRecords.catId, catId)))
+    .where(
+      and(
+        eq(poopRecords.id, id),
+        eq(poopRecords.catId, catId),
+        isNull(poopRecords.deletedAt),
+      ),
+    )
     .limit(1);
   return record ?? null;
 }

@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { cleaningRecords, cleaningTargets } from "@/db/schema";
 import { calculateNextDueAt, isCleaningOverdue } from "../domain/calculations";
@@ -50,7 +50,9 @@ export async function listCleaningTargetsWithStatus(
       performedAt: cleaningRecords.performedAt,
     })
     .from(cleaningRecords)
-    .where(eq(cleaningRecords.catId, catId))
+    .where(
+      and(eq(cleaningRecords.catId, catId), isNull(cleaningRecords.deletedAt)),
+    )
     .orderBy(desc(cleaningRecords.performedAt));
 
   const lastPerformedByTarget = new Map<string, Date>();

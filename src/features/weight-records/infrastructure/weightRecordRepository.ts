@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { weightRecords } from "@/db/schema";
 import type { WeightRecordRepository } from "../domain/weightRecordRepository";
@@ -20,14 +20,28 @@ export function createWeightRecordRepository(
       const result = await db
         .update(weightRecords)
         .set({ ...content, updatedAt: new Date() })
-        .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)))
+        .where(
+          and(
+            eq(weightRecords.id, id),
+            eq(weightRecords.catId, catId),
+            isNull(weightRecords.deletedAt),
+          ),
+        )
         .returning({ id: weightRecords.id });
       return result.length > 0;
     },
     async remove(catId, id) {
       const result = await db
-        .delete(weightRecords)
-        .where(and(eq(weightRecords.id, id), eq(weightRecords.catId, catId)))
+        .update(weightRecords)
+        // 論理削除。削除済みの記録は読み取り・更新から除く
+        .set({ deletedAt: new Date() })
+        .where(
+          and(
+            eq(weightRecords.id, id),
+            eq(weightRecords.catId, catId),
+            isNull(weightRecords.deletedAt),
+          ),
+        )
         .returning({ id: weightRecords.id });
       return result.length > 0;
     },

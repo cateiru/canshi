@@ -35,6 +35,6 @@ export interface FeedingRecordRepository {
     content: FeedingRecordContent,
     completeNotifications: boolean,
   ): Promise<boolean>;
-  /** 猫の記録を明細ごと削除する。見つからなければ false */
+  /** 猫の記録を論理削除する（明細は残す）。見つからない・削除済みなら false */
   remove(catId: string, id: string): Promise<boolean>;
 }

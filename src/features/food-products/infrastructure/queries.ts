@@ -1,10 +1,11 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
   type FoodProduct,
   feedingPresetItems,
   feedingRecordItems,
+  feedingRecords,
   foodProducts,
   householdMembers,
 } from "@/db/schema";
@@ -127,7 +128,17 @@ export async function listFoodProductUsages(
       db
         .selectDistinct({ foodProductId: feedingRecordItems.foodProductId })
         .from(feedingRecordItems)
-        .where(inArray(feedingRecordItems.foodProductId, chunk)),
+        // 論理削除したごはん記録の明細は、商品の削除時にまとめて消すため「使っている」に数えない
+        .innerJoin(
+          feedingRecords,
+          eq(feedingRecordItems.feedingRecordId, feedingRecords.id),
+        )
+        .where(
+          and(
+            inArray(feedingRecordItems.foodProductId, chunk),
+            isNull(feedingRecords.deletedAt),
+          ),
+        ),
       db
         .selectDistinct({ foodProductId: feedingPresetItems.foodProductId })
         .from(feedingPresetItems)

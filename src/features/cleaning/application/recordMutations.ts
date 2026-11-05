@@ -116,7 +116,7 @@ export async function updateCleaningRecord(
   );
 }
 
-/** 掃除対象の記録を削除する。見つからなければ false */
+/** 掃除対象の記録を論理削除する（削除日時を入れ、一覧・タイムラインから除く）。見つからなければ false */
 export async function deleteCleaningRecord(
   catId: string,
   cleaningTargetId: string,

@@ -1,5 +1,3 @@
-import { deleteMediaAssetsByRecord } from "@/features/media/infrastructure/storage";
-import { MEMO_RECORD_MEDIA_TYPE } from "../domain/media";
 import { toMemoRecordContent } from "../domain/memoRecord";
 import type { MemoRecordFormInput } from "../domain/schema";
 import { createMemoRecordRepository } from "../infrastructure/memoRecordRepository";
@@ -34,19 +32,13 @@ export async function updateMemoRecord(
 }
 
 /**
- * 猫の記録を、紐付く画像（R2 のオブジェクトと media_assets 行）ごと削除する。
- * 見つからなければ false
+ * 猫の記録を論理削除する（削除日時を入れ、一覧・タイムライン・集計から除く）。
+ * 紐付く画像（R2 のオブジェクトと media_assets 行）は消さずに残す。見つからなければ false
  */
 export async function deleteMemoRecord(
   catId: string,
   id: string,
+  d1?: D1Database,
 ): Promise<boolean> {
-  const repository = createMemoRecordRepository();
-  // 添付の削除は記録 ID だけで行うため、先に記録がこの猫のものであることを確かめる。
-  // 確かめないと、自分の猫の catId と別の家の記録 ID を渡して添付を消せてしまう
-  if (!(await repository.existsForCat(catId, id))) return false;
-  // 紐付く画像を先に削除する
-  await deleteMediaAssetsByRecord(MEMO_RECORD_MEDIA_TYPE, id);
-  await repository.remove(catId, id);
-  return true;
+  return createMemoRecordRepository(d1).remove(catId, id);
 }

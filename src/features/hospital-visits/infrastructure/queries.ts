@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lt, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lt, or } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
@@ -16,7 +16,9 @@ export async function listHospitalVisits(catId: string) {
   return db
     .select()
     .from(hospitalVisits)
-    .where(eq(hospitalVisits.catId, catId))
+    .where(
+      and(eq(hospitalVisits.catId, catId), isNull(hospitalVisits.deletedAt)),
+    )
     .orderBy(desc(hospitalVisits.visitedAt));
 }
 
@@ -25,7 +27,7 @@ export async function getHospitalVisitById(id: string) {
   const [hospitalVisit] = await db
     .select()
     .from(hospitalVisits)
-    .where(eq(hospitalVisits.id, id))
+    .where(and(eq(hospitalVisits.id, id), isNull(hospitalVisits.deletedAt)))
     .limit(1);
   return hospitalVisit ?? null;
 }
@@ -52,6 +54,7 @@ export async function listHospitalVisitsByIds(
       .where(
         and(
           inArray(hospitalVisits.id, chunk),
+          isNull(hospitalVisits.deletedAt),
           inArray(hospitalVisits.catId, accessibleCatIdsQuery(db, userId)),
         ),
       );
@@ -104,6 +107,7 @@ export async function listHospitalVisitsOnDate(
     .where(
       and(
         eq(cats.householdId, householdId),
+        isNull(hospitalVisits.deletedAt),
         or(
           and(
             gte(hospitalVisits.visitedAt, start),
@@ -143,9 +147,18 @@ export async function getHospitalVisitWithExpenseAmountForCat(
     )
     .leftJoin(
       expenseRecords,
-      eq(expenseRecords.id, expenseRecordHospitalVisits.expenseRecordId),
+      and(
+        eq(expenseRecords.id, expenseRecordHospitalVisits.expenseRecordId),
+        isNull(expenseRecords.deletedAt),
+      ),
     )
-    .where(and(eq(hospitalVisits.id, id), eq(hospitalVisits.catId, catId)))
+    .where(
+      and(
+        eq(hospitalVisits.id, id),
+        eq(hospitalVisits.catId, catId),
+        isNull(hospitalVisits.deletedAt),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }

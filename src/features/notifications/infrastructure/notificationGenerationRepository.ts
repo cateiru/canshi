@@ -5,6 +5,7 @@ import {
   exists,
   gte,
   inArray,
+  isNull,
   lt,
   ne,
   notExists,
@@ -97,6 +98,7 @@ export async function listRecentFeedingAtsByCat(
             ),
         ),
         gte(feedingRecords.occurredAt, since),
+        isNull(feedingRecords.deletedAt),
       ),
     );
   const byCat = new Map<string, Date[]>();
@@ -196,6 +198,7 @@ export async function insertHouseholdNotification(
                       candidate.recordWindow.start,
                     ),
                     lt(feedingRecords.occurredAt, recordedUntil),
+                    isNull(feedingRecords.deletedAt),
                   ),
                 ),
             ),
@@ -224,7 +227,7 @@ export async function listOpenSymptomsByCat(
       status: symptoms.status,
     })
     .from(symptoms)
-    .where(ne(symptoms.status, "resolved"));
+    .where(and(ne(symptoms.status, "resolved"), isNull(symptoms.deletedAt)));
   if (rows.length === 0) {
     return byCat;
   }
@@ -317,6 +320,7 @@ export async function insertSymptomOngoingNotification(
             eq(symptoms.id, candidate.symptomId),
             eq(symptoms.catId, candidate.catId),
             ne(symptoms.status, "resolved"),
+            isNull(symptoms.deletedAt),
           ),
         ),
     )
@@ -337,7 +341,12 @@ export function createNotificationGenerationRepository(
       const [latest] = await db
         .select({ performedAt: shampooRecords.performedAt })
         .from(shampooRecords)
-        .where(eq(shampooRecords.catId, catId))
+        .where(
+          and(
+            eq(shampooRecords.catId, catId),
+            isNull(shampooRecords.deletedAt),
+          ),
+        )
         .orderBy(desc(shampooRecords.performedAt))
         .limit(1);
       return latest?.performedAt ?? null;
@@ -347,7 +356,9 @@ export function createNotificationGenerationRepository(
       const [latest] = await db
         .select({ occurredAt: weightRecords.occurredAt })
         .from(weightRecords)
-        .where(eq(weightRecords.catId, catId))
+        .where(
+          and(eq(weightRecords.catId, catId), isNull(weightRecords.deletedAt)),
+        )
         .orderBy(desc(weightRecords.occurredAt))
         .limit(1);
       return latest?.occurredAt ?? null;

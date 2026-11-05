@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   cats,
@@ -20,6 +20,20 @@ function catInHouseholdCondition(catId: string, householdId: string) {
   return sql`EXISTS (
     SELECT 1 FROM ${cats}
     WHERE ${cats.id} = ${catId} AND ${cats.householdId} = ${householdId}
+  )`;
+}
+
+/**
+ * 猫の記録が削除されずにあるときだけ真になる条件。記録の更新と同じ batch に並べる明細・通知の文に含め、
+ * 確認の後に記録が論理削除された場合に、明細の入れ直しや通知の完了だけが通らないようにする
+ * （記録の追加では、同じ batch の先頭で挿入した記録を見る）
+ */
+function liveRecordCondition(catId: string, feedingRecordId: string) {
+  return sql`EXISTS (
+    SELECT 1 FROM ${feedingRecords}
+    WHERE ${feedingRecords.id} = ${feedingRecordId}
+      AND ${feedingRecords.catId} = ${catId}
+      AND ${feedingRecords.deletedAt} IS NULL
   )`;
 }
 
@@ -71,7 +85,12 @@ export function createFeedingRecordRepository(
             sortOrder: sql`${item.sortOrder ?? 0}`.as("sort_order"),
           })
           .from(cats)
-          .where(catInHouseholdRow(catId, householdId)),
+          .where(
+            and(
+              catInHouseholdRow(catId, householdId),
+              liveRecordCondition(catId, feedingRecordId),
+            ),
+          ),
       ),
     );
   }
@@ -80,6 +99,7 @@ export function createFeedingRecordRepository(
   function completeNotifications(
     catId: string,
     householdId: string,
+    feedingRecordId: string,
     complete: boolean,
   ) {
     if (!complete) {
@@ -98,6 +118,7 @@ export function createFeedingRecordRepository(
             ]),
             inArray(notifications.status, ["pending", "snoozed"]),
             catInHouseholdCondition(catId, householdId),
+            liveRecordCondition(catId, feedingRecordId),
           ),
         ),
     ];
@@ -119,7 +140,13 @@ export function createFeedingRecordRepository(
       const [row] = await db
         .select({ occurredAt: feedingRecords.occurredAt })
         .from(feedingRecords)
-        .where(and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)))
+        .where(
+          and(
+            eq(feedingRecords.id, id),
+            eq(feedingRecords.catId, catId),
+            isNull(feedingRecords.deletedAt),
+          ),
+        )
         .limit(1);
       return row?.occurredAt ?? null;
     },
@@ -154,6 +181,7 @@ export function createFeedingRecordRepository(
                 mode: sql`${content.mode}`.as("mode"),
                 createdAt: sql`(unixepoch())`.as("created_at"),
                 updatedAt: sql`(unixepoch())`.as("updated_at"),
+                deletedAt: sql`null`.as("deleted_at"),
               })
               .from(cats)
               .where(catInHouseholdRow(catId, householdId)),
@@ -163,6 +191,7 @@ export function createFeedingRecordRepository(
         ...completeNotifications(
           catId,
           householdId,
+          feedingRecordId,
           completeNotificationsOnSave,
         ),
       ]);
@@ -176,7 +205,8 @@ export function createFeedingRecordRepository(
       content,
       completeNotificationsOnSave,
     ) {
-      // 更新・明細の削除と挿入のいずれも、猫が確認した時点の家にいるときだけ行う
+      // 更新・明細の削除と挿入・通知の完了のいずれも、猫が確認した時点の家にいて、
+      // 記録が削除されていないときだけ行う
       const [updated] = await db.batch([
         db
           .update(feedingRecords)
@@ -188,6 +218,7 @@ export function createFeedingRecordRepository(
           .where(
             and(
               eq(feedingRecords.id, id),
+              isNull(feedingRecords.deletedAt),
               catInHouseholdCondition(catId, householdId),
             ),
           )
@@ -198,12 +229,14 @@ export function createFeedingRecordRepository(
             and(
               eq(feedingRecordItems.feedingRecordId, id),
               catInHouseholdCondition(catId, householdId),
+              liveRecordCondition(catId, id),
             ),
           ),
         ...insertItems(id, catId, householdId, content.items),
         ...completeNotifications(
           catId,
           householdId,
+          id,
           completeNotificationsOnSave,
         ),
       ]);
@@ -211,27 +244,18 @@ export function createFeedingRecordRepository(
     },
 
     async remove(catId, id) {
-      // 明細は記録 ID で紐付くため、この猫の記録の明細だけを消すよう親の記録で絞り込む。
-      // 絞り込まないと、自分の猫の catId と別の家の記録 ID を渡して明細だけを消せてしまう
-      const [, deleted] = await db.batch([
-        db.delete(feedingRecordItems).where(
-          inArray(
-            feedingRecordItems.feedingRecordId,
-            db
-              .select({ id: feedingRecords.id })
-              .from(feedingRecords)
-              .where(
-                and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)),
-              ),
+      // 論理削除。明細は記録の中身として残す（削除済みの記録の明細は、記録と一緒に読み取りから除く）
+      const deleted = await db
+        .update(feedingRecords)
+        .set({ deletedAt: new Date() })
+        .where(
+          and(
+            eq(feedingRecords.id, id),
+            eq(feedingRecords.catId, catId),
+            isNull(feedingRecords.deletedAt),
           ),
-        ),
-        db
-          .delete(feedingRecords)
-          .where(
-            and(eq(feedingRecords.id, id), eq(feedingRecords.catId, catId)),
-          )
-          .returning({ id: feedingRecords.id }),
-      ]);
+        )
+        .returning({ id: feedingRecords.id });
       return deleted.length > 0;
     },
   };

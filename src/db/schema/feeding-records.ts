@@ -35,6 +35,8 @@ export const feedingRecords = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
+    // 記録を削除した日時。削除は論理削除で、NULL でない行は削除済みとして読み取り・更新から除く（猫・家を削除したときは物理削除する）
+    deletedAt: integer("deleted_at", { mode: "timestamp" }),
   },
   (table) => [
     // ごはんの時間の通知で、猫ごとに直近の記録を期間で絞って読むため
