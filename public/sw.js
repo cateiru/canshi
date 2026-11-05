@@ -1,13 +1,56 @@
 // キャッシュ構成を変更したら CACHE_VERSION を上げる。
 // activate 時に古いバージョンのキャッシュをすべて破棄する。
-const CACHE_VERSION = "v1";
+// v2: オフラインページの HTML だけでなく、そのページが読み込む CSS もキャッシュするようにした
+const CACHE_VERSION = "v2";
 const STATIC_CACHE = `canshi-static-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
 
+/**
+ * HTML 中の `<link rel="stylesheet" href="...">` から、同一オリジンの
+ * `/_next/static/` 配下の CSS の URL を取り出す。
+ * Service Worker では DOMParser を使えないため、正規表現で属性を読む
+ */
+function extractStylesheetUrls(html) {
+  const urls = new Set();
+  for (const [tag] of html.matchAll(/<link\b[^>]*>/gi)) {
+    const rel = tag.match(/\brel\s*=\s*["']([^"']*)["']/i)?.[1] ?? "";
+    if (!rel.toLowerCase().split(/\s+/).includes("stylesheet")) {
+      continue;
+    }
+    const href = tag.match(/\bhref\s*=\s*["']([^"']*)["']/i)?.[1];
+    if (!href) {
+      continue;
+    }
+    const url = new URL(href.replaceAll("&amp;", "&"), self.location.origin);
+    if (
+      url.origin === self.location.origin &&
+      url.pathname.startsWith("/_next/static/")
+    ) {
+      urls.add(url.pathname + url.search);
+    }
+  }
+  return [...urls];
+}
+
+/**
+ * オフラインページを、表示に必要な CSS とあわせてキャッシュする。
+ * HTML だけをキャッシュすると、オフライン時に CSS の取得が失敗して
+ * スタイルが当たらない状態で表示されてしまう
+ */
+async function precacheOfflinePage() {
+  const cache = await caches.open(STATIC_CACHE);
+  const response = await fetch(OFFLINE_URL, { cache: "reload" });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${OFFLINE_URL}: ${response.status}`);
+  }
+  const html = await response.clone().text();
+  // CSS を先にキャッシュし、揃ってから HTML を置く（片方だけ残らないようにする）
+  await cache.addAll(extractStylesheetUrls(html));
+  await cache.put(OFFLINE_URL, response);
+}
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.add(OFFLINE_URL)),
-  );
+  event.waitUntil(precacheOfflinePage());
   self.skipWaiting();
 });
 
@@ -47,7 +90,10 @@ self.addEventListener("fetch", (event) => {
   // ビルドごとにファイル名が変わる静的アセットのみキャッシュ優先で配信する
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
-      caches.match(request).then((cached) => {
+      // ファイル名にハッシュが入っており内容が変わらないため、Vary は見ない。
+      // install 時に `cache.addAll` で保存した CSS は、ブラウザが送る実際の
+      // リクエストとヘッダー（Accept など）が異なるため
+      caches.match(request, { ignoreVary: true }).then((cached) => {
         if (cached) {
           return cached;
         }
