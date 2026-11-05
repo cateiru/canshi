@@ -29,6 +29,8 @@ import { expect, takeSnapshot, test } from "./vrt-snapshot";
 // - "/" : 登録済みの猫の数によってリダイレクト先が変わる (top-page.spec.ts 参照)
 // - "/notifications" : 表示するたびに `generateNotifications` で通知を生成する副作用があり、
 //   登録済みの猫のデータにも依存する
+// - "/release-notes" : release-notes.json を追記するたびに差分が出るため、同じ表示を
+//   固定のダミーデータで描く "/dev/release-notes" を代わりに撮る
 // - "/dev/media" : `recordId` の初期値が `crypto.randomUUID()` で、フォームに
 //   そのまま表示されるため実行するたびにスナップショットが変わってしまう
 // - 猫ごとの記録の「編集」ページ (weight-records/[id]/edit 等): 今回のスコープでは
@@ -709,8 +711,10 @@ for (const accent of ["blue", "green", "pink", "purple"] as const) {
   }
 }
 
+// 本物の release-notes.json は変更のたびに追記されて差分が出てしまうため、同じ表示を
+// 固定のダミーデータで描く開発用ページ（src/app/dev/release-notes）を撮る
 test("更新情報ページの見た目", async ({ page }, testInfo) => {
-  await page.goto("/release-notes");
+  await page.goto("/dev/release-notes");
   await expect(page.getByRole("heading", { name: "更新情報" })).toBeVisible();
   await takeSnapshot(page, testInfo);
 });

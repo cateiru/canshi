@@ -1,9 +1,9 @@
 .main {
-  composes: page from "../../features/shared/PageLayout.module.css";
+  composes: page from "../shared/PageLayout.module.css";
 }
 
 .list {
-  composes: list from "../../features/shared/PageLayout.module.css";
+  composes: list from "../shared/PageLayout.module.css";
 }
 
 .date {
@@ -21,11 +21,11 @@
 }
 
 .emptyState {
-  composes: emptyState from "../../features/shared/PageLayout.module.css";
+  composes: emptyState from "../shared/PageLayout.module.css";
 }
 
 .release {
-  composes: surface from "../../features/shared/Surface.module.css";
+  composes: surface from "../shared/Surface.module.css";
 }
 
 .meta {
