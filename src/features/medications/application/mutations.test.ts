@@ -7,9 +7,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import {
   cats,
+  expenseRecords,
   hospitalVisits,
+  households,
   medicationDoses,
   medications,
+  symptoms,
 } from "@/db/schema";
 import { listTimelineForMonth } from "@/features/timeline/infrastructure/queries";
 import { listMedicationDoses } from "../infrastructure/doseQueries";
@@ -224,5 +227,185 @@ describe("deleteMedicationDose", () => {
     expect(await updateMedicationDose("tama", "med", "dose-1", doseForm)).toBe(
       false,
     );
+  });
+});
+
+describe("確認の後に関連する記録が論理削除された場合", () => {
+  const deletedAt = new Date("2026-07-05T00:00:00Z");
+
+  beforeEach(async () => {
+    await db.insert(symptoms).values([
+      {
+        id: "deleted-symptom",
+        catId: "tama",
+        symptomType: "vomit",
+        onsetAt: new Date("2026-07-01T00:00:00Z"),
+        status: "ongoing",
+        deletedAt,
+      },
+      {
+        id: "live-symptom",
+        catId: "tama",
+        symptomType: "vomit",
+        onsetAt: new Date("2026-07-01T00:00:00Z"),
+        status: "ongoing",
+      },
+    ]);
+    await db.insert(hospitalVisits).values({
+      id: "deleted-visit",
+      catId: "tama",
+      visitedAt: new Date("2026-07-01T10:00:00Z"),
+      reason: "健診",
+      deletedAt,
+    });
+  });
+
+  const medicationContent = {
+    name: "抗生物質",
+    doseAmount: "1錠",
+    dosesPerDay: 2,
+    startDate: "2026-07-01",
+    endDate: null,
+    symptomId: null,
+    hospitalVisitId: null,
+  };
+  const visitContent = {
+    symptomId: null,
+    visitedAt: new Date("2026-07-02T10:00:00Z"),
+    reason: "再診",
+    diagnosis: null,
+    examinationResults: null,
+    treatment: null,
+    nextVisitAt: null,
+    memo: null,
+  };
+  const symptomContent = {
+    symptomType: "vomit" as const,
+    onsetAt: new Date("2026-07-02T00:00:00Z"),
+    frequencyOrSeverity: null,
+    appetiteNote: null,
+    energyNote: null,
+    status: "ongoing" as const,
+    hospitalVisitId: null,
+    memo: null,
+  };
+
+  it("服薬予定は、削除済みの症状・通院記録を参照して追加・更新しない", async () => {
+    const { createMedicationRepository } = await import(
+      "../infrastructure/medicationRepository"
+    );
+    const repository = createMedicationRepository();
+
+    expect(
+      await repository.add("tama", {
+        ...medicationContent,
+        symptomId: "deleted-symptom",
+      }),
+    ).toBeNull();
+    expect(
+      await repository.add("tama", {
+        ...medicationContent,
+        hospitalVisitId: "deleted-visit",
+      }),
+    ).toBeNull();
+    // 別の猫の症状も参照しない
+    expect(
+      await repository.add("kuro", {
+        ...medicationContent,
+        symptomId: "live-symptom",
+      }),
+    ).toBeNull();
+    expect(
+      await repository.update("tama", "med", {
+        ...medicationContent,
+        symptomId: "deleted-symptom",
+      }),
+    ).toBe(false);
+    expect(await db.select().from(medications)).toHaveLength(2);
+    const [med] = await db
+      .select({ name: medications.name, symptomId: medications.symptomId })
+      .from(medications)
+      .where(eq(medications.id, "med"));
+    expect(med).toEqual({ name: "抗生物質", symptomId: null });
+
+    // 削除されていない症状なら、既定値（ID・作成日時など）を入れて追加できる
+    const id = await repository.add("tama", {
+      ...medicationContent,
+      symptomId: "live-symptom",
+    });
+    const [created] = await db
+      .select()
+      .from(medications)
+      .where(eq(medications.id, id as string));
+    expect(created).toMatchObject({
+      catId: "tama",
+      symptomId: "live-symptom",
+      archivedAt: null,
+      deletedAt: null,
+    });
+    expect(created.createdAt).toBeInstanceOf(Date);
+  });
+
+  it("症状は、削除済みの通院記録を参照して追加・更新しない", async () => {
+    const { createSymptomRepository } = await import(
+      "@/features/symptoms/infrastructure/symptomRepository"
+    );
+    const repository = createSymptomRepository();
+
+    expect(
+      await repository.add("tama", {
+        ...symptomContent,
+        hospitalVisitId: "deleted-visit",
+      }),
+    ).toBeNull();
+    expect(
+      await repository.update("tama", "live-symptom", {
+        ...symptomContent,
+        hospitalVisitId: "deleted-visit",
+      }),
+    ).toBe(false);
+    expect(await db.select().from(symptoms)).toHaveLength(2);
+  });
+
+  it("通院記録は、削除済みの症状を参照して追加・更新せず、病院代の支出も作らない", async () => {
+    const { createHospitalVisitRepository } = await import(
+      "@/features/hospital-visits/infrastructure/hospitalVisitRepository"
+    );
+    const repository = createHospitalVisitRepository();
+    await db.insert(households).values({ id: "home", name: "わが家" });
+    await db.insert(hospitalVisits).values({
+      id: "live-visit",
+      catId: "tama",
+      visitedAt: new Date("2026-07-01T10:00:00Z"),
+      reason: "健診",
+    });
+
+    expect(
+      await repository.add(
+        "tama",
+        { ...visitContent, symptomId: "deleted-symptom" },
+        { householdId: "home", amountYen: 3000 },
+      ),
+    ).toBeNull();
+    expect(
+      await repository.update(
+        "tama",
+        "live-visit",
+        { ...visitContent, symptomId: "deleted-symptom" },
+        { householdId: "home", amountYen: 3000 },
+      ),
+    ).toBe(false);
+    expect(await db.select().from(hospitalVisits)).toHaveLength(2);
+    expect(await db.select().from(expenseRecords)).toEqual([]);
+
+    // 削除されていない症状なら追加でき、病院代の支出も作る
+    expect(
+      await repository.add(
+        "tama",
+        { ...visitContent, symptomId: "live-symptom" },
+        { householdId: "home", amountYen: 3000 },
+      ),
+    ).toEqual(expect.any(String));
+    expect(await db.select().from(expenseRecords)).toHaveLength(1);
   });
 });

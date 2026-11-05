@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { insertWhere, liveRowCondition } from "@/db/conditionalInsert";
 import {
   expenseRecordHospitalVisits,
   hospitalVisits,
@@ -21,6 +22,11 @@ export function createHospitalVisitRepository(
       isNull(hospitalVisits.deletedAt),
     );
 
+  // 関連する症状が、この猫のもので削除されていないこと。確認の後に論理削除された場合に、
+  // 削除済みの記録を指したまま保存しないよう、書き込みの文の中でも確かめる
+  const symptomIsLive = (catId: string, symptomId: string | null) =>
+    liveRowCondition(symptoms, catId, symptomId);
+
   return {
     async existsForCat(catId, id) {
       const [row] = await db
@@ -33,32 +39,40 @@ export function createHospitalVisitRepository(
 
     async add(catId, content, expense) {
       const id = crypto.randomUUID();
-      await saveHospitalVisitWithExpense(
+      const saved = await saveHospitalVisitWithExpense(
         db,
-        db.insert(hospitalVisits).values({ id, catId, ...content }),
+        insertWhere(
+          db,
+          hospitalVisits,
+          { id, catId, ...content },
+          symptomIsLive(catId, content.symptomId),
+        ).returning({ id: hospitalVisits.id }),
         {
           hospitalVisitId: id,
           catId,
           visitedAt: content.visitedAt,
           ...expense,
         },
+        symptomIsLive(catId, content.symptomId),
       );
-      return id;
+      return saved ? id : null;
     },
 
     async update(catId, id, content, expense) {
-      await saveHospitalVisitWithExpense(
+      return saveHospitalVisitWithExpense(
         db,
         db
           .update(hospitalVisits)
           .set({ ...content, updatedAt: new Date() })
-          .where(byId(catId, id)),
+          .where(and(byId(catId, id), symptomIsLive(catId, content.symptomId)))
+          .returning({ id: hospitalVisits.id }),
         {
           hospitalVisitId: id,
           catId,
           visitedAt: content.visitedAt,
           ...expense,
         },
+        symptomIsLive(catId, content.symptomId),
       );
     },
 

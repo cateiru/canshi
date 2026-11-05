@@ -1,6 +1,13 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { medicationDoses, medications } from "@/db/schema";
+import { insertWhere, liveRowCondition } from "@/db/conditionalInsert";
+import {
+  hospitalVisits,
+  medicationDoses,
+  medications,
+  symptoms,
+} from "@/db/schema";
+import type { MedicationContent } from "../domain/medication";
 import type { MedicationRepository } from "../domain/medicationRepository";
 
 /** D1 に保存する `MedicationRepository`。`d1` を省略すると Next.js のリクエストの D1 を使う */
@@ -14,6 +21,13 @@ export function createMedicationRepository(
       eq(medications.catId, catId),
       isNull(medications.deletedAt),
     );
+  // 関連する症状・通院記録が、この猫のもので削除されていないこと。確認の後に論理削除された場合に、
+  // 削除済みの記録を指したまま保存しないよう、書き込みの文の中でも確かめる
+  const referencesAreLive = (catId: string, content: MedicationContent) =>
+    and(
+      liveRowCondition(symptoms, catId, content.symptomId),
+      liveRowCondition(hospitalVisits, catId, content.hospitalVisitId),
+    );
   return {
     async existsForCat(catId, id) {
       const [row] = await db
@@ -24,17 +38,19 @@ export function createMedicationRepository(
       return row != null;
     },
     async add(catId, content) {
-      const [created] = await db
-        .insert(medications)
-        .values({ catId, ...content })
-        .returning({ id: medications.id });
-      return created.id;
+      const [created] = await insertWhere(
+        db,
+        medications,
+        { catId, ...content },
+        referencesAreLive(catId, content),
+      ).returning({ id: medications.id });
+      return created?.id ?? null;
     },
     async update(catId, id, content) {
       const result = await db
         .update(medications)
         .set({ ...content, updatedAt: new Date() })
-        .where(byId(catId, id))
+        .where(and(byId(catId, id), referencesAreLive(catId, content)))
         .returning({ id: medications.id });
       return result.length > 0;
     },

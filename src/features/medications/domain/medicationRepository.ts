@@ -7,9 +7,15 @@ import type { MedicationContent } from "./medication";
 export interface MedicationRepository {
   /** 猫の服薬予定があるか */
   existsForCat(catId: string, id: string): Promise<boolean>;
-  /** 服薬予定を追加し、その ID を返す */
-  add(catId: string, content: MedicationContent): Promise<string>;
-  /** 服薬予定を書き換える。見つからなければ false */
+  /**
+   * 服薬予定を追加し、その ID を返す。関連する症状・通院記録がこの猫のもので削除されていなければ
+   * 追加し、そうでなければ null
+   */
+  add(catId: string, content: MedicationContent): Promise<string | null>;
+  /**
+   * 服薬予定を書き換える。見つからない・削除済み、または関連する症状・通院記録がこの猫のもので
+   * 削除されていなければ書き換えず false
+   */
   update(
     catId: string,
     id: string,

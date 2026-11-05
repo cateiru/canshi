@@ -81,7 +81,8 @@ export async function createHospitalVisit(
       linkExpenseRecordId,
     },
   );
-  return { id };
+  // 確認の後に関連する症状が削除された場合は、追加の文の中で断られる
+  return id == null ? { error: "関連する症状が見つかりませんでした" } : { id };
 }
 
 /**
@@ -103,13 +104,19 @@ export async function updateHospitalVisit(
     return { error: "通院記録が見つかりませんでした" };
   }
 
-  await repository.update(cat.id, id, toHospitalVisitContent(data), {
-    householdId: cat.householdId,
-    amountYen: data.expenseAmountYen ?? null,
-    // 既存の支出記録へ紐付けて作成した後の再送信では、紐付けた支出記録を削除せずに残す
-    keepLinkedExpenseRecordId: data.linkExpenseRecordId,
-  });
-  return { id };
+  const updated = await repository.update(
+    cat.id,
+    id,
+    toHospitalVisitContent(data),
+    {
+      householdId: cat.householdId,
+      amountYen: data.expenseAmountYen ?? null,
+      // 既存の支出記録へ紐付けて作成した後の再送信では、紐付けた支出記録を削除せずに残す
+      keepLinkedExpenseRecordId: data.linkExpenseRecordId,
+    },
+  );
+  // 確認の後に通院記録・関連する症状が削除された場合は、更新の文の中で断られる
+  return updated ? { id } : { error: "通院記録が見つかりませんでした" };
 }
 
 /**

@@ -49,6 +49,12 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     （`src/features/media/infrastructure/recordOwner.ts`）など、すべての読み取りと更新から除く。記録テーブルを読む・
     更新するクエリを追加するときは、必ず `isNull(<table>.deletedAt)` を条件に含める
   - 削除済みの記録を見る画面・復元する操作は持たない
+  - 論理削除した記録は行が残るため、外部キー制約では「削除済みの記録を参照する書き込み」を防げない。
+    記録を親や参照先にする行（明細・紐付け・投薬実績、関連する症状・通院記録の列など）を書き込む文と、
+    記録の保存と同じ batch に並べる文（明細の入れ直し・通知の完了・病院代など）は、事前の確認だけに頼らず、
+    文の中で親・参照先が削除されていないことを確かめる。確認の後、書き込みの前に別の端末から削除された
+    場合に、削除済みの記録にぶら下がった行が残らないようにするため
+    （INSERT は `src/db/conditionalInsert.ts` の `insertWhere`、条件は `liveRowCondition` などを使う）
   - 記録の中身として持つ行（ごはん記録の明細 `feeding_record_items`、支出記録の関連する猫 `expense_record_cats`）と
     添付の写真（`media_assets` と R2 のオブジェクト）は消さずに残す。写真は削除済みの記録の分も保存容量に数える
   - ほかの記録との紐付け（症状・投薬・通院記録の相互の参照、通院記録と支出記録の `expense_record_hospital_visits`）と、

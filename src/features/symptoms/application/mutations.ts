@@ -43,7 +43,10 @@ export async function createSymptom(
     catId,
     toSymptomContent(data),
   );
-  return { id };
+  // 確認の後に関連する通院記録が削除された場合は、追加の文の中で断られる
+  return id == null
+    ? { error: SYMPTOM_HOSPITAL_VISIT_NOT_FOUND_ERROR }
+    : { id };
 }
 
 /** 猫の記録を更新する。関連する通院記録は同じ猫のものに限る */

@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { insertWhere, liveRowCondition } from "@/db/conditionalInsert";
 import {
   hospitalVisits,
   medications,
@@ -27,17 +28,26 @@ export function createSymptomRepository(d1?: D1Database): SymptomRepository {
       return row != null;
     },
     async add(catId, content) {
-      const [created] = await db
-        .insert(symptoms)
-        .values({ catId, ...content })
-        .returning({ id: symptoms.id });
-      return created.id;
+      // 関連する通院記録が確認の後に論理削除された場合に、削除済みの記録を指したまま保存しないよう、
+      // 挿入の文の中でもこの猫のもので削除されていないことを確かめる
+      const [created] = await insertWhere(
+        db,
+        symptoms,
+        { catId, ...content },
+        liveRowCondition(hospitalVisits, catId, content.hospitalVisitId),
+      ).returning({ id: symptoms.id });
+      return created?.id ?? null;
     },
     async update(catId, id, content) {
       const result = await db
         .update(symptoms)
         .set({ ...content, updatedAt: new Date() })
-        .where(byId(catId, id))
+        .where(
+          and(
+            byId(catId, id),
+            liveRowCondition(hospitalVisits, catId, content.hospitalVisitId),
+          ),
+        )
         .returning({ id: symptoms.id });
       return result.length > 0;
     },

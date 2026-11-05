@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, type SQL, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import type { getDb } from "@/db/client";
 import {
@@ -15,6 +15,12 @@ import {
   liveExpenseCondition,
   liveHospitalVisitCondition,
 } from "./storage";
+
+/** batch の先頭の通院記録の文（`.returning()` 付き）で、通院記録が保存されたか */
+function visitWasSaved(results: unknown[]): boolean {
+  const [visitResult] = results;
+  return Array.isArray(visitResult) && visitResult.length > 0;
+}
 
 /** `timestamp` 列に INSERT ... SELECT で入れる値（UNIX 秒） */
 function toUnixSeconds(date: Date) {
@@ -45,6 +51,8 @@ export type SyncHospitalVisitExpenseParams = {
 
 /**
  * 通院記録と病院代を同じ batch で保存し、片方だけが保存されることを防ぐ。
+ * `visitStatement` は `.returning()` を付けた通院記録の INSERT・UPDATE で、通院記録が保存されたか
+ * （保存されなかった場合は、病院代の文も通院記録が見つからず何もしない）を返す。
  * 金額を入力したら作成、変更したら更新、空にしたら削除する。
  * メモ・関連する猫は支出記録側で自由に変更できるため、
  * 既存の支出記録を更新するときは金額と支出日だけを上書きする。
@@ -66,7 +74,8 @@ export async function saveHospitalVisitWithExpense(
     linkExpenseRecordId,
     keepLinkedExpenseRecordId,
   }: SyncHospitalVisitExpenseParams,
-): Promise<void> {
+  visitCondition?: SQL,
+): Promise<boolean> {
   const [existing] = await db
     .select({ id: expenseRecordHospitalVisits.expenseRecordId })
     .from(expenseRecordHospitalVisits)
@@ -87,7 +96,11 @@ export async function saveHospitalVisitWithExpense(
   // 病院代の文は、通院記録が削除されずにあるときだけ実行する。確認の後に通院記録が論理削除された場合に、
   // 通院記録の更新は通らないのに支出だけが追加・変更されることを防ぐ
   // （通院記録の追加では、同じ batch の先頭で挿入した通院記録を見る）
-  const visitIsLive = liveHospitalVisitCondition(hospitalVisitId);
+  // `visitCondition` には、通院記録の文が保存の条件にしたもの（関連する症状が削除されていないことなど）
+  // を渡す。通院記録の文が条件で断られたときに、病院代の文だけが通らないようにする
+  const visitIsLive = sql`${liveHospitalVisitCondition(hospitalVisitId)}${
+    visitCondition == null ? sql`` : sql` AND ${visitCondition}`
+  }`;
 
   if (amountYen == null) {
     if (existing != null && existing.id === keepLinkedExpenseRecordId) {
@@ -125,8 +138,7 @@ export async function saveHospitalVisitWithExpense(
           .onConflictDoNothing(),
       );
     }
-    await db.batch(statements);
-    return;
+    return visitWasSaved(await db.batch(statements));
   }
 
   const spentAt = combineDateTimeUtc(splitDateTimeUtc(visitedAt).date, "00:00");
@@ -168,5 +180,5 @@ export async function saveHospitalVisitWithExpense(
         .select(sql`SELECT ${id}, ${catId} WHERE ${bothAreLive}`),
     );
   }
-  await db.batch(statements);
+  return visitWasSaved(await db.batch(statements));
 }

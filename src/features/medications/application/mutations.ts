@@ -54,7 +54,8 @@ export async function createMedication(
     catId,
     toMedicationContent(data),
   );
-  return { id };
+  // 確認の後に関連する症状・通院記録が削除された場合は、追加の文の中で断られる
+  return id == null ? { error: MEDICATION_REFERENCE_NOT_FOUND_ERROR } : { id };
 }
 
 /**
