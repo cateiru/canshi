@@ -207,7 +207,7 @@ importers:
         version: 0.45.4(@opentelemetry/api@1.10.0)(@types/sql.js@1.4.11)(sql.js@1.15.2)
       jose:
         specifier: ^6.2.12
-        version: 6.2.14
+        version: 6.2.15
       next:
         specifier: 16.4.3
         version: 16.4.3(@babel/core@8.0.6)(@opentelemetry/api@1.10.0)(@playwright/test@1.64.1)(@types/node@24.19.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -3280,8 +3280,8 @@ packages:
   jackspeak@3.4.3:
     resolution: {integrity: sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==}
 
-  jose@6.2.14:
-    resolution: {integrity: sha512-3JasLuki1NRLQvY4wCoC37KZk4qxoBx2k2aFqLxT84IezqW0bkJKnNtxnZj/Fu1xsQivoc/lytxaRHJoGLjJ1A==}
+  jose@6.2.15:
+    resolution: {integrity: sha512-qdF6ewcZARtef63fJ9AKKZPgxw+t7USH6HLXYcD4CrdmSvDp79rpJSPFEKc90QBeGS63u1KQtN2MZQHC0yDIzA==}
 
   jpeg-js@0.4.4:
     resolution: {integrity: sha512-WZzeDOEtTOBK4Mdsar0IqEU5sMr3vSV2RqkAIzUEV2BHnUfKGyswWFPFwK5EeDo93K3FohSHbLAjj0s1Wzd+dg==}
@@ -5830,7 +5830,7 @@ snapshots:
       cross-spawn: 7.0.6
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
-      jose: 6.2.14
+      jose: 6.2.15
       pkce-challenge: 5.0.1
       zod: 4.6.7
 
@@ -7561,7 +7561,7 @@ snapshots:
     optionalDependencies:
       '@pkgjs/parseargs': 0.11.0
 
-  jose@6.2.14: {}
+  jose@6.2.15: {}
 
   jpeg-js@0.4.4: {}
 
