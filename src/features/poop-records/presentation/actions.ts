@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireCatAccess } from "@/features/auth/presentation/session";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createPoopRecord,
   deletePoopRecord,
@@ -44,14 +45,14 @@ export async function createPoopRecordAction(
   _prevState: PoopRecordFormState,
   formData: FormData,
 ): Promise<PoopRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const id = await createPoopRecord(catId, parsed.data);
+  const id = await createPoopRecord(catId, parsed.data, userActor(user));
 
   const mediaError = await syncRecordMediaFromForm(
     POOP_RECORD_MEDIA_TYPE,
@@ -67,14 +68,14 @@ export async function updatePoopRecordAction(
   _prevState: PoopRecordFormState,
   formData: FormData,
 ): Promise<PoopRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  if (!(await updatePoopRecord(catId, id, parsed.data))) {
+  if (!(await updatePoopRecord(catId, id, parsed.data, userActor(user)))) {
     return { formError: "記録が見つかりませんでした" };
   }
 
@@ -90,7 +91,7 @@ export async function deletePoopRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
-  await deletePoopRecord(catId, id);
+  const { user } = await requireCatAccess(catId);
+  await deletePoopRecord(catId, id, userActor(user));
   redirect(`/cats/${catId}/poop-records`, "replace");
 }

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireCatAccess } from "@/features/auth/presentation/session";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createVomitRecord,
   deleteVomitRecord,
@@ -43,14 +44,14 @@ export async function createVomitRecordAction(
   _prevState: VomitRecordFormState,
   formData: FormData,
 ): Promise<VomitRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const id = await createVomitRecord(catId, parsed.data);
+  const id = await createVomitRecord(catId, parsed.data, userActor(user));
 
   const mediaError = await syncRecordMediaFromForm(
     VOMIT_RECORD_MEDIA_TYPE,
@@ -66,14 +67,14 @@ export async function updateVomitRecordAction(
   _prevState: VomitRecordFormState,
   formData: FormData,
 ): Promise<VomitRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  if (!(await updateVomitRecord(catId, id, parsed.data))) {
+  if (!(await updateVomitRecord(catId, id, parsed.data, userActor(user)))) {
     return { formError: "記録が見つかりませんでした" };
   }
 
@@ -89,7 +90,7 @@ export async function deleteVomitRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
-  await deleteVomitRecord(catId, id);
+  const { user } = await requireCatAccess(catId);
+  await deleteVomitRecord(catId, id, userActor(user));
   redirect(`/cats/${catId}/vomit-records`, "replace");
 }

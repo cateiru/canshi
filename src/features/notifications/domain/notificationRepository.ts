@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type { NotificationTarget } from "./notification";
 
 /**
@@ -21,12 +22,17 @@ export interface NotificationRepository {
    * 掃除の通知（`cleaning_due`）を完了にし、同時にその掃除対象へ `performedAt` の掃除記録を
    * 追加する。通知が完了済み・掃除対象が無効なら記録は追加しない（同時に完了したときの二重記録を防ぐ）
    */
-  completeWithCleaningRecord(id: string, performedAt: Date): Promise<void>;
+  completeWithCleaningRecord(
+    id: string,
+    performedAt: Date,
+    actor: RecordActor,
+  ): Promise<void>;
   /** 症状の確認通知を完了にし、同時に症状の記録を「解消」にする */
   completeWithSymptomResolved(
     id: string,
     catId: string,
     symptomId: string,
+    actor: RecordActor,
   ): Promise<void>;
   /** 症状について未対応のまま残っている確認通知（`symptom_ongoing`）を完了にする */
   completeOngoingSymptomNotifications(

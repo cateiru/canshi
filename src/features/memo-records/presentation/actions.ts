@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireCatAccess } from "@/features/auth/presentation/session";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createMemoRecord,
   deleteMemoRecord,
@@ -38,14 +39,14 @@ export async function createMemoRecordAction(
   _prevState: MemoRecordFormState,
   formData: FormData,
 ): Promise<MemoRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const id = await createMemoRecord(catId, parsed.data);
+  const id = await createMemoRecord(catId, parsed.data, userActor(user));
 
   const mediaError = await syncRecordMediaFromForm(
     MEMO_RECORD_MEDIA_TYPE,
@@ -61,14 +62,14 @@ export async function updateMemoRecordAction(
   _prevState: MemoRecordFormState,
   formData: FormData,
 ): Promise<MemoRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  if (!(await updateMemoRecord(catId, id, parsed.data))) {
+  if (!(await updateMemoRecord(catId, id, parsed.data, userActor(user)))) {
     return { formError: "記録が見つかりませんでした" };
   }
 
@@ -84,7 +85,7 @@ export async function deleteMemoRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
-  await deleteMemoRecord(catId, id);
+  const { user } = await requireCatAccess(catId);
+  await deleteMemoRecord(catId, id, userActor(user));
   redirect(`/cats/${catId}/memo-records`, "replace");
 }

@@ -27,6 +27,9 @@ import {
 } from "./doseMutations";
 import { deleteMedication, updateMedication } from "./mutations";
 
+/** 記録を操作した人（履歴の確認以外では中身を問わない） */
+const actor = { userId: "user-1", mcpClientId: null };
+
 // `src/features/households/application/management.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
@@ -115,7 +118,7 @@ async function findDeletedAt(id: string) {
 
 describe("deleteMedication", () => {
   it("服薬予定と投薬実績を論理削除し、一覧・タイムラインから除く", async () => {
-    expect(await deleteMedication("tama", "med")).toBe(true);
+    expect(await deleteMedication("tama", "med", actor)).toBe(true);
 
     expect((await listMedications("tama")).map((row) => row.id)).toEqual([
       "other-med",
@@ -147,7 +150,7 @@ describe("deleteMedication", () => {
       .set({ hospitalVisitId: "visit" })
       .where(eq(medications.catId, "tama"));
 
-    await deleteMedication("tama", "med");
+    await deleteMedication("tama", "med", actor);
 
     const byVisitId = await listMedicationsByHospitalVisitIds("tama", [
       "visit",
@@ -156,26 +159,35 @@ describe("deleteMedication", () => {
   });
 
   it("削除済みの服薬予定は、更新・もう一度の削除・投薬実績の追加ができない", async () => {
-    await deleteMedication("tama", "med");
+    await deleteMedication("tama", "med", actor);
 
-    expect(await deleteMedication("tama", "med")).toBe(false);
-    expect(await updateMedication("tama", "med", medicationForm)).toBeNull();
-    expect(await createMedicationDose("tama", "med", doseForm)).toBeNull();
+    expect(await deleteMedication("tama", "med", actor)).toBe(false);
+    expect(
+      await updateMedication("tama", "med", medicationForm, actor),
+    ).toBeNull();
+    expect(
+      await createMedicationDose("tama", "med", doseForm, actor),
+    ).toBeNull();
   });
 
   it("別の猫の服薬予定は削除しない", async () => {
-    expect(await deleteMedication("kuro", "med")).toBe(false);
+    expect(await deleteMedication("kuro", "med", actor)).toBe(false);
     expect(await findDeletedAt("dose-1")).toBeNull();
   });
 });
 
 describe("createMedicationDose", () => {
   it("服薬予定に投薬実績を追加する", async () => {
-    const id = await createMedicationDose("tama", "med", {
-      ...doseForm,
-      wasAdministered: false,
-      memo: "吐き出した",
-    });
+    const id = await createMedicationDose(
+      "tama",
+      "med",
+      {
+        ...doseForm,
+        wasAdministered: false,
+        memo: "吐き出した",
+      },
+      actor,
+    );
 
     const [row] = await db
       .select()
@@ -206,10 +218,15 @@ describe("createMedicationDose", () => {
     };
 
     expect(
-      await createMedicationDoseRepository().add("tama", "med", content),
+      await createMedicationDoseRepository().add("tama", "med", content, actor),
     ).toBeNull();
     expect(
-      await createMedicationDoseRepository().add("kuro", "other-med", content),
+      await createMedicationDoseRepository().add(
+        "kuro",
+        "other-med",
+        content,
+        actor,
+      ),
     ).toBeNull();
     expect(await db.select().from(medicationDoses)).toHaveLength(3);
   });
@@ -217,16 +234,20 @@ describe("createMedicationDose", () => {
 
 describe("deleteMedicationDose", () => {
   it("投薬実績を論理削除し、削除済みの実績は更新・もう一度の削除ができない", async () => {
-    expect(await deleteMedicationDose("tama", "med", "dose-1")).toBe(true);
+    expect(await deleteMedicationDose("tama", "med", "dose-1", actor)).toBe(
+      true,
+    );
 
     expect(await findDeletedAt("dose-1")).toBeInstanceOf(Date);
     expect((await listMedicationDoses("med")).map((row) => row.id)).toEqual([
       "dose-2",
     ]);
-    expect(await deleteMedicationDose("tama", "med", "dose-1")).toBe(false);
-    expect(await updateMedicationDose("tama", "med", "dose-1", doseForm)).toBe(
+    expect(await deleteMedicationDose("tama", "med", "dose-1", actor)).toBe(
       false,
     );
+    expect(
+      await updateMedicationDose("tama", "med", "dose-1", doseForm, actor),
+    ).toBe(false);
   });
 });
 
@@ -297,29 +318,46 @@ describe("確認の後に関連する記録が論理削除された場合", () =
     const repository = createMedicationRepository();
 
     expect(
-      await repository.add("tama", {
-        ...medicationContent,
-        symptomId: "deleted-symptom",
-      }),
+      await repository.add(
+        "tama",
+        {
+          ...medicationContent,
+          symptomId: "deleted-symptom",
+        },
+        actor,
+      ),
     ).toBeNull();
     expect(
-      await repository.add("tama", {
-        ...medicationContent,
-        hospitalVisitId: "deleted-visit",
-      }),
+      await repository.add(
+        "tama",
+        {
+          ...medicationContent,
+          hospitalVisitId: "deleted-visit",
+        },
+        actor,
+      ),
     ).toBeNull();
     // 別の猫の症状も参照しない
     expect(
-      await repository.add("kuro", {
-        ...medicationContent,
-        symptomId: "live-symptom",
-      }),
+      await repository.add(
+        "kuro",
+        {
+          ...medicationContent,
+          symptomId: "live-symptom",
+        },
+        actor,
+      ),
     ).toBeNull();
     expect(
-      await repository.update("tama", "med", {
-        ...medicationContent,
-        symptomId: "deleted-symptom",
-      }),
+      await repository.update(
+        "tama",
+        "med",
+        {
+          ...medicationContent,
+          symptomId: "deleted-symptom",
+        },
+        actor,
+      ),
     ).toBe(false);
     expect(await db.select().from(medications)).toHaveLength(2);
     const [med] = await db
@@ -329,10 +367,14 @@ describe("確認の後に関連する記録が論理削除された場合", () =
     expect(med).toEqual({ name: "抗生物質", symptomId: null });
 
     // 削除されていない症状なら、既定値（ID・作成日時など）を入れて追加できる
-    const id = await repository.add("tama", {
-      ...medicationContent,
-      symptomId: "live-symptom",
-    });
+    const id = await repository.add(
+      "tama",
+      {
+        ...medicationContent,
+        symptomId: "live-symptom",
+      },
+      actor,
+    );
     const [created] = await db
       .select()
       .from(medications)
@@ -353,16 +395,25 @@ describe("確認の後に関連する記録が論理削除された場合", () =
     const repository = createSymptomRepository();
 
     expect(
-      await repository.add("tama", {
-        ...symptomContent,
-        hospitalVisitId: "deleted-visit",
-      }),
+      await repository.add(
+        "tama",
+        {
+          ...symptomContent,
+          hospitalVisitId: "deleted-visit",
+        },
+        actor,
+      ),
     ).toBeNull();
     expect(
-      await repository.update("tama", "live-symptom", {
-        ...symptomContent,
-        hospitalVisitId: "deleted-visit",
-      }),
+      await repository.update(
+        "tama",
+        "live-symptom",
+        {
+          ...symptomContent,
+          hospitalVisitId: "deleted-visit",
+        },
+        actor,
+      ),
     ).toBe(false);
     expect(await db.select().from(symptoms)).toHaveLength(2);
   });
@@ -385,6 +436,7 @@ describe("確認の後に関連する記録が論理削除された場合", () =
         "tama",
         { ...visitContent, symptomId: "deleted-symptom" },
         { householdId: "home", amountYen: 3000 },
+        actor,
       ),
     ).toBeNull();
     expect(
@@ -393,6 +445,7 @@ describe("確認の後に関連する記録が論理削除された場合", () =
         "live-visit",
         { ...visitContent, symptomId: "deleted-symptom" },
         { householdId: "home", amountYen: 3000 },
+        actor,
       ),
     ).toBe(false);
     expect(await db.select().from(hospitalVisits)).toHaveLength(2);
@@ -404,6 +457,7 @@ describe("確認の後に関連する記録が論理削除された場合", () =
         "tama",
         { ...visitContent, symptomId: "live-symptom" },
         { householdId: "home", amountYen: 3000 },
+        actor,
       ),
     ).toEqual(expect.any(String));
     expect(await db.select().from(expenseRecords)).toHaveLength(1);

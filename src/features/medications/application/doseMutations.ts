@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type { MedicationDoseFormInput } from "../domain/doseSchema";
 import { toMedicationDoseContent } from "../domain/medicationDose";
 import { createMedicationDoseRepository } from "../infrastructure/medicationDoseRepository";
@@ -18,12 +19,14 @@ export async function createMedicationDose(
   catId: string,
   medicationId: string,
   data: MedicationDoseFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string | null> {
   return createMedicationDoseRepository(d1).add(
     catId,
     medicationId,
     toMedicationDoseContent(data),
+    actor,
   );
 }
 
@@ -33,6 +36,7 @@ export async function updateMedicationDose(
   medicationId: string,
   id: string,
   data: MedicationDoseFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   return createMedicationDoseRepository(d1).update(
@@ -40,6 +44,7 @@ export async function updateMedicationDose(
     medicationId,
     id,
     toMedicationDoseContent(data),
+    actor,
   );
 }
 
@@ -48,7 +53,13 @@ export async function deleteMedicationDose(
   catId: string,
   medicationId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createMedicationDoseRepository(d1).remove(catId, medicationId, id);
+  return createMedicationDoseRepository(d1).remove(
+    catId,
+    medicationId,
+    id,
+    actor,
+  );
 }

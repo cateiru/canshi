@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
 import {
   type CleaningRecordContent,
@@ -24,12 +25,14 @@ export async function createCleaningRecord(
   catId: string,
   cleaningTargetId: string,
   data: CleaningRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string | null> {
   return addCleaningRecord(
     catId,
     cleaningTargetId,
     toCleaningRecordContent(data),
+    actor,
     d1,
   );
 }
@@ -43,12 +46,14 @@ export async function createCleaningRecord(
 export async function createCleaningRecordNow(
   catId: string,
   cleaningTargetId: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string | null> {
   return addCleaningRecord(
     catId,
     cleaningTargetId,
     { performedAt: getNaiveUtcNow(), memo: null },
+    actor,
     d1,
   );
 }
@@ -57,6 +62,7 @@ async function addCleaningRecord(
   catId: string,
   cleaningTargetId: string,
   content: CleaningRecordContent,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string | null> {
   const target = await createCleaningTargetRepository(d1).findScheduleForCat(
@@ -72,6 +78,7 @@ async function addCleaningRecord(
     cleaningTargetId,
     content,
     cleaningNotificationsDueBefore(target, content.performedAt),
+    actor,
   );
 }
 
@@ -86,6 +93,7 @@ export async function updateCleaningRecord(
   cleaningTargetId: string,
   id: string,
   data: CleaningRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   const records = createCleaningRecordRepository(d1);
@@ -113,6 +121,7 @@ export async function updateCleaningRecord(
     content.performedAt.getTime() === performedAt.getTime()
       ? null
       : cleaningNotificationsDueBefore(target, content.performedAt),
+    actor,
   );
 }
 
@@ -121,7 +130,13 @@ export async function deleteCleaningRecord(
   catId: string,
   cleaningTargetId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createCleaningRecordRepository(d1).remove(catId, cleaningTargetId, id);
+  return createCleaningRecordRepository(d1).remove(
+    catId,
+    cleaningTargetId,
+    id,
+    actor,
+  );
 }

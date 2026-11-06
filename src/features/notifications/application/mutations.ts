@@ -1,5 +1,6 @@
 import { createCleaningTargetRepository } from "@/features/cleaning/infrastructure/cleaningTargetRepository";
 import { getNaiveUtcNow } from "@/features/shared/datetime";
+import { userActor } from "@/features/shared/recordActor";
 import { createSymptomRepository } from "@/features/symptoms/infrastructure/symptomRepository";
 import { createNotificationRepository } from "../infrastructure/notificationRepository";
 
@@ -63,7 +64,11 @@ export async function markCleaningNotificationDone(
     return "target-inactive";
   }
 
-  await repository.completeWithCleaningRecord(id, getNaiveUtcNow());
+  await repository.completeWithCleaningRecord(
+    id,
+    getNaiveUtcNow(),
+    userActor({ id: userId }),
+  );
   return "done";
 }
 
@@ -105,6 +110,7 @@ export async function resolveSymptomNotification(
     id,
     notification.catId,
     notification.referenceId,
+    userActor({ id: userId }),
   );
   return "resolved";
 }

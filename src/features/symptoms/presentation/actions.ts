@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireCatAccess } from "@/features/auth/presentation/session";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createSymptom,
   deleteSymptom,
@@ -43,14 +44,14 @@ export async function createSymptomAction(
   _prevState: SymptomFormState,
   formData: FormData,
 ): Promise<SymptomFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const saved = await createSymptom(catId, parsed.data);
+  const saved = await createSymptom(catId, parsed.data, userActor(user));
   if ("error" in saved) {
     return { formError: saved.error };
   }
@@ -69,14 +70,14 @@ export async function updateSymptomAction(
   _prevState: SymptomFormState,
   formData: FormData,
 ): Promise<SymptomFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const saved = await updateSymptom(catId, id, parsed.data);
+  const saved = await updateSymptom(catId, id, parsed.data, userActor(user));
   if ("error" in saved) {
     return { formError: saved.error };
   }
@@ -93,7 +94,7 @@ export async function deleteSymptomAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
-  await deleteSymptom(catId, id);
+  const { user } = await requireCatAccess(catId);
+  await deleteSymptom(catId, id, userActor(user));
   redirect(`/cats/${catId}/symptoms`, "replace");
 }

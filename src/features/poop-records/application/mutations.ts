@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import { toPoopRecordContent } from "../domain/poopRecord";
 import type { PoopRecordFormInput } from "../domain/schema";
 import { createPoopRecordRepository } from "../infrastructure/poopRecordRepository";
@@ -12,9 +13,14 @@ import { createPoopRecordRepository } from "../infrastructure/poopRecordReposito
 export async function createPoopRecord(
   catId: string,
   data: PoopRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string> {
-  return createPoopRecordRepository(d1).add(catId, toPoopRecordContent(data));
+  return createPoopRecordRepository(d1).add(
+    catId,
+    toPoopRecordContent(data),
+    actor,
+  );
 }
 
 /** 猫の記録を更新する。見つからなければ false */
@@ -22,12 +28,14 @@ export async function updatePoopRecord(
   catId: string,
   id: string,
   data: PoopRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   return createPoopRecordRepository(d1).update(
     catId,
     id,
     toPoopRecordContent(data),
+    actor,
   );
 }
 
@@ -38,7 +46,8 @@ export async function updatePoopRecord(
 export async function deletePoopRecord(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createPoopRecordRepository(d1).remove(catId, id);
+  return createPoopRecordRepository(d1).remove(catId, id, actor);
 }

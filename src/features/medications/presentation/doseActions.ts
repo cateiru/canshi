@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireCatAccess } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createMedicationDose,
   deleteMedicationDose,
@@ -33,14 +34,21 @@ export async function createMedicationDoseAction(
   _prevState: MedicationDoseFormState,
   formData: FormData,
 ): Promise<MedicationDoseFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  if (!(await createMedicationDose(catId, medicationId, parsed.data))) {
+  if (
+    !(await createMedicationDose(
+      catId,
+      medicationId,
+      parsed.data,
+      userActor(user),
+    ))
+  ) {
     return { formError: "服薬予定が見つかりませんでした" };
   }
 
@@ -54,14 +62,22 @@ export async function updateMedicationDoseAction(
   _prevState: MedicationDoseFormState,
   formData: FormData,
 ): Promise<MedicationDoseFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  if (!(await updateMedicationDose(catId, medicationId, id, parsed.data))) {
+  if (
+    !(await updateMedicationDose(
+      catId,
+      medicationId,
+      id,
+      parsed.data,
+      userActor(user),
+    ))
+  ) {
     return { formError: "投薬実績が見つかりませんでした" };
   }
 
@@ -73,7 +89,7 @@ export async function deleteMedicationDoseAction(
   medicationId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
-  await deleteMedicationDose(catId, medicationId, id);
+  const { user } = await requireCatAccess(catId);
+  await deleteMedicationDose(catId, medicationId, id, userActor(user));
   redirect(`/cats/${catId}/medications/${medicationId}/doses`, "replace");
 }

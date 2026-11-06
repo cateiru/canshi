@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type { WaterRecordContent } from "./waterRecord";
 
 /**
@@ -6,13 +7,18 @@ import type { WaterRecordContent } from "./waterRecord";
  */
 export interface WaterRecordRepository {
   /** 記録を追加し、その ID を返す */
-  add(catId: string, content: WaterRecordContent): Promise<string>;
+  add(
+    catId: string,
+    content: WaterRecordContent,
+    actor: RecordActor,
+  ): Promise<string>;
   /** 記録を書き換える。見つからなければ false */
   update(
     catId: string,
     id: string,
     content: WaterRecordContent,
+    actor: RecordActor,
   ): Promise<boolean>;
   /** 記録を論理削除する（削除日時を入れる）。見つからない・削除済みなら false */
-  remove(catId: string, id: string): Promise<boolean>;
+  remove(catId: string, id: string, actor: RecordActor): Promise<boolean>;
 }

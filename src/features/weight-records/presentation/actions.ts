@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireCatAccess } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createWeightRecord,
   deleteWeightRecord,
@@ -35,14 +36,14 @@ export async function createWeightRecordAction(
   _prevState: WeightRecordFormState,
   formData: FormData,
 ): Promise<WeightRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  await createWeightRecord(catId, parsed.data);
+  await createWeightRecord(catId, parsed.data, userActor(user));
 
   return { redirectTo: `/cats/${catId}/weight-records` };
 }
@@ -53,14 +54,14 @@ export async function updateWeightRecordAction(
   _prevState: WeightRecordFormState,
   formData: FormData,
 ): Promise<WeightRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  if (!(await updateWeightRecord(catId, id, parsed.data))) {
+  if (!(await updateWeightRecord(catId, id, parsed.data, userActor(user)))) {
     return { formError: "記録が見つかりませんでした" };
   }
 
@@ -71,7 +72,7 @@ export async function deleteWeightRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
-  await deleteWeightRecord(catId, id);
+  const { user } = await requireCatAccess(catId);
+  await deleteWeightRecord(catId, id, userActor(user));
   redirect(`/cats/${catId}/weight-records`, "replace");
 }

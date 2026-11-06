@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type { ShampooRecordFormInput } from "../domain/schema";
 import { toShampooRecordContent } from "../domain/shampooRecord";
 import { createShampooRecordRepository } from "../infrastructure/shampooRecordRepository";
@@ -12,11 +13,13 @@ import { createShampooRecordRepository } from "../infrastructure/shampooRecordRe
 export async function createShampooRecord(
   catId: string,
   data: ShampooRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string> {
   return createShampooRecordRepository(d1).add(
     catId,
     toShampooRecordContent(data),
+    actor,
   );
 }
 
@@ -25,12 +28,14 @@ export async function updateShampooRecord(
   catId: string,
   id: string,
   data: ShampooRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   return createShampooRecordRepository(d1).update(
     catId,
     id,
     toShampooRecordContent(data),
+    actor,
   );
 }
 
@@ -38,7 +43,8 @@ export async function updateShampooRecord(
 export async function deleteShampooRecord(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createShampooRecordRepository(d1).remove(catId, id);
+  return createShampooRecordRepository(d1).remove(catId, id, actor);
 }
