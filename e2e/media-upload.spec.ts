@@ -90,7 +90,7 @@ test("うんち記録に画像を添付すると一覧・タイムラインに�
     page.getByRole("button", { name: /うんちの写真 \d を表示/ }),
   ).toHaveCount(1);
 
-  // 記録を削除すると写真の配信も止まる
+  // 記録は論理削除のため、削除しても写真は残り、配信も続く
   const remainingSrc =
     (await page
       .getByRole("button", { name: /うんちの写真 \d を表示/ })
@@ -102,7 +102,7 @@ test("うんち記録に画像を添付すると一覧・タイムラインに�
     .getByRole("button", { name: "削除する" })
     .click();
   await expect(page.getByText("まだうんち記録がありません。")).toBeVisible();
-  expect((await page.request.get(remainingSrc)).status()).toBe(404);
+  expect((await page.request.get(remainingSrc)).status()).toBe(200);
 
   // 後片付け（猫の削除）
   await page.goto("/cats");
