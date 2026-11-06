@@ -4,13 +4,13 @@
 }
 
 .sm {
-  width: 64px;
-  height: 64px;
+  width: calc(64px * var(--font-scale));
+  height: calc(64px * var(--font-scale));
 }
 
 .lg {
-  width: 112px;
-  height: 112px;
+  width: calc(112px * var(--font-scale));
+  height: calc(112px * var(--font-scale));
 }
 
 .image {

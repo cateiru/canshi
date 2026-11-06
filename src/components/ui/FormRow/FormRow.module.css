@@ -1,4 +1,4 @@
-/* 入力欄を 2 列に並べる。狭い画面でも 2 列のまま、間隔だけ詰める */
+/* 入力欄を 2 列に並べ、日付を含む場合は収まる幅に合わせて折り返す */
 .row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -7,6 +7,15 @@
 
 .row > * {
   min-width: 0;
+}
+
+/* 日付のネイティブ UI が欠けない幅を、文字サイズに合わせて確保する。
+   2 列が収まらない場合は、日付・時刻（開始日・終了日）を縦に並べる。 */
+.row:has(input[type="date"]) {
+  grid-template-columns: repeat(
+      auto-fit,
+      minmax(min(100%, calc(var(--text-input) * 10)), 1fr)
+    );
 }
 
 @media (max-width: 480px) {
