@@ -6,7 +6,8 @@ import {
   RadioGroup as AriaRadioGroup,
   Label,
 } from "react-aria-components";
-import { Radio, RadioGroup } from "@/components/ui";
+import { TbCheck } from "react-icons/tb";
+import { RadioGroup } from "@/components/ui";
 import {
   CAT_COAT_COLORS,
   CAT_COAT_PATTERNS,
@@ -194,18 +195,36 @@ function CoatRadioGroup<T extends string>({
         isInvalid={errorMessage !== undefined}
         optionsClassName={styles.options}
       >
-        <Radio value={UNSET} className={styles.option}>
+        <AriaRadio value={UNSET} className={styles.option}>
           <CoatSwatch
             coat={{ coatColor: null, coatPattern: null, coatWhite: null }}
+            size="md"
           />
-          未設定
-        </Radio>
-        {options.map((option) => (
-          <Radio key={option} value={option} className={styles.option}>
-            <CoatSwatch coat={swatch(option)} />
-            {labels[option]}
-          </Radio>
-        ))}
+          <span className={styles.optionLabel}>未設定</span>
+          <TbCheck className={styles.check} aria-hidden="true" size={16} />
+        </AriaRadio>
+        {options.map((option) => {
+          const [title, description] = labels[option].split(/[（）]/);
+          return (
+            <AriaRadio
+              key={option}
+              value={option}
+              aria-label={labels[option]}
+              className={styles.option}
+            >
+              <CoatSwatch coat={swatch(option)} size="md" />
+              <span className={styles.optionText}>
+                <span className={styles.optionLabel}>{title}</span>
+                {description ? (
+                  <span className={styles.optionDescription}>
+                    {description}
+                  </span>
+                ) : null}
+              </span>
+              <TbCheck className={styles.check} aria-hidden="true" size={16} />
+            </AriaRadio>
+          );
+        })}
       </RadioGroup>
       {errorMessage ? (
         <p className={styles.errorMessage}>{errorMessage}</p>
