@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type {
   HospitalVisitContent,
   HospitalVisitExpenseChange,
@@ -18,6 +19,7 @@ export interface HospitalVisitRepository {
     catId: string,
     content: HospitalVisitContent,
     expense: HospitalVisitExpenseChange,
+    actor: RecordActor,
   ): Promise<string | null>;
   /**
    * 通院記録を病院代とあわせて書き換える。見つからない・削除済み、または関連する症状がこの猫の
@@ -28,9 +30,10 @@ export interface HospitalVisitRepository {
     id: string,
     content: HospitalVisitContent,
     expense: HospitalVisitExpenseChange,
+    actor: RecordActor,
   ): Promise<boolean>;
   /**
    * 通院記録を論理削除する。症状・投薬・支出記録からの紐付けは外し、それらの記録は残す
    */
-  remove(catId: string, id: string): Promise<void>;
+  remove(catId: string, id: string, actor: RecordActor): Promise<void>;
 }

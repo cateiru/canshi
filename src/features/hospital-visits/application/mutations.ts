@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import { isLinkableToHospitalVisit } from "@/features/expenses/domain/expenseRecord";
 import { createExpenseRecordRepository } from "@/features/expenses/infrastructure/expenseRecordRepository";
 import { createSymptomRepository } from "@/features/symptoms/infrastructure/symptomRepository";
@@ -51,6 +52,7 @@ async function verifyLinkableExpense(
 export async function createHospitalVisit(
   cat: HospitalVisitCat,
   data: HospitalVisitFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveHospitalVisitResult> {
   if (!(await verifySymptomBelongsToCat(data.symptomId, cat.id, d1))) {
@@ -80,6 +82,7 @@ export async function createHospitalVisit(
       amountYen: data.expenseAmountYen ?? null,
       linkExpenseRecordId,
     },
+    actor,
   );
   // 確認の後に関連する症状が削除された場合は、追加の文の中で断られる
   return id == null ? { error: "関連する症状が見つかりませんでした" } : { id };
@@ -93,6 +96,7 @@ export async function updateHospitalVisit(
   cat: HospitalVisitCat,
   id: string,
   data: HospitalVisitFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveHospitalVisitResult> {
   if (!(await verifySymptomBelongsToCat(data.symptomId, cat.id, d1))) {
@@ -114,6 +118,7 @@ export async function updateHospitalVisit(
       // 既存の支出記録へ紐付けて作成した後の再送信では、紐付けた支出記録を削除せずに残す
       keepLinkedExpenseRecordId: data.linkExpenseRecordId,
     },
+    actor,
   );
   // 確認の後に通院記録・関連する症状が削除された場合は、更新の文の中で断られる
   return updated ? { id } : { error: "通院記録が見つかりませんでした" };
@@ -127,10 +132,11 @@ export async function updateHospitalVisit(
 export async function deleteHospitalVisit(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   const repository = createHospitalVisitRepository(d1);
   if (!(await repository.existsForCat(catId, id))) return false;
-  await repository.remove(catId, id);
+  await repository.remove(catId, id, actor);
   return true;
 }

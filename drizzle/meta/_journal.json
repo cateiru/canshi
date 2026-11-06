@@ -453,8 +453,15 @@
     {
       "idx": 64,
       "version": "6",
-      "when": 1793886622151,
-      "tag": "0064_cat_profile_details",
+      "when": 1793887312087,
+      "tag": "0064_record_change_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "6",
+      "when": 1793966413176,
+      "tag": "0065_cat_profile_details",
       "breakpoints": true
     }
   ]

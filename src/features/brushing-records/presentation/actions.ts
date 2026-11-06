@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireCatAccess } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
+import { userActor } from "@/features/shared/recordActor";
 import {
   createBrushingRecord,
   deleteBrushingRecord,
@@ -35,14 +36,14 @@ export async function createBrushingRecordAction(
   _prevState: BrushingRecordFormState,
   formData: FormData,
 ): Promise<BrushingRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  await createBrushingRecord(catId, parsed.data);
+  await createBrushingRecord(catId, parsed.data, userActor(user));
 
   return { redirectTo: `/cats/${catId}/brushing-records` };
 }
@@ -53,14 +54,14 @@ export async function updateBrushingRecordAction(
   _prevState: BrushingRecordFormState,
   formData: FormData,
 ): Promise<BrushingRecordFormState> {
-  await requireCatAccess(catId);
+  const { user } = await requireCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  if (!(await updateBrushingRecord(catId, id, parsed.data))) {
+  if (!(await updateBrushingRecord(catId, id, parsed.data, userActor(user)))) {
     return { formError: "記録が見つかりませんでした" };
   }
 
@@ -71,7 +72,7 @@ export async function deleteBrushingRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  await requireCatAccess(catId);
-  await deleteBrushingRecord(catId, id);
+  const { user } = await requireCatAccess(catId);
+  await deleteBrushingRecord(catId, id, userActor(user));
   redirect(`/cats/${catId}/brushing-records`, "replace");
 }

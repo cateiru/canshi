@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type {
   ExpenseLinks,
   ExpenseRecord,
@@ -27,6 +28,7 @@ export interface ExpenseRecordRepository {
     householdId: string,
     content: ExpenseRecordContent,
     links: ExpenseLinks,
+    actor: RecordActor,
   ): Promise<string>;
   /** 支出記録を書き換え、関連する猫・通院記録を入れ直す */
   update(
@@ -34,7 +36,8 @@ export interface ExpenseRecordRepository {
     id: string,
     content: ExpenseRecordContent,
     links: ExpenseLinks,
+    actor: RecordActor,
   ): Promise<void>;
   /** 支出記録を論理削除する。通院記録との紐付けは外し、通院記録は残す。関連する猫と写真は残す */
-  remove(id: string): Promise<void>;
+  remove(id: string, actor: RecordActor): Promise<void>;
 }

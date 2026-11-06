@@ -1,10 +1,12 @@
 import { and, eq, isNull, type SQL, sql } from "drizzle-orm";
 import type { getDb } from "@/db/client";
+import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import {
   expenseRecordCats,
   expenseRecordHospitalVisits,
   expenseRecords,
   hospitalVisits,
+  type RecordActor,
 } from "@/db/schema";
 
 type Db = ReturnType<typeof getDb>;
@@ -81,8 +83,19 @@ export function insertExpenseHospitalVisits(
  * 通院記録とは病院代としての紐付けだけを外す（通院記録は残す）。
  * `condition` を渡すと、その条件が真のときだけ削除する
  */
-export function deleteExpenseStatements(db: Db, id: string, condition?: SQL) {
+export function deleteExpenseStatements(
+  db: Db,
+  id: string,
+  actor: RecordActor,
+  condition?: SQL,
+) {
   return [
+    // 削除の後は支出が条件に一致しないため、履歴を先に追加する
+    insertRecordChangeLog(
+      db,
+      { recordType: "expense", recordId: id, action: "delete", actor },
+      and(liveExpenseCondition(id), condition),
+    ),
     db
       .delete(expenseRecordHospitalVisits)
       .where(

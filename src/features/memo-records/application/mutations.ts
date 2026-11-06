@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import { toMemoRecordContent } from "../domain/memoRecord";
 import type { MemoRecordFormInput } from "../domain/schema";
 import { createMemoRecordRepository } from "../infrastructure/memoRecordRepository";
@@ -12,9 +13,14 @@ import { createMemoRecordRepository } from "../infrastructure/memoRecordReposito
 export async function createMemoRecord(
   catId: string,
   data: MemoRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string> {
-  return createMemoRecordRepository(d1).add(catId, toMemoRecordContent(data));
+  return createMemoRecordRepository(d1).add(
+    catId,
+    toMemoRecordContent(data),
+    actor,
+  );
 }
 
 /** 猫の記録を更新する。見つからなければ false */
@@ -22,12 +28,14 @@ export async function updateMemoRecord(
   catId: string,
   id: string,
   data: MemoRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   return createMemoRecordRepository(d1).update(
     catId,
     id,
     toMemoRecordContent(data),
+    actor,
   );
 }
 
@@ -38,7 +46,8 @@ export async function updateMemoRecord(
 export async function deleteMemoRecord(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createMemoRecordRepository(d1).remove(catId, id);
+  return createMemoRecordRepository(d1).remove(catId, id, actor);
 }

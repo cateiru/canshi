@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import type { WeightRecordFormInput } from "../domain/schema";
 import { toWeightRecordContent } from "../domain/weightRecord";
 import { createWeightRecordRepository } from "../infrastructure/weightRecordRepository";
@@ -12,11 +13,13 @@ import { createWeightRecordRepository } from "../infrastructure/weightRecordRepo
 export async function createWeightRecord(
   catId: string,
   data: WeightRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<string> {
   return createWeightRecordRepository(d1).add(
     catId,
     toWeightRecordContent(data),
+    actor,
   );
 }
 
@@ -25,12 +28,14 @@ export async function updateWeightRecord(
   catId: string,
   id: string,
   data: WeightRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
   return createWeightRecordRepository(d1).update(
     catId,
     id,
     toWeightRecordContent(data),
+    actor,
   );
 }
 
@@ -38,7 +43,8 @@ export async function updateWeightRecord(
 export async function deleteWeightRecord(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createWeightRecordRepository(d1).remove(catId, id);
+  return createWeightRecordRepository(d1).remove(catId, id, actor);
 }

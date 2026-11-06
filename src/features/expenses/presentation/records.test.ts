@@ -25,6 +25,9 @@ import {
   users,
 } from "@/db/schema";
 
+/** 記録を操作した人（履歴の確認以外では中身を問わない） */
+const actor = { userId: "user-1", mcpClientId: null };
+
 let db: ReturnType<typeof getDb>;
 let sqlite: Database;
 let SQL: Awaited<ReturnType<typeof initSqlJs>>;
@@ -1018,6 +1021,7 @@ describe("確認の後に記録が論理削除された場合", () => {
         memo: null,
       },
       { catIds: ["tama", "mike"], hospitalVisitIds: [tamaVisit] },
+      actor,
     );
 
     expect(await db.select().from(expenseRecordHospitalVisits)).toEqual([]);
@@ -1048,6 +1052,7 @@ describe("確認の後に記録が論理削除された場合", () => {
         householdId: "household-1",
         amountYen: 3000,
       },
+      actor,
     );
 
     expect(await db.select().from(expenseRecords)).toEqual([]);
@@ -1068,14 +1073,26 @@ describe("確認の後に記録が論理削除された場合", () => {
     );
     const repository = createHospitalVisitRepository();
 
-    await repository.update("tama", tamaVisit, visitContent, {
-      householdId: "household-1",
-      amountYen: 8000,
-    });
-    await repository.update("tama", tamaVisit, visitContent, {
-      householdId: "household-1",
-      amountYen: null,
-    });
+    await repository.update(
+      "tama",
+      tamaVisit,
+      visitContent,
+      {
+        householdId: "household-1",
+        amountYen: 8000,
+      },
+      actor,
+    );
+    await repository.update(
+      "tama",
+      tamaVisit,
+      visitContent,
+      {
+        householdId: "household-1",
+        amountYen: null,
+      },
+      actor,
+    );
 
     const [row] = await db
       .select()
@@ -1100,11 +1117,16 @@ describe("確認の後に記録が論理削除された場合", () => {
       "@/features/hospital-visits/infrastructure/hospitalVisitRepository"
     );
 
-    await createHospitalVisitRepository().add("tama", visitContent, {
-      householdId: "household-1",
-      amountYen: null,
-      linkExpenseRecordId: expenseId,
-    });
+    await createHospitalVisitRepository().add(
+      "tama",
+      visitContent,
+      {
+        householdId: "household-1",
+        amountYen: null,
+        linkExpenseRecordId: expenseId,
+      },
+      actor,
+    );
 
     expect(await db.select().from(hospitalVisits)).toHaveLength(1);
     expect(await db.select().from(expenseRecordHospitalVisits)).toEqual([]);

@@ -29,6 +29,7 @@ import {
   notificationSettings,
   notifications,
   poopRecords,
+  recordChangeLogs,
   users,
   vomitRecords,
   weightRecords,
@@ -240,6 +241,33 @@ describe("記録の追加", () => {
       });
       expect(result.error).toContain("の書き込みが許可されていません");
     }
+  });
+
+  it("追加・編集の履歴に、接続を許可したユーザーと接続を残す", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    const created = await call("create_poop_record", {
+      catId: "cat-1",
+      consistency: "soft",
+    });
+    const { id } = created.value as { id: string };
+    await call("update_poop_record", { catId: "cat-1", id, memo: "編集" });
+
+    const logs = await db.select().from(recordChangeLogs);
+    expect(logs).toHaveLength(2);
+    expect(logs).toEqual(
+      expect.arrayContaining(
+        (["create", "update"] as const).map((action) =>
+          expect.objectContaining({
+            recordType: "poop_record",
+            recordId: id,
+            action,
+            userId: "user-1",
+            mcpClientId: "client-1",
+          }),
+        ),
+      ),
+    );
   });
 
   it("日時を省略すると、日本時間の今の日時で記録する", async () => {

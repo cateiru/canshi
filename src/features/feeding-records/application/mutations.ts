@@ -1,3 +1,4 @@
+import type { RecordActor } from "@/db/schema";
 import {
   completesFeedingNotifications,
   feedingRecordFoodProductIds,
@@ -24,6 +25,7 @@ const HOUSEHOLD_CHANGED_ERROR =
 export async function createFeedingRecord(
   cat: FeedingRecordCat,
   data: FeedingRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveFeedingRecordResult> {
   const repository = createFeedingRecordRepository(d1);
@@ -46,6 +48,7 @@ export async function createFeedingRecord(
     householdId,
     built.content,
     completesFeedingNotifications(built.content.occurredAt),
+    actor,
   );
   if (id == null) {
     return { error: HOUSEHOLD_CHANGED_ERROR };
@@ -60,6 +63,7 @@ export async function updateFeedingRecord(
   cat: FeedingRecordCat,
   id: string,
   data: FeedingRecordFormInput,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveFeedingRecordResult> {
   const repository = createFeedingRecordRepository(d1);
@@ -93,6 +97,7 @@ export async function updateFeedingRecord(
     // 何もしない
     built.content.occurredAt.getTime() !== occurredAt.getTime() &&
       completesFeedingNotifications(built.content.occurredAt),
+    actor,
   );
   if (!updated) {
     return { error: HOUSEHOLD_CHANGED_ERROR };
@@ -104,7 +109,8 @@ export async function updateFeedingRecord(
 export async function deleteFeedingRecord(
   catId: string,
   id: string,
+  actor: RecordActor,
   d1?: D1Database,
 ): Promise<boolean> {
-  return createFeedingRecordRepository(d1).remove(catId, id);
+  return createFeedingRecordRepository(d1).remove(catId, id, actor);
 }

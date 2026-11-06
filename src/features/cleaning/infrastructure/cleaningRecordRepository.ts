@@ -1,5 +1,6 @@
 import { and, eq, exists, inArray, isNull, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import { cleaningRecords, notifications } from "@/db/schema";
 import type { CleaningRecordRepository } from "../domain/cleaningRecordRepository";
 
@@ -14,6 +15,15 @@ export function createCleaningRecordRepository(
       eq(cleaningRecords.catId, catId),
       eq(cleaningRecords.cleaningTargetId, cleaningTargetId),
       isNull(cleaningRecords.deletedAt),
+    );
+
+  // 実施記録が削除されずにあること。記録の保存と同じ batch に並べる文の条件にする
+  const recordIsLive = (catId: string, cleaningTargetId: string, id: string) =>
+    exists(
+      db
+        .select({ id: cleaningRecords.id })
+        .from(cleaningRecords)
+        .where(byId(catId, cleaningTargetId, id)),
     );
 
   /**
@@ -41,12 +51,7 @@ export function createCleaningRecordRepository(
             eq(notifications.referenceId, cleaningTargetId),
             inArray(notifications.status, ["pending", "snoozed"]),
             lt(notifications.dueAt, dueBefore),
-            exists(
-              db
-                .select({ id: cleaningRecords.id })
-                .from(cleaningRecords)
-                .where(byId(catId, cleaningTargetId, cleaningRecordId)),
-            ),
+            recordIsLive(catId, cleaningTargetId, cleaningRecordId),
           ),
         ),
     ];
@@ -66,12 +71,19 @@ export function createCleaningRecordRepository(
       cleaningTargetId,
       content,
       completeNotificationsDueBefore,
+      actor,
     ) {
       const id = crypto.randomUUID();
       await db.batch([
         db
           .insert(cleaningRecords)
           .values({ id, catId, cleaningTargetId, ...content }),
+        insertRecordChangeLog(db, {
+          recordType: "cleaning_record",
+          recordId: id,
+          action: "create",
+          actor,
+        }),
         ...completeNotifications(
           catId,
           cleaningTargetId,
@@ -87,6 +99,7 @@ export function createCleaningRecordRepository(
       id,
       content,
       completeNotificationsDueBefore,
+      actor,
     ) {
       const [updated] = await db.batch([
         db
@@ -94,6 +107,16 @@ export function createCleaningRecordRepository(
           .set({ ...content, updatedAt: new Date() })
           .where(byId(catId, cleaningTargetId, id))
           .returning({ id: cleaningRecords.id }),
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "cleaning_record",
+            recordId: id,
+            action: "update",
+            actor,
+          },
+          recordIsLive(catId, cleaningTargetId, id),
+        ),
         ...completeNotifications(
           catId,
           cleaningTargetId,
@@ -103,14 +126,27 @@ export function createCleaningRecordRepository(
       ]);
       return updated.length > 0;
     },
-    async remove(catId, cleaningTargetId, id) {
-      const result = await db
-        .update(cleaningRecords)
-        // 論理削除。削除済みの記録は読み取り・更新から除く
-        .set({ deletedAt: new Date() })
-        .where(byId(catId, cleaningTargetId, id))
-        .returning({ id: cleaningRecords.id });
-      return result.length > 0;
+    async remove(catId, cleaningTargetId, id, actor) {
+      // 削除の後は記録が条件に一致しないため、履歴を先に追加する
+      const [, deleted] = await db.batch([
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "cleaning_record",
+            recordId: id,
+            action: "delete",
+            actor,
+          },
+          recordIsLive(catId, cleaningTargetId, id),
+        ),
+        db
+          .update(cleaningRecords)
+          // 論理削除。削除済みの記録は読み取り・更新から除く
+          .set({ deletedAt: new Date() })
+          .where(byId(catId, cleaningTargetId, id))
+          .returning({ id: cleaningRecords.id }),
+      ]);
+      return deleted.length > 0;
     },
   };
 }

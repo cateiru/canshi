@@ -1,5 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { liveRowCondition } from "@/db/conditionalInsert";
+import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import { vomitRecords } from "@/db/schema";
 import type { VomitRecordRepository } from "../domain/vomitRecordRepository";
 
@@ -8,42 +10,57 @@ export function createVomitRecordRepository(
   d1?: D1Database,
 ): VomitRecordRepository {
   const db = getDb(d1);
+  const byId = (catId: string, id: string) =>
+    and(
+      eq(vomitRecords.id, id),
+      eq(vomitRecords.catId, catId),
+      isNull(vomitRecords.deletedAt),
+    );
   return {
-    async add(catId, content) {
-      const [created] = await db
-        .insert(vomitRecords)
-        .values({ catId, ...content })
-        .returning({ id: vomitRecords.id });
-      return created.id;
+    async add(catId, content, actor) {
+      const id = crypto.randomUUID();
+      await db.batch([
+        db.insert(vomitRecords).values({ id, catId, ...content }),
+        insertRecordChangeLog(db, {
+          recordType: "vomit_record",
+          recordId: id,
+          action: "create",
+          actor,
+        }),
+      ]);
+      return id;
     },
-    async update(catId, id, content) {
-      const result = await db
-        .update(vomitRecords)
-        .set({ ...content, updatedAt: new Date() })
-        .where(
-          and(
-            eq(vomitRecords.id, id),
-            eq(vomitRecords.catId, catId),
-            isNull(vomitRecords.deletedAt),
-          ),
-        )
-        .returning({ id: vomitRecords.id });
-      return result.length > 0;
+    async update(catId, id, content, actor) {
+      const [updated] = await db.batch([
+        db
+          .update(vomitRecords)
+          .set({ ...content, updatedAt: new Date() })
+          .where(byId(catId, id))
+          .returning({ id: vomitRecords.id }),
+        insertRecordChangeLog(
+          db,
+          { recordType: "vomit_record", recordId: id, action: "update", actor },
+          liveRowCondition(vomitRecords, catId, id),
+        ),
+      ]);
+      return updated.length > 0;
     },
-    async remove(catId, id) {
-      const result = await db
-        .update(vomitRecords)
-        // 論理削除。削除済みの記録は読み取り・更新から除く
-        .set({ deletedAt: new Date() })
-        .where(
-          and(
-            eq(vomitRecords.id, id),
-            eq(vomitRecords.catId, catId),
-            isNull(vomitRecords.deletedAt),
-          ),
-        )
-        .returning({ id: vomitRecords.id });
-      return result.length > 0;
+    async remove(catId, id, actor) {
+      // 削除の後は記録が条件に一致しないため、履歴を先に追加する
+      const [, deleted] = await db.batch([
+        insertRecordChangeLog(
+          db,
+          { recordType: "vomit_record", recordId: id, action: "delete", actor },
+          liveRowCondition(vomitRecords, catId, id),
+        ),
+        db
+          .update(vomitRecords)
+          // 論理削除。削除済みの記録は読み取り・更新から除く
+          .set({ deletedAt: new Date() })
+          .where(byId(catId, id))
+          .returning({ id: vomitRecords.id }),
+      ]);
+      return deleted.length > 0;
     },
   };
 }

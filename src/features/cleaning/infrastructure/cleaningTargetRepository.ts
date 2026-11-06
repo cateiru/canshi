@@ -1,5 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { deleteRecordChangeLogsOf } from "@/db/recordChangeLog";
 import {
   cleaningRecords,
   cleaningTargets,
@@ -67,6 +68,16 @@ export function createCleaningTargetRepository(
       // （`28`）、同じ batch でまとめて削除する。delete の間に別リクエストが
       // 割り込まないよう、D1 の batch で原子的に実行する
       await db.batch([
+        // 実施記録を物理削除するため、履歴も消す
+        deleteRecordChangeLogsOf(
+          db,
+          "cleaning_record",
+          cleaningRecords,
+          and(
+            eq(cleaningRecords.cleaningTargetId, id),
+            eq(cleaningRecords.catId, catId),
+          ),
+        ),
         db
           .delete(cleaningRecords)
           .where(

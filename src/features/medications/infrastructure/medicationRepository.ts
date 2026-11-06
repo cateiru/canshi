@@ -1,10 +1,12 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { insertWhere, liveRowCondition } from "@/db/conditionalInsert";
+import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import {
   hospitalVisits,
   medicationDoses,
   medications,
+  recordChangeLogs,
   symptoms,
 } from "@/db/schema";
 import type { MedicationContent } from "../domain/medication";
@@ -37,28 +39,62 @@ export function createMedicationRepository(
         .limit(1);
       return row != null;
     },
-    async add(catId, content) {
-      const [created] = await insertWhere(
-        db,
-        medications,
-        { catId, ...content },
-        referencesAreLive(catId, content),
-      ).returning({ id: medications.id });
-      return created?.id ?? null;
+    async add(catId, content, actor) {
+      const id = crypto.randomUUID();
+      const [created] = await db.batch([
+        insertWhere(
+          db,
+          medications,
+          { id, catId, ...content },
+          referencesAreLive(catId, content),
+        ).returning({ id: medications.id }),
+        // 挿入が断られたときは履歴も追加しない
+        insertRecordChangeLog(
+          db,
+          { recordType: "medication", recordId: id, action: "create", actor },
+          liveRowCondition(medications, catId, id),
+        ),
+      ]);
+      return created.length > 0 ? id : null;
     },
-    async update(catId, id, content) {
-      const result = await db
-        .update(medications)
-        .set({ ...content, updatedAt: new Date() })
-        .where(and(byId(catId, id), referencesAreLive(catId, content)))
-        .returning({ id: medications.id });
-      return result.length > 0;
+    async update(catId, id, content, actor) {
+      const [updated] = await db.batch([
+        db
+          .update(medications)
+          .set({ ...content, updatedAt: new Date() })
+          .where(and(byId(catId, id), referencesAreLive(catId, content)))
+          .returning({ id: medications.id }),
+        insertRecordChangeLog(
+          db,
+          { recordType: "medication", recordId: id, action: "update", actor },
+          and(
+            liveRowCondition(medications, catId, id),
+            referencesAreLive(catId, content),
+          ),
+        ),
+      ]);
+      return updated.length > 0;
     },
-    async remove(catId, id) {
+    async remove(catId, id, actor) {
       // 服薬予定と、その投薬実績をまとめて論理削除する。2つの更新の間に別リクエストが
-      // 割り込まないよう、D1 の batch で原子的に実行する
+      // 割り込まないよう、D1 の batch で原子的に実行する。
+      // 削除の後は記録が条件に一致しないため、履歴を先に追加する。投薬実績の履歴は 1 件ずつ残す。
+      // INSERT ... SELECT では列の既定値が使われないため、列はテーブル定義と同じ並びにすべて書く
       const deletedAt = new Date();
       await db.batch([
+        db.insert(recordChangeLogs).select(
+          sql`SELECT lower(hex(randomblob(16))), 'medication_dose', ${medicationDoses.id}, 'delete',
+              ${actor.userId}, ${actor.mcpClientId}, unixepoch()
+            FROM ${medicationDoses}
+            WHERE ${medicationDoses.medicationId} = ${id}
+              AND ${medicationDoses.catId} = ${catId}
+              AND ${medicationDoses.deletedAt} IS NULL`,
+        ),
+        insertRecordChangeLog(
+          db,
+          { recordType: "medication", recordId: id, action: "delete", actor },
+          liveRowCondition(medications, catId, id),
+        ),
         db
           .update(medicationDoses)
           .set({ deletedAt })
@@ -72,11 +108,18 @@ export function createMedicationRepository(
         db.update(medications).set({ deletedAt }).where(byId(catId, id)),
       ]);
     },
-    async setArchivedAt(catId, id, archivedAt) {
-      await db
-        .update(medications)
-        .set({ archivedAt, updatedAt: new Date() })
-        .where(byId(catId, id));
+    async setArchivedAt(catId, id, archivedAt, actor) {
+      await db.batch([
+        db
+          .update(medications)
+          .set({ archivedAt, updatedAt: new Date() })
+          .where(byId(catId, id)),
+        insertRecordChangeLog(
+          db,
+          { recordType: "medication", recordId: id, action: "update", actor },
+          liveRowCondition(medications, catId, id),
+        ),
+      ]);
     },
   };
 }
