@@ -20,7 +20,7 @@ describe("Button", () => {
     expect(screen.getByRole("button")).toBeDisabled();
   });
 
-  it("leftIcon・rightIcon を文字の前後に 18px で描画し、読み上げない", () => {
+  it("leftIcon・rightIcon を文字サイズに追従する大きさで文字の前後に描画し、読み上げない", () => {
     render(
       <Button leftIcon={TbPlus} rightIcon={TbChevronRight}>
         追加
@@ -33,7 +33,7 @@ describe("Button", () => {
     expect(button.lastChild).toBe(right);
     for (const icon of [left, right]) {
       expect(icon).toHaveAttribute("aria-hidden", "true");
-      expect(icon).toHaveAttribute("width", "18");
+      expect(icon).toHaveAttribute("width", "calc(18px * var(--font-scale))");
     }
   });
 

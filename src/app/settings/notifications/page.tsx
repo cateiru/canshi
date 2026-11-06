@@ -1,6 +1,7 @@
 import { TbClock, TbDeviceMobile, TbPaw } from "react-icons/tb";
 import { Alert, Breadcrumb, ButtonLink, NavCard } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { listCurrentUserCats } from "@/features/auth/presentation/session";
 import { CatAvatar } from "@/features/cats/presentation/CatAvatar";
 import { CatIcon } from "@/features/cats/presentation/CatIcon";
@@ -77,7 +78,7 @@ export default async function NotificationSettingsPage() {
         </p>
         {cats.length === 0 ? (
           <div className={styles.emptyState}>
-            <TbPaw size={32} aria-hidden="true" />
+            <ScaledIcon icon={TbPaw} size={32} aria-hidden="true" />
             <p>まだねこが登録されていません。</p>
             <ButtonLink href="/cats/new" variant="secondary">
               ねこを登録する

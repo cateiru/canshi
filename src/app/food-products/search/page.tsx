@@ -1,5 +1,6 @@
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import { hasOpenCatalogFoodProductRequest } from "@/features/catalog-food-products/application/requests";
 import {
@@ -85,7 +86,7 @@ export default async function SearchFoodProductsPage({
         {breadcrumb}
         <h1>共通のごはん商品から探す</h1>
         <Surface className={listStyles.emptyState}>
-          <FoodProductIcon aria-hidden="true" size={32} />
+          <ScaledIcon icon={FoodProductIcon} aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>
             ごはん商品を登録するには家が必要です。設定の「家の設定」から家を作成してください。
@@ -152,7 +153,7 @@ export default async function SearchFoodProductsPage({
 
         {items.length === 0 ? (
           <Surface className={listStyles.emptyState}>
-            <FoodProductIcon aria-hidden="true" size={32} />
+            <ScaledIcon icon={FoodProductIcon} aria-hidden="true" size={32} />
             <p>条件に合う共通のごはん商品はありませんでした。</p>
             <p>キーワードを変えるか、手動で入力して登録してください。</p>
             <div className={listStyles.emptyActions}>

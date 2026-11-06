@@ -185,6 +185,107 @@ for (const fontSize of ["small", "medium", "large", "xlarge"]) {
   });
 }
 
+test("文字サイズを変えるとボタン・選択欄・カレンダーの目印も拡大縮小する", async ({
+  page,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  for (const [fontSize, scale] of [
+    ["small", 0.9],
+    ["medium", 1],
+    ["large", 1.15],
+    ["xlarge", 1.3],
+  ] as const) {
+    await page
+      .context()
+      .addCookies([
+        { name: "canshi-font-size", value: fontSize, url: baseURL },
+      ]);
+    await page.goto("/dev/components");
+    const checkbox = page.locator("label").filter({
+      has: page.getByRole("checkbox", { name: "ドライフード", exact: true }),
+    });
+    const radio = page.locator("label").filter({
+      has: page.getByRole("radio", { name: "メス", exact: true }),
+    });
+    for (const [name, icon, width, height] of [
+      [
+        "追加メニュー",
+        page
+          .getByRole("button", { name: "追加する", exact: true })
+          .locator("svg"),
+        18,
+        18,
+      ],
+      [
+        "月送り",
+        page.getByRole("link", { name: "前の月", exact: true }).locator("svg"),
+        18,
+        18,
+      ],
+      [
+        "選択欄の矢印",
+        page.getByRole("button", { name: /性別/ }).locator("svg"),
+        10,
+        6,
+      ],
+      [
+        "チェックボックス",
+        checkbox.locator('span[aria-hidden="true"]'),
+        18,
+        18,
+      ],
+      ["ラジオ", radio.locator('span[aria-hidden="true"]'), 18, 18],
+      [
+        "カレンダーの凡例",
+        page.locator('li > svg[data-record-type="feeding"]').first(),
+        14,
+        14,
+      ],
+    ] as const) {
+      const bounds = await icon.boundingBox();
+      expect(bounds?.width, `${name}・${fontSize}`).toBeCloseTo(
+        width * scale,
+        1,
+      );
+      expect(bounds?.height, `${name}・${fontSize}`).toBeCloseTo(
+        height * scale,
+        1,
+      );
+    }
+  }
+});
+
+test("特大文字でも狭い画面のプロフィール名とIDに十分な幅を確保する", async ({
+  page,
+  baseURL,
+}) => {
+  await page
+    .context()
+    .addCookies([{ name: "canshi-font-size", value: "xlarge", url: baseURL }]);
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/settings/account");
+  const profile = page.getByRole("region", {
+    name: "プロフィール",
+    exact: true,
+  });
+  const details = profile.locator("dl");
+  const edit = profile.getByRole("link", { name: "編集", exact: true });
+  const narrowDetails = await details.boundingBox();
+  const narrowEdit = await edit.boundingBox();
+  expect(narrowDetails?.width).toBeGreaterThanOrEqual(240);
+  expect(narrowDetails?.y).toBeGreaterThanOrEqual(
+    (narrowEdit?.y ?? 0) + (narrowEdit?.height ?? 0),
+  );
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const wideDetails = await details.boundingBox();
+  const wideEdit = await edit.boundingBox();
+  expect(wideDetails?.x).toBeLessThan(wideEdit?.x ?? 0);
+  expect((wideDetails?.x ?? 0) + (wideDetails?.width ?? 0)).toBeLessThanOrEqual(
+    wideEdit?.x ?? 0,
+  );
+});
+
 test("全テーマ・アクセントカラー・コントラストの組み合わせで文字と操作の目印を読み取れる", async ({
   page,
 }) => {

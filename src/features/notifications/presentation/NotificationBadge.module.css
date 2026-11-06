@@ -5,8 +5,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 16px;
-  height: 16px;
+  min-width: calc(16px * var(--font-scale));
+  height: calc(16px * var(--font-scale));
   padding: 0 var(--space-1);
   border-radius: 999px;
   background-color: var(--color-error-strong);

@@ -10,6 +10,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { toMediaAssetView } from "@/features/media/domain/view";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
@@ -114,7 +115,7 @@ export default async function PoopRecordsPage({
               <RecordCard aria-label={formatDateTimeUtc(record.occurredAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
-                    <TbClock aria-hidden="true" size={18} />
+                    <ScaledIcon icon={TbClock} aria-hidden="true" size={18} />
                     <time dateTime={record.occurredAt.toISOString()}>
                       {formatDateTimeUtc(record.occurredAt)}
                     </time>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { TbCake } from "react-icons/tb";
 import { Button, Modal } from "@/components/ui";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
   type BirthdayCelebrationCat,
   type BirthdayMilestone,
@@ -97,7 +98,7 @@ export function BirthdayCelebration({
         onClose={close}
         title={
           <span className={styles.title}>
-            <TbCake aria-hidden="true" size={24} />
+            <ScaledIcon icon={TbCake} aria-hidden="true" size={24} />
             {milestone.kind === "yearly"
               ? "お誕生日おめでとう！"
               : `${age}おめでとう！`}

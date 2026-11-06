@@ -9,6 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { MemoIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { toMediaAssetView } from "@/features/media/domain/view";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
@@ -109,14 +110,22 @@ export default async function MemoRecordsPage({
                   <h2 className={styles.recordDate}>
                     {record.recordedAt ? (
                       <>
-                        <TbClock aria-hidden="true" size={18} />
+                        <ScaledIcon
+                          icon={TbClock}
+                          aria-hidden="true"
+                          size={18}
+                        />
                         <time dateTime={record.recordedAt.toISOString()}>
                           {formatDateTimeUtc(record.recordedAt)}
                         </time>
                       </>
                     ) : (
                       <span className={styles.undated}>
-                        <TbClockOff aria-hidden="true" size={18} />
+                        <ScaledIcon
+                          icon={TbClockOff}
+                          aria-hidden="true"
+                          size={18}
+                        />
                         日付なし
                       </span>
                     )}

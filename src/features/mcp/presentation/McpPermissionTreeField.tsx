@@ -8,6 +8,7 @@ import {
   FoodProductIcon,
   HouseholdIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { CatIcon } from "@/features/cats/presentation/CatIcon";
 import {
   TIMELINE_TYPE_ICON,
@@ -146,7 +147,8 @@ export function McpPermissionTreeField({
               <li key={household.id} className={styles.household}>
                 <div className={styles.row}>
                   <span className={styles.householdName}>
-                    <HouseholdIcon
+                    <ScaledIcon
+                      icon={HouseholdIcon}
                       className={styles.icon}
                       size={20}
                       aria-hidden="true"
@@ -198,7 +200,8 @@ export function McpPermissionTreeField({
                     className={styles.detailsTrigger}
                     aria-label={`${household.name}の詳細な設定`}
                   >
-                    <TbTriangleFilled
+                    <ScaledIcon
+                      icon={TbTriangleFilled}
                       aria-hidden="true"
                       size={10}
                       className={styles.caret}
@@ -324,7 +327,8 @@ export function McpPermissionTreeField({
       {catalogOperations !== null ? (
         <fieldset aria-label="共通のごはん商品" className={styles.catalog}>
           <span className={styles.catalogLabel}>
-            <FoodProductIcon
+            <ScaledIcon
+              icon={FoodProductIcon}
               className={styles.icon}
               size={20}
               aria-hidden="true"
@@ -396,12 +400,18 @@ function CatPermissionItem({
       <Disclosure>
         <div className={styles.row}>
           <Button slot="trigger" className={styles.catTrigger}>
-            <TbTriangleFilled
+            <ScaledIcon
+              icon={TbTriangleFilled}
               aria-hidden="true"
               size={10}
               className={styles.caret}
             />
-            <CatIcon className={styles.icon} size={20} aria-hidden="true" />
+            <ScaledIcon
+              icon={CatIcon}
+              className={styles.icon}
+              size={20}
+              aria-hidden="true"
+            />
             <span className={styles.name}>{cat.name}</span>
           </Button>
           <span className={styles.choices}>
@@ -435,7 +445,8 @@ function CatPermissionItem({
                   aria-label={`${cat.name}の${label}`}
                 >
                   <span className={styles.recordLabel}>
-                    <Icon
+                    <ScaledIcon
+                      icon={Icon}
                       className={styles.icon}
                       size={18}
                       aria-hidden="true"

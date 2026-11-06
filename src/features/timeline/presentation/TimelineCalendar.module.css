@@ -105,8 +105,8 @@
 }
 
 .icon {
-  width: 14px;
-  height: 14px;
+  width: calc(14px * var(--font-scale));
+  height: calc(14px * var(--font-scale));
   flex-shrink: 0;
 }
 

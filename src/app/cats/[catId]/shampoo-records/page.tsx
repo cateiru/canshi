@@ -9,6 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { calculateElapsedDays } from "@/features/shampoo-records/domain/calculations";
 import { listShampooRecords } from "@/features/shampoo-records/infrastructure/queries";
@@ -80,7 +81,7 @@ export default async function ShampooRecordsPage({
 
       {elapsedDays != null ? (
         <p className={styles.elapsed}>
-          <ShampooIcon aria-hidden="true" size={20} />
+          <ScaledIcon icon={ShampooIcon} aria-hidden="true" size={20} />
           <span>
             前回のシャンプーから<strong>{elapsedDays}</strong>日経過
           </span>
@@ -109,7 +110,7 @@ export default async function ShampooRecordsPage({
               <RecordCard aria-label={formatDateTimeUtc(record.performedAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
-                    <TbClock aria-hidden="true" size={18} />
+                    <ScaledIcon icon={TbClock} aria-hidden="true" size={18} />
                     <time dateTime={record.performedAt.toISOString()}>
                       {formatDateTimeUtc(record.performedAt)}
                     </time>

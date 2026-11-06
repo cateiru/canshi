@@ -19,6 +19,7 @@ import {
   RadioGroup,
   Select,
 } from "@/components/ui";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { FoodProduct } from "@/db/schema";
 import {
   type FeedingMode,
@@ -169,7 +170,7 @@ export function FeedingRecordForm({
         aria-labelledby="feeding-date-heading"
       >
         <h2 id="feeding-date-heading" className={styles.sectionHeading}>
-          <TbCalendar aria-hidden="true" size={18} />
+          <ScaledIcon icon={TbCalendar} aria-hidden="true" size={18} />
           食事の日時
         </h2>
         <FormRow>
@@ -202,7 +203,7 @@ export function FeedingRecordForm({
         <div className={styles.quickSelect}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionHeading}>
-              <TbStack2 aria-hidden="true" size={18} />
+              <ScaledIcon icon={TbStack2} aria-hidden="true" size={18} />
               プリセット
             </h2>
             {presetHouseholdId ? (
@@ -210,7 +211,7 @@ export function FeedingRecordForm({
                 href={feedingPresetHelpHref(presetHouseholdId)}
                 className={styles.sectionLink}
               >
-                <TbHelpCircle aria-hidden="true" size={16} />
+                <ScaledIcon icon={TbHelpCircle} aria-hidden="true" size={16} />
                 「プリセット」とは？
               </Link>
             ) : null}

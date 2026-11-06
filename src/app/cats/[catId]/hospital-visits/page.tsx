@@ -9,6 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { formatYen } from "@/features/expenses/domain/labels";
 import { listExpensesByHospitalVisitIds } from "@/features/expenses/infrastructure/queries";
@@ -155,7 +156,7 @@ export default async function HospitalVisitsPage({
                   </div>
 
                   <p className={styles.meta}>
-                    <TbClock aria-hidden="true" size={16} />
+                    <ScaledIcon icon={TbClock} aria-hidden="true" size={16} />
                     <time dateTime={visit.visitedAt.toISOString()}>
                       {formatDateTimeUtc(visit.visitedAt)}
                     </time>

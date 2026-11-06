@@ -82,3 +82,21 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* 画像と編集ボタンの間で名前・IDが1文字ずつにならないよう、狭い画面では次の行へ送る */
+@media (max-width: 480px) {
+  .profile {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .profileDetails {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .editButton {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+}

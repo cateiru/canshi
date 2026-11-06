@@ -10,6 +10,7 @@ import {
   Select,
 } from "@/components/ui";
 import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { Cat } from "@/db/schema";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { Surface } from "@/features/shared/Surface";
@@ -63,7 +64,7 @@ export function CatForm({
         titleId="cat-basic-heading"
         title="基本情報"
         titleSize="lg"
-        icon={<CatIcon aria-hidden="true" size={24} />}
+        icon={<ScaledIcon icon={CatIcon} aria-hidden="true" size={24} />}
         gap="md"
       >
         <FormField
@@ -115,7 +116,7 @@ export function CatForm({
           titleId="cat-profile-image-heading"
           title="プロフィール画像"
           titleSize="lg"
-          icon={<PhotoIcon aria-hidden="true" size={24} />}
+          icon={<ScaledIcon icon={PhotoIcon} aria-hidden="true" size={24} />}
           gap="md"
         >
           <p className={styles.description}>
@@ -140,7 +141,7 @@ export function CatForm({
         titleId="cat-dates-heading"
         title="大切な日"
         titleSize="lg"
-        icon={<TbCalendar aria-hidden="true" size={20} />}
+        icon={<ScaledIcon icon={TbCalendar} aria-hidden="true" size={20} />}
         gap="md"
       >
         <p className={styles.description}>

@@ -9,6 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { WaterIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
@@ -99,7 +100,7 @@ export default async function WaterRecordsPage({
               <RecordCard aria-label={formatDateTimeUtc(record.occurredAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
-                    <TbClock aria-hidden="true" size={18} />
+                    <ScaledIcon icon={TbClock} aria-hidden="true" size={18} />
                     <time dateTime={record.occurredAt.toISOString()}>
                       {formatDateTimeUtc(record.occurredAt)}
                     </time>
@@ -127,7 +128,11 @@ export default async function WaterRecordsPage({
                 <dl className={styles.summary} aria-label="給水の合計">
                   <div>
                     <dt>
-                      <WaterIcon aria-hidden="true" size={18} />
+                      <ScaledIcon
+                        icon={WaterIcon}
+                        aria-hidden="true"
+                        size={18}
+                      />
                       給水量
                     </dt>
                     <dd>
@@ -137,7 +142,11 @@ export default async function WaterRecordsPage({
                   </div>
                   <div>
                     <dt>
-                      <WaterIcon aria-hidden="true" size={18} />
+                      <ScaledIcon
+                        icon={WaterIcon}
+                        aria-hidden="true"
+                        size={18}
+                      />
                       推定飲水量
                       {record.hasSpill ? (
                         <span className={styles.estimate}>（参考値）</span>

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import { TbCalendarStats } from "react-icons/tb";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { CALENDAR_COLORS } from "../domain/labels";
 import {
   filterCalendarDataToRange,
@@ -40,7 +41,8 @@ export function HospitalVisitChart({ data, now }: HospitalVisitChartProps) {
     <section className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>
-          <TbCalendarStats
+          <ScaledIcon
+            icon={TbCalendarStats}
             aria-hidden="true"
             size={20}
             className={styles.titleIcon}

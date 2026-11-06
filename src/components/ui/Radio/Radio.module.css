@@ -29,9 +29,11 @@
 
 .dot {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: calc(18px * var(--font-scale));
+  height: calc(18px * var(--font-scale));
   border: var(--border-width) solid var(--color-ink);
   border-radius: 50%;
   background-color: var(--color-bg);
@@ -47,9 +49,9 @@
 .dot::before {
   content: "";
   display: block;
-  width: 8px;
-  height: 8px;
-  margin: 4px;
+  width: calc(8px * var(--font-scale));
+  height: calc(8px * var(--font-scale));
+  flex-shrink: 0;
   border-radius: 50%;
   /* 選択中の点はアクセントカラーにする。--color-accent-strong は背景との差が 4.5:1 以上ある */
   background-color: var(--color-accent-strong);

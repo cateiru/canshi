@@ -63,7 +63,7 @@
 
 .selectedMark {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: calc(18px * var(--font-scale));
+  height: calc(18px * var(--font-scale));
   color: var(--color-accent-strong);
 }

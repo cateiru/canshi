@@ -1,4 +1,5 @@
 import { Breadcrumb, ButtonLink } from "@/components/ui";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import { createCatAction } from "@/features/cats/presentation/actions";
 import { CatForm } from "@/features/cats/presentation/CatForm";
@@ -37,7 +38,7 @@ export default async function NewCatPage({ searchParams }: NewCatPageProps) {
       <RecordPageHeading icon={CatIcon}>ねこを登録する</RecordPageHeading>
       {households.length === 0 ? (
         <Surface className={styles.emptyState}>
-          <CatIcon aria-hidden="true" size={32} />
+          <ScaledIcon icon={CatIcon} aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>ねこを登録するには家が必要です。先に家を作成してください。</p>
           <ButtonLink

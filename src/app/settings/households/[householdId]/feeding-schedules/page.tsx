@@ -8,6 +8,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { FeedingScheduleIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireHouseholdAccess } from "@/features/auth/presentation/session";
 import { listFeedingSchedules } from "@/features/feeding-schedules/infrastructure/queries";
 import {
@@ -85,7 +86,7 @@ export default async function FeedingSchedulesPage({
                 >
                   <div className={styles.scheduleHeader}>
                     <h3 className={styles.time}>
-                      <TbClock size={20} aria-hidden="true" />
+                      <ScaledIcon icon={TbClock} size={20} aria-hidden="true" />
                       <time dateTime={schedule.time}>{schedule.time}</time>
                     </h3>
                     <HouseholdMemberActionButton
@@ -137,7 +138,7 @@ export default async function FeedingSchedulesPage({
         title="ごはんの時間を追加"
         titleId="feeding-schedule-new-heading"
         gap="md"
-        icon={<TbPlus size={20} aria-hidden="true" />}
+        icon={<ScaledIcon icon={TbPlus} size={20} aria-hidden="true" />}
       >
         <FeedingScheduleForm
           action={createFeedingScheduleAction.bind(null, household.id)}

@@ -7,6 +7,7 @@ import {
   CalorieIcon,
   FeedingIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
   FEEDING_CHART_PERIOD_LABEL,
   type FeedingChartPeriod,
@@ -54,7 +55,7 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
         <div className={styles.charts}>
           <div className={styles.chartBlock}>
             <h3 className={styles.chartLabel}>
-              <FeedingIcon aria-hidden="true" size={16} />
+              <ScaledIcon icon={FeedingIcon} aria-hidden="true" size={16} />
               食べた量（推定）
             </h3>
             <div className={styles.canvas}>
@@ -63,7 +64,7 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
           </div>
           <div className={styles.chartBlock}>
             <h3 className={styles.chartLabel}>
-              <CalorieIcon aria-hidden="true" size={16} />
+              <ScaledIcon icon={CalorieIcon} aria-hidden="true" size={16} />
               カロリー（推定）
             </h3>
             <div className={styles.canvas}>

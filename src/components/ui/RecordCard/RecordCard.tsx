@@ -1,5 +1,6 @@
 import type { ComponentType, HTMLAttributes, ReactNode } from "react";
 import type { IconBaseProps } from "react-icons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import styles from "./RecordCard.module.css";
 
 export type RecordCardProps = HTMLAttributes<HTMLElement> & {
@@ -48,7 +49,7 @@ export function RecordEmptyState({
         .join(" ")}
       {...props}
     >
-      {Icon ? <Icon aria-hidden="true" size={32} /> : null}
+      {Icon ? <ScaledIcon icon={Icon} aria-hidden="true" size={32} /> : null}
       <p>{children}</p>
       {actions ? <div className={styles.emptyActions}>{actions}</div> : null}
     </div>

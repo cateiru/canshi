@@ -9,6 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { listCleaningRecords } from "@/features/cleaning/infrastructure/recordQueries";
 import { getCleaningTargetById } from "@/features/cleaning/infrastructure/targetQueries";
@@ -113,7 +114,7 @@ export default async function CleaningRecordsPage({
               <RecordCard aria-label={formatDateTimeUtc(record.performedAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
-                    <TbClock aria-hidden="true" size={18} />
+                    <ScaledIcon icon={TbClock} aria-hidden="true" size={18} />
                     <time dateTime={record.performedAt.toISOString()}>
                       {formatDateTimeUtc(record.performedAt)}
                     </time>

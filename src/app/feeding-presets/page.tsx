@@ -1,6 +1,7 @@
 import { TbPencil, TbPlus } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { FeedingPresetIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import { listFeedingPresetsForUser } from "@/features/feeding-presets/infrastructure/queries";
 import { deleteFeedingPresetAction } from "@/features/feeding-presets/presentation/actions";
@@ -84,7 +85,7 @@ export default async function FeedingPresetsPage({
 
       {groups.length === 0 ? (
         <Surface className={styles.emptyState}>
-          <FeedingPresetIcon aria-hidden="true" size={32} />
+          <ScaledIcon icon={FeedingPresetIcon} aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>
             プリセットを登録するには家が必要です。設定の「家の設定」から家を作成してください。
@@ -100,7 +101,11 @@ export default async function FeedingPresetsPage({
           {({ household, items }) =>
             items.length === 0 ? (
               <Surface className={styles.emptyState}>
-                <FeedingPresetIcon aria-hidden="true" size={32} />
+                <ScaledIcon
+                  icon={FeedingPresetIcon}
+                  aria-hidden="true"
+                  size={32}
+                />
                 <p>まだプリセットが登録されていません。</p>
                 <div className={styles.emptyActions}>
                   {/* 登録画面でこの家を最初から選んでおく */}

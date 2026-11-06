@@ -718,7 +718,7 @@ for (const appearance of [
   { fontSize: "medium", theme: "dark", accent: "green", contrast: "more" },
   { fontSize: "large", theme: "light", accent: "pink", contrast: "more" },
   { fontSize: "xlarge", theme: "dark", accent: "purple", contrast: "more" },
-]) {
+] as const) {
   test.describe(`文字サイズ別の見た目（${appearance.fontSize}）`, () => {
     test.use({
       viewport: { width: 320, height: 800 },
@@ -737,6 +737,8 @@ for (const appearance of [
 
     for (const { label, path } of [
       { label: "見た目設定", path: "/settings/appearance" },
+      { label: "設定メニュー", path: "/settings" },
+      { label: "共通部品", path: "/dev/components" },
       { label: "猫一覧", path: "/cats" },
       { label: "猫の詳細", path: `/cats/${CAT}` },
       { label: "タイムライン", path: `/cats/${BUSY_CAT}/timeline?ym=${YM}` },
@@ -755,8 +757,21 @@ for (const appearance of [
           );
           await fillAndKeep(page.getByLabel("時刻", { exact: true }), "08:00");
           await page.getByLabel("時刻", { exact: true }).blur();
+          // 長いヘルプ文の隣でもアイコンが潰れず、文字サイズに追従する
+          const helpIcons = page.locator('a[href^="/help/feeding-"] > svg');
+          await expect(helpIcons).toHaveCount(2);
+          const scale = { small: 0.9, medium: 1, large: 1.15, xlarge: 1.3 }[
+            appearance.fontSize
+          ];
+          for (const icon of await helpIcons.all()) {
+            const bounds = await icon.boundingBox();
+            expect(bounds?.width).toBeCloseTo(16 * scale, 1);
+            expect(bounds?.height).toBeCloseTo(16 * scale, 1);
+          }
         }
-        await takeSnapshot(page, testInfo);
+        await takeSnapshot(page, testInfo, {
+          waitForLoaded: path !== "/dev/components",
+        });
       });
     }
   });

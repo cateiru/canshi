@@ -25,6 +25,7 @@ export * from "./NavCard/NavCard";
 export * from "./Pagination/Pagination";
 export * from "./Radio/Radio";
 export * from "./RecordCard/RecordCard";
+export * from "./ScaledIcon/ScaledIcon";
 export * from "./SegmentedControl/SegmentedControl";
 export * from "./Select/Select";
 export * from "./Slider/Slider";

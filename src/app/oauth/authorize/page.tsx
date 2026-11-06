@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { TbEye, TbUser } from "react-icons/tb";
 import { Alert, Button, Heading } from "@/components/ui";
 import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import { getMcpPermissionTree } from "@/features/mcp/infrastructure/permissions";
 import { ConsentActionsHint } from "@/features/mcp/presentation/ConsentActionsHint";
@@ -86,7 +87,7 @@ export default async function AuthorizePage({
               <div>
                 <dt>接続に使うアカウント</dt>
                 <dd className={styles.account}>
-                  <TbUser size={18} aria-hidden="true" />
+                  <ScaledIcon icon={TbUser} size={18} aria-hidden="true" />
                   {user.name} さん
                 </dd>
               </div>
@@ -101,7 +102,7 @@ export default async function AuthorizePage({
               title="許可する範囲"
               titleId="ai-permissions"
               titleSize="lg"
-              icon={<TbEye size={22} aria-hidden="true" />}
+              icon={<ScaledIcon icon={TbEye} size={22} aria-hidden="true" />}
               gap="sm"
             >
               <p className={styles.note}>

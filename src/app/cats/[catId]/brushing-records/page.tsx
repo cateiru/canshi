@@ -9,6 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { BrushingIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { BrushingRecord } from "@/db/schema";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { SHED_AMOUNT_LABEL } from "@/features/brushing-records/domain/labels";
@@ -106,7 +107,7 @@ export default async function BrushingRecordsPage({
 
       {elapsedDays != null ? (
         <p className={styles.elapsed}>
-          <BrushingIcon aria-hidden="true" size={20} />
+          <ScaledIcon icon={BrushingIcon} aria-hidden="true" size={20} />
           <span>
             前回のブラッシングから<strong>{elapsedDays}</strong>日経過
           </span>
@@ -137,7 +138,7 @@ export default async function BrushingRecordsPage({
                 <RecordCard aria-label={formatDateTimeUtc(record.performedAt)}>
                   <div className={styles.recordHeader}>
                     <h2 className={styles.recordDate}>
-                      <TbClock aria-hidden="true" size={18} />
+                      <ScaledIcon icon={TbClock} aria-hidden="true" size={18} />
                       <time dateTime={record.performedAt.toISOString()}>
                         {formatDateTimeUtc(record.performedAt)}
                       </time>

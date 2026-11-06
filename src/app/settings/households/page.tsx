@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink, NavCard } from "@/components/ui";
 import { HouseholdIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import { HOUSEHOLD_ROLE_LABEL } from "@/features/households/domain/labels";
 import { listHouseholdSummariesForUser } from "@/features/households/infrastructure/queries";
@@ -47,7 +48,7 @@ export default async function HouseholdsSettingsPage() {
 
       {householdList.length === 0 ? (
         <Surface className={styles.emptyState}>
-          <HouseholdIcon aria-hidden="true" size={32} />
+          <ScaledIcon icon={HouseholdIcon} aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>
             ねこを登録するには家が必要です。「家を作成する」から家を作成してください。

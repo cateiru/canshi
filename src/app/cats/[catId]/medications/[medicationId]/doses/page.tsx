@@ -10,6 +10,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { listMedicationDoses } from "@/features/medications/infrastructure/doseQueries";
 import { getMedicationById } from "@/features/medications/infrastructure/queries";
@@ -101,7 +102,7 @@ export default async function MedicationDosesPage({
               <RecordCard aria-label={formatDateTimeUtc(dose.occurredAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
-                    <TbClock aria-hidden="true" size={18} />
+                    <ScaledIcon icon={TbClock} aria-hidden="true" size={18} />
                     <time dateTime={dose.occurredAt.toISOString()}>
                       {formatDateTimeUtc(dose.occurredAt)}
                     </time>

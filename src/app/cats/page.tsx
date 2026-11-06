@@ -7,6 +7,7 @@ import {
   Collapsible,
   IconButtonLink,
 } from "@/components/ui";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { Cat } from "@/db/schema";
 import { requireUser } from "@/features/auth/presentation/session";
 import {
@@ -100,7 +101,7 @@ export default async function CatsPage() {
 
       {groups.length === 0 ? (
         <Surface className={styles.emptyState}>
-          <CatIcon aria-hidden="true" size={32} />
+          <ScaledIcon icon={CatIcon} aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>
             ねこを登録するには家が必要です。家を作成するか、家族から届いた招待
