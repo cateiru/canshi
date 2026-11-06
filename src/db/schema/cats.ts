@@ -14,7 +14,7 @@ export const CAT_NEUTER_STATUSES = ["intact", "neutered"] as const;
 
 export type CatNeuterStatus = (typeof CAT_NEUTER_STATUSES)[number];
 
-/** 毛色のベース色。黒×茶・グレー×クリームは、サビ・三毛のように 2 色が混ざる毛色 */
+/** 毛色のベース色。黒と茶・グレーとクリームは、サビ・三毛のように 2 色が混ざる毛色 */
 export const CAT_COAT_COLORS = [
   "black",
   "brown",
@@ -22,7 +22,7 @@ export const CAT_COAT_COLORS = [
   "red",
   "cream",
   "blue",
-  "chocolate",
+  "dark_brown",
   "tortoiseshell",
   "blue_cream",
   "white",

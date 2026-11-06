@@ -1871,7 +1871,7 @@ describe("猫のプロフィール", () => {
       coatColor: "red",
       coatPattern: "mackerel_tabby",
       coatWhite: "low",
-      coatLabel: "茶（レッド）・縞（トラ）・白少し",
+      coatLabel: "茶・縞（トラ）・白少し",
     });
   });
 
@@ -1936,7 +1936,7 @@ describe("猫のプロフィール", () => {
       coatColor: "tortoiseshell",
       coatPattern: null,
       coatWhite: "medium",
-      coatLabel: "黒×茶（サビ・三毛）・白半分くらい",
+      coatLabel: "黒と茶・白半分くらい",
     });
   });
 

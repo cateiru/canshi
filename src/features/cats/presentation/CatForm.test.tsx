@@ -74,7 +74,7 @@ describe("CatForm", () => {
     const { form, read } = renderForm();
 
     fireEvent.click(screen.getByRole("radio", { name: "済" }));
-    fireEvent.click(screen.getByRole("radio", { name: "茶（レッド）" }));
+    fireEvent.click(screen.getByRole("radio", { name: "茶" }));
     fireEvent.click(screen.getByRole("radio", { name: "縞（トラ）" }));
     fireEvent.click(
       screen.getByRole("radio", { name: "少し（胸・足先など）" }),
@@ -89,24 +89,20 @@ describe("CatForm", () => {
       coatWhite: "low",
     };
     expect(read()).toMatchObject(expected);
-    expect(
-      screen.getByText("茶（レッド）・縞（トラ）・白少し"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("茶・縞（トラ）・白少し")).toBeInTheDocument();
 
     // 何も変えずにもう一度送っても、選択は残る
     await submitAndWaitForError(form);
 
     expect(read()).toMatchObject(expected);
-    expect(
-      screen.getByText("茶（レッド）・縞（トラ）・白少し"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("茶・縞（トラ）・白少し")).toBeInTheDocument();
   });
 
   it("編集時も、保存済みの値ではなく送信した選択を保持する", async () => {
     const { form, read } = renderForm(rejectWithSubmittedChoices, savedCat);
 
     fireEvent.click(screen.getByRole("radio", { name: "済" }));
-    fireEvent.click(screen.getByRole("radio", { name: "茶（レッド）" }));
+    fireEvent.click(screen.getByRole("radio", { name: "茶" }));
 
     await submitAndWaitForError(form);
 

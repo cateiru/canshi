@@ -24,16 +24,20 @@ export const NEUTER_STATUS_LABEL: Record<CatNeuterStatus, string> = {
   neutered: "済",
 };
 
+/**
+ * ベース色の名前。画面では色見本だけで選ぶため、読み上げ・色見本のツールチップと、
+ * 毛色・柄を 1 行にまとめるとき（`formatCoat`）・AI との接続（MCP）で使う
+ */
 export const COAT_COLOR_LABEL: Record<CatCoatColor, string> = {
   black: "黒",
-  brown: "ブラウン（キジ）",
-  silver: "シルバー（サバ）",
-  red: "茶（レッド）",
+  brown: "ブラウン",
+  silver: "シルバー",
+  red: "茶",
   cream: "クリーム",
-  blue: "グレー（ブルー）",
-  chocolate: "チョコレート",
-  tortoiseshell: "黒×茶（サビ・三毛）",
-  blue_cream: "グレー×クリーム",
+  blue: "グレー",
+  dark_brown: "こげ茶",
+  tortoiseshell: "黒と茶",
+  blue_cream: "グレーとクリーム",
   white: "白",
 };
 

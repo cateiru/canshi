@@ -137,8 +137,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   （`src/features/cats/domain/labels.ts` の `NEUTER_TERM`）
 - 毛色・柄は、ベース色（`coat_color`）・柄（`coat_pattern`）・白い毛の割合（`coat_white`）の 3 列で持ち、
   それぞれプリセット（`src/db/schema/cats.ts` の `CAT_COAT_COLORS`・`CAT_COAT_PATTERNS`・`CAT_COAT_WHITE_AMOUNTS`）
-  から選ぶ。NULL は未設定（`0064`）。三毛・サビのように 2 色が混ざる毛色は、ベース色の `tortoiseshell`（黒×茶）・
-  `blue_cream`（グレー×クリーム）で表し、白の多さは `coat_white` で表す
+  から選ぶ。NULL は未設定（`0064`）。三毛・サビのように 2 色が混ざる毛色は、ベース色の `tortoiseshell`（黒と茶）・
+  `blue_cream`（グレーとクリーム）で表し、白の多さは `coat_white` で表す
 
 ## ごはん記録（`feeding_records`・`feeding_record_items`・`feeding_presets`・`feeding_preset_items`）
 

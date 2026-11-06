@@ -17,7 +17,7 @@ const COAT_COLOR_SWATCH: Record<
   red: { fill: "#e09a52", stripe: "#a3561c" },
   cream: { fill: "#f0dbb4", stripe: "#c99f62" },
   blue: { fill: "#8f98a5", stripe: "#4f5762" },
-  chocolate: { fill: "#6b4430", stripe: "#36200f" },
+  dark_brown: { fill: "#6b4430", stripe: "#36200f" },
   tortoiseshell: {
     fill: patches("#2b2724", "#d47f3a"),
     stripe: "rgba(0, 0, 0, 0.45)",
@@ -92,9 +92,10 @@ export type CoatSwatchProps = {
   coat: Coat;
   /**
    * - sm: 選択肢に添える小さな見本
+   * - md: ベース色の選択肢（色見本だけで選ぶ）
    * - lg: 選んだ毛色・柄の見本
    */
-  size?: "sm" | "lg";
+  size?: "sm" | "md" | "lg";
   className?: string;
 };
 

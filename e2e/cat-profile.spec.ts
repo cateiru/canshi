@@ -14,14 +14,15 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
   await page.getByLabel("名前").fill(catName);
   await page.getByLabel("性別").click();
   await page.getByRole("option", { name: "メス" }).click();
-  // 性別がメスなら、避妊・去勢の欄は「避妊」になる。ラジオボタンは見えない input のため、ラベルの文字を押す
+  // 性別がメスなら、避妊・去勢の欄は「避妊」になる。ラジオボタンは見えない input のため、ラベルの文字
+  // （ベース色は色見本）を押す
   await page
     .getByRole("radiogroup", { name: "避妊", exact: true })
     .getByText("済", { exact: true })
     .click();
   await page
     .getByRole("radiogroup", { name: "ベース色" })
-    .getByText("茶（レッド）", { exact: true })
+    .getByTitle("茶", { exact: true })
     .click();
   await page
     .getByRole("radiogroup", { name: "柄" })
@@ -46,9 +47,6 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();
   await expect(page.getByText("メス")).toBeVisible();
   await expect(page.getByText("マンチカン")).toBeVisible();
-  await expect(page.getByText("避妊", { exact: true })).toBeVisible();
-  await expect(page.getByText("済", { exact: true })).toBeVisible();
-  await expect(page.getByText("茶（レッド）・縞（トラ）")).toBeVisible();
   await expect(page.getByText(/歳/)).toBeVisible();
   await expect(page.getByText(/（お迎えから\d+年(?:\d+ヶ月)?）/)).toBeVisible();
 
@@ -57,6 +55,16 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
 
   await page.getByRole("heading", { name: catName }).click();
   await page.getByRole("link", { name: "編集する" }).click();
+  // 避妊・去勢と毛色・柄は詳細ページには出さないため、編集ページで保存されたことを確かめる
+  await expect(
+    page
+      .getByRole("radiogroup", { name: "避妊", exact: true })
+      .getByRole("radio", { name: "済" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("radio", { name: "茶", exact: true }),
+  ).toBeChecked();
+  await expect(page.getByRole("radio", { name: "縞（トラ）" })).toBeChecked();
   await expect(page.getByRole("combobox", { name: "猫種" })).toHaveValue(
     "マンチカン",
   );
@@ -196,14 +204,14 @@ test("生年月日を年のみ・年月のみでも登録・編集できる", as
   });
   const coatColorGroup = page.getByRole("radiogroup", { name: "ベース色" });
   await neuterGroup.getByText("済", { exact: true }).click();
-  await coatColorGroup.getByText("茶（レッド）", { exact: true }).click();
+  await coatColorGroup.getByTitle("茶", { exact: true }).click();
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page.getByText("生まれた月を選択してください")).toBeVisible();
   await expect(page.getByLabel("生まれた年（西暦）")).toHaveValue("2018");
   await expect(page.getByLabel("性別")).toContainText("オス");
   await expect(neuterGroup.getByRole("radio", { name: "済" })).toBeChecked();
   await expect(
-    coatColorGroup.getByRole("radio", { name: "茶（レッド）" }),
+    coatColorGroup.getByRole("radio", { name: "茶", exact: true }),
   ).toBeChecked();
 
   await page.getByLabel("生まれた月").click();
@@ -213,11 +221,16 @@ test("生年月日を年のみ・年月のみでも登録・編集できる", as
   await expect(birthDateDetail()).toHaveText(/^2018年4月（\d+歳/);
   // エラーのあとに選び直していなくても、エラー前の選択が保存される
   await expect(page.getByText("オス")).toBeVisible();
-  await expect(page.getByText("去勢", { exact: true })).toBeVisible();
-  await expect(page.getByText("済", { exact: true })).toBeVisible();
-  await expect(page.getByText("茶（レッド）")).toBeVisible();
 
   await page.goto(`${detailUrl}/edit`);
   await expect(page.getByLabel("生まれた年（西暦）")).toHaveValue("2018");
   await expect(page.getByLabel("生まれた月")).toContainText("4月");
+  await expect(
+    page
+      .getByRole("radiogroup", { name: "去勢", exact: true })
+      .getByRole("radio", { name: "済" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("radio", { name: "茶", exact: true }),
+  ).toBeChecked();
 });

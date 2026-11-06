@@ -9,7 +9,7 @@ describe("formatCoat", () => {
         coatPattern: "mackerel_tabby",
         coatWhite: "low",
       }),
-    ).toBe("茶（レッド）・縞（トラ）・白少し");
+    ).toBe("茶・縞（トラ）・白少し");
   });
 
   it("未設定の項目は省く", () => {

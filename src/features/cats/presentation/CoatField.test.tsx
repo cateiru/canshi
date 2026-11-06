@@ -31,15 +31,13 @@ describe("CoatField", () => {
       coatPattern: "mackerel_tabby",
       coatWhite: "",
     });
-    expect(screen.getByText("茶（レッド）・縞（トラ）")).toBeInTheDocument();
+    expect(screen.getByText("茶・縞（トラ）")).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("radio", { name: "少し（胸・足先など）" }),
     );
 
     expect(read()).toMatchObject({ coatWhite: "low" });
-    expect(
-      screen.getByText("茶（レッド）・縞（トラ）・白少し"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("茶・縞（トラ）・白少し")).toBeInTheDocument();
   });
 });

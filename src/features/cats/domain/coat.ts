@@ -15,7 +15,7 @@ const COAT_WHITE_SUMMARY: Record<NonNullable<Coat["coatWhite"]>, string> = {
 };
 
 /**
- * 毛色・柄を「ベース色・柄・白い毛の割合」の順に 1 行にまとめる（例：「茶（レッド）・縞（トラ）・白少し」）。
+ * 毛色・柄を「ベース色・柄・白い毛の割合」の順に 1 行にまとめる（例：「茶・縞（トラ）・白少し」）。
  * 未設定の項目は省き、すべて未設定なら null
  */
 export function formatCoat(coat: Coat): string | null {
