@@ -26,7 +26,7 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
     .click();
   await page
     .getByRole("radiogroup", { name: "柄" })
-    .getByText("縞（トラ）", { exact: true })
+    .getByText("縞", { exact: true })
     .click();
   await page.getByLabel("生年月日", { exact: true }).fill("2020-04-01");
   // ひらがなで途中まで入力すると、カタカナの猫種が候補に出る。
