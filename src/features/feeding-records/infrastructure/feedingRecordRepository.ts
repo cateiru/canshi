@@ -152,14 +152,6 @@ export function createFeedingRecordRepository(
       return row?.occurredAt ?? null;
     },
 
-    async listItemFoodProductIds(id) {
-      const rows = await db
-        .select({ foodProductId: feedingRecordItems.foodProductId })
-        .from(feedingRecordItems)
-        .where(eq(feedingRecordItems.feedingRecordId, id));
-      return rows.map((row) => row.foodProductId);
-    },
-
     async addWhileCatInHousehold(
       catId,
       householdId,

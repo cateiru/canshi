@@ -16,8 +16,6 @@ export interface FeedingRecordRepository {
   findFoodProducts(ids: string[]): Promise<FeedingRecordFoodProduct[]>;
   /** 猫の記録の日時を読む。見つからなければ null */
   findOccurredAtForCat(catId: string, id: string): Promise<Date | null>;
-  /** 記録の明細が使っている商品の ID */
-  listItemFoodProductIds(id: string): Promise<string[]>;
   /**
    * 記録を明細ごと追加し、その ID を返す。猫が `householdId` の家にいなければ null。
    * `completeNotifications` なら、家の未対応のごはんの時間の通知を同じ batch で完了にする

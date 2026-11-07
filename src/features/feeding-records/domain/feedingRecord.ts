@@ -54,24 +54,18 @@ export function feedingRecordFoodProductIds(
 
 /**
  * 入力から記録の中身を作る。明細の商品は、猫の家（`householdId`）の商品に限る。
- * 以前は猫を別の家へ引っ越せた（#502 で廃止）ため、引っ越す前の記録は元の家の商品を使っていることがある。
- * その記録を編集するときは、記録ですでに使っている商品（元の家の商品）も、そのまま残せるよう
- * `keptFoodProductIds` で許可する。
  * `products` は入力が参照する商品（`feedingRecordFoodProductIds`）のうち、見つかったもの
  */
 export function toFeedingRecordContent(
   input: FeedingRecordFormInput,
   products: FeedingRecordFoodProduct[],
   householdId: string | null,
-  keptFoodProductIds: string[] = [],
 ): { error: string } | { content: FeedingRecordContent } {
   const foodProductIds = feedingRecordFoodProductIds(input);
   const productById = new Map(
     products
       .filter(
-        (product) =>
-          (householdId != null && product.householdId === householdId) ||
-          keptFoodProductIds.includes(product.id),
+        (product) => householdId != null && product.householdId === householdId,
       )
       .map((product) => [product.id, product]),
   );

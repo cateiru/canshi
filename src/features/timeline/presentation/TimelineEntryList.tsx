@@ -8,8 +8,6 @@ import styles from "./TimelineEntryList.module.css";
 
 type TimelineEntryListProps = {
   catId: string;
-  /** ごはん商品の画像を探す家（猫が家に属していなければ null） */
-  householdId: string | null;
   /** 表示中の月（YYYY-MM）。ページ送りのリンクに使う */
   ym: string;
   /** 絞り込み中の日付（YYYY-MM-DD）。ページ送りのリンクに引き継ぐ */
@@ -26,7 +24,6 @@ type TimelineEntryListProps = {
  */
 export async function TimelineEntryList({
   catId,
-  householdId,
   ym,
   selectedDate,
   emptyMessage,
@@ -34,18 +31,15 @@ export async function TimelineEntryList({
 }: TimelineEntryListProps) {
   const { entries, page, totalPages } = await timeline;
 
-  const foodProductImageUrls = await listFoodProductImageUrls(
-    [
-      ...new Set(
-        entries
-          .filter((entry) => entry.type === "feeding")
-          .flatMap((entry) =>
-            entry.record.items.map((item) => item.foodProductId),
-          ),
-      ),
-    ],
-    { householdId },
-  );
+  const foodProductImageUrls = await listFoodProductImageUrls([
+    ...new Set(
+      entries
+        .filter((entry) => entry.type === "feeding")
+        .flatMap((entry) =>
+          entry.record.items.map((item) => item.foodProductId),
+        ),
+    ),
+  ]);
 
   return (
     <>

@@ -57,7 +57,7 @@ export async function createFeedingRecord(
 }
 
 /**
- * 猫の記録を更新する。明細の商品は猫の家の商品に限るが、その記録ですでに使っている商品は残せる
+ * 猫の記録を更新する。明細の商品は猫の家の商品に限る
  */
 export async function updateFeedingRecord(
   cat: FeedingRecordCat,
@@ -77,7 +77,6 @@ export async function updateFeedingRecord(
     data,
     await repository.findFoodProducts(feedingRecordFoodProductIds(data)),
     householdId,
-    await repository.listItemFoodProductIds(id),
   );
   if ("error" in built) {
     return { error: built.error };

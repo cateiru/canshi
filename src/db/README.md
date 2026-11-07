@@ -179,9 +179,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     `src/features/feeding-presets/infrastructure/queries.ts`）
   - プリセットの明細の商品は、プリセットと同じ家の商品に限る。ごはん記録の明細の商品は、猫の家の商品に限る
     （`src/features/feeding-presets/presentation/actions.ts`・`src/features/feeding-records/presentation/actions.ts`）
-  - 猫を飼う家（`cats.household_id`）は登録後は変えられない。以前は猫を別の家へ引っ越せた（#502 で廃止）ため、
-    引っ越す前の記録は元の家の商品を使っていることがある。その記録の編集では、記録ですでに使っている
-    元の家の商品をそのまま選べる
+  - 猫を飼う家（`cats.household_id`）は登録後は変えられないため、ごはん記録の明細の商品は常に猫の家の商品になる
   - 商品画像（`media_assets`、`record_type = "food_product"`）は、商品の家のメンバーだけが参照できる
     （`src/features/media/application/access.ts`）
   - `household_id` は、家に紐付けられなかった導入前の商品・プリセットを残すため nullable（`0040` では

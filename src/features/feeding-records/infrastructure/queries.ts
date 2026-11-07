@@ -142,8 +142,7 @@ export async function getFeedingRecordById(
  * 記録フォームの初期選択に使うため、直近使用した商品の ID を新しい順・重複なしで返す。
  */
 /**
- * 猫に最近与えた商品の ID。猫の家の商品に限る（以前の猫の引っ越し（#502 で廃止）より前に与えた、
- * 元の家の商品は記録フォームの選択肢にないため含めない）
+ * 猫に最近与えた商品の ID。記録フォームの選択肢と揃えるため、猫の家の商品に限る
  */
 export async function listRecentlyUsedFoodProductIds(
   catId: string,
@@ -182,23 +181,6 @@ export async function listRecentlyUsedFoodProductIds(
     }
   }
   return Array.from(seen);
-}
-
-/**
- * ごはん記録の明細で使っている商品。以前は猫を別の家へ引っ越せた（#502 で廃止）ため、引っ越す前の
- * 記録は元の家の商品を使っていることがある。編集フォームの選択肢に足して、そのまま保存し直せるようにする
- */
-export async function listFoodProductsOfFeedingRecord(feedingRecordId: string) {
-  const db = getDb();
-  const rows = await db
-    .selectDistinct({ foodProduct: foodProducts })
-    .from(feedingRecordItems)
-    .innerJoin(
-      foodProducts,
-      eq(feedingRecordItems.foodProductId, foodProducts.id),
-    )
-    .where(eq(feedingRecordItems.feedingRecordId, feedingRecordId));
-  return rows.map((row) => row.foodProduct);
 }
 
 /** 猫のごはんの記録（明細を含まない行）を ID で 1 件読む。別の猫の記録・見つからなければ null */

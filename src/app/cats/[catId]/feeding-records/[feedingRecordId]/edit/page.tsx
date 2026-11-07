@@ -5,7 +5,6 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { listFeedingPresets } from "@/features/feeding-presets/infrastructure/queries";
 import {
   getFeedingRecordById,
-  listFoodProductsOfFeedingRecord,
   listRecentlyUsedFoodProductIds,
 } from "@/features/feeding-records/infrastructure/queries";
 import { updateFeedingRecordAction } from "@/features/feeding-records/presentation/actions";
@@ -36,30 +35,15 @@ export default async function EditFeedingRecordPage({
     notFound();
   }
 
-  const [
-    householdFoodProducts,
-    recordFoodProducts,
-    recentlyUsedFoodProductIds,
-    presets,
-  ] = await Promise.all([
-    listFoodProducts(cat.householdId),
-    listFoodProductsOfFeedingRecord(feedingRecord.id),
-    listRecentlyUsedFoodProductIds(catId, cat.householdId),
-    listFeedingPresets(cat.householdId),
-  ]);
-  // 以前の猫の引っ越し（#502 で廃止）より前の記録は元の家の商品を使っていることがあるため、その商品も選択肢に残す
-  const foodProducts = [
-    ...householdFoodProducts,
-    ...recordFoodProducts.filter(
-      (recordFoodProduct) =>
-        !householdFoodProducts.some(
-          (foodProduct) => foodProduct.id === recordFoodProduct.id,
-        ),
-    ),
-  ];
+  const [foodProducts, recentlyUsedFoodProductIds, presets] = await Promise.all(
+    [
+      listFoodProducts(cat.householdId),
+      listRecentlyUsedFoodProductIds(catId, cat.householdId),
+      listFeedingPresets(cat.householdId),
+    ],
+  );
   const foodProductImageUrls = await listFoodProductImageUrls(
     foodProducts.map((foodProduct) => foodProduct.id),
-    { householdId: cat.householdId },
   );
 
   return (
