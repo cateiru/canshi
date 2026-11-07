@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ComponentProps } from "react";
+import { ScaledIcon } from "../ScaledIcon/ScaledIcon";
 import { getIconButtonClassName } from "./buttonStyles";
 import { ICON_BUTTON_ICON_SIZE, type IconButtonIcon } from "./iconButtonIcon";
 
@@ -24,7 +25,7 @@ export function IconButtonLink({
 }: IconButtonLinkProps) {
   return (
     <Link className={getIconButtonClassName(className)} {...props}>
-      <Icon aria-hidden="true" size={ICON_BUTTON_ICON_SIZE} />
+      <ScaledIcon icon={Icon} aria-hidden="true" size={ICON_BUTTON_ICON_SIZE} />
       {children}
     </Link>
   );

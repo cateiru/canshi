@@ -32,8 +32,8 @@
 
 .icon {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: calc(36px * var(--font-scale));
+  height: calc(36px * var(--font-scale));
   color: var(--color-accent);
 }
 
@@ -56,8 +56,8 @@
 
 .chevron {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: calc(20px * var(--font-scale));
+  height: calc(20px * var(--font-scale));
 }
 
 /* 縦並びのタイル型。アイコンと見出しを中央に積む */
@@ -70,8 +70,8 @@
 }
 
 .tile .icon {
-  width: var(--space-10);
-  height: var(--space-10);
+  width: calc(var(--space-10) * var(--font-scale));
+  height: calc(var(--space-10) * var(--font-scale));
   color: inherit;
 }
 

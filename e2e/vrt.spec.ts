@@ -711,6 +711,72 @@ for (const accent of ["blue", "green", "pink", "purple"] as const) {
   }
 }
 
+// 文字サイズの両端と中間を狭い画面で確認する。テーマ・アクセント・コントラストも
+// 組み合わせ、文字の拡大と配色の変更が同時に効いた場合を残す。
+for (const appearance of [
+  { fontSize: "small", theme: "light", accent: "blue", contrast: "default" },
+  { fontSize: "medium", theme: "dark", accent: "green", contrast: "more" },
+  { fontSize: "large", theme: "light", accent: "pink", contrast: "more" },
+  { fontSize: "xlarge", theme: "dark", accent: "purple", contrast: "more" },
+] as const) {
+  test.describe(`文字サイズ別の見た目（${appearance.fontSize}）`, () => {
+    test.use({
+      viewport: { width: 320, height: 800 },
+      // 年齢・期間の表示は日時に依存するため除外する
+      ignoreSelectors: ['[class*="details"] dd', '[class*="cardBody"] p'],
+    });
+
+    test.beforeEach(async ({ page, baseURL }) => {
+      await page.context().addCookies([
+        { name: "canshi-font-size", value: appearance.fontSize, url: baseURL },
+        { name: "canshi-theme", value: appearance.theme, url: baseURL },
+        { name: "canshi-accent", value: appearance.accent, url: baseURL },
+        { name: "canshi-contrast", value: appearance.contrast, url: baseURL },
+      ]);
+    });
+
+    for (const { label, path } of [
+      { label: "見た目設定", path: "/settings/appearance" },
+      { label: "設定メニュー", path: "/settings" },
+      { label: "共通部品", path: "/dev/components" },
+      { label: "猫一覧", path: "/cats" },
+      { label: "猫の詳細", path: `/cats/${CAT}` },
+      { label: "タイムライン", path: `/cats/${BUSY_CAT}/timeline?ym=${YM}` },
+      { label: "ごはん記録の追加", path: `/cats/${CAT}/feeding-records/new` },
+    ]) {
+      test(label, async ({ page }, testInfo) => {
+        await page.goto(path);
+        await expect(page.locator("html")).toHaveAttribute(
+          "data-font-size",
+          appearance.fontSize,
+        );
+        if (path.endsWith("/feeding-records/new")) {
+          await fillAndKeep(
+            page.getByLabel("日付", { exact: true }),
+            "2024-06-18",
+          );
+          await fillAndKeep(page.getByLabel("時刻", { exact: true }), "08:00");
+          await page.getByLabel("時刻", { exact: true }).blur();
+          // 長いヘルプ文の隣でもアイコンが潰れず、文字サイズに追従する
+          const helpIcons = page.locator('a[href^="/help/feeding-"] > svg');
+          await expect(helpIcons).toHaveCount(2);
+          const scale = { small: 0.9, medium: 1, large: 1.15, xlarge: 1.3 }[
+            appearance.fontSize
+          ];
+          for (const icon of await helpIcons.all()) {
+            const bounds = await icon.boundingBox();
+            expect(bounds?.width).toBeCloseTo(16 * scale, 1);
+            expect(bounds?.height).toBeCloseTo(16 * scale, 1);
+          }
+        }
+        await takeSnapshot(page, testInfo, {
+          waitForLoaded: path !== "/dev/components",
+        });
+      });
+    }
+  });
+}
+
 // 本物の release-notes.json は変更のたびに追記されて差分が出てしまうため、同じ表示を
 // 固定のダミーデータで描く開発用ページ（src/app/dev/release-notes）を撮る
 test("更新情報ページの見た目", async ({ page }, testInfo) => {

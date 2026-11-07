@@ -1,6 +1,7 @@
 import { TbPencil, TbSearch } from "react-icons/tb";
 import { Breadcrumb, NavCard } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import {
   foodProductsBreadcrumbItems,
@@ -40,7 +41,7 @@ export default async function AddFoodProductPage({
       <h1>ごはん商品を登録する</h1>
       {households.length === 0 ? (
         <Surface className={styles.emptyState}>
-          <FoodProductIcon aria-hidden="true" size={32} />
+          <ScaledIcon icon={FoodProductIcon} aria-hidden="true" size={32} />
           <p>所属している家がありません。</p>
           <p>
             ごはん商品を登録するには家が必要です。設定の「家の設定」から家を作成してください。

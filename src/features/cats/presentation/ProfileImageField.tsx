@@ -5,6 +5,7 @@ import { Button as AriaButton, FileTrigger } from "react-aria-components";
 import { TbPhotoPlus, TbTrash } from "react-icons/tb";
 import { Button, Modal } from "@/components/ui";
 import { getButtonClassName } from "@/components/ui/Button/buttonStyles";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { discardPendingMediaAction } from "@/features/media/presentation/actions";
 import { uploadPendingMedia } from "@/features/media/presentation/upload";
 import {
@@ -159,7 +160,7 @@ export function ProfileImageField({
               className={getButtonClassName("secondary")}
               isDisabled={isDisabled || isUploading}
             >
-              <TbPhotoPlus aria-hidden="true" size={18} />
+              <ScaledIcon icon={TbPhotoPlus} aria-hidden="true" size={18} />
               {previewAssetId ? "画像を変更する" : "画像を選ぶ"}
             </AriaButton>
           </FileTrigger>

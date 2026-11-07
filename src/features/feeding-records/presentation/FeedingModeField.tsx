@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useId } from "react";
 import { TbAdjustments, TbHelpCircle } from "react-icons/tb";
 import { SegmentedControl } from "@/components/ui";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { FEEDING_MODES, type FeedingMode } from "@/db/schema/feeding-modes";
 import { FEEDING_MODE_HELP_HREF, FEEDING_MODE_LABEL } from "../domain/labels";
 import styles from "./FeedingModeField.module.css";
@@ -30,11 +31,11 @@ export function FeedingModeField({
     <section className={styles.section} aria-labelledby={headingId}>
       <div className={styles.header}>
         <h2 id={headingId} className={styles.heading}>
-          <TbAdjustments aria-hidden="true" size={18} />
+          <ScaledIcon icon={TbAdjustments} aria-hidden="true" size={18} />
           記録方法
         </h2>
         <Link href={FEEDING_MODE_HELP_HREF} className={styles.helpLink}>
-          <TbHelpCircle aria-hidden="true" size={16} />
+          <ScaledIcon icon={TbHelpCircle} aria-hidden="true" size={16} />
           「厳格モード」「あいまいモード」とは？
         </Link>
       </div>

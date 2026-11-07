@@ -1,5 +1,6 @@
 import { Badge, Breadcrumb } from "@/components/ui";
 import { ReleaseNotesIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./ReleaseNotesView.module.css";
@@ -31,7 +32,7 @@ export function ReleaseNotesView({ notes }: ReleaseNotesViewProps) {
 
       {notes.length === 0 ? (
         <Surface className={styles.emptyState}>
-          <ReleaseNotesIcon aria-hidden="true" size={32} />
+          <ScaledIcon icon={ReleaseNotesIcon} aria-hidden="true" size={32} />
           <p>更新情報はまだありません。</p>
         </Surface>
       ) : (

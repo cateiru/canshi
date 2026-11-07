@@ -4,6 +4,7 @@ import {
   Button as AriaButton,
   type ButtonProps as AriaButtonProps,
 } from "react-aria-components";
+import { ScaledIcon } from "../ScaledIcon/ScaledIcon";
 import { getIconButtonClassName } from "./buttonStyles";
 import { ICON_BUTTON_ICON_SIZE, type IconButtonIcon } from "./iconButtonIcon";
 
@@ -36,7 +37,7 @@ export function IconButton({
       className={getIconButtonClassName(className)}
       {...props}
     >
-      <Icon aria-hidden="true" size={ICON_BUTTON_ICON_SIZE} />
+      <ScaledIcon icon={Icon} aria-hidden="true" size={ICON_BUTTON_ICON_SIZE} />
     </AriaButton>
   );
 

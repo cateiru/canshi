@@ -10,6 +10,7 @@ import {
   TbWash,
 } from "react-icons/tb";
 import { Button, Checkbox, FormField } from "@/components/ui";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { CleaningTarget } from "@/db/schema";
 import { Surface } from "@/features/shared/Surface";
 import type { ResolvedNotificationSettings } from "../domain/rules";
@@ -38,7 +39,7 @@ export function NotificationSettingsForm({
     <form action={formAction} className={styles.form}>
       <Surface
         title="誕生日"
-        icon={<TbCake aria-hidden="true" size={20} />}
+        icon={<ScaledIcon icon={TbCake} aria-hidden="true" size={20} />}
         gap="sm"
       >
         <Checkbox
@@ -63,7 +64,7 @@ export function NotificationSettingsForm({
 
       <Surface
         title="シャンプー"
-        icon={<TbWash aria-hidden="true" size={20} />}
+        icon={<ScaledIcon icon={TbWash} aria-hidden="true" size={20} />}
         gap="sm"
       >
         <Checkbox
@@ -85,7 +86,7 @@ export function NotificationSettingsForm({
 
       <Surface
         title="体重測定"
-        icon={<TbScale aria-hidden="true" size={20} />}
+        icon={<ScaledIcon icon={TbScale} aria-hidden="true" size={20} />}
         gap="sm"
       >
         <Checkbox
@@ -107,7 +108,7 @@ export function NotificationSettingsForm({
 
       <Surface
         title="症状"
-        icon={<TbThermometer aria-hidden="true" size={20} />}
+        icon={<ScaledIcon icon={TbThermometer} aria-hidden="true" size={20} />}
         gap="sm"
       >
         <Checkbox
@@ -121,7 +122,7 @@ export function NotificationSettingsForm({
       {cleaningTargets.length > 0 ? (
         <Surface
           title="掃除"
-          icon={<TbSpray aria-hidden="true" size={20} />}
+          icon={<ScaledIcon icon={TbSpray} aria-hidden="true" size={20} />}
           gap="sm"
         >
           {cleaningTargets.map((target) => (

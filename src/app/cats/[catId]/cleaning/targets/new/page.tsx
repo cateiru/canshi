@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { TbPlus, TbStack2 } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { CLEANING_TARGET_PRESETS } from "@/features/cleaning/domain/presets";
 import { CleaningTargetForm } from "@/features/cleaning/presentation/CleaningTargetForm";
@@ -49,7 +50,7 @@ export default async function NewCleaningTargetPage({
       <Surface
         title="よく使う対象をワンタップで追加"
         titleSize="sm"
-        icon={<TbStack2 aria-hidden="true" size={18} />}
+        icon={<ScaledIcon icon={TbStack2} aria-hidden="true" size={18} />}
         gap="sm"
       >
         <div className={styles.presets}>
@@ -72,7 +73,7 @@ export default async function NewCleaningTargetPage({
       <Surface
         title="対象を作成する"
         titleSize="sm"
-        icon={<TbPlus aria-hidden="true" size={18} />}
+        icon={<ScaledIcon icon={TbPlus} aria-hidden="true" size={18} />}
         gap="sm"
       >
         <CleaningTargetForm

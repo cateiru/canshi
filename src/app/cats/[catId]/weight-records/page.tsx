@@ -9,6 +9,7 @@ import {
   RecordEmptyState,
 } from "@/components/ui";
 import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
@@ -109,7 +110,7 @@ export default async function WeightRecordsPage({
               <RecordCard aria-label={formatDateTimeUtc(record.occurredAt)}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordDate}>
-                    <TbClock aria-hidden="true" size={18} />
+                    <ScaledIcon icon={TbClock} aria-hidden="true" size={18} />
                     <time dateTime={record.occurredAt.toISOString()}>
                       {formatDateTimeUtc(record.occurredAt)}
                     </time>
@@ -136,7 +137,11 @@ export default async function WeightRecordsPage({
 
                 <dl className={styles.summary}>
                   <dt>
-                    <WeightIcon aria-hidden="true" size={18} />
+                    <ScaledIcon
+                      icon={WeightIcon}
+                      aria-hidden="true"
+                      size={18}
+                    />
                     体重
                   </dt>
                   <dd>

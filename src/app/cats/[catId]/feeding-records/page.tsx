@@ -13,6 +13,7 @@ import {
   CalorieIcon,
   FeedingIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { sumFeedingTotals } from "@/features/feeding-records/domain/calculations";
 import {
@@ -133,7 +134,11 @@ export default async function FeedingRecordsPage({
             <li key={group.dateKey} className={styles.dateGroup}>
               <div className={styles.dateHeader}>
                 <span className={styles.dateIcon}>
-                  <TbCalendarEvent aria-hidden="true" size={22} />
+                  <ScaledIcon
+                    icon={TbCalendarEvent}
+                    aria-hidden="true"
+                    size={22}
+                  />
                 </span>
                 <h2 className={styles.dateHeading}>
                   <time dateTime={group.dateKey}>
@@ -162,7 +167,11 @@ export default async function FeedingRecordsPage({
                       >
                         <div className={styles.recordHeader}>
                           <h3 className={styles.recordDate}>
-                            <TbClock aria-hidden="true" size={18} />
+                            <ScaledIcon
+                              icon={TbClock}
+                              aria-hidden="true"
+                              size={18}
+                            />
                             <time dateTime={record.occurredAt.toISOString()}>
                               {splitDateTimeUtc(record.occurredAt).time}
                             </time>
@@ -233,7 +242,11 @@ export default async function FeedingRecordsPage({
                           >
                             <div>
                               <dt>
-                                <FeedingIcon aria-hidden="true" size={18} />
+                                <ScaledIcon
+                                  icon={FeedingIcon}
+                                  aria-hidden="true"
+                                  size={18}
+                                />
                                 食べた量
                                 <span className={styles.estimate}>
                                   （推定）
@@ -246,7 +259,11 @@ export default async function FeedingRecordsPage({
                             </div>
                             <div>
                               <dt>
-                                <CalorieIcon aria-hidden="true" size={18} />
+                                <ScaledIcon
+                                  icon={CalorieIcon}
+                                  aria-hidden="true"
+                                  size={18}
+                                />
                                 カロリー
                                 <span className={styles.estimate}>
                                   （推定）

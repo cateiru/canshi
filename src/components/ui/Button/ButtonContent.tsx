@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ScaledIcon } from "../ScaledIcon/ScaledIcon";
 import { BUTTON_ICON_SIZE, type ButtonIcon } from "./iconButtonIcon";
 
 export type ButtonIconProps = {
@@ -21,11 +22,19 @@ export function ButtonContent({
   return (
     <>
       {LeftIcon ? (
-        <LeftIcon aria-hidden="true" size={BUTTON_ICON_SIZE} />
+        <ScaledIcon
+          icon={LeftIcon}
+          aria-hidden="true"
+          size={BUTTON_ICON_SIZE}
+        />
       ) : null}
       {children}
       {RightIcon ? (
-        <RightIcon aria-hidden="true" size={BUTTON_ICON_SIZE} />
+        <ScaledIcon
+          icon={RightIcon}
+          aria-hidden="true"
+          size={BUTTON_ICON_SIZE}
+        />
       ) : null}
     </>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { TbCheck, TbId } from "react-icons/tb";
 import { Alert, addToast, Button, FormField } from "@/components/ui";
 import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { ProfileImageField } from "@/features/cats/presentation/ProfileImageField";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { Surface } from "@/features/shared/Surface";
@@ -50,7 +51,7 @@ export function UserProfileForm({
         titleId="profile-basic-heading"
         title="基本情報"
         titleSize="lg"
-        icon={<TbId aria-hidden="true" size={20} />}
+        icon={<ScaledIcon icon={TbId} aria-hidden="true" size={20} />}
         gap="md"
       >
         <p className={styles.description}>
@@ -71,7 +72,7 @@ export function UserProfileForm({
         titleId="profile-icon-heading"
         title="アイコン"
         titleSize="lg"
-        icon={<PhotoIcon aria-hidden="true" size={24} />}
+        icon={<ScaledIcon icon={PhotoIcon} aria-hidden="true" size={24} />}
         gap="md"
       >
         <p className={styles.description}>

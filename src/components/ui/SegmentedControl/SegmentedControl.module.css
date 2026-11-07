@@ -51,13 +51,20 @@
 }
 
 /* md: 設定項目など、幅いっぱいに広げる切り替え */
+.md {
+  flex-wrap: wrap;
+  border-radius: 24px;
+}
+
+/* 文字を大きくしたときはラベルの途中で改行せず、選択肢ごと次の行に送る */
 .md .button {
   flex: 1;
-  min-width: 0;
+  min-width: max-content;
   min-height: 44px;
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-sm);
   line-height: var(--line-height-heading);
+  white-space: nowrap;
 }
 
 /* 選択中はプライマリボタンと同じ配色にし、ライト・ダークどちらでも文字との差を確保する */

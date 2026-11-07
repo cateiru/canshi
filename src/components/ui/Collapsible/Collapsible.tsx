@@ -8,6 +8,7 @@ import {
   Heading,
 } from "react-aria-components";
 import { TbTriangleFilled } from "react-icons/tb";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import styles from "./Collapsible.module.css";
 
 export type CollapsibleProps = {
@@ -81,7 +82,8 @@ export function Collapsible({
       <div className={styles.header}>
         <Heading level={headingLevel} className={styles.heading}>
           <Button slot="trigger" className={styles.trigger}>
-            <TbTriangleFilled
+            <ScaledIcon
+              icon={TbTriangleFilled}
               aria-hidden="true"
               size={12}
               className={styles.caret}

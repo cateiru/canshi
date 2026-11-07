@@ -13,6 +13,7 @@ import { TbChevronDown } from "react-icons/tb";
 import { ButtonContent } from "../Button/ButtonContent";
 import { type ButtonVariant, getButtonClassName } from "../Button/buttonStyles";
 import { BUTTON_ICON_SIZE, type ButtonIcon } from "../Button/iconButtonIcon";
+import { ScaledIcon } from "../ScaledIcon/ScaledIcon";
 import styles from "./DropdownMenu.module.css";
 
 export type DropdownMenuItem = {
@@ -77,7 +78,11 @@ export function DropdownMenu({
                 className={styles.item}
               >
                 {item.icon ? (
-                  <item.icon aria-hidden="true" size={BUTTON_ICON_SIZE} />
+                  <ScaledIcon
+                    icon={item.icon}
+                    aria-hidden="true"
+                    size={BUTTON_ICON_SIZE}
+                  />
                 ) : null}
                 {item.label}
               </MenuItem>

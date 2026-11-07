@@ -4,6 +4,7 @@ import {
   CalorieIcon,
   FeedingIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { BrushingRecord } from "@/db/schema";
 import { SHED_AMOUNT_LABEL } from "@/features/brushing-records/domain/labels";
 import {
@@ -205,7 +206,7 @@ function renderBody(
             <dl className={styles.summary} aria-label="食事の合計（推定）">
               <div>
                 <dt>
-                  <FeedingIcon aria-hidden="true" size={18} />
+                  <ScaledIcon icon={FeedingIcon} aria-hidden="true" size={18} />
                   食べた量
                   <span className={styles.estimate}>（推定）</span>
                 </dt>
@@ -216,7 +217,7 @@ function renderBody(
               </div>
               <div>
                 <dt>
-                  <CalorieIcon aria-hidden="true" size={18} />
+                  <ScaledIcon icon={CalorieIcon} aria-hidden="true" size={18} />
                   カロリー
                   <span className={styles.estimate}>（推定）</span>
                 </dt>

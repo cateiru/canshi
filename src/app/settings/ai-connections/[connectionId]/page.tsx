@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TbEye } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import { getUserMcpConnection } from "@/features/mcp/infrastructure/connections";
 import { getMcpPermissionTree } from "@/features/mcp/infrastructure/permissions";
@@ -96,7 +97,7 @@ export default async function AiConnectionPage({
         title="許可する範囲"
         titleId="ai-permissions"
         titleSize="lg"
-        icon={<TbEye aria-hidden="true" size={20} />}
+        icon={<ScaledIcon icon={TbEye} aria-hidden="true" size={20} />}
         gap="sm"
       >
         <p className={styles.description}>

@@ -15,8 +15,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: calc(18px * var(--font-scale));
+  height: calc(18px * var(--font-scale));
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-base);
   background-color: var(--color-bg);
@@ -30,8 +30,8 @@
 }
 
 .mark {
-  width: 10px;
-  height: 10px;
+  width: calc(10px * var(--font-scale));
+  height: calc(10px * var(--font-scale));
   fill: none;
   stroke: var(--color-bg);
   stroke-width: 2;

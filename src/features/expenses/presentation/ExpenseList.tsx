@@ -1,5 +1,6 @@
 import { TbCalendar, TbPencil } from "react-icons/tb";
 import { Badge, IconButtonLink, RecordCard } from "@/components/ui";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { HospitalVisit, MediaAsset } from "@/db/schema";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/domain/labels";
 import { toMediaAssetView } from "@/features/media/domain/view";
@@ -48,7 +49,7 @@ export function ExpenseList({
             >
               <div className={styles.recordHeader}>
                 <p className={styles.date}>
-                  <TbCalendar aria-hidden="true" size={16} />
+                  <ScaledIcon icon={TbCalendar} aria-hidden="true" size={16} />
                   <time dateTime={splitDateTimeUtc(expense.spentAt).date}>
                     {splitDateTimeUtc(expense.spentAt).date}
                   </time>

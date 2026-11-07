@@ -11,6 +11,7 @@ import {
   TableActionHeader,
 } from "@/components/ui";
 import { AccountSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { formatDeviceName } from "@/features/auth/domain/deviceName";
 import { SESSION_COOKIE_NAME } from "@/features/auth/domain/sessionToken";
 import { listUserSessions } from "@/features/auth/infrastructure/sessions";
@@ -83,7 +84,7 @@ export default async function AccountSettingsPage() {
         title="ログイン中の端末"
         titleId="login-sessions"
         titleSize="lg"
-        icon={<TbDevices aria-hidden="true" size={20} />}
+        icon={<ScaledIcon icon={TbDevices} aria-hidden="true" size={20} />}
         gap="sm"
       >
         <p className={styles.sectionDescription}>
@@ -134,7 +135,7 @@ export default async function AccountSettingsPage() {
         title="ログアウト"
         titleId="logout"
         titleSize="lg"
-        icon={<TbLogout aria-hidden="true" size={20} />}
+        icon={<ScaledIcon icon={TbLogout} aria-hidden="true" size={20} />}
         gap="md"
       >
         <div className={styles.logoutItem}>
