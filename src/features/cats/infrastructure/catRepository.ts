@@ -8,7 +8,6 @@ import {
   cleaningTargets,
   expenseRecordCats,
   expenseRecordHospitalVisits,
-  expenseRecords,
   feedingRecordItems,
   feedingRecords,
   hospitalVisits,
@@ -75,67 +74,34 @@ export function createCatRepository(d1?: D1Database): CatRepository {
     },
 
     async updateForMember(userId, catId, values) {
-      // 猫の今の家と違う家の支出記録（UPDATE の後に評価するため、引っ越し元の家の支出記録になる）
-      const otherHouseholdExpenseIds = db
-        .select({ id: expenseRecords.id })
-        .from(expenseRecords)
+      // 猫を飼う家は登録後は変えられないため、プロフィールの列だけを書き換える
+      // （型にない `householdId` などが実行時に混ざっても、ほかの列は書き換えない）
+      const updated = await db
+        .update(cats)
+        .set({
+          name: values.name,
+          sex: values.sex,
+          birthDate: values.birthDate,
+          birthDatePrecision: values.birthDatePrecision,
+          breed: values.breed,
+          adoptedAt: values.adoptedAt,
+          neuterStatus: values.neuterStatus,
+          coatColor: values.coatColor,
+          coatPattern: values.coatPattern,
+          coatWhite: values.coatWhite,
+          updatedAt: new Date(),
+        })
         .where(
-          sql`${expenseRecords.householdId} <> (${db
-            .select({ householdId: cats.householdId })
-            .from(cats)
-            .where(eq(cats.id, catId))})`,
-        );
-      const [updated] = await db.batch([
-        db
-          .update(cats)
-          .set({ ...values, updatedAt: new Date() })
-          .where(
-            and(
-              eq(cats.id, catId),
-              sql`EXISTS (
-              SELECT 1 FROM ${householdMembers} AS current_member
-              WHERE current_member.household_id = ${cats.householdId}
-                AND current_member.user_id = ${userId}
+          and(
+            eq(cats.id, catId),
+            sql`EXISTS (
+              SELECT 1 FROM ${householdMembers}
+              WHERE ${householdMembers.householdId} = ${cats.householdId}
+                AND ${householdMembers.userId} = ${userId}
             )`,
-              sql`EXISTS (
-              SELECT 1 FROM ${householdMembers} AS next_member
-              WHERE next_member.household_id = ${values.householdId}
-                AND next_member.user_id = ${userId}
-            )`,
-            ),
-          )
-          .returning({ id: cats.id }),
-        db
-          .delete(expenseRecordCats)
-          .where(
-            and(
-              eq(expenseRecordCats.catId, catId),
-              inArray(
-                expenseRecordCats.expenseRecordId,
-                otherHouseholdExpenseIds,
-              ),
-            ),
           ),
-        db
-          .delete(expenseRecordHospitalVisits)
-          .where(
-            and(
-              inArray(
-                expenseRecordHospitalVisits.hospitalVisitId,
-                db
-                  .select({ id: hospitalVisits.id })
-                  .from(hospitalVisits)
-                  .where(eq(hospitalVisits.catId, catId)),
-              ),
-              inArray(
-                expenseRecordHospitalVisits.expenseRecordId,
-                otherHouseholdExpenseIds,
-              ),
-            ),
-          ),
-        // 最後の猫が引っ越して猫のいなくなった家に、ごはんの時間の通知を残さない
-        dismissFeedingNotificationsOfCatlessHouseholds(db, userId),
-      ]);
+        )
+        .returning({ id: cats.id });
       return updated.length > 0;
     },
 

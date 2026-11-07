@@ -179,8 +179,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     `src/features/feeding-presets/infrastructure/queries.ts`）
   - プリセットの明細の商品は、プリセットと同じ家の商品に限る。ごはん記録の明細の商品は、猫の家の商品に限る
     （`src/features/feeding-presets/presentation/actions.ts`・`src/features/feeding-records/presentation/actions.ts`）
-  - 猫が別の家へ引っ越したときは、ごはん記録は猫と一緒に移り、商品・プリセットは元の家に残る。引っ越す前の
-    記録の編集では、その記録ですでに使っている元の家の商品をそのまま選べる
+  - 猫を飼う家（`cats.household_id`）は登録後は変えられないため、ごはん記録の明細の商品は常に猫の家の商品になる
   - 商品画像（`media_assets`、`record_type = "food_product"`）は、商品の家のメンバーだけが参照できる
     （`src/features/media/application/access.ts`）
   - `household_id` は、家に紐付けられなかった導入前の商品・プリセットを残すため nullable（`0040` では
@@ -270,8 +269,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 支出記録の一覧・グラフは、表示中の猫の家の支出を表示する。記録したページの猫の家を支出の家にし、
     家はクライアントから受け取らない（`src/features/expenses/presentation/actions.ts`）
   - 関連する猫・病院代として紐付ける通院記録は、支出と同じ家の猫のものに限る
-  - 猫が別の家へ引っ越したときは、支出記録は元の家に残し、引っ越した猫とその通院記録との紐付けだけを
-    猫の更新と同じ `db.batch` で外す（`src/features/cats/application/mutations.ts`）
+  - 猫を飼う家は登録後は変えられないため、紐付けた猫・通院記録が支出と別の家のものになることはない
   - 支出の添付（`media_assets`、`record_type = "expense"`）は、支出の家のメンバーだけが参照できる
     （`src/features/media/application/access.ts`）
   - `household_id` は、家に紐付けられなかった導入前の支出記録を残すため nullable（`0039` で、関連する猫の家、

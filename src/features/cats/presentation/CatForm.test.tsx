@@ -70,6 +70,27 @@ const savedCat: Partial<Cat> = {
 };
 
 describe("CatForm", () => {
+  it("登録時は猫を飼う家を選べる", () => {
+    renderForm();
+
+    expect(
+      screen.getByText(
+        "選んだ家のメンバーと、このねこの記録を共有します。登録した後は、家を変えられません。",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("編集時は猫を飼う家を選べず、送信もしない", () => {
+    const { read } = renderForm(rejectWithSubmittedChoices, savedCat);
+
+    expect(
+      screen.queryByText(
+        "選んだ家のメンバーと、このねこの記録を共有します。登録した後は、家を変えられません。",
+      ),
+    ).not.toBeInTheDocument();
+    expect(read()).not.toHaveProperty("householdId");
+  });
+
   it("入力エラーで戻っても、避妊・去勢と毛色・柄の選択を保持する", async () => {
     const { form, read } = renderForm();
 
