@@ -56,7 +56,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     場合に、削除済みの記録にぶら下がった行が残らないようにするため
     （INSERT は `src/db/conditionalInsert.ts` の `insertWhere`、条件は `liveRowCondition` などを使う）
   - 記録の中身として持つ行（ごはん記録の明細 `feeding_record_items`、支出記録の関連する猫 `expense_record_cats`）と
-    添付の写真（`media_assets` と R2 のオブジェクト）は消さずに残す。写真は削除済みの記録の分も保存容量に数える
+    添付の写真（`media_assets` と R2 のオブジェクト）は消さずに残す。写真は削除済みの記録の分も保存容量に数える。
+    猫に紐付く写真は、画面には出さないが、猫を参照できるユーザーなら URL で引き続き取得できる
   - ほかの記録との紐付け（症状・投薬・通院記録の相互の参照、通院記録と支出記録の `expense_record_hospital_visits`）と、
     記録に対する通知（症状の確認通知など）は、削除済みの記録を指したままにしないよう削除時に外す・削除する
   - 服薬予定（`medications`）を削除したときは、その投薬実績（`medication_doses`）も同じ削除日時で論理削除する
