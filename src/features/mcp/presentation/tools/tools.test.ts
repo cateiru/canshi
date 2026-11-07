@@ -1978,23 +1978,20 @@ describe("猫のプロフィール", () => {
     }
   });
 
-  it("引っ越しは、引っ越し先の家でも編集を許可しているときだけ行える", async () => {
-    await allow({ householdOperations: { "house-1": ["cat:update"] } });
-
-    const denied = await call("update_cat", {
-      catId: "cat-1",
-      householdId: "house-2",
-    });
-    expect(denied.error).toContain(
-      "家「家2」での「猫のプロフィールの編集」が許可されていません",
-    );
-
+  it("猫を飼う家は変えられない（householdId を渡しても無視する）", async () => {
     await allow(operations("cat:update"));
-    const moved = await call("update_cat", {
+
+    const result = await call("update_cat", {
       catId: "cat-1",
       householdId: "house-2",
+      name: "タマ",
     });
-    expect(moved.value).toMatchObject({ id: "cat-1", householdId: "house-2" });
+
+    expect(result.value).toMatchObject({
+      id: "cat-1",
+      name: "タマ",
+      householdId: "house-1",
+    });
   });
 });
 

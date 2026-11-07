@@ -1,4 +1,4 @@
-import type { CatValues } from "./cat";
+import type { CatValues, NewCatValues } from "./cat";
 
 /**
  * 猫の保存先。書き込みは、ユーザーが家のメンバーであることを同じ文の中で確かめる
@@ -7,14 +7,10 @@ import type { CatValues } from "./cat";
  */
 export interface CatRepository {
   /** 猫を登録し、その ID を返す。ユーザーが登録先の家のメンバーでなければ null */
-  addForMember(userId: string, values: CatValues): Promise<string | null>;
+  addForMember(userId: string, values: NewCatValues): Promise<string | null>;
   /**
-   * 猫を書き換える。家を変えると、猫を記録ごとその家へ引っ越す。引っ越し元・引っ越し先の
-   * どちらの家にもユーザーが所属している必要があり、そうでない・見つからなければ false。
-   *
-   * 支出記録は猫ではなく家に属するため引っ越し元の家に残し、関連する猫・通院記録は支出と同じ家の
-   * ものに限るため、引っ越した猫とその通院記録との紐付けを同じ batch で外す。
-   * 最後の猫が引っ越して猫のいなくなった家には、ごはんの時間の通知を残さない
+   * 猫のプロフィールを書き換える。猫を飼う家は変えない。
+   * ユーザーが猫の家に所属していない・猫が見つからなければ false
    */
   updateForMember(
     userId: string,

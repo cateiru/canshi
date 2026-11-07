@@ -579,7 +579,7 @@ describe("確認の後に家から外された場合", () => {
 });
 
 describe("ごはん記録の商品", () => {
-  it("確認の後に猫が別の家へ引っ越した場合、記録の登録・更新は通らない", async () => {
+  it("確認の後に猫の家が変わった場合、記録の登録・更新は通らない", async () => {
     await db.insert(feedingRecords).values({
       id: "meal",
       catId: "tama",
@@ -653,8 +653,8 @@ describe("ごはん記録の商品", () => {
     );
   });
 
-  it("別の家へ引っ越す前の記録は、元の家の商品のまま編集できる", async () => {
-    // household-2 の猫として記録した後、猫が household-1 へ引っ越したとする
+  it("以前の引っ越し（廃止済み）より前の記録は、元の家の商品のまま編集できる", async () => {
+    // household-2 の猫として記録した後、以前の引っ越しで猫が household-1 へ移ったとする
     await db.insert(feedingRecords).values({
       id: "moved-meal",
       catId: "tama",
@@ -669,7 +669,7 @@ describe("ごはん記録の商品", () => {
     await expect(
       updateFeedingRecordAction("tama", "moved-meal", {}, recordForm("food-2")),
     ).resolves.toEqual({ redirectTo: "/cats/tama/feeding-records" });
-    // 引っ越し先の家の商品に替えることもできる
+    // 今の家の商品に替えることもできる
     await expect(
       updateFeedingRecordAction("tama", "moved-meal", {}, recordForm("food-1")),
     ).resolves.toEqual({ redirectTo: "/cats/tama/feeding-records" });

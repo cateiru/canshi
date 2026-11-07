@@ -474,7 +474,7 @@ describe("insertHouseholdNotification", () => {
     expect(await listByHousehold(disabled.household.id)).toEqual([]);
   });
 
-  it("判定後に家の最後の猫が削除・引っ越しされていれば、通知を作らない", async () => {
+  it("判定後に家に猫がいなくなっていれば、通知を作らない", async () => {
     const { household, cat, candidate, message } = await setup();
     const [otherHousehold] = await db
       .insert(households)

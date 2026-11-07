@@ -39,7 +39,6 @@ import {
 } from "../formValues";
 import { toCatSummary } from "../summaries";
 import {
-  checkHouseholdOperation,
   errorResult,
   jsonResult,
   type McpToolContext,
@@ -180,12 +179,11 @@ function parseCatValues(
       coatColor: parsed.data.coatColor ?? null,
       coatPattern: parsed.data.coatPattern ?? null,
       coatWhite: parsed.data.coatWhite ?? null,
-      householdId: parsed.data.householdId,
     },
   };
 }
 
-function catCurrentValues(cat: Cat & { householdId: string }) {
+function catCurrentValues(cat: Cat) {
   return {
     birthDate: cat.birthDate,
     values: {
@@ -198,7 +196,6 @@ function catCurrentValues(cat: Cat & { householdId: string }) {
       coatColor: cat.coatColor ?? "",
       coatPattern: cat.coatPattern ?? "",
       coatWhite: cat.coatWhite ?? "",
-      householdId: cat.householdId,
     },
   };
 }
@@ -279,7 +276,7 @@ export function registerCatTools(server: McpServer, ctx: McpToolContext) {
       const parsed = parseCatValues(
         {
           birthDate: null,
-          values: { birthDatePrecision: "day", householdId: args.householdId },
+          values: { birthDatePrecision: "day" },
         },
         args,
       );
@@ -288,7 +285,7 @@ export function registerCatTools(server: McpServer, ctx: McpToolContext) {
       }
       const createdId = await createCatForUser(
         resolved.connection.userId,
-        parsed.data,
+        { ...parsed.data, householdId: args.householdId },
         ctx.env.DB,
       );
       const created =
@@ -312,17 +309,10 @@ export function registerCatTools(server: McpServer, ctx: McpToolContext) {
       description:
         "猫のプロフィールを編集し、編集後のプロフィールを返す。" +
         "指定した項目だけを変更し、省略した項目は今の値のまま。" +
-        "householdId に今と別の家を指定すると、猫を記録ごとその家へ引っ越す" +
-        "（引っ越し先の家でも猫のプロフィールの編集を許可している必要がある）。" +
+        "猫を飼っている家は、登録した後は変えられない。" +
         CAT_DESCRIPTION,
       inputSchema: {
         catId: z.string().describe("猫の ID（list_cats で取得できる）"),
-        householdId: z
-          .string()
-          .optional()
-          .describe(
-            "引っ越し先の家の ID（list_households で取得できる）。引っ越さないときは省略する",
-          ),
         ...catFields,
       },
       annotations: {
@@ -337,35 +327,18 @@ export function registerCatTools(server: McpServer, ctx: McpToolContext) {
         return errorResult(resolved.error);
       }
       const { cat } = resolved;
-      if (
-        args.householdId !== undefined &&
-        args.householdId !== cat.householdId
-      ) {
-        const error = await checkHouseholdOperation(
-          ctx,
-          resolved,
-          args.householdId,
-          "cat:update",
-        );
-        if (error) {
-          return errorResult(error);
-        }
-      }
       const parsed = parseCatValues(catCurrentValues(cat), args);
       if ("error" in parsed) {
         return errorResult(parsed.error);
       }
-      const result = await updateCatForUser(
+      const saved = await updateCatForUser(
         cat.id,
         resolved.connection.userId,
         parsed.data,
         ctx.env.DB,
       );
-      if (result === "household-not-allowed") {
-        return errorResult(HOUSEHOLD_NOT_ALLOWED_ERROR);
-      }
       const updated =
-        result === "updated" &&
+        saved &&
         (await getCatForUser(resolved.connection.userId, cat.id, ctx.env.DB));
       if (!updated) {
         return errorResult("猫が見つかりませんでした");

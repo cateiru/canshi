@@ -1,7 +1,7 @@
 /**
  * 家についてのごはんの通知の遷移先。通知には猫の URL ではなくこの家の URL を保存し、開いたときに
  * その時点の家の猫から記録画面を決める（`resolveHouseholdFeedingRecordPath`）。通知を作った後に
- * 猫が引っ越し・削除されても、通知のリンクが別の家の猫や存在しない猫を指したままにならない
+ * 猫が削除されても、通知のリンクが存在しない猫を指したままにならない
  */
 export function householdFeedingRecordPath(householdId: string) {
   return `/households/${householdId}/feeding-records/new`;

@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { catFormSchema, resolveBirthDate } from "./schema";
+import { catFormSchema, newCatFormSchema, resolveBirthDate } from "./schema";
 
 describe("catFormSchema", () => {
   it("必須項目のみでも成功する", () => {
     const result = catFormSchema.safeParse({
       name: "たま",
       sex: "female",
-      householdId: "home",
       birthDate: "",
       breed: "",
       adoptedAt: "",
@@ -22,7 +21,6 @@ describe("catFormSchema", () => {
     const result = catFormSchema.safeParse({
       name: "",
       sex: "female",
-      householdId: "home",
     });
 
     expect(result.success).toBe(false);
@@ -41,7 +39,6 @@ describe("catFormSchema", () => {
     const result = catFormSchema.safeParse({
       name: "たま",
       sex: "female",
-      householdId: "home",
       birthDate: "2020-13-40",
     });
 
@@ -52,7 +49,6 @@ describe("catFormSchema", () => {
     const result = catFormSchema.safeParse({
       name: "たま",
       sex: "female",
-      householdId: "home",
       birthDate: "2020-04-01",
       breed: "雑種",
       adoptedAt: "2020-06-01",
@@ -65,7 +61,6 @@ describe("catFormSchema", () => {
     const result = catFormSchema.safeParse({
       name: "たま",
       sex: "female",
-      householdId: "home",
       birthDatePrecision: null,
       birthDate: null,
       birthYear: null,
@@ -81,7 +76,7 @@ describe("catFormSchema", () => {
   });
 
   it("避妊・去勢の状況と毛色・柄はプリセットの値だけを受け付け、空なら未設定にする", () => {
-    const base = { name: "たま", sex: "female", householdId: "home" };
+    const base = { name: "たま", sex: "female" };
     const filled = catFormSchema.safeParse({
       ...base,
       neuterStatus: "neutered",
@@ -122,28 +117,10 @@ describe("catFormSchema", () => {
     }
   });
 
-  it("家が選択されていない場合は失敗する", () => {
-    for (const householdId of [null, ""]) {
-      const result = catFormSchema.safeParse({
-        name: "たま",
-        sex: "female",
-        householdId,
-      });
-
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.flatten().fieldErrors.householdId).toEqual([
-          "家を選択してください",
-        ]);
-      }
-    }
-  });
-
   it("生まれた年が西暦4桁でない場合は失敗する", () => {
     const result = catFormSchema.safeParse({
       name: "たま",
       sex: "female",
-      householdId: "home",
       birthDatePrecision: "year",
       birthYear: "20",
     });
@@ -155,7 +132,6 @@ describe("catFormSchema", () => {
     const result = catFormSchema.safeParse({
       name: "たま",
       sex: "female",
-      householdId: "home",
       birthDatePrecision: "month",
       birthYear: "2020",
       birthMonth: "13",
@@ -248,5 +224,47 @@ describe("resolveBirthDate", () => {
       success: false,
       fieldErrors: { birthYear: ["生まれた年を入力してください"] },
     });
+  });
+});
+
+describe("newCatFormSchema", () => {
+  it("猫を飼う家を受け付ける", () => {
+    const result = newCatFormSchema.safeParse({
+      name: "たま",
+      sex: "female",
+      householdId: "home",
+    });
+
+    expect(result.success && result.data.householdId).toBe("home");
+  });
+
+  it("家が選択されていない場合は失敗する", () => {
+    for (const householdId of [null, ""]) {
+      const result = newCatFormSchema.safeParse({
+        name: "たま",
+        sex: "female",
+        householdId,
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.flatten().fieldErrors.householdId).toEqual([
+          "家を選択してください",
+        ]);
+      }
+    }
+  });
+});
+
+describe("catFormSchema（更新）", () => {
+  it("猫を飼う家は受け取らない", () => {
+    const result = catFormSchema.safeParse({
+      name: "たま",
+      sex: "female",
+      householdId: "other",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.success && "householdId" in result.data).toBe(false);
   });
 });

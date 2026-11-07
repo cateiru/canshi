@@ -83,7 +83,14 @@ export const catFormSchema = z.object({
       .enum(CAT_COAT_WHITE_AMOUNTS, { error: "白い毛の割合を選択してください" })
       .optional(),
   ),
-  // 猫を飼っている家。所属している家かどうかはサーバー側で確認する
+});
+
+/**
+ * 猫を登録するときのフォーム。猫を飼う家は登録するときだけ選び、登録後は変えられないため、
+ * 更新のフォーム（`catFormSchema`）には含めない
+ */
+export const newCatFormSchema = catFormSchema.extend({
+  // 猫を飼う家。所属している家かどうかはサーバー側で確認する
   householdId: z.preprocess(
     emptyToUndefined,
     z.string({ error: "家を選択してください" }),
@@ -92,7 +99,11 @@ export const catFormSchema = z.object({
 
 export type CatFormInput = z.infer<typeof catFormSchema>;
 
-export type CatFormFieldErrors = Partial<Record<keyof CatFormInput, string[]>>;
+export type NewCatFormInput = z.infer<typeof newCatFormSchema>;
+
+export type CatFormFieldErrors = Partial<
+  Record<keyof NewCatFormInput, string[]>
+>;
 
 export type ResolvedBirthDate = {
   birthDate: string | null;

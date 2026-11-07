@@ -47,7 +47,7 @@ export default async function EditFeedingRecordPage({
     listRecentlyUsedFoodProductIds(catId, cat.householdId),
     listFeedingPresets(cat.householdId),
   ]);
-  // 猫が別の家へ引っ越す前の記録は元の家の商品を使っているため、その商品も選択肢に残す
+  // 以前の猫の引っ越し（#502 で廃止）より前の記録は元の家の商品を使っていることがあるため、その商品も選択肢に残す
   const foodProducts = [
     ...householdFoodProducts,
     ...recordFoodProducts.filter(

@@ -5,18 +5,8 @@ import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import {
-  cats,
-  expenseRecordCats,
-  expenseRecordHospitalVisits,
-  expenseRecords,
-  hospitalVisits,
-  householdMembers,
-  households,
-  notifications,
-  users,
-} from "@/db/schema";
-import type { CatValues } from "../domain/cat";
+import { cats, householdMembers, households, users } from "@/db/schema";
+import type { CatValues, NewCatValues } from "../domain/cat";
 import { createCatForUser, updateCatForUser } from "./mutations";
 
 // `src/features/notifications/queries.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
@@ -59,7 +49,7 @@ beforeEach(async () => {
     .values({ id: "tama", name: "たま", sex: "female", householdId: "home" });
 });
 
-function catValues(householdId: string, name = "たま"): CatValues {
+function catValues(name = "たま"): CatValues {
   return {
     name,
     sex: "female",
@@ -71,8 +61,11 @@ function catValues(householdId: string, name = "たま"): CatValues {
     coatColor: null,
     coatPattern: null,
     coatWhite: null,
-    householdId,
   };
+}
+
+function newCatValues(householdId: string, name = "たま"): NewCatValues {
+  return { ...catValues(name), householdId };
 }
 
 async function getCat(id: string) {
@@ -85,7 +78,7 @@ async function getCat(id: string) {
 
 describe("createCatForUser", () => {
   it("所属する家を選べば、その家に猫を登録する", async () => {
-    const id = await createCatForUser("both", catValues("second", "ミケ"));
+    const id = await createCatForUser("both", newCatValues("second", "ミケ"));
     expect(id).not.toBeNull();
     expect(await getCat(id as string)).toEqual({
       name: "ミケ",
@@ -131,193 +124,37 @@ describe("createCatForUser", () => {
   });
 
   it("所属していない家・存在しない家には登録しない", async () => {
-    expect(await createCatForUser("home-only", catValues("second"))).toBeNull();
-    expect(await createCatForUser("both", catValues("missing"))).toBeNull();
+    expect(
+      await createCatForUser("home-only", newCatValues("second")),
+    ).toBeNull();
+    expect(await createCatForUser("both", newCatValues("missing"))).toBeNull();
     expect(await db.select().from(cats)).toHaveLength(1);
   });
 });
 
 describe("updateCatForUser", () => {
-  it("同じ家のまま猫の情報を更新できる", async () => {
-    expect(
-      await updateCatForUser("tama", "home-only", catValues("home", "タマ")),
-    ).toBe("updated");
+  it("猫の家のメンバーなら、猫の情報を更新できる", async () => {
+    expect(await updateCatForUser("tama", "home-only", catValues("タマ"))).toBe(
+      true,
+    );
     expect(await getCat("tama")).toEqual({ name: "タマ", householdId: "home" });
   });
 
-  it("両方の家に所属していれば、猫を別の家へ引っ越せる", async () => {
-    expect(await updateCatForUser("tama", "both", catValues("second"))).toBe(
-      "updated",
-    );
-    expect(await getCat("tama")).toEqual({
-      name: "たま",
-      householdId: "second",
-    });
+  it("猫を飼う家は変えられない（値に家が混ざっていても書き換えない）", async () => {
+    // 型にない値が実行時に混ざった場合を確かめるため、型を外して渡す
+    const values = { ...catValues("タマ"), householdId: "second" } as CatValues;
+    expect(await updateCatForUser("tama", "both", values)).toBe(true);
+    expect(await getCat("tama")).toEqual({ name: "タマ", householdId: "home" });
   });
 
-  it("引っ越し先の家に所属していなければ引っ越せない", async () => {
-    expect(
-      await updateCatForUser("tama", "home-only", catValues("second")),
-    ).toBe("household-not-allowed");
-    expect(await updateCatForUser("tama", "both", catValues("other"))).toBe(
-      "household-not-allowed",
+  it("猫の家に所属していなければ更新できない", async () => {
+    expect(await updateCatForUser("tama", "stranger", catValues("クロ"))).toBe(
+      false,
     );
-    expect((await getCat("tama")).householdId).toBe("home");
-  });
-
-  it("今の家に所属していなければ、自分の家へ引っ越すこともできない", async () => {
-    expect(
-      await updateCatForUser("tama", "stranger", catValues("other", "クロ")),
-    ).toBe("not-found");
     expect(await getCat("tama")).toEqual({ name: "たま", householdId: "home" });
   });
 
-  it("存在しない猫は not-found", async () => {
-    expect(await updateCatForUser("missing", "both", catValues("home"))).toBe(
-      "not-found",
-    );
-  });
-
-  describe("支出記録との紐付け", () => {
-    beforeEach(async () => {
-      await db.insert(cats).values({
-        id: "mike",
-        name: "みけ",
-        sex: "female",
-        householdId: "home",
-      });
-      await db.insert(hospitalVisits).values({
-        id: "visit-tama",
-        catId: "tama",
-        visitedAt: new Date("2026-09-15T10:00:00Z"),
-        reason: "健診",
-      });
-      await db.insert(expenseRecords).values({
-        id: "expense-1",
-        householdId: "home",
-        spentAt: new Date("2026-09-15T00:00:00Z"),
-        amountYen: 11000,
-        category: "hospital",
-      });
-      await db.insert(expenseRecordCats).values([
-        { expenseRecordId: "expense-1", catId: "tama" },
-        { expenseRecordId: "expense-1", catId: "mike" },
-      ]);
-      await db.insert(expenseRecordHospitalVisits).values({
-        expenseRecordId: "expense-1",
-        hospitalVisitId: "visit-tama",
-      });
-    });
-
-    async function listLinks() {
-      return {
-        catIds: (
-          await db
-            .select({ catId: expenseRecordCats.catId })
-            .from(expenseRecordCats)
-            .orderBy(expenseRecordCats.catId)
-        ).map((row) => row.catId),
-        hospitalVisitIds: (
-          await db
-            .select({ id: expenseRecordHospitalVisits.hospitalVisitId })
-            .from(expenseRecordHospitalVisits)
-        ).map((row) => row.id),
-      };
-    }
-
-    it("引っ越すと、支出記録は元の家に残し、猫と通院記録との紐付けだけを外す", async () => {
-      expect(await updateCatForUser("tama", "both", catValues("second"))).toBe(
-        "updated",
-      );
-      expect(await listLinks()).toEqual({
-        catIds: ["mike"],
-        hospitalVisitIds: [],
-      });
-      const [expense] = await db
-        .select({ householdId: expenseRecords.householdId })
-        .from(expenseRecords);
-      expect(expense).toEqual({ householdId: "home" });
-    });
-
-    it("同じ家のままなら紐付けは外さない", async () => {
-      expect(
-        await updateCatForUser("tama", "home-only", catValues("home", "タマ")),
-      ).toBe("updated");
-      expect(await listLinks()).toEqual({
-        catIds: ["mike", "tama"],
-        hospitalVisitIds: ["visit-tama"],
-      });
-    });
-
-    it("引っ越せなかったときは紐付けを外さない", async () => {
-      expect(
-        await updateCatForUser("tama", "stranger", catValues("other")),
-      ).toBe("not-found");
-      expect(await listLinks()).toEqual({
-        catIds: ["mike", "tama"],
-        hospitalVisitIds: ["visit-tama"],
-      });
-    });
-  });
-
-  describe("ごはんの時間の通知", () => {
-    beforeEach(async () => {
-      await db.insert(notifications).values(
-        (["pending", "snoozed", "done"] as const).map((status) => ({
-          id: `home-${status}`,
-          householdId: "home",
-          kind: "feeding_time" as const,
-          referenceId: "home-morning",
-          dedupeKey: `home-${status}`,
-          title: "ごはんの時間です",
-          body: "本文",
-          url: "/cats",
-          dueAt: new Date("2026-09-21T07:00:00.000Z"),
-          status,
-        })),
-      );
-    });
-
-    async function statuses() {
-      const rows = await db
-        .select({ id: notifications.id, status: notifications.status })
-        .from(notifications)
-        .orderBy(notifications.id);
-      return Object.fromEntries(rows.map((row) => [row.id, row.status]));
-    }
-
-    it("最後の猫が引っ越すと、元の家の未対応のごはんの通知を無視にする", async () => {
-      await updateCatForUser("tama", "both", catValues("second"));
-      expect(await statuses()).toEqual({
-        "home-pending": "dismissed",
-        "home-snoozed": "dismissed",
-        // 対応済みの通知は履歴として残す
-        "home-done": "done",
-      });
-    });
-
-    it("元の家にまだ猫がいれば、通知はそのまま", async () => {
-      await db
-        .insert(cats)
-        .values({ id: "mike", name: "みけ", sex: "male", householdId: "home" });
-      await updateCatForUser("tama", "both", catValues("second"));
-      expect(await statuses()).toEqual({
-        "home-pending": "pending",
-        "home-snoozed": "snoozed",
-        "home-done": "done",
-      });
-    });
-
-    it("引っ越せなかったときは、通知もそのまま", async () => {
-      // 引っ越し先の家には所属しているが、今の家には所属していない
-      expect(
-        await updateCatForUser("tama", "stranger", catValues("other")),
-      ).toBe("not-found");
-      expect(await statuses()).toEqual({
-        "home-pending": "pending",
-        "home-snoozed": "snoozed",
-        "home-done": "done",
-      });
-    });
+  it("存在しない猫は更新できない", async () => {
+    expect(await updateCatForUser("missing", "both", catValues())).toBe(false);
   });
 });
