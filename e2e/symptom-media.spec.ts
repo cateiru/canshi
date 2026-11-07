@@ -59,14 +59,14 @@ test("症状記録に動画と写真を添付できる", async ({ page }) => {
     .toBeGreaterThan(0);
   await dialog.getByRole("button", { name: "閉じる" }).click();
 
-  // 記録を削除すると動画・写真の配信も止まる
+  // 記録は論理削除のため、削除しても動画・写真は残り、配信も続く
   await page.getByRole("button", { name: "削除する" }).first().click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "削除する" })
     .click();
   await expect(page.getByText("まだ症状記録がありません。")).toBeVisible();
-  expect((await page.request.get(videoSrc)).status()).toBe(404);
+  expect((await page.request.get(videoSrc)).status()).toBe(200);
 
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
