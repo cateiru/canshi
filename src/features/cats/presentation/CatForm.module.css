@@ -29,3 +29,15 @@
   font-size: var(--text-sm);
   color: var(--color-error-strong);
 }
+
+.radioField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.inlineOptions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  column-gap: var(--space-6);
+}

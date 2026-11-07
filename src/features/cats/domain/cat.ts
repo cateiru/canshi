@@ -9,7 +9,16 @@ export type { Cat };
 /** フォームから保存する猫の項目。`householdId` は猫を飼っている家（登録先・引っ越し先） */
 export type CatValues = Pick<
   NewCat,
-  "name" | "sex" | "birthDate" | "birthDatePrecision" | "breed" | "adoptedAt"
+  | "name"
+  | "sex"
+  | "birthDate"
+  | "birthDatePrecision"
+  | "breed"
+  | "adoptedAt"
+  | "neuterStatus"
+  | "coatColor"
+  | "coatPattern"
+  | "coatWhite"
 > & { householdId: string };
 
 /** 選んだ家にユーザーが所属していないときのエラー（改ざんされた値や、抜けた家が送られた場合） */

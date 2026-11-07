@@ -76,7 +76,7 @@ test("通院記録と服薬予定に書類の写真を添付し、等倍で閲�
     page.getByRole("button", { name: "通院の添付 1 を表示" }),
   ).toBeVisible();
 
-  // 服薬予定・通院記録を削除すると写真も削除される
+  // 服薬予定・通院記録は論理削除のため、削除しても写真は残り、配信も続く
   await page.goto(page.url().replace(/timeline.*$/, "medications"));
   await page.getByRole("button", { name: "削除する" }).first().click();
   await page
@@ -86,7 +86,7 @@ test("通院記録と服薬予定に書類の写真を添付し、等倍で閲�
   await expect(
     page.getByText("まだ服薬予定が登録されていません。"),
   ).toBeVisible();
-  expect((await page.request.get(medicationSrc)).status()).toBe(404);
+  expect((await page.request.get(medicationSrc)).status()).toBe(200);
 
   await page.goto(page.url().replace(/medications$/, "hospital-visits"));
   await page.getByRole("button", { name: "削除する" }).first().click();
@@ -95,7 +95,7 @@ test("通院記録と服薬予定に書類の写真を添付し、等倍で閲�
     .getByRole("button", { name: "削除する" })
     .click();
   await expect(page.getByText("まだ通院記録がありません。")).toBeVisible();
-  expect((await page.request.get(visitSrc)).status()).toBe(404);
+  expect((await page.request.get(visitSrc)).status()).toBe(200);
 
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();

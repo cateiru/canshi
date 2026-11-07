@@ -19,6 +19,10 @@ import {
   catFormSchema,
   resolveBirthDate,
 } from "../domain/schema";
+import {
+  readSubmittedCatChoices,
+  type SubmittedCatChoices,
+} from "../domain/submittedChoices";
 import { applyProfileImageChange } from "../infrastructure/applyProfileImage";
 
 export type CatFormState = SubmitRedirect & {
@@ -26,6 +30,8 @@ export type CatFormState = SubmitRedirect & {
   formError?: string;
   // 入力エラーで戻したときに、送信した生年月日の入力欄と値を表示し直すための値
   submittedBirthDate?: SubmittedBirthDate;
+  // 入力エラーで戻したときに、性別・避妊・去勢・毛色・柄の選択を保持するための値
+  submittedChoices?: SubmittedCatChoices;
 };
 
 function readSubmittedBirthDate(formData: FormData): SubmittedBirthDate {
@@ -42,6 +48,13 @@ function readSubmittedBirthDate(formData: FormData): SubmittedBirthDate {
   };
 }
 
+function readSubmittedValues(formData: FormData) {
+  return {
+    submittedBirthDate: readSubmittedBirthDate(formData),
+    submittedChoices: readSubmittedCatChoices(formData),
+  };
+}
+
 function parseFormData(formData: FormData) {
   const parsed = catFormSchema.safeParse({
     name: formData.get("name"),
@@ -52,13 +65,16 @@ function parseFormData(formData: FormData) {
     birthMonth: formData.get("birthMonth"),
     breed: formData.get("breed"),
     adoptedAt: formData.get("adoptedAt"),
+    neuterStatus: formData.get("neuterStatus"),
+    coatColor: formData.get("coatColor"),
+    coatPattern: formData.get("coatPattern"),
+    coatWhite: formData.get("coatWhite"),
     householdId: formData.get("householdId"),
   });
   if (!parsed.success) {
     return {
       success: false as const,
       fieldErrors: parsed.error.flatten().fieldErrors,
-      submittedBirthDate: readSubmittedBirthDate(formData),
     };
   }
 
@@ -67,7 +83,6 @@ function parseFormData(formData: FormData) {
     return {
       success: false as const,
       fieldErrors: birth.fieldErrors,
-      submittedBirthDate: readSubmittedBirthDate(formData),
     };
   }
 
@@ -80,6 +95,10 @@ function parseFormData(formData: FormData) {
       birthDatePrecision: birth.data.birthDatePrecision,
       breed: parsed.data.breed ?? null,
       adoptedAt: parsed.data.adoptedAt ?? null,
+      neuterStatus: parsed.data.neuterStatus ?? null,
+      coatColor: parsed.data.coatColor ?? null,
+      coatPattern: parsed.data.coatPattern ?? null,
+      coatWhite: parsed.data.coatWhite ?? null,
       householdId: parsed.data.householdId,
     },
   };
@@ -95,7 +114,7 @@ export async function createCatAction(
   if (!parsed.success) {
     return {
       fieldErrors: parsed.fieldErrors,
-      submittedBirthDate: parsed.submittedBirthDate,
+      ...readSubmittedValues(formData),
     };
   }
 
@@ -103,7 +122,7 @@ export async function createCatAction(
   if (!createdId) {
     return {
       fieldErrors: { householdId: [HOUSEHOLD_NOT_ALLOWED_ERROR] },
-      submittedBirthDate: readSubmittedBirthDate(formData),
+      ...readSubmittedValues(formData),
     };
   }
 
@@ -121,7 +140,7 @@ export async function updateCatAction(
   if (!parsed.success) {
     return {
       fieldErrors: parsed.fieldErrors,
-      submittedBirthDate: parsed.submittedBirthDate,
+      ...readSubmittedValues(formData),
     };
   }
 
@@ -129,7 +148,7 @@ export async function updateCatAction(
   if (result === "household-not-allowed") {
     return {
       fieldErrors: { householdId: [HOUSEHOLD_NOT_ALLOWED_ERROR] },
-      submittedBirthDate: readSubmittedBirthDate(formData),
+      ...readSubmittedValues(formData),
     };
   }
   if (result === "not-found") {
@@ -142,7 +161,8 @@ export async function updateCatAction(
     user.id,
   );
   if (profileImageError) {
-    return { formError: profileImageError };
+    // ねこの情報はすでに保存済み。作り直した入力欄が古い値に戻らないよう、送信した値を返す
+    return { formError: profileImageError, ...readSubmittedValues(formData) };
   }
 
   return { redirectTo: `/cats/${id}` };
