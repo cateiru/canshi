@@ -151,6 +151,16 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   NULL の猫はどのユーザーからも見えないため、`scripts/link-household.mts`（`pnpm household:link`）で
   家に紐付ける（`docs/deploy.md` 参照）
 
+## 猫のプロフィール（`cats`）
+
+- 避妊・去勢手術の状況は `neuter_status`（`intact`=未・`neutered`=済）で持ち、NULL は未設定（`0065`）。
+  避妊（メス）と去勢（オス）は性別で決まるため列は分けず、表示するときに性別から呼び方を選ぶ
+  （`src/features/cats/domain/labels.ts` の `NEUTER_TERM`）
+- 毛色・柄は、ベース色（`coat_color`）・柄（`coat_pattern`）・白い毛の割合（`coat_white`）の 3 列で持ち、
+  それぞれプリセット（`src/db/schema/cats.ts` の `CAT_COAT_COLORS`・`CAT_COAT_PATTERNS`・`CAT_COAT_WHITE_AMOUNTS`）
+  から選ぶ。NULL は未設定（`0065`）。三毛・サビのように 2 色が混ざる毛色は、ベース色の `tortoiseshell`（黒と茶）・
+  `blue_cream`（グレーとクリーム）で表し、白の多さは `coat_white` で表す
+
 ## ごはん記録（`feeding_records`・`feeding_record_items`・`feeding_presets`・`feeding_preset_items`）
 
 - `feeding_records.mode` は記録方法で、`strict`（厳格モード）と `approximate`（あいまいモード）を持つ。

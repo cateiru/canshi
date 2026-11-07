@@ -80,6 +80,48 @@ describe("catFormSchema", () => {
     }
   });
 
+  it("避妊・去勢の状況と毛色・柄はプリセットの値だけを受け付け、空なら未設定にする", () => {
+    const base = { name: "たま", sex: "female", householdId: "home" };
+    const filled = catFormSchema.safeParse({
+      ...base,
+      neuterStatus: "neutered",
+      coatColor: "tortoiseshell",
+      coatPattern: "solid",
+      coatWhite: "medium",
+    });
+    expect(filled.success && filled.data).toMatchObject({
+      neuterStatus: "neutered",
+      coatColor: "tortoiseshell",
+      coatPattern: "solid",
+      coatWhite: "medium",
+    });
+
+    const empty = catFormSchema.safeParse({
+      ...base,
+      neuterStatus: "",
+      coatColor: "",
+      coatPattern: null,
+      coatWhite: "",
+    });
+    expect(empty.success && empty.data).toMatchObject({
+      neuterStatus: undefined,
+      coatColor: undefined,
+      coatPattern: undefined,
+      coatWhite: undefined,
+    });
+
+    for (const invalid of [
+      { neuterStatus: "yes" },
+      { coatColor: "rainbow" },
+      { coatPattern: "stripe" },
+      { coatWhite: "all" },
+    ]) {
+      expect(catFormSchema.safeParse({ ...base, ...invalid }).success).toBe(
+        false,
+      );
+    }
+  });
+
   it("家が選択されていない場合は失敗する", () => {
     for (const householdId of [null, ""]) {
       const result = catFormSchema.safeParse({

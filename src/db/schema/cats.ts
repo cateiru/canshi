@@ -9,6 +9,49 @@ import {
 import { households } from "./households";
 import { mediaAssets } from "./media-assets";
 
+/** 避妊・去勢手術の状況（未・済）。メスなら避妊、オスなら去勢と表示する */
+export const CAT_NEUTER_STATUSES = ["intact", "neutered"] as const;
+
+export type CatNeuterStatus = (typeof CAT_NEUTER_STATUSES)[number];
+
+/** 毛色のベース色。黒と茶・グレーとクリームは、サビ・三毛のように 2 色が混ざる毛色 */
+export const CAT_COAT_COLORS = [
+  "black",
+  "brown",
+  "silver",
+  "red",
+  "cream",
+  "blue",
+  "dark_brown",
+  "tortoiseshell",
+  "blue_cream",
+  "white",
+] as const;
+
+export type CatCoatColor = (typeof CAT_COAT_COLORS)[number];
+
+/** 毛の柄 */
+export const CAT_COAT_PATTERNS = [
+  "solid",
+  "mackerel_tabby",
+  "classic_tabby",
+  "spotted",
+  "ticked",
+  "colorpoint",
+] as const;
+
+export type CatCoatPattern = (typeof CAT_COAT_PATTERNS)[number];
+
+/** 白い毛の割合（なし・少し・半分くらい・ほとんど白） */
+export const CAT_COAT_WHITE_AMOUNTS = [
+  "none",
+  "low",
+  "medium",
+  "high",
+] as const;
+
+export type CatCoatWhiteAmount = (typeof CAT_COAT_WHITE_AMOUNTS)[number];
+
 export const cats = sqliteTable(
   "cats",
   {
@@ -32,6 +75,12 @@ export const cats = sqliteTable(
       .default("day"),
     breed: text("breed"),
     adoptedAt: text("adopted_at"),
+    // 避妊・去勢手術の状況。NULL は未設定
+    neuterStatus: text("neuter_status", { enum: CAT_NEUTER_STATUSES }),
+    // 毛色・柄。プリセットから選び、それぞれ NULL は未設定
+    coatColor: text("coat_color", { enum: CAT_COAT_COLORS }),
+    coatPattern: text("coat_pattern", { enum: CAT_COAT_PATTERNS }),
+    coatWhite: text("coat_white", { enum: CAT_COAT_WHITE_AMOUNTS }),
     // プロフィール画像（media_assets、record_type = "cat_profile"）。cats ⇄ media_assets が互いを参照するため
     // AnySQLiteColumn で型の循環参照を回避する
     profileMediaAssetId: text("profile_media_asset_id").references(

@@ -12,12 +12,15 @@ import styles from "./Radio.module.css";
 
 export type RadioGroupProps = Omit<AriaRadioGroupProps, "children"> & {
   label?: string;
+  /** 選択肢を並べる要素に足すクラス（横並び・格子状に並べるときなど） */
+  optionsClassName?: string;
   children: ReactNode;
 };
 
 export function RadioGroup({
   label,
   className,
+  optionsClassName,
   children,
   ...props
 }: RadioGroupProps) {
@@ -26,7 +29,11 @@ export function RadioGroup({
   return (
     <AriaRadioGroup className={classes} {...props}>
       {label ? <Label className={styles.groupLabel}>{label}</Label> : null}
-      <div className={styles.options}>{children}</div>
+      <div
+        className={[styles.options, optionsClassName].filter(Boolean).join(" ")}
+      >
+        {children}
+      </div>
     </AriaRadioGroup>
   );
 }

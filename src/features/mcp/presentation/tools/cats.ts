@@ -1,6 +1,12 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import type { Cat } from "@/db/schema";
+import {
+  CAT_COAT_COLORS,
+  CAT_COAT_PATTERNS,
+  CAT_COAT_WHITE_AMOUNTS,
+  CAT_NEUTER_STATUSES,
+  type Cat,
+} from "@/db/schema";
 import {
   createCatForUser,
   updateCatForUser,
@@ -9,6 +15,11 @@ import {
   type CatValues,
   HOUSEHOLD_NOT_ALLOWED_ERROR,
 } from "@/features/cats/domain/cat";
+import {
+  COAT_COLOR_LABEL,
+  COAT_PATTERN_LABEL,
+  COAT_WHITE_LABEL,
+} from "@/features/cats/domain/labels";
 import {
   BIRTH_DATE_PRECISIONS,
   type BirthDatePrecision,
@@ -39,7 +50,16 @@ import {
 const CAT_DESCRIPTION =
   "sex（性別）は male=オス、female=メス、unknown=不明。" +
   "birthDatePrecision は生年月日のわかっている範囲（year=年のみ、month=年月のみ、day=年月日すべて）。" +
-  "year・month の場合、birthDate の不明な月・日は 01 にする（例: 2020年5月生まれなら 2020-05-01）。";
+  "year・month の場合、birthDate の不明な月・日は 01 にする（例: 2020年5月生まれなら 2020-05-01）。" +
+  "neuterStatus は避妊（メス）・去勢（オス）手術の状況（intact=未、neutered=済）。" +
+  "毛色・柄は coatColor（ベース色）・coatPattern（柄）・coatWhite（白い毛の割合）の 3 つのプリセットから選ぶ。";
+
+/** プリセットの値と表示名の一覧を、引数の説明に使う形（`black=黒、…`）にする */
+function describeOptions<T extends string>(labels: Record<T, string>): string {
+  return Object.entries<string>(labels)
+    .map(([value, label]) => `${value}=${label}`)
+    .join("、");
+}
 
 const catFields = {
   name: z.string().optional().describe("名前（50文字以内）"),
@@ -60,6 +80,34 @@ const catFields = {
     .nullable()
     .optional()
     .describe("お迎え日（YYYY-MM-DD）。null を指定すると空にする"),
+  neuterStatus: z
+    .enum(CAT_NEUTER_STATUSES)
+    .nullable()
+    .optional()
+    .describe(
+      "避妊・去勢手術の状況（intact=未、neutered=済）。null を指定すると未設定にする",
+    ),
+  coatColor: z
+    .enum(CAT_COAT_COLORS)
+    .nullable()
+    .optional()
+    .describe(
+      `毛色のベース色（${describeOptions(COAT_COLOR_LABEL)}）。null を指定すると未設定にする`,
+    ),
+  coatPattern: z
+    .enum(CAT_COAT_PATTERNS)
+    .nullable()
+    .optional()
+    .describe(
+      `毛の柄（${describeOptions(COAT_PATTERN_LABEL)}）。null を指定すると未設定にする`,
+    ),
+  coatWhite: z
+    .enum(CAT_COAT_WHITE_AMOUNTS)
+    .nullable()
+    .optional()
+    .describe(
+      `白い毛の割合（${describeOptions(COAT_WHITE_LABEL)}）。null を指定すると未設定にする`,
+    ),
 };
 
 const INVALID_BIRTH_DATE_ERROR =
@@ -128,6 +176,10 @@ function parseCatValues(
       birthDatePrecision: birth.data.birthDatePrecision,
       breed: parsed.data.breed ?? null,
       adoptedAt: parsed.data.adoptedAt ?? null,
+      neuterStatus: parsed.data.neuterStatus ?? null,
+      coatColor: parsed.data.coatColor ?? null,
+      coatPattern: parsed.data.coatPattern ?? null,
+      coatWhite: parsed.data.coatWhite ?? null,
       householdId: parsed.data.householdId,
     },
   };
@@ -142,6 +194,10 @@ function catCurrentValues(cat: Cat & { householdId: string }) {
       birthDatePrecision: cat.birthDatePrecision,
       breed: cat.breed ?? "",
       adoptedAt: cat.adoptedAt ?? "",
+      neuterStatus: cat.neuterStatus ?? "",
+      coatColor: cat.coatColor ?? "",
+      coatPattern: cat.coatPattern ?? "",
+      coatWhite: cat.coatWhite ?? "",
       householdId: cat.householdId,
     },
   };
