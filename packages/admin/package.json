@@ -19,7 +19,7 @@
     "sql.js": "^1.14.2",
     "typescript": "^5",
     "vitest": "^5.0.0",
-    "wrangler": "^4.129.0"
+    "wrangler": "^4.135.0"
   },
   "packageManager": "pnpm@12.18.0"
 }

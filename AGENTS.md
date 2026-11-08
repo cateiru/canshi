@@ -57,6 +57,8 @@
 
 メインアプリは、Cloudflare 側の GitHub App（Workers Builds）で自動的にデプロイされる。
 `main` にマージされるとデプロイがトリガーされるため、手動で `wrangler deploy` する必要はない。
+管理画面（`packages/admin`）も同じく Workers Builds で、管理画面に関わるファイルが変わったときだけ
+自動でデプロイされる（`main` 以外のブランチではプレビューが作られる）。
 
 本番 D1 のマイグレーションは自動では適用されず、`pnpm db:migrate:remote` を手動で実行したときだけ
 適用される。マイグレーションを含む PR は、マージと同時に新しいコードがデプロイされることを前提に、
