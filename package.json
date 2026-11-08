@@ -68,7 +68,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "autoprefixer": "^10.5.5",
     "drizzle-kit": "^0.31.10",
-    "jsdom": "^30.0.1",
+    "jsdom": "^31.0.0",
     "postcss": "^8.5.28",
     "reg-keygen-git-hash-plugin": "^0.14.5",
     "reg-publish-s3-plugin": "^0.14.4",
