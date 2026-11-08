@@ -46,7 +46,8 @@ pnpm dev         # wrangler dev でローカル起動（メインアプリのロ
 pnpm typecheck   # tsc --noEmit
 pnpm test        # vitest run
 pnpm cf-typegen  # wrangler.jsonc から worker-configuration.d.ts を再生成
-pnpm deploy      # wrangler deploy
+pnpm run deploy  # wrangler deploy（通常は main へのマージで Workers Builds が実行する）
+pnpm run preview # wrangler preview --ignore-base-config（通常は main 以外のブランチで Workers Builds が実行する）
 ```
 
 ### ローカルでの起動
@@ -88,6 +89,14 @@ Access のポリシーにも別途追加すること。
 
 Self-hosted アプリケーションはデプロイする前に作ること。手順は
 [`docs/deploy.md`](../../docs/deploy.md) の「管理画面」節を参照。
+
+## デプロイとプレビュー
+
+`main` にマージされると、管理画面に関わるファイル（`packages/admin/` など）が変わっていれば
+Cloudflare の Workers Builds が自動でデプロイする。`main` 以外のブランチでは、Worker Previews で
+プレビュー専用の D1・R2 を使うプレビューが作られる。プレビューの URL も、管理者だけを許可する
+Worker 単位の Access で保護する。設定と確認の手順は [`docs/deploy.md`](../../docs/deploy.md) の
+「管理画面の自動デプロイとプレビュー」節を参照。
 
 ## 共通のごはん商品の画像
 

@@ -40,6 +40,8 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - メインアプリは、Cloudflare 側の GitHub App（Workers Builds）で自動的にデプロイされる。
   `main` にマージされるとデプロイがトリガーされるため、手動で `wrangler deploy` する必要はない。
   GitHub Actions からはデプロイしない
+- 管理画面（`packages/admin`）も同じく Workers Builds で、管理画面に関わるファイルが変わったときだけ
+  自動でデプロイされる（「管理画面の自動デプロイとプレビュー」節）
 - 本番 D1 のマイグレーションは自動では適用されない（Workers Builds のブランチのプレビューも適用しない）。
   `pnpm db:migrate:remote`（`wrangler d1 migrations apply DB --remote`）を手動で実行したときだけ適用される
   - マージと同時に新しいコードがデプロイされるため、新しい列・テーブルを使うコードを含む PR では、
@@ -438,8 +440,8 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
 
 運用者向けの管理画面を、メインアプリとは別の Cloudflare Workers（`packages/admin/`、Worker 名
 `canshi-admin`）として用意している。公開ホスト名は `canshi-admin.cateiru.dev`
-（`packages/admin/wrangler.jsonc` の `routes` で `custom_domain` として設定。`workers.dev`・
-プレビュー URL は作らない）。メインアプリと同じ D1（`canshi-db`）と R2（`canshi-media`）を直接参照し、
+（`packages/admin/wrangler.jsonc` の `routes` で `custom_domain` として設定。本番の `workers.dev` は
+作らない。Worker Previews の URL だけは workers.dev に作る。「管理画面の自動デプロイとプレビュー」節）。メインアプリと同じ D1（`canshi-db`）と R2（`canshi-media`）を直接参照し、
 ユーザー・家の一覧を閲覧できる。書き換えるデータは次のものだけ。
 
 - ユーザーをすべての端末からログアウトさせる操作で削除するログインセッション（`sessions` テーブル）
@@ -478,9 +480,76 @@ Workers 全体の Access だけには頼れない。Self-hosted アプリケー�
 管理画面も合わせて更新・デプロイする（`packages/admin/src/db/queries.ts`・
 `packages/admin/src/db/catalogFoodProducts.ts`）。
 
-管理画面は `main` へのマージでは自動でデプロイされない。管理画面を変えた PR をマージしたときは、
-`pnpm --filter @canshi/admin run deploy` で手動でデプロイする（`wrangler.jsonc` のバインディングを
-増やしたときも、このデプロイで反映される）。`run` を省くと pnpm 組み込みの `pnpm deploy` として
+### 管理画面の自動デプロイとプレビュー
+
+管理画面も、メインアプリと同じく Cloudflare 側の GitHub App（Workers Builds）でデプロイする。
+GitHub Actions からはデプロイしない。`canshi-admin` の Worker を同じリポジトリにつなぎ、
+ビルドの対象のパス（Build watch paths）で `packages/admin` などが変わったときだけビルドする。
+
+- `main` にマージされ、管理画面に関わるファイルが変わっていれば、`wrangler deploy` で本番にデプロイされる
+- `main` 以外のブランチで管理画面に関わるファイルが変わっていれば、Worker Previews（`wrangler preview`）で
+  プレビューが作られる。URL は `<ブランチ名>-canshi-admin.<サブドメイン>.workers.dev`
+- プレビューは本番のバインディングを引き継がない。`packages/admin/wrangler.jsonc` の `previews` で、
+  メインアプリのプレビューと同じプレビュー専用の D1（`canshi-preview-db`）・R2（`canshi-media-preview`）を
+  使う。本番のデータには触れない。プレビュー用 D1 のマイグレーションはメインアプリの
+  `pnpm db:migrate:preview` で適用する（「プレビュー用 D1 のマイグレーション」節）
+  - プレビュー用 D1 はメインアプリのプレビューと共有するため、管理画面のプレビューで行った書き換え
+    （ユーザーの権限・家のメンバー・共通のごはん商品など）は、メインアプリのプレビューにも反映される
+- 管理画面はアプリ内で認証しないため、プレビューの URL・バージョンの URL も管理者だけに見せる。
+  `canshi-admin` の Worker 単位の Access（**Previews only**。Zero Trust では
+  `canshi-admin - Cloudflare Workers`、destination が `preview_worker`）に管理者だけを許可するポリシーを
+  付けて保護する。本番のカスタムドメインは `canshi-admin.cateiru.dev` の Self-hosted アプリケーションが守る
+
+`wrangler.jsonc` の `preview_urls` は `wrangler deploy`（本番のデプロイ）のときだけ反映される。
+
+#### 初回の設定手順
+
+**1. と 2. は、`preview_urls: true` を含む変更を `main` にマージする前に行う。**
+先にマージすると、Workers 全体の Access（メインアプリの利用者全員を許可する）だけで守られた
+バージョンの URL から、本番の D1 を読み書きする管理画面に入れてしまう。
+
+1. Workers & Pages → `canshi-admin` → Access で **Protect this Worker behind Access** を選び、
+   **Previews only** にして、管理者だけを許可するポリシーを付ける（2026-11-08 に設定済み）。ダッシュボードで選べるポリシーが
+   合わないときは、作られた Access アプリケーションを Zero Trust で開き、「初回の公開手順」の 1. で作った
+   管理者だけを Include するポリシーに付け替える。メインアプリの利用者全員を許可するポリシーは付けない。
+2. Workers & Pages → `canshi-admin` → Settings → Build で、GitHub の `cateiru/canshi` をつなぐ
+   （2026-11-08 に設定済み）。つないだあとの値は、Cloudflare CLI（`cf`）の
+   `cf builds workers get <Worker のタグ>` で確かめ、`cf builds workers update <Worker のタグ> --body '<JSON>'` で
+   `production_settings`・`previews_base_config` をまとめて変えられる（Worker のタグは
+   `cf workers scripts search --name canshi-admin` の `id`）。
+   - プレビューのビルドの設定は、ブランチの最初のビルドのときに `previews_base_config` からブランチごとの
+     トリガーにコピーされる。あとから `previews_base_config` を変えても既存のブランチには効かないため、
+     `--patch-existing-previews true` を付けて既存のプレビューにも当てる（付けずに変えると、既存のブランチは
+     古い設定のままビルドされる）。やり直すときは `cf builds create <トリガーの UUID>` でビルドする
+   - Production branch：`main`
+   - Root directory：`packages/admin`
+   - Build variables：`SKIP_DEPENDENCY_INSTALL` を `true`（依存は次のビルドコマンドで入れる）
+   - Build command：`pnpm install --frozen-lockfile`（ワークスペース全体の依存が入る）
+   - Deploy command：`pnpm run deploy`（`wrangler deploy`）
+   - Non-production branch deploy command：`pnpm run preview`（`wrangler preview --ignore-base-config`）
+     （Worker Previews への切り替えを求められたら切り替える。**切り替えは元に戻せない**）。
+     どちらも `packages/admin/package.json` の scripts で、フラグはリポジトリで管理する。
+     `run` を省くと `pnpm deploy` が pnpm 組み込みのコマンドとして扱われて失敗するため、必ず付ける
+   - Build watch paths の Include：`packages/admin/*`・`pnpm-lock.yaml`・`pnpm-workspace.yaml`。
+     ルートの `package.json` は PR ごとにバージョンを上げるため含めない
+   - ダッシュボードの Previews Base には本番の設定をインポートしない（「プレビュー（Worker Previews）」節と同じ理由）
+3. この変更を `main` にマージし、`canshi-admin` のビルドが成功して本番にデプロイされたことを確かめる。
+   最初のビルドのログで、依存が pnpm で入っていることも確かめる。
+4. ログインしていないブラウザ（シークレットウィンドウなど）で次を開き、Access のログイン画面が出ることを
+   確かめる。管理者ではないメインアプリの利用者のアカウントで認証し、拒否されることも確かめる。
+   一覧が表示されたら、直ちに `wrangler.jsonc` の `preview_urls` を `false` に戻してデプロイする。
+   - `https://canshi-admin.cateiru.dev/`
+   - 管理画面を変えたブランチのプレビューの URL と、そのデプロイの URL（ビルドのログに出る）
+5. 最初のプレビューのビルドのログで、`DB` が `canshi-preview-db`、`MEDIA_BUCKET` が
+   `canshi-media-preview` を指していることを確かめる。
+
+メインアプリ（`canshi`）の Workers Builds の Build watch paths の Exclude に `packages/admin/*` を
+入れると、管理画面だけを変えた PR でメインアプリのビルドが走らなくなる（任意）。
+
+#### 手動でデプロイするとき
+
+Workers Builds を使わずにデプロイするときは、`main` のきれいな作業ツリーで
+`pnpm --filter @canshi/admin run deploy` を実行する。`run` を省くと pnpm 組み込みの `pnpm deploy` として
 扱われ、`ERR_PNPM_INVALID_DEPLOY_TARGET` で失敗する。
 
 ## 監視・運用（TODO）
