@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { getEmailHashSalt, hashEmail } from "../domain/emailHash";
+import { isDangerousDevelopmentLoginEnabled } from "./developmentLogin";
 
 /** ユーザーが 1 件もないときに、最初のログインで作る管理者ユーザーの名前 */
 export const INITIAL_USER_NAME = "管理者";
@@ -13,15 +14,21 @@ export const INITIAL_USER_NAME = "管理者";
 export const NEW_USER_NAME = "ユーザー";
 
 /**
- * 環境変数の SALT でメールアドレスをハッシュにする。開発環境（`next dev`）に限り、
- * `EMAIL_HASH_SALT` が未設定でも開発用の SALT を使う
+ * 環境変数の SALT でメールアドレスをハッシュにする。開発環境（`next dev`）と、
+ * `DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN` を有効にした Worker Previews（本番とは別の D1 を使う）に
+ * 限り、`EMAIL_HASH_SALT` が未設定でも開発用の SALT を使う
  */
 export function hashEmailWithEnv(
   email: string,
-  env: Pick<CloudflareEnv, "EMAIL_HASH_SALT">,
+  env: Pick<
+    CloudflareEnv,
+    "EMAIL_HASH_SALT" | "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN"
+  >,
 ) {
   const salt = getEmailHashSalt(env.EMAIL_HASH_SALT, {
-    allowDevelopmentSalt: process.env.NODE_ENV === "development",
+    allowDevelopmentSalt:
+      process.env.NODE_ENV === "development" ||
+      isDangerousDevelopmentLoginEnabled(env),
   });
   return hashEmail(email, salt);
 }

@@ -12,4 +12,8 @@ interface Env {
   ACCESS_CLIENT_SECRET?: string;
   // メールアドレスをハッシュにするときの SALT（`src/features/auth/domain/emailHash.ts`）
   EMAIL_HASH_SALT?: string;
+  // `"true"` のとき、Access（OIDC）を通さない開発用のログインを有効にする
+  // （`src/features/auth/infrastructure/developmentLogin.ts`）。Worker Previews の
+  // `[previews.vars]` だけで設定し、本番には決して設定しない
+  DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN?: string;
 }

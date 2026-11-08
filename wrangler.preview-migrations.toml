@@ -1,0 +1,12 @@
+# Worker Previews 専用の D1（`canshi-preview-db`）にマイグレーションを適用するための設定。
+# `wrangler d1 migrations apply` はトップレベルの `d1_databases` しか見ないため、
+# `wrangler.toml` の `[[previews.d1_databases]]` と同じ DB をここに書く（2 つは必ず揃える）。
+# `pnpm db:migrate:preview` から使う。デプロイには使わない
+name = "canshi"
+compatibility_date = "2026-09-06"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "canshi-preview-db"
+database_id = "b88bd1c2-3cb6-4eac-b812-a5680ca44202"
+migrations_dir = "drizzle"

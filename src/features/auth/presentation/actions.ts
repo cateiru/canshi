@@ -19,9 +19,10 @@ import {
 import { requireUser } from "./session";
 
 /**
- * 開発環境（`next dev`）だけで使えるログイン。Cloudflare Access を通さず、入力した
- * メールアドレスでログインする（e2e・VRT もこれを使う）。本番ビルドでは
- * `process.env.NODE_ENV` が "production" に置き換わるため、常にエラーになる
+ * 開発環境（`next dev`）と、`DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN` を有効にした
+ * Worker Previews だけで使えるログイン。Cloudflare Access を通さず、入力した
+ * メールアドレスでログインする（e2e・VRT もこれを使う）。本番では
+ * `isDevelopmentLoginEnabled` が false になるため、常にエラーになる
  */
 export async function developmentLoginAction(
   formData: FormData,

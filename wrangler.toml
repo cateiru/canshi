@@ -9,6 +9,9 @@ compatibility_date = "2026-09-06"
 # `global_fetch_strictly_public` は MCP の OAuth で CIMD（クライアントの情報を置いた URL）を
 # 取得するのに要る（`@cloudflare/workers-oauth-provider`、`src/worker.ts` 参照）
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+# Worker Previews（`wrangler preview`）の workers.dev の URL を有効にする。
+# `wrangler deploy`（本番のデプロイ）のときだけ反映される（`docs/deploy.md` の「プレビュー」節）
+preview_urls = true
 
 [assets]
 directory = ".open-next/assets"
@@ -40,8 +43,6 @@ bucket_name = "canshi-media"
 enabled = true
 invocation_logs = true
 
-# Durable Object のマイグレーションは `wrangler deploy` でだけ適用され、
-# `wrangler versions upload`（プレビュー）では適用できない。
 # 以前は MCP サーバー本体（`CanshiMcp`, `agents` パッケージの `McpAgent`）がセッション状態を
 # Durable Object に保持していた。MCP の 2026-07-28 版の仕様に合わせてセッションを持たない
 # 作り（`src/features/mcp/presentation/agent.ts`）にしたため、v2 で Durable Object ごと削除する。
@@ -53,3 +54,30 @@ new_sqlite_classes = ["CanshiMcp"]
 [[migrations]]
 tag = "v2"
 deleted_classes = ["CanshiMcp"]
+
+# Worker Previews（Workers Builds のブランチのビルドで実行する `wrangler preview`）の設定。
+# プレビューは上の本番の設定（vars・バインディング・シークレット）を引き継がないため、
+# 使うものをここに書き直す。`assets`・`compatibility_*`・`observability` はトップレベルの値が使われる。
+# Cron Triggers はプレビューでは動かない（`scheduled` が呼ばれない）ため、Workflow はバインドしない
+# （本番の Workflow を共有することになるため）。詳細は `docs/deploy.md` の「プレビュー」節
+[previews]
+
+[previews.vars]
+# Cloudflare Access（OIDC）を通さず、メールアドレスの入力だけでログインできるようにする
+# （`src/features/auth/infrastructure/developmentLogin.ts`）。プレビューの URL は Workers 全体の
+# Access で保護し、D1・R2 は本番と分けているため、プレビューに限って有効にする。
+# 本番のドメインは Access で保護していないため、トップレベルの `[vars]` には決して書かない
+DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN = "true"
+
+# プレビュー専用の D1。マイグレーションは `pnpm db:migrate:preview`
+# （`wrangler.preview-migrations.toml`）で手動で適用する
+[[previews.d1_databases]]
+binding = "DB"
+database_name = "canshi-preview-db"
+database_id = "b88bd1c2-3cb6-4eac-b812-a5680ca44202"
+migrations_dir = "drizzle"
+
+# プレビュー専用のメディア用バケット
+[[previews.r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "canshi-media-preview"
