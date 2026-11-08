@@ -22,10 +22,12 @@ jobs:
     # GitHub API を呼ぶだけなので、軽量な 1 vCPU のランナーで十分
     runs-on: ubuntu-slim
     permissions:
-      # コメントへのリアクションの付与
+      # コメントへのリアクションの付与。PR へのコメントは Issues API で扱うが、
+      # GITHUB_TOKEN では issues: write だけだと PR のコメントへの付与が 403 になるため、
+      # pull-requests: write も付ける（#510）
       issues: write
-      # PR の最新のコミットの取得
-      pull-requests: read
+      # 上記のリアクションの付与と、PR の最新のコミットの取得
+      pull-requests: write
     outputs:
       accepted: ${{ steps.command.outputs.accepted }}
       sha: ${{ steps.pr.outputs.sha }}
@@ -46,8 +48,10 @@ jobs:
             echo "accepted=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # 👀 は受け付けたことを示すだけなので、付与に失敗しても e2e は実行する
       - name: React to the comment with eyes
         if: ${{ steps.command.outputs.accepted == 'true' }}
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMENT_ID: ${{ github.event.comment.id }}
