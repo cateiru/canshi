@@ -47,6 +47,7 @@ pnpm typecheck   # tsc --noEmit
 pnpm test        # vitest run
 pnpm cf-typegen  # wrangler.jsonc から worker-configuration.d.ts を再生成
 pnpm run deploy  # wrangler deploy（通常は main へのマージで Workers Builds が実行する）
+pnpm run preview # wrangler preview --ignore-base-config（通常は main 以外のブランチで Workers Builds が実行する）
 ```
 
 ### ローカルでの起動

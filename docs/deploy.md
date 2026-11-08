@@ -518,9 +518,11 @@ GitHub Actions からはデプロイしない。`canshi-admin` の Worker を同
    - Root directory：`packages/admin`
    - Build variables：`SKIP_DEPENDENCY_INSTALL` を `true`（依存は次のビルドコマンドで入れる）
    - Build command：`pnpm install --frozen-lockfile`（ワークスペース全体の依存が入る）
-   - Deploy command：`npx wrangler deploy`
-   - Non-production branch deploy command：`npx wrangler preview --ignore-base-config`
-     （Worker Previews への切り替えを求められたら切り替える。**切り替えは元に戻せない**）
+   - Deploy command：`pnpm run deploy`（`wrangler deploy`）
+   - Non-production branch deploy command：`pnpm run preview`（`wrangler preview --ignore-base-config`）
+     （Worker Previews への切り替えを求められたら切り替える。**切り替えは元に戻せない**）。
+     どちらも `packages/admin/package.json` の scripts で、フラグはリポジトリで管理する。
+     `run` を省くと `pnpm deploy` が pnpm 組み込みのコマンドとして扱われて失敗するため、必ず付ける
    - Build watch paths の Include：`packages/admin/*`・`pnpm-lock.yaml`・`pnpm-workspace.yaml`。
      ルートの `package.json` は PR ごとにバージョンを上げるため含めない
    - ダッシュボードの Previews Base には本番の設定をインポートしない（「プレビュー（Worker Previews）」節と同じ理由）
