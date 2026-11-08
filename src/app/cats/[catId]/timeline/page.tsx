@@ -161,7 +161,6 @@ export default async function TimelinePage({
       >
         <TimelineEntryList
           catId={catId}
-          householdId={cat.householdId}
           ym={ym}
           selectedDate={selectedDate}
           emptyMessage={emptyMessage}

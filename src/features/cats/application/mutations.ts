@@ -1,6 +1,5 @@
-import { getHouseholdForUser } from "@/features/households/infrastructure/queries";
 import { deleteMediaAssetsByCat } from "@/features/media/infrastructure/storage";
-import type { CatValues } from "../domain/cat";
+import type { CatValues, NewCatValues } from "../domain/cat";
 import { createCatRepository } from "../infrastructure/catRepository";
 
 /*
@@ -13,35 +12,23 @@ import { createCatRepository } from "../infrastructure/catRepository";
  */
 export async function createCatForUser(
   userId: string,
-  values: CatValues,
+  values: NewCatValues,
   d1?: D1Database,
 ): Promise<string | null> {
   return createCatRepository(d1).addForMember(userId, values);
 }
 
-export type UpdateCatResult = "updated" | "household-not-allowed" | "not-found";
-
 /**
- * 猫を更新する。`values.householdId` に今と別の家を渡すと、猫を記録ごとその家へ引っ越す
- * （猫の記録はすべて `cat_id` で猫に紐付くため、`cats.household_id` を変えるだけで移る）。
- * 引っ越し元・引っ越し先のどちらの家にもユーザーが所属している必要がある
+ * 猫のプロフィールを更新する。猫を飼う家は登録後は変えられないため、`values` に含めない。
+ * ユーザーが猫の家に所属していない・猫が見つからなければ false を返す
  */
 export async function updateCatForUser(
   catId: string,
   userId: string,
   values: CatValues,
   d1?: D1Database,
-): Promise<UpdateCatResult> {
-  // フォームのエラーとして返し分けるため、引っ越し先の家だけは先に確認する
-  if (!(await getHouseholdForUser(userId, values.householdId, d1))) {
-    return "household-not-allowed";
-  }
-  const updated = await createCatRepository(d1).updateForMember(
-    userId,
-    catId,
-    values,
-  );
-  return updated ? "updated" : "not-found";
+): Promise<boolean> {
+  return createCatRepository(d1).updateForMember(userId, catId, values);
 }
 
 /**

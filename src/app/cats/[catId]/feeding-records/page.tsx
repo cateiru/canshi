@@ -73,16 +73,13 @@ export default async function FeedingRecordsPage({
   // あいまいモードの記録はグラフに含めないため、点が無ければグラフ自体を出さない
   const chartPoints = toFeedingChartPoints(records);
   const now = getNaiveUtcNow();
-  const foodProductImageUrls = await listFoodProductImageUrls(
-    [
-      ...new Set(
-        pagedRecords.flatMap((record) =>
-          record.items.map((item) => item.foodProductId),
-        ),
+  const foodProductImageUrls = await listFoodProductImageUrls([
+    ...new Set(
+      pagedRecords.flatMap((record) =>
+        record.items.map((item) => item.foodProductId),
       ),
-    ],
-    { householdId: cat.householdId },
-  );
+    ),
+  ]);
 
   return (
     <main className={styles.main}>

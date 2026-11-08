@@ -17,6 +17,7 @@ import {
   BIRTH_DATE_PRECISIONS,
   type CatFormFieldErrors,
   catFormSchema,
+  newCatFormSchema,
   resolveBirthDate,
 } from "../domain/schema";
 import {
@@ -55,6 +56,7 @@ function readSubmittedValues(formData: FormData) {
   };
 }
 
+/** 猫のプロフィールの項目を読む。猫を飼う家は登録後は変えられないため、ここでは読まない */
 function parseFormData(formData: FormData) {
   const parsed = catFormSchema.safeParse({
     name: formData.get("name"),
@@ -69,7 +71,6 @@ function parseFormData(formData: FormData) {
     coatColor: formData.get("coatColor"),
     coatPattern: formData.get("coatPattern"),
     coatWhite: formData.get("coatWhite"),
-    householdId: formData.get("householdId"),
   });
   if (!parsed.success) {
     return {
@@ -99,8 +100,28 @@ function parseFormData(formData: FormData) {
       coatColor: parsed.data.coatColor ?? null,
       coatPattern: parsed.data.coatPattern ?? null,
       coatWhite: parsed.data.coatWhite ?? null,
-      householdId: parsed.data.householdId,
     },
+  };
+}
+
+/** 登録するときの項目を読む。プロフィールの項目に加えて、猫を飼う家を読む */
+function parseNewCatFormData(formData: FormData) {
+  const household = newCatFormSchema
+    .pick({ householdId: true })
+    .safeParse({ householdId: formData.get("householdId") });
+  const profile = parseFormData(formData);
+  if (!household.success || !profile.success) {
+    return {
+      success: false as const,
+      fieldErrors: {
+        ...(profile.success ? {} : profile.fieldErrors),
+        ...(household.success ? {} : household.error.flatten().fieldErrors),
+      },
+    };
+  }
+  return {
+    success: true as const,
+    data: { ...profile.data, householdId: household.data.householdId },
   };
 }
 
@@ -109,7 +130,7 @@ export async function createCatAction(
   formData: FormData,
 ): Promise<CatFormState> {
   const user = await requireUser();
-  const parsed = parseFormData(formData);
+  const parsed = parseNewCatFormData(formData);
 
   if (!parsed.success) {
     return {
@@ -144,14 +165,8 @@ export async function updateCatAction(
     };
   }
 
-  const result = await updateCatForUser(id, user.id, parsed.data);
-  if (result === "household-not-allowed") {
-    return {
-      fieldErrors: { householdId: [HOUSEHOLD_NOT_ALLOWED_ERROR] },
-      ...readSubmittedValues(formData),
-    };
-  }
-  if (result === "not-found") {
+  const updated = await updateCatForUser(id, user.id, parsed.data);
+  if (!updated) {
     return { formError: "ねこが見つかりませんでした" };
   }
 

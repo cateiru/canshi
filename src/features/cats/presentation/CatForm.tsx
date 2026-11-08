@@ -31,9 +31,12 @@ import { ProfileImageField } from "./ProfileImageField";
 type CatFormProps = {
   action: (state: CatFormState, formData: FormData) => Promise<CatFormState>;
   cat?: Cat;
-  /** 猫を飼う家の選択肢（ユーザーが所属する家） */
-  households: { id: string; name: string }[];
-  /** 登録時に最初から選んでおく家。編集時は猫の今の家を選ぶため使わない */
+  /**
+   * 猫を飼う家の選択肢（ユーザーが所属する家）。登録時だけ使う。
+   * 猫を飼う家は登録後は変えられないため、編集時（`cat` があるとき）は選択欄を出さない
+   */
+  households?: { id: string; name: string }[];
+  /** 登録時に最初から選んでおく家 */
   defaultHouseholdId?: string;
   submitLabel: string;
 };
@@ -153,23 +156,19 @@ export function CatForm({
           allowsCustomValue
         />
 
-        <Select
-          name="householdId"
-          label="家"
-          options={households.map((household) => ({
-            value: household.id,
-            label: household.name,
-          }))}
-          defaultSelectedKey={
-            cat?.householdId ?? defaultHouseholdId ?? households[0]?.id
-          }
-          description={
-            cat
-              ? "別の家を選ぶと、記録ごとその家に移ります。今の家のメンバーからは見えなくなります。支出記録は今の家に残り、このねことの関連付けは外れます。"
-              : "選んだ家のメンバーと、このねこの記録を共有します。"
-          }
-          errorMessage={state.fieldErrors?.householdId?.[0]}
-        />
+        {!cat && households ? (
+          <Select
+            name="householdId"
+            label="家"
+            options={households.map((household) => ({
+              value: household.id,
+              label: household.name,
+            }))}
+            defaultSelectedKey={defaultHouseholdId ?? households[0]?.id}
+            description="選んだ家のメンバーと、このねこの記録を共有します。登録した後は、家を変えられません。"
+            errorMessage={state.fieldErrors?.householdId?.[0]}
+          />
+        ) : null}
       </Surface>
       <Surface
         titleId="cat-coat-heading"

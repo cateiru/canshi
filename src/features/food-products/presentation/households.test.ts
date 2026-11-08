@@ -579,7 +579,7 @@ describe("確認の後に家から外された場合", () => {
 });
 
 describe("ごはん記録の商品", () => {
-  it("確認の後に猫が別の家へ引っ越した場合、記録の登録・更新は通らない", async () => {
+  it("確認の後に猫の家が変わった場合、記録の登録・更新は通らない", async () => {
     await db.insert(feedingRecords).values({
       id: "meal",
       catId: "tama",
@@ -653,30 +653,25 @@ describe("ごはん記録の商品", () => {
     );
   });
 
-  it("別の家へ引っ越す前の記録は、元の家の商品のまま編集できる", async () => {
-    // household-2 の猫として記録した後、猫が household-1 へ引っ越したとする
+  it("記録ですでに使っている商品でも、猫の家の商品でなければ保存し直せない", async () => {
+    // 猫の家（household-1）と別の家の商品（food-2）を使った記録があったとする
     await db.insert(feedingRecords).values({
-      id: "moved-meal",
+      id: "other-meal",
       catId: "tama",
       occurredAt: new Date("2026-10-01T08:00:00Z"),
     });
     await db.insert(feedingRecordItems).values({
-      feedingRecordId: "moved-meal",
+      feedingRecordId: "other-meal",
       foodProductId: "food-2",
       givenAmountG: 20,
     });
 
     await expect(
-      updateFeedingRecordAction("tama", "moved-meal", {}, recordForm("food-2")),
-    ).resolves.toEqual({ redirectTo: "/cats/tama/feeding-records" });
-    // 引っ越し先の家の商品に替えることもできる
-    await expect(
-      updateFeedingRecordAction("tama", "moved-meal", {}, recordForm("food-1")),
-    ).resolves.toEqual({ redirectTo: "/cats/tama/feeding-records" });
-    // 一度外した元の家の商品は、もう選べない
-    await expect(
-      updateFeedingRecordAction("tama", "moved-meal", {}, recordForm("food-2")),
+      updateFeedingRecordAction("tama", "other-meal", {}, recordForm("food-2")),
     ).resolves.toEqual({ formError: "選択された商品が見つかりませんでした" });
+    await expect(
+      updateFeedingRecordAction("tama", "other-meal", {}, recordForm("food-1")),
+    ).resolves.toEqual({ redirectTo: "/cats/tama/feeding-records" });
     // 最近使った商品には、猫の家の商品だけを出す
     expect(await listRecentlyUsedFoodProductIds("tama", "household-1")).toEqual(
       ["food-1"],
