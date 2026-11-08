@@ -517,6 +517,10 @@ GitHub Actions からはデプロイしない。`canshi-admin` の Worker を同
    `cf builds workers get <Worker のタグ>` で確かめ、`cf builds workers update <Worker のタグ> --body '<JSON>'` で
    `production_settings`・`previews_base_config` をまとめて変えられる（Worker のタグは
    `cf workers scripts search --name canshi-admin` の `id`）。
+   - プレビューのビルドの設定は、ブランチの最初のビルドのときに `previews_base_config` からブランチごとの
+     トリガーにコピーされる。あとから `previews_base_config` を変えても既存のブランチには効かないため、
+     `--patch-existing-previews true` を付けて既存のプレビューにも当てる（付けずに変えると、既存のブランチは
+     古い設定のままビルドされる）。やり直すときは `cf builds create <トリガーの UUID>` でビルドする
    - Production branch：`main`
    - Root directory：`packages/admin`
    - Build variables：`SKIP_DEPENDENCY_INSTALL` を `true`（依存は次のビルドコマンドで入れる）
