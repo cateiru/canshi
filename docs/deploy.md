@@ -496,10 +496,9 @@ GitHub Actions からはデプロイしない。`canshi-admin` の Worker を同
   - プレビュー用 D1 はメインアプリのプレビューと共有するため、管理画面のプレビューで行った書き換え
     （ユーザーの権限・家のメンバー・共通のごはん商品など）は、メインアプリのプレビューにも反映される
 - 管理画面はアプリ内で認証しないため、プレビューの URL・バージョンの URL も管理者だけに見せる。
-  `canshi-admin` の Worker 単位の Access（**All traffic**）に管理者だけを許可するポリシーを付けて保護する。
-  Worker 単位の Access は Workers 全体の Access より優先され、Worker のカスタムドメイン・workers.dev・
-  プレビューをまとめて保護する。本番のカスタムドメインは、より具体的な `canshi-admin.cateiru.dev` の
-  Self-hosted アプリケーションが引き続き優先される
+  `canshi-admin` の Worker 単位の Access（**Previews only**。Zero Trust では
+  `canshi-admin - Cloudflare Workers`、destination が `preview_worker`）に管理者だけを許可するポリシーを
+  付けて保護する。本番のカスタムドメインは `canshi-admin.cateiru.dev` の Self-hosted アプリケーションが守る
 
 `wrangler.jsonc` の `preview_urls` は `wrangler deploy`（本番のデプロイ）のときだけ反映される。
 
@@ -510,10 +509,14 @@ GitHub Actions からはデプロイしない。`canshi-admin` の Worker を同
 バージョンの URL から、本番の D1 を読み書きする管理画面に入れてしまう。
 
 1. Workers & Pages → `canshi-admin` → Access で **Protect this Worker behind Access** を選び、
-   **All traffic** にして、管理者だけを許可するポリシーを付ける。ダッシュボードで選べるポリシーが
+   **Previews only** にして、管理者だけを許可するポリシーを付ける（2026-11-08 に設定済み）。ダッシュボードで選べるポリシーが
    合わないときは、作られた Access アプリケーションを Zero Trust で開き、「初回の公開手順」の 1. で作った
    管理者だけを Include するポリシーに付け替える。メインアプリの利用者全員を許可するポリシーは付けない。
-2. Workers & Pages → `canshi-admin` → Settings → Build で、GitHub の `cateiru/canshi` をつなぐ。
+2. Workers & Pages → `canshi-admin` → Settings → Build で、GitHub の `cateiru/canshi` をつなぐ
+   （2026-11-08 に設定済み）。つないだあとの値は、Cloudflare CLI（`cf`）の
+   `cf builds workers get <Worker のタグ>` で確かめ、`cf builds workers update <Worker のタグ> --body '<JSON>'` で
+   `production_settings`・`previews_base_config` をまとめて変えられる（Worker のタグは
+   `cf workers scripts search --name canshi-admin` の `id`）。
    - Production branch：`main`
    - Root directory：`packages/admin`
    - Build variables：`SKIP_DEPENDENCY_INSTALL` を `true`（依存は次のビルドコマンドで入れる）
