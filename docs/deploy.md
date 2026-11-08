@@ -108,13 +108,21 @@ pnpm exec wrangler d1 execute DB --remote --config wrangler.preview-migrations.t
 1. この設定（`[previews]`・`preview_urls = true`）を含む変更を `main` にマージし、本番にデプロイする。
    `preview_urls` は `wrangler deploy` でだけ反映される。
 2. Workers & Pages → `canshi` のビルド（Workers Builds）の設定で、Worker Previews への一度だけの切り替えを行い、`main` 以外のブランチの
-   デプロイコマンドを `npx wrangler preview` にする（ビルドコマンドは今のまま、OpenNext のビルドを使う）。
+   デプロイコマンドを `npx wrangler preview --ignore-base-config` にする（ビルドコマンドは今のまま、OpenNext のビルドを使う）。
    Worker Previews ではブランチごとに設定するため、失敗するブランチがあればそのブランチの設定を確かめる。
+   - ダッシュボードの Previews Base（プレビューのひな形）に本番の設定をインポートしない。`wrangler preview` は
+     既定で Previews Base の設定も合わせて使うため、本番の D1・R2・Workflow が入るとプレビューから本番のデータに
+     触れてしまう。`--ignore-base-config` を付け、`wrangler.toml` の `[previews]` だけを使う
+     （シークレットも Previews Base に置かないため、プレビューには何も設定されない）
 3. Domains → Worker URL で Preview が有効になっていることを確かめる。
 4. 最初のプレビューができたら、**ログインしていないブラウザ（シークレットウィンドウなど）でプレビューの
    URL を開き、Access のログイン画面が出ることを確かめる。** 出ない場合は、開発用のログインで誰でも
    入れてしまうため、すぐに `DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN` を外す（またはプレビューを消す）。
-5. Access を通ったあと、`/login` に「メールアドレス（開発用）」の欄が出て、ログインできることを確かめる。
+5. 最初のプレビューのビルドのログで、バインディングが次のとおりになっていることを確かめる。
+   - `DB` が `canshi-preview-db`、`MEDIA_BUCKET` が `canshi-media-preview` を指している
+   - `DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN` がある
+   - `NOTIFICATION_WORKFLOW` がない
+6. Access を通ったあと、`/login` に「メールアドレス（開発用）」の欄が出て、ログインできることを確かめる。
 
 ローカルから `wrangler preview` を実行するときは、先に `pnpm cf:build` で OpenNext のビルドを作る。
 プレビューの名前は今のブランチ名になる（`--name` で変えられる）。
