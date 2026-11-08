@@ -21,6 +21,12 @@ export interface HouseholdRepository {
   /** オーナー以外のメンバーが自分で抜ける。オーナー・メンバーでなければ false */
   removeSelfAsMember(householdId: string, userId: string): Promise<boolean>;
   /**
+   * 家を削除する。家に属する支出記録・ごはん商品・プリセット・ごはんの時間・家についての通知・
+   * 招待・メンバーも同じ batch で削除する。`ownerUserId` がオーナーでない、または家に猫がいれば
+   * 何も削除せずに false
+   */
+  removeAsOwner(householdId: string, ownerUserId: string): Promise<boolean>;
+  /**
    * オーナーを移譲する。移譲先をオーナーに、移譲元をメンバーにする。2 人のロールの入れ替えと
    * 条件の判定を 1 つの文にまとめる。移譲元がオーナーで移譲先がメンバーでなければ false
    */

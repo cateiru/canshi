@@ -15,19 +15,25 @@ import {
 } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireHouseholdAccess } from "@/features/auth/presentation/session";
 import { HOUSEHOLD_INVITATION_MAX_AGE_SECONDS } from "@/features/households/domain/household";
-import { HOUSEHOLD_ROLE_LABEL } from "@/features/households/domain/labels";
 import {
+  HOUSEHOLD_HAS_CATS_MESSAGE,
+  HOUSEHOLD_ROLE_LABEL,
+} from "@/features/households/domain/labels";
+import {
+  countHouseholdCats,
   listHouseholdMembers,
   listPendingHouseholdInvitations,
 } from "@/features/households/infrastructure/queries";
 import {
   createHouseholdInvitationAction,
+  deleteHouseholdAction,
   leaveHouseholdAction,
   removeHouseholdMemberAction,
   revokeHouseholdInvitationAction,
   transferHouseholdOwnershipAction,
   updateHouseholdNameAction,
 } from "@/features/households/presentation/actions";
+import { DeleteHouseholdButton } from "@/features/households/presentation/DeleteHouseholdButton";
 import { HouseholdInvitationIssueButton } from "@/features/households/presentation/HouseholdInvitationIssueButton";
 import { HouseholdMemberActionButton } from "@/features/households/presentation/HouseholdMemberActionButton";
 import { HouseholdNameForm } from "@/features/households/presentation/HouseholdNameForm";
@@ -57,6 +63,7 @@ export default async function HouseholdSettingsPage({
   const invitations = isOwner
     ? await listPendingHouseholdInvitations(household.id)
     : [];
+  const catCount = isOwner ? await countHouseholdCats(household.id) : 0;
 
   return (
     <main className={styles.main}>
@@ -261,6 +268,23 @@ export default async function HouseholdSettingsPage({
           ) : (
             <p className={styles.note}>まだ使われていない招待はありません。</p>
           )}
+        </Surface>
+      ) : null}
+
+      {isOwner ? (
+        <Surface title="家の削除" titleId="household-delete-heading" gap="md">
+          <p className={styles.note}>
+            {catCount > 0
+              ? HOUSEHOLD_HAS_CATS_MESSAGE
+              : "家を削除すると、この家の支出記録・ごはん商品・ごはんプリセット・ごはんの時間・招待もすべて削除されます。"}
+          </p>
+          <div>
+            <DeleteHouseholdButton
+              action={deleteHouseholdAction.bind(null, household.id)}
+              householdName={household.name}
+              isDisabled={catCount > 0}
+            />
+          </div>
         </Surface>
       ) : null}
     </main>

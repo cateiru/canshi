@@ -13,6 +13,7 @@ import {
 } from "../application/invitations";
 import {
   createHousehold,
+  deleteHousehold,
   leaveHousehold,
   removeHouseholdMember,
   renameHousehold,
@@ -134,6 +135,24 @@ export async function leaveHouseholdAction(
   return result.ok
     ? { redirectTo: "/settings/households" }
     : { error: result.error };
+}
+
+/**
+ * 家を削除する。削除したあとは家のページを開けなくなるため、家の一覧へ戻す。
+ * オーナーであること・猫がいないことは、削除の文の中で確かめる
+ */
+export async function deleteHouseholdAction(
+  householdId: string,
+): Promise<HouseholdMemberActionResult> {
+  const { user } = await requireHouseholdAccess(householdId);
+  const result = await deleteHousehold(householdId, user.id);
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  revalidatePath("/settings/households", "layout");
+  revalidatePath("/cats");
+  return { redirectTo: "/settings/households" };
 }
 
 export type CreateHouseholdInvitationActionResult =

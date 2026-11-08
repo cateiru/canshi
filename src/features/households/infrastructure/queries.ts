@@ -202,6 +202,16 @@ export async function listHouseholdMembers(
     );
 }
 
+/** 家の猫の頭数。家を削除できるか（猫がいないか）の判定に使う */
+export async function countHouseholdCats(householdId: string, d1?: D1Database) {
+  const db = getDb(d1);
+  const [row] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(cats)
+    .where(eq(cats.householdId, householdId));
+  return row?.count ?? 0;
+}
+
 /** ユーザーが参照できる猫（所属する家の猫）の一覧。新しく登録した順 */
 export async function listCatsForUser(userId: string, d1?: D1Database) {
   const db = getDb(d1);

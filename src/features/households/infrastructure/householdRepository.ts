@@ -1,6 +1,20 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { householdMembers, households } from "@/db/schema";
+import { deleteRecordChangeLogsOf } from "@/db/recordChangeLog";
+import {
+  cats,
+  expenseRecordCats,
+  expenseRecordHospitalVisits,
+  expenseRecords,
+  feedingPresetItems,
+  feedingPresets,
+  feedingSchedules,
+  foodProducts,
+  householdInvitations,
+  householdMembers,
+  households,
+  notifications,
+} from "@/db/schema";
 import type { HouseholdRepository } from "../domain/householdRepository";
 
 /**
@@ -77,6 +91,115 @@ export function createHouseholdRepository(
         )
         .returning({ userId: householdMembers.userId });
       return deleted.length > 0;
+    },
+
+    async removeAsOwner(householdId, ownerUserId) {
+      // 確認から削除までの間に、ほかのメンバーが猫を登録したりオーナーを移譲したりしうるため、
+      // オーナーであること・猫がいないことは、batch のすべての文の WHERE で確かめる。
+      // 条件を満たさないときは、どの文も行を消さない（batch の途中で条件は変わらない）
+      const canRemove = and(
+        isOwnerCondition(householdId, ownerUserId),
+        sql`NOT EXISTS (
+          SELECT 1 FROM ${cats} WHERE ${cats.householdId} = ${householdId}
+        )`,
+      );
+      const householdExpenseIds = db
+        .select({ id: expenseRecords.id })
+        .from(expenseRecords)
+        .where(eq(expenseRecords.householdId, householdId));
+      const householdPresetIds = db
+        .select({ id: feedingPresets.id })
+        .from(feedingPresets)
+        .where(eq(feedingPresets.householdId, householdId));
+
+      // 外部キーはすべて ON DELETE no action のため、参照する側から順に消す。猫がいない家だけを
+      // 削除するため、猫に紐付く記録（`cat_id` を持つ行）は対象にならない
+      const results = await db.batch([
+        // 支出記録は論理削除したものも含めて物理削除するため、その履歴も消す。
+        // 記録を消すと対象を選べなくなるため先に消す
+        deleteRecordChangeLogsOf(
+          db,
+          "expense",
+          expenseRecords,
+          and(eq(expenseRecords.householdId, householdId), canRemove),
+        ),
+        // 猫がいない家の支出に猫・通院記録の紐付けは残らないはずだが、残っていれば支出より先に消す
+        db
+          .delete(expenseRecordCats)
+          .where(
+            and(
+              inArray(expenseRecordCats.expenseRecordId, householdExpenseIds),
+              canRemove,
+            ),
+          ),
+        db
+          .delete(expenseRecordHospitalVisits)
+          .where(
+            and(
+              inArray(
+                expenseRecordHospitalVisits.expenseRecordId,
+                householdExpenseIds,
+              ),
+              canRemove,
+            ),
+          ),
+        db
+          .delete(expenseRecords)
+          .where(and(eq(expenseRecords.householdId, householdId), canRemove)),
+        // プリセットの明細はプリセットとごはん商品の両方を参照するため、どちらよりも先に消す
+        db
+          .delete(feedingPresetItems)
+          .where(
+            and(
+              inArray(feedingPresetItems.presetId, householdPresetIds),
+              canRemove,
+            ),
+          ),
+        db
+          .delete(feedingPresets)
+          .where(and(eq(feedingPresets.householdId, householdId), canRemove)),
+        // ほかの家のごはん記録の明細から参照されている商品が残っていれば、外部キー制約で
+        // batch 全体が失敗し、何も削除されない
+        db
+          .delete(foodProducts)
+          .where(and(eq(foodProducts.householdId, householdId), canRemove)),
+        db
+          .delete(feedingSchedules)
+          .where(and(eq(feedingSchedules.householdId, householdId), canRemove)),
+        // 家についての通知（ごはんの時間など）。送信の記録（push_deliveries）は ON DELETE CASCADE で消える
+        db
+          .delete(notifications)
+          .where(and(eq(notifications.householdId, householdId), canRemove)),
+        db
+          .delete(householdInvitations)
+          .where(
+            and(eq(householdInvitations.householdId, householdId), canRemove),
+          ),
+        // オーナーの行が条件の判定に使われるため、メンバーは家本体の直前に消す
+        // （SQLite は消す行を先に決めてから消すため、オーナーの行も含めて 1 文で消せる）
+        db
+          .delete(householdMembers)
+          .where(and(eq(householdMembers.householdId, householdId), canRemove)),
+        // オーナーの行はもう消えているため、オーナーであることの代わりに、メンバーが残っていない
+        // （上の文でメンバーを消せた）ことを確かめる
+        db
+          .delete(households)
+          .where(
+            and(
+              eq(households.id, householdId),
+              sql`NOT EXISTS (
+                SELECT 1 FROM ${householdMembers}
+                WHERE ${householdMembers.householdId} = ${householdId}
+              )`,
+              sql`NOT EXISTS (
+                SELECT 1 FROM ${cats} WHERE ${cats.householdId} = ${householdId}
+              )`,
+            ),
+          )
+          .returning({ id: households.id }),
+      ]);
+      const deleted = results.at(-1);
+      return Array.isArray(deleted) && deleted.length > 0;
     },
 
     async transferOwnership(householdId, currentOwnerUserId, nextOwnerUserId) {
