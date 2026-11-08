@@ -1,4 +1,4 @@
-FROM node:24-slim
+FROM node:26-slim
 
 # Node.js 25 以降は corepack が Node.js 本体に同梱されないため、npm で入れてから有効にする。
 # pnpm のバージョンは package.json の packageManager に従う
