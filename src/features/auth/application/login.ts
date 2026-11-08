@@ -12,7 +12,10 @@ import {
  */
 export async function loginWithEmail(
   email: string,
-  env: Pick<CloudflareEnv, "EMAIL_HASH_SALT">,
+  env: Pick<
+    CloudflareEnv,
+    "EMAIL_HASH_SALT" | "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN"
+  >,
   userAgent: string | null,
 ) {
   const user = await findOrCreateUserByEmailHash(hashEmailWithEnv(email, env));

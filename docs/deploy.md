@@ -40,7 +40,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - メインアプリは、Cloudflare 側の GitHub App（Workers Builds）で自動的にデプロイされる。
   `main` にマージされるとデプロイがトリガーされるため、手動で `wrangler deploy` する必要はない。
   GitHub Actions からはデプロイしない
-- 本番 D1 のマイグレーションは自動では適用されない（Workers Builds のブランチプレビューも適用しない）。
+- 本番 D1 のマイグレーションは自動では適用されない（Workers Builds のブランチのプレビューも適用しない）。
   `pnpm db:migrate:remote`（`wrangler d1 migrations apply DB --remote`）を手動で実行したときだけ適用される
   - マージと同時に新しいコードがデプロイされるため、新しい列・テーブルを使うコードを含む PR では、
     マイグレーションの適用とマージの順序に注意する。列・テーブルを追加するだけのマイグレーションは、
@@ -50,6 +50,82 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 未着手の検討事項:
 
 - ステージング環境を用意するかどうか
+
+## プレビュー（Worker Previews）
+
+`main` 以外のブランチは、Workers Builds が [Worker Previews](https://developers.cloudflare.com/workers/previews/)
+（`wrangler preview`、2026-11 時点でオープンベータ）でプレビューを作る。プレビューの URL は
+`<ブランチ名>-canshi.<サブドメイン>.workers.dev` で、ブランチに push するたびに更新される。
+
+プレビューは本番の設定（vars・バインディング・シークレット）を引き継がない。使うものは `wrangler.toml` の
+`[previews]` に書き直している。
+
+- D1 はプレビュー専用の `canshi-preview-db`、R2 はプレビュー専用の `canshi-media-preview` を使う。
+  本番のデータには触れない。すべてのブランチのプレビューで同じ DB・バケットを共有する
+- `DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN = "true"`（`[previews.vars]`）で、Cloudflare Access（OIDC）を
+  通さない開発用のログイン（メールアドレスを入力するだけでログインする）を有効にする。
+  `EMAIL_HASH_SALT` が未設定なら開発用の SALT を使う（`src/features/auth/infrastructure/developmentLogin.ts`）
+  - **このフラグは `[previews.vars]` にだけ書き、トップレベルの `[vars]` やシークレットには決して設定しない。**
+    本番のドメインは Access で保護していないため、本番で有効になると誰でも任意のメールアドレスで
+    ログインできてしまう
+  - プレビューの URL は Workers 全体の Access で保護する（「Cloudflare Access 設定」節）。
+    Access を通れる人は、プレビューでは任意のメールアドレスで（つまり誰としてでも）ログインできる
+- Cron Triggers はプレビューでは動かない（`scheduled` が呼ばれない）ため、定期通知の生成・Push の送信・
+  期限切れの OAuth の行の削除は行われない。Workflow（`NOTIFICATION_WORKFLOW`）は本番の Workflow を
+  共有することになるため、バインドしていない
+- シークレット（VAPID 鍵・OIDC の設定）は設定していない。Push の送信は自動的にスキップされる
+- `assets`・`compatibility_*`・`observability` はトップレベルの値がプレビューにも使われる
+
+### プレビュー用 D1 のマイグレーション
+
+プレビュー用 D1 のマイグレーションも自動では適用されない。マイグレーションを含むブランチの
+プレビューを確認するときは、手動で適用する。
+
+```sh
+pnpm db:migrate:preview
+```
+
+`wrangler d1 migrations apply` はトップレベルの `d1_databases` しか見ないため、
+`wrangler.preview-migrations.toml` に同じ DB を書いて `--config` で指定している。
+`wrangler.toml` の `[[previews.d1_databases]]` を変えるときは、このファイルも揃える。
+
+すべてのブランチで同じ DB を共有するため、まだマージしていないマイグレーションを適用すると、
+ほかのブランチのプレビューにも影響する。作り直したマイグレーションを適用し直したいときは、
+プレビュー用 D1 を作り直してよい（本番のデータは入っていない）。
+
+確認用のデータが要るときは、VRT のシード（`e2e/fixtures/vrt-seed.sql`）を入れると、
+`e2e@example.com` でログインして VRT と同じ猫・記録を見られる（開発用の SALT が前提）。
+
+```sh
+pnpm exec wrangler d1 execute DB --remote --config wrangler.preview-migrations.toml --file=e2e/fixtures/vrt-seed.sql
+```
+
+### 初回の切り替え手順
+
+既存の Worker は、ダッシュボードで一度切り替えるまで以前の方式（`wrangler versions upload`）で
+プレビューを作る。**切り替えは元に戻せない。**
+
+1. この設定（`[previews]`・`preview_urls = true`）を含む変更を `main` にマージし、本番にデプロイする。
+   `preview_urls` は `wrangler deploy` でだけ反映される。
+2. Workers & Pages → `canshi` のビルド（Workers Builds）の設定で、Worker Previews への一度だけの切り替えを行い、`main` 以外のブランチの
+   デプロイコマンドを `npx wrangler preview --ignore-base-config` にする（ビルドコマンドは今のまま、OpenNext のビルドを使う）。
+   Worker Previews ではブランチごとに設定するため、失敗するブランチがあればそのブランチの設定を確かめる。
+   - ダッシュボードの Previews Base（プレビューのひな形）に本番の設定をインポートしない。`wrangler preview` は
+     既定で Previews Base の設定も合わせて使うため、本番の D1・R2・Workflow が入るとプレビューから本番のデータに
+     触れてしまう。`--ignore-base-config` を付け、`wrangler.toml` の `[previews]` だけを使う
+     （シークレットも Previews Base に置かないため、プレビューには何も設定されない）
+3. Domains → Worker URL で Preview が有効になっていることを確かめる。
+4. 最初のプレビューができたら、**ログインしていないブラウザ（シークレットウィンドウなど）でプレビューの
+   URL を開き、Access のログイン画面が出ることを確かめる。** 出ない場合は、開発用のログインで誰でも
+   入れてしまうため、すぐに `DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN` を外す（またはプレビューを消す）。
+5. 最初のプレビューのビルドのログで、バインディングが次のとおりになっていることを確かめる。
+   - `DB` が `canshi-preview-db`、`MEDIA_BUCKET` が `canshi-media-preview` を指している
+   - `DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN` がある
+   - `NOTIFICATION_WORKFLOW` がない
+6. Access を通ったあと、`/login` に「メールアドレス（開発用）」の欄が出て、ログインできることを確かめる。
+
+ローカルから `wrangler preview` を実行するときは、先に `pnpm cf:build` で OpenNext のビルドを作る。
+プレビューの名前は今のブランチ名になる（`--name` で変えられる）。
 
 ## ログインと家（ユーザー・猫の紐付け）
 
@@ -108,7 +184,7 @@ SaaS OIDC アプリの作成:
 4. 表示された Client ID・Client secret・OIDC discovery URL を、上の手順でシークレットに設定する。
 
 Redirect URL は登録したホスト名でしか使えないため、Workers Builds のプレビュー URL
-ではログインできない（必要ならその URL も Redirect URL に追加する）。
+では OIDC でログインできない。プレビューでは代わりに開発用のログインを使う（「プレビュー（Worker Previews）」節）。
 
 ローカル開発（`next dev`）では、`ACCESS_*` が未設定なら `/login` が開発用のログイン（Access を
 通さず、入力したメールアドレスでログインする）になる。e2e・VRT もこれを使う。`EMAIL_HASH_SALT` が
@@ -224,7 +300,7 @@ Cloudflare ダッシュボードの Workers & Pages で、Workers 全体を保�
 
 - `src/middleware.ts` が、`src/features/auth/domain/publicPaths.ts` に挙げたパス（`/login`、PWA の manifest・アイコンなど）以外のすべてのリクエストで、D1 のログインセッションを確認する
 - ログインできるのは、SaaS OIDC アプリのポリシーで許可された人だけになる。初めてログインしたメールアドレスではユーザーが作られるため、このポリシーが「誰が CANSHI を使えるか」を決める
-- プレビュー URL は、引き続き Workers 全体の Access で保護する。プレビュービルドは本番と同じ D1・R2 に接続するため、レビュー前のコードを本番データ付きで公開しないためである
+- プレビュー URL は、引き続き Workers 全体の Access で保護する。プレビューは本番とは別の D1・R2 を使うが、開発用のログイン（`DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN`）で誰としてでもログインできるため、Access で利用者を絞る必要がある（「プレビュー（Worker Previews）」節）
 - `workers.dev` は無効にしている
 
 アプリケーション内で `Cf-Access-Jwt-Assertion` を検証する処理や、そのための Team ドメイン・Audience タグの環境変数は持たない。
@@ -326,9 +402,6 @@ CANSHI のデータを参照できる MCP サーバーを、メインアプリ�
   同じくセッションを持たずに応答する
 - 以前はセッション状態を Durable Object（`CanshiMcp`、バインディング名 `MCP_OBJECT`）に
   保存していた。使わなくなったため、`wrangler.toml` の `[[migrations]]`（tag `v2`）で削除する。
-  Durable Object のマイグレーションは `wrangler deploy` でだけ適用され、Workers Builds の
-  ブランチプレビュー（`wrangler versions upload`）では適用できない。新しいマイグレーションを
-  含む PR のプレビューのビルドは失敗するが、マージ後の本番デプロイで適用される
 - メインアプリの本番ドメインは Access で保護していないため、`/mcp` などには Access のログイン画面を
   挟まずに到達できる。プレビュー URL は Access で保護しているため、プレビューでは MCP を使えない
 

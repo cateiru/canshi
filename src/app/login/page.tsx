@@ -55,7 +55,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </Alert>
         ) : null}
         {developmentLogin ? (
-          // 開発環境（`next dev`）では Cloudflare Access を通さず、メールアドレスだけでログインする
+          // 開発環境（`next dev`）と Worker Previews（`DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN`）では
+          // Cloudflare Access を通さず、メールアドレスだけでログインする
           <form action={developmentLoginAction} className={styles.form}>
             <input type="hidden" name="callbackUrl" value={callbackUrl} />
             <FormField
