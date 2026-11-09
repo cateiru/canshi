@@ -22,6 +22,8 @@ import { toMediaAssetView } from "@/features/media/domain/view";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
 import { MediaGallery } from "@/features/media/presentation/MediaGallery";
 import { listMedicationsByHospitalVisitIds } from "@/features/medications/infrastructure/queries";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {
@@ -61,6 +63,10 @@ export default async function HospitalVisitsPage({
     page,
     totalPages,
   } = paginate(visits, parsePageParam(pageParam));
+  const contributorsByRecordId = await loadRecordContributors(
+    "hospital_visit",
+    pagedVisits.map((visit) => visit.id),
+  );
   const symptomNameById = new Map(
     symptomList.map((symptom) => [symptom.id, symptom.symptomType]),
   );
@@ -136,6 +142,9 @@ export default async function HospitalVisitsPage({
                   <div className={styles.recordHeader}>
                     <h2 className={styles.recordTitle}>{visit.reason}</h2>
                     <div className={styles.cardActions}>
+                      <RecordContributors
+                        contributors={contributorsByRecordId.get(visit.id)}
+                      />
                       <IconButtonLink
                         href={`/cats/${catId}/hospital-visits/${visit.id}/edit`}
                         icon={TbPencil}

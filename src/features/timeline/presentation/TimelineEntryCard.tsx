@@ -19,6 +19,8 @@ import {
 import { FoodProductImage } from "@/features/food-products/presentation/FoodProductImage";
 import { MediaThumbnailStrip } from "@/features/media/presentation/MediaThumbnailStrip";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/domain/labels";
+import type { RecordContributor } from "@/features/record-contributors/domain/contributor";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import {
   formatDateTimeUtc,
   splitDateTimeUtc,
@@ -47,6 +49,8 @@ type TimelineEntryCardProps = {
   isLast: boolean;
   /** ごはん商品のサムネイル URL（商品ID -> URL）。タイムラインのごはん記録の画像表示に使う */
   foodProductImageUrls: Record<string, string>;
+  /** 記録を作成・編集した人。記念日・履歴のない記録では undefined */
+  contributors?: readonly RecordContributor[];
 };
 
 export function TimelineEntryCard({
@@ -55,6 +59,7 @@ export function TimelineEntryCard({
   isFirst,
   isLast,
   foodProductImageUrls,
+  contributors,
 }: TimelineEntryCardProps) {
   const Icon = TIMELINE_TYPE_ICON[entry.type];
   // 記念日は時刻を持たないため、日付だけを表示する
@@ -94,6 +99,7 @@ export function TimelineEntryCard({
             >
               {occurredAtLabel}
             </time>
+            <RecordContributors contributors={contributors} />
             <IconButtonLink
               href={getEditHref(catId, entry)}
               icon={TbPencil}

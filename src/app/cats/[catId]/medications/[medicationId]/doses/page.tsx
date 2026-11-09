@@ -15,6 +15,8 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { listMedicationDoses } from "@/features/medications/infrastructure/doseQueries";
 import { getMedicationById } from "@/features/medications/infrastructure/queries";
 import { deleteMedicationDoseAction } from "@/features/medications/presentation/doseActions";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import {
@@ -53,6 +55,10 @@ export default async function MedicationDosesPage({
     page,
     totalPages,
   } = paginate(doses, parsePageParam(pageParam));
+  const contributorsByRecordId = await loadRecordContributors(
+    "medication_dose",
+    pagedDoses.map((dose) => dose.id),
+  );
 
   return (
     <main className={styles.main}>
@@ -108,6 +114,9 @@ export default async function MedicationDosesPage({
                     </time>
                   </h2>
                   <div className={styles.cardActions}>
+                    <RecordContributors
+                      contributors={contributorsByRecordId.get(dose.id)}
+                    />
                     <IconButtonLink
                       href={`/cats/${catId}/medications/${medicationId}/doses/${dose.id}/edit`}
                       icon={TbPencil}

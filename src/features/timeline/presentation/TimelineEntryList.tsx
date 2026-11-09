@@ -1,6 +1,9 @@
 import { Pagination } from "@/components/ui";
 import { listFoodProductImageUrls } from "@/features/food-products/infrastructure/queries";
+import { recordContributorKey } from "@/features/record-contributors/infrastructure/queries";
+import { loadRecordContributorsByRef } from "@/features/record-contributors/presentation/load";
 import { Surface } from "@/features/shared/Surface";
+import { getTimelineRecordChangeLogType } from "../domain/timelineEntry";
 import type { ListTimelineForMonthResult } from "../infrastructure/queries";
 import { buildTimelineHref } from "./href";
 import { TimelineEntryCard } from "./TimelineEntryCard";
@@ -31,13 +34,21 @@ export async function TimelineEntryList({
 }: TimelineEntryListProps) {
   const { entries, page, totalPages } = await timeline;
 
-  const foodProductImageUrls = await listFoodProductImageUrls([
-    ...new Set(
-      entries
-        .filter((entry) => entry.type === "feeding")
-        .flatMap((entry) =>
-          entry.record.items.map((item) => item.foodProductId),
-        ),
+  const [foodProductImageUrls, contributors] = await Promise.all([
+    listFoodProductImageUrls([
+      ...new Set(
+        entries
+          .filter((entry) => entry.type === "feeding")
+          .flatMap((entry) =>
+            entry.record.items.map((item) => item.foodProductId),
+          ),
+      ),
+    ]),
+    loadRecordContributorsByRef(
+      entries.flatMap((entry) => {
+        const recordType = getTimelineRecordChangeLogType(entry.type);
+        return recordType ? [{ recordType, recordId: entry.id }] : [];
+      }),
     ),
   ]);
 
@@ -49,17 +60,27 @@ export async function TimelineEntryList({
         </Surface>
       ) : (
         <ul className={styles.list}>
-          {entries.map((entry, index) => (
-            <li key={`${entry.type}-${entry.id}`}>
-              <TimelineEntryCard
-                catId={catId}
-                entry={entry}
-                isFirst={index === 0}
-                isLast={index === entries.length - 1}
-                foodProductImageUrls={foodProductImageUrls}
-              />
-            </li>
-          ))}
+          {entries.map((entry, index) => {
+            const recordType = getTimelineRecordChangeLogType(entry.type);
+            return (
+              <li key={`${entry.type}-${entry.id}`}>
+                <TimelineEntryCard
+                  catId={catId}
+                  entry={entry}
+                  isFirst={index === 0}
+                  isLast={index === entries.length - 1}
+                  foodProductImageUrls={foodProductImageUrls}
+                  contributors={
+                    recordType
+                      ? contributors.get(
+                          recordContributorKey(recordType, entry.id),
+                        )
+                      : undefined
+                  }
+                />
+              </li>
+            );
+          })}
         </ul>
       )}
 

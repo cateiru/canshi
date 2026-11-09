@@ -27,6 +27,8 @@ import { FeedingChart } from "@/features/feeding-records/presentation/FeedingCha
 import { groupRecordsByDate } from "@/features/feeding-records/presentation/groupByDate";
 import { listFoodProductImageUrls } from "@/features/food-products/infrastructure/queries";
 import { FoodProductImage } from "@/features/food-products/presentation/FoodProductImage";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import {
   formatDateHeadingUtc,
@@ -68,6 +70,10 @@ export default async function FeedingRecordsPage({
     page,
     totalPages,
   } = paginate(records, parsePageParam(pageParam));
+  const contributorsByRecordId = await loadRecordContributors(
+    "feeding_record",
+    pagedRecords.map((record) => record.id),
+  );
   // ページの境目で同じ日の記録が前後のページに分かれることがある
   const dateGroups = groupRecordsByDate(pagedRecords);
   // あいまいモードの記録はグラフに含めないため、点が無ければグラフ自体を出さない
@@ -179,6 +185,11 @@ export default async function FeedingRecordsPage({
                             ) : null}
                           </h3>
                           <div className={styles.cardActions}>
+                            <RecordContributors
+                              contributors={contributorsByRecordId.get(
+                                record.id,
+                              )}
+                            />
                             <IconButtonLink
                               href={`/cats/${catId}/feeding-records/${record.id}/edit`}
                               icon={TbPencil}

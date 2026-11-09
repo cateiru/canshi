@@ -15,6 +15,8 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { toMediaAssetView } from "@/features/media/domain/view";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
 import { MediaGallery } from "@/features/media/presentation/MediaGallery";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import {
@@ -53,6 +55,10 @@ export default async function VomitRecordsPage({
     page,
     totalPages,
   } = paginate(records, parsePageParam(pageParam));
+  const contributorsByRecordId = await loadRecordContributors(
+    "vomit_record",
+    pagedRecords.map((record) => record.id),
+  );
   const mediaByRecordId = await listMediaAssetsByRecords(
     VOMIT_RECORD_MEDIA_TYPE,
     pagedRecords.map((record) => record.id),
@@ -111,6 +117,9 @@ export default async function VomitRecordsPage({
                     </time>
                   </h2>
                   <div className={styles.cardActions}>
+                    <RecordContributors
+                      contributors={contributorsByRecordId.get(record.id)}
+                    />
                     <IconButtonLink
                       href={`/cats/${catId}/vomit-records/${record.id}/edit`}
                       icon={TbPencil}

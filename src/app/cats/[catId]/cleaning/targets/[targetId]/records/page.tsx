@@ -16,6 +16,8 @@ import { getCleaningTargetById } from "@/features/cleaning/infrastructure/target
 import { CleaningRecordChart } from "@/features/cleaning/presentation/CleaningRecordChart";
 import { deleteCleaningRecordAction } from "@/features/cleaning/presentation/recordActions";
 import { toCleaningRecordCalendarData } from "@/features/cleaning/presentation/recordChart";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {
@@ -54,6 +56,10 @@ export default async function CleaningRecordsPage({
     page,
     totalPages,
   } = paginate(records, parsePageParam(pageParam));
+  const contributorsByRecordId = await loadRecordContributors(
+    "cleaning_record",
+    pagedRecords.map((record) => record.id),
+  );
 
   return (
     <main className={styles.main}>
@@ -120,6 +126,9 @@ export default async function CleaningRecordsPage({
                     </time>
                   </h2>
                   <div className={styles.cardActions}>
+                    <RecordContributors
+                      contributors={contributorsByRecordId.get(record.id)}
+                    />
                     <IconButtonLink
                       href={`/cats/${catId}/cleaning/targets/${targetId}/records/${record.id}/edit`}
                       icon={TbPencil}

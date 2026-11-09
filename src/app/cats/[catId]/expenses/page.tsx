@@ -39,6 +39,7 @@ import {
 } from "@/features/expenses/presentation/href";
 import { listHospitalVisitsByIds } from "@/features/hospital-visits/infrastructure/queries";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -96,16 +97,16 @@ export default async function ExpensesPage({
       .filter((entry) => entry.householdId === householdId)
       .map((entry) => [entry.id, entry.name]),
   );
-  const [mediaByRecordId, hospitalVisitById] = await Promise.all([
-    listMediaAssetsByRecords(
-      EXPENSE_MEDIA_TYPE,
-      expenses.map((expense) => expense.id),
-    ),
-    listHospitalVisitsByIds(
-      user.id,
-      expenses.flatMap((expense) => expense.hospitalVisitIds),
-    ),
-  ]);
+  const expenseIds = expenses.map((expense) => expense.id);
+  const [mediaByRecordId, hospitalVisitById, contributorsByRecordId] =
+    await Promise.all([
+      listMediaAssetsByRecords(EXPENSE_MEDIA_TYPE, expenseIds),
+      listHospitalVisitsByIds(
+        user.id,
+        expenses.flatMap((expense) => expense.hospitalVisitIds),
+      ),
+      loadRecordContributors("expense", expenseIds),
+    ]);
 
   const total = sumExpenseAmounts(expenses);
   const categoryTotals = sumExpenseAmountsByCategory(expenses);
@@ -207,6 +208,7 @@ export default async function ExpensesPage({
           catNameById={catNameById}
           hospitalVisitById={hospitalVisitById}
           mediaByRecordId={mediaByRecordId}
+          contributorsByRecordId={contributorsByRecordId}
         />
       )}
     </main>
