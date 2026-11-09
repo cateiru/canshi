@@ -1,3 +1,4 @@
+import { detectMcpClientApp, type McpClientApp } from "../domain/clientApp";
 import { D1KvStore, revokedGrantMarkerKey } from "./d1KvStore";
 import { deleteMcpPermissions } from "./permissions";
 import {
@@ -175,6 +176,73 @@ export async function revokeUserMcpConnection(
     }
   }
   return true;
+}
+
+/** 記録を操作した AI のアプリ（`record_change_logs.mcp_client_id`）を表示するための情報 */
+export interface McpClientSummary {
+  /** クライアントが名乗った名前。自己申告のため、表示するときはそう扱う。わからなければ null */
+  clientName: string | null;
+  /** アイコンを見分けられるアプリ。わからなければ null */
+  app: McpClientApp | null;
+}
+
+/**
+ * ユーザーが許可した接続のクライアントの名前とアプリを返す。記録の作成・編集者のアイコンに使う。
+ *
+ * アプリは、ユーザーの grant の認可コードの渡し先（実際に使われた渡し先）から決める。接続を
+ * 解除して grant が無いときは、登録された渡し先がすべて同じアプリのものならそのアプリにする
+ * （登録の渡し先は自己申告のため、ほかのアプリの渡し先を混ぜて名乗れないようにする）。
+ * CIMD のクライアントは、ID の URL（そのドメインから情報を取得している）から決める
+ */
+export async function getMcpClientSummary(
+  userId: string,
+  clientId: string,
+  d1?: D1Database,
+): Promise<McpClientSummary> {
+  const store = new D1KvStore(d1);
+  const grant = await findUserGrantOfClient(store, userId, clientId);
+  const client = await store.get(`client:${clientId}`, "json");
+
+  let app = detectMcpClientApp(grant?.redirectUri);
+  if (!app && !grant?.redirectUri) {
+    const apps = parseRedirectUris(client).map(detectMcpClientApp);
+    app = apps.length > 0 && apps.every((a) => a === apps[0]) ? apps[0] : null;
+  }
+  return {
+    clientName: parseClientName(client) ?? grant?.clientName ?? null,
+    app: app ?? detectMcpClientApp(clientId),
+  };
+}
+
+/** ユーザーの grant のうち、指定したクライアントのもの（期限切れも含む）。無ければ null */
+async function findUserGrantOfClient(
+  store: D1KvStore,
+  userId: string,
+  clientId: string,
+): Promise<StoredGrant | null> {
+  let cursor: string | undefined;
+  do {
+    const page = await store.list({ prefix: grantKeyPrefix(userId), cursor });
+    for (const { name } of page.keys) {
+      const grant = parseStoredGrant(await store.get(name, "json"));
+      if (grant?.clientId === clientId) {
+        return grant;
+      }
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  return null;
+}
+
+/** 登録済みのクライアントの情報から、認可コードの渡し先だけを取り出す */
+function parseRedirectUris(value: unknown): string[] {
+  if (typeof value !== "object" || value === null) {
+    return [];
+  }
+  const { redirectUris } = value as Record<string, unknown>;
+  return Array.isArray(redirectUris)
+    ? redirectUris.filter((uri): uri is string => typeof uri === "string")
+    : [];
 }
 
 /** ライブラリが発行する grant の ID の形式 */

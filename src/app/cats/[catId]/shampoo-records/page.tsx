@@ -11,6 +11,8 @@ import {
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { calculateElapsedDays } from "@/features/shampoo-records/domain/calculations";
 import { listShampooRecords } from "@/features/shampoo-records/infrastructure/queries";
 import { deleteShampooRecordAction } from "@/features/shampoo-records/presentation/actions";
@@ -49,6 +51,10 @@ export default async function ShampooRecordsPage({
     page,
     totalPages,
   } = paginate(records, parsePageParam(pageParam));
+  const contributorsByRecordId = await loadRecordContributors(
+    "shampoo_record",
+    pagedRecords.map((record) => record.id),
+  );
   const elapsedDays =
     records.length > 0
       ? calculateElapsedDays(records[0].performedAt, getNaiveUtcNow())
@@ -116,6 +122,9 @@ export default async function ShampooRecordsPage({
                     </time>
                   </h2>
                   <div className={styles.cardActions}>
+                    <RecordContributors
+                      contributors={contributorsByRecordId.get(record.id)}
+                    />
                     <IconButtonLink
                       href={`/cats/${catId}/shampoo-records/${record.id}/edit`}
                       icon={TbPencil}

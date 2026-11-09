@@ -29,6 +29,8 @@ import {
   unarchiveMedicationAction,
 } from "@/features/medications/presentation/actions";
 import { MedicationHistoryButton } from "@/features/medications/presentation/MedicationHistoryButton";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { listSymptoms } from "@/features/symptoms/infrastructure/queries";
@@ -55,10 +57,11 @@ export default async function MedicationsPage({
     listSymptoms(catId),
     listHospitalVisits(catId),
   ]);
-  const mediaByRecordId = await listMediaAssetsByRecords(
-    MEDICATION_MEDIA_TYPE,
-    medicationList.map((medication) => medication.id),
-  );
+  const medicationIds = medicationList.map((medication) => medication.id);
+  const [mediaByRecordId, contributorsByRecordId] = await Promise.all([
+    listMediaAssetsByRecords(MEDICATION_MEDIA_TYPE, medicationIds),
+    loadRecordContributors("medication", medicationIds),
+  ]);
   const symptomNameById = new Map(
     symptomList.map((symptom) => [symptom.id, symptom.symptomType]),
   );
@@ -76,6 +79,7 @@ export default async function MedicationsPage({
     symptomNameById,
     hospitalVisitLabelById,
     mediaByRecordId,
+    contributorsByRecordId,
   };
 
   return (
@@ -168,6 +172,7 @@ type MedicationCardProps = {
   symptomNameById: Map<string, string>;
   hospitalVisitLabelById: Map<string, string>;
   mediaByRecordId: Awaited<ReturnType<typeof listMediaAssetsByRecords>>;
+  contributorsByRecordId: Awaited<ReturnType<typeof loadRecordContributors>>;
   /** 服薬歴（Collapsible の見出しの下）に置くときは 3 にする */
   headingLevel?: 2 | 3;
   className?: string;
@@ -180,6 +185,7 @@ function MedicationCard({
   symptomNameById,
   hospitalVisitLabelById,
   mediaByRecordId,
+  contributorsByRecordId,
   headingLevel = 2,
   className,
 }: MedicationCardProps) {
@@ -192,6 +198,9 @@ function MedicationCard({
       <div className={styles.recordHeader}>
         <Heading className={styles.recordTitle}>{medication.name}</Heading>
         <div className={styles.cardActions}>
+          <RecordContributors
+            contributors={contributorsByRecordId.get(medication.id)}
+          />
           <IconButtonLink
             href={`/cats/${catId}/medications/${medication.id}/edit`}
             icon={TbPencil}

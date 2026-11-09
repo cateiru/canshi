@@ -11,6 +11,8 @@ import {
 import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {
@@ -55,6 +57,10 @@ export default async function WeightRecordsPage({
     page,
     totalPages,
   } = paginate(records, parsePageParam(pageParam));
+  const contributorsByRecordId = await loadRecordContributors(
+    "weight_record",
+    pagedRecords.map((record) => record.id),
+  );
 
   return (
     <main className={styles.main}>
@@ -116,6 +122,9 @@ export default async function WeightRecordsPage({
                     </time>
                   </h2>
                   <div className={styles.cardActions}>
+                    <RecordContributors
+                      contributors={contributorsByRecordId.get(record.id)}
+                    />
                     <IconButtonLink
                       href={`/cats/${catId}/weight-records/${record.id}/edit`}
                       icon={TbPencil}

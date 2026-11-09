@@ -17,6 +17,8 @@ import { MediaGallery } from "@/features/media/presentation/MediaGallery";
 import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/domain/media";
 import { listMemoRecords } from "@/features/memo-records/infrastructure/queries";
 import { deleteMemoRecordAction } from "@/features/memo-records/presentation/actions";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
 import {
@@ -52,6 +54,10 @@ export default async function MemoRecordsPage({
     page,
     totalPages,
   } = paginate(records, parsePageParam(pageParam));
+  const contributorsByRecordId = await loadRecordContributors(
+    "memo_record",
+    pagedRecords.map((record) => record.id),
+  );
   const mediaByRecordId = await listMediaAssetsByRecords(
     MEMO_RECORD_MEDIA_TYPE,
     pagedRecords.map((record) => record.id),
@@ -131,6 +137,9 @@ export default async function MemoRecordsPage({
                     )}
                   </h2>
                   <div className={styles.cardActions}>
+                    <RecordContributors
+                      contributors={contributorsByRecordId.get(record.id)}
+                    />
                     <IconButtonLink
                       href={`/cats/${catId}/memo-records/${record.id}/edit`}
                       icon={TbPencil}

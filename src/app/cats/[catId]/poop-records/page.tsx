@@ -21,6 +21,8 @@ import { listPoopRecords } from "@/features/poop-records/infrastructure/queries"
 import { deletePoopRecordAction } from "@/features/poop-records/presentation/actions";
 import { toPoopChartPoints } from "@/features/poop-records/presentation/chart";
 import { PoopRecordChart } from "@/features/poop-records/presentation/PoopRecordChart";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import {
@@ -56,6 +58,10 @@ export default async function PoopRecordsPage({
     page,
     totalPages,
   } = paginate(records, parsePageParam(pageParam));
+  const contributorsByRecordId = await loadRecordContributors(
+    "poop_record",
+    pagedRecords.map((record) => record.id),
+  );
   const mediaByRecordId = await listMediaAssetsByRecords(
     POOP_RECORD_MEDIA_TYPE,
     pagedRecords.map((record) => record.id),
@@ -121,6 +127,9 @@ export default async function PoopRecordsPage({
                     </time>
                   </h2>
                   <div className={styles.cardActions}>
+                    <RecordContributors
+                      contributors={contributorsByRecordId.get(record.id)}
+                    />
                     <IconButtonLink
                       href={`/cats/${catId}/poop-records/${record.id}/edit`}
                       icon={TbPencil}

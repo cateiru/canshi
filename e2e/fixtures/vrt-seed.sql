@@ -312,3 +312,23 @@ UPDATE expense_records SET household_id = 'vrt-household' WHERE id LIKE 'vrt-exp
 -- ごはん商品・プリセットも家に属するため、ここまでに登録した商品・プリセットも VRT 用の家のものにする
 UPDATE food_products SET household_id = 'vrt-household' WHERE id LIKE 'vrt-food-%';
 UPDATE feeding_presets SET household_id = 'vrt-household' WHERE id LIKE 'vrt-preset-%';
+
+-- 記録を作成・編集した人（編集ボタンの左のアイコン、#529）。記録の一覧とタイムラインで次の表示を撮る。
+-- ユーザーを増やすと家のメンバー一覧などほかのスナップショットが変わるため、既存の 2 人と
+-- 上の AI との接続（ChatGPT）・登録の無い接続（ロボットのアイコン）を組み合わせる。
+-- vrt-inviter は VRT の家にいないため、アイコン画像の無い表示になる。
+-- ここに無い記録は、履歴を残し始める前の記録として何も表示しない
+-- - vrt-poop-1   : 4 人（3 人まで表示し、残りを「+1」にまとめる）
+-- - vrt-weight-1 : 画面からの操作と ChatGPT からの操作（ユーザーとアプリのアイコンの重なり）
+-- - vrt-vomit-1  : 1 人だけ
+-- - vrt-memo-1   : わからないアプリからの操作（ロボットのアイコン）
+INSERT INTO record_change_logs (id, record_type, record_id, action, user_id, mcp_client_id, created_at)
+VALUES
+  ('vrt-log-poop-1', 'poop_record', 'vrt-poop-1', 'create', 'vrt-user', NULL, strftime('%s', '2024-06-12 08:00:00')),
+  ('vrt-log-poop-2', 'poop_record', 'vrt-poop-1', 'update', 'vrt-user', 'vrt-client', strftime('%s', '2024-06-12 09:00:00')),
+  ('vrt-log-poop-3', 'poop_record', 'vrt-poop-1', 'update', 'vrt-inviter', NULL, strftime('%s', '2024-06-12 10:00:00')),
+  ('vrt-log-poop-4', 'poop_record', 'vrt-poop-1', 'update', 'vrt-user', 'vrt-unknown-client', strftime('%s', '2024-06-12 11:00:00')),
+  ('vrt-log-weight-1', 'weight_record', 'vrt-weight-1', 'create', 'vrt-user', NULL, strftime('%s', '2024-06-09 08:00:00')),
+  ('vrt-log-weight-2', 'weight_record', 'vrt-weight-1', 'update', 'vrt-user', 'vrt-client', strftime('%s', '2024-06-09 09:00:00')),
+  ('vrt-log-vomit-1', 'vomit_record', 'vrt-vomit-1', 'create', 'vrt-user', NULL, strftime('%s', '2024-06-11 07:00:00')),
+  ('vrt-log-memo-1', 'memo_record', 'vrt-memo-1', 'create', 'vrt-user', 'vrt-unknown-client', strftime('%s', '2024-06-20 21:00:00'));

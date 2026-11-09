@@ -41,7 +41,8 @@ export type RecordActor = {
 };
 
 /**
- * 記録の作成・編集・削除の履歴。保存した人と日時を残すためのもので、今は画面にも AI にも返さない。
+ * 記録の作成・編集・削除の履歴。保存した人と日時を残すためのもの。画面では、記録を作成・編集した人の
+ * アイコンの表示に使う（`src/features/record-contributors`）。AI には返さない。
  * 1 回の保存につき 1 行で、記録の書き込みと同じ batch で追加する（`src/db/recordChangeLog.ts`）。
  *
  * - 記録のテーブルが複数あるため、`record_type` と `record_id` で指し、外部キーにはしない

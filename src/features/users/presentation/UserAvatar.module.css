@@ -5,6 +5,11 @@
   border-radius: 50%;
 }
 
+.xs {
+  width: calc(28px * var(--font-scale));
+  height: calc(28px * var(--font-scale));
+}
+
 .sm {
   width: calc(40px * var(--font-scale));
   height: calc(40px * var(--font-scale));

@@ -7,6 +7,7 @@ import type { getDb } from "@/db/client";
 import { mcpConnectionUsages, mcpPermissions, users } from "@/db/schema";
 import {
   getGrantClientId,
+  getMcpClientSummary,
   getUserMcpConnection,
   listUserMcpConnections,
   revokeUserMcpConnection,
@@ -414,5 +415,110 @@ describe("revokeUserMcpConnection", () => {
     expect(await store.get("grant:user-1:grantNew2")).not.toBeNull();
     expect(await store.get("token:user-1:grantNew2:token-c")).not.toBeNull();
     expect(await store.get("grant:user-2:grantOther")).not.toBeNull();
+  });
+});
+
+describe("getMcpClientSummary", () => {
+  it("登録の名前と、grant の認可コードの渡し先のアプリを返す", async () => {
+    await seed();
+
+    expect(await getMcpClientSummary("user-1", "client-chatgpt", d1)).toEqual({
+      clientName: "ChatGPT",
+      app: "openai",
+    });
+  });
+
+  it("CIMD のクライアントは grant に残した名前と、渡し先のアプリを返す", async () => {
+    const store = new D1KvStore(d1);
+    await store.put(
+      "grant:user-1:grantCimd",
+      JSON.stringify(
+        cimdGrant("grantCimd", "https://claude.ai/api/mcp/auth_callback"),
+      ),
+    );
+
+    expect(await getMcpClientSummary("user-1", CIMD_CLIENT_ID, d1)).toEqual({
+      clientName: "Claude",
+      app: "claude",
+    });
+  });
+
+  it("接続を解除した CIMD のクライアントは、ID の URL からアプリを決める", async () => {
+    expect(await getMcpClientSummary("user-1", CIMD_CLIENT_ID, d1)).toEqual({
+      clientName: null,
+      app: "claude",
+    });
+  });
+
+  it("接続を解除したクライアントは、登録の渡し先がすべて同じアプリのときだけアプリを返す", async () => {
+    const store = new D1KvStore(d1);
+    await store.put(
+      "client:client-same",
+      JSON.stringify({
+        clientId: "client-same",
+        clientName: "ChatGPT",
+        redirectUris: [
+          "https://chatgpt.com/connector/oauth/callback",
+          "https://chat.openai.com/aip/callback",
+        ],
+      }),
+    );
+    await store.put(
+      "client:client-mixed",
+      JSON.stringify({
+        clientId: "client-mixed",
+        clientName: "ChatGPT",
+        redirectUris: [
+          "https://chatgpt.com/connector/oauth/callback",
+          "https://example.com/callback",
+        ],
+      }),
+    );
+
+    expect(await getMcpClientSummary("user-1", "client-same", d1)).toEqual({
+      clientName: "ChatGPT",
+      app: "openai",
+    });
+    expect(await getMcpClientSummary("user-1", "client-mixed", d1)).toEqual({
+      clientName: "ChatGPT",
+      app: null,
+    });
+  });
+
+  it("grant の渡し先がわからないアプリなら、登録の渡し先は使わない", async () => {
+    const store = new D1KvStore(d1);
+    await store.put(
+      "client:client-spoofed",
+      JSON.stringify({
+        clientId: "client-spoofed",
+        clientName: "ChatGPT",
+        redirectUris: ["https://chatgpt.com/connector/oauth/callback"],
+      }),
+    );
+    await store.put(
+      "grant:user-1:grantSpoofed",
+      JSON.stringify({
+        id: "grantSpoofed",
+        clientId: "client-spoofed",
+        userId: "user-1",
+        scope: [],
+        metadata: {},
+        encryptedProps: "encrypted",
+        createdAt: NOW_SECONDS,
+        redirectUri: "https://example.com/callback",
+      }),
+    );
+
+    expect(await getMcpClientSummary("user-1", "client-spoofed", d1)).toEqual({
+      clientName: "ChatGPT",
+      app: null,
+    });
+  });
+
+  it("登録も grant も無いクライアントは、名前もアプリも返さない", async () => {
+    expect(await getMcpClientSummary("user-1", "client-gone", d1)).toEqual({
+      clientName: null,
+      app: null,
+    });
   });
 });

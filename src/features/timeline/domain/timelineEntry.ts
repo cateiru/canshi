@@ -9,6 +9,7 @@ import type {
   MedicationDose,
   MemoRecord,
   PoopRecord,
+  RecordChangeLogRecordType,
   ShampooRecord,
   Symptom,
   VomitRecord,
@@ -57,6 +58,40 @@ export function isTimelineAnniversaryType(
   type: TimelineRecordType,
 ): type is TimelineAnniversaryType {
   return (TIMELINE_ANNIVERSARY_TYPES as readonly string[]).includes(type);
+}
+
+/**
+ * 記録の種別ごとの、記録の履歴（`record_change_logs`）での種類。作成・編集した人の表示に使う。
+ * 記念日は記録ではないため持たない
+ */
+export const TIMELINE_RECORD_CHANGE_LOG_TYPES: Readonly<
+  Record<
+    Exclude<TimelineRecordType, TimelineAnniversaryType>,
+    RecordChangeLogRecordType
+  >
+> = {
+  feeding: "feeding_record",
+  poop: "poop_record",
+  weight: "weight_record",
+  vomit: "vomit_record",
+  water: "water_record",
+  shampoo: "shampoo_record",
+  brushing: "brushing_record",
+  cleaning: "cleaning_record",
+  symptom: "symptom",
+  medicationDose: "medication_dose",
+  hospitalVisit: "hospital_visit",
+  expense: "expense",
+  memo: "memo_record",
+};
+
+/** エントリの記録の、記録の履歴での種類。記念日なら null */
+export function getTimelineRecordChangeLogType(
+  type: TimelineRecordType,
+): RecordChangeLogRecordType | null {
+  return isTimelineAnniversaryType(type)
+    ? null
+    : TIMELINE_RECORD_CHANGE_LOG_TYPES[type];
 }
 
 type TimelineEntryOf<T extends TimelineRecordType, R> = {

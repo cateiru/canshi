@@ -4,11 +4,13 @@ import {
   desc,
   eq,
   gt,
+  inArray,
   isNull,
   type SQLWrapper,
   sql,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
+import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
   cats,
@@ -176,6 +178,40 @@ export async function sharesHousehold(
     )
     .limit(1);
   return row != null;
+}
+
+/**
+ * `otherUserIds` のうち、ユーザーと同じ家に所属している（ユーザー自身を含む）ユーザーの ID。
+ * `sharesHousehold` を複数のユーザーにまとめて行うもので、アイコン画像を見せてよい相手の判定に使う
+ */
+export async function listUserIdsSharingHousehold(
+  userId: string,
+  otherUserIds: readonly string[],
+  d1?: D1Database,
+): Promise<Set<string>> {
+  const result = new Set<string>();
+  const others = [...new Set(otherUserIds)].filter((id) => {
+    if (id === userId) {
+      result.add(id);
+      return false;
+    }
+    return true;
+  });
+  const db = getDb(d1);
+  const other = alias(householdMembers, "other_members");
+  for (const ids of chunkForBoundParameters(others, 1)) {
+    const rows = await db
+      .selectDistinct({ userId: other.userId })
+      .from(householdMembers)
+      .innerJoin(other, eq(householdMembers.householdId, other.householdId))
+      .where(
+        and(eq(householdMembers.userId, userId), inArray(other.userId, ids)),
+      );
+    for (const row of rows) {
+      result.add(row.userId);
+    }
+  }
+  return result;
 }
 
 /** 家のメンバーを、オーナーを先頭に所属した順で返す */

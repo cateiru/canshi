@@ -15,6 +15,8 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { SHED_AMOUNT_LABEL } from "@/features/brushing-records/domain/labels";
 import { listBrushingRecords } from "@/features/brushing-records/infrastructure/queries";
 import { deleteBrushingRecordAction } from "@/features/brushing-records/presentation/actions";
+import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
+import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { calculateElapsedDays } from "@/features/shampoo-records/domain/calculations";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
@@ -75,6 +77,10 @@ export default async function BrushingRecordsPage({
     page,
     totalPages,
   } = paginate(records, parsePageParam(pageParam));
+  const contributorsByRecordId = await loadRecordContributors(
+    "brushing_record",
+    pagedRecords.map((record) => record.id),
+  );
   const elapsedDays =
     records.length > 0
       ? calculateElapsedDays(records[0].performedAt, getNaiveUtcNow())
@@ -144,6 +150,9 @@ export default async function BrushingRecordsPage({
                       </time>
                     </h2>
                     <div className={styles.cardActions}>
+                      <RecordContributors
+                        contributors={contributorsByRecordId.get(record.id)}
+                      />
                       <IconButtonLink
                         href={`/cats/${catId}/brushing-records/${record.id}/edit`}
                         icon={TbPencil}
