@@ -514,6 +514,40 @@ test.describe("家の詳細設定", () => {
   });
 });
 
+// 家の削除のダイアログ。フィクスチャの家には猫がいて削除できないため、猫のいない家を作って撮り、
+// 撮影後にその家を削除して元に戻す。ほかの家の一覧などの撮影と重ならないよう直列にする
+test.describe("家の削除", () => {
+  test.describe.configure({ mode: "serial" });
+
+  test("家の削除のダイアログの見た目", async ({ page }, testInfo) => {
+    const householdName = "VRTの削除する家";
+    await page.goto("/settings/households/new");
+    await page.getByRole("textbox", { name: "家の名前" }).fill(householdName);
+    await page.getByRole("button", { name: "家を作成する" }).click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: householdName }),
+    ).toBeVisible();
+
+    const dialog = page.getByRole("dialog", { name: "家の削除" });
+    try {
+      await page.getByRole("button", { name: "家を削除する" }).click();
+      await expect(dialog).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    } finally {
+      if (!(await dialog.isVisible())) {
+        await page.getByRole("button", { name: "家を削除する" }).click();
+      }
+      await dialog
+        .getByRole("textbox", {
+          name: `確認のため「${householdName}」と入力してください`,
+        })
+        .fill(householdName);
+      await dialog.getByRole("button", { name: "削除する" }).click();
+      await expect(page).toHaveURL(/\/settings\/households$/);
+    }
+  });
+});
+
 // 招待ページ。フィクスチャの招待は固定のトークンの SHA-256 で保存している
 // （e2e/fixtures/vrt-seed.sql）。「参加する」は押さない（フィクスチャが変わるため）
 const VRT_INVITATION_TOKENS = {

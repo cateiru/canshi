@@ -299,7 +299,7 @@ test("ログインしていない状態で招待 URL を開くと、ログイン
 test("家の設定から家を作成すると、作成した家のページに移り、オーナーになる", async ({
   page,
 }) => {
-  // 家は削除できないため、他のテストの家と取り違えないよう一意な名前にする。
+  // 他のテストの家と取り違えないよう一意な名前にする。
   // 家の一覧は所属した順に並ぶため、作成した家は末尾に入り、先頭の家を使う他のテストには影響しない
   const householdName = `作成した家-${Date.now()}`;
 
@@ -326,6 +326,95 @@ test("家の設定から家を作成すると、作成した家のページに�
       .filter({ hasText: householdName })
       .filter({ hasText: "あなたはオーナー" }),
   ).toBeVisible();
+});
+
+/** 家の設定の一覧から家を作成し、作成した家の ID を返す */
+async function createHouseholdFromList(page: Page, householdName: string) {
+  await page.goto("/settings/households");
+  await page.getByRole("link", { name: "家を作成する" }).click();
+  await expect(page).toHaveURL(/\/settings\/households\/new$/);
+  await fillAndKeep(
+    page.getByRole("textbox", { name: "家の名前" }),
+    householdName,
+  );
+  await page.getByRole("button", { name: "家を作成する" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: householdName }),
+  ).toBeVisible();
+  const householdId = page.url().split("/").at(-1);
+  if (!householdId) {
+    throw new Error("作成した家の ID を URL から読み取れませんでした");
+  }
+  return householdId;
+}
+
+/** 家の設定ページで、家の名前を入力して家を削除する */
+async function deleteHouseholdFromSettings(page: Page, householdName: string) {
+  await page.getByRole("button", { name: "家を削除する" }).click();
+  const dialog = page.getByRole("dialog", { name: "家の削除" });
+  const submit = dialog.getByRole("button", { name: "削除する" });
+  // 家の名前を正確に入力するまでは削除できない
+  await expect(submit).toBeDisabled();
+  await dialog
+    .getByRole("textbox", {
+      name: `確認のため「${householdName}」と入力してください`,
+    })
+    .fill(householdName);
+  await submit.click();
+  await expect(page).toHaveURL(/\/settings\/households$/);
+}
+
+test("猫のいない家は、家の名前を入力すると削除でき、家の一覧から消える", async ({
+  page,
+}) => {
+  const householdName = `削除する家-${Date.now()}`;
+  // 一覧 → 作成 → 家のページの順に移るため、削除後は一覧へ戻る（履歴を戻る）経路を通る
+  await createHouseholdFromList(page, householdName);
+
+  await deleteHouseholdFromSettings(page, householdName);
+
+  await expect(
+    page.getByText(`「${householdName}」を削除しました`),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link").filter({ hasText: householdName }),
+  ).toHaveCount(0);
+});
+
+test("猫のいる家は削除できず、猫を削除すると削除できる", async ({ page }) => {
+  const householdName = `猫のいる家-${Date.now()}`;
+  const catName = `削除する家の猫-${Date.now()}`;
+  const householdId = await createHouseholdFromList(page, householdName);
+
+  await page.goto(`/cats/new?householdId=${encodeURIComponent(householdId)}`);
+  await fillAndKeep(page.getByLabel("名前"), catName);
+  await page.getByRole("button", { name: "登録する" }).click();
+  await expect(page.getByRole("heading", { name: catName })).toBeVisible();
+  const catUrl = page.url();
+
+  await page.goto(`/settings/households/${householdId}`);
+  await expect(
+    page.getByText(
+      "この家にはねこがいるため削除できません。先にこの家のねこをすべて削除してください。",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "家を削除する" }),
+  ).toBeDisabled();
+
+  // 猫を削除すると、家を削除できるようになる（同じローカル DB を使う他のテストに家を残さない）
+  await page.goto(catUrl);
+  await page.getByRole("button", { name: "削除する" }).click();
+  const catDialog = page.getByRole("dialog", { name: "ねこの削除" });
+  await catDialog.getByRole("textbox").fill(catName);
+  await catDialog.getByRole("button", { name: "削除する" }).click();
+  await expect(page).toHaveURL(/\/cats$/);
+
+  await page.goto(`/settings/households/${householdId}`);
+  await deleteHouseholdFromSettings(page, householdName);
+  await expect(
+    page.getByRole("link").filter({ hasText: householdName }),
+  ).toHaveCount(0);
 });
 
 test("家の名前を空にすると家を作成できない", async ({ page }) => {
