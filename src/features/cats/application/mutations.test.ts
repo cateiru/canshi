@@ -7,7 +7,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import { cats, householdMembers, households, users } from "@/db/schema";
 import type { CatValues, NewCatValues } from "../domain/cat";
-import { createCatForUser, updateCatForUser } from "./mutations";
+import {
+  createCatForUser,
+  markCatNeuteredForUser,
+  updateCatForUser,
+} from "./mutations";
 
 // `src/features/notifications/queries.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;
@@ -156,5 +160,43 @@ describe("updateCatForUser", () => {
 
   it("存在しない猫は更新できない", async () => {
     expect(await updateCatForUser("missing", "both", catValues())).toBe(false);
+  });
+});
+
+describe("markCatNeuteredForUser", () => {
+  async function getProfile(id: string) {
+    const [row] = await db
+      .select({
+        name: cats.name,
+        sex: cats.sex,
+        breed: cats.breed,
+        neuterStatus: cats.neuterStatus,
+      })
+      .from(cats)
+      .where(eq(cats.id, id));
+    return row;
+  }
+
+  it("猫の家のメンバーなら、避妊・去勢を「済」にし、ほかの項目は変えない", async () => {
+    await db
+      .update(cats)
+      .set({ breed: "雑種", neuterStatus: "intact" })
+      .where(eq(cats.id, "tama"));
+    expect(await markCatNeuteredForUser("tama", "home-only")).toBe(true);
+    expect(await getProfile("tama")).toEqual({
+      name: "たま",
+      sex: "female",
+      breed: "雑種",
+      neuterStatus: "neutered",
+    });
+  });
+
+  it("猫の家に所属していなければ変えない", async () => {
+    expect(await markCatNeuteredForUser("tama", "stranger")).toBe(false);
+    expect((await getProfile("tama")).neuterStatus).toBeNull();
+  });
+
+  it("存在しない猫は変えられない", async () => {
+    expect(await markCatNeuteredForUser("missing", "both")).toBe(false);
   });
 });

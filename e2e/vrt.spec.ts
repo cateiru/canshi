@@ -1364,3 +1364,20 @@ test("通院記録の作成時の支出記録との紐付け確認モーダル�
   await expect(dialog.getByRole("radio")).toHaveCount(2);
   await takeSnapshot(page, testInfo, { fullPage: false });
 });
+
+// 避妊・去勢の通院記録を追加した直後に開く、プロフィールの避妊・去勢を「済」にするかを聞くダイアログ。
+// 一覧を `?confirmNeuter=1` 付きで開くだけで表示されるため、保存はせずフィクスチャのデータは変わらない。
+// EMPTY_CAT は性別が「不明」で避妊・去勢が未設定のため、呼び方は「避妊・去勢」になる
+test("通院記録の追加後の避妊・去勢の確認ダイアログの見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${EMPTY_CAT}/hospital-visits?confirmNeuter=1`);
+  const dialog = page.getByRole("dialog", { name: "プロフィールの更新" });
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByText(
+      "避妊・去勢の通院記録が追加されましたが、VRT空猫ちゃんは避妊・去勢されましたか？",
+    ),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo, { fullPage: false });
+});

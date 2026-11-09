@@ -18,6 +18,11 @@ export interface CatRepository {
     values: CatValues,
   ): Promise<boolean>;
   /**
+   * 猫の避妊・去勢手術の状況を「済」にする。ほかのプロフィールの項目は変えない。
+   * ユーザーが猫の家に所属していない・猫が見つからなければ false
+   */
+  markNeuteredForMember(userId: string, catId: string): Promise<boolean>;
+  /**
    * 猫を、記録・通知ごと削除する。支出記録は家計簿として残し、この猫との紐付けだけを外す。
    * 最後の猫を削除して猫のいなくなった家には、ごはんの時間の通知を残さない
    */
