@@ -15,16 +15,24 @@ async function registerCat(page: Page, catName: string, sex: "オス" | "メス"
 }
 
 /**
- * 開いている通院記録の追加ページで記録する。同じ日の「病院」の支出記録との紐付けを聞かれないよう、
- * ほかのテストが支出を記録しない過去の日付で記録する
+ * 開いている通院記録の追加ページで記録し、一覧へ遷移するのを待つ。同じ日の「病院」の支出記録との
+ * 紐付けを聞かれないよう、ほかのテストが支出を記録しない過去の日付で記録する。
+ * 確認のダイアログを開いている間は背景の記録カードがアクセシビリティツリーから外れるため、
+ * 保存の完了はカードではなく遷移先の URL で待つ
  */
 async function submitVisit(page: Page, reason: string) {
   await fillAndKeep(page.getByLabel("受診日"), "2001-01-01");
   await page.getByLabel("受診理由").fill(reason);
   await page.getByRole("button", { name: "記録する", exact: true }).click();
+  await expect(page).toHaveURL(/\/hospital-visits(\?confirmNeuter=1)?$/);
+}
+
+/** 確認のダイアログを開かずに、一覧に記録が表示されていることを確かめる */
+async function expectListedWithoutDialog(page: Page, reason: string) {
   await expect(
     page.getByRole("article", { name: reason }).first(),
   ).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 }
 
 /** 通院記録の追加ページを直接開いて記録する */
@@ -61,6 +69,7 @@ test("去勢の通院記録を追加して「はい」を選ぶと、プロフ�
   ).toBeVisible();
   await dialog.getByRole("button", { name: "はい" }).click();
   await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("article", { name: "去勢手術" })).toBeVisible();
   // 答えたら一覧の search を外す。一覧は履歴に 1 つだけ残り、戻ると猫の詳細になる
   await expect(page).toHaveURL(/\/hospital-visits$/);
   await page.goBack();
@@ -75,7 +84,7 @@ test("去勢の通院記録を追加して「はい」を選ぶと、プロフ�
 
   // すでに「済」なら、去勢の通院記録を追加しても聞かない
   await recordVisit(page, catUrl, "去勢手術の抜糸");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expectListedWithoutDialog(page, "去勢手術の抜糸");
 
   await deleteCat(page, catUrl, catName);
 });
@@ -88,7 +97,8 @@ test("避妊の通院記録を追加して「いいえ」を選ぶと、プロ�
 
   // 避妊・去勢の言葉を含まない受診理由では聞かない
   await recordVisit(page, catUrl, "ワクチン接種");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/hospital-visits$/);
+  await expectListedWithoutDialog(page, "ワクチン接種");
 
   await recordVisit(page, catUrl, "避妊手術の術前検査");
   const dialog = page.getByRole("dialog", { name: "プロフィールの更新" });
@@ -110,11 +120,8 @@ test("避妊の通院記録を追加して「いいえ」を選ぶと、プロ�
     .click();
   await page.getByLabel("受診理由").fill("ワクチン接種と避妊の相談");
   await page.getByRole("button", { name: "更新する" }).click();
-  await expect(
-    page.getByRole("article", { name: "ワクチン接種と避妊の相談" }),
-  ).toBeVisible();
   await expect(page).toHaveURL(/\/hospital-visits$/);
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expectListedWithoutDialog(page, "ワクチン接種と避妊の相談");
 
   await page.goto(`${catUrl}/edit`);
   await expect(
