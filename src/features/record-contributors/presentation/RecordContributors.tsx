@@ -43,7 +43,7 @@ export function RecordContributors({ contributors }: RecordContributorsProps) {
         </li>
       ))}
       {hiddenCount > 0 ? (
-        <li className={styles.item} title={hiddenLabel}>
+        <li className={`${styles.item} ${styles.moreItem}`} title={hiddenLabel}>
           <span className={styles.more} aria-hidden="true">
             +{hiddenCount}
           </span>
