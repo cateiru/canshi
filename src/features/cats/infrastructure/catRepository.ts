@@ -105,6 +105,24 @@ export function createCatRepository(d1?: D1Database): CatRepository {
       return updated.length > 0;
     },
 
+    async markNeuteredForMember(userId, catId) {
+      const updated = await db
+        .update(cats)
+        .set({ neuterStatus: "neutered", updatedAt: new Date() })
+        .where(
+          and(
+            eq(cats.id, catId),
+            sql`EXISTS (
+              SELECT 1 FROM ${householdMembers}
+              WHERE ${householdMembers.householdId} = ${cats.householdId}
+                AND ${householdMembers.userId} = ${userId}
+            )`,
+          ),
+        )
+        .returning({ id: cats.id });
+      return updated.length > 0;
+    },
+
     async removeForUser(userId, id) {
       // 各記録テーブルは cats.id への外部キー制約（ON DELETE no action）を持つため、
       // 猫本体より先に紐づく記録を削除しておく。symptoms と hospital_visits は

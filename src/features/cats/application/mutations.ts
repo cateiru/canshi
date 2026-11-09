@@ -32,6 +32,18 @@ export async function updateCatForUser(
 }
 
 /**
+ * 猫の避妊・去勢手術の状況を「済」にする（避妊・去勢の通院記録を追加したときの確認で「はい」を選んだ場合）。
+ * ほかのプロフィールの項目は変えない。ユーザーが猫の家に所属していない・猫が見つからなければ false を返す
+ */
+export async function markCatNeuteredForUser(
+  catId: string,
+  userId: string,
+  d1?: D1Database,
+): Promise<boolean> {
+  return createCatRepository(d1).markNeuteredForMember(userId, catId);
+}
+
+/**
  * 猫を、紐付くメディア（R2 のオブジェクトと media_assets 行）・記録・通知ごと削除する。
  * 支出記録は家計簿として残し、この猫との紐付けだけを外す。
  * ユーザーが猫を参照できることは呼び出し側で確かめる

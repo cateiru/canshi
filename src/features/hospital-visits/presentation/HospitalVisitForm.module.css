@@ -25,6 +25,10 @@
   margin-top: var(--space-3);
 }
 
+.modalNote {
+  margin-top: var(--space-2);
+}
+
 .modalActions {
   display: flex;
   flex-wrap: wrap;
