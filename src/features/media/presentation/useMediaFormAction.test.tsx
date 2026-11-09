@@ -27,11 +27,13 @@ function Harness({
   action,
   updateAction,
   waitForUploads,
+  redirectTo = "/done",
   onReady,
 }: {
   action: Action;
   updateAction?: (recordId: string) => Action;
   waitForUploads: () => Promise<MediaUploadSummary>;
+  redirectTo?: string | ((formData: FormData) => string);
   onReady: (submit: Submit, getState: () => MediaFormState) => void;
 }) {
   const [state, formAction] = useMediaFormAction<MediaFormState>({
@@ -39,7 +41,7 @@ function Harness({
     updateAction,
     initialState: {},
     media: { waitForUploads } as unknown as MediaAttachmentsController,
-    redirectTo: "/done",
+    redirectTo,
   });
   onReady(
     (formData) => startTransition(() => formAction(formData)),
@@ -157,5 +159,22 @@ describe("useMediaFormAction", () => {
     expect(updateAction).toHaveBeenLastCalledWith("rec-1");
     expect(createAction).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/done"));
+  });
+
+  it("遷移先に関数を渡すと、保存に成功した送信の内容から遷移先を決める", async () => {
+    const action = vi.fn<Action>(async () => ({ savedRecordId: "rec-1" }));
+    const waitForUploads = vi.fn(async () => ({ assetIds: [], failed: [] }));
+    const { submit } = setup({
+      action,
+      waitForUploads,
+      redirectTo: (formData) => `/done?reason=${formData.get("reason")}`,
+    });
+
+    const formData = new FormData();
+    formData.set("reason", "去勢");
+    await act(async () => submit(formData));
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith("/done?reason=去勢"),
+    );
   });
 });

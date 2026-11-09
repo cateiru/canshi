@@ -8,6 +8,7 @@ import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   createCatForUser,
   deleteCatForUser,
+  markCatNeuteredForUser,
   updateCatForUser,
 } from "../application/mutations";
 import type { SubmittedBirthDate } from "../domain/birthDate";
@@ -181,6 +182,18 @@ export async function updateCatAction(
   }
 
   return { redirectTo: `/cats/${id}` };
+}
+
+/**
+ * 猫の避妊・去勢手術の状況を「済」にする。避妊・去勢の通院記録を追加したあとの確認で「はい」を選んだときに使う。
+ * 失敗したときは、確認のダイアログに表示するエラーの文言を返す
+ */
+export async function markCatNeuteredAction(
+  id: string,
+): Promise<{ error?: string }> {
+  const { user } = await requireCatAccess(id);
+  const updated = await markCatNeuteredForUser(id, user.id);
+  return updated ? {} : { error: "ねこが見つかりませんでした" };
 }
 
 export async function deleteCatAction(id: string): Promise<SubmitRedirect> {

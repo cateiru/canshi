@@ -12,9 +12,11 @@ import { MediaAttachmentField } from "@/features/media/presentation/MediaAttachm
 import { useMediaAttachments } from "@/features/media/presentation/useMediaAttachments";
 import { useMediaFormAction } from "@/features/media/presentation/useMediaFormAction";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
+import { isNeuterVisitReason } from "../domain/neuterVisit";
 import type { HospitalVisitFormState } from "./actions";
 import { ExpenseLinkConfirmModal } from "./ExpenseLinkConfirmModal";
 import styles from "./HospitalVisitForm.module.css";
+import { hospitalVisitsHref } from "./neuterConfirm";
 
 type FormAction = (
   state: HospitalVisitFormState,
@@ -81,7 +83,13 @@ export function HospitalVisitForm({
       : undefined,
     initialState,
     media,
-    redirectTo: `/cats/${catId}/hospital-visits`,
+    // 避妊・去勢の通院記録を追加したら、一覧でプロフィールの避妊・去勢を「済」にするかを聞く。
+    // 一覧ページは、猫がすでに「済」なら聞かない
+    redirectTo: (formData) =>
+      hospitalVisitsHref(
+        catId,
+        isNew && isNeuterVisitReason(String(formData.get("reason") ?? "")),
+      ),
   });
   // 通院記録を作成済みか（添付の保存だけ失敗して再送信を待っている状態）。
   // 再送信で入力エラーになると `state.savedRecordId` は消えるため、別に覚えておく

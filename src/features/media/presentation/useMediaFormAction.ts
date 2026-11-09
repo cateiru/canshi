@@ -33,8 +33,11 @@ export type UseMediaFormActionOptions<S extends MediaFormState> = {
   updateAction?: (recordId: string) => MediaFormAction<S>;
   initialState: S;
   media: MediaAttachmentsController;
-  /** 記録とメディアの保存がすべて完了したときの遷移先 */
-  redirectTo: string;
+  /**
+   * 記録とメディアの保存がすべて完了したときの遷移先。
+   * 送信した内容で遷移先を変える場合は、保存に成功した送信の `FormData` を受け取る関数にする
+   */
+  redirectTo: string | ((formData: FormData) => string);
 };
 
 /**
@@ -89,7 +92,9 @@ export function useMediaFormAction<S extends MediaFormState>({
       }
 
       setIsNavigating(true);
-      navigateAfterSubmit(redirectTo);
+      navigateAfterSubmit(
+        typeof redirectTo === "string" ? redirectTo : redirectTo(formData),
+      );
       return result;
       // S は Promise ではない状態オブジェクトなので Awaited<S> と同じ型として扱う
     },

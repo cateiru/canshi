@@ -11,6 +11,7 @@ import {
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { NEUTER_TERM } from "@/features/cats/domain/labels";
 import { formatYen } from "@/features/expenses/domain/labels";
 import { listExpensesByHospitalVisitIds } from "@/features/expenses/infrastructure/queries";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/domain/media";
@@ -18,6 +19,8 @@ import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/qu
 import { deleteHospitalVisitAction } from "@/features/hospital-visits/presentation/actions";
 import { toHospitalVisitCalendarData } from "@/features/hospital-visits/presentation/chart";
 import { HospitalVisitChart } from "@/features/hospital-visits/presentation/HospitalVisitChart";
+import { NeuterStatusConfirmModal } from "@/features/hospital-visits/presentation/NeuterStatusConfirmModal";
+import { NEUTER_CONFIRM_PARAM } from "@/features/hospital-visits/presentation/neuterConfirm";
 import { toMediaAssetView } from "@/features/media/domain/view";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
 import { MediaGallery } from "@/features/media/presentation/MediaGallery";
@@ -37,7 +40,10 @@ export const dynamic = "force-dynamic";
 
 type HospitalVisitsPageProps = {
   params: Promise<{ catId: string }>;
-  searchParams: Promise<{ page?: string | string[] }>;
+  searchParams: Promise<{
+    page?: string | string[];
+    [NEUTER_CONFIRM_PARAM]?: string | string[];
+  }>;
 };
 
 export default async function HospitalVisitsPage({
@@ -55,7 +61,11 @@ export default async function HospitalVisitsPage({
     listHospitalVisits(catId),
     listSymptoms(catId),
   ]);
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, [NEUTER_CONFIRM_PARAM]: confirmNeuterParam } =
+    await searchParams;
+  // 避妊・去勢の通院記録を追加した直後。プロフィールがすでに「済」なら聞かない
+  const confirmNeuter =
+    confirmNeuterParam === "1" && cat.neuterStatus !== "neutered";
   const {
     items: pagedVisits,
     page,
@@ -242,6 +252,14 @@ export default async function HospitalVisitsPage({
           buildPageHref(`/cats/${catId}/hospital-visits`, target)
         }
       />
+
+      {confirmNeuter ? (
+        <NeuterStatusConfirmModal
+          catId={catId}
+          catName={cat.name}
+          term={NEUTER_TERM[cat.sex]}
+        />
+      ) : null}
     </main>
   );
 }
