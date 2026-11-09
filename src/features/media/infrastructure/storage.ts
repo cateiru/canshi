@@ -32,7 +32,11 @@ import {
 } from "../domain/objectKey";
 import { PENDING_MEDIA_RECORD_TYPE } from "../domain/recordTypes";
 import { MAX_DECODE_PIXELS } from "../domain/thumbnailSize";
-import { nextMediaSortOrder, sumMediaStorageBytes } from "./queries";
+import {
+  listMediaAssetsByRecords,
+  nextMediaSortOrder,
+  sumMediaStorageBytes,
+} from "./queries";
 import { generateImageThumbnail } from "./thumbnail";
 
 /**
@@ -463,6 +467,19 @@ export async function deleteMediaAssetsByRecord(
       ),
     );
   await deleteMediaAssetRows(rows, env);
+}
+
+/**
+ * 同じ種別の複数のレコードに紐付くメディアをまとめて削除する。家の削除で一緒に消した
+ * ごはん商品・支出記録の画像を消すときに呼ぶ。`recordType` で絞るため、ほかの種別
+ * （共通のごはん商品の `catalog_food_product` など）のメディアは消さない
+ */
+export async function deleteMediaAssetsByRecords(
+  recordType: string,
+  recordIds: string[],
+): Promise<void> {
+  const grouped = await listMediaAssetsByRecords(recordType, recordIds);
+  await deleteMediaAssetRows([...grouped.values()].flat());
 }
 
 /**

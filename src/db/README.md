@@ -133,7 +133,12 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     猫が登録されたりオーナーを移譲されたりした場合は、どの文も行を消さない。オーナーの行が判定に使われるため、
     メンバーは家本体の直前に消し、家本体はメンバーと猫が残っていないことを条件に消す
   - ほかの家のごはん記録の明細から家のごはん商品が参照されていれば、外部キー制約で batch 全体が失敗する
-  - ごはん商品・支出記録の画像（`media_assets` と R2）は削除しない（#484 で扱う）
+  - ごはん商品・支出記録の画像（`media_assets` と R2）は、batch が成功してから削除する（#484）。R2 の削除は
+    batch に含められないため、先に消すと、条件を満たさず家が残ったときに画像だけが消えてしまう。消す対象は、
+    batch のごはん商品・支出記録の DELETE の `RETURNING` で返した ID と `record_type`（`food_product`・`expense`）で
+    決め、共通のごはん商品の画像（`catalog_food_product`）やほかの家の画像は消さない
+    （`deleteMediaAssetsByRecords`）。画像の削除に失敗しても家はもう消えているため、ログだけ残して成功として扱う
+    （参照されない画像が残る）
 - 家への招待は `household_invitations` に保存する（`src/features/households/application/invitations.ts`）
   - 招待 URL（`/invitations/{トークン}`）のトークンそのものは保存せず、`sessions` と同じく SHA-256 の
     ハッシュ（`token_hash`）だけを持つ。そのため URL を表示できるのは発行したときだけ
