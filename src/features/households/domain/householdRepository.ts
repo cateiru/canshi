@@ -1,3 +1,11 @@
+/** 家の削除で一緒に削除した、画像を持ちうる行の ID */
+export type RemovedHousehold = {
+  /** 削除したごはん商品の ID（`media_assets.record_type = 'food_product'` の `record_id`） */
+  foodProductIds: string[];
+  /** 削除した支出記録の ID（論理削除済みのものも含む。`record_type = 'expense'` の `record_id`） */
+  expenseRecordIds: string[];
+};
+
 /**
  * 家とメンバーの保存先。オーナーにだけ許す操作は、オーナーであることを同じ文の中で確かめる
  * （読んでから書く方式だと、判定と更新の間にオーナーを移譲された場合に元オーナーの操作が通ってしまうため）。
@@ -23,9 +31,13 @@ export interface HouseholdRepository {
   /**
    * 家を削除する。家に属する支出記録・ごはん商品・プリセット・ごはんの時間・家についての通知・
    * 招待・メンバーも同じ batch で削除する。`ownerUserId` がオーナーでない、または家に猫がいれば
-   * 何も削除せずに false
+   * 何も削除せずに null。削除できたら、画像を消すために、一緒に削除したごはん商品・支出記録の ID を返す
+   * （画像は R2 にあり batch に含められないため、ここでは削除しない）
    */
-  removeAsOwner(householdId: string, ownerUserId: string): Promise<boolean>;
+  removeAsOwner(
+    householdId: string,
+    ownerUserId: string,
+  ): Promise<RemovedHousehold | null>;
   /**
    * オーナーを移譲する。移譲先をオーナーに、移譲元をメンバーにする。2 人のロールの入れ替えと
    * 条件の判定を 1 つの文にまとめる。移譲元がオーナーで移譲先がメンバーでなければ false

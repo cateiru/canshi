@@ -114,7 +114,21 @@ export function createHouseholdRepository(
 
       // 外部キーはすべて ON DELETE no action のため、参照する側から順に消す。猫がいない家だけを
       // 削除するため、猫に紐付く記録（`cat_id` を持つ行）は対象にならない
-      const results = await db.batch([
+      // 結果は文の順に並ぶ。ID を返す支出記録（4 番目）・ごはん商品（7 番目）・家（12 番目）だけを取り出す
+      const [
+        ,
+        ,
+        ,
+        deletedExpenses,
+        ,
+        ,
+        deletedFoodProducts,
+        ,
+        ,
+        ,
+        ,
+        deletedHouseholds,
+      ] = await db.batch([
         // 支出記録は論理削除したものも含めて物理削除するため、その履歴も消す。
         // 記録を消すと対象を選べなくなるため先に消す
         deleteRecordChangeLogsOf(
@@ -143,9 +157,11 @@ export function createHouseholdRepository(
               canRemove,
             ),
           ),
+        // 画像を消す対象を、batch で実際に削除した行から決めるため、ID を返す
         db
           .delete(expenseRecords)
-          .where(and(eq(expenseRecords.householdId, householdId), canRemove)),
+          .where(and(eq(expenseRecords.householdId, householdId), canRemove))
+          .returning({ id: expenseRecords.id }),
         // プリセットの明細はプリセットとごはん商品の両方を参照するため、どちらよりも先に消す
         db
           .delete(feedingPresetItems)
@@ -162,7 +178,8 @@ export function createHouseholdRepository(
         // batch 全体が失敗し、何も削除されない
         db
           .delete(foodProducts)
-          .where(and(eq(foodProducts.householdId, householdId), canRemove)),
+          .where(and(eq(foodProducts.householdId, householdId), canRemove))
+          .returning({ id: foodProducts.id }),
         db
           .delete(feedingSchedules)
           .where(and(eq(feedingSchedules.householdId, householdId), canRemove)),
@@ -198,8 +215,13 @@ export function createHouseholdRepository(
           )
           .returning({ id: households.id }),
       ]);
-      const deleted = results.at(-1);
-      return Array.isArray(deleted) && deleted.length > 0;
+      if (deletedHouseholds.length === 0) {
+        return null;
+      }
+      return {
+        foodProductIds: deletedFoodProducts.map(({ id }) => id),
+        expenseRecordIds: deletedExpenses.map(({ id }) => id),
+      };
     },
 
     async transferOwnership(householdId, currentOwnerUserId, nextOwnerUserId) {

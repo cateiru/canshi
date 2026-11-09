@@ -16,6 +16,7 @@ import {
   householdInvitations,
   householdMembers,
   households,
+  mediaAssets,
   notifications,
   pushDeliveries,
   pushSubscriptions,
@@ -35,6 +36,19 @@ import {
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
   getDb: () => db,
+}));
+
+// 家の削除で消す画像を確かめるため、R2 の代わりに Map を使う
+const objects = new Map<string, true>();
+const bucket = {
+  delete: vi.fn(async (keys: string | string[]) => {
+    for (const key of Array.isArray(keys) ? keys : [keys]) {
+      objects.delete(key);
+    }
+  }),
+};
+vi.mock("@opennextjs/cloudflare", () => ({
+  getCloudflareContext: () => ({ env: { MEDIA_BUCKET: bucket } }),
 }));
 
 beforeEach(async () => {
@@ -349,6 +363,130 @@ describe("deleteHousehold", () => {
       expiresAt: new Date("2099-01-01T00:00:00Z"),
     });
     await seedHouseholdData("home");
+  });
+
+  describe("画像", () => {
+    /** `media_assets` の行と、R2 の元データ・サムネイルのオブジェクトを作る */
+    async function seedMedia(id: string, recordType: string, recordId: string) {
+      const objectKey = `${recordType}/${recordId}/${id}`;
+      await db.insert(mediaAssets).values({
+        id,
+        recordType,
+        recordId,
+        objectKey,
+        thumbnailObjectKey: `${objectKey}-thumb`,
+        mimeType: "image/jpeg",
+      });
+      objects.set(objectKey, true);
+      objects.set(`${objectKey}-thumb`, true);
+    }
+
+    async function mediaIds() {
+      const rows = await db.select({ id: mediaAssets.id }).from(mediaAssets);
+      return rows.map(({ id }) => id).sort();
+    }
+
+    beforeEach(async () => {
+      objects.clear();
+      bucket.delete.mockClear();
+      // 論理削除した支出の画像も、家の削除で消す
+      await db.insert(expenseRecords).values({
+        id: "home-deleted-expense",
+        householdId: "home",
+        spentAt: new Date("2024-06-01T00:00:00Z"),
+        amountYen: 500,
+        category: "food",
+        deletedAt: new Date("2024-06-02T00:00:00Z"),
+      });
+      // ほかの家のごはん商品・支出の画像は消さない
+      await db.insert(expenseRecords).values({
+        id: "other-expense",
+        householdId: "other",
+        spentAt: new Date("2024-06-01T00:00:00Z"),
+        amountYen: 1000,
+        category: "food",
+      });
+      await db.insert(foodProducts).values({
+        id: "other-food",
+        householdId: "other",
+        name: "カリカリ",
+        manufacturer: "",
+        kcalPer100g: 350,
+        packageAmountG: 500,
+        nutritionType: "complete",
+        textureType: "dry",
+      });
+      await seedMedia("home-food-image", "food_product", "home-food");
+      await seedMedia("home-expense-image", "expense", "home-expense");
+      await seedMedia(
+        "home-deleted-expense-image",
+        "expense",
+        "home-deleted-expense",
+      );
+      await seedMedia("other-food-image", "food_product", "other-food");
+      await seedMedia("other-expense-image", "expense", "other-expense");
+      // 家のごはん商品は共通のごはん商品から追加したもの、という想定。共通のごはん商品の画像は
+      // 家の商品とは別の行・オブジェクトで、家を削除しても消さない
+      await seedMedia("catalog-image", "catalog_food_product", "catalog-food");
+    });
+
+    const KEPT = [
+      "catalog-image",
+      "other-expense-image",
+      "other-food-image",
+    ].sort();
+    const ALL = [
+      ...KEPT,
+      "home-deleted-expense-image",
+      "home-expense-image",
+      "home-food-image",
+    ].sort();
+
+    it("家のごはん商品・支出の画像を、R2 と media_assets の両方から削除する", async () => {
+      expect(await deleteHousehold("home", "owner")).toEqual({ ok: true });
+
+      expect(await mediaIds()).toEqual(KEPT);
+      expect([...objects.keys()].sort()).toEqual(
+        [
+          "catalog_food_product/catalog-food/catalog-image",
+          "expense/other-expense/other-expense-image",
+          "food_product/other-food/other-food-image",
+        ].flatMap((key) => [key, `${key}-thumb`]),
+      );
+    });
+
+    it("家に猫がいて削除できなければ、画像を削除しない", async () => {
+      await db.insert(cats).values({
+        id: "cat",
+        householdId: "home",
+        name: "たま",
+        sex: "female",
+      });
+
+      expect((await deleteHousehold("home", "owner")).ok).toBe(false);
+      expect(await mediaIds()).toEqual(ALL);
+      expect(objects.size).toBe(ALL.length * 2);
+      expect(bucket.delete).not.toHaveBeenCalled();
+    });
+
+    it("オーナーでなく削除できなければ、画像を削除しない", async () => {
+      expect((await deleteHousehold("home", "member")).ok).toBe(false);
+      expect(await mediaIds()).toEqual(ALL);
+      expect(bucket.delete).not.toHaveBeenCalled();
+    });
+
+    it("画像の削除に失敗しても、家の削除は成功として返し、画像の行は残す", async () => {
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      bucket.delete.mockRejectedValueOnce(new Error("R2 failed"));
+
+      expect(await deleteHousehold("home", "owner")).toEqual({ ok: true });
+      expect(await getHouseholdName("home")).toBeUndefined();
+      expect(await mediaIds()).toEqual(ALL);
+      expect(consoleError).toHaveBeenCalled();
+      consoleError.mockRestore();
+    });
   });
 
   it("オーナーは、猫のいない家を家に属するデータごと削除できる", async () => {
