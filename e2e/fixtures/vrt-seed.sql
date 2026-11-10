@@ -318,7 +318,7 @@ UPDATE feeding_presets SET household_id = 'vrt-household' WHERE id LIKE 'vrt-pre
 -- 上の AI との接続（ChatGPT）・登録の無い接続（ロボットのアイコン）を組み合わせる。
 -- vrt-inviter は VRT の家にいないため、アイコン画像の無い表示になる。
 -- ここに無い記録は、履歴を残し始める前の記録として何も表示しない
--- - vrt-poop-1   : 4 人（3 人まで表示し、残りを「+1」にまとめる）
+-- - vrt-poop-1   : 4 人（2 人まで表示し、残りを「+2」にまとめる。アイコンを押すと編集履歴を表示する、#534）
 -- - vrt-weight-1 : 画面からの操作と ChatGPT からの操作（ユーザーとアプリのアイコンの重なり）
 -- - vrt-vomit-1  : 1 人だけ
 -- - vrt-memo-1   : わからないアプリからの操作（ロボットのアイコン）

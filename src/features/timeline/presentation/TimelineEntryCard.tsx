@@ -19,7 +19,7 @@ import {
 import { FoodProductImage } from "@/features/food-products/presentation/FoodProductImage";
 import { MediaThumbnailStrip } from "@/features/media/presentation/MediaThumbnailStrip";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/domain/labels";
-import type { RecordContributor } from "@/features/record-contributors/domain/contributor";
+import type { RecordContributions } from "@/features/record-contributors/domain/contributor";
 import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import {
   formatDateTimeUtc,
@@ -50,7 +50,7 @@ type TimelineEntryCardProps = {
   /** ごはん商品のサムネイル URL（商品ID -> URL）。タイムラインのごはん記録の画像表示に使う */
   foodProductImageUrls: Record<string, string>;
   /** 記録を作成・編集した人。記念日・履歴のない記録では undefined */
-  contributors?: readonly RecordContributor[];
+  contributors?: RecordContributions;
 };
 
 export function TimelineEntryCard({

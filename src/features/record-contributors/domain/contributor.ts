@@ -36,3 +36,22 @@ export function formatRecordContributorLabel(
   }
   return `${contributor.clientName ?? UNNAMED_AI_APP}（${contributor.userName}が接続）`;
 }
+
+/** 作成・編集の履歴の 1 件（1 回の保存） */
+export type RecordChangeHistoryEntry = {
+  /** 保存した人。`RecordContributions.contributors` の添字 */
+  contributorIndex: number;
+  /** 保存した日時 */
+  changedAt: Date;
+};
+
+/**
+ * 1 件の記録を作成・編集した人と、その履歴。同じ人の保存をまとめて見分けるために、
+ * 接続の ID の代わりに `contributors` の添字で人を指す
+ */
+export type RecordContributions = {
+  /** 作成・編集した人（最初に操作した順。作成した人が先頭） */
+  contributors: RecordContributor[];
+  /** 作成・編集の履歴（古い順。先頭が作成） */
+  history: RecordChangeHistoryEntry[];
+};

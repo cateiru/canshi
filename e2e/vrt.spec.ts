@@ -888,6 +888,21 @@ test("タイムライン（データがあるケース）の見た目", async ({
   await takeSnapshot(page, testInfo);
 });
 
+// vrt-poop-1 は 4 人が作成・編集した記録（e2e/fixtures/vrt-seed.sql）。アイコンを押すと、
+// 保存ごとの履歴を新しい順（一番下が作成した人）に並べたモーダルが開く（#534）
+test("記録の編集履歴のモーダルの見た目", async ({ page }, testInfo) => {
+  await page.goto(`/cats/${CAT}/poop-records`);
+  await page
+    .getByRole("button", { name: /^編集履歴を見る（作成・編集した人：/ })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "編集履歴" });
+  await expect(
+    dialog.getByRole("list", { name: "編集履歴（新しい順）" }),
+  ).toBeVisible();
+  await expect(dialog.getByRole("listitem")).toHaveCount(4);
+  await takeSnapshot(page, testInfo, { fullPage: false });
+});
+
 test("タイムライン（あいまいモードのごはん記録）の見た目", async ({
   page,
 }, testInfo) => {

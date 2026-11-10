@@ -1,14 +1,37 @@
+/* アイコンの並びを押すと編集履歴を開く。見た目はアイコンの並びのままにする */
+.trigger {
+  display: flex;
+  flex-shrink: 0;
+  margin: 0 var(--space-1) 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition: outline-color var(--transition-base);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.trigger[data-focus-visible] {
+  outline-color: var(--color-focus-ring);
+}
+
+.trigger[data-pressed] {
+  opacity: 0.8;
+}
+
 .group {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  list-style: none;
-  margin: 0;
   /* アイコンの重なり順（z-index）をこの中だけで決める */
   isolation: isolate;
   /* 重ねた分だけ左に寄るため、最初のアイコンの分の余白を空けておく */
   padding: 0 0 0 calc(12px * var(--font-scale));
-  margin-right: var(--space-1);
 }
 
 .item {
@@ -26,22 +49,18 @@
 }
 
 /*
- * 左のアイコン（先に操作した人）ほど上に重ねる。並べるのはアイコン 3 つと「+N」の最大 4 つ
+ * 左のアイコン（先に操作した人）ほど上に重ねる。並べるのはアイコン 2 つと「+N」の最大 3 つ
  * （RecordContributors.tsx の MAX_VISIBLE_CONTRIBUTORS）
  */
 .item:nth-child(1) {
-  z-index: 4;
-}
-
-.item:nth-child(2) {
   z-index: 3;
 }
 
-.item:nth-child(3) {
+.item:nth-child(2) {
   z-index: 2;
 }
 
-.item:nth-child(4) {
+.item:nth-child(3) {
   z-index: 1;
 }
 
@@ -76,14 +95,74 @@
   font-variant-numeric: tabular-nums;
 }
 
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
+/*
+ * 編集履歴。新しい保存を上に並べ、アイコンどうしを縦の線でつなぐ
+ */
+.history {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
   padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+}
+
+.historyItem {
+  position: relative;
+  display: flex;
+  /* 名前と日時が折り返しても、線の位置がずれないようアイコンを上に揃える */
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+}
+
+.historyItem:last-child {
+  padding-bottom: 0;
+}
+
+/* 下の（ひとつ前の）保存のアイコンへつなぐ線 */
+.historyItem:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: calc(28px * var(--font-scale) + var(--space-1));
+  bottom: var(--space-1);
+  left: calc(14px * var(--font-scale) - 1px);
+  width: 2px;
+  border-radius: 1px;
+  background-color: var(--color-border);
+}
+
+.historyAvatar {
+  display: flex;
+  flex-shrink: 0;
+  width: calc(28px * var(--font-scale));
+  height: calc(28px * var(--font-scale));
+}
+
+.historyText {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  /* 1 行のときはアイコンの中央に揃える */
+  align-content: center;
+  min-height: calc(28px * var(--font-scale));
+  column-gap: var(--space-2);
+  min-width: 0;
+}
+
+.historyName {
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.historyTime {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
 }
