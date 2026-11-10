@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { type FormEvent, startTransition, useActionState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Alert, addToast, Button } from "@/components/ui";
 import type { McpPermissionTree } from "../domain/permissionRules";
@@ -34,8 +34,20 @@ export function McpPermissionsForm({ action, tree }: McpPermissionsFormProps) {
     initialState,
   );
 
+  // `<form action>` で送ると、React は送信後にフォームを reset する。react-aria の Checkbox は
+  // reset でマウント時の値に戻そうとして onChange を呼ぶため、保存したチェックが
+  // ページを開いたときの状態に戻って見える（Issue #527）。reset されないよう、送信は
+  // onSubmit で受けて action を自分で呼ぶ
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => {
+      formAction(formData);
+    });
+  };
+
   return (
-    <form action={formAction} className={styles.form}>
+    <form onSubmit={handleSubmit} className={styles.form}>
       <McpPermissionTreeField
         tree={tree.households}
         catalogOperations={tree.catalogOperations}

@@ -128,6 +128,14 @@ test("AIとの接続ごとに、読み取り・書き込みを許可する範囲
 
   await permissions.getByRole("button", { name: "保存する" }).click();
   await expect(page.getByText("許可する範囲を保存しました")).toBeVisible();
+  // 保存した後も、ページを開いたときの状態に戻らず、選んだチェックのまま表示する（Issue #527）。
+  // チェックが戻るのはトーストより後の、ページの再検証が終わって送信中の表示が消えるときのため、
+  // ボタンが押せるようになるまで待ってから確かめる
+  await expect(
+    permissions.getByRole("button", { name: "保存する" }),
+  ).toBeEnabled();
+  await expect(readPoop).not.toBeChecked();
+  await expect(writeFeeding).toBeChecked();
 
   await page.reload();
   await expandCat();
