@@ -284,6 +284,14 @@ export default async function FeedingRecordsPage({
                             </div>
                           </dl>
                         ) : null}
+                        {record.memo ? (
+                          <dl className={styles.details}>
+                            <div>
+                              <dt>備考</dt>
+                              <dd>{record.memo}</dd>
+                            </div>
+                          </dl>
+                        ) : null}
                       </RecordCard>
                     </li>
                   );

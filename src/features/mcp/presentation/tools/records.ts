@@ -413,6 +413,7 @@ const weightRecordTool = defineRecordTool({
       .nullable()
       .optional()
       .describe("BCS（1〜5）。null を指定すると未評価にする"),
+    memo: optionalText("備考", 500),
   },
   schema: weightRecordFormSchema,
   defaults: () => ({
@@ -431,6 +432,7 @@ const weightRecordTool = defineRecordTool({
         humanWeightKg: toOptionalValue(row.humanWeightKg),
         catWeightKg: toOptionalValue(row.catWeightKg),
         bcs: toOptionalValue(row.bcs),
+        memo: toOptionalValue(row.memo),
       },
     };
   },
@@ -1077,6 +1079,7 @@ const feedingRecordTool = defineRecordTool({
     occurredTime: timeField("記録時刻"),
     mode: z.enum(["strict", "approximate"]).optional(),
     items: z.array(feedingItemSchema).optional(),
+    memo: optionalText("備考", 500),
   },
   schema: feedingRecordFormSchema,
   defaults: () => nowDateTimeValues("occurredDate", "occurredTime"),
@@ -1089,6 +1092,7 @@ const feedingRecordTool = defineRecordTool({
       values: {
         ...dateTimeValues("occurredDate", "occurredTime", row.occurredAt),
         mode: row.mode,
+        memo: toOptionalValue(row.memo),
         items: items.map((item) => ({
           foodProductId: item.foodProductId,
           givenAmountG: item.givenAmountG ?? undefined,

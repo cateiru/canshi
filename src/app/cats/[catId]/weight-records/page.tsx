@@ -170,6 +170,12 @@ export default async function WeightRecordsPage({
                       <dd>{formatBcs(record.bcs)}</dd>
                     </div>
                   ) : null}
+                  {record.memo ? (
+                    <div>
+                      <dt>備考</dt>
+                      <dd>{record.memo}</dd>
+                    </div>
+                  ) : null}
                 </dl>
               </RecordCard>
             </li>

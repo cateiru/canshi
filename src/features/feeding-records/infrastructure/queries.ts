@@ -31,11 +31,12 @@ export type FeedingRecordWithItems = {
   catId: string;
   occurredAt: Date;
   mode: FeedingMode;
+  memo: string | null;
   items: FeedingRecordItemWithProduct[];
 };
 
 async function attachItems(
-  headers: { id: string; catId: string; occurredAt: Date; mode: FeedingMode }[],
+  headers: Omit<FeedingRecordWithItems, "items">[],
 ): Promise<FeedingRecordWithItems[]> {
   if (headers.length === 0) {
     return [];
@@ -105,6 +106,7 @@ export async function listFeedingRecords(
       catId: feedingRecords.catId,
       occurredAt: feedingRecords.occurredAt,
       mode: feedingRecords.mode,
+      memo: feedingRecords.memo,
     })
     .from(feedingRecords)
     .where(
@@ -125,6 +127,7 @@ export async function getFeedingRecordById(
       catId: feedingRecords.catId,
       occurredAt: feedingRecords.occurredAt,
       mode: feedingRecords.mode,
+      memo: feedingRecords.memo,
     })
     .from(feedingRecords)
     .where(and(eq(feedingRecords.id, id), isNull(feedingRecords.deletedAt)))

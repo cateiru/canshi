@@ -18,6 +18,7 @@ import {
   Radio,
   RadioGroup,
   Select,
+  Textarea,
 } from "@/components/ui";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { FoodProduct } from "@/db/schema";
@@ -381,6 +382,14 @@ export function FeedingRecordForm({
       >
         商品を追加する
       </Button>
+
+      <Textarea
+        name="memo"
+        label="備考"
+        rows={3}
+        defaultValue={feedingRecord?.memo ?? ""}
+        errorMessage={state.fieldErrors?.memo?.[0]}
+      />
 
       {state.formError ? (
         <p className={styles.errorMessage}>{state.formError}</p>

@@ -76,6 +76,7 @@ async function fetchFeedingEntries(
       catId: feedingRecords.catId,
       occurredAt: feedingRecords.occurredAt,
       mode: feedingRecords.mode,
+      memo: feedingRecords.memo,
     })
     .from(feedingRecords)
     .where(

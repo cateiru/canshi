@@ -35,6 +35,14 @@ export const weightRecordFormSchema = z
         .max(5, "BCSは1〜5から選択してください")
         .optional(),
     ),
+    memo: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .trim()
+        .max(500, "備考は500文字以内で入力してください")
+        .optional(),
+    ),
   })
   .refine(
     (data) =>

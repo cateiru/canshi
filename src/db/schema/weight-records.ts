@@ -25,6 +25,7 @@ export const weightRecords = sqliteTable(
     catWeightKg: real("cat_weight_kg").notNull(),
     // ボディコンディションスコア（1〜5 の 5 段階、3 が理想体重）。未評価の記録は NULL
     bcs: integer("bcs"),
+    memo: text("memo"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

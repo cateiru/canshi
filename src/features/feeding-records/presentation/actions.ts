@@ -47,6 +47,7 @@ function parseFormData(formData: FormData) {
     occurredDate: formData.get("occurredDate"),
     occurredTime: formData.get("occurredTime"),
     mode: formData.get("mode"),
+    memo: formData.get("memo"),
     items,
   });
 }
@@ -70,7 +71,8 @@ function mapZodErrors(error: z.ZodError): FeedingRecordFormFieldErrors {
     if (
       first === "occurredDate" ||
       first === "occurredTime" ||
-      first === "mode"
+      first === "mode" ||
+      first === "memo"
     ) {
       fieldErrors[first] ??= [];
       fieldErrors[first].push(issue.message);

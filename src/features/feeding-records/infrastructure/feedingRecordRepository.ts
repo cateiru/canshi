@@ -173,6 +173,7 @@ export function createFeedingRecordRepository(
                   "occurred_at",
                 ),
                 mode: sql`${content.mode}`.as("mode"),
+                memo: sql`${content.memo ?? null}`.as("memo"),
                 createdAt: sql`(unixepoch())`.as("created_at"),
                 updatedAt: sql`(unixepoch())`.as("updated_at"),
                 deletedAt: sql`null`.as("deleted_at"),
@@ -218,6 +219,7 @@ export function createFeedingRecordRepository(
           .set({
             occurredAt: content.occurredAt,
             mode: content.mode,
+            memo: content.memo,
             updatedAt: new Date(),
           })
           .where(

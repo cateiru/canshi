@@ -122,6 +122,7 @@ export type TimelineFeedingRecord = {
   catId: string;
   occurredAt: Date;
   mode: FeedingMode;
+  memo: string | null;
   items: TimelineFeedingItem[];
 };
 
