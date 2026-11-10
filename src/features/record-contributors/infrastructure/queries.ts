@@ -11,7 +11,10 @@ import {
   getMcpClientSummary,
   type McpClientSummary,
 } from "@/features/mcp/infrastructure/connections";
-import type { RecordContributor } from "../domain/contributor";
+import type {
+  RecordContributions,
+  RecordContributor,
+} from "../domain/contributor";
 
 /** 作成・編集した人を求める記録 */
 export type RecordContributorRef = {
@@ -34,12 +37,14 @@ type ContributionRow = {
   mcpClientId: string | null;
   userName: string;
   iconMediaAssetId: string | null;
+  createdAt: Date;
 };
 
 /**
- * 記録ごとに、作成・編集した人を最初に操作した順（作成した人が先頭）で返す。キーは
- * `recordContributorKey`。履歴（`record_change_logs`）の無い記録（`0064` より前に作られ、
- * その後に編集されていない記録）はキーを含めない。
+ * 記録ごとに、作成・編集した人を最初に操作した順（作成した人が先頭）で返す。あわせて、
+ * 作成・編集の履歴（保存ごとに 1 件、古い順）を返す。キーは `recordContributorKey`。
+ * 履歴（`record_change_logs`）の無い記録（`0064` より前に作られ、その後に編集されていない記録）は
+ * キーを含めない。
  *
  * - 削除の履歴は含めない（読む記録は削除されていない前提）
  * - 同じユーザーでも、画面からの操作と AI との接続からの操作、接続どうしは別の人として扱う
@@ -51,8 +56,8 @@ export async function listRecordContributors(
   refs: readonly RecordContributorRef[],
   viewerUserId: string,
   d1?: D1Database,
-): Promise<Map<string, RecordContributor[]>> {
-  const result = new Map<string, RecordContributor[]>();
+): Promise<Map<string, RecordContributions>> {
+  const result = new Map<string, RecordContributions>();
   const idsByType = new Map<RecordChangeLogRecordType, Set<string>>();
   for (const { recordType, recordId } of refs) {
     const ids = idsByType.get(recordType) ?? new Set<string>();
@@ -78,6 +83,7 @@ export async function listRecordContributors(
             mcpClientId: recordChangeLogs.mcpClientId,
             userName: users.name,
             iconMediaAssetId: users.iconMediaAssetId,
+            createdAt: recordChangeLogs.createdAt,
           })
           .from(recordChangeLogs)
           .innerJoin(users, eq(recordChangeLogs.userId, users.id))
@@ -107,37 +113,49 @@ export async function listRecordContributors(
   );
   const clientSummaries = await loadMcpClientSummaries(rows, d1);
 
-  const seen = new Set<string>();
+  // 記録・人ごとに、`contributors` での添字
+  const contributorIndexes = new Map<string, number>();
   for (const row of rows) {
     const key = recordContributorKey(row.recordType, row.recordId);
+    const contributions = result.get(key) ?? { contributors: [], history: [] };
     const contributorKey = `${key}\0${row.userId}\0${row.mcpClientId ?? ""}`;
-    if (seen.has(contributorKey)) {
-      continue;
-    }
-    seen.add(contributorKey);
-    const contributors = result.get(key) ?? [];
-    if (row.mcpClientId === null) {
-      contributors.push({
-        kind: "user",
-        userName: row.userName,
-        iconMediaAssetId: visibleIconUserIds.has(row.userId)
-          ? row.iconMediaAssetId
-          : null,
-      });
-    } else {
-      const summary = clientSummaries.get(
-        clientSummaryKey(row.userId, row.mcpClientId),
+    let contributorIndex = contributorIndexes.get(contributorKey);
+    if (contributorIndex === undefined) {
+      contributorIndex = contributions.contributors.length;
+      contributorIndexes.set(contributorKey, contributorIndex);
+      contributions.contributors.push(
+        toRecordContributor(row, visibleIconUserIds, clientSummaries),
       );
-      contributors.push({
-        kind: "ai",
-        userName: row.userName,
-        clientName: summary?.clientName ?? null,
-        app: summary?.app ?? null,
-      });
     }
-    result.set(key, contributors);
+    contributions.history.push({ contributorIndex, changedAt: row.createdAt });
+    result.set(key, contributions);
   }
   return result;
+}
+
+function toRecordContributor(
+  row: ContributionRow,
+  visibleIconUserIds: ReadonlySet<string>,
+  clientSummaries: ReadonlyMap<string, McpClientSummary>,
+): RecordContributor {
+  if (row.mcpClientId === null) {
+    return {
+      kind: "user",
+      userName: row.userName,
+      iconMediaAssetId: visibleIconUserIds.has(row.userId)
+        ? row.iconMediaAssetId
+        : null,
+    };
+  }
+  const summary = clientSummaries.get(
+    clientSummaryKey(row.userId, row.mcpClientId),
+  );
+  return {
+    kind: "ai",
+    userName: row.userName,
+    clientName: summary?.clientName ?? null,
+    app: summary?.app ?? null,
+  };
 }
 
 function clientSummaryKey(userId: string, clientId: string) {

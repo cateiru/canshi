@@ -5,7 +5,7 @@ import type { HospitalVisit, MediaAsset } from "@/db/schema";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/domain/labels";
 import { toMediaAssetView } from "@/features/media/domain/view";
 import { MediaGallery } from "@/features/media/presentation/MediaGallery";
-import type { RecordContributor } from "@/features/record-contributors/domain/contributor";
+import type { RecordContributions } from "@/features/record-contributors/domain/contributor";
 import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
@@ -21,7 +21,7 @@ type ExpenseListProps = {
   hospitalVisitById: Map<string, HospitalVisit>;
   mediaByRecordId: Map<string, MediaAsset[]>;
   /** 支出記録を作成・編集した人（支出記録の ID -> 人） */
-  contributorsByRecordId: Map<string, RecordContributor[]>;
+  contributorsByRecordId: Map<string, RecordContributions>;
 };
 
 export function ExpenseList({

@@ -3,6 +3,7 @@ import {
   combineDateTimeUtc,
   formatDateHeadingUtc,
   formatDateTimeUtc,
+  formatTimestampJst,
   getLocalNowParts,
   getNaiveUtcNow,
   getRelativeDayLabelUtc,
@@ -89,5 +90,19 @@ describe("getNaiveUtcNow", () => {
     // 「9/11 08:00 の記録」と同じ日付として比較できることを確認する
     const result = getNaiveUtcNow(new Date("2026-09-10T23:00:00.000Z"));
     expect(result.toISOString().slice(0, 10)).toBe("2026-09-11");
+  });
+});
+
+describe("formatTimestampJst", () => {
+  it("実際の日時を JST の「YYYY/MM/DD hh:mm」で返す", () => {
+    expect(formatTimestampJst(new Date("2026-09-10T03:04:00.000Z"))).toBe(
+      "2026/09/10 12:04",
+    );
+  });
+
+  it("実UTCでは前日でも JST の日付で返す", () => {
+    expect(formatTimestampJst(new Date("2026-09-10T23:30:00.000Z"))).toBe(
+      "2026/09/11 08:30",
+    );
   });
 });

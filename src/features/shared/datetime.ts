@@ -82,3 +82,14 @@ const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 export function getNaiveUtcNow(now: Date = new Date()): Date {
   return new Date(now.getTime() + JST_OFFSET_MS);
 }
+
+/**
+ * 実際の日時（記録の作成・編集の日時など、`unixepoch()` で保存した値）を、JST の
+ * 「YYYY/MM/DD hh:mm」で表す。記録の発生日時（naive UTC）には使わないこと
+ */
+export function formatTimestampJst(date: Date): string {
+  const { date: d, time: t } = splitDateTimeUtc(
+    new Date(date.getTime() + JST_OFFSET_MS),
+  );
+  return `${d.replaceAll("-", "/")} ${t}`;
+}

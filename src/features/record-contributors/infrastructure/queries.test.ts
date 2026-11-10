@@ -55,7 +55,7 @@ async function insertLogs(
 }
 
 describe("listRecordContributors", () => {
-  it("作成・編集した人を最初に操作した順に、人ごとに 1 件にまとめて返す", async () => {
+  it("作成・編集した人を最初に操作した順に、人ごとに 1 件にまとめ、保存ごとの履歴とあわせて返す", async () => {
     await insertLogs([
       {
         recordId: "record-1",
@@ -90,14 +90,34 @@ describe("listRecordContributors", () => {
       new Map([
         [
           recordContributorKey("poop_record", "record-1"),
-          [
-            { kind: "user", userName: "家族", iconMediaAssetId: "icon-asset" },
-            {
-              kind: "user",
-              userName: "見る人",
-              iconMediaAssetId: "icon-asset",
-            },
-          ],
+          {
+            contributors: [
+              {
+                kind: "user",
+                userName: "家族",
+                iconMediaAssetId: "icon-asset",
+              },
+              {
+                kind: "user",
+                userName: "見る人",
+                iconMediaAssetId: "icon-asset",
+              },
+            ],
+            history: [
+              {
+                contributorIndex: 0,
+                changedAt: new Date("2026-07-01T00:00:00Z"),
+              },
+              {
+                contributorIndex: 1,
+                changedAt: new Date("2026-07-02T00:00:00Z"),
+              },
+              {
+                contributorIndex: 0,
+                changedAt: new Date("2026-07-03T00:00:00Z"),
+              },
+            ],
+          },
         ],
       ]),
     );
@@ -129,7 +149,7 @@ describe("listRecordContributors", () => {
     expect(
       result
         .get(recordContributorKey("poop_record", "record-1"))
-        ?.map((contributor) => contributor.userName),
+        ?.contributors.map((contributor) => contributor.userName),
     ).toEqual(["見る人", "家族"]);
   });
 
@@ -149,9 +169,13 @@ describe("listRecordContributors", () => {
       d1,
     );
 
-    expect(result.get(recordContributorKey("poop_record", "record-1"))).toEqual(
-      [{ kind: "user", userName: "見る人", iconMediaAssetId: "icon-asset" }],
+    const contributions = result.get(
+      recordContributorKey("poop_record", "record-1"),
     );
+    expect(contributions?.contributors).toEqual([
+      { kind: "user", userName: "見る人", iconMediaAssetId: "icon-asset" },
+    ]);
+    expect(contributions?.history).toHaveLength(1);
   });
 
   it("同じ家にいないユーザーのアイコン画像は返さない", async () => {
@@ -165,9 +189,9 @@ describe("listRecordContributors", () => {
       d1,
     );
 
-    expect(result.get(recordContributorKey("poop_record", "record-1"))).toEqual(
-      [{ kind: "user", userName: "元の家族", iconMediaAssetId: null }],
-    );
+    expect(
+      result.get(recordContributorKey("poop_record", "record-1"))?.contributors,
+    ).toEqual([{ kind: "user", userName: "元の家族", iconMediaAssetId: null }]);
   });
 
   it("AI との接続からの操作は、接続ごとにアプリとして返し、画面からの操作とは分ける", async () => {
@@ -202,18 +226,18 @@ describe("listRecordContributors", () => {
       d1,
     );
 
-    expect(result.get(recordContributorKey("poop_record", "record-1"))).toEqual(
-      [
-        { kind: "user", userName: "家族", iconMediaAssetId: "icon-asset" },
-        {
-          kind: "ai",
-          userName: "家族",
-          clientName: "ChatGPT",
-          app: "openai",
-        },
-        { kind: "ai", userName: "家族", clientName: null, app: null },
-      ],
-    );
+    expect(
+      result.get(recordContributorKey("poop_record", "record-1"))?.contributors,
+    ).toEqual([
+      { kind: "user", userName: "家族", iconMediaAssetId: "icon-asset" },
+      {
+        kind: "ai",
+        userName: "家族",
+        clientName: "ChatGPT",
+        app: "openai",
+      },
+      { kind: "ai", userName: "家族", clientName: null, app: null },
+    ]);
   });
 
   it("記録を指定しなければ問い合わせずに空を返す", async () => {
