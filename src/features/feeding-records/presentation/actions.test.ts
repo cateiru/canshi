@@ -244,6 +244,7 @@ describe("createFeedingRecordAction・updateFeedingRecordAction のごはんの�
         {
           occurredAt: new Date("2026-09-21T07:30:00.000Z"),
           mode: "strict",
+          memo: null,
           items: [
             {
               foodProductId: "food",
@@ -287,5 +288,46 @@ describe("createFeedingRecordAction・updateFeedingRecordAction のごはんの�
     expect(result).toEqual({ redirectTo: "/cats/tama/feeding-records" });
 
     expect(await statusOf("time")).toBe("pending");
+  });
+
+  async function memoOf(id: string) {
+    const [record] = await db
+      .select({ memo: feedingRecords.memo })
+      .from(feedingRecords)
+      .where(eq(feedingRecords.id, id));
+    return record.memo;
+  }
+
+  it("備考を保存し、編集で書き換え・空にできる", async () => {
+    const formData = strictForm();
+    formData.set("memo", "  半分ほど残して後で食べた  ");
+    expect(await createFeedingRecordAction("tama", {}, formData)).toEqual({
+      redirectTo: "/cats/tama/feeding-records",
+    });
+    const [created] = await db
+      .select({ id: feedingRecords.id, memo: feedingRecords.memo })
+      .from(feedingRecords)
+      .where(eq(feedingRecords.memo, "半分ほど残して後で食べた"));
+    expect(created).toBeDefined();
+    expect(await itemsOf(created.id)).toHaveLength(1);
+
+    formData.set("memo", "ふやかしてあげた");
+    await updateFeedingRecordAction("tama", created.id, {}, formData);
+    expect(await memoOf(created.id)).toBe("ふやかしてあげた");
+
+    formData.set("memo", "");
+    await updateFeedingRecordAction("tama", created.id, {}, formData);
+    expect(await memoOf(created.id)).toBeNull();
+  });
+
+  it("備考が500文字を超えると保存しない", async () => {
+    const formData = strictForm();
+    formData.set("memo", "あ".repeat(501));
+    expect(
+      await updateFeedingRecordAction("tama", "tama-meal", {}, formData),
+    ).toEqual({
+      fieldErrors: { memo: ["備考は500文字以内で入力してください"] },
+    });
+    expect(await memoOf("tama-meal")).toBeNull();
   });
 });

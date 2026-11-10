@@ -29,6 +29,7 @@ export const feedingRecords = sqliteTable(
       .references(() => cats.id),
     occurredAt: integer("occurred_at", { mode: "timestamp" }).notNull(),
     mode: text("mode", { enum: FEEDING_MODES }).notNull().default("strict"),
+    memo: text("memo"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

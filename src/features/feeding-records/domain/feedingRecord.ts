@@ -31,10 +31,10 @@ export type FeedingRecordItemContent = Pick<
   | "sortOrder"
 >;
 
-/** 記録の中身。日時・入力方法と、並び順どおりの明細 */
+/** 記録の中身。日時・入力方法・備考と、並び順どおりの明細 */
 export type FeedingRecordContent = Pick<
   FeedingRecord,
-  "occurredAt" | "mode"
+  "occurredAt" | "mode" | "memo"
 > & {
   items: FeedingRecordItemContent[];
 };
@@ -75,6 +75,7 @@ export function toFeedingRecordContent(
   }
 
   const occurredAt = combineDateTimeUtc(input.occurredDate, input.occurredTime);
+  const memo = input.memo ?? null;
 
   // あいまいモードは量を段階でしか持たないため、摂取量・カロリーは計算しない
   if (input.mode === "approximate") {
@@ -88,7 +89,7 @@ export function toFeedingRecordContent(
       leftoverLevel: item.leftoverLevel,
       sortOrder: index,
     }));
-    return { content: { occurredAt, mode: input.mode, items } };
+    return { content: { occurredAt, mode: input.mode, memo, items } };
   }
 
   const items = input.items.map((item, index) => {
@@ -112,7 +113,7 @@ export function toFeedingRecordContent(
       sortOrder: index,
     };
   });
-  return { content: { occurredAt, mode: input.mode, items } };
+  return { content: { occurredAt, mode: input.mode, memo, items } };
 }
 
 /**

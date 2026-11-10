@@ -216,6 +216,7 @@ describe("ごはんの記録", () => {
   const feeding = () => ({
     occurredAt: at,
     mode: "approximate" as const,
+    memo: null,
     items: [],
   });
 

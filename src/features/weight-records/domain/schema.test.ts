@@ -103,4 +103,47 @@ describe("weightRecordFormSchema", () => {
       }
     });
   });
+
+  describe("memo", () => {
+    const directInput = {
+      ...baseInput,
+      inputMethod: "direct",
+      catWeightKg: "4.2",
+    };
+
+    it("前後の空白を除いて受け取る", () => {
+      const result = weightRecordFormSchema.safeParse({
+        ...directInput,
+        memo: "  ごはんの前に量った  ",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.memo).toBe("ごはんの前に量った");
+      }
+    });
+
+    it("未入力（空文字）のときは undefined として成功する", () => {
+      const result = weightRecordFormSchema.safeParse({
+        ...directInput,
+        memo: "",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.memo).toBeUndefined();
+      }
+    });
+
+    it("500文字を超えると失敗する", () => {
+      const result = weightRecordFormSchema.safeParse({
+        ...directInput,
+        memo: "あ".repeat(501),
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.flatten().fieldErrors.memo?.[0]).toBe(
+          "備考は500文字以内で入力してください",
+        );
+      }
+    });
+  });
 });

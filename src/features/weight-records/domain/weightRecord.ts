@@ -15,6 +15,7 @@ export type WeightRecordContent = Pick<
   | "humanWeightKg"
   | "catWeightKg"
   | "bcs"
+  | "memo"
 >;
 
 /** 入力から記録の中身を作る */
@@ -28,5 +29,6 @@ export function toWeightRecordContent(
     humanWeightKg: data.humanWeightKg ?? null,
     catWeightKg: catWeightKg(catWeightMeasurementFrom(data)),
     bcs: data.bcs ?? null,
+    memo: data.memo ?? null,
   };
 }

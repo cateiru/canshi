@@ -28,6 +28,7 @@ function parseFormData(formData: FormData) {
     humanWeightKg: formData.get("humanWeightKg"),
     catWeightKg: formData.get("catWeightKg"),
     bcs: formData.get("bcs"),
+    memo: formData.get("memo"),
   });
 }
 

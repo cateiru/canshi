@@ -49,6 +49,14 @@ const feedingRecordBaseShape = {
   occurredTime: z
     .string()
     .regex(TIME_STRING_PATTERN, "記録時刻の形式が正しくありません"),
+  memo: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .max(500, "備考は500文字以内で入力してください")
+      .optional(),
+  ),
 };
 
 // モードは記録単位で選ぶため、すべての商品が同じモードの入力形式に従う
@@ -92,7 +100,7 @@ export type FeedingRecordItemFieldErrors = Partial<
 >;
 
 export type FeedingRecordFormFieldErrors = Partial<
-  Record<"occurredDate" | "occurredTime" | "mode" | "items", string[]>
+  Record<"occurredDate" | "occurredTime" | "mode" | "memo" | "items", string[]>
 > & {
   itemErrors?: FeedingRecordItemFieldErrors[];
 };

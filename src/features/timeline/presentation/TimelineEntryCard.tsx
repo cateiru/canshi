@@ -234,6 +234,7 @@ function renderBody(
               </div>
             </dl>
           )}
+          {record.memo ? <p>{record.memo}</p> : null}
         </div>
       );
     }
@@ -258,6 +259,7 @@ function renderBody(
             {isBodyConditionScore(record.bcs)
               ? `・${formatBcs(record.bcs)}`
               : ""}
+            {record.memo ? `・${record.memo}` : ""}
           </p>
         </div>
       );

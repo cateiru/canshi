@@ -151,8 +151,9 @@ VALUES ('vrt-expense-1', strftime('%s', '2024-06-10 00:00:00'), 3000, 'food',
 INSERT INTO expense_record_cats (expense_record_id, cat_id)
 VALUES ('vrt-expense-1', 'vrt-cat-populated');
 
-INSERT INTO feeding_records (id, cat_id, occurred_at, created_at, updated_at)
-VALUES ('vrt-feeding-1', 'vrt-cat-populated', strftime('%s', '2024-06-15 08:00:00'),
+-- 一覧・タイムラインで備考の表示も撮るため、備考を入れておく
+INSERT INTO feeding_records (id, cat_id, occurred_at, memo, created_at, updated_at)
+VALUES ('vrt-feeding-1', 'vrt-cat-populated', strftime('%s', '2024-06-15 08:00:00'), 'ぬるま湯でふやかしてあげた',
   strftime('%s', '2024-06-15 08:00:00'), strftime('%s', '2024-06-15 08:00:00'));
 
 INSERT INTO feeding_record_items (id, feeding_record_id, food_product_id, given_amount_g, leftover_amount_g, estimated_intake_g, estimated_kcal, sort_order)
@@ -228,8 +229,9 @@ INSERT INTO water_records (id, cat_id, occurred_at, measurement_method, supplied
 VALUES ('vrt-water-1', 'vrt-cat-populated', strftime('%s', '2024-06-14 09:00:00'), 'measuring_cup', 200,
   strftime('%s', '2024-06-14 09:00:00'), strftime('%s', '2024-06-14 09:00:00'));
 
-INSERT INTO weight_records (id, cat_id, occurred_at, input_method, cat_weight_kg, bcs, created_at, updated_at)
-VALUES ('vrt-weight-1', 'vrt-cat-populated', strftime('%s', '2024-06-09 08:00:00'), 'direct', 4.2, 3,
+-- 一覧・タイムラインで備考の表示も撮るため、備考を入れておく
+INSERT INTO weight_records (id, cat_id, occurred_at, input_method, cat_weight_kg, bcs, memo, created_at, updated_at)
+VALUES ('vrt-weight-1', 'vrt-cat-populated', strftime('%s', '2024-06-09 08:00:00'), 'direct', 4.2, 3, 'ごはんの前に量った',
   strftime('%s', '2024-06-09 08:00:00'), strftime('%s', '2024-06-09 08:00:00'));
 
 -- メモ: 日付ありと日付なし（recorded_at が NULL）を1件ずつ登録する（一覧で両方のカードの表示を撮る。
