@@ -1,25 +1,10 @@
-.container {
-  padding: var(--space-6);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
-  /* 開いた見出しの背景に隠れないよう、子要素より手前に描かれる outline で輪郭を描く */
-  outline: var(--border-width) solid var(--color-border-emphasis);
-  outline-offset: calc(-1 * var(--border-width));
-}
-
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: var(--space-3);
   flex-wrap: wrap;
   margin-bottom: var(--space-4);
-}
-
-.title {
-  margin: 0;
-  font-size: var(--text-md);
-  font-weight: var(--font-weight-bold);
 }
 
 .canvas {
@@ -40,10 +25,6 @@
 }
 
 @media (max-width: 480px) {
-  .container {
-    padding: var(--space-4);
-  }
-
   .canvas,
   .placeholder,
   .emptyPeriod {

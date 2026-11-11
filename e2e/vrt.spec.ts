@@ -952,9 +952,9 @@ type RecordListCase = {
   path: string;
   heading: string;
   /**
-   * ごはん記録・うんち記録のグラフはデフォルトで折りたたまれている
+   * 記録のグラフはデフォルトで折りたたまれている
    * (react-aria-components の Disclosure, defaultExpanded={false})。
-   * 体重記録のグラフは折りたたみを持たないため未指定でよい
+   * グラフを持たない記録では未指定でよい
    */
   chartDisclosureTitle?: string;
 };
@@ -977,6 +977,7 @@ const CHART_RECORD_LISTS: ChartRecordListCase[] = [
     label: "体重記録",
     path: "weight-records",
     heading: "の体重記録",
+    chartDisclosureTitle: "体重の推移",
     chartPeriodLabel: "全期間",
   },
   {
@@ -1151,6 +1152,11 @@ test.describe("通院記録一覧（データがあるケース）", () => {
     await expect(
       page.getByRole("heading", { name: "VRTテスト猫の通院記録" }),
     ).toBeVisible();
+    // グラフはデフォルトで折りたたまれているため、開いた状態を撮る
+    await page.getByRole("button", { name: "通院日カレンダー" }).click();
+    await expect(
+      page.getByRole("region", { name: "通院日カレンダーグラフ" }),
+    ).toBeVisible();
     await takeSnapshot(page, testInfo);
   });
 });
@@ -1193,6 +1199,11 @@ test.describe("掃除の実施記録（対象ごと・データがあるケー�
     await page.goto(`/cats/${CAT}/cleaning/targets/vrt-clean-target-1/records`);
     await expect(
       page.getByRole("heading", { name: "トイレ掃除の実施記録" }),
+    ).toBeVisible();
+    // グラフはデフォルトで折りたたまれているため、開いた状態を撮る
+    await page.getByRole("button", { name: "実施日カレンダー" }).click();
+    await expect(
+      page.getByRole("region", { name: "実施日カレンダーグラフ" }),
     ).toBeVisible();
     await takeSnapshot(page, testInfo);
   });

@@ -2,8 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
-import { TbCalendarStats } from "react-icons/tb";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
+import { Collapsible } from "@/components/ui";
 import { CALENDAR_COLORS } from "../domain/labels";
 import {
   filterCalendarDataToRange,
@@ -38,19 +37,11 @@ export function HospitalVisitChart({ data, now }: HospitalVisitChartProps) {
   }
 
   return (
-    <section className={styles.container}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>
-          <ScaledIcon
-            icon={TbCalendarStats}
-            aria-hidden="true"
-            size={20}
-            className={styles.titleIcon}
-          />
-          通院日カレンダー
-        </h2>
-      </div>
-
+    <Collapsible
+      title="通院日カレンダー"
+      defaultExpanded={false}
+      storageKey="canshi:hospital-visit-calendar-expanded"
+    >
       <section
         className={styles.canvas}
         aria-label="通院日カレンダーグラフ"
@@ -77,6 +68,6 @@ export function HospitalVisitChart({ data, now }: HospitalVisitChartProps) {
         </span>
         多い
       </div>
-    </section>
+    </Collapsible>
   );
 }

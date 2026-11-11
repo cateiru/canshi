@@ -41,7 +41,11 @@ export function ExpenseChart({ months }: ExpenseChartProps) {
   const hasExpenses = visibleMonths.some((month) => month.total > 0);
 
   return (
-    <Collapsible title="月ごとの支出グラフ" defaultExpanded={false}>
+    <Collapsible
+      title="月ごとの支出グラフ"
+      defaultExpanded={false}
+      storageKey="canshi:expense-chart-expanded"
+    >
       <div className={styles.header}>
         {first && last ? (
           <p className={styles.range}>

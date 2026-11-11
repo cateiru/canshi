@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CleaningRecordChart } from "./CleaningRecordChart";
 import type { CleaningRecordCalendarDatum } from "./recordChart";
@@ -11,6 +11,8 @@ vi.mock("./CleaningRecordChartCanvas", () => ({
 
 afterEach(() => {
   cleanup();
+  // 開閉状態は localStorage に保存されるため、テストごとに初期状態へ戻す
+  window.localStorage.clear();
 });
 
 const NOW = "2026-09-16T00:00:00.000Z";
@@ -22,17 +24,17 @@ const DATA: CleaningRecordCalendarDatum[] = [
 ];
 
 describe("CleaningRecordChart", () => {
-  it("見出しとグラフを常に表示する", async () => {
+  it("初期表示ではグラフが折りたたまれている", () => {
     render(<CleaningRecordChart data={DATA} now={NOW} />);
 
-    expect(
-      screen.getByRole("heading", { name: "実施日カレンダー" }),
-    ).toBeInTheDocument();
-    expect(await screen.findByTestId("chart-canvas")).toBeInTheDocument();
+    const trigger = screen.getByRole("button", { name: "実施日カレンダー" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("今日を終端とした直近1年のデータだけがキャンバスに渡る", async () => {
+  it("開くと今日を終端とした直近1年のデータだけがキャンバスに渡る", async () => {
     render(<CleaningRecordChart data={DATA} now={NOW} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "実施日カレンダー" }));
 
     expect(await screen.findByTestId("chart-canvas")).toHaveTextContent("2");
   });
