@@ -15,6 +15,9 @@ export const CAT_COAT_FILL_VARIABLE = "--illustration-cat-coat";
 /** 猫の目・口の線の色を差し替える CSS 変数。濃い毛色で目・口が塗りに沈まないようにする */
 export const CAT_FEATURE_STROKE_VARIABLE = "--illustration-cat-feature";
 
+/** 猫の毛の輪郭の線の色を差し替える CSS 変数。濃い毛色で猫の形が背景に沈まないようにする */
+export const CAT_OUTLINE_STROKE_VARIABLE = "--illustration-cat-outline";
+
 /** 猫の耳の内側の塗り（fill の値）を差し替える CSS 変数。`none` で耳の内側を塗らない */
 export const CAT_EAR_FILL_VARIABLE = "--illustration-cat-ear";
 
@@ -110,7 +113,7 @@ function CatOutline({
 
   return (
     <g transform={transform}>
-      <path d={facePath} />
+      <path className={styles.catOutline} d={facePath} />
       <path
         className={styles.catFeature}
         d={eyes[expression]}
@@ -227,7 +230,10 @@ export function PoopIcon(props: RecordIconProps) {
         </>
       }
     >
-      <path d="M5 12.5c-1.5 1.5-2 3.5-1 5.5m7-5.5 1 5.5M7 15v3" />
+      <path
+        className={styles.catOutline}
+        d="M5 12.5c-1.5 1.5-2 3.5-1 5.5m7-5.5 1 5.5M7 15v3"
+      />
       <CatOutline transform={catTransform} expression="calm" />
       <path d={poop} />
       <path d={tray} />
@@ -281,7 +287,10 @@ export function VomitIcon(props: RecordIconProps) {
         </>
       }
     >
-      <path d="M9.5 17.8C5.7 17.1 3 14.9 3 12a6 6 0 0 1 1-3V3l5 3a12 12 0 0 1 6 0l5-3v6a6 6 0 0 1 1 3c0 2.9-2.7 5.1-6.5 5.8" />
+      <path
+        className={styles.catOutline}
+        d="M9.5 17.8C5.7 17.1 3 14.9 3 12a6 6 0 0 1 1-3V3l5 3a12 12 0 0 1 6 0l5-3v6a6 6 0 0 1 1 3c0 2.9-2.7 5.1-6.5 5.8"
+      />
       <path
         className={styles.catFeature}
         d="m7 10 2 1.5L7 13m10-3-2 1.5 2 1.5"
@@ -377,7 +386,7 @@ export function MemoIcon(props: RecordIconProps) {
       <path className={styles.foregroundFill} fill="#fff4df" d={note} />
       <path d="M7.5 15.5h9m-9 3h6" />
       <path
-        className={`${styles.foregroundFill} ${styles.catCoat}`}
+        className={`${styles.foregroundFill} ${styles.catCoat} ${styles.catOutline}`}
         fill={DEFAULT_CAT_COAT}
         d={paws}
       />
@@ -405,7 +414,10 @@ export function BroomIcon(props: RecordIconProps) {
         </>
       }
     >
-      <path d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5M7 17v4" />
+      <path
+        className={styles.catOutline}
+        d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5M7 17v4"
+      />
       <path className={styles.line} d="M4 20c-3 0-3-3-2-4" />
       <CatOutline transform={catTransform} expression="calm" />
       <path className={styles.line} d="m20 3-2 10.5" />
@@ -554,7 +566,11 @@ export function PhotoIcon(props: RecordIconProps) {
       }
     >
       <rect x="3" y="3" width="18" height="18" rx="3" />
-      <path d="M8 18c0-1 .8-1.8 2-2m4 0c1.2.2 2 1 2 2" strokeLinecap="butt" />
+      <path
+        className={styles.catOutline}
+        d="M8 18c0-1 .8-1.8 2-2m4 0c1.2.2 2 1 2 2"
+        strokeLinecap="butt"
+      />
       <CatOutline transform={catTransform} />
       <path d="M3 18h18" />
     </RecordIcon>
@@ -577,7 +593,7 @@ export function ExpenseIcon(props: RecordIconProps) {
         </>
       }
     >
-      <path d={body} />
+      <path className={styles.catOutline} d={body} />
       <path d="M8 12.5h8" />
       {/* 胴体と首輪の線を顔の塗りで隠し、小判と抱える手をさらに手前に重ねる。 */}
       <g stroke="none">
@@ -600,7 +616,7 @@ export function ExpenseIcon(props: RecordIconProps) {
         />
       </g>
       <path
-        className={`${styles.foregroundFill} ${styles.catCoat}`}
+        className={`${styles.foregroundFill} ${styles.catCoat} ${styles.catOutline}`}
         fill={DEFAULT_CAT_COAT}
         d={paw}
       />

@@ -57,6 +57,11 @@
   --color-illustration-outline: #2e3142;
   /* イラストアイコンのうち、塗りに接さず背景に直接描かれる線（ほうきの柄など） */
   --color-illustration-line: #2e3142;
+  /*
+   * 黒系の毛色で塗ったイラストアイコンの猫の輪郭。ダークテーマでは塗りも背景も濃く、
+   * 濃い輪郭では猫の形が分からないため白くする
+   */
+  --color-illustration-dark-coat-outline: #2e3142;
 
   /* 影・モーダル背後の覆い */
   --color-shadow: rgb(46 49 66 / 15%);
@@ -190,6 +195,7 @@
   --color-warning-fill: #8f7200;
 
   --color-illustration-line: #a6a9b8;
+  --color-illustration-dark-coat-outline: #f3f4f8;
 
   --color-shadow: rgb(0 0 0 / 45%);
   --color-backdrop: rgb(0 0 0 / 60%);
@@ -226,6 +232,7 @@
     --color-warning-fill: #8f7200;
 
     --color-illustration-line: #a6a9b8;
+    --color-illustration-dark-coat-outline: #f3f4f8;
 
     --color-shadow: rgb(0 0 0 / 45%);
     --color-backdrop: rgb(0 0 0 / 60%);

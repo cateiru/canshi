@@ -40,6 +40,14 @@
   stroke: var(--illustration-cat-feature);
 }
 
-.monochrome .catFeature {
+/*
+ * 猫の毛の輪郭。--illustration-cat-outline が未設定なら宣言が無効になり、ほかの輪郭と同じ色を継承する
+ */
+.catOutline {
+  stroke: var(--illustration-cat-outline);
+}
+
+.monochrome .catFeature,
+.monochrome .catOutline {
   stroke: currentColor;
 }

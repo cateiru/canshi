@@ -19,11 +19,13 @@ describe("catCoatIconStyle", () => {
     });
   });
 
-  it("黒系のベース色は明るくして塗り、目・口を明るい色で描き、耳の内側を塗らない", () => {
+  it("黒系のベース色は明るくして塗り、目・口を明るく、耳の内側を塗らず、輪郭をテーマに合わせる", () => {
     expect(catCoatIconStyle("black", "cat-coat-1")).toEqual({
       "--illustration-cat-coat": "#4a4442",
       "--illustration-cat-feature": "#fff4df",
       "--illustration-cat-ear": "none",
+      "--illustration-cat-outline":
+        "var(--color-illustration-dark-coat-outline)",
     });
   });
 });
