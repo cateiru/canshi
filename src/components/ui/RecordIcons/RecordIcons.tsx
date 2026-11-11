@@ -15,6 +15,11 @@ export const CAT_COAT_FILL_VARIABLE = "--illustration-cat-coat";
 /** 猫の目・口の線の色を差し替える CSS 変数。濃い毛色で目・口が塗りに沈まないようにする */
 export const CAT_FEATURE_STROKE_VARIABLE = "--illustration-cat-feature";
 
+/** 猫の耳の内側の塗り（fill の値）を差し替える CSS 変数。`none` で耳の内側を塗らない */
+export const CAT_EAR_FILL_VARIABLE = "--illustration-cat-ear";
+
+const DEFAULT_CAT_EAR = "#f4b0a3";
+
 const DEFAULT_CAT_COAT = "#f5dfb7";
 
 // 24px グリッド・1.5px 線・丸い線端。SVG のまま描画し、拡大時も鮮明に保つ。
@@ -75,8 +80,8 @@ function CatFill({
         transform={transform}
       />
       <path
-        className={className}
-        fill="#f4b0a3"
+        className={[styles.catEar, className].filter(Boolean).join(" ")}
+        fill={DEFAULT_CAT_EAR}
         d="M6.5 4.5v2l2-1Zm11 0v2l-2-1Z"
         transform={transform}
       />
@@ -267,7 +272,11 @@ export function VomitIcon(props: RecordIconProps) {
       fills={
         <>
           <path className={styles.catCoat} fill={DEFAULT_CAT_COAT} d={face} />
-          <path fill="#f4b0a3" d="M5.5 5.5v3l2-1.5Zm13 0v3l-2-1.5Z" />
+          <path
+            className={styles.catEar}
+            fill={DEFAULT_CAT_EAR}
+            d="M5.5 5.5v3l2-1.5Zm13 0v3l-2-1.5Z"
+          />
           <path fill="#b2d3aa" d={vomit} />
         </>
       }

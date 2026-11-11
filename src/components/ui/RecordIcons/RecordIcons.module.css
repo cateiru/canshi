@@ -28,6 +28,11 @@
   fill: var(--illustration-cat-coat, #f5dfb7);
 }
 
+/* 猫の耳の内側。黒系の毛色ではピンクが浮くため、--illustration-cat-ear: none で塗らない */
+.catEar {
+  fill: var(--illustration-cat-ear, #f4b0a3);
+}
+
 /*
  * 猫の目・口。--illustration-cat-feature が未設定なら宣言が無効になり、輪郭と同じ色を継承する
  */
