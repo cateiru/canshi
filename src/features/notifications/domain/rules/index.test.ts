@@ -15,8 +15,6 @@ function makeCat(overrides: Partial<Cat> = {}): Cat {
     adoptedAt: null,
     neuterStatus: null,
     coatColor: null,
-    coatPattern: null,
-    coatWhite: null,
     profileMediaAssetId: null,
     createdAt: new Date("2025-09-11T00:00:00.000Z"),
     updatedAt: new Date("2025-09-11T00:00:00.000Z"),

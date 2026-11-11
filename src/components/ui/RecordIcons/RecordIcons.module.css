@@ -22,7 +22,7 @@
 
 /*
  * 猫の毛の塗り。祖先で --illustration-cat-coat を設定した範囲（猫詳細の記録の導線）では、
- * その猫の毛色・柄で塗る。単色表示では上の .monochrome の指定（詳細度が高い）が勝つ
+ * その猫の毛色で塗る。単色表示では上の .monochrome の指定（詳細度が高い）が勝つ
  */
 .catCoat {
   fill: var(--illustration-cat-coat, #f5dfb7);

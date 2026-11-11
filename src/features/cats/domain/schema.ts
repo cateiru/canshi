@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  CAT_COAT_COLORS,
-  CAT_COAT_PATTERNS,
-  CAT_COAT_WHITE_AMOUNTS,
-  CAT_NEUTER_STATUSES,
-} from "@/db/schema";
+import { CAT_COAT_COLORS, CAT_NEUTER_STATUSES } from "@/db/schema";
 
 export const BIRTH_DATE_PRECISIONS = ["day", "month", "year"] as const;
 
@@ -72,16 +67,6 @@ export const catFormSchema = z.object({
   coatColor: z.preprocess(
     emptyToUndefined,
     z.enum(CAT_COAT_COLORS, { error: "ベース色を選択してください" }).optional(),
-  ),
-  coatPattern: z.preprocess(
-    emptyToUndefined,
-    z.enum(CAT_COAT_PATTERNS, { error: "柄を選択してください" }).optional(),
-  ),
-  coatWhite: z.preprocess(
-    emptyToUndefined,
-    z
-      .enum(CAT_COAT_WHITE_AMOUNTS, { error: "白い毛の割合を選択してください" })
-      .optional(),
   ),
 });
 

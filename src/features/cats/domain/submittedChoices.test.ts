@@ -17,16 +17,12 @@ describe("readSubmittedCatChoices", () => {
           sex: "male",
           neuterStatus: "neutered",
           coatColor: "red",
-          coatPattern: "mackerel_tabby",
-          coatWhite: "low",
         }),
       ),
     ).toEqual({
       sex: "male",
       neuterStatus: "neutered",
       coatColor: "red",
-      coatPattern: "mackerel_tabby",
-      coatWhite: "low",
     });
   });
 
@@ -37,16 +33,12 @@ describe("readSubmittedCatChoices", () => {
           sex: "unknown",
           neuterStatus: "",
           coatColor: "rainbow",
-          coatPattern: "",
-          coatWhite: "",
         }),
       ),
     ).toEqual({
       sex: "unknown",
       neuterStatus: null,
       coatColor: null,
-      coatPattern: null,
-      coatWhite: null,
     });
   });
 

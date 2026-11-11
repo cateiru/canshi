@@ -1,12 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import {
-  CAT_COAT_COLORS,
-  CAT_COAT_PATTERNS,
-  CAT_COAT_WHITE_AMOUNTS,
-  CAT_NEUTER_STATUSES,
-  type Cat,
-} from "@/db/schema";
+import { CAT_COAT_COLORS, CAT_NEUTER_STATUSES, type Cat } from "@/db/schema";
 import {
   createCatForUser,
   updateCatForUser,
@@ -15,11 +9,7 @@ import {
   type CatValues,
   HOUSEHOLD_NOT_ALLOWED_ERROR,
 } from "@/features/cats/domain/cat";
-import {
-  COAT_COLOR_LABEL,
-  COAT_PATTERN_LABEL,
-  COAT_WHITE_LABEL,
-} from "@/features/cats/domain/labels";
+import { COAT_COLOR_LABEL } from "@/features/cats/domain/labels";
 import {
   BIRTH_DATE_PRECISIONS,
   type BirthDatePrecision,
@@ -51,7 +41,7 @@ const CAT_DESCRIPTION =
   "birthDatePrecision は生年月日のわかっている範囲（year=年のみ、month=年月のみ、day=年月日すべて）。" +
   "year・month の場合、birthDate の不明な月・日は 01 にする（例: 2020年5月生まれなら 2020-05-01）。" +
   "neuterStatus は避妊（メス）・去勢（オス）手術の状況（intact=未、neutered=済）。" +
-  "毛色・柄は coatColor（ベース色）・coatPattern（柄）・coatWhite（白い毛の割合）の 3 つのプリセットから選ぶ。";
+  "毛色は coatColor（ベース色）のプリセットから選ぶ。";
 
 /** プリセットの値と表示名の一覧を、引数の説明に使う形（`black=黒、…`）にする */
 function describeOptions<T extends string>(labels: Record<T, string>): string {
@@ -92,20 +82,6 @@ const catFields = {
     .optional()
     .describe(
       `毛色のベース色（${describeOptions(COAT_COLOR_LABEL)}）。null を指定すると未設定にする`,
-    ),
-  coatPattern: z
-    .enum(CAT_COAT_PATTERNS)
-    .nullable()
-    .optional()
-    .describe(
-      `毛の柄（${describeOptions(COAT_PATTERN_LABEL)}）。null を指定すると未設定にする`,
-    ),
-  coatWhite: z
-    .enum(CAT_COAT_WHITE_AMOUNTS)
-    .nullable()
-    .optional()
-    .describe(
-      `白い毛の割合（${describeOptions(COAT_WHITE_LABEL)}）。null を指定すると未設定にする`,
     ),
 };
 
@@ -177,8 +153,6 @@ function parseCatValues(
       adoptedAt: parsed.data.adoptedAt ?? null,
       neuterStatus: parsed.data.neuterStatus ?? null,
       coatColor: parsed.data.coatColor ?? null,
-      coatPattern: parsed.data.coatPattern ?? null,
-      coatWhite: parsed.data.coatWhite ?? null,
     },
   };
 }
@@ -194,8 +168,6 @@ function catCurrentValues(cat: Cat) {
       adoptedAt: cat.adoptedAt ?? "",
       neuterStatus: cat.neuterStatus ?? "",
       coatColor: cat.coatColor ?? "",
-      coatPattern: cat.coatPattern ?? "",
-      coatWhite: cat.coatWhite ?? "",
     },
   };
 }

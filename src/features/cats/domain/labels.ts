@@ -1,10 +1,4 @@
-import type {
-  Cat,
-  CatCoatColor,
-  CatCoatPattern,
-  CatCoatWhiteAmount,
-  CatNeuterStatus,
-} from "@/db/schema";
+import type { Cat, CatCoatColor, CatNeuterStatus } from "@/db/schema";
 
 export const SEX_LABEL: Record<Cat["sex"], string> = {
   female: "メス",
@@ -26,7 +20,7 @@ export const NEUTER_STATUS_LABEL: Record<CatNeuterStatus, string> = {
 
 /**
  * ベース色の名前。画面では色見本だけで選ぶため、読み上げ・色見本のツールチップと、
- * 毛色・柄を 1 行にまとめるとき（`formatCoat`）・AI との接続（MCP）で使う
+ * 毛色を表示するとき（`formatCoat`）・AI との接続（MCP）で使う
  */
 export const COAT_COLOR_LABEL: Record<CatCoatColor, string> = {
   black: "黒",
@@ -39,22 +33,6 @@ export const COAT_COLOR_LABEL: Record<CatCoatColor, string> = {
   tortoiseshell: "黒と茶",
   blue_cream: "グレーとクリーム",
   white: "白",
-};
-
-export const COAT_PATTERN_LABEL: Record<CatCoatPattern, string> = {
-  solid: "単色（柄なし）",
-  mackerel_tabby: "縞（トラ）",
-  classic_tabby: "渦巻き",
-  spotted: "斑点（スポッテッド）",
-  ticked: "ティックド（細かい霜降り）",
-  colorpoint: "ポイント（顔・手足が濃い）",
-};
-
-export const COAT_WHITE_LABEL: Record<CatCoatWhiteAmount, string> = {
-  none: "なし",
-  low: "少し（胸・足先など）",
-  medium: "半分くらい（ハチワレなど）",
-  high: "ほとんど白",
 };
 
 /** 避妊・去勢手術の状況を、性別に合った呼び方と合わせて表示する（例：「去勢：済」）。未設定なら null */

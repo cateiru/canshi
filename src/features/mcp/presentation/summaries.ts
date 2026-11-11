@@ -14,7 +14,7 @@ import {
 } from "@/features/weight-records/domain/labels";
 
 /**
- * MCP ツール向けの猫プロフィールの要約。避妊・去勢の状況と毛色・柄は値だけでは意味が伝わりにくいため、
+ * MCP ツール向けの猫プロフィールの要約。避妊・去勢の状況と毛色は値だけでは意味が伝わりにくいため、
  * 表示用のラベル（未設定なら null）を添える
  */
 export function toCatSummary(cat: Cat) {
@@ -30,8 +30,6 @@ export function toCatSummary(cat: Cat) {
     neuterStatus: cat.neuterStatus,
     neuterStatusLabel: formatNeuterStatus(cat.sex, cat.neuterStatus),
     coatColor: cat.coatColor,
-    coatPattern: cat.coatPattern,
-    coatWhite: cat.coatWhite,
     coatLabel: formatCoat(cat),
   };
 }

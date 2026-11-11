@@ -93,10 +93,9 @@ INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, created_at, upda
 VALUES ('vrt-cat-populated', 'VRTテスト猫', 'female', '2015-04-01', '雑種', '2015-06-01',
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
--- 猫のページのアイコンの猫を毛色のベース色で塗った見た目を撮るため、毛色・柄を入れておく。
--- 柄・白い毛の割合はアイコンには反映しないため、入れても塗りはブラウンの 1 色になる
-INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, coat_color, coat_pattern, coat_white, created_at, updated_at)
-VALUES ('vrt-cat-busy', 'VRT記録多数猫', 'unknown', NULL, NULL, NULL, 'brown', 'mackerel_tabby', 'low',
+-- 猫のページのアイコンの猫を毛色で塗った見た目を撮るため、毛色を入れておく
+INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, coat_color, created_at, updated_at)
+VALUES ('vrt-cat-busy', 'VRT記録多数猫', 'unknown', NULL, NULL, NULL, 'brown',
   strftime('%s', '2024-05-31 00:00:00'), strftime('%s', '2024-05-31 00:00:00'));
 
 -- 共通のごはん商品（管理画面から登録し、ごはん商品の登録時に検索して家に追加する）。
@@ -163,8 +162,8 @@ VALUES ('vrt-feeding-item-1', 'vrt-feeding-1', 'vrt-food-1', 50, 0, 50, 175, 0);
 
 -- あいまいモードのごはん記録。グラム単位の値・推定値は持たず、段階だけを持つ
 -- 黒系の毛色（黒と茶）の猫。猫のページのアイコンで、2 色の斑で塗り、目・口を白に、耳の内側を塗らない見た目を撮る
-INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, coat_color, coat_pattern, coat_white, created_at, updated_at)
-VALUES ('vrt-cat-approximate', 'VRTあいまい猫', 'unknown', NULL, NULL, NULL, 'tortoiseshell', NULL, NULL,
+INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, coat_color, created_at, updated_at)
+VALUES ('vrt-cat-approximate', 'VRTあいまい猫', 'unknown', NULL, NULL, NULL, 'tortoiseshell',
   strftime('%s', '2024-05-30 00:00:00'), strftime('%s', '2024-05-30 00:00:00'));
 
 INSERT INTO feeding_records (id, cat_id, occurred_at, mode, created_at, updated_at)

@@ -1880,8 +1880,6 @@ describe("猫のプロフィール", () => {
       breed: "雑種",
       neuterStatus: "neutered",
       coatColor: "red",
-      coatPattern: "mackerel_tabby",
-      coatWhite: "low",
     });
 
     const [cat] = await db.select().from(cats).where(eq(cats.name, "ぶち"));
@@ -1897,9 +1895,7 @@ describe("猫のプロフィール", () => {
       neuterStatus: "neutered",
       neuterStatusLabel: "去勢：済",
       coatColor: "red",
-      coatPattern: "mackerel_tabby",
-      coatWhite: "low",
-      coatLabel: "茶・縞（トラ）・白少し",
+      coatLabel: "茶",
     });
   });
 
@@ -1936,8 +1932,6 @@ describe("猫のプロフィール", () => {
         adoptedAt: "2020-08-01",
         neuterStatus: "intact",
         coatColor: "tortoiseshell",
-        coatPattern: "solid",
-        coatWhite: "medium",
       })
       .where(eq(cats.id, "cat-1"));
 
@@ -1947,7 +1941,6 @@ describe("猫のプロフィール", () => {
       birthDatePrecision: "year",
       breed: null,
       neuterStatus: "neutered",
-      coatPattern: null,
     });
 
     expect(result.value).toEqual({
@@ -1962,9 +1955,7 @@ describe("猫のプロフィール", () => {
       neuterStatus: "neutered",
       neuterStatusLabel: "避妊：済",
       coatColor: "tortoiseshell",
-      coatPattern: null,
-      coatWhite: "medium",
-      coatLabel: "黒と茶・白半分くらい",
+      coatLabel: "黒と茶",
     });
   });
 

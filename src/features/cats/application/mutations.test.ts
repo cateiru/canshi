@@ -63,8 +63,6 @@ function catValues(name = "たま"): CatValues {
     adoptedAt: null,
     neuterStatus: null,
     coatColor: null,
-    coatPattern: null,
-    coatWhite: null,
   };
 }
 
@@ -100,8 +98,6 @@ describe("createCatForUser", () => {
       adoptedAt: "2020-06-01",
       neuterStatus: "neutered",
       coatColor: "brown",
-      coatPattern: "classic_tabby",
-      coatWhite: "high",
       householdId: "home",
     });
     const [row] = await db
@@ -119,8 +115,6 @@ describe("createCatForUser", () => {
       adoptedAt: "2020-06-01",
       neuterStatus: "neutered",
       coatColor: "brown",
-      coatPattern: "classic_tabby",
-      coatWhite: "high",
       profileMediaAssetId: null,
     });
     expect(row.createdAt).toBeInstanceOf(Date);
