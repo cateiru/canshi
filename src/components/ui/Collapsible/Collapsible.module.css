@@ -26,6 +26,8 @@
  */
 .header:has(.trigger[data-hovered]) {
   background: color-mix(in srgb, var(--color-accent) 12%, var(--color-bg));
+  outline: var(--border-width) solid var(--color-border-emphasis);
+  outline-offset: calc(-1 * var(--border-width));
 }
 
 .heading {
