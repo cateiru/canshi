@@ -47,15 +47,28 @@ function floorToUtcDay(date: Date): Date {
  * 期間内が 1 日だけのときは time スケールの範囲が幅 0 になり、全件が中央に寄って
  * 縦の線になってしまう。そのため期間外の点は、時間の近いほうの端にある期間内の点と
  * 同じ位置に重ねる（線の長さが 0 になって見えず、点の数も変わらない）。
+ *
+ * 期間は時刻まで比べて絞り込むが、配置は日に切り捨てるため、境界の日の期間外の記録は
+ * 期間内の端の点と同じ x に来てしまう。期間外の点は、端の点との線の太さが描画領域に
+ * はみ出さない距離まで外側へ離す（getHiddenGap）。
  */
-function placeAllData({
+export function placeAllData({
   allData,
   series,
   xScale,
   yScale,
+  lineWidth,
+  pointSize,
+  pointBorderWidth,
 }: Pick<
   KeyedLineLayerProps,
-  "allData" | "series" | "xScale" | "yScale"
+  | "allData"
+  | "series"
+  | "xScale"
+  | "yScale"
+  | "lineWidth"
+  | "pointSize"
+  | "pointBorderWidth"
 >): PlacedDatum[] {
   const inPeriodPositions = new Map(
     (series[0]?.data ?? []).map((datum) => [datum.data.key, datum.position]),
@@ -69,11 +82,14 @@ function placeAllData({
   const firstInPeriod = inPeriodPositions.get(
     allData[firstInPeriodIndex]?.key ?? "",
   );
+  const lastInPeriodIndex = allData.findLastIndex((datum) =>
+    inPeriodPositions.has(datum.key),
+  );
   const lastInPeriod = inPeriodPositions.get(
-    allData.findLast((datum) => inPeriodPositions.has(datum.key))?.key ?? "",
+    allData[lastInPeriodIndex]?.key ?? "",
   );
 
-  return allData.map((datum, index): PlacedDatum => {
+  const placed = allData.map((datum, index): PlacedDatum => {
     const position = inPeriodPositions.get(datum.key);
     if (position) {
       return { key: datum.key, x: position.x, y: position.y, isInPeriod: true };
@@ -90,6 +106,71 @@ function placeAllData({
       isInPeriod: false,
     };
   });
+
+  if (isSingleColumn || !firstInPeriod || !lastInPeriod) {
+    return placed;
+  }
+
+  const pointRadius = getPointPadding({ pointSize, pointBorderWidth });
+  // 期間より前の点：端の点と隣り合う点を十分に左へ離し、それより前の点はその左に並べる
+  let maxX = Number.POSITIVE_INFINITY;
+  for (let index = firstInPeriodIndex - 1; index >= 0; index--) {
+    const datum = placed[index];
+    if (!datum) {
+      continue;
+    }
+    if (index === firstInPeriodIndex - 1) {
+      const gap = getHiddenGap({
+        dy: datum.y - firstInPeriod.y,
+        lineWidth,
+        pointRadius,
+      });
+      maxX = firstInPeriod.x - gap;
+    }
+    datum.x = Math.min(datum.x, maxX);
+    maxX = datum.x;
+  }
+  // 期間より後の点（未来の日時の記録）も同じように右へ離す
+  let minX = Number.NEGATIVE_INFINITY;
+  for (let index = lastInPeriodIndex + 1; index < placed.length; index++) {
+    const datum = placed[index];
+    if (!datum) {
+      continue;
+    }
+    if (index === lastInPeriodIndex + 1) {
+      const gap = getHiddenGap({
+        dy: datum.y - lastInPeriod.y,
+        lineWidth,
+        pointRadius,
+      });
+      minX = lastInPeriod.x + gap;
+    }
+    datum.x = Math.max(datum.x, minX);
+    minX = datum.x;
+  }
+
+  return placed;
+}
+
+/**
+ * 期間内の端の点と期間外の点を結ぶ線が、描画領域の中へ見えるほどはみ出さない横の距離。
+ *
+ * 線は太さの半分だけ線と直角の向きに広がる。描画領域の端にある点から外へ急な傾きで
+ * 伸びる線は、横の距離が短いほど端の点から縦に長く内側へはみ出す（はみ出す縦の長さは
+ * およそ 太さの半分 × 縦の差 ÷ 横の距離）。これが端の点の半径に収まり、点に隠れる
+ * だけ離す。
+ */
+function getHiddenGap({
+  dy,
+  lineWidth,
+  pointRadius,
+}: {
+  dy: number;
+  lineWidth: number;
+  pointRadius: number;
+}): number {
+  const halfLineWidth = lineWidth / 2;
+  return halfLineWidth + (halfLineWidth * Math.abs(dy)) / pointRadius;
 }
 
 /** 両端の点が欠けないよう、点の半径と枠線のぶん描画領域より広げる幅 */
