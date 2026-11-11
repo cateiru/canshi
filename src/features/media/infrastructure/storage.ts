@@ -2,6 +2,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { and, eq, inArray, lt } from "drizzle-orm";
 import { chunk, chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
+import { insertWhere } from "@/db/conditionalInsert";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
 import { detachProfileImages } from "@/features/cats/infrastructure/profileImage";
 import { detachUserIcons } from "@/features/users/infrastructure/iconImage";
@@ -37,6 +38,7 @@ import {
   nextMediaSortOrder,
   sumMediaStorageBytes,
 } from "./queries";
+import { liveMediaRecordCondition } from "./recordOwner";
 import { generateImageThumbnail } from "./thumbnail";
 
 /**
@@ -349,9 +351,12 @@ async function storeMediaFile(
     const sortOrder =
       placement.sortOrder ??
       (await nextMediaSortOrder(recordType, recordId, env?.DB));
-    const [created] = await db
-      .insert(mediaAssets)
-      .values({
+    // 呼び出し元での確認の後に記録が論理削除された場合に、削除済みの記録へ添付しないよう、
+    // 挿入の文の中でも記録が削除されずにあることを確かめる
+    const [created] = await insertWhere(
+      db,
+      mediaAssets,
+      {
         id: assetId,
         catId,
         uploadedByUserId: uploadedByUserId ?? null,
@@ -365,8 +370,12 @@ async function storeMediaFile(
         width: prepared.width,
         height: prepared.height,
         sortOrder,
-      })
-      .returning();
+      },
+      liveMediaRecordCondition(recordType, recordId),
+    ).returning();
+    if (!created) {
+      throw new MediaUploadError("添付先のレコードが見つかりませんでした", 404);
+    }
     return created;
   } catch (error) {
     // R2 への保存が一部失敗した場合や行の作成に失敗した場合は、R2 に置いたオブジェクトを片付ける
