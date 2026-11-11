@@ -45,7 +45,8 @@ function floorToUtcDay(date: Date): Date {
  * パスの点の数が変わらず、記録ごとに新しい位置へ動く。
  *
  * 期間内が 1 日だけのときは time スケールの範囲が幅 0 になり、全件が中央に寄って
- * 縦の線になってしまうため、期間内の点だけを置く。
+ * 縦の線になってしまう。そのため期間外の点は、時間の近いほうの端にある期間内の点と
+ * 同じ位置に重ねる（線の長さが 0 になって見えず、点の数も変わらない）。
  */
 function placeAllData({
   allData,
@@ -62,25 +63,32 @@ function placeAllData({
   const isSingleColumn =
     new Set([...inPeriodPositions.values()].map((position) => position.x))
       .size <= 1;
+  const firstInPeriodIndex = allData.findIndex((datum) =>
+    inPeriodPositions.has(datum.key),
+  );
+  const firstInPeriod = inPeriodPositions.get(
+    allData[firstInPeriodIndex]?.key ?? "",
+  );
+  const lastInPeriod = inPeriodPositions.get(
+    allData.findLast((datum) => inPeriodPositions.has(datum.key))?.key ?? "",
+  );
 
-  return allData.flatMap((datum): PlacedDatum[] => {
+  return allData.map((datum, index): PlacedDatum => {
     const position = inPeriodPositions.get(datum.key);
     if (position) {
-      return [
-        { key: datum.key, x: position.x, y: position.y, isInPeriod: true },
-      ];
+      return { key: datum.key, x: position.x, y: position.y, isInPeriod: true };
     }
-    if (isSingleColumn) {
-      return [];
+    const nearestInPeriod =
+      index < firstInPeriodIndex ? firstInPeriod : lastInPeriod;
+    if (isSingleColumn && nearestInPeriod) {
+      return { key: datum.key, ...nearestInPeriod, isInPeriod: false };
     }
-    return [
-      {
-        key: datum.key,
-        x: xScale(floorToUtcDay(datum.x)),
-        y: yScale(datum.y),
-        isInPeriod: false,
-      },
-    ];
+    return {
+      key: datum.key,
+      x: xScale(floorToUtcDay(datum.x)),
+      y: yScale(datum.y),
+      isInPeriod: false,
+    };
   });
 }
 
