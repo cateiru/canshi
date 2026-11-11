@@ -9,7 +9,7 @@ import type { CatCoatColor } from "@/db/schema";
 import styles from "./CatCoatPatternDefs.module.css";
 import {
   CoatArt,
-  ICON_LIGHT_FEATURE_COLOR,
+  ICON_DARK_COAT_FEATURE_COLOR,
   iconPalette,
   isDarkIconCoat,
 } from "./CoatArt";
@@ -36,7 +36,7 @@ export function catCoatIconStyle(
       : palette.fill,
     ...(isDarkIconCoat(coatColor)
       ? {
-          [CAT_FEATURE_STROKE_VARIABLE]: ICON_LIGHT_FEATURE_COLOR,
+          [CAT_FEATURE_STROKE_VARIABLE]: ICON_DARK_COAT_FEATURE_COLOR,
           [CAT_EAR_FILL_VARIABLE]: "none",
           // ダークテーマでは塗りも背景も濃いため、猫も道具もアイコンの輪郭をグレーにして形を見せる
           [ICON_OUTLINE_STROKE_VARIABLE]:

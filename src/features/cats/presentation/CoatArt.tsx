@@ -60,9 +60,10 @@ const ICON_DARK_COAT_COLORS: ReadonlySet<CatCoatColor> = new Set([
 ]);
 
 /**
- * 黒系の毛色のアイコンの猫の目・口の色。塗りとの差を出しつつ、白ほど強くして怖く見えないようグレーにする
+ * 黒系の毛色のアイコンの猫の目・口の色。輪郭の濃い色では塗りに沈むが、明るくしすぎると
+ * 怖く見えるため、塗りより少し明るいグレーにする
  */
-export const ICON_LIGHT_FEATURE_COLOR = "#a6a9b8";
+export const ICON_DARK_COAT_FEATURE_COLOR = "#595959";
 
 /** 毛色・柄の見本（CoatSwatch）の色 */
 export function swatchPalette(coatColor: CatCoatColor | null): CoatPalette {
