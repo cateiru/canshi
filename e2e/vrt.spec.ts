@@ -819,6 +819,24 @@ test("更新情報ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+// うんち記録の一覧のグラフは実行日を今日として期間を切り、VRT の固定データ（2024-06）が
+// どの期間にも入らないため、固定の今日・記録で描く開発用ページ（src/app/dev/poop-chart）を撮る
+for (const period of ["1週間", "半年"]) {
+  test(`うんちの時間帯のグラフ（${period}）の見た目`, async ({
+    page,
+  }, testInfo) => {
+    await page.goto("/dev/poop-chart");
+    await page.getByRole("button", { name: "うんちの時間帯" }).click();
+    await page.getByRole("radio", { name: period }).click();
+    await expect(
+      page.locator('[class*="canvas"] svg circle').first(),
+    ).toBeVisible();
+    // Nivo のグラフ描画アニメーションが収まるのを待つ
+    await page.waitForTimeout(500);
+    await takeSnapshot(page, testInfo);
+  });
+}
+
 // 猫の年齢・お迎えからの期間は実行日時から計算されるため、その部分だけ除外する
 test.describe("猫の詳細ページ（データがある）", () => {
   test.use({ ignoreSelectors: ['[class*="details"] dd'] });
