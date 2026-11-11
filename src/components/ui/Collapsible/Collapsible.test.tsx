@@ -92,9 +92,14 @@ describe("Collapsible", () => {
       );
       const disclosure = container.firstElementChild;
       expect(disclosure).toHaveAttribute("data-restoring", "true");
+      // VRT の撮影は aria-busy がなくなるまで待つ
+      expect(
+        screen.getByText("グラフの内容", { selector: "p" }).parentElement,
+      ).toHaveAttribute("aria-busy", "true");
       await waitFor(() => {
         expect(disclosure).not.toHaveAttribute("data-restoring");
       });
+      expect(container.querySelector('[aria-busy="true"]')).toBeNull();
     });
 
     it("開いたまま保存されていれば、開いた状態で表示する", async () => {

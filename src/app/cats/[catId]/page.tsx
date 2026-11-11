@@ -72,7 +72,12 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
         </div>
       </div>
 
-      <Collapsible title="基本情報" storageKey="canshi:cat-basic-info-expanded">
+      <Collapsible
+        title="基本情報"
+        storageKey="canshi:cat-basic-info-expanded"
+        // 開閉を読むまでは、下の記録の導線も page.module.css で隠す
+        reserveExpandedSpace
+      >
         <Badge>{SEX_LABEL[cat.sex]}</Badge>
         <dl className={styles.details}>
           <dt>生年月日</dt>

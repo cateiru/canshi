@@ -20,9 +20,9 @@ export type CollapsibleProps = {
   storageKey?: string;
   defaultExpanded?: boolean;
   /**
-   * storageKey の開閉状態を読むまで、開いた高さの空白にしておく。
-   * 保存した状態はブラウザでしか読めないため、サーバーでは開いた状態を見えないように描き、
-   * 開いたまま保存した人が読み込み後に下の内容を押し下げられないようにする
+   * storageKey の開閉状態を読むまで、開いた状態を見えないように描いておく。
+   * 保存した状態はブラウザでしか読めないため、読む前の開閉で描いた中身が見えたまま
+   * 動かないようにする。開いたまま保存したまとまりは、読み込み後に下の内容を押し下げない
    */
   reserveExpandedSpace?: boolean;
   /** 見出しの階層。ページ内の位置に合わせて指定する */
@@ -118,7 +118,10 @@ export function Collapsible({
         ) : null}
       </div>
       <DisclosurePanel>
-        <div className={styles.panelInner}>{children}</div>
+        {/* Disclosure は aria-busy を DOM に渡さないため、中身の要素に付ける */}
+        <div className={styles.panelInner} aria-busy={isRestoring || undefined}>
+          {children}
+        </div>
       </DisclosurePanel>
     </AriaDisclosure>
   );
