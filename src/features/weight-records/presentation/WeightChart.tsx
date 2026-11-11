@@ -49,7 +49,7 @@ export function WeightChart({ points, now }: WeightChartProps) {
         <div className={styles.emptyPeriod}>この期間の記録はありません。</div>
       ) : (
         <div className={styles.canvas}>
-          <WeightChartCanvas points={filtered} />
+          <WeightChartCanvas points={filtered} allPoints={points} />
         </div>
       )}
     </div>

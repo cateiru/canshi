@@ -1,14 +1,23 @@
 "use client";
 
-import { ResponsiveLine } from "@nivo/line";
-import { type ComponentProps, useEffect, useState } from "react";
+import { type LineCustomSvgLayer, ResponsiveLine } from "@nivo/line";
+import { useEffect, useState } from "react";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
+import {
+  createKeyedLineLayers,
+  type KeyedLineDatum,
+  type KeyedLineSeries,
+} from "@/features/shared/KeyedLineLayers";
+import { usePrefersReducedMotion } from "@/features/shared/usePrefersReducedMotion";
 import type { FeedingChartPoint } from "./chart";
 
 export type FeedingChartMetric = "intake" | "kcal";
 
 type FeedingChartCanvasProps = {
+  /** 表示する期間に入る日 */
   points: FeedingChartPoint[];
+  /** 期間で絞る前の全件。期間を切り替えたとき、同じ日の点を動かすために使う */
+  allPoints: FeedingChartPoint[];
   metric: FeedingChartMetric;
 };
 
@@ -58,19 +67,6 @@ function KcalYAxisUnitLabel() {
   );
 }
 
-const BASE_LAYERS = [
-  "grid",
-  "markers",
-  "axes",
-  "areas",
-  "crosshair",
-  "lines",
-  "points",
-  "slices",
-  "mesh",
-  "legends",
-] as const;
-
 function formatAxisDateUtc(value: Date): string {
   return new Intl.DateTimeFormat("ja-JP", {
     timeZone: "UTC",
@@ -84,7 +80,7 @@ type MetricConfig = {
   color: string;
   step: number;
   getValue: (point: FeedingChartPoint) => number;
-  layers: ComponentProps<typeof ResponsiveLine>["layers"];
+  unitLabelLayer: LineCustomSvgLayer<KeyedLineSeries>;
 };
 
 const METRIC_CONFIG: Record<FeedingChartMetric, MetricConfig> = {
@@ -94,7 +90,7 @@ const METRIC_CONFIG: Record<FeedingChartMetric, MetricConfig> = {
     color: "var(--color-accent)",
     step: 5,
     getValue: (point) => point.totalIntakeG,
-    layers: [...BASE_LAYERS, IntakeYAxisUnitLabel],
+    unitLabelLayer: IntakeYAxisUnitLabel,
   },
   kcal: {
     seriesId: "feedingKcal",
@@ -102,7 +98,7 @@ const METRIC_CONFIG: Record<FeedingChartMetric, MetricConfig> = {
     color: "var(--color-accent-cool)",
     step: 5,
     getValue: (point) => point.totalKcal,
-    layers: [...BASE_LAYERS, KcalYAxisUnitLabel],
+    unitLabelLayer: KcalYAxisUnitLabel,
   },
 };
 
@@ -165,23 +161,30 @@ const nivoTheme = {
 
 export default function FeedingChartCanvas({
   points,
+  allPoints,
   metric,
 }: FeedingChartCanvasProps) {
   const config = METRIC_CONFIG[metric];
 
-  const data = [
+  // 点は日ごとの合計なので、日付（occurredAtIso）を key にする
+  const toKeyedLineDatum = (point: FeedingChartPoint): KeyedLineDatum => ({
+    key: point.occurredAtIso,
+    x: new Date(point.occurredAtIso),
+    y: config.getValue(point),
+  });
+  const data: KeyedLineSeries[] = [
     {
       id: config.seriesId,
-      data: points.map((point) => ({
-        x: new Date(point.occurredAtIso),
-        y: config.getValue(point),
-      })),
+      data: points.map(toKeyedLineDatum),
     },
   ];
+  // Nivo の lines・points は「何番目の点か」で動かすため、日付で描くレイヤーに置き換える
+  const keyedLayers = createKeyedLineLayers(allPoints.map(toKeyedLineDatum));
 
   const values = points.map((point) => config.getValue(point));
   const { min: yMin, max: yMax } = computeYDomain(values, config.step);
   const isCompact = useIsCompact();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const pointSize = isCompact
     ? points.length <= 2
       ? 10
@@ -201,7 +204,18 @@ export default function FeedingChartCanvas({
         format: (value) => formatAxisDateUtc(value as Date),
         tickValues: Math.min(points.length, 6),
       }}
-      layers={config.layers}
+      layers={[
+        "grid",
+        "markers",
+        "axes",
+        keyedLayers.areas,
+        "crosshair",
+        keyedLayers.linesAndPoints,
+        "slices",
+        "mesh",
+        "legends",
+        config.unitLabelLayer,
+      ]}
       colors={[config.color]}
       lineWidth={4}
       enableArea={true}
@@ -213,8 +227,10 @@ export default function FeedingChartCanvas({
       pointColor="var(--color-bg)"
       enableGridX={false}
       useMesh={true}
-      animate={true}
-      motionConfig="gentle"
+      // 行き過ぎて揺れる gentle ではなく、揺れずに止まる default（減衰比がほぼ 1）にする。
+      // 動きを減らす設定の端末では動かさない
+      animate={!prefersReducedMotion}
+      motionConfig="default"
       enableSlices={false}
       theme={nivoTheme}
     />

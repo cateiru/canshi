@@ -59,7 +59,11 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
               食べた量（推定）
             </h3>
             <div className={styles.canvas}>
-              <FeedingChartCanvas points={filtered} metric="intake" />
+              <FeedingChartCanvas
+                points={filtered}
+                allPoints={points}
+                metric="intake"
+              />
             </div>
           </div>
           <div className={styles.chartBlock}>
@@ -68,7 +72,11 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
               カロリー（推定）
             </h3>
             <div className={styles.canvas}>
-              <FeedingChartCanvas points={filtered} metric="kcal" />
+              <FeedingChartCanvas
+                points={filtered}
+                allPoints={points}
+                metric="kcal"
+              />
             </div>
           </div>
         </div>

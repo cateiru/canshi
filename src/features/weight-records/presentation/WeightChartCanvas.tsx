@@ -3,10 +3,19 @@
 import { ResponsiveLine } from "@nivo/line";
 import { useEffect, useState } from "react";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
+import {
+  createKeyedLineLayers,
+  type KeyedLineDatum,
+  type KeyedLineSeries,
+} from "@/features/shared/KeyedLineLayers";
+import { usePrefersReducedMotion } from "@/features/shared/usePrefersReducedMotion";
 import type { WeightChartPoint } from "./chart";
 
 type WeightChartCanvasProps = {
+  /** 表示する期間に入る記録 */
   points: WeightChartPoint[];
+  /** 期間で絞る前の全件。期間を切り替えたとき、同じ記録の点を動かすために使う */
+  allPoints: WeightChartPoint[];
 };
 
 const COMPACT_BREAKPOINT_PX = 480;
@@ -46,20 +55,6 @@ function YAxisUnitLabel() {
     </text>
   );
 }
-
-const LAYERS = [
-  "grid",
-  "markers",
-  "axes",
-  "areas",
-  "crosshair",
-  "lines",
-  "points",
-  "slices",
-  "mesh",
-  "legends",
-  YAxisUnitLabel,
-] as const;
 
 function formatAxisDateUtc(value: Date): string {
   return new Intl.DateTimeFormat("ja-JP", {
@@ -131,20 +126,31 @@ const nivoTheme = {
   },
 };
 
-export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
-  const data = [
+function toKeyedLineDatum(point: WeightChartPoint): KeyedLineDatum {
+  return {
+    key: point.id,
+    x: new Date(point.occurredAtIso),
+    y: point.catWeightKg,
+  };
+}
+
+export default function WeightChartCanvas({
+  points,
+  allPoints,
+}: WeightChartCanvasProps) {
+  const data: KeyedLineSeries[] = [
     {
       id: "catWeightKg",
-      data: points.map((point) => ({
-        x: new Date(point.occurredAtIso),
-        y: point.catWeightKg,
-      })),
+      data: points.map(toKeyedLineDatum),
     },
   ];
+  // Nivo の lines・points は「何番目の点か」で動かすため、記録の ID で描くレイヤーに置き換える
+  const keyedLayers = createKeyedLineLayers(allPoints.map(toKeyedLineDatum));
 
   const weights = points.map((point) => point.catWeightKg);
   const { min: yMin, max: yMax } = computeYDomain(weights);
   const isCompact = useIsCompact();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const pointSize = isCompact
     ? points.length <= 2
       ? 10
@@ -164,7 +170,18 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
         format: (value) => formatAxisDateUtc(value as Date),
         tickValues: Math.min(points.length, 6),
       }}
-      layers={LAYERS}
+      layers={[
+        "grid",
+        "markers",
+        "axes",
+        keyedLayers.areas,
+        "crosshair",
+        keyedLayers.linesAndPoints,
+        "slices",
+        "mesh",
+        "legends",
+        YAxisUnitLabel,
+      ]}
       colors={["var(--color-accent)"]}
       lineWidth={4}
       enableArea={true}
@@ -176,8 +193,10 @@ export default function WeightChartCanvas({ points }: WeightChartCanvasProps) {
       pointColor="var(--color-bg)"
       enableGridX={false}
       useMesh={true}
-      animate={true}
-      motionConfig="gentle"
+      // 行き過ぎて揺れる gentle ではなく、揺れずに止まる default（減衰比がほぼ 1）にする。
+      // 動きを減らす設定の端末では動かさない
+      animate={!prefersReducedMotion}
+      motionConfig="default"
       enableSlices={false}
       theme={nivoTheme}
     />
