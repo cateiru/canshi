@@ -851,6 +851,30 @@ test.describe("猫の詳細ページ（データがある）", () => {
   });
 });
 
+// 記録の導線のアイコンの猫は、猫の設定の毛色のベース色で塗る（柄・白い毛の割合は反映しない）。
+// BUSY_CAT は茶（縞・白少しも設定済み）、APPROXIMATE_CAT は濃い毛色（サビ）で斑に塗り、目・口を
+// 明るく描く。濃い毛色が背景に沈まないかを確かめるため、ダークテーマでも撮る
+for (const { label, catId, name } of [
+  { label: "茶", catId: BUSY_CAT, name: "VRT記録多数猫" },
+  { label: "サビ", catId: APPROXIMATE_CAT, name: "VRTあいまい猫" },
+]) {
+  for (const theme of ["light", "dark"]) {
+    test(`猫の詳細ページ（毛色が${label}、${theme}）の見た目`, async ({
+      page,
+      baseURL,
+    }, testInfo) => {
+      await page
+        .context()
+        .addCookies([{ name: "canshi-theme", value: theme, url: baseURL }]);
+      await page.goto(`/cats/${catId}`);
+      await expect(
+        page.getByRole("heading", { name, exact: true }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo);
+    });
+  }
+}
+
 test("猫の編集ページ（データがある）の見た目", async ({ page }, testInfo) => {
   await page.goto(`/cats/${CAT}/edit`);
   await expect(

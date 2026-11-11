@@ -6,6 +6,17 @@ export type RecordIconProps = IconBaseProps & {
   monochrome?: boolean;
 };
 
+/**
+ * 猫の毛の塗り（fill の値）を差し替える CSS 変数。祖先の要素で設定すると、その中のアイコンの猫を
+ * その色・柄（`url(#…)` の SVG パターンなど）で塗る。未設定なら既定のクリーム色
+ */
+export const CAT_COAT_FILL_VARIABLE = "--illustration-cat-coat";
+
+/** 猫の目・口の線の色を差し替える CSS 変数。濃い毛色で目・口が塗りに沈まないようにする */
+export const CAT_FEATURE_STROKE_VARIABLE = "--illustration-cat-feature";
+
+const DEFAULT_CAT_COAT = "#f5dfb7";
+
 // 24px グリッド・1.5px 線・丸い線端。SVG のまま描画し、拡大時も鮮明に保つ。
 const outlineAttributes = {
   viewBox: "0 0 24 24",
@@ -58,8 +69,8 @@ function CatFill({
   return (
     <>
       <path
-        className={className}
-        fill="#f5dfb7"
+        className={[styles.catCoat, className].filter(Boolean).join(" ")}
+        fill={DEFAULT_CAT_COAT}
         d={catFace}
         transform={transform}
       />
@@ -95,9 +106,16 @@ function CatOutline({
   return (
     <g transform={transform}>
       <path d={facePath} />
-      <path d={eyes[expression]} transform={`translate(0 ${eyesOffsetY})`} />
+      <path
+        className={styles.catFeature}
+        d={eyes[expression]}
+        transform={`translate(0 ${eyesOffsetY})`}
+      />
       {showMouth && (
-        <path d={expression === "unwell" ? "M11 12h2" : "m11 11 1 1 1-1"} />
+        <path
+          className={styles.catFeature}
+          d={expression === "unwell" ? "M11 12h2" : "m11 11 1 1 1-1"}
+        />
       )}
     </g>
   );
@@ -193,7 +211,11 @@ export function PoopIcon(props: RecordIconProps) {
       {...props}
       fills={
         <>
-          <path fill="#f5dfb7" d="M5 12.5c-1.5 1.5-2 3.5-1 5.5h8l-1-5.5Z" />
+          <path
+            className={styles.catCoat}
+            fill={DEFAULT_CAT_COAT}
+            d="M5 12.5c-1.5 1.5-2 3.5-1 5.5h8l-1-5.5Z"
+          />
           <CatFill transform={catTransform} />
           <path fill="#c99a72" d={poop} />
           <path fill="#d7c4e9" d={tray} />
@@ -244,14 +266,17 @@ export function VomitIcon(props: RecordIconProps) {
       {...props}
       fills={
         <>
-          <path fill="#f5dfb7" d={face} />
+          <path className={styles.catCoat} fill={DEFAULT_CAT_COAT} d={face} />
           <path fill="#f4b0a3" d="M5.5 5.5v3l2-1.5Zm13 0v3l-2-1.5Z" />
           <path fill="#b2d3aa" d={vomit} />
         </>
       }
     >
       <path d="M9.5 17.8C5.7 17.1 3 14.9 3 12a6 6 0 0 1 1-3V3l5 3a12 12 0 0 1 6 0l5-3v6a6 6 0 0 1 1 3c0 2.9-2.7 5.1-6.5 5.8" />
-      <path d="m7 10 2 1.5L7 13m10-3-2 1.5 2 1.5" />
+      <path
+        className={styles.catFeature}
+        d="m7 10 2 1.5L7 13m10-3-2 1.5 2 1.5"
+      />
       <path className={styles.line} d="m2 14 2 .5m18-.5-2 .5" />
       <path d={vomit} />
     </RecordIcon>
@@ -342,7 +367,11 @@ export function MemoIcon(props: RecordIconProps) {
       {/* 猫の顎の線をメモ用紙の塗りで隠し、用紙の縁に前足を掛ける。 */}
       <path className={styles.foregroundFill} fill="#fff4df" d={note} />
       <path d="M7.5 15.5h9m-9 3h6" />
-      <path className={styles.foregroundFill} fill="#f5dfb7" d={paws} />
+      <path
+        className={`${styles.foregroundFill} ${styles.catCoat}`}
+        fill={DEFAULT_CAT_COAT}
+        d={paws}
+      />
     </RecordIcon>
   );
 }
@@ -356,7 +385,11 @@ export function BroomIcon(props: RecordIconProps) {
       {...props}
       fills={
         <>
-          <path fill="#f5dfb7" d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5Z" />
+          <path
+            className={styles.catCoat}
+            fill={DEFAULT_CAT_COAT}
+            d="M5 12.5c-2 2.5-2 5.5-1 8.5h7l.5-8.5Z"
+          />
           <CatFill transform={catTransform} />
           <path fill="#f2d17b" d={broom} />
           <path fill="#e99a70" d="m16 13 4 1 .571 2-5.321-1Z" />
@@ -501,7 +534,11 @@ export function PhotoIcon(props: RecordIconProps) {
       fills={
         <>
           <rect fill="#d0e9f4" x="3" y="3" width="18" height="18" rx="3" />
-          <path fill="#f5dfb7" d="M8 18c0-1 .8-1.8 2-2h4c1.2.2 2 1 2 2Z" />
+          <path
+            className={styles.catCoat}
+            fill={DEFAULT_CAT_COAT}
+            d="M8 18c0-1 .8-1.8 2-2h4c1.2.2 2 1 2 2Z"
+          />
           <CatFill transform={catTransform} />
           <path fill="#fff4df" d="M3 18h18a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3Z" />
         </>
@@ -526,7 +563,7 @@ export function ExpenseIcon(props: RecordIconProps) {
       {...props}
       fills={
         <>
-          <path fill="#f5dfb7" d={body} />
+          <path className={styles.catCoat} fill={DEFAULT_CAT_COAT} d={body} />
           <path fill="#e99a70" d="M8 11h8v2H8Z" />
         </>
       }
@@ -553,7 +590,11 @@ export function ExpenseIcon(props: RecordIconProps) {
           strokeWidth="1"
         />
       </g>
-      <path className={styles.foregroundFill} fill="#f5dfb7" d={paw} />
+      <path
+        className={`${styles.foregroundFill} ${styles.catCoat}`}
+        fill={DEFAULT_CAT_COAT}
+        d={paw}
+      />
     </RecordIcon>
   );
 }
