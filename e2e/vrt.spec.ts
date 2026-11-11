@@ -832,8 +832,8 @@ for (const period of ["1週間", "半年"]) {
       page.locator('[class*="canvas"] svg circle').first(),
     ).toBeVisible();
     // Nivo のグラフ描画アニメーションが収まるのを待つ。点は記録ごとに 1週間の位置から
-    // 新しい位置へ長く動き、ばねの揺れが 500ms では収まらないため長めに待つ
-    await page.waitForTimeout(2000);
+    // 新しい位置へ長く動き、500ms では収まらないため長めに待つ
+    await page.waitForTimeout(1000);
     await takeSnapshot(page, testInfo);
   });
 }

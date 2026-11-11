@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from "react";
 import type { PoopRecord } from "@/db/schema";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
+import { usePrefersReducedMotion } from "@/features/shared/usePrefersReducedMotion";
 import { CONSISTENCY_LABEL } from "../domain/labels";
 import type { PoopChartPeriod, PoopChartPlacedPoint } from "./chart";
 
@@ -130,6 +131,7 @@ export default function PoopRecordChartCanvas({
   tickIndexes,
 }: PoopRecordChartCanvasProps) {
   const isCompact = useIsCompact();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const nodeSize = isCompact
     ? NODE_SIZE[period].compact
     : NODE_SIZE[period].regular;
@@ -188,8 +190,10 @@ export default function PoopRecordChartCanvas({
       tooltip={PoopTooltip}
       isInteractive={true}
       useMesh={true}
-      animate={true}
-      motionConfig="gentle"
+      // 行き過ぎて揺れる gentle ではなく、揺れずに止まる default（減衰比がほぼ 1）にする。
+      // 動きを減らす設定の端末では動かさない
+      animate={!prefersReducedMotion}
+      motionConfig="default"
       theme={nivoTheme}
     />
   );

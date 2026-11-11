@@ -227,8 +227,8 @@ export default function FeedingChartCanvas({
       pointColor="var(--color-bg)"
       enableGridX={false}
       useMesh={true}
-      // 期間を切り替えたとき点と線が長く動くため、行き過ぎて揺れる gentle ではなく、
-      // 揺れずに止まる default（減衰比がほぼ 1）にする。動きを減らす設定の端末では動かさない
+      // 行き過ぎて揺れる gentle ではなく、揺れずに止まる default（減衰比がほぼ 1）にする。
+      // 動きを減らす設定の端末では動かさない
       animate={!prefersReducedMotion}
       motionConfig="default"
       enableSlices={false}

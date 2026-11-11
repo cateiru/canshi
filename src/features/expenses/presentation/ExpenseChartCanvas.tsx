@@ -4,6 +4,7 @@ import { type BarTooltipProps, ResponsiveBar } from "@nivo/bar";
 import { useEffect, useState } from "react";
 import type { ExpenseCategory } from "@/db/schema";
 import { EXPENSE_CATEGORIES } from "@/db/schema";
+import { usePrefersReducedMotion } from "@/features/shared/usePrefersReducedMotion";
 import {
   EXPENSE_CATEGORY_COLOR,
   EXPENSE_CATEGORY_LABEL,
@@ -150,6 +151,7 @@ export default function ExpenseChartCanvas({
   months,
 }: ExpenseChartCanvasProps) {
   const isCompact = useIsCompact();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const data: ExpenseBarDatum[] = months.map((month) => ({
     ...month.amounts,
     ym: month.ym,
@@ -194,8 +196,10 @@ export default function ExpenseChartCanvas({
       tooltip={ExpenseBarTooltip}
       role="img"
       ariaLabel="月ごとのカテゴリ別支出の積み上げ棒グラフ"
-      animate={true}
-      motionConfig="gentle"
+      // 行き過ぎて揺れる gentle ではなく、揺れずに止まる default（減衰比がほぼ 1）にする。
+      // 動きを減らす設定の端末では動かさない
+      animate={!prefersReducedMotion}
+      motionConfig="default"
       theme={nivoTheme}
     />
   );
