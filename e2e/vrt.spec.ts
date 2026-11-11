@@ -819,6 +819,25 @@ test("更新情報ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+// イラストアイコン（RecordIcons）をすべて、猫の毛色ごとと単色表示で並べた開発用ページ
+// （src/app/dev/record-icons）。毛色の塗りや黒系の目・口・輪郭の色を、ライト・ダークテーマとも撮る
+for (const theme of ["light", "dark"]) {
+  test(`イラストアイコンの一覧（${theme}）の見た目`, async ({
+    page,
+    baseURL,
+  }, testInfo) => {
+    await page
+      .context()
+      .addCookies([{ name: "canshi-theme", value: theme, url: baseURL }]);
+    await page.goto("/dev/record-icons");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(
+      page.getByRole("heading", { name: "イラストアイコンの一覧" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+}
+
 // うんち記録の一覧のグラフは実行日を今日として期間を切り、VRT の固定データ（2024-06）が
 // どの期間にも入らないため、固定の今日・記録で描く開発用ページ（src/app/dev/poop-chart）を撮る
 for (const period of ["1週間", "半年"]) {
