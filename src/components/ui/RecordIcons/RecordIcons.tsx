@@ -16,8 +16,8 @@ export const CAT_COAT_FILL_VARIABLE = "--illustration-cat-coat";
 export const CAT_FEATURE_STROKE_VARIABLE = "--illustration-cat-feature";
 
 /**
- * アイコンの輪郭の線の色を差し替える CSS 変数。黒系の毛色の猫を描く範囲で、ダークテーマでも
- * 猫や道具の形が背景に沈まないようにする。未設定なら --color-illustration-outline
+ * アイコンの輪郭の線の色を差し替える CSS 変数。猫の毛色で描く範囲で、ダークテーマのときに
+ * 毛色に合わせた色にする。未設定なら --color-illustration-outline
  */
 export const ICON_OUTLINE_STROKE_VARIABLE = "--illustration-outline";
 

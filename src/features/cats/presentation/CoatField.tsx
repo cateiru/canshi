@@ -10,7 +10,11 @@ import { CAT_COAT_COLORS, type CatCoatColor } from "@/db/schema";
 import { type Coat, formatCoat } from "../domain/coat";
 import { COAT_COLOR_LABEL } from "../domain/labels";
 import type { CatFormFieldErrors } from "../domain/schema";
-import { CatCoatPatternDefs, catCoatIconStyle } from "./CatCoatPatternDefs";
+import {
+  CAT_COAT_ICON_SCOPE_CLASS,
+  CatCoatPatternDefs,
+  catCoatIconStyle,
+} from "./CatCoatPatternDefs";
 import { CatIcon } from "./CatIcon";
 import styles from "./CoatField.module.css";
 import { CoatSwatch } from "./CoatSwatch";
@@ -62,7 +66,7 @@ function CoatPreview({ coatColor }: { coatColor: CatCoatColor | null }) {
 
   return (
     <span
-      className={styles.previewIcon}
+      className={`${styles.previewIcon} ${CAT_COAT_ICON_SCOPE_CLASS}`}
       style={catCoatIconStyle(coatColor, patternId, { isolate: true })}
     >
       <CatCoatPatternDefs coatColor={coatColor} patternId={patternId} />

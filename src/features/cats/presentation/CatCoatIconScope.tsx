@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
 import type { CatCoatColor } from "@/db/schema";
 import styles from "./CatCoatIconScope.module.css";
-import { CatCoatPatternDefs, catCoatIconStyle } from "./CatCoatPatternDefs";
+import {
+  CAT_COAT_ICON_SCOPE_CLASS,
+  CatCoatPatternDefs,
+  catCoatIconStyle,
+} from "./CatCoatPatternDefs";
 
 type CatCoatIconScopeProps = {
   catId: string;
@@ -25,7 +29,7 @@ export function CatCoatIconScope({
     <>
       <CatCoatPatternDefs coatColor={coatColor} patternId={patternId} />
       <div
-        className={styles.scope}
+        className={`${styles.scope} ${CAT_COAT_ICON_SCOPE_CLASS}`}
         style={catCoatIconStyle(coatColor, patternId)}
       >
         {children}

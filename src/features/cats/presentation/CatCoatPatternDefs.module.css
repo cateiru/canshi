@@ -4,3 +4,28 @@
   height: 0;
   overflow: hidden;
 }
+
+/*
+ * 猫の毛色で描くアイコンの目・口・輪郭の色を、テーマに合わせて選ぶ（値は catCoatIconStyle の style で渡す）。
+ * 元の値が未設定（initial を含む）なら、振り分けた変数も無効になり、アイコンの既定の色に戻る。
+ * ライトテーマでは、目・口だけを黒系の毛色ごとの色にし、輪郭は既定の濃い色のままにする
+ */
+.coatScope {
+  --illustration-cat-feature: var(--cat-coat-light-feature);
+}
+
+/*
+ * ダークテーマでは、輪郭と目・口を毛色ごとの同じ色にする。「ダーク」を選んだときと、
+ * 「システム」で端末がダークのときの 2 か所に同じ宣言を書く（tokens.css と同じ）
+ */
+:root[data-theme="dark"] .coatScope {
+  --illustration-cat-feature: var(--cat-coat-dark-line);
+  --illustration-outline: var(--cat-coat-dark-line);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) .coatScope {
+    --illustration-cat-feature: var(--cat-coat-dark-line);
+    --illustration-outline: var(--cat-coat-dark-line);
+  }
+}

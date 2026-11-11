@@ -2,18 +2,33 @@ import type { CSSProperties } from "react";
 import {
   CAT_COAT_FILL_VARIABLE,
   CAT_EAR_FILL_VARIABLE,
-  CAT_FEATURE_STROKE_VARIABLE,
-  ICON_OUTLINE_STROKE_VARIABLE,
 } from "@/components/ui/RecordIcons/RecordIcons";
 import type { CatCoatColor } from "@/db/schema";
 import styles from "./CatCoatPatternDefs.module.css";
-import { CoatArt, darkIconCoatFeatureColor, iconPalette } from "./CoatArt";
+import {
+  CoatArt,
+  darkIconCoatFeatureColor,
+  darkThemeIconLineColor,
+  iconPalette,
+} from "./CoatArt";
+
+/**
+ * 目・口・輪郭の色は、ライト・ダークテーマで変えるため、style では元になる値だけを渡し、
+ * CAT_COAT_ICON_SCOPE_CLASS（CatCoatPatternDefs.module.css）でテーマに合わせて
+ * RecordIcons の変数（--illustration-cat-feature・--illustration-outline）に振り分ける
+ */
+const LIGHT_FEATURE_VARIABLE = "--cat-coat-light-feature";
+const DARK_LINE_VARIABLE = "--cat-coat-dark-line";
+
+/** catCoatIconStyle の style と一緒に付ける class。テーマに合わせて目・口・輪郭の色を選ぶ */
+export const CAT_COAT_ICON_SCOPE_CLASS = styles.coatScope;
 
 /**
  * イラストアイコン（RecordIcons）の猫を、毛色のベース色で塗るための style。この要素の中のアイコンに効く。
  * サビ・ブルークリームのように 2 色が混ざるベース色は、CatCoatPatternDefs と同じ patternId の
- * パターンで斑に塗る。黒系の毛色では目・口を毛色ごとの色にし、耳の内側のピンクを塗らず、
- * ダークテーマではアイコン全体の輪郭をグレーにする。
+ * パターンで斑に塗る。黒系の毛色では耳の内側のピンクを塗らず、ライトテーマでは目・口を毛色ごとの色にする。
+ * ダークテーマでは、アイコン全体の輪郭と目・口を毛色ごとの同じ色にする。
+ * 要素には CAT_COAT_ICON_SCOPE_CLASS も付ける。
  * ベース色が未設定なら何も設定せず、既定のクリーム色のままにする。
  * `isolate` を付けると、祖先で別の猫の毛色が設定されていても受け継がず、設定しない変数は既定に戻す
  * （猫の編集ページで、保存済みの毛色の中に選んでいる毛色のプレビューを置くときなど）
@@ -27,9 +42,9 @@ export function catCoatIconStyle(
   const reset: CSSProperties | undefined = isolate
     ? ({
         [CAT_COAT_FILL_VARIABLE]: "initial",
-        [CAT_FEATURE_STROKE_VARIABLE]: "initial",
         [CAT_EAR_FILL_VARIABLE]: "initial",
-        [ICON_OUTLINE_STROKE_VARIABLE]: "initial",
+        [LIGHT_FEATURE_VARIABLE]: "initial",
+        [DARK_LINE_VARIABLE]: "initial",
       } as CSSProperties)
     : undefined;
   if (!coatColor) {
@@ -42,13 +57,11 @@ export function catCoatIconStyle(
     [CAT_COAT_FILL_VARIABLE]: palette.patch
       ? `url("#${patternId}") ${palette.fill}`
       : palette.fill,
+    [DARK_LINE_VARIABLE]: darkThemeIconLineColor(coatColor),
     ...(featureColor
       ? {
-          [CAT_FEATURE_STROKE_VARIABLE]: featureColor,
+          [LIGHT_FEATURE_VARIABLE]: featureColor,
           [CAT_EAR_FILL_VARIABLE]: "none",
-          // ダークテーマでは塗りも背景も濃いため、猫も道具もアイコンの輪郭をグレーにして形を見せる
-          [ICON_OUTLINE_STROKE_VARIABLE]:
-            "var(--color-illustration-dark-coat-outline)",
         }
       : {}),
   } as CSSProperties;
