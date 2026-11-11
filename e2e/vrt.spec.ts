@@ -940,26 +940,39 @@ type RecordListCase = {
   chartDisclosureTitle?: string;
 };
 
-// チャート (1m/3m/all の期間タブ) を持つ記録一覧。「データがあるケース」では
-// 実行日時からの相対期間 (デフォルト3ヶ月) の外に固定データが出てしまうため、
-// 「全期間」タブに切り替えてから撮影する
-const CHART_RECORD_LISTS: RecordListCase[] = [
+type ChartRecordListCase = RecordListCase & {
+  /**
+   * 撮影前に選ぶ期間タブ。体重記録・ごはん記録は「全期間」で固定データを写す。
+   * うんち記録のグラフは今日を右端にした日ごとの列で、全期間のタブがなく
+   * 固定データ（2024-06）がどの期間にも入らないため、「この期間の記録は
+   * ありません。」の表示を撮る（グラフ本体は実行日に依存するため撮らない）
+   */
+  chartPeriodLabel: string;
+};
+
+// 期間タブ付きのチャートを持つ記録一覧。「データがあるケース」では
+// 実行日時からの相対期間の外に固定データが出てしまうため、
+// chartPeriodLabel のタブに切り替えてから撮影する
+const CHART_RECORD_LISTS: ChartRecordListCase[] = [
   {
     label: "体重記録",
     path: "weight-records",
     heading: "の体重記録",
+    chartPeriodLabel: "全期間",
   },
   {
     label: "ごはん記録",
     path: "feeding-records",
     heading: "のごはん記録",
     chartDisclosureTitle: "ごはんの推移",
+    chartPeriodLabel: "全期間",
   },
   {
     label: "うんち記録",
     path: "poop-records",
     heading: "のうんち記録",
     chartDisclosureTitle: "うんちの時間帯",
+    chartPeriodLabel: "半年",
   },
 ];
 
@@ -968,6 +981,7 @@ for (const {
   path,
   heading,
   chartDisclosureTitle,
+  chartPeriodLabel,
 } of CHART_RECORD_LISTS) {
   test(`${label}一覧（何もないケース）の見た目`, async ({ page }, testInfo) => {
     await page.goto(`/cats/${EMPTY_CAT}/${path}`);
@@ -987,7 +1001,7 @@ for (const {
     if (chartDisclosureTitle) {
       await page.getByRole("button", { name: chartDisclosureTitle }).click();
     }
-    await page.getByRole("radio", { name: "全期間" }).click();
+    await page.getByRole("radio", { name: chartPeriodLabel }).click();
     await expect(page.locator("svg").first()).toBeVisible();
     // Nivo のグラフ描画アニメーションが収まるのを待つ
     await page.waitForTimeout(500);

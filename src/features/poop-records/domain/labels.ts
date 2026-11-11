@@ -14,12 +14,3 @@ export const CONSISTENCY_ORDER: PoopRecord["consistency"][] = [
   "soft",
   "liquid",
 ];
-
-// 便の状態ごとの色。血液・異物のバッジ（error/warning）と同じ
-// 「液体ほど注意」の方向感に揃える。グラフの凡例と点の色分けで使う
-export const CONSISTENCY_COLOR: Record<PoopRecord["consistency"], string> = {
-  hard: "var(--color-warning)",
-  normal: "var(--color-success)",
-  soft: "var(--color-info)",
-  liquid: "var(--color-error)",
-};

@@ -29,6 +29,7 @@ const POINTS: PoopChartPoint[] = [
   point("a", "2025-01-01T00:00:00.000Z"),
   point("b", "2026-08-05T00:00:00.000Z"),
   point("c", "2026-09-15T00:00:00.000Z"),
+  point("d", "2026-09-28T00:00:00.000Z"),
 ];
 
 function openChart() {
@@ -43,12 +44,12 @@ describe("PoopRecordChart", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("開くと初期表示（直近3ヶ月）で期間内の件数がキャンバスに渡る", async () => {
+  it("開くと初期表示（1週間）で期間内の件数がキャンバスに渡る", async () => {
     render(<PoopRecordChart points={POINTS} now={NOW} />);
 
     openChart();
 
-    expect(await screen.findByTestId("chart-canvas")).toHaveTextContent("2");
+    expect(await screen.findByTestId("chart-canvas")).toHaveTextContent("1");
   });
 
   it("期間を切り替えるとキャンバスに渡る件数が変わる", async () => {
@@ -57,7 +58,7 @@ describe("PoopRecordChart", () => {
     openChart();
 
     const group = screen.getByRole("radiogroup", { name: "表示期間" });
-    fireEvent.click(within(group).getByRole("radio", { name: "全期間" }));
+    fireEvent.click(within(group).getByRole("radio", { name: "3ヶ月" }));
 
     expect(await screen.findByTestId("chart-canvas")).toHaveTextContent("3");
   });
@@ -69,9 +70,6 @@ describe("PoopRecordChart", () => {
     render(<PoopRecordChart points={oldPoints} now={NOW} />);
 
     openChart();
-
-    const group = screen.getByRole("radiogroup", { name: "表示期間" });
-    fireEvent.click(within(group).getByRole("radio", { name: "直近1ヶ月" }));
 
     expect(
       await screen.findByText("この期間の記録はありません。"),
