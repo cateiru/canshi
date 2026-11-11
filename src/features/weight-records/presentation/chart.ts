@@ -1,6 +1,7 @@
 import type { WeightRecord } from "@/db/schema";
 
 export type WeightChartPoint = {
+  id: string;
   occurredAtIso: string;
   catWeightKg: number;
 };
@@ -23,11 +24,12 @@ const PERIOD_DAYS: Record<Exclude<WeightChartPeriod, "all">, number> = {
  * 昇順・シリアライズ可能な形式へ変換する。
  */
 export function toWeightChartPoints(
-  records: Pick<WeightRecord, "occurredAt" | "catWeightKg">[],
+  records: Pick<WeightRecord, "id" | "occurredAt" | "catWeightKg">[],
 ): WeightChartPoint[] {
   return [...records]
     .sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime())
     .map((record) => ({
+      id: record.id,
       occurredAtIso: record.occurredAt.toISOString(),
       catWeightKg: record.catWeightKg,
     }));

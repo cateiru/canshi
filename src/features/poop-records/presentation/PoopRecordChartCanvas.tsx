@@ -94,6 +94,8 @@ const nivoTheme = {
 };
 
 type PoopScatterDatum = {
+  /** 期間を切り替えたとき、同じ記録の点を同じものとして動かすための key */
+  recordId: string;
   x: number;
   y: number;
   occurredAtIso: string;
@@ -138,6 +140,7 @@ export default function PoopRecordChartCanvas({
       id: "poop",
       data: points.map(
         (point): PoopScatterDatum => ({
+          recordId: point.id,
           x: point.dayIndex + 0.5,
           y: point.hourValue,
           occurredAtIso: point.occurredAtIso,
@@ -159,6 +162,9 @@ export default function PoopRecordChartCanvas({
   return (
     <ResponsiveScatterPlot<PoopScatterDatum>
       data={data}
+      // 既定の key は「何番目の点か」で、期間を変えると別の記録どうしがつながって動くため、
+      // 記録の ID を key にする
+      nodeId={(node) => node.data.recordId}
       xScale={{ type: "linear", min: 0, max: dayStartIsos.length, nice: false }}
       yScale={{ type: "linear", min: 0, max: 24, reverse: true, nice: false }}
       margin={{ top: 10, right: 16, bottom: 32, left: 48 }}

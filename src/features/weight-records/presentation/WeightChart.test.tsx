@@ -22,9 +22,9 @@ afterEach(() => {
 const NOW = "2026-09-30T00:00:00.000Z";
 
 const POINTS: WeightChartPoint[] = [
-  { occurredAtIso: "2025-01-01T00:00:00.000Z", catWeightKg: 3.5 },
-  { occurredAtIso: "2026-08-05T00:00:00.000Z", catWeightKg: 4.0 },
-  { occurredAtIso: "2026-09-15T00:00:00.000Z", catWeightKg: 4.1 },
+  { id: "w1", occurredAtIso: "2025-01-01T00:00:00.000Z", catWeightKg: 3.5 },
+  { id: "w2", occurredAtIso: "2026-08-05T00:00:00.000Z", catWeightKg: 4.0 },
+  { id: "w3", occurredAtIso: "2026-09-15T00:00:00.000Z", catWeightKg: 4.1 },
 ];
 
 describe("WeightChart", () => {
@@ -47,7 +47,7 @@ describe("WeightChart", () => {
 
   it("選択期間に記録がない場合はメッセージを表示しキャンバスを描画しない", async () => {
     const oldPoints: WeightChartPoint[] = [
-      { occurredAtIso: "2026-01-01T00:00:00.000Z", catWeightKg: 3.5 },
+      { id: "w4", occurredAtIso: "2026-01-01T00:00:00.000Z", catWeightKg: 3.5 },
     ];
     render(<WeightChart points={oldPoints} now={NOW} />);
 
