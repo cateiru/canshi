@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
+import { TbSettings } from "react-icons/tb";
 import {
   Badge,
   Breadcrumb,
-  ButtonLink,
   Collapsible,
   Heading,
+  IconButtonLink,
 } from "@/components/ui";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import {
@@ -58,7 +59,15 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
           profileMediaAssetId={cat.profileMediaAssetId}
           size="lg"
         />
-        <h1>{cat.name}</h1>
+        <div className={styles.nameRow}>
+          <h1 className={styles.name}>{cat.name}</h1>
+          <IconButtonLink
+            href={`/cats/${cat.id}/edit`}
+            icon={TbSettings}
+            aria-label={`${cat.name}を編集する`}
+            title="編集"
+          />
+        </div>
       </div>
 
       <Collapsible title="基本情報" storageKey="canshi:cat-basic-info-expanded">
@@ -93,9 +102,6 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
       </section>
 
       <div className={styles.actions}>
-        <ButtonLink href={`/cats/${cat.id}/edit`} variant="secondary">
-          編集する
-        </ButtonLink>
         <DeleteCatButton
           action={deleteCatAction.bind(null, cat.id)}
           catName={cat.name}
