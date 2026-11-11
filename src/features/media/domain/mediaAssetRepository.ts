@@ -11,7 +11,8 @@ export interface MediaAssetRepository {
   listPendingForUser(ids: string[], userId: string): Promise<MediaAsset[]>;
   /**
    * 添付を記録に紐付け、表示順を振り直す。下書きは同時に別の記録へ紐付けられていない
-   * （`userId` がアップロードした下書きのままの）ときだけ紐付ける
+   * （`userId` がアップロードした下書きのままの）ときだけ紐付ける。
+   * 記録が削除されている（論理削除を含む）ときは何も変えない。紐付け・振り直しができた行の ID を返す
    */
   assign(
     recordType: MediaRecordType,
@@ -19,5 +20,5 @@ export interface MediaAssetRepository {
     catId: string | null,
     items: MediaSyncPlan["assign"],
     userId: string,
-  ): Promise<void>;
+  ): Promise<string[]>;
 }

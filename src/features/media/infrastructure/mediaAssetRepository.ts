@@ -4,6 +4,7 @@ import { getDb } from "@/db/client";
 import { type MediaAsset, mediaAssets } from "@/db/schema";
 import type { MediaAssetRepository } from "../domain/mediaAssetRepository";
 import { PENDING_MEDIA_RECORD_TYPE } from "../domain/recordTypes";
+import { liveMediaRecordCondition } from "./recordOwner";
 
 /** D1 に保存する `MediaAssetRepository`。`d1` を省略すると Next.js のリクエストの D1 を使う */
 export function createMediaAssetRepository(
@@ -33,8 +34,9 @@ export function createMediaAssetRepository(
 
     async assign(recordType, recordId, catId, items, userId) {
       const db = getDb(d1);
+      const assignedIds: string[] = [];
       for (const item of items) {
-        await db
+        const updated = await db
           .update(mediaAssets)
           .set(
             item.isPending
@@ -57,9 +59,15 @@ export function createMediaAssetRepository(
               item.isPending
                 ? eq(mediaAssets.uploadedByUserId, userId)
                 : undefined,
+              // 確認の後に記録が論理削除された場合に、削除済みの記録へ添付しないよう、
+              // 文の中でも記録が削除されずにあることを確かめる
+              liveMediaRecordCondition(recordType, recordId),
             ),
-          );
+          )
+          .returning({ id: mediaAssets.id });
+        assignedIds.push(...updated.map((row) => row.id));
       }
+      return assignedIds;
     },
   };
 }

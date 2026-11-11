@@ -33,7 +33,9 @@ export async function syncRecordMedia(
   // ただし、この確認から下の R2・D1 の書き込みまでの間に家から外された場合は防げない
   // （R2 の削除は D1 の文やトランザクションに含められないため）。完全に防ぐには、`media_assets` の
   // 更新・削除の WHERE に所属の条件を含め、R2 は行を論理削除してから非同期で掃除する方式にする
-  // 必要があり、全記録の添付にかかわる設計の変更になるため見送っている（PR #257 のレビューを参照）
+  // 必要があり、全記録の添付にかかわる設計の変更になるため見送っている（PR #257 のレビューを参照）。
+  // 記録が論理削除された場合は、付け替えの文（`assign`）の中で記録が削除されずにあることを確かめ、
+  // 削除済みの記録へは添付しない
   if (!owner || !(await canAccessMediaRecordOwner(userId, owner))) {
     return { error: "添付先の記録が見つかりませんでした" };
   }
@@ -50,21 +52,34 @@ export async function syncRecordMedia(
     pendingIds: pending.map((asset) => asset.id),
   });
 
-  await deleteMediaAssetRows(
-    current.filter((asset) => plan.remove.includes(asset.id)),
-  );
-
-  await repository.assign(
+  // 付け替えを先にし、記録が削除されていて付け替えられなかったときは、外された添付も削除しない
+  // （削除済みの記録の添付には手を付けない）
+  const assignedIds = await repository.assign(
     recordType,
     recordId,
     owner.catId,
     plan.assign,
     userId,
   );
+  const unassigned = plan.assign.filter(
+    (item) => !assignedIds.includes(item.id),
+  );
+  if (
+    unassigned.length > 0 &&
+    !(await resolveMediaRecordOwner(recordType, recordId))
+  ) {
+    return { error: "添付先の記録が見つかりませんでした" };
+  }
 
-  if (plan.missing.length > 0) {
+  await deleteMediaAssetRows(
+    current.filter((asset) => plan.remove.includes(asset.id)),
+  );
+
+  // 同時に別の記録へ紐付けられた下書きなど、付け替えられなかった添付も見つからない扱いにする
+  const missingCount = plan.missing.length + unassigned.length;
+  if (missingCount > 0) {
     return {
-      error: `${plan.missing.length} 件の添付が見つかりませんでした。もう一度選び直してから保存してください`,
+      error: `${missingCount} 件の添付が見つかりませんでした。もう一度選び直してから保存してください`,
     };
   }
   return {};
