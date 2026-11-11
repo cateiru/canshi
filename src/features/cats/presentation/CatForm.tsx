@@ -172,13 +172,13 @@ export function CatForm({
       </Surface>
       <Surface
         titleId="cat-coat-heading"
-        title="毛色・柄"
+        title="毛色"
         titleSize="lg"
         icon={<TbPalette aria-hidden="true" size={20} />}
         gap="md"
       >
         <p className={styles.description}>
-          近いものを選んでください。わからない項目は未設定のままで大丈夫です。
+          近いものを選んでください。わからない場合は未設定のままで大丈夫です。
         </p>
         <CoatField
           key={submittedChoicesKey}

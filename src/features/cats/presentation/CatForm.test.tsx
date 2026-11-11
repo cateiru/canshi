@@ -65,8 +65,6 @@ const savedCat: Partial<Cat> = {
   householdId: "household-1",
   neuterStatus: "intact",
   coatColor: "black",
-  coatPattern: null,
-  coatWhite: null,
 };
 
 describe("CatForm", () => {
@@ -91,32 +89,26 @@ describe("CatForm", () => {
     expect(read()).not.toHaveProperty("householdId");
   });
 
-  it("入力エラーで戻っても、避妊・去勢と毛色・柄の選択を保持する", async () => {
+  it("入力エラーで戻っても、避妊・去勢と毛色の選択を保持する", async () => {
     const { form, read } = renderForm();
 
     fireEvent.click(screen.getByRole("radio", { name: "済" }));
     fireEvent.click(screen.getByRole("radio", { name: "茶" }));
-    fireEvent.click(screen.getByRole("radio", { name: "縞（トラ）" }));
-    fireEvent.click(
-      screen.getByRole("radio", { name: "少し（胸・足先など）" }),
-    );
 
     await submitAndWaitForError(form);
 
     const expected = {
       neuterStatus: "neutered",
       coatColor: "red",
-      coatPattern: "mackerel_tabby",
-      coatWhite: "low",
     };
     expect(read()).toMatchObject(expected);
-    expect(screen.getByText("茶・縞（トラ）・白少し")).toBeInTheDocument();
+    expect(screen.getByText("茶", { selector: "p" })).toBeInTheDocument();
 
     // 何も変えずにもう一度送っても、選択は残る
     await submitAndWaitForError(form);
 
     expect(read()).toMatchObject(expected);
-    expect(screen.getByText("茶・縞（トラ）・白少し")).toBeInTheDocument();
+    expect(screen.getByText("茶", { selector: "p" })).toBeInTheDocument();
   });
 
   it("編集時も、保存済みの値ではなく送信した選択を保持する", async () => {

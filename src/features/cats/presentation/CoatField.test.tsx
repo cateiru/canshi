@@ -14,30 +14,30 @@ function renderInForm(initialCoat?: Coat) {
 }
 
 describe("CoatField", () => {
-  it("登録時はすべて未設定として送信する", () => {
+  it("登録時は未設定として送信する", () => {
     const read = renderInForm();
-    expect(read()).toEqual({ coatColor: "", coatPattern: "", coatWhite: "" });
+    expect(read()).toEqual({ coatColor: "" });
     expect(screen.getByText("未設定", { selector: "p" })).toBeInTheDocument();
   });
 
-  it("編集時は今の毛色・柄を選び、選び直すと見本の名前も変わる", () => {
-    const read = renderInForm({
-      coatColor: "red",
-      coatPattern: "mackerel_tabby",
-      coatWhite: null,
-    });
-    expect(read()).toEqual({
-      coatColor: "red",
-      coatPattern: "mackerel_tabby",
-      coatWhite: "",
-    });
-    expect(screen.getByText("茶・縞（トラ）")).toBeInTheDocument();
+  it("編集時は今の毛色を選び、選び直すとプレビューの名前も変わる", () => {
+    const read = renderInForm({ coatColor: "red" });
+    expect(read()).toEqual({ coatColor: "red" });
+    expect(screen.getByText("茶", { selector: "p" })).toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("radio", { name: "少し（胸・足先など）" }),
+    fireEvent.click(screen.getByRole("radio", { name: "黒と茶" }));
+
+    expect(read()).toEqual({ coatColor: "tortoiseshell" });
+    expect(screen.getByText("黒と茶", { selector: "p" })).toBeInTheDocument();
+  });
+
+  it("プレビューの猫は、祖先で設定された別の毛色を受け継がない", () => {
+    const { container } = render(
+      <CoatField initialCoat={{ coatColor: null }} />,
     );
-
-    expect(read()).toMatchObject({ coatWhite: "low" });
-    expect(screen.getByText("茶・縞（トラ）・白少し")).toBeInTheDocument();
+    const preview = container.querySelector("svg")?.parentElement;
+    expect(preview?.style.getPropertyValue("--illustration-cat-coat")).toBe(
+      "initial",
+    );
   });
 });

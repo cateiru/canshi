@@ -819,6 +819,25 @@ test("更新情報ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+// イラストアイコン（RecordIcons）をすべて、猫の毛色ごとと単色表示で並べた開発用ページ
+// （src/app/dev/record-icons）。毛色の塗りや黒系の目・口・輪郭の色を、ライト・ダークテーマとも撮る
+for (const theme of ["light", "dark"]) {
+  test(`イラストアイコンの一覧（${theme}）の見た目`, async ({
+    page,
+    baseURL,
+  }, testInfo) => {
+    await page
+      .context()
+      .addCookies([{ name: "canshi-theme", value: theme, url: baseURL }]);
+    await page.goto("/dev/record-icons");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(
+      page.getByRole("heading", { name: "イラストアイコンの一覧" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+}
+
 // うんち記録の一覧のグラフは実行日を今日として期間を切り、VRT の固定データ（2024-06）が
 // どの期間にも入らないため、固定の今日・記録で描く開発用ページ（src/app/dev/poop-chart）を撮る
 for (const period of ["1週間", "半年"]) {
@@ -850,6 +869,31 @@ test.describe("猫の詳細ページ（データがある）", () => {
     await takeSnapshot(page, testInfo);
   });
 });
+
+// 猫のページのアイコンの猫は、猫の設定の毛色のベース色で塗る（柄・白い毛の割合は反映しない）。
+// BUSY_CAT はブラウン、APPROXIMATE_CAT は黒系（黒と茶）で斑に塗り、目・口を
+// 白にし、耳の内側を塗らない。ダークテーマでは輪郭と目・口を毛色ごとの色にするため、ダークテーマでも撮る。
+// 各記録のページのアイコンも同じ塗りになり、BUSY_CAT のタイムラインなどの既存のケースに写る
+for (const { label, catId, name } of [
+  { label: "ブラウン", catId: BUSY_CAT, name: "VRT記録多数猫" },
+  { label: "黒と茶", catId: APPROXIMATE_CAT, name: "VRTあいまい猫" },
+]) {
+  for (const theme of ["light", "dark"]) {
+    test(`猫の詳細ページ（毛色が${label}、${theme}）の見た目`, async ({
+      page,
+      baseURL,
+    }, testInfo) => {
+      await page
+        .context()
+        .addCookies([{ name: "canshi-theme", value: theme, url: baseURL }]);
+      await page.goto(`/cats/${catId}`);
+      await expect(
+        page.getByRole("heading", { name, exact: true }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo);
+    });
+  }
+}
 
 test("猫の編集ページ（データがある）の見た目", async ({ page }, testInfo) => {
   await page.goto(`/cats/${CAT}/edit`);

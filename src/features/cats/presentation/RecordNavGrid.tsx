@@ -6,6 +6,7 @@ type RecordNavGridProps = {
   catId: string;
 };
 
+/** アイコンの猫は、猫のページのレイアウト（CatCoatIconScope）でその猫の毛色に塗る */
 export function RecordNavGrid({ catId }: RecordNavGridProps) {
   return (
     <div className={styles.grid}>

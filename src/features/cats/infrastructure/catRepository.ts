@@ -53,10 +53,6 @@ export function createCatRepository(d1?: D1Database): CatRepository {
                 "neuter_status",
               ),
               coatColor: sql`${values.coatColor ?? null}`.as("coat_color"),
-              coatPattern: sql`${values.coatPattern ?? null}`.as(
-                "coat_pattern",
-              ),
-              coatWhite: sql`${values.coatWhite ?? null}`.as("coat_white"),
               profileMediaAssetId: sql`NULL`.as("profile_media_asset_id"),
               createdAt: sql`(unixepoch())`.as("created_at"),
               updatedAt: sql`(unixepoch())`.as("updated_at"),
@@ -87,8 +83,6 @@ export function createCatRepository(d1?: D1Database): CatRepository {
           adoptedAt: values.adoptedAt,
           neuterStatus: values.neuterStatus,
           coatColor: values.coatColor,
-          coatPattern: values.coatPattern,
-          coatWhite: values.coatWhite,
           updatedAt: new Date(),
         })
         .where(
