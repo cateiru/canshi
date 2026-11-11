@@ -50,7 +50,7 @@ test("猫の登録・一覧表示・詳細表示・編集・削除ができる",
   await expect(page.getByRole("heading", { name: catName })).toBeVisible();
 
   await page.getByRole("heading", { name: catName }).click();
-  await page.getByRole("link", { name: "ねこの設定" }).click();
+  await page.getByRole("link", { name: "ねこの編集" }).click();
   // 避妊・去勢と毛色は詳細ページには出さないため、編集ページで保存されたことを確かめる
   await expect(
     page
