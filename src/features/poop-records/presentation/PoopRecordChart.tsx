@@ -4,12 +4,7 @@ import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { Collapsible, SegmentedControl } from "@/components/ui";
 import {
-  CONSISTENCY_COLOR,
-  CONSISTENCY_LABEL,
-  CONSISTENCY_ORDER,
-} from "../domain/labels";
-import {
-  filterByPeriod,
+  buildPoopChartWindow,
   POOP_CHART_PERIOD_LABEL,
   type PoopChartPeriod,
   type PoopChartPoint,
@@ -21,7 +16,7 @@ const PoopRecordChartCanvas = dynamic(() => import("./PoopRecordChartCanvas"), {
   loading: () => <div className={styles.placeholder} aria-hidden="true" />,
 });
 
-const PERIOD_ORDER: PoopChartPeriod[] = ["1m", "3m", "all"];
+const PERIOD_ORDER: PoopChartPeriod[] = ["1w", "3m", "6m"];
 
 type PoopRecordChartProps = {
   points: PoopChartPoint[];
@@ -29,10 +24,10 @@ type PoopRecordChartProps = {
 };
 
 export function PoopRecordChart({ points, now }: PoopRecordChartProps) {
-  const [period, setPeriod] = useState<PoopChartPeriod>("3m");
+  const [period, setPeriod] = useState<PoopChartPeriod>("1w");
 
-  const filtered = useMemo(
-    () => filterByPeriod(points, period, new Date(now)),
+  const chartWindow = useMemo(
+    () => buildPoopChartWindow(points, period, new Date(now)),
     [points, period, now],
   );
 
@@ -49,28 +44,18 @@ export function PoopRecordChart({ points, now }: PoopRecordChartProps) {
         />
       </div>
 
-      {filtered.length === 0 ? (
+      {chartWindow.points.length === 0 ? (
         <div className={styles.emptyPeriod}>この期間の記録はありません。</div>
       ) : (
-        <>
-          <div className={styles.canvas}>
-            <PoopRecordChartCanvas points={filtered} />
-          </div>
-          <ul className={styles.legend} aria-label="便の状態の凡例">
-            {CONSISTENCY_ORDER.map((consistency) => (
-              <li key={consistency} className={styles.legendItem}>
-                <span
-                  className={styles.legendSwatch}
-                  style={{
-                    backgroundColor: CONSISTENCY_COLOR[consistency],
-                  }}
-                  aria-hidden="true"
-                />
-                {CONSISTENCY_LABEL[consistency]}
-              </li>
-            ))}
-          </ul>
-        </>
+        <div className={styles.canvas}>
+          <PoopRecordChartCanvas
+            period={period}
+            points={chartWindow.points}
+            dayStartIsos={chartWindow.dayStartIsos}
+            gridIndexes={chartWindow.gridIndexes}
+            tickIndexes={chartWindow.tickIndexes}
+          />
+        </div>
       )}
     </Collapsible>
   );

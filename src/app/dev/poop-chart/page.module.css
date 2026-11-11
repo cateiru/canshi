@@ -1,0 +1,3 @@
+.main {
+  composes: page from "../../../features/shared/PageLayout.module.css";
+}
