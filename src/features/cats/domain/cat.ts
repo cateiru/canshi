@@ -17,8 +17,6 @@ export type CatValues = Pick<
   | "adoptedAt"
   | "neuterStatus"
   | "coatColor"
-  | "coatPattern"
-  | "coatWhite"
 >;
 
 /** 猫を登録するときの項目。`householdId` は猫を飼う家（登録先） */

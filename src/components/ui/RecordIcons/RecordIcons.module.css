@@ -19,3 +19,27 @@
 .monochrome .line {
   stroke: currentColor;
 }
+
+/*
+ * 猫の毛の塗り。祖先で --illustration-cat-coat を設定した範囲（猫詳細の記録の導線）では、
+ * その猫の毛色で塗る。単色表示では上の .monochrome の指定（詳細度が高い）が勝つ
+ */
+.catCoat {
+  fill: var(--illustration-cat-coat, #f5dfb7);
+}
+
+/* 猫の耳の内側。黒系の毛色ではピンクが浮くため、--illustration-cat-ear: none で塗らない */
+.catEar {
+  fill: var(--illustration-cat-ear, #f4b0a3);
+}
+
+/*
+ * 猫の目・口。--illustration-cat-feature が未設定なら宣言が無効になり、輪郭と同じ色を継承する
+ */
+.catFeature {
+  stroke: var(--illustration-cat-feature);
+}
+
+.monochrome .catFeature {
+  stroke: currentColor;
+}

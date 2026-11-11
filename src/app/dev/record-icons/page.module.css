@@ -1,0 +1,52 @@
+.main {
+  composes: page from "../../../features/shared/PageLayout.module.css";
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.heading {
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-2);
+  border-radius: calc(var(--radius-base) * 2);
+  background-color: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+  color: var(--color-accent-strong);
+}
+
+.name {
+  max-width: 100%;
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  overflow-wrap: anywhere;
+  text-align: center;
+}

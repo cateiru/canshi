@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import {
   requireCatAccess,
   requireUser,
@@ -32,7 +33,7 @@ export type CatFormState = SubmitRedirect & {
   formError?: string;
   // 入力エラーで戻したときに、送信した生年月日の入力欄と値を表示し直すための値
   submittedBirthDate?: SubmittedBirthDate;
-  // 入力エラーで戻したときに、性別・避妊・去勢・毛色・柄の選択を保持するための値
+  // 入力エラーで戻したときに、性別・避妊・去勢・毛色の選択を保持するための値
   submittedChoices?: SubmittedCatChoices;
 };
 
@@ -70,8 +71,6 @@ function parseFormData(formData: FormData) {
     adoptedAt: formData.get("adoptedAt"),
     neuterStatus: formData.get("neuterStatus"),
     coatColor: formData.get("coatColor"),
-    coatPattern: formData.get("coatPattern"),
-    coatWhite: formData.get("coatWhite"),
   });
   if (!parsed.success) {
     return {
@@ -99,8 +98,6 @@ function parseFormData(formData: FormData) {
       adoptedAt: parsed.data.adoptedAt ?? null,
       neuterStatus: parsed.data.neuterStatus ?? null,
       coatColor: parsed.data.coatColor ?? null,
-      coatPattern: parsed.data.coatPattern ?? null,
-      coatWhite: parsed.data.coatWhite ?? null,
     },
   };
 }
@@ -170,6 +167,9 @@ export async function updateCatAction(
   if (!updated) {
     return { formError: "ねこが見つかりませんでした" };
   }
+  // 猫のページのレイアウトは、アイコンの猫を毛色で塗る。保存後に遷移しても
+  // 共有のレイアウトは描き直されないため、ここで描き直させる
+  revalidatePath(`/cats/${id}`, "layout");
 
   const profileImageError = await applyProfileImageChange(
     id,
