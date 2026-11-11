@@ -17,6 +17,8 @@ vi.mock("./WeightChartCanvas", () => ({
 
 afterEach(() => {
   cleanup();
+  // 開閉状態は localStorage に保存されるため、テストごとに初期状態へ戻す
+  window.localStorage.clear();
 });
 
 const NOW = "2026-09-30T00:00:00.000Z";
@@ -27,9 +29,33 @@ const POINTS: WeightChartPoint[] = [
   { id: "w3", occurredAtIso: "2026-09-15T00:00:00.000Z", catWeightKg: 4.1 },
 ];
 
+function openChart() {
+  fireEvent.click(screen.getByRole("button", { name: "体重の推移" }));
+}
+
 describe("WeightChart", () => {
-  it("初期表示（直近3ヶ月）で期間内の件数がキャンバスに渡る", async () => {
+  it("初期表示ではグラフが折りたたまれている", () => {
     render(<WeightChart points={POINTS} now={NOW} />);
+
+    const trigger = screen.getByRole("button", { name: "体重の推移" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("開いた状態は保存され、次に表示したときも開いている", () => {
+    const { unmount } = render(<WeightChart points={POINTS} now={NOW} />);
+    openChart();
+    unmount();
+
+    render(<WeightChart points={POINTS} now={NOW} />);
+
+    const trigger = screen.getByRole("button", { name: "体重の推移" });
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("開くと初期表示（直近3ヶ月）で期間内の件数がキャンバスに渡る", async () => {
+    render(<WeightChart points={POINTS} now={NOW} />);
+
+    openChart();
 
     const canvas = await screen.findByTestId("chart-canvas");
     expect(canvas).toHaveTextContent("2");
@@ -37,6 +63,8 @@ describe("WeightChart", () => {
 
   it("期間を切り替えるとキャンバスに渡る件数が変わる", async () => {
     render(<WeightChart points={POINTS} now={NOW} />);
+
+    openChart();
 
     const group = screen.getByRole("radiogroup", { name: "表示期間" });
     fireEvent.click(within(group).getByRole("radio", { name: "全期間" }));
@@ -50,6 +78,8 @@ describe("WeightChart", () => {
       { id: "w4", occurredAtIso: "2026-01-01T00:00:00.000Z", catWeightKg: 3.5 },
     ];
     render(<WeightChart points={oldPoints} now={NOW} />);
+
+    openChart();
 
     const group = screen.getByRole("radiogroup", { name: "表示期間" });
     fireEvent.click(within(group).getByRole("radio", { name: "直近1ヶ月" }));

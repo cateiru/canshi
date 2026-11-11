@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HospitalVisitCalendarDatum } from "./chart";
 import { HospitalVisitChart } from "./HospitalVisitChart";
@@ -11,6 +11,8 @@ vi.mock("./HospitalVisitChartCanvas", () => ({
 
 afterEach(() => {
   cleanup();
+  // 開閉状態は localStorage に保存されるため、テストごとに初期状態へ戻す
+  window.localStorage.clear();
 });
 
 const NOW = "2026-09-16T00:00:00.000Z";
@@ -22,17 +24,17 @@ const DATA: HospitalVisitCalendarDatum[] = [
 ];
 
 describe("HospitalVisitChart", () => {
-  it("見出しとグラフを常に表示する", async () => {
+  it("初期表示ではグラフが折りたたまれている", () => {
     render(<HospitalVisitChart data={DATA} now={NOW} />);
 
-    expect(
-      screen.getByRole("heading", { name: "通院日カレンダー" }),
-    ).toBeInTheDocument();
-    expect(await screen.findByTestId("chart-canvas")).toBeInTheDocument();
+    const trigger = screen.getByRole("button", { name: "通院日カレンダー" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("今日を終端とした直近1年のデータだけがキャンバスに渡る", async () => {
+  it("開くと今日を終端とした直近1年のデータだけがキャンバスに渡る", async () => {
     render(<HospitalVisitChart data={DATA} now={NOW} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "通院日カレンダー" }));
 
     expect(await screen.findByTestId("chart-canvas")).toHaveTextContent("2");
   });

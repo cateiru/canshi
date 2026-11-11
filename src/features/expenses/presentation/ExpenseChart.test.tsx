@@ -17,6 +17,8 @@ vi.mock("./ExpenseChartCanvas", () => ({
 
 afterEach(() => {
   cleanup();
+  // 開閉状態は localStorage に保存されるため、テストごとに初期状態へ戻す
+  window.localStorage.clear();
 });
 
 const MONTHS = buildMonthlyExpenseChart(

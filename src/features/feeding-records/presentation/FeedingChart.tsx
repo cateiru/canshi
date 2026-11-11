@@ -37,7 +37,12 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
   );
 
   return (
-    <Collapsible title="ごはんの推移" defaultExpanded={false}>
+    <Collapsible
+      title="ごはんの推移"
+      defaultExpanded={false}
+      storageKey="canshi:feeding-chart-expanded"
+      reserveExpandedSpace
+    >
       <div className={styles.header}>
         <SegmentedControl
           size="sm"

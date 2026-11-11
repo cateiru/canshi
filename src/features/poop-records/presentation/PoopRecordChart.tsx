@@ -32,7 +32,12 @@ export function PoopRecordChart({ points, now }: PoopRecordChartProps) {
   );
 
   return (
-    <Collapsible title="うんちの時間帯" defaultExpanded={false}>
+    <Collapsible
+      title="うんちの時間帯"
+      defaultExpanded={false}
+      storageKey="canshi:poop-chart-expanded"
+      reserveExpandedSpace
+    >
       <div className={styles.header}>
         <SegmentedControl
           size="sm"

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { SegmentedControl } from "@/components/ui";
+import { Collapsible, SegmentedControl } from "@/components/ui";
 import {
   filterByPeriod,
   WEIGHT_CHART_PERIOD_LABEL,
@@ -32,9 +32,13 @@ export function WeightChart({ points, now }: WeightChartProps) {
   );
 
   return (
-    <div className={styles.container}>
+    <Collapsible
+      title="体重の推移"
+      defaultExpanded={false}
+      storageKey="canshi:weight-chart-expanded"
+      reserveExpandedSpace
+    >
       <div className={styles.header}>
-        <h2 className={styles.title}>体重の推移</h2>
         <SegmentedControl
           size="sm"
           options={PERIOD_ORDER}
@@ -52,6 +56,6 @@ export function WeightChart({ points, now }: WeightChartProps) {
           <WeightChartCanvas points={filtered} allPoints={points} />
         </div>
       )}
-    </div>
+    </Collapsible>
   );
 }
