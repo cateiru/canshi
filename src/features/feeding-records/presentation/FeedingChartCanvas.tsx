@@ -8,6 +8,7 @@ import {
   type KeyedLineDatum,
   type KeyedLineSeries,
 } from "@/features/shared/KeyedLineLayers";
+import { usePrefersReducedMotion } from "@/features/shared/usePrefersReducedMotion";
 import type { FeedingChartPoint } from "./chart";
 
 export type FeedingChartMetric = "intake" | "kcal";
@@ -183,6 +184,7 @@ export default function FeedingChartCanvas({
   const values = points.map((point) => config.getValue(point));
   const { min: yMin, max: yMax } = computeYDomain(values, config.step);
   const isCompact = useIsCompact();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const pointSize = isCompact
     ? points.length <= 2
       ? 10
@@ -225,8 +227,10 @@ export default function FeedingChartCanvas({
       pointColor="var(--color-bg)"
       enableGridX={false}
       useMesh={true}
-      animate={true}
-      motionConfig="gentle"
+      // 期間を切り替えたとき点と線が長く動くため、行き過ぎて揺れる gentle ではなく、
+      // 揺れずに止まる default（減衰比がほぼ 1）にする。動きを減らす設定の端末では動かさない
+      animate={!prefersReducedMotion}
+      motionConfig="default"
       enableSlices={false}
       theme={nivoTheme}
     />

@@ -8,6 +8,7 @@ import {
   type KeyedLineDatum,
   type KeyedLineSeries,
 } from "@/features/shared/KeyedLineLayers";
+import { usePrefersReducedMotion } from "@/features/shared/usePrefersReducedMotion";
 import type { WeightChartPoint } from "./chart";
 
 type WeightChartCanvasProps = {
@@ -149,6 +150,7 @@ export default function WeightChartCanvas({
   const weights = points.map((point) => point.catWeightKg);
   const { min: yMin, max: yMax } = computeYDomain(weights);
   const isCompact = useIsCompact();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const pointSize = isCompact
     ? points.length <= 2
       ? 10
@@ -191,8 +193,10 @@ export default function WeightChartCanvas({
       pointColor="var(--color-bg)"
       enableGridX={false}
       useMesh={true}
-      animate={true}
-      motionConfig="gentle"
+      // 期間を切り替えたとき点と線が長く動くため、行き過ぎて揺れる gentle ではなく、
+      // 揺れずに止まる default（減衰比がほぼ 1）にする。動きを減らす設定の端末では動かさない
+      animate={!prefersReducedMotion}
+      motionConfig="default"
       enableSlices={false}
       theme={nivoTheme}
     />
