@@ -105,7 +105,7 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
         <Heading level={2} size="md" className={styles.recordHeading}>
           記録
         </Heading>
-        <RecordNavGrid catId={cat.id} coatColor={cat.coatColor} />
+        <RecordNavGrid catId={cat.id} />
       </section>
 
       <div className={styles.actions}>

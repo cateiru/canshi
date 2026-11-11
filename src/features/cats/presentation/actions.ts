@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import {
   requireCatAccess,
   requireUser,
@@ -170,6 +171,9 @@ export async function updateCatAction(
   if (!updated) {
     return { formError: "ねこが見つかりませんでした" };
   }
+  // 猫のページのレイアウトは、アイコンの猫を毛色で塗る。保存後に遷移しても
+  // 共有のレイアウトは描き直されないため、ここで描き直させる
+  revalidatePath(`/cats/${id}`, "layout");
 
   const profileImageError = await applyProfileImageChange(
     id,

@@ -50,7 +50,7 @@ const ICON_COAT_COLOR_OVERRIDE: Partial<Record<CatCoatColor, CoatPalette>> = {
 };
 
 /**
- * 黒系の濃い毛色。アイコンの猫の目・口が塗りに沈まないよう明るい色で描き、
+ * 黒系の濃い毛色。アイコンの猫の目・口が塗りに沈まないようグレーで描き、
  * 耳の内側のピンクは浮いて見えるため塗らない
  */
 const ICON_DARK_COAT_COLORS: ReadonlySet<CatCoatColor> = new Set([
@@ -59,8 +59,10 @@ const ICON_DARK_COAT_COLORS: ReadonlySet<CatCoatColor> = new Set([
   "tortoiseshell",
 ]);
 
-/** アイコンの猫の目・口を明るくするときの色 */
-export const ICON_LIGHT_FEATURE_COLOR = "#fff4df";
+/**
+ * 黒系の毛色のアイコンの猫の目・口の色。塗りとの差を出しつつ、白ほど強くして怖く見えないようグレーにする
+ */
+export const ICON_LIGHT_FEATURE_COLOR = "#a6a9b8";
 
 /** 毛色・柄の見本（CoatSwatch）の色 */
 export function swatchPalette(coatColor: CatCoatColor | null): CoatPalette {
@@ -72,7 +74,7 @@ export function iconPalette(coatColor: CatCoatColor): CoatPalette {
   return ICON_COAT_COLOR_OVERRIDE[coatColor] ?? COAT_COLOR_SWATCH[coatColor];
 }
 
-/** 黒系の濃い毛色か（アイコンの猫の目・口を明るくし、耳の内側を塗らない） */
+/** 黒系の濃い毛色か（アイコンの猫の目・口をグレーにし、耳の内側を塗らない） */
 export function isDarkIconCoat(coatColor: CatCoatColor): boolean {
   return ICON_DARK_COAT_COLORS.has(coatColor);
 }

@@ -851,12 +851,13 @@ test.describe("猫の詳細ページ（データがある）", () => {
   });
 });
 
-// 記録の導線のアイコンの猫は、猫の設定の毛色のベース色で塗る（柄・白い毛の割合は反映しない）。
-// BUSY_CAT は茶（縞・白少しも設定済み）、APPROXIMATE_CAT は濃い毛色（サビ）で斑に塗り、目・口を
-// 明るく描き、耳の内側を塗らない。ダークテーマでは輪郭を白くするため、ダークテーマでも撮る
+// 猫のページのアイコンの猫は、猫の設定の毛色のベース色で塗る（柄・白い毛の割合は反映しない）。
+// BUSY_CAT はブラウン（縞・白少しも設定済み）、APPROXIMATE_CAT は黒系（黒と茶）で斑に塗り、目・口を
+// グレーにし、耳の内側を塗らない。ダークテーマではアイコンの輪郭をグレーにするため、ダークテーマでも撮る。
+// 各記録のページのアイコンも同じ塗りになり、BUSY_CAT のタイムラインなどの既存のケースに写る
 for (const { label, catId, name } of [
-  { label: "茶", catId: BUSY_CAT, name: "VRT記録多数猫" },
-  { label: "サビ", catId: APPROXIMATE_CAT, name: "VRTあいまい猫" },
+  { label: "ブラウン", catId: BUSY_CAT, name: "VRT記録多数猫" },
+  { label: "黒と茶", catId: APPROXIMATE_CAT, name: "VRTあいまい猫" },
 ]) {
   for (const theme of ["light", "dark"]) {
     test(`猫の詳細ページ（毛色が${label}、${theme}）の見た目`, async ({
