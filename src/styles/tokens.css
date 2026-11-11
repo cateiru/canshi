@@ -195,7 +195,7 @@
   --color-warning-fill: #8f7200;
 
   --color-illustration-line: #a6a9b8;
-  --color-illustration-dark-coat-outline: #a6a9b8;
+  --color-illustration-dark-coat-outline: #5f5f5f;
 
   --color-shadow: rgb(0 0 0 / 45%);
   --color-backdrop: rgb(0 0 0 / 60%);
@@ -232,7 +232,7 @@
     --color-warning-fill: #8f7200;
 
     --color-illustration-line: #a6a9b8;
-    --color-illustration-dark-coat-outline: #a6a9b8;
+    --color-illustration-dark-coat-outline: #5f5f5f;
 
     --color-shadow: rgb(0 0 0 / 45%);
     --color-backdrop: rgb(0 0 0 / 60%);

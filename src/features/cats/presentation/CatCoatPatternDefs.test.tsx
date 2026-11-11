@@ -19,13 +19,25 @@ describe("catCoatIconStyle", () => {
     });
   });
 
-  it("黒系のベース色は明るくして塗り、目・口をグレーに、耳の内側を塗らず、輪郭をテーマに合わせる", () => {
+  it("黒系のベース色は明るくして塗り、目・口を毛色ごとの色に、耳の内側を塗らず、輪郭をテーマに合わせる", () => {
     expect(catCoatIconStyle("black", "cat-coat-1")).toEqual({
       "--illustration-cat-coat": "#4a4442",
-      "--illustration-cat-feature": "#595959",
+      "--illustration-cat-feature": "#bbbbbb",
       "--illustration-cat-ear": "none",
       "--illustration-outline": "var(--color-illustration-dark-coat-outline)",
     });
+  });
+});
+
+describe("catCoatIconStyle の黒系の目・口の色", () => {
+  it.each([
+    ["dark_brown", "#3c2c2c"],
+    ["tortoiseshell", "#ffffff"],
+  ] as const)("%s は %s で描く", (coatColor, featureColor) => {
+    expect(catCoatIconStyle(coatColor, "cat-coat-1")).toHaveProperty(
+      "--illustration-cat-feature",
+      featureColor,
+    );
   });
 });
 

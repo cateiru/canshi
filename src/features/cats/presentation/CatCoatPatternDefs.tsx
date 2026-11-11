@@ -7,18 +7,13 @@ import {
 } from "@/components/ui/RecordIcons/RecordIcons";
 import type { CatCoatColor } from "@/db/schema";
 import styles from "./CatCoatPatternDefs.module.css";
-import {
-  CoatArt,
-  ICON_DARK_COAT_FEATURE_COLOR,
-  iconPalette,
-  isDarkIconCoat,
-} from "./CoatArt";
+import { CoatArt, darkIconCoatFeatureColor, iconPalette } from "./CoatArt";
 
 /**
  * イラストアイコン（RecordIcons）の猫を、毛色のベース色で塗るための style。この要素の中のアイコンに効く。
  * 柄・白い毛の割合は、小さなアイコンでは線が込み入って見づらくなるため反映しない。
  * サビ・ブルークリームのように 2 色が混ざるベース色は、CatCoatPatternDefs と同じ patternId の
- * パターンで斑に塗る。黒系の毛色では目・口をグレーにし、耳の内側のピンクを塗らず、
+ * パターンで斑に塗る。黒系の毛色では目・口を毛色ごとの色にし、耳の内側のピンクを塗らず、
  * ダークテーマではアイコン全体の輪郭をグレーにする。
  * ベース色が未設定なら何も設定せず、既定のクリーム色のままにする
  */
@@ -30,13 +25,14 @@ export function catCoatIconStyle(
     return undefined;
   }
   const palette = iconPalette(coatColor);
+  const featureColor = darkIconCoatFeatureColor(coatColor);
   return {
     [CAT_COAT_FILL_VARIABLE]: palette.patch
       ? `url("#${patternId}") ${palette.fill}`
       : palette.fill,
-    ...(isDarkIconCoat(coatColor)
+    ...(featureColor
       ? {
-          [CAT_FEATURE_STROKE_VARIABLE]: ICON_DARK_COAT_FEATURE_COLOR,
+          [CAT_FEATURE_STROKE_VARIABLE]: featureColor,
           [CAT_EAR_FILL_VARIABLE]: "none",
           // ダークテーマでは塗りも背景も濃いため、猫も道具もアイコンの輪郭をグレーにして形を見せる
           [ICON_OUTLINE_STROKE_VARIABLE]:
