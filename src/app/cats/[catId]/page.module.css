@@ -44,6 +44,10 @@
   overflow-wrap: anywhere;
 }
 
+.settingsLink {
+  flex-shrink: 0;
+}
+
 .details dd {
   min-width: 0;
 }

@@ -3,9 +3,9 @@ import { TbSettings } from "react-icons/tb";
 import {
   Badge,
   Breadcrumb,
+  ButtonLink,
   Collapsible,
   Heading,
-  IconButtonLink,
 } from "@/components/ui";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import {
@@ -61,12 +61,14 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
         />
         <div className={styles.nameRow}>
           <h1 className={styles.name}>{cat.name}</h1>
-          <IconButtonLink
+          <ButtonLink
             href={`/cats/${cat.id}/edit`}
-            icon={TbSettings}
-            aria-label={`${cat.name}を編集する`}
-            title="編集"
-          />
+            variant="secondary"
+            leftIcon={TbSettings}
+            className={styles.settingsLink}
+          >
+            ねこの設定
+          </ButtonLink>
         </div>
       </div>
 
