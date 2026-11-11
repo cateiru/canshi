@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Collapsible } from "./Collapsible";
 
@@ -67,6 +67,69 @@ describe("Collapsible", () => {
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(window.localStorage.length).toBe(0);
+  });
+
+  describe("reserveExpandedSpace", () => {
+    function renderReserved() {
+      return render(
+        <Collapsible
+          title="グラフ"
+          storageKey="test-key"
+          defaultExpanded={false}
+          reserveExpandedSpace
+        >
+          <p>グラフの内容</p>
+        </Collapsible>,
+      );
+    }
+
+    it("保存がなければ defaultExpanded の状態にし、次のフレームで見えるようにする", async () => {
+      const { container } = renderReserved();
+
+      expect(screen.getByRole("button", { name: "グラフ" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+      const disclosure = container.firstElementChild;
+      expect(disclosure).toHaveAttribute("data-restoring", "true");
+      await waitFor(() => {
+        expect(disclosure).not.toHaveAttribute("data-restoring");
+      });
+    });
+
+    it("開いたまま保存されていれば、開いた状態で表示する", async () => {
+      window.localStorage.setItem("test-key", "true");
+
+      const { container } = renderReserved();
+
+      expect(screen.getByRole("button", { name: "グラフ" })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+      await waitFor(() => {
+        expect(container.firstElementChild).not.toHaveAttribute(
+          "data-restoring",
+        );
+      });
+    });
+
+    it("storageKey がなければ空白にせず、すぐに表示する", () => {
+      const { container } = render(
+        <Collapsible
+          title="グラフ"
+          defaultExpanded={false}
+          reserveExpandedSpace
+        >
+          <p>グラフの内容</p>
+        </Collapsible>,
+      );
+
+      expect(container.firstElementChild).not.toHaveAttribute("data-restoring");
+      expect(screen.getByRole("button", { name: "グラフ" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+    });
   });
 
   it("見出しの階層と、見出し横の補足を指定できる", () => {

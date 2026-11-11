@@ -41,6 +41,7 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
       title="ごはんの推移"
       defaultExpanded={false}
       storageKey="canshi:feeding-chart-expanded"
+      reserveExpandedSpace
     >
       <div className={styles.header}>
         <SegmentedControl

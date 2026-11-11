@@ -36,6 +36,7 @@ export function WeightChart({ points, now }: WeightChartProps) {
       title="体重の推移"
       defaultExpanded={false}
       storageKey="canshi:weight-chart-expanded"
+      reserveExpandedSpace
     >
       <div className={styles.header}>
         <SegmentedControl

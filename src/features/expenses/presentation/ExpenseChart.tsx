@@ -45,6 +45,7 @@ export function ExpenseChart({ months }: ExpenseChartProps) {
       title="月ごとの支出グラフ"
       defaultExpanded={false}
       storageKey="canshi:expense-chart-expanded"
+      reserveExpandedSpace
     >
       <div className={styles.header}>
         {first && last ? (

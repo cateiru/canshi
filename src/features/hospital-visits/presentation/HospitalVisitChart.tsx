@@ -41,6 +41,7 @@ export function HospitalVisitChart({ data, now }: HospitalVisitChartProps) {
       title="通院日カレンダー"
       defaultExpanded={false}
       storageKey="canshi:hospital-visit-calendar-expanded"
+      reserveExpandedSpace
     >
       <section
         className={styles.canvas}

@@ -8,6 +8,11 @@
   outline-offset: calc(-1 * var(--border-width));
 }
 
+/* 保存した開閉状態を読むまでは、開いた高さの空白として描く */
+.container[data-restoring] {
+  visibility: hidden;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -15,9 +20,12 @@
   transition: background-color var(--transition-base);
 }
 
-/* 右端に操作があるときも、見出しの行全体を押せる範囲として見せる */
+/*
+ * 右端に操作があるときも、見出しの行全体を押せる範囲として見せる。
+ * 記録の導線のカード（NavCard）と同じく、ホバー時はテーマカラーの面にする
+ */
 .header:has(.trigger[data-hovered]) {
-  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-bg));
 }
 
 .heading {
@@ -81,6 +89,11 @@
 
 .container[data-expanded] .caret {
   transform: rotate(180deg);
+}
+
+/* 空白から表示に切り替えたとき、保存した状態へ向かう矢印の回転を見せない */
+.container[data-restoring] .caret {
+  transition: none;
 }
 
 .panelInner {

@@ -41,6 +41,7 @@ export function CleaningRecordChart({ data, now }: CleaningRecordChartProps) {
       title="実施日カレンダー"
       defaultExpanded={false}
       storageKey="canshi:cleaning-calendar-expanded"
+      reserveExpandedSpace
     >
       <section
         className={styles.canvas}

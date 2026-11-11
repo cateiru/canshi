@@ -36,6 +36,7 @@ export function PoopRecordChart({ points, now }: PoopRecordChartProps) {
       title="うんちの時間帯"
       defaultExpanded={false}
       storageKey="canshi:poop-chart-expanded"
+      reserveExpandedSpace
     >
       <div className={styles.header}>
         <SegmentedControl
