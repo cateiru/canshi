@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { TbSettings } from "react-icons/tb";
+import { TbPencil } from "react-icons/tb";
 import {
   Badge,
   Breadcrumb,
@@ -64,10 +64,10 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
           <ButtonLink
             href={`/cats/${cat.id}/edit`}
             variant="secondary"
-            leftIcon={TbSettings}
+            leftIcon={TbPencil}
             className={styles.settingsLink}
           >
-            ねこの設定
+            ねこの編集
           </ButtonLink>
         </div>
       </div>
