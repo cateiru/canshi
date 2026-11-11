@@ -130,6 +130,8 @@ export default async function CatsPage() {
                 />
               }
               storageKey={householdExpandedStorageKey(household.id)}
+              // 閉じて保存した家があっても、読み込み後に下の家が持ち上がるのを見せない
+              reserveExpandedSpace
             >
               {cats.length === 0 ? (
                 <div className={styles.householdEmpty}>
