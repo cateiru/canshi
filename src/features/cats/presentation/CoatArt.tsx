@@ -55,6 +55,19 @@ const ICON_DARK_COAT_FEATURE_COLOR: Partial<Record<CatCoatColor, string>> = {
 };
 
 /**
+ * 黒系の濃い毛色の、ライトテーマでの大きなイラスト（BCS のイラスト）の猫の輪郭の色。
+ * 既定の濃い輪郭では、脚の付け根やお腹のラインなど体型を見る内側の線が塗りに沈むため、
+ * アイコンの目・口と同じように明るくする。サビは目・口の白だと白い背景に輪郭が溶けるため、黒と同じ灰色にする
+ */
+const LARGE_ILLUSTRATION_LIGHT_LINE_COLOR: Partial<
+  Record<CatCoatColor, string>
+> = {
+  black: "#bbbbbb",
+  dark_brown: "#3c2c2c",
+  tortoiseshell: "#bbbbbb",
+};
+
+/**
  * ダークテーマで、その毛色の猫を描くアイコンの輪郭と目・口に使う色（両方を同じ色にする）。
  * ライトテーマでは輪郭は既定の濃い色のままで、目・口は黒系だけ ICON_DARK_COAT_FEATURE_COLOR にする
  */
@@ -84,6 +97,13 @@ export function swatchPalette(coatColor: CatCoatColor | null): CoatPalette {
 /** イラストアイコンの猫を塗るときの色 */
 export function iconPalette(coatColor: CatCoatColor): CoatPalette {
   return ICON_COAT_COLOR_OVERRIDE[coatColor] ?? COAT_COLOR_SWATCH[coatColor];
+}
+
+/** 黒系の濃い毛色なら、ライトテーマでの大きなイラストの猫の輪郭の色を返す。それ以外は null */
+export function largeIllustrationLightLineColor(
+  coatColor: CatCoatColor,
+): string | null {
+  return LARGE_ILLUSTRATION_LIGHT_LINE_COLOR[coatColor] ?? null;
 }
 
 /**

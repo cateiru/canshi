@@ -11,6 +11,7 @@ import {
   darkIconCoatFeatureColor,
   darkThemeIconLineColor,
   iconPalette,
+  largeIllustrationLightLineColor,
   TILED_COAT_ART_SIZE,
   TiledCoatArt,
 } from "./CoatArt";
@@ -18,14 +19,15 @@ import {
 /**
  * 目・口・輪郭の色は、ライト・ダークテーマで変えるため、style では元になる値だけを渡し、
  * CAT_COAT_ICON_SCOPE_CLASS（CatCoatPatternDefs.module.css）でテーマに合わせて
- * RecordIcons の変数（--illustration-cat-feature・--illustration-outline）に振り分ける
+ * RecordIcons の変数（--illustration-cat-feature・--illustration-outline・--illustration-cat-line）に振り分ける
  */
 const LIGHT_FEATURE_VARIABLE = "--cat-coat-light-feature";
+const LIGHT_LINE_VARIABLE = "--cat-coat-light-line";
 const DARK_LINE_VARIABLE = "--cat-coat-dark-line";
 
 /**
  * 大きなイラスト用の、斑を敷き詰めたパターンの 1 枚の大きさ。パターンを使う SVG の座標の単位で、
- * 幅 840 の BCS のイラストで猫の胴に斑が 2〜3 個並ぶ大きさにしている
+ * 幅 840 の BCS のイラストで猫 1 匹に斑が 10 個前後並ぶ大きさにしている
  */
 const TILED_PATTERN_SIZE = 280;
 
@@ -42,6 +44,7 @@ export const CAT_COAT_ICON_SCOPE_CLASS = styles.coatScope;
  * サビ・ブルークリームのように 2 色が混ざるベース色は、CatCoatPatternDefs と同じ patternId の
  * パターンで斑に塗る（大きなイラスト用に、斑を敷き詰めたパターンの変数も設定する）。黒系の毛色では耳の内側のピンクを塗らず、ライトテーマでは目・口を毛色ごとの色にする。
  * ダークテーマでは、アイコン全体の輪郭と目・口を毛色ごとの同じ色にする。
+ * 大きなイラスト（BCS）の輪郭は、黒系の毛色ではライトテーマでも明るくする。
  * 要素には CAT_COAT_ICON_SCOPE_CLASS も付ける。
  * ベース色が未設定なら何も設定せず、既定のクリーム色のままにする。
  * `isolate` を付けると、祖先で別の猫の毛色が設定されていても受け継がず、設定しない変数は既定に戻す
@@ -59,6 +62,7 @@ export function catCoatIconStyle(
         [CAT_COAT_TILED_FILL_VARIABLE]: "initial",
         [CAT_EAR_FILL_VARIABLE]: "initial",
         [LIGHT_FEATURE_VARIABLE]: "initial",
+        [LIGHT_LINE_VARIABLE]: "initial",
         [DARK_LINE_VARIABLE]: "initial",
       } as CSSProperties)
     : undefined;
@@ -67,6 +71,7 @@ export function catCoatIconStyle(
   }
   const palette = iconPalette(coatColor);
   const featureColor = darkIconCoatFeatureColor(coatColor);
+  const largeLightLineColor = largeIllustrationLightLineColor(coatColor);
   return {
     ...reset,
     [CAT_COAT_FILL_VARIABLE]: palette.patch
@@ -78,6 +83,9 @@ export function catCoatIconStyle(
         }
       : {}),
     [DARK_LINE_VARIABLE]: darkThemeIconLineColor(coatColor),
+    ...(largeLightLineColor
+      ? { [LIGHT_LINE_VARIABLE]: largeLightLineColor }
+      : {}),
     ...(featureColor
       ? {
           [LIGHT_FEATURE_VARIABLE]: featureColor,

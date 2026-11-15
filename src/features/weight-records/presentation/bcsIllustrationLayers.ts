@@ -7,9 +7,6 @@ export type BcsIllustrationLayers = {
   hasOverlay: boolean;
 };
 
-/** 元の画像の塗りの色。毛色が未設定のときに使う */
-export const BCS_ILLUSTRATION_DEFAULT_FILL = "#f9cca2";
-
 export const BCS_ILLUSTRATION_LAYERS = {
   "bcs-1": { width: 840, height: 840, hasOverlay: false },
   "bcs-2": { width: 840, height: 840, hasOverlay: false },

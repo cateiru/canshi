@@ -226,9 +226,6 @@ export type BcsIllustrationLayers = {
   hasOverlay: boolean;
 };
 
-/** 元の画像の塗りの色。毛色が未設定のときに使う */
-export const BCS_ILLUSTRATION_DEFAULT_FILL = "${toHex(results[2].fillColor)}";
-
 export const BCS_ILLUSTRATION_LAYERS = {
 ${entries}
 } as const satisfies Record<string, BcsIllustrationLayers>;

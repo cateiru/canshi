@@ -2,10 +2,11 @@ import { type CSSProperties, useId } from "react";
 import {
   CAT_COAT_FILL_VARIABLE,
   CAT_COAT_TILED_FILL_VARIABLE,
+  CAT_LINE_VARIABLE,
+  DEFAULT_CAT_COAT,
   ICON_OUTLINE_STROKE_VARIABLE,
 } from "@/components/ui/RecordIcons/RecordIcons";
 import {
-  BCS_ILLUSTRATION_DEFAULT_FILL,
   BCS_ILLUSTRATION_LAYERS,
   type BcsIllustrationName,
 } from "./bcsIllustrationLayers";
@@ -14,15 +15,19 @@ import { getBcsIllustrationLayerSrc } from "./bcsIllustrations";
 /**
  * 猫の塗り。イラストアイコン（RecordIcons）と同じく、猫のページでは毛色で塗る。
  * サビ・ブルークリームは、アイコンの斑を引き伸ばすと大きすぎるため、小さな斑を敷き詰めた
- * パターンで塗る。未設定なら元の画像のベージュ
+ * パターンで塗る。未設定ならアイコンと同じクリーム色
  */
 const fillStyle: CSSProperties = {
-  fill: `var(${CAT_COAT_TILED_FILL_VARIABLE}, var(${CAT_COAT_FILL_VARIABLE}, ${BCS_ILLUSTRATION_DEFAULT_FILL}))`,
+  fill: `var(${CAT_COAT_TILED_FILL_VARIABLE}, var(${CAT_COAT_FILL_VARIABLE}, ${DEFAULT_CAT_COAT}))`,
 };
 
-/** 輪郭。イラストアイコンと同じく、猫のページのダークテーマでは毛色に合わせた色になる */
+/**
+ * 輪郭。猫のページのダークテーマでは、イラストアイコンと同じく毛色に合わせた色になる。
+ * BCS では脚の付け根やお腹のラインなど内側の線で体型を見るため、黒系の毛色のライトテーマでは
+ * 線が塗りに沈まないよう明るい色（--illustration-cat-line）で描く
+ */
 const lineStyle: CSSProperties = {
-  fill: `var(${ICON_OUTLINE_STROKE_VARIABLE}, var(--color-illustration-outline, #2e3142))`,
+  fill: `var(${CAT_LINE_VARIABLE}, var(${ICON_OUTLINE_STROKE_VARIABLE}, var(--color-illustration-outline, #2e3142)))`,
 };
 
 const maskStyle: CSSProperties = { maskType: "alpha" };

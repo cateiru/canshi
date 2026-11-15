@@ -26,6 +26,7 @@ describe("catCoatIconStyle", () => {
     expect(catCoatIconStyle("black", "cat-coat-1")).toEqual({
       "--illustration-cat-coat": "#4a4442",
       "--cat-coat-dark-line": "#0e0e0e",
+      "--cat-coat-light-line": "#bbbbbb",
       "--cat-coat-light-feature": "#bbbbbb",
       "--illustration-cat-ear": "none",
     });
@@ -37,6 +38,7 @@ describe("catCoatIconStyle", () => {
       "--illustration-cat-coat-tiled": "initial",
       "--illustration-cat-ear": "initial",
       "--cat-coat-light-feature": "initial",
+      "--cat-coat-light-line": "initial",
       "--cat-coat-dark-line": "initial",
     });
   });
@@ -44,13 +46,14 @@ describe("catCoatIconStyle", () => {
 
 describe("catCoatIconStyle の毛色ごとの線の色", () => {
   it.each([
-    ["dark_brown", "#3c2c2c", "#241313"],
-    ["tortoiseshell", "#ffffff", "#4e3d3d"],
+    ["dark_brown", "#3c2c2c", "#3c2c2c", "#241313"],
+    ["tortoiseshell", "#ffffff", "#bbbbbb", "#4e3d3d"],
   ] as const)(
-    "%s はライトの目・口を %s、ダークの輪郭・目・口を %s にする",
-    (coatColor, lightFeature, darkLine) => {
+    "%s はライトの目・口を %s、ライトの大きなイラストの輪郭を %s、ダークの輪郭・目・口を %s にする",
+    (coatColor, lightFeature, lightLine, darkLine) => {
       expect(catCoatIconStyle(coatColor, "cat-coat-1")).toMatchObject({
         "--cat-coat-light-feature": lightFeature,
+        "--cat-coat-light-line": lightLine,
         "--cat-coat-dark-line": darkLine,
       });
     },
@@ -68,6 +71,7 @@ describe("catCoatIconStyle の毛色ごとの線の色", () => {
       const style = catCoatIconStyle(coatColor, "cat-coat-1");
       expect(style).toHaveProperty("--cat-coat-dark-line", darkLine);
       expect(style).not.toHaveProperty("--cat-coat-light-feature");
+      expect(style).not.toHaveProperty("--cat-coat-light-line");
     },
   );
 });
