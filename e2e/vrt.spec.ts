@@ -1073,6 +1073,26 @@ for (const {
   });
 }
 
+// ごはんの推移は食べた量とカロリーを切り替えて 1 つずつ表示する。カロリーを選んだ状態も撮る
+test("ごはん記録一覧（カロリーのグラフ）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${CAT}/feeding-records`);
+  await expect(
+    page.getByRole("heading", { name: "VRTテスト猫のごはん記録" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "ごはんの推移" }).click();
+  await page.getByRole("radio", { name: "全期間" }).click();
+  await page.getByRole("radio", { name: "カロリー" }).click();
+  await expect(
+    page.getByRole("heading", { name: "カロリー（推定）" }),
+  ).toBeVisible();
+  await expect(page.locator("svg").first()).toBeVisible();
+  // Nivo のグラフ描画アニメーションが収まるのを待つ
+  await page.waitForTimeout(500);
+  await takeSnapshot(page, testInfo);
+});
+
 // あいまいモードの記録は食べた量・カロリーを計算しないため、あいまいモードの記録しかない
 // 猫ではグラフ（「ごはんの推移」）を表示しない
 test("ごはん記録一覧（あいまいモードの記録だけのケース）の見た目", async ({

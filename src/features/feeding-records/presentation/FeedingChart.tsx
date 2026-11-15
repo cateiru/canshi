@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { type ComponentType, useMemo, useState } from "react";
+import type { IconBaseProps } from "react-icons";
 import { Collapsible, SegmentedControl } from "@/components/ui";
 import {
   CalorieIcon,
@@ -9,7 +10,9 @@ import {
 } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
+  FEEDING_CHART_METRIC_LABEL,
   FEEDING_CHART_PERIOD_LABEL,
+  type FeedingChartMetric,
   type FeedingChartPeriod,
   type FeedingChartPoint,
   filterByPeriod,
@@ -23,6 +26,13 @@ const FeedingChartCanvas = dynamic(() => import("./FeedingChartCanvas"), {
 
 const PERIOD_ORDER: FeedingChartPeriod[] = ["1m", "3m", "all"];
 
+const METRIC_ORDER: FeedingChartMetric[] = ["intake", "kcal"];
+
+const METRIC_ICON: Record<FeedingChartMetric, ComponentType<IconBaseProps>> = {
+  intake: FeedingIcon,
+  kcal: CalorieIcon,
+};
+
 type FeedingChartProps = {
   points: FeedingChartPoint[];
   now: string;
@@ -30,6 +40,8 @@ type FeedingChartProps = {
 
 export function FeedingChart({ points, now }: FeedingChartProps) {
   const [period, setPeriod] = useState<FeedingChartPeriod>("3m");
+  // 食べた量とカロリーはほぼ同じ形のグラフになるため、並べずに切り替えて 1 つだけ表示する
+  const [metric, setMetric] = useState<FeedingChartMetric>("intake");
 
   const filtered = useMemo(
     () => filterByPeriod(points, period, new Date(now)),
@@ -46,6 +58,14 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
       <div className={styles.header}>
         <SegmentedControl
           size="sm"
+          options={METRIC_ORDER}
+          labels={FEEDING_CHART_METRIC_LABEL}
+          value={metric}
+          onChange={setMetric}
+          aria-label="グラフの種類"
+        />
+        <SegmentedControl
+          size="sm"
           options={PERIOD_ORDER}
           labels={FEEDING_CHART_PERIOD_LABEL}
           value={period}
@@ -57,34 +77,23 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
       {filtered.length === 0 ? (
         <div className={styles.emptyPeriod}>この期間の記録はありません。</div>
       ) : (
-        <div className={styles.charts}>
-          <div className={styles.chartBlock}>
-            <h3 className={styles.chartLabel}>
-              <ScaledIcon icon={FeedingIcon} aria-hidden="true" size={16} />
-              食べた量（推定）
-            </h3>
-            <div className={styles.canvas}>
-              <FeedingChartCanvas
-                points={filtered}
-                allPoints={points}
-                metric="intake"
-              />
-            </div>
+        <>
+          <h3 className={styles.chartLabel}>
+            <ScaledIcon
+              icon={METRIC_ICON[metric]}
+              aria-hidden="true"
+              size={16}
+            />
+            {FEEDING_CHART_METRIC_LABEL[metric]}（推定）
+          </h3>
+          <div className={styles.canvas}>
+            <FeedingChartCanvas
+              points={filtered}
+              allPoints={points}
+              metric={metric}
+            />
           </div>
-          <div className={styles.chartBlock}>
-            <h3 className={styles.chartLabel}>
-              <ScaledIcon icon={CalorieIcon} aria-hidden="true" size={16} />
-              カロリー（推定）
-            </h3>
-            <div className={styles.canvas}>
-              <FeedingChartCanvas
-                points={filtered}
-                allPoints={points}
-                metric="kcal"
-              />
-            </div>
-          </div>
-        </div>
+        </>
       )}
     </Collapsible>
   );

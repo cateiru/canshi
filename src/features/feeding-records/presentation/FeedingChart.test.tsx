@@ -57,7 +57,7 @@ describe("FeedingChart", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("開くと初期表示（直近3ヶ月）で期間内の件数が両方のキャンバスに渡る", async () => {
+  it("開くと初期表示（直近3ヶ月）で期間内の件数が食べた量のキャンバスにだけ渡る", async () => {
     render(<FeedingChart points={POINTS} now={NOW} />);
 
     openChart();
@@ -65,21 +65,46 @@ describe("FeedingChart", () => {
     expect(await screen.findByTestId("chart-canvas-intake")).toHaveTextContent(
       "2",
     );
-    expect(screen.getByTestId("chart-canvas-kcal")).toHaveTextContent("2");
+    expect(screen.queryByTestId("chart-canvas-kcal")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "食べた量（推定）" }),
+    ).toBeInTheDocument();
   });
 
-  it("期間を切り替えると両方のキャンバスに渡る件数が変わる", async () => {
+  it("グラフの種類をカロリーに切り替えるとカロリーのキャンバスだけを表示する", async () => {
     render(<FeedingChart points={POINTS} now={NOW} />);
 
     openChart();
 
-    const group = screen.getByRole("radiogroup", { name: "表示期間" });
-    fireEvent.click(within(group).getByRole("radio", { name: "全期間" }));
+    const group = screen.getByRole("radiogroup", { name: "グラフの種類" });
+    fireEvent.click(within(group).getByRole("radio", { name: "カロリー" }));
 
-    expect(await screen.findByTestId("chart-canvas-intake")).toHaveTextContent(
+    expect(await screen.findByTestId("chart-canvas-kcal")).toHaveTextContent(
+      "2",
+    );
+    expect(screen.queryByTestId("chart-canvas-intake")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "カロリー（推定）" }),
+    ).toBeInTheDocument();
+  });
+
+  it("期間を切り替えると表示中のキャンバスに渡る件数が変わる", async () => {
+    render(<FeedingChart points={POINTS} now={NOW} />);
+
+    openChart();
+
+    const metricGroup = screen.getByRole("radiogroup", {
+      name: "グラフの種類",
+    });
+    fireEvent.click(
+      within(metricGroup).getByRole("radio", { name: "カロリー" }),
+    );
+    const periodGroup = screen.getByRole("radiogroup", { name: "表示期間" });
+    fireEvent.click(within(periodGroup).getByRole("radio", { name: "全期間" }));
+
+    expect(await screen.findByTestId("chart-canvas-kcal")).toHaveTextContent(
       "3",
     );
-    expect(screen.getByTestId("chart-canvas-kcal")).toHaveTextContent("3");
   });
 
   it("選択期間に記録がない場合はメッセージを表示しキャンバスを描画しない", async () => {
