@@ -12,6 +12,7 @@ import {
 import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { toMediaAssetView } from "@/features/media/domain/view";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
@@ -52,6 +53,8 @@ export default async function VomitRecordsPage({
   if (!cat) {
     notFound();
   }
+  // メモリーへ移した猫は、記録を見返すだけにする（追加・編集・削除の導線を出さない）
+  const readOnly = isMemorialCat(cat);
 
   const records = await listVomitRecords(catId);
   const { page: pageParam } = await searchParams;
@@ -84,27 +87,31 @@ export default async function VomitRecordsPage({
         <RecordPageHeading icon={VomitIcon}>
           {cat.name}の嘔吐記録
         </RecordPageHeading>
-        <ButtonLink
-          href={`/cats/${catId}/vomit-records/new`}
-          variant="primary"
-          className={styles.createButton}
-          leftIcon={TbPlus}
-        >
-          記録する
-        </ButtonLink>
+        {readOnly ? null : (
+          <ButtonLink
+            href={`/cats/${catId}/vomit-records/new`}
+            variant="primary"
+            className={styles.createButton}
+            leftIcon={TbPlus}
+          >
+            記録する
+          </ButtonLink>
+        )}
       </div>
 
       {records.length === 0 ? (
         <RecordEmptyState
           icon={VomitIcon}
           actions={
-            <ButtonLink
-              href={`/cats/${catId}/vomit-records/new`}
-              variant="primary"
-              className={styles.createButton}
-            >
-              最初の記録をする
-            </ButtonLink>
+            readOnly ? undefined : (
+              <ButtonLink
+                href={`/cats/${catId}/vomit-records/new`}
+                variant="primary"
+                className={styles.createButton}
+              >
+                最初の記録をする
+              </ButtonLink>
+            )
           }
         >
           まだ嘔吐記録がありません。
@@ -125,22 +132,26 @@ export default async function VomitRecordsPage({
                     <RecordContributors
                       contributors={contributorsByRecordId.get(record.id)}
                     />
-                    <IconButtonLink
-                      href={`/cats/${catId}/vomit-records/${record.id}/edit`}
-                      icon={TbPencil}
-                      aria-label="編集する"
-                      title="編集する"
-                    />
-                    <DeleteRecordButton
-                      action={deleteVomitRecordAction.bind(
-                        null,
-                        catId,
-                        record.id,
-                      )}
-                      title="嘔吐記録の削除"
-                      description="この嘔吐記録を削除しますか？この操作は取り消せません。"
-                      iconOnly
-                    />
+                    {readOnly ? null : (
+                      <>
+                        <IconButtonLink
+                          href={`/cats/${catId}/vomit-records/${record.id}/edit`}
+                          icon={TbPencil}
+                          aria-label="編集する"
+                          title="編集する"
+                        />
+                        <DeleteRecordButton
+                          action={deleteVomitRecordAction.bind(
+                            null,
+                            catId,
+                            record.id,
+                          )}
+                          title="嘔吐記録の削除"
+                          description="この嘔吐記録を削除しますか？この操作は取り消せません。"
+                          iconOnly
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 

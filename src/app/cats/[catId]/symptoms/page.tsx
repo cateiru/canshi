@@ -12,6 +12,7 @@ import {
 import { SymptomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/domain/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
@@ -61,6 +62,8 @@ export default async function SymptomsPage({
   if (!cat) {
     notFound();
   }
+  // メモリーへ移した猫は、記録を見返すだけにする（追加・編集・削除の導線を出さない）
+  const readOnly = isMemorialCat(cat);
 
   const [records, hospitalVisitList] = await Promise.all([
     listSymptoms(catId),
@@ -102,27 +105,31 @@ export default async function SymptomsPage({
         <RecordPageHeading icon={SymptomIcon}>
           {cat.name}の症状記録
         </RecordPageHeading>
-        <ButtonLink
-          href={`/cats/${catId}/symptoms/new`}
-          variant="primary"
-          className={styles.createButton}
-          leftIcon={TbPlus}
-        >
-          記録する
-        </ButtonLink>
+        {readOnly ? null : (
+          <ButtonLink
+            href={`/cats/${catId}/symptoms/new`}
+            variant="primary"
+            className={styles.createButton}
+            leftIcon={TbPlus}
+          >
+            記録する
+          </ButtonLink>
+        )}
       </div>
 
       {records.length === 0 ? (
         <RecordEmptyState
           icon={SymptomIcon}
           actions={
-            <ButtonLink
-              href={`/cats/${catId}/symptoms/new`}
-              variant="primary"
-              className={styles.createButton}
-            >
-              最初の記録をする
-            </ButtonLink>
+            readOnly ? undefined : (
+              <ButtonLink
+                href={`/cats/${catId}/symptoms/new`}
+                variant="primary"
+                className={styles.createButton}
+              >
+                最初の記録をする
+              </ButtonLink>
+            )
           }
         >
           まだ症状記録がありません。
@@ -143,18 +150,26 @@ export default async function SymptomsPage({
                     <RecordContributors
                       contributors={contributorsByRecordId.get(record.id)}
                     />
-                    <IconButtonLink
-                      href={`/cats/${catId}/symptoms/${record.id}/edit`}
-                      icon={TbPencil}
-                      aria-label="編集する"
-                      title="編集する"
-                    />
-                    <DeleteRecordButton
-                      action={deleteSymptomAction.bind(null, catId, record.id)}
-                      title="症状記録の削除"
-                      description="この症状記録を削除しますか？この操作は取り消せません。"
-                      iconOnly
-                    />
+                    {readOnly ? null : (
+                      <>
+                        <IconButtonLink
+                          href={`/cats/${catId}/symptoms/${record.id}/edit`}
+                          icon={TbPencil}
+                          aria-label="編集する"
+                          title="編集する"
+                        />
+                        <DeleteRecordButton
+                          action={deleteSymptomAction.bind(
+                            null,
+                            catId,
+                            record.id,
+                          )}
+                          title="症状記録の削除"
+                          description="この症状記録を削除しますか？この操作は取り消せません。"
+                          iconOnly
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 

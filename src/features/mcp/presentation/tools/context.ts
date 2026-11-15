@@ -1,4 +1,5 @@
 import type { Cat, RecordActor } from "@/db/schema";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import {
   getCatForUser,
   listHouseholdsForUser,
@@ -100,6 +101,20 @@ export function catNotFoundMessage(catId: string) {
   return `catId="${catId}" の猫が見つかりません`;
 }
 
+/** メモリーへ移した猫の記録・プロフィール・通知の設定を変えようとしたときの、AI に返すメッセージ */
+export function memorialCatMessage(cat: Pick<Cat, "name" | "memorialDate">) {
+  return (
+    `「${cat.name}」はメモリー（思い出）に移されているため、記録・プロフィール・通知の設定は変更できません` +
+    `（メモリーへ移した日: ${cat.memorialDate}）。読み取りはこれまでどおりできます`
+  );
+}
+
+/** 猫について行う操作のうち、メモリーへ移した猫には行えない（書き換える）操作 */
+const MEMORIAL_BLOCKED_CAT_OPERATIONS: readonly McpHouseholdOperation[] = [
+  "cat:update",
+  "catNotification:update",
+];
+
 /** 接続を求め、その接続の範囲を返す。求められなければ AI に返すエラーメッセージ */
 export async function resolvePermissions(
   ctx: McpToolContext,
@@ -120,7 +135,7 @@ export async function resolvePermissions(
 
 /**
  * 記録を書き込む猫を求める。ユーザーが参照でき、この接続からの読み取りを許可している猫で、
- * その記録の種類の書き込みも許可しているときに限る。読み取りを許可していない猫は、
+ * メモリーへ移しておらず、その記録の種類の書き込みも許可しているときに限る。読み取りを許可していない猫は、
  * 存在しない猫と区別しない
  */
 export async function resolveWritableCat(
@@ -151,6 +166,9 @@ export async function resolveWritableCat(
     !isCatAllowedForMcp(resolved.permissions, cat)
   ) {
     return { error: catNotFoundMessage(catId) };
+  }
+  if (isMemorialCat(cat)) {
+    return { error: memorialCatMessage(cat) };
   }
   if (
     !writableMcpRecordTypes(resolved.permissions, cat.id).includes(recordType)
@@ -239,7 +257,8 @@ export async function resolveHouseholdOperation(
 /**
  * 猫について家ごとの操作（猫のプロフィール・通知の設定）を行えるときだけ、接続と範囲、猫を返す。
  * ユーザーが参照でき、この接続からの読み取りも許可している猫で、猫の今の家でその操作も
- * 許可しているときに限る。読み取りを許可していない猫は、存在しない猫と区別しない
+ * 許可しているときに限る。メモリーへ移した猫には、書き換える操作（プロフィール・通知の設定の変更）を
+ * 行えない。読み取りを許可していない猫は、存在しない猫と区別しない
  */
 export async function resolveCatOperation(
   ctx: McpToolContext,
@@ -277,6 +296,12 @@ export async function resolveCatOperation(
   );
   if (error) {
     return { error };
+  }
+  if (
+    isMemorialCat(cat) &&
+    MEMORIAL_BLOCKED_CAT_OPERATIONS.includes(operation)
+  ) {
+    return { error: memorialCatMessage(cat) };
   }
   return { ...resolved, cat: { ...cat, householdId: cat.householdId } };
 }

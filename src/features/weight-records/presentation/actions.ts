@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireCatAccess } from "@/features/auth/presentation/session";
+import { requireWritableCatAccess } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { userActor } from "@/features/shared/recordActor";
 import {
@@ -37,7 +37,7 @@ export async function createWeightRecordAction(
   _prevState: WeightRecordFormState,
   formData: FormData,
 ): Promise<WeightRecordFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -55,7 +55,7 @@ export async function updateWeightRecordAction(
   _prevState: WeightRecordFormState,
   formData: FormData,
 ): Promise<WeightRecordFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -73,7 +73,7 @@ export async function deleteWeightRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   await deleteWeightRecord(catId, id, userActor(user));
   redirect(`/cats/${catId}/weight-records`, "replace");
 }

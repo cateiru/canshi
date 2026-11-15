@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { deleteRecordChangeLogsOf } from "@/db/recordChangeLog";
 import {
@@ -54,6 +54,7 @@ export function createCatRepository(d1?: D1Database): CatRepository {
               ),
               coatColor: sql`${values.coatColor ?? null}`.as("coat_color"),
               profileMediaAssetId: sql`NULL`.as("profile_media_asset_id"),
+              memorialDate: sql`NULL`.as("memorial_date"),
               createdAt: sql`(unixepoch())`.as("created_at"),
               updatedAt: sql`(unixepoch())`.as("updated_at"),
             })
@@ -93,6 +94,8 @@ export function createCatRepository(d1?: D1Database): CatRepository {
               WHERE ${householdMembers.householdId} = ${cats.householdId}
                 AND ${householdMembers.userId} = ${userId}
             )`,
+            // メモリーへ移した猫のプロフィールは変えない
+            isNull(cats.memorialDate),
           ),
         )
         .returning({ id: cats.id });
@@ -111,6 +114,8 @@ export function createCatRepository(d1?: D1Database): CatRepository {
               WHERE ${householdMembers.householdId} = ${cats.householdId}
                 AND ${householdMembers.userId} = ${userId}
             )`,
+            // メモリーへ移した猫のプロフィールは変えない
+            isNull(cats.memorialDate),
           ),
         )
         .returning({ id: cats.id });

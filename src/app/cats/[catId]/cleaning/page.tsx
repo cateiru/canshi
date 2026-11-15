@@ -11,6 +11,7 @@ import {
 } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { listCleaningTargetsWithStatus } from "@/features/cleaning/infrastructure/targetQueries";
 import { quickCreateCleaningRecordAction } from "@/features/cleaning/presentation/recordActions";
@@ -35,6 +36,8 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
   if (!cat) {
     notFound();
   }
+  // メモリーへ移した猫は、記録を見返すだけにする（対象の追加・編集、記録の追加の導線を出さない）
+  const readOnly = isMemorialCat(cat);
 
   const statuses = await listCleaningTargetsWithStatus(catId, getNaiveUtcNow());
   const activeStatuses = statuses.filter((status) => status.target.isActive);
@@ -55,33 +58,37 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
         <RecordPageHeading icon={BroomIcon}>
           {cat.name}の掃除記録
         </RecordPageHeading>
-        <div className={styles.headerActions}>
-          <ButtonLink
-            href={`/cats/${catId}/notification-settings`}
-            variant="secondary"
-          >
-            通知設定
-          </ButtonLink>
-          <ButtonLink
-            href={`/cats/${catId}/cleaning/targets/new`}
-            variant="primary"
-            leftIcon={TbPlus}
-          >
-            対象を追加する
-          </ButtonLink>
-        </div>
+        {readOnly ? null : (
+          <div className={styles.headerActions}>
+            <ButtonLink
+              href={`/cats/${catId}/notification-settings`}
+              variant="secondary"
+            >
+              通知設定
+            </ButtonLink>
+            <ButtonLink
+              href={`/cats/${catId}/cleaning/targets/new`}
+              variant="primary"
+              leftIcon={TbPlus}
+            >
+              対象を追加する
+            </ButtonLink>
+          </div>
+        )}
       </div>
 
       {statuses.length === 0 ? (
         <RecordEmptyState
           icon={BroomIcon}
           actions={
-            <ButtonLink
-              href={`/cats/${catId}/cleaning/targets/new`}
-              variant="primary"
-            >
-              最初の対象を追加する
-            </ButtonLink>
+            readOnly ? undefined : (
+              <ButtonLink
+                href={`/cats/${catId}/cleaning/targets/new`}
+                variant="primary"
+              >
+                最初の対象を追加する
+              </ButtonLink>
+            )
           }
         >
           まだ掃除対象が登録されていません。
@@ -93,12 +100,14 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
               <RecordCard aria-label={status.target.name}>
                 <div className={styles.recordHeader}>
                   <h2 className={styles.recordTitle}>{status.target.name}</h2>
-                  <IconButtonLink
-                    href={`/cats/${catId}/cleaning/targets/${status.target.id}/edit`}
-                    icon={TbPencil}
-                    aria-label="編集する"
-                    title="編集する"
-                  />
+                  {readOnly ? null : (
+                    <IconButtonLink
+                      href={`/cats/${catId}/cleaning/targets/${status.target.id}/edit`}
+                      icon={TbPencil}
+                      aria-label="編集する"
+                      title="編集する"
+                    />
+                  )}
                 </div>
 
                 <dl className={styles.schedule}>
@@ -110,18 +119,22 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                         : "未実施"}
                     </dd>
                   </div>
-                  <hr className={styles.scheduleDivider} />
-                  <div>
-                    <dt>次回の予定日</dt>
-                    <dd>
-                      {status.nextDueAt
-                        ? formatDateTimeUtc(status.nextDueAt)
-                        : "未定（未実施のため）"}
-                    </dd>
-                  </div>
+                  {readOnly ? null : (
+                    <>
+                      <hr className={styles.scheduleDivider} />
+                      <div>
+                        <dt>次回の予定日</dt>
+                        <dd>
+                          {status.nextDueAt
+                            ? formatDateTimeUtc(status.nextDueAt)
+                            : "未定（未実施のため）"}
+                        </dd>
+                      </div>
+                    </>
+                  )}
                 </dl>
 
-                {status.isOverdue || status.target.notifyTime ? (
+                {!readOnly && (status.isOverdue || status.target.notifyTime) ? (
                   <div className={styles.badges}>
                     {status.isOverdue ? (
                       <Badge color="warning">期限超過</Badge>
@@ -133,17 +146,19 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                 ) : null}
 
                 <div className={styles.actions}>
-                  <form
-                    action={quickCreateCleaningRecordAction.bind(
-                      null,
-                      catId,
-                      status.target.id,
-                    )}
-                  >
-                    <Button type="submit" variant="primary">
-                      今すぐ掃除した
-                    </Button>
-                  </form>
+                  {readOnly ? null : (
+                    <form
+                      action={quickCreateCleaningRecordAction.bind(
+                        null,
+                        catId,
+                        status.target.id,
+                      )}
+                    >
+                      <Button type="submit" variant="primary">
+                        今すぐ掃除した
+                      </Button>
+                    </form>
+                  )}
                   <ButtonLink
                     href={`/cats/${catId}/cleaning/targets/${status.target.id}/records`}
                     variant="secondary"
@@ -166,12 +181,14 @@ export default async function CleaningPage({ params }: CleaningPageProps) {
                 <RecordCard aria-label={status.target.name}>
                   <div className={styles.recordHeader}>
                     <h2 className={styles.recordTitle}>{status.target.name}</h2>
-                    <IconButtonLink
-                      href={`/cats/${catId}/cleaning/targets/${status.target.id}/edit`}
-                      icon={TbPencil}
-                      aria-label="編集する"
-                      title="編集する"
-                    />
+                    {readOnly ? null : (
+                      <IconButtonLink
+                        href={`/cats/${catId}/cleaning/targets/${status.target.id}/edit`}
+                        icon={TbPencil}
+                        aria-label="編集する"
+                        title="編集する"
+                      />
+                    )}
                   </div>
                   <div className={styles.actions}>
                     <ButtonLink

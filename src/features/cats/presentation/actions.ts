@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   requireCatAccess,
   requireUser,
+  requireWritableCatAccess,
 } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import {
@@ -153,7 +154,7 @@ export async function updateCatAction(
   _prevState: CatFormState,
   formData: FormData,
 ): Promise<CatFormState> {
-  const { user } = await requireCatAccess(id);
+  const { user } = await requireWritableCatAccess(id);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -191,7 +192,7 @@ export async function updateCatAction(
 export async function markCatNeuteredAction(
   id: string,
 ): Promise<{ error?: string }> {
-  const { user } = await requireCatAccess(id);
+  const { user } = await requireWritableCatAccess(id);
   const updated = await markCatNeuteredForUser(id, user.id);
   return updated ? {} : { error: "ねこが見つかりませんでした" };
 }

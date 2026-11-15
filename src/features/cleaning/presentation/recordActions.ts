@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireCatAccess } from "@/features/auth/presentation/session";
+import { requireWritableCatAccess } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { userActor } from "@/features/shared/recordActor";
 import {
@@ -34,7 +34,7 @@ export async function createCleaningRecordAction(
   _prevState: CleaningRecordFormState,
   formData: FormData,
 ): Promise<CleaningRecordFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -64,7 +64,7 @@ export async function updateCleaningRecordAction(
   _prevState: CleaningRecordFormState,
   formData: FormData,
 ): Promise<CleaningRecordFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -93,7 +93,7 @@ export async function deleteCleaningRecordAction(
   cleaningTargetId: string,
   id: string,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   await deleteCleaningRecord(catId, cleaningTargetId, id, userActor(user));
   redirect(
     `/cats/${catId}/cleaning/targets/${cleaningTargetId}/records`,
@@ -110,7 +110,7 @@ export async function quickCreateCleaningRecordAction(
   cleaningTargetId: string,
   _formData: FormData,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   // 無効化済みの掃除対象は編集・記録閲覧のみが仕様のため、記録せずに一覧へ戻す
   await createCleaningRecordNow(catId, cleaningTargetId, userActor(user));
 

@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireCatAccess } from "@/features/auth/presentation/session";
+import { requireWritableCatAccess } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { userActor } from "@/features/shared/recordActor";
 import {
@@ -34,7 +34,7 @@ export async function createMedicationDoseAction(
   _prevState: MedicationDoseFormState,
   formData: FormData,
 ): Promise<MedicationDoseFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -62,7 +62,7 @@ export async function updateMedicationDoseAction(
   _prevState: MedicationDoseFormState,
   formData: FormData,
 ): Promise<MedicationDoseFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -89,7 +89,7 @@ export async function deleteMedicationDoseAction(
   medicationId: string,
   id: string,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   await deleteMedicationDose(catId, medicationId, id, userActor(user));
   redirect(`/cats/${catId}/medications/${medicationId}/doses`, "replace");
 }

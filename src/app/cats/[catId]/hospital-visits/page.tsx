@@ -12,6 +12,7 @@ import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { NEUTER_TERM } from "@/features/cats/domain/labels";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { formatYen } from "@/features/expenses/domain/labels";
 import { listExpensesByHospitalVisitIds } from "@/features/expenses/infrastructure/queries";
@@ -63,6 +64,8 @@ export default async function HospitalVisitsPage({
   if (!cat) {
     notFound();
   }
+  // メモリーへ移した猫は、記録を見返すだけにする（追加・編集・削除の導線を出さない）
+  const readOnly = isMemorialCat(cat);
 
   const [visits, symptomList] = await Promise.all([
     listHospitalVisits(catId),
@@ -113,14 +116,16 @@ export default async function HospitalVisitsPage({
         <RecordPageHeading icon={HospitalIcon}>
           {cat.name}の通院記録
         </RecordPageHeading>
-        <ButtonLink
-          href={`/cats/${catId}/hospital-visits/new`}
-          variant="primary"
-          className={styles.createButton}
-          leftIcon={TbPlus}
-        >
-          記録する
-        </ButtonLink>
+        {readOnly ? null : (
+          <ButtonLink
+            href={`/cats/${catId}/hospital-visits/new`}
+            variant="primary"
+            className={styles.createButton}
+            leftIcon={TbPlus}
+          >
+            記録する
+          </ButtonLink>
+        )}
       </div>
 
       {visits.length > 0 && (
@@ -134,13 +139,15 @@ export default async function HospitalVisitsPage({
         <RecordEmptyState
           icon={HospitalIcon}
           actions={
-            <ButtonLink
-              href={`/cats/${catId}/hospital-visits/new`}
-              variant="primary"
-              className={styles.createButton}
-            >
-              最初の記録をする
-            </ButtonLink>
+            readOnly ? undefined : (
+              <ButtonLink
+                href={`/cats/${catId}/hospital-visits/new`}
+                variant="primary"
+                className={styles.createButton}
+              >
+                最初の記録をする
+              </ButtonLink>
+            )
           }
         >
           まだ通院記録がありません。
@@ -160,22 +167,26 @@ export default async function HospitalVisitsPage({
                       <RecordContributors
                         contributors={contributorsByRecordId.get(visit.id)}
                       />
-                      <IconButtonLink
-                        href={`/cats/${catId}/hospital-visits/${visit.id}/edit`}
-                        icon={TbPencil}
-                        aria-label="編集する"
-                        title="編集する"
-                      />
-                      <DeleteRecordButton
-                        action={deleteHospitalVisitAction.bind(
-                          null,
-                          catId,
-                          visit.id,
-                        )}
-                        title="通院記録の削除"
-                        description="この通院記録を削除しますか？この操作は取り消せません。"
-                        iconOnly
-                      />
+                      {readOnly ? null : (
+                        <>
+                          <IconButtonLink
+                            href={`/cats/${catId}/hospital-visits/${visit.id}/edit`}
+                            icon={TbPencil}
+                            aria-label="編集する"
+                            title="編集する"
+                          />
+                          <DeleteRecordButton
+                            action={deleteHospitalVisitAction.bind(
+                              null,
+                              catId,
+                              visit.id,
+                            )}
+                            title="通院記録の削除"
+                            description="この通院記録を削除しますか？この操作は取り消せません。"
+                            iconOnly
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
 

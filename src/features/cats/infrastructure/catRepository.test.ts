@@ -103,3 +103,32 @@ describe("removeForUser", () => {
     ).toEqual(["kuro-meal"]);
   });
 });
+
+describe("メモリーへ移した猫のプロフィール", () => {
+  it("プロフィール・避妊去勢の状況を書き換えない", async () => {
+    await db
+      .update(cats)
+      .set({ memorialDate: "2026-07-10" })
+      .where(eq(cats.id, "tama"));
+    const repository = createCatRepository();
+
+    expect(
+      await repository.updateForMember("owner", "tama", {
+        name: "たまこ",
+        sex: "female",
+        birthDate: null,
+        birthDatePrecision: "day",
+        breed: null,
+        adoptedAt: null,
+        neuterStatus: null,
+        coatColor: null,
+      }),
+    ).toBe(false);
+    expect(await repository.markNeuteredForMember("owner", "tama")).toBe(false);
+    const [tama] = await db.select().from(cats).where(eq(cats.id, "tama"));
+    expect(tama.name).toBe("たま");
+    expect(tama.neuterStatus).toBeNull();
+    // メモリーへ移していない猫は書き換えられる
+    expect(await repository.markNeuteredForMember("owner", "kuro")).toBe(true);
+  });
+});

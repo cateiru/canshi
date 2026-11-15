@@ -11,6 +11,7 @@ import {
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { Medication } from "@/db/schema";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/domain/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
@@ -56,6 +57,8 @@ export default async function MedicationsPage({
   if (!cat) {
     notFound();
   }
+  // メモリーへ移した猫は、記録を見返すだけにする（追加・編集・削除の導線を出さない）
+  const readOnly = isMemorialCat(cat);
 
   const [medicationList, symptomList, hospitalVisitList] = await Promise.all([
     listMedications(catId),
@@ -85,6 +88,7 @@ export default async function MedicationsPage({
     hospitalVisitLabelById,
     mediaByRecordId,
     contributorsByRecordId,
+    readOnly,
   };
 
   return (
@@ -102,27 +106,31 @@ export default async function MedicationsPage({
         <RecordPageHeading icon={MedicationIcon}>
           {cat.name}の服薬予定
         </RecordPageHeading>
-        <ButtonLink
-          href={`/cats/${catId}/medications/new`}
-          variant="primary"
-          className={styles.createButton}
-          leftIcon={TbPlus}
-        >
-          服薬予定を登録する
-        </ButtonLink>
+        {readOnly ? null : (
+          <ButtonLink
+            href={`/cats/${catId}/medications/new`}
+            variant="primary"
+            className={styles.createButton}
+            leftIcon={TbPlus}
+          >
+            服薬予定を登録する
+          </ButtonLink>
+        )}
       </div>
 
       {medicationList.length === 0 ? (
         <RecordEmptyState
           icon={MedicationIcon}
           actions={
-            <ButtonLink
-              href={`/cats/${catId}/medications/new`}
-              variant="primary"
-              className={styles.createButton}
-            >
-              最初の服薬予定を登録する
-            </ButtonLink>
+            readOnly ? undefined : (
+              <ButtonLink
+                href={`/cats/${catId}/medications/new`}
+                variant="primary"
+                className={styles.createButton}
+              >
+                最初の服薬予定を登録する
+              </ButtonLink>
+            )
           }
         >
           まだ服薬予定が登録されていません。
@@ -178,6 +186,8 @@ type MedicationCardProps = {
   hospitalVisitLabelById: Map<string, string>;
   mediaByRecordId: Awaited<ReturnType<typeof listMediaAssetsByRecords>>;
   contributorsByRecordId: Awaited<ReturnType<typeof loadRecordContributors>>;
+  /** true なら編集・削除・服薬歴への移動の導線を出さない（メモリーへ移した猫のページ） */
+  readOnly: boolean;
   /** 服薬歴（Collapsible の見出しの下）に置くときは 3 にする */
   headingLevel?: 2 | 3;
   className?: string;
@@ -191,6 +201,7 @@ function MedicationCard({
   hospitalVisitLabelById,
   mediaByRecordId,
   contributorsByRecordId,
+  readOnly,
   headingLevel = 2,
   className,
 }: MedicationCardProps) {
@@ -206,18 +217,22 @@ function MedicationCard({
           <RecordContributors
             contributors={contributorsByRecordId.get(medication.id)}
           />
-          <IconButtonLink
-            href={`/cats/${catId}/medications/${medication.id}/edit`}
-            icon={TbPencil}
-            aria-label="編集する"
-            title="編集する"
-          />
-          <DeleteRecordButton
-            action={deleteMedicationAction.bind(null, catId, medication.id)}
-            title="服薬予定の削除"
-            description="この服薬予定を削除しますか？関連する投薬実績も参照できなくなります。"
-            iconOnly
-          />
+          {readOnly ? null : (
+            <>
+              <IconButtonLink
+                href={`/cats/${catId}/medications/${medication.id}/edit`}
+                icon={TbPencil}
+                aria-label="編集する"
+                title="編集する"
+              />
+              <DeleteRecordButton
+                action={deleteMedicationAction.bind(null, catId, medication.id)}
+                title="服薬予定の削除"
+                description="この服薬予定を削除しますか？関連する投薬実績も参照できなくなります。"
+                iconOnly
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -284,7 +299,7 @@ function MedicationCard({
         >
           投薬実績を見る
         </ButtonLink>
-        {isEnded ? null : isArchived ? (
+        {isEnded || readOnly ? null : isArchived ? (
           <MedicationHistoryButton
             action={unarchiveMedicationAction.bind(null, catId, medication.id)}
             kind="unarchive"

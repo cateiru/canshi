@@ -15,6 +15,7 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { SHED_AMOUNT_LABEL } from "@/features/brushing-records/domain/labels";
 import { listBrushingRecords } from "@/features/brushing-records/infrastructure/queries";
 import { deleteBrushingRecordAction } from "@/features/brushing-records/presentation/actions";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
 import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
@@ -74,6 +75,8 @@ export default async function BrushingRecordsPage({
   if (!cat) {
     notFound();
   }
+  // メモリーへ移した猫は、記録を見返すだけにする（追加・編集・削除の導線を出さない）
+  const readOnly = isMemorialCat(cat);
 
   const records = await listBrushingRecords(catId);
   const { page: pageParam } = await searchParams;
@@ -106,14 +109,16 @@ export default async function BrushingRecordsPage({
         <RecordPageHeading icon={BrushingIcon}>
           {cat.name}のブラッシング記録
         </RecordPageHeading>
-        <ButtonLink
-          href={`/cats/${catId}/brushing-records/new`}
-          variant="primary"
-          className={styles.createButton}
-          leftIcon={TbPlus}
-        >
-          記録する
-        </ButtonLink>
+        {readOnly ? null : (
+          <ButtonLink
+            href={`/cats/${catId}/brushing-records/new`}
+            variant="primary"
+            className={styles.createButton}
+            leftIcon={TbPlus}
+          >
+            記録する
+          </ButtonLink>
+        )}
       </div>
 
       {elapsedDays != null ? (
@@ -129,13 +134,15 @@ export default async function BrushingRecordsPage({
         <RecordEmptyState
           icon={BrushingIcon}
           actions={
-            <ButtonLink
-              href={`/cats/${catId}/brushing-records/new`}
-              variant="primary"
-              className={styles.createButton}
-            >
-              最初の記録をする
-            </ButtonLink>
+            readOnly ? undefined : (
+              <ButtonLink
+                href={`/cats/${catId}/brushing-records/new`}
+                variant="primary"
+                className={styles.createButton}
+              >
+                最初の記録をする
+              </ButtonLink>
+            )
           }
         >
           まだブラッシング記録がありません。
@@ -158,22 +165,26 @@ export default async function BrushingRecordsPage({
                       <RecordContributors
                         contributors={contributorsByRecordId.get(record.id)}
                       />
-                      <IconButtonLink
-                        href={`/cats/${catId}/brushing-records/${record.id}/edit`}
-                        icon={TbPencil}
-                        aria-label="編集する"
-                        title="編集する"
-                      />
-                      <DeleteRecordButton
-                        action={deleteBrushingRecordAction.bind(
-                          null,
-                          catId,
-                          record.id,
-                        )}
-                        title="ブラッシング記録の削除"
-                        description="このブラッシング記録を削除しますか？この操作は取り消せません。"
-                        iconOnly
-                      />
+                      {readOnly ? null : (
+                        <>
+                          <IconButtonLink
+                            href={`/cats/${catId}/brushing-records/${record.id}/edit`}
+                            icon={TbPencil}
+                            aria-label="編集する"
+                            title="編集する"
+                          />
+                          <DeleteRecordButton
+                            action={deleteBrushingRecordAction.bind(
+                              null,
+                              catId,
+                              record.id,
+                            )}
+                            title="ブラッシング記録の削除"
+                            description="このブラッシング記録を削除しますか？この操作は取り消せません。"
+                            iconOnly
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
 

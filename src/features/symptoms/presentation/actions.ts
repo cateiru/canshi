@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireCatAccess } from "@/features/auth/presentation/session";
+import { requireWritableCatAccess } from "@/features/auth/presentation/session";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
 import { userActor } from "@/features/shared/recordActor";
@@ -44,7 +44,7 @@ export async function createSymptomAction(
   _prevState: SymptomFormState,
   formData: FormData,
 ): Promise<SymptomFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -70,7 +70,7 @@ export async function updateSymptomAction(
   _prevState: SymptomFormState,
   formData: FormData,
 ): Promise<SymptomFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -94,7 +94,7 @@ export async function deleteSymptomAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   await deleteSymptom(catId, id, userActor(user));
   redirect(`/cats/${catId}/symptoms`, "replace");
 }

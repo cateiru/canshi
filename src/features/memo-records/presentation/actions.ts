@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireCatAccess } from "@/features/auth/presentation/session";
+import { requireWritableCatAccess } from "@/features/auth/presentation/session";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
 import { userActor } from "@/features/shared/recordActor";
@@ -39,7 +39,7 @@ export async function createMemoRecordAction(
   _prevState: MemoRecordFormState,
   formData: FormData,
 ): Promise<MemoRecordFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -62,7 +62,7 @@ export async function updateMemoRecordAction(
   _prevState: MemoRecordFormState,
   formData: FormData,
 ): Promise<MemoRecordFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -85,7 +85,7 @@ export async function deleteMemoRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   await deleteMemoRecord(catId, id, userActor(user));
   redirect(`/cats/${catId}/memo-records`, "replace");
 }

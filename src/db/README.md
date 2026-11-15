@@ -177,6 +177,11 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 毛色は、ベース色（`coat_color`）の 1 列で持ち、プリセット（`src/db/schema/cats.ts` の `CAT_COAT_COLORS`）
   から選ぶ。NULL は未設定（`0065`）。三毛・サビのように 2 色が混ざる毛色は、ベース色の `tortoiseshell`（黒と茶）・
   `blue_cream`（グレーとクリーム）で表す。柄（`coat_pattern`）・白い毛の割合（`coat_white`）の列は `0067` で削除した
+- メモリー（思い出）へ移した日を `memorial_date`（`YYYY-MM-DD`、日本時間、nullable）で持つ（`0068`）。NULL ならメモリーへ移していない。
+  旅立った猫を、記録を残したまま記録・通知の対象から外すためのもので、`src/features/cats/domain/memorial.ts` に規則をまとめる
+  - メモリーへ移した猫の記録の追加・編集・削除、プロフィール・通知の設定の変更は、画面の Server Action では
+    `requireWritableCatAccess`、MCP では `resolveWritableCat`・`resolveCatOperation` で断る。プロフィールの更新文
+    （`updateForMember`・`markNeuteredForMember`）は WHERE でも `memorial_date IS NULL` を確かめる
 
 ## ごはん記録（`feeding_records`・`feeding_record_items`・`feeding_presets`・`feeding_preset_items`）
 

@@ -1,5 +1,6 @@
 import type { MediaAsset } from "@/db/schema";
 import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "@/features/catalog-food-products/domain/media";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/domain/media";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "@/features/food-products/domain/media";
 import {
@@ -38,6 +39,21 @@ export async function canAccessMediaRecordOwner(
     return (await getCatForUser(userId, owner.catId)) != null;
   }
   return true;
+}
+
+/**
+ * ユーザーが添付先のレコードに、新しく添付を加えてよいかを判定する。参照できるレコードのうち、
+ * メモリーへ移した猫に紐付くレコードには加えない
+ */
+export async function canAttachToMediaRecordOwner(
+  userId: string,
+  owner: MediaRecordOwner,
+): Promise<boolean> {
+  if (owner.householdId === undefined && owner.catId != null) {
+    const cat = await getCatForUser(userId, owner.catId);
+    return cat != null && !isMemorialCat(cat);
+  }
+  return canAccessMediaRecordOwner(userId, owner);
 }
 
 /**
@@ -82,7 +98,8 @@ export async function canAccessMediaAsset(
 /**
  * ユーザーがメディアを削除してよいかを判定する。ユーザーのアイコン画像は、同じ家のメンバーでも
  * 本人以外には削除させない。共通のごはん商品の画像は管理画面（と、AI との接続での差し替え）
- * だけが削除し、メインアプリのユーザーには削除させない。それ以外は参照できるメディアなら削除できる
+ * だけが削除し、メインアプリのユーザーには削除させない。メモリーへ移した猫のメディアも削除させない。
+ * それ以外は参照できるメディアなら削除できる
  */
 export async function canDeleteMediaAsset(
   userId: string,
@@ -93,6 +110,13 @@ export async function canDeleteMediaAsset(
   }
   if (asset.recordType === USER_ICON_MEDIA_TYPE) {
     return asset.recordId === userId;
+  }
+  // メモリーへ移した猫の記録・プロフィールの写真は、参照はできても削除はさせない
+  if (asset.catId != null) {
+    const cat = await getCatForUser(userId, asset.catId);
+    if (cat != null && isMemorialCat(cat)) {
+      return false;
+    }
   }
   return canAccessMediaAsset(userId, asset);
 }

@@ -31,7 +31,7 @@ vi.mock("next/navigation", () => ({
 }));
 // 猫の家による認可はこのテストの対象外のため、常に許可する
 vi.mock("@/features/auth/presentation/session", () => ({
-  requireCatAccess: async () => ({ user: { id: "user-1" } }),
+  requireWritableCatAccess: async () => ({ user: { id: "user-1" } }),
 }));
 
 const { deleteSymptomAction, updateSymptomAction } = await import("./actions");

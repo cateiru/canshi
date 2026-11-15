@@ -22,6 +22,8 @@ type ExpenseListProps = {
   mediaByRecordId: Map<string, MediaAsset[]>;
   /** 支出記録を作成・編集した人（支出記録の ID -> 人） */
   contributorsByRecordId: Map<string, RecordContributions>;
+  /** true なら編集・削除の導線を出さない（メモリーへ移した猫のページ） */
+  readOnly?: boolean;
 };
 
 export function ExpenseList({
@@ -31,6 +33,7 @@ export function ExpenseList({
   hospitalVisitById,
   mediaByRecordId,
   contributorsByRecordId,
+  readOnly = false,
 }: ExpenseListProps) {
   return (
     <ul className={styles.list}>
@@ -63,18 +66,27 @@ export function ExpenseList({
                   <RecordContributors
                     contributors={contributorsByRecordId.get(expense.id)}
                   />
-                  <IconButtonLink
-                    href={`/cats/${catId}/expenses/${expense.id}/edit`}
-                    icon={TbPencil}
-                    aria-label={`${EXPENSE_CATEGORY_LABEL[expense.category]} ${formatYen(expense.amountYen)}の支出を編集する`}
-                    title="編集する"
-                  />
-                  <DeleteRecordButton
-                    action={deleteExpenseAction.bind(null, catId, expense.id)}
-                    title="支出記録の削除"
-                    description="この支出記録を削除しますか？関連するすべてのねこの一覧・タイムラインから削除されます。この操作は取り消せません。"
-                    iconOnly
-                  />
+                  {readOnly ? null : (
+                    <>
+                      {" "}
+                      <IconButtonLink
+                        href={`/cats/${catId}/expenses/${expense.id}/edit`}
+                        icon={TbPencil}
+                        aria-label={`${EXPENSE_CATEGORY_LABEL[expense.category]} ${formatYen(expense.amountYen)}の支出を編集する`}
+                        title="編集する"
+                      />
+                      <DeleteRecordButton
+                        action={deleteExpenseAction.bind(
+                          null,
+                          catId,
+                          expense.id,
+                        )}
+                        title="支出記録の削除"
+                        description="この支出記録を削除しますか？関連するすべてのねこの一覧・タイムラインから削除されます。この操作は取り消せません。"
+                        iconOnly
+                      />
+                    </>
+                  )}
                 </div>
               </div>
 

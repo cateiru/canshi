@@ -10,7 +10,7 @@ export interface CatRepository {
   addForMember(userId: string, values: NewCatValues): Promise<string | null>;
   /**
    * 猫のプロフィールを書き換える。猫を飼う家は変えない。
-   * ユーザーが猫の家に所属していない・猫が見つからなければ false
+   * ユーザーが猫の家に所属していない・猫が見つからない・メモリーへ移した猫なら false
    */
   updateForMember(
     userId: string,
@@ -19,7 +19,7 @@ export interface CatRepository {
   ): Promise<boolean>;
   /**
    * 猫の避妊・去勢手術の状況を「済」にする。ほかのプロフィールの項目は変えない。
-   * ユーザーが猫の家に所属していない・猫が見つからなければ false
+   * ユーザーが猫の家に所属していない・猫が見つからない・メモリーへ移した猫なら false
    */
   markNeuteredForMember(userId: string, catId: string): Promise<boolean>;
   /**

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { getShampooRecordById } from "@/features/shampoo-records/infrastructure/queries";
 import { updateShampooRecordAction } from "@/features/shampoo-records/presentation/actions";
@@ -24,7 +24,7 @@ export default async function EditShampooRecordPage({
 }: EditShampooRecordPageProps) {
   const { catId, shampooRecordId } = await params;
   const [cat, shampooRecord] = await Promise.all([
-    getAccessibleCat(catId),
+    getWritableCat(catId),
     getShampooRecordById(shampooRecordId),
   ]);
 

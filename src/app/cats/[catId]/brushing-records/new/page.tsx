@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { BrushingIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getWritableCat } from "@/features/auth/presentation/session";
 import { createBrushingRecordAction } from "@/features/brushing-records/presentation/actions";
 import { BrushingRecordForm } from "@/features/brushing-records/presentation/BrushingRecordForm";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
@@ -22,7 +22,7 @@ export default async function NewBrushingRecordPage({
   params,
 }: NewBrushingRecordPageProps) {
   const { catId } = await params;
-  const cat = await getAccessibleCat(catId);
+  const cat = await getWritableCat(catId);
 
   if (!cat) {
     notFound();
