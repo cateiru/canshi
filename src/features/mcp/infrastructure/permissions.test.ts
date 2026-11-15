@@ -24,11 +24,36 @@ import {
   saveMcpPermissionsFromForm,
 } from "./permissions";
 
+const { listCatsForUser } = await import(
+  "@/features/households/infrastructure/queries"
+);
+
 // `src/features/auth/sessions.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
+// 猫の一覧を読んだあとにメモリーへ移された場合を再現するため、読んだ一覧を差し替えられるようにする
+let staleCats: Awaited<
+  ReturnType<
+    typeof import("@/features/households/infrastructure/queries")["listCatsForUser"]
+  >
+> | null = null;
+vi.mock(
+  "@/features/households/infrastructure/queries",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("@/features/households/infrastructure/queries")
+      >();
+    return {
+      ...actual,
+      listCatsForUser: async (
+        ...args: Parameters<typeof actual.listCatsForUser>
+      ) => staleCats ?? actual.listCatsForUser(...args),
+    };
+  },
+);
 
 beforeEach(async () => {
   const SQL = await initSqlJs();
@@ -36,6 +61,16 @@ beforeEach(async () => {
   await migrate(db as unknown as ReturnType<typeof drizzle>, {
     migrationsFolder: "./drizzle",
   });
+  // sql.js は `db.batch`（D1 専用）を持たないため、順番に実行するだけの簡易実装で補う
+  // biome-ignore lint/suspicious/noExplicitAny: テスト用に D1 の batch を簡易実装する
+  (db as any).batch = async (statements: PromiseLike<unknown>[]) => {
+    const results: unknown[] = [];
+    for (const statement of statements) {
+      results.push(await statement);
+    }
+    return results;
+  };
+  staleCats = null;
 
   await db.insert(users).values([
     { id: "user-1", name: "ユーザー1" },
@@ -170,6 +205,29 @@ describe("saveMcpPermissionsFromForm", () => {
     expect(await getMcpPermissions("user-1", "client-2")).toEqual(
       DEFAULT_MCP_PERMISSIONS,
     );
+  });
+
+  it("猫の一覧を読んだあとにメモリーへ移された猫には、書き込みの許可を保存しない", async () => {
+    staleCats = await listCatsForUser("user-1");
+    await db
+      .update(cats)
+      .set({ memorialDate: "2026-07-10" })
+      .where(eq(cats.id, "cat-1"));
+
+    await saveMcpPermissionsFromForm(
+      "user-1",
+      "client-1",
+      form({
+        excludedHouseholdIds: [],
+        excludedCatIds: [],
+        excludedRecordTypes: {},
+        writableRecordTypes: { "cat-1": ["feeding"], "cat-2": ["memo"] },
+      }),
+    );
+
+    expect(
+      (await getMcpPermissions("user-1", "client-1")).writableRecordTypes,
+    ).toEqual({ "cat-2": ["memo"] });
   });
 
   it("外した家の猫は、読み取りを許可した家へ引っ越しても読み取れないまま", async () => {

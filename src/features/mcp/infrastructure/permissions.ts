@@ -1,6 +1,6 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { mcpPermissions } from "@/db/schema";
+import { cats as catsTable, mcpPermissions } from "@/db/schema";
 import { getUserById } from "@/features/auth/infrastructure/users";
 import {
   listCatsForUser,
@@ -127,13 +127,31 @@ export async function saveMcpPermissionsFromForm(
 
   const db = getDb(d1);
   const values = { ...permissions, updatedAt: new Date() };
-  await db
-    .insert(mcpPermissions)
-    .values({ userId, clientId, ...values })
-    .onConflictDoUpdate({
-      target: [mcpPermissions.userId, mcpPermissions.clientId],
-      set: values,
-    });
+  await db.batch([
+    db
+      .insert(mcpPermissions)
+      .values({ userId, clientId, ...values })
+      .onConflictDoUpdate({
+        target: [mcpPermissions.userId, mcpPermissions.clientId],
+        set: values,
+      }),
+    // 猫の一覧を読んでから保存するまでの間に猫がメモリーへ移されると、移したときに外した書き込みの
+    // 許可を、古い一覧に基づいて保存し直してしまう（メモリーから戻すと、許可し直していない接続まで
+    // 書き込めるようになる）。保存と同じ batch で、その時点でメモリーへ移している猫のキーを外す
+    db
+      .update(mcpPermissions)
+      .set({
+        writableRecordTypes: sql`(
+          SELECT json_group_object(entry.key, json(entry.value))
+          FROM json_each(${mcpPermissions.writableRecordTypes}) AS entry
+          WHERE entry.key NOT IN (
+            SELECT ${catsTable.id} FROM ${catsTable}
+            WHERE ${catsTable.memorialDate} IS NOT NULL
+          )
+        )`,
+      })
+      .where(permissionsKey(userId, clientId)),
+  ]);
   return true;
 }
 
