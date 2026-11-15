@@ -12,6 +12,8 @@ import {
   foodProducts,
   householdMembers,
   households,
+  mcpPermissions,
+  notifications,
   users,
 } from "@/db/schema";
 import { createCatRepository } from "./catRepository";
@@ -101,5 +103,193 @@ describe("removeForUser", () => {
         (item) => item.feedingRecordId,
       ),
     ).toEqual(["kuro-meal"]);
+  });
+});
+
+describe("memorializeForMember", () => {
+  async function insertNotification(
+    id: string,
+    values: Partial<typeof notifications.$inferInsert>,
+  ) {
+    await db.insert(notifications).values({
+      id,
+      kind: "weight_measurement",
+      dedupeKey: id,
+      title: "体重を測りましょう",
+      body: "",
+      url: "/",
+      dueAt: new Date("2026-07-01T09:00:00Z"),
+      ...values,
+    });
+  }
+
+  it("メモリーへ移した日を保存し、まだ終わっていない通知を閉じる", async () => {
+    await insertNotification("pending", { catId: "tama" });
+    await insertNotification("snoozed", { catId: "tama", status: "snoozed" });
+    await insertNotification("done", { catId: "tama", status: "done" });
+    await insertNotification("kuro", { catId: "kuro" });
+
+    expect(
+      await createCatRepository().memorializeForMember(
+        "owner",
+        "tama",
+        "2026-07-10",
+      ),
+    ).toBe(true);
+
+    const [tama] = await db.select().from(cats).where(eq(cats.id, "tama"));
+    expect(tama.memorialDate).toBe("2026-07-10");
+    const statuses = Object.fromEntries(
+      (await db.select().from(notifications)).map((row) => [
+        row.id,
+        row.status,
+      ]),
+    );
+    expect(statuses).toEqual({
+      pending: "dismissed",
+      snoozed: "dismissed",
+      done: "done",
+      // ほかの猫の通知はそのまま
+      kuro: "pending",
+    });
+  });
+
+  it("すべてのユーザーの AI との接続から、この猫への書き込みの許可だけを外す", async () => {
+    await db.insert(users).values({ id: "member", name: "メンバー" });
+    await db.insert(mcpPermissions).values([
+      {
+        userId: "owner",
+        clientId: "client-a",
+        excludedRecordTypes: { tama: ["poop"] },
+        writableRecordTypes: { tama: ["feeding"], kuro: ["weight"] },
+      },
+      {
+        userId: "member",
+        clientId: "client-b",
+        writableRecordTypes: { tama: ["memo"] },
+      },
+    ]);
+
+    await createCatRepository().memorializeForMember(
+      "owner",
+      "tama",
+      "2026-07-10",
+    );
+
+    const rows = await db.select().from(mcpPermissions);
+    expect(
+      Object.fromEntries(
+        rows.map((row) => [row.clientId, row.writableRecordTypes]),
+      ),
+    ).toEqual({
+      "client-a": { kuro: ["weight"] },
+      "client-b": {},
+    });
+    // 読み取りの範囲は変えない
+    expect(
+      rows.find((row) => row.clientId === "client-a")?.excludedRecordTypes,
+    ).toEqual({ tama: ["poop"] });
+  });
+
+  it("記録できる猫がいなくなった家の、ごはんの時間の通知を閉じる", async () => {
+    await insertNotification("feeding-home", {
+      householdId: "home",
+      kind: "feeding_time",
+    });
+    const repository = createCatRepository();
+
+    await repository.memorializeForMember("owner", "tama", "2026-07-10");
+    // くろがまだ記録できるため、閉じない
+    expect((await db.select().from(notifications))[0].status).toBe("pending");
+
+    await repository.memorializeForMember("owner", "kuro", "2026-07-10");
+    expect((await db.select().from(notifications))[0].status).toBe("dismissed");
+  });
+
+  it("家のメンバーでなければ、猫・通知・書き込みの許可を変えない", async () => {
+    await db.insert(users).values({ id: "stranger", name: "よその人" });
+    await insertNotification("pending", { catId: "tama" });
+    await db.insert(mcpPermissions).values({
+      userId: "owner",
+      clientId: "client-a",
+      writableRecordTypes: { tama: ["feeding"] },
+    });
+
+    expect(
+      await createCatRepository().memorializeForMember(
+        "stranger",
+        "tama",
+        "2026-07-10",
+      ),
+    ).toBe(false);
+
+    const [tama] = await db.select().from(cats).where(eq(cats.id, "tama"));
+    expect(tama.memorialDate).toBeNull();
+    expect((await db.select().from(notifications))[0].status).toBe("pending");
+    expect(
+      (await db.select().from(mcpPermissions))[0].writableRecordTypes,
+    ).toEqual({ tama: ["feeding"] });
+  });
+
+  it("すでにメモリーへ移した猫なら false を返し、日付を変えない", async () => {
+    const repository = createCatRepository();
+    await repository.memorializeForMember("owner", "tama", "2026-07-10");
+
+    expect(
+      await repository.memorializeForMember("owner", "tama", "2026-07-20"),
+    ).toBe(false);
+    const [tama] = await db.select().from(cats).where(eq(cats.id, "tama"));
+    expect(tama.memorialDate).toBe("2026-07-10");
+  });
+});
+
+describe("メモリーへ移した猫のプロフィール", () => {
+  it("プロフィール・避妊去勢の状況を書き換えない", async () => {
+    const repository = createCatRepository();
+    await repository.memorializeForMember("owner", "tama", "2026-07-10");
+
+    expect(
+      await repository.updateForMember("owner", "tama", {
+        name: "たまこ",
+        sex: "female",
+        birthDate: null,
+        birthDatePrecision: "day",
+        breed: null,
+        adoptedAt: null,
+        neuterStatus: null,
+        coatColor: null,
+      }),
+    ).toBe(false);
+    expect(await repository.markNeuteredForMember("owner", "tama")).toBe(false);
+    const [tama] = await db.select().from(cats).where(eq(cats.id, "tama"));
+    expect(tama.name).toBe("たま");
+    expect(tama.neuterStatus).toBeNull();
+  });
+});
+
+describe("restoreFromMemorialForMember", () => {
+  it("メモリーから戻すと、プロフィールを書き換えられるようになる", async () => {
+    const repository = createCatRepository();
+    await repository.memorializeForMember("owner", "tama", "2026-07-10");
+
+    expect(await repository.restoreFromMemorialForMember("owner", "tama")).toBe(
+      true,
+    );
+    const [tama] = await db.select().from(cats).where(eq(cats.id, "tama"));
+    expect(tama.memorialDate).toBeNull();
+    expect(await repository.markNeuteredForMember("owner", "tama")).toBe(true);
+  });
+
+  it("メモリーへ移していない猫・家のメンバーでなければ false を返す", async () => {
+    await db.insert(users).values({ id: "stranger", name: "よその人" });
+    const repository = createCatRepository();
+
+    expect(await repository.restoreFromMemorialForMember("owner", "tama")).toBe(
+      false,
+    );
+    await repository.memorializeForMember("owner", "tama", "2026-07-10");
+    expect(
+      await repository.restoreFromMemorialForMember("stranger", "tama"),
+    ).toBe(false);
   });
 });

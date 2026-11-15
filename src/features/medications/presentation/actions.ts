@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireCatAccess } from "@/features/auth/presentation/session";
+import { requireWritableCatAccess } from "@/features/auth/presentation/session";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
 import { userActor } from "@/features/shared/recordActor";
@@ -43,7 +43,7 @@ export async function createMedicationAction(
   _prevState: MedicationFormState,
   formData: FormData,
 ): Promise<MedicationFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -69,7 +69,7 @@ export async function updateMedicationAction(
   _prevState: MedicationFormState,
   formData: FormData,
 ): Promise<MedicationFormState> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -96,7 +96,7 @@ export async function deleteMedicationAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   await deleteMedication(catId, id, userActor(user));
   redirect(`/cats/${catId}/medications`, "replace");
 }
@@ -109,7 +109,7 @@ export async function archiveMedicationAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   await setMedicationArchived(catId, id, true, userActor(user));
   redirect(`/cats/${catId}/medications`, "replace");
 }
@@ -122,7 +122,7 @@ export async function unarchiveMedicationAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   await setMedicationArchived(catId, id, false, userActor(user));
   redirect(`/cats/${catId}/medications`, "replace");
 }

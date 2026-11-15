@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import {
-  getAccessibleCat,
+  getWritableCat,
   listCurrentUserCats,
 } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import {
   createExpenseAction,
   updateExpenseAction,
@@ -28,7 +29,7 @@ type NewExpensePageProps = {
 export default async function NewExpensePage({ params }: NewExpensePageProps) {
   const { catId } = await params;
   const [cat, allCats] = await Promise.all([
-    getAccessibleCat(catId),
+    getWritableCat(catId),
     listCurrentUserCats(),
   ]);
 
@@ -54,7 +55,11 @@ export default async function NewExpensePage({ params }: NewExpensePageProps) {
         action={createExpenseAction.bind(null, catId)}
         updateAction={updateExpenseAction.bind(null, catId)}
         // 支出は表示中の猫の家に属するため、関連する猫も同じ家の猫から選ぶ
-        cats={allCats.filter((entry) => entry.householdId === cat.householdId)}
+        // メモリーへ移した猫は、関連する猫に新しく加えられない
+        cats={allCats.filter(
+          (entry) =>
+            entry.householdId === cat.householdId && !isMemorialCat(entry),
+        )}
         mediaLimits={resolveMediaLimits()}
         submitLabel="記録する"
       />

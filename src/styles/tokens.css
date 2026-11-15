@@ -65,6 +65,7 @@
   /* タイムラインのカレンダーで記録の種類を見分けるための単色 */
   --color-record-birthday: #a21caf;
   --color-record-adoption: #4d7c0f;
+  --color-record-memorial: #8e4a7d;
   --color-record-feeding: #b45309;
   --color-record-poop: #795548;
   --color-record-weight: #7c3aed;
@@ -196,6 +197,7 @@
 
   --color-record-birthday: #e879f9;
   --color-record-adoption: #a3e635;
+  --color-record-memorial: #e2a8d6;
   --color-record-feeding: #fbbf24;
   --color-record-poop: #c8a08a;
   --color-record-weight: #a78bfa;
@@ -232,6 +234,7 @@
 
     --color-record-birthday: #e879f9;
     --color-record-adoption: #a3e635;
+    --color-record-memorial: #e2a8d6;
     --color-record-feeding: #fbbf24;
     --color-record-poop: #c8a08a;
     --color-record-weight: #a78bfa;

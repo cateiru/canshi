@@ -1896,6 +1896,7 @@ describe("猫のプロフィール", () => {
       neuterStatusLabel: "去勢：済",
       coatColor: "red",
       coatLabel: "茶",
+      memorialDate: null,
     });
   });
 
@@ -1956,6 +1957,7 @@ describe("猫のプロフィール", () => {
       neuterStatusLabel: "避妊：済",
       coatColor: "tortoiseshell",
       coatLabel: "黒と茶",
+      memorialDate: null,
     });
   });
 
@@ -2177,5 +2179,82 @@ describe("ごはんの時間", () => {
       );
     }
     expect(await db.select().from(feedingSchedules)).toHaveLength(2);
+  });
+});
+
+describe("メモリーへ移した猫", () => {
+  beforeEach(async () => {
+    await db
+      .update(cats)
+      .set({ memorialDate: "2026-07-10" })
+      .where(eq(cats.id, "cat-1"));
+  });
+
+  it("書き込みを許可していても、記録の追加・編集はできない", async () => {
+    const [record] = await db
+      .insert(poopRecords)
+      .values({
+        catId: "cat-1",
+        occurredAt: new Date("2026-07-01T08:00:00.000Z"),
+        consistency: "normal",
+      })
+      .returning();
+    await allow(WRITE_ALL_RECORDS);
+
+    const created = await call("create_poop_record", {
+      catId: "cat-1",
+      consistency: "normal",
+    });
+    expect(created.error).toContain("メモリー");
+    const updated = await call("update_poop_record", {
+      catId: "cat-1",
+      id: record.id,
+      memo: "編集",
+    });
+    expect(updated.error).toContain("メモリー");
+    expect(
+      (await db.select().from(poopRecords)).map((row) => row.memo),
+    ).toEqual([null]);
+  });
+
+  it("ほかの猫の支出の記録に、関連する猫として加えられない", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    const result = await call("create_expense", {
+      catId: "cat-2",
+      amountYen: 1000,
+      category: "food",
+      catIds: ["cat-1"],
+    });
+
+    expect(result.error).toBeDefined();
+    expect(await db.select().from(expenseRecords)).toEqual([]);
+  });
+
+  it("プロフィール・通知の設定は変えられないが、読み取りはできる", async () => {
+    await allow(
+      operations(
+        "cat:update",
+        "catNotification:read",
+        "catNotification:update",
+      ),
+    );
+
+    const updated = await call("update_cat", {
+      catId: "cat-1",
+      name: "たまこ",
+    });
+    expect(updated.error).toContain("メモリー");
+    const settings = await call("update_cat_notification_settings", {
+      catId: "cat-1",
+      birthdayYearlyEnabled: false,
+    });
+    expect(settings.error).toContain("メモリー");
+
+    expect(
+      (await call("get_cat_notification_settings", { catId: "cat-1" })).value,
+    ).toBeDefined();
+    const [cat] = await db.select().from(cats).where(eq(cats.id, "cat-1"));
+    expect(cat.name).toBe("たま");
   });
 });

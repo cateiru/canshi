@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { SymptomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
 import { resolveMediaLimits } from "@/features/media/domain/limits";
@@ -29,7 +29,7 @@ export default async function EditSymptomPage({
 }: EditSymptomPageProps) {
   const { catId, symptomId } = await params;
   const [cat, symptom] = await Promise.all([
-    getAccessibleCat(catId),
+    getWritableCat(catId),
     getSymptomById(symptomId),
   ]);
 

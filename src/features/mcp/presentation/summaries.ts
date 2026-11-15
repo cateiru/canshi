@@ -31,6 +31,8 @@ export function toCatSummary(cat: Cat) {
     neuterStatusLabel: formatNeuterStatus(cat.sex, cat.neuterStatus),
     coatColor: cat.coatColor,
     coatLabel: formatCoat(cat),
+    // メモリー（思い出）へ移した日（YYYY-MM-DD）。null ならメモリーへ移していない
+    memorialDate: cat.memorialDate,
   };
 }
 

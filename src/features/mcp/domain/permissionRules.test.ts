@@ -159,9 +159,24 @@ describe("buildMcpPermissionTree", () => {
         { id: "house-2", name: "家2" },
       ],
       [
-        { id: "cat-1", name: "たま", householdId: "house-1" },
-        { id: "cat-2", name: "みけ", householdId: "house-1" },
-        { id: "cat-3", name: "くろ", householdId: "house-2" },
+        {
+          id: "cat-1",
+          name: "たま",
+          householdId: "house-1",
+          memorialDate: null,
+        },
+        {
+          id: "cat-2",
+          name: "みけ",
+          householdId: "house-1",
+          memorialDate: null,
+        },
+        {
+          id: "cat-3",
+          name: "くろ",
+          householdId: "house-2",
+          memorialDate: null,
+        },
       ],
     );
 
@@ -175,6 +190,7 @@ describe("buildMcpPermissionTree", () => {
           {
             id: "cat-1",
             name: "たま",
+            memorial: false,
             checked: true,
             checkedRecordTypes: MCP_PERMISSION_RECORD_TYPES.filter(
               (type) => type !== "poop",
@@ -184,6 +200,7 @@ describe("buildMcpPermissionTree", () => {
           {
             id: "cat-2",
             name: "みけ",
+            memorial: false,
             checked: false,
             checkedRecordTypes: [],
             writableRecordTypes: [],
@@ -199,6 +216,7 @@ describe("buildMcpPermissionTree", () => {
           {
             id: "cat-3",
             name: "くろ",
+            memorial: false,
             checked: false,
             checkedRecordTypes: [],
             writableRecordTypes: [],
@@ -213,9 +231,9 @@ describe("parseMcpPermissionsInput", () => {
   const accessible = {
     householdIds: ["house-1", "house-2"],
     cats: [
-      { id: "cat-1", householdId: "house-1" },
-      { id: "cat-2", householdId: "house-1" },
-      { id: "cat-3", householdId: "house-2" },
+      { id: "cat-1", householdId: "house-1", memorialDate: null },
+      { id: "cat-2", householdId: "house-1", memorialDate: null },
+      { id: "cat-3", householdId: "house-2", memorialDate: null },
     ],
     canUseCatalog: false,
   };
@@ -246,6 +264,25 @@ describe("parseMcpPermissionsInput", () => {
       parsed &&
         isCatAllowedForMcp(parsed, { id: "cat-3", householdId: "house-1" }),
     ).toBe(false);
+  });
+
+  it("メモリーへ移した猫の書き込みの範囲は保存しない（読み取りの範囲は保存する）", () => {
+    const value = JSON.stringify({
+      excludedHouseholdIds: [],
+      excludedCatIds: [],
+      excludedRecordTypes: { "cat-1": ["poop"] },
+      writableRecordTypes: { "cat-1": ["feeding"], "cat-2": ["feeding"] },
+    });
+
+    const parsed = parseMcpPermissionsInput(value, {
+      ...accessible,
+      cats: accessible.cats.map((cat) =>
+        cat.id === "cat-1" ? { ...cat, memorialDate: "2026-07-10" } : cat,
+      ),
+    });
+
+    expect(parsed?.excludedRecordTypes).toEqual({ "cat-1": ["poop"] });
+    expect(parsed?.writableRecordTypes).toEqual({ "cat-2": ["feeding"] });
   });
 
   it("空の配列・空の記録の種類は、何も外していない状態になる", () => {

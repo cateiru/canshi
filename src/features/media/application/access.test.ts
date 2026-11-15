@@ -1,10 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { canAccessMediaAsset, canDeleteMediaAsset } from "./access";
+import {
+  canAccessMediaAsset,
+  canAttachToMediaRecordOwner,
+  canDeleteMediaAsset,
+} from "./access";
 
-// user-1 の家（household-1）の猫は tama だけで、user-1 と user-3 が同じ家に所属しているとする
+// user-1 の家（household-1）の猫は tama とメモリーへ移した sora で、user-1 と user-3 が同じ家に所属しているとする
 vi.mock("@/features/households/infrastructure/queries", () => ({
   getCatForUser: async (userId: string, catId: string) =>
-    userId === "user-1" && catId === "tama" ? { id: "tama" } : null,
+    userId !== "user-1"
+      ? null
+      : catId === "tama"
+        ? { id: "tama", memorialDate: null }
+        : catId === "sora"
+          ? { id: "sora", memorialDate: "2026-07-10" }
+          : null,
   getHouseholdForUser: async (userId: string, householdId: string) =>
     ["user-1", "user-3"].includes(userId) && householdId === "household-1"
       ? { id: "household-1" }
@@ -143,5 +153,34 @@ describe("canDeleteMediaAsset", () => {
     };
     expect(await canDeleteMediaAsset("user-1", asset)).toBe(true);
     expect(await canDeleteMediaAsset("user-2", asset)).toBe(false);
+  });
+});
+
+describe("メモリーへ移した猫のメディア", () => {
+  const asset = {
+    catId: "sora",
+    recordType: "poop_record",
+    recordId: "poop",
+    uploadedByUserId: "user-1",
+  };
+
+  it("参照はできるが、削除はできない", async () => {
+    expect(await canAccessMediaAsset("user-1", asset)).toBe(true);
+    expect(await canDeleteMediaAsset("user-1", asset)).toBe(false);
+    expect(
+      await canDeleteMediaAsset("user-1", { ...asset, catId: "tama" }),
+    ).toBe(true);
+  });
+
+  it("記録に新しく添付できない", async () => {
+    expect(await canAttachToMediaRecordOwner("user-1", { catId: "sora" })).toBe(
+      false,
+    );
+    expect(await canAttachToMediaRecordOwner("user-1", { catId: "tama" })).toBe(
+      true,
+    );
+    expect(await canAttachToMediaRecordOwner("user-2", { catId: "tama" })).toBe(
+      false,
+    );
   });
 });

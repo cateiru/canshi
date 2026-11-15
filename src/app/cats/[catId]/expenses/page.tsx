@@ -14,6 +14,7 @@ import {
   listCurrentUserCats,
   requireUser,
 } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import {
   sumExpenseAmounts,
   sumExpenseAmountsByCategory,
@@ -72,6 +73,8 @@ export default async function ExpensesPage({
   if (!cat) {
     notFound();
   }
+  // メモリーへ移した猫は、記録を見返すだけにする（追加・編集・削除の導線を出さない）
+  const readOnly = isMemorialCat(cat);
 
   // 記録の保存値と同じ「naive UTC」の現在時刻を基準にする（datetime.ts 参照）
   const nowDateKey = splitDateTimeUtc(getNaiveUtcNow()).date;
@@ -134,14 +137,16 @@ export default async function ExpensesPage({
 
       <div className={styles.header}>
         <RecordPageHeading icon={ExpenseIcon}>支出記録</RecordPageHeading>
-        <ButtonLink
-          href={`/cats/${catId}/expenses/new`}
-          variant="primary"
-          className={styles.createButton}
-          leftIcon={TbPlus}
-        >
-          記録する
-        </ButtonLink>
+        {readOnly ? null : (
+          <ButtonLink
+            href={`/cats/${catId}/expenses/new`}
+            variant="primary"
+            className={styles.createButton}
+            leftIcon={TbPlus}
+          >
+            記録する
+          </ButtonLink>
+        )}
       </div>
 
       <MonthNav
@@ -193,13 +198,15 @@ export default async function ExpensesPage({
         <RecordEmptyState
           icon={ExpenseIcon}
           actions={
-            <ButtonLink
-              href={`/cats/${catId}/expenses/new`}
-              variant="primary"
-              className={styles.createButton}
-            >
-              最初の記録をする
-            </ButtonLink>
+            readOnly ? undefined : (
+              <ButtonLink
+                href={`/cats/${catId}/expenses/new`}
+                variant="primary"
+                className={styles.createButton}
+              >
+                最初の記録をする
+              </ButtonLink>
+            )
           }
         >
           {year}年{month}月の
@@ -214,6 +221,7 @@ export default async function ExpensesPage({
           hospitalVisitById={hospitalVisitById}
           mediaByRecordId={mediaByRecordId}
           contributorsByRecordId={contributorsByRecordId}
+          readOnly={readOnly}
         />
       )}
     </main>

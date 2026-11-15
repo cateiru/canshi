@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { sumFeedingTotals } from "@/features/feeding-records/domain/calculations";
 import {
@@ -67,6 +68,8 @@ export default async function FeedingRecordsPage({
   if (!cat) {
     notFound();
   }
+  // メモリーへ移した猫は、記録を見返すだけにする（追加・編集・削除の導線を出さない）
+  const readOnly = isMemorialCat(cat);
 
   const records = await listFeedingRecords(catId);
   const { page: pageParam } = await searchParams;
@@ -107,14 +110,16 @@ export default async function FeedingRecordsPage({
         <RecordPageHeading icon={FeedingIcon}>
           {cat.name}のごはん記録
         </RecordPageHeading>
-        <ButtonLink
-          href={`/cats/${catId}/feeding-records/new`}
-          variant="primary"
-          className={styles.createButton}
-          leftIcon={TbPlus}
-        >
-          記録する
-        </ButtonLink>
+        {readOnly ? null : (
+          <ButtonLink
+            href={`/cats/${catId}/feeding-records/new`}
+            variant="primary"
+            className={styles.createButton}
+            leftIcon={TbPlus}
+          >
+            記録する
+          </ButtonLink>
+        )}
       </div>
 
       {chartPoints.length > 0 && (
@@ -125,13 +130,15 @@ export default async function FeedingRecordsPage({
         <RecordEmptyState
           icon={FeedingIcon}
           actions={
-            <ButtonLink
-              href={`/cats/${catId}/feeding-records/new`}
-              variant="primary"
-              className={styles.createButton}
-            >
-              最初の記録をする
-            </ButtonLink>
+            readOnly ? undefined : (
+              <ButtonLink
+                href={`/cats/${catId}/feeding-records/new`}
+                variant="primary"
+                className={styles.createButton}
+              >
+                最初の記録をする
+              </ButtonLink>
+            )
           }
         >
           まだごはん記録がありません。
@@ -195,22 +202,26 @@ export default async function FeedingRecordsPage({
                                 record.id,
                               )}
                             />
-                            <IconButtonLink
-                              href={`/cats/${catId}/feeding-records/${record.id}/edit`}
-                              icon={TbPencil}
-                              aria-label="編集する"
-                              title="編集する"
-                            />
-                            <DeleteRecordButton
-                              action={deleteFeedingRecordAction.bind(
-                                null,
-                                catId,
-                                record.id,
-                              )}
-                              title="ごはん記録の削除"
-                              description="このごはん記録を削除しますか？この操作は取り消せません。"
-                              iconOnly
-                            />
+                            {readOnly ? null : (
+                              <>
+                                <IconButtonLink
+                                  href={`/cats/${catId}/feeding-records/${record.id}/edit`}
+                                  icon={TbPencil}
+                                  aria-label="編集する"
+                                  title="編集する"
+                                />
+                                <DeleteRecordButton
+                                  action={deleteFeedingRecordAction.bind(
+                                    null,
+                                    catId,
+                                    record.id,
+                                  )}
+                                  title="ごはん記録の削除"
+                                  description="このごはん記録を削除しますか？この操作は取り消せません。"
+                                  iconOnly
+                                />
+                              </>
+                            )}
                           </div>
                         </div>
                         <ul className={styles.itemsList}>

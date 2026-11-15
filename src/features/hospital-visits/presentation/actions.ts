@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireCatAccess } from "@/features/auth/presentation/session";
+import { requireWritableCatAccess } from "@/features/auth/presentation/session";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
 import { userActor } from "@/features/shared/recordActor";
@@ -47,7 +47,7 @@ export async function createHospitalVisitAction(
   _prevState: HospitalVisitFormState,
   formData: FormData,
 ): Promise<HospitalVisitFormState> {
-  const { user, cat } = await requireCatAccess(catId);
+  const { user, cat } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -78,7 +78,7 @@ export async function updateHospitalVisitAction(
   _prevState: HospitalVisitFormState,
   formData: FormData,
 ): Promise<HospitalVisitFormState> {
-  const { user, cat } = await requireCatAccess(catId);
+  const { user, cat } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -108,7 +108,7 @@ export async function deleteHospitalVisitAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   await deleteHospitalVisit(catId, id, userActor(user));
   redirect(`/cats/${catId}/hospital-visits`, "replace");
 }

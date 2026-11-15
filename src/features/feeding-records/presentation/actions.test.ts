@@ -30,12 +30,13 @@ vi.mock("next/navigation", () => ({
   },
 }));
 // 猫の家による認可はこのテストの対象外のため、常に許可して猫をそのまま返す
-vi.mock("@/features/auth/presentation/session", () => ({
-  requireCatAccess: async (catId: string) => {
+vi.mock("@/features/auth/presentation/session", () => {
+  const requireCatAccess = async (catId: string) => {
     const [cat] = await db.select().from(cats).where(eq(cats.id, catId));
     return { user: { id: "user-1" }, cat };
-  },
-}));
+  };
+  return { requireCatAccess, requireWritableCatAccess: requireCatAccess };
+});
 
 const { createFeedingRecordRepository } = await import(
   "../infrastructure/feedingRecordRepository"

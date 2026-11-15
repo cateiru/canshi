@@ -15,6 +15,7 @@ import {
   brushingRecordFormSchema,
 } from "@/features/brushing-records/domain/schema";
 import { getBrushingRecordForCat } from "@/features/brushing-records/infrastructure/queries";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import {
   createCleaningRecord,
   updateCleaningRecord,
@@ -883,7 +884,10 @@ const memoTool = defineRecordTool({
       : { error: RECORD_NOT_FOUND_ERROR },
 });
 
-/** 支出の記録の関連する猫のうち、この接続から支出の記録を書き込める猫だけを返す */
+/**
+ * 支出の記録の関連する猫のうち、この接続から支出の記録を書き込める猫だけを返す。
+ * メモリーへ移した猫には書き込めない
+ */
 async function listExpenseWritableCatIds(
   ctx: McpToolContext,
   userId: string,
@@ -895,6 +899,7 @@ async function listExpenseWritableCatIds(
     .filter(
       (cat) =>
         cat.householdId === householdId &&
+        !isMemorialCat(cat) &&
         isCatAllowedForMcp(permissions, cat) &&
         writableMcpRecordTypes(permissions, cat.id).includes("expense"),
     )

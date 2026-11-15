@@ -77,3 +77,9 @@
   gap: var(--space-4);
   color: var(--color-ink-muted);
 }
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}

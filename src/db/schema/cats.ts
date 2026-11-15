@@ -62,6 +62,10 @@ export const cats = sqliteTable(
     profileMediaAssetId: text("profile_media_asset_id").references(
       (): AnySQLiteColumn => mediaAssets.id,
     ),
+    // メモリー（思い出）へ移した日（YYYY-MM-DD、日本時間）。NULL ならメモリーへ移していない。
+    // メモリーへ移した猫は、記録の追加・編集・削除、プロフィール・通知の設定の変更ができず、
+    // 通知も作らない。タイムラインはこの日までを表示する（`src/features/cats/domain/memorial.ts` 参照）
+    memorialDate: text("memorial_date"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

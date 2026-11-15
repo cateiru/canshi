@@ -21,8 +21,11 @@ vi.mock("@/db/client", () => ({
 }));
 
 const { generateNotifications } = await import("./generate");
-const { insertHouseholdNotification, insertSymptomOngoingNotification } =
-  await import("../infrastructure/notificationGenerationRepository");
+const {
+  createNotificationGenerationRepository,
+  insertHouseholdNotification,
+  insertSymptomOngoingNotification,
+} = await import("../infrastructure/notificationGenerationRepository");
 
 /**
  * 症状の確認通知（`symptom_ongoing`）について、`generateNotifications` が DB から集める
@@ -198,6 +201,60 @@ describe("insertSymptomOngoingNotification", () => {
 
     expect(await listByReference(symptom.id)).toHaveLength(0);
   });
+
+  it("判定後に猫がメモリーへ移されていれば、通知を作らない", async () => {
+    const { cat, symptom, candidate, message } = await setup("ongoing");
+    await db
+      .update(cats)
+      .set({ memorialDate: "2026-08-20" })
+      .where(eq(cats.id, cat.id));
+
+    await insertSymptomOngoingNotification(db, candidate, message);
+
+    expect(await listByReference(symptom.id)).toHaveLength(0);
+  });
+});
+
+describe("insertCatNotification", () => {
+  async function insertFor(memorialDate: string | null) {
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "ちび", sex: "male", memorialDate })
+      .returning();
+    const dedupeKey = `${cat.id}:weight_measurement:2026-09-01`;
+    await createNotificationGenerationRepository().insertCatNotification(
+      {
+        catId: cat.id,
+        kind: "weight_measurement",
+        elapsedDays: 30,
+        referenceId: null,
+        dedupeKey,
+        dueAt: new Date("2026-09-01T09:00:00.000Z"),
+      },
+      { title: "体重を測りましょう", body: "", url: `/cats/${cat.id}` },
+    );
+    return db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.dedupeKey, dedupeKey));
+  }
+
+  it("猫についての未対応の通知を作る", async () => {
+    const rows = await insertFor(null);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      kind: "weight_measurement",
+      householdId: null,
+      userId: null,
+      referenceId: null,
+      title: "体重を測りましょう",
+      status: "pending",
+    });
+  });
+
+  it("判定後に猫がメモリーへ移されていれば、通知を作らない", async () => {
+    expect(await insertFor("2026-08-20")).toEqual([]);
+  });
 });
 
 /**
@@ -330,6 +387,51 @@ describe("generateNotifications（ごはんの時間）", () => {
     // JST 2026-09-23 07:00
     await generateNotifications(new Date("2026-09-22T22:00:00.000Z"));
     expect(await listFeedingNotifications(household.id)).toEqual([]);
+  });
+
+  it("メモリーへ移した猫だけの家には通知しない", async () => {
+    const { household, householdCats } = await setupHousehold("思い出の家", [
+      "ふく",
+    ]);
+    await db
+      .update(cats)
+      .set({ memorialDate: "2026-09-01" })
+      .where(eq(cats.id, householdCats[0].id));
+
+    // JST 2026-09-24 07:00・08:00
+    await generateNotifications(new Date("2026-09-23T22:00:00.000Z"));
+    await generateNotifications(new Date("2026-09-23T23:00:00.000Z"));
+    expect(await listFeedingNotifications(household.id)).toEqual([]);
+  });
+});
+
+describe("generateNotifications（メモリーへ移した猫）", () => {
+  it("誕生日・症状などの猫についての通知を作らない", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({
+        name: "はな",
+        sex: "female",
+        birthDate: "2020-10-05",
+        memorialDate: "2026-09-01",
+      })
+      .returning();
+    await db.insert(symptoms).values({
+      catId: cat.id,
+      symptomType: "くしゃみ",
+      onsetAt: new Date("2026-08-01T09:00:00.000Z"),
+      status: "ongoing",
+    });
+
+    // JST 2026-10-05 18:00。誕生日で、症状の発症から 2 ヶ月
+    await generateNotifications(new Date("2026-10-05T09:00:00.000Z"));
+
+    expect(
+      await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.catId, cat.id)),
+    ).toEqual([]);
   });
 });
 

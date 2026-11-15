@@ -9,6 +9,7 @@ import {
   HospitalIcon,
   MedicationIcon,
   MemoIcon,
+  MemorialIcon,
   PoopIcon,
   ShampooIcon,
   SymptomIcon,
@@ -20,6 +21,7 @@ import {
 import type { TimelineRecordType } from "./timelineEntry";
 
 export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
+  memorial: "メモリー",
   birthday: "誕生日",
   adoption: "お迎え日",
   feeding: "ごはん",
@@ -38,6 +40,7 @@ export const TIMELINE_TYPE_LABEL: Record<TimelineRecordType, string> = {
 };
 
 export const TIMELINE_TYPE_ICON = {
+  memorial: MemorialIcon,
   birthday: BirthdayIcon,
   adoption: AdoptionIcon,
   feeding: FeedingIcon,

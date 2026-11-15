@@ -50,13 +50,15 @@ vi.mock("@/features/auth/presentation/session", async () => {
   const { getCatForUser } = await import(
     "@/features/households/infrastructure/queries"
   );
+  const requireCatAccess = async (catId: string) => {
+    const cat = await getCatForUser(currentUserId, catId);
+    if (!cat) throw new Error("notFound");
+    return { user: { id: currentUserId }, cat };
+  };
   return {
     requireUser: async () => ({ id: currentUserId }),
-    requireCatAccess: async (catId: string) => {
-      const cat = await getCatForUser(currentUserId, catId);
-      if (!cat) throw new Error("notFound");
-      return { user: { id: currentUserId }, cat };
-    },
+    requireCatAccess,
+    requireWritableCatAccess: requireCatAccess,
   };
 });
 

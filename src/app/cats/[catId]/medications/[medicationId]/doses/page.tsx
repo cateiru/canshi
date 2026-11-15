@@ -12,6 +12,7 @@ import {
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { listMedicationDoses } from "@/features/medications/infrastructure/doseQueries";
 import { getMedicationById } from "@/features/medications/infrastructure/queries";
 import { deleteMedicationDoseAction } from "@/features/medications/presentation/doseActions";
@@ -52,6 +53,8 @@ export default async function MedicationDosesPage({
   if (!cat || !medication || medication.catId !== catId) {
     notFound();
   }
+  // メモリーへ移した猫は、記録を見返すだけにする（追加・編集・削除の導線を出さない）
+  const readOnly = isMemorialCat(cat);
 
   const doses = await listMedicationDoses(medicationId);
   const { page: pageParam } = await searchParams;
@@ -81,27 +84,31 @@ export default async function MedicationDosesPage({
         <RecordPageHeading icon={MedicationIcon}>
           {medication.name}の投薬実績
         </RecordPageHeading>
-        <ButtonLink
-          href={`/cats/${catId}/medications/${medicationId}/doses/new`}
-          variant="primary"
-          className={styles.createButton}
-          leftIcon={TbPlus}
-        >
-          記録する
-        </ButtonLink>
+        {readOnly ? null : (
+          <ButtonLink
+            href={`/cats/${catId}/medications/${medicationId}/doses/new`}
+            variant="primary"
+            className={styles.createButton}
+            leftIcon={TbPlus}
+          >
+            記録する
+          </ButtonLink>
+        )}
       </div>
 
       {doses.length === 0 ? (
         <RecordEmptyState
           icon={MedicationIcon}
           actions={
-            <ButtonLink
-              href={`/cats/${catId}/medications/${medicationId}/doses/new`}
-              variant="primary"
-              className={styles.createButton}
-            >
-              最初の実績を記録する
-            </ButtonLink>
+            readOnly ? undefined : (
+              <ButtonLink
+                href={`/cats/${catId}/medications/${medicationId}/doses/new`}
+                variant="primary"
+                className={styles.createButton}
+              >
+                最初の実績を記録する
+              </ButtonLink>
+            )
           }
         >
           まだ投薬実績がありません。
@@ -122,23 +129,27 @@ export default async function MedicationDosesPage({
                     <RecordContributors
                       contributors={contributorsByRecordId.get(dose.id)}
                     />
-                    <IconButtonLink
-                      href={`/cats/${catId}/medications/${medicationId}/doses/${dose.id}/edit`}
-                      icon={TbPencil}
-                      aria-label="編集する"
-                      title="編集する"
-                    />
-                    <DeleteRecordButton
-                      action={deleteMedicationDoseAction.bind(
-                        null,
-                        catId,
-                        medicationId,
-                        dose.id,
-                      )}
-                      title="投薬実績の削除"
-                      description="この投薬実績を削除しますか？この操作は取り消せません。"
-                      iconOnly
-                    />
+                    {readOnly ? null : (
+                      <>
+                        <IconButtonLink
+                          href={`/cats/${catId}/medications/${medicationId}/doses/${dose.id}/edit`}
+                          icon={TbPencil}
+                          aria-label="編集する"
+                          title="編集する"
+                        />
+                        <DeleteRecordButton
+                          action={deleteMedicationDoseAction.bind(
+                            null,
+                            catId,
+                            medicationId,
+                            dose.id,
+                          )}
+                          title="投薬実績の削除"
+                          description="この投薬実績を削除しますか？この操作は取り消せません。"
+                          iconOnly
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 

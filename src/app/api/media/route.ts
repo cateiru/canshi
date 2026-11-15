@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/features/auth/presentation/session";
-import { canAccessMediaRecordOwner } from "@/features/media/application/access";
+import { canAttachToMediaRecordOwner } from "@/features/media/application/access";
 import {
   DEV_MEDIA_RECORD_TYPE,
   isMediaRecordType,
@@ -65,8 +65,8 @@ export async function POST(request: Request) {
       return jsonError("添付先のレコード種別が正しくありません", 400);
     }
     const owner = await resolveMediaRecordOwner(recordType, recordId);
-    // 別の家の記録は、存在しない記録と同じ扱いにする
-    if (!owner || !(await canAccessMediaRecordOwner(user.id, owner))) {
+    // 別の家の記録・メモリーへ移した猫の記録は、存在しない記録と同じ扱いにする
+    if (!owner || !(await canAttachToMediaRecordOwner(user.id, owner))) {
       return jsonError("添付先のレコードが見つかりませんでした", 404);
     }
     catId = owner.catId;

@@ -544,32 +544,57 @@ async function fetchExpenseEntries(
   }));
 }
 
-/**
- * 猫の生年月日・お迎え日から、指定した月（複数可）の誕生日・お迎え記念日のエントリを作る。
- * 記念日は時刻を持たないため、発生日時はその日の 0 時（naive UTC）にする
- */
-async function fetchAnniversaryEntries(
+/** タイムラインの記念日とメモリーの区切りに使う、猫の項目 */
+type TimelineCat = {
+  birthDate: string | null;
+  adoptedAt: string | null;
+  memorialDate: string | null;
+};
+
+async function fetchTimelineCat(
   catId: string,
-  months: readonly YearMonth[],
   d1?: D1Database,
-): Promise<TimelineEntry[]> {
+): Promise<TimelineCat | null> {
   const db = getDb(d1);
   const [cat] = await db
-    .select({ birthDate: cats.birthDate, adoptedAt: cats.adoptedAt })
+    .select({
+      birthDate: cats.birthDate,
+      adoptedAt: cats.adoptedAt,
+      memorialDate: cats.memorialDate,
+    })
     .from(cats)
     .where(eq(cats.id, catId))
     .limit(1);
-  if (!cat) {
-    return [];
-  }
+  return cat ?? null;
+}
 
+/**
+ * 猫の生年月日・お迎え日・メモリーへ移した日から、指定した月（複数可）の記念日のエントリを作る。
+ * 記念日は時刻を持たないため、発生日時はその日の 0 時（naive UTC）にする
+ */
+function buildAnniversaryEntries(
+  catId: string,
+  cat: TimelineCat,
+  months: readonly YearMonth[],
+): TimelineEntry[] {
   return months.flatMap(({ year, month }) => {
-    const { birthdays, adoptions } = listAnniversariesForMonth(
+    const { memorials, birthdays, adoptions } = listAnniversariesForMonth(
       cat,
       year,
       month,
     );
-    return toAnniversaryEntries(catId, birthdays, adoptions);
+    return [
+      ...memorials.map(
+        (record): TimelineEntry => ({
+          id: `${catId}:memorial:${record.date}`,
+          type: "memorial",
+          occurredAt: new Date(`${record.date}T00:00:00.000Z`),
+          media: [],
+          record,
+        }),
+      ),
+      ...toAnniversaryEntries(catId, birthdays, adoptions),
+    ];
   });
 }
 
@@ -728,15 +753,25 @@ export async function listTimelineForMonth(
   const fetchers = Object.entries(FETCHERS).flatMap(([type, fetcher]) =>
     isIncluded(type as TimelineRecordType) ? [fetcher] : [],
   );
-  const results = await Promise.all([
-    TIMELINE_ANNIVERSARY_TYPES.some(isIncluded)
-      ? fetchAnniversaryEntries(catId, months, d1)
-      : [],
+  const [cat, ...results] = await Promise.all([
+    fetchTimelineCat(catId, d1),
     ...fetchers.map((fetcher) => fetcher(catId, range, d1)),
   ]);
-  const merged = results
+  const anniversaries =
+    cat && TIMELINE_ANNIVERSARY_TYPES.some(isIncluded)
+      ? buildAnniversaryEntries(catId, cat, months)
+      : [];
+  // メモリーへ移した猫は、メモリーへ移した日より後を表示しない。カレンダー（datesByDay）と
+  // ページ数も揃うよう、ページ分けより前に除く。発生日時は naive UTC のため、日付の文字列で比べる
+  const memorialDate = cat?.memorialDate ?? null;
+  const merged = [anniversaries, ...results]
     .flat()
     .filter((entry) => isIncluded(entry.type))
+    .filter(
+      (entry) =>
+        memorialDate == null ||
+        splitDateTimeUtc(entry.occurredAt).date <= memorialDate,
+    )
     .sort(compareTimelineEntries);
 
   const datesByDay = buildDatesByDay(merged);

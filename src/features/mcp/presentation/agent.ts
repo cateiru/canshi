@@ -36,7 +36,10 @@ import { registerRecordTools } from "./tools/records";
 /** 猫のプロフィールを返すツールの説明に添える、生年月日の精度の補足 */
 const BIRTH_DATE_PRECISION_DESCRIPTION =
   "birthDatePrecision は生年月日のわかっている範囲（year=年のみ、month=年月のみ、" +
-  "day=年月日すべて）で、year・month の場合 birthDate の不明な月・日は 1月・1日で補完されている。";
+  "day=年月日すべて）で、year・month の場合 birthDate の不明な月・日は 1月・1日で補完されている。" +
+  "memorialDate はユーザーが猫をメモリー（思い出）へ移した日（YYYY-MM-DD）で、null なら移していない。" +
+  "メモリーへ移した猫は、旅立った猫を思い出として残しているもので、記録やプロフィールは読み取れるが、" +
+  "記録の追加・編集やプロフィール・通知の設定の変更はできない。";
 
 /**
  * `OAuthProvider` の `apiHandler` に渡す、MCP サーバー（`route`、`/mcp`）の HTTP ハンドラを作る。
@@ -236,6 +239,8 @@ export function createCanshiMcpServer(
         '1〜11=1歳未満の毎月の記念日）を、お迎え記念日（type="adoption"）は' +
         "record.years にお迎えしてからの年数（0=お迎えした日）を持ち、" +
         "同じ日の記録より先頭に並ぶ。" +
+        'メモリー（思い出）へ移した猫では、移した日に type="memorial" のエントリ' +
+        "（record.date に移した日）が入り、それより後の記録・記念日は含まない。" +
         '体重記録（type="weight"）には猫の体重 catWeightKg に加え、' +
         "BCS（ボディコンディションスコア）の bcs（1〜5 の 5 段階。1=痩せ、" +
         "2=やや痩せ、3=理想体重、4=やや肥満、5=肥満。未評価は null）と" +

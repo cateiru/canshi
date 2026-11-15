@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { getExpenseByHospitalVisitId } from "@/features/expenses/infrastructure/queries";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/domain/media";
@@ -30,7 +30,7 @@ export default async function EditHospitalVisitPage({
 }: EditHospitalVisitPageProps) {
   const { catId, hospitalVisitId } = await params;
   const [cat, hospitalVisit] = await Promise.all([
-    getAccessibleCat(catId),
+    getWritableCat(catId),
     getHospitalVisitById(hospitalVisitId),
   ]);
 

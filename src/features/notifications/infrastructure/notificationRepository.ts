@@ -1,8 +1,10 @@
-import { and, eq, exists, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, exists, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import {
+  cats,
   cleaningRecords,
   cleaningTargets,
   notifications,
@@ -14,6 +16,18 @@ import {
   ACCESSIBLE_NOTIFICATIONS_CONDITION_PARAMETERS,
   accessibleNotificationsCondition,
 } from "./access";
+
+type Db = ReturnType<typeof getDb>;
+
+/** 猫（`catId` の列が指す猫）がメモリーへ移していない猫であるという条件 */
+function notMemorialCat(db: Db, catId: SQLiteColumn) {
+  return exists(
+    db
+      .select({ id: cats.id })
+      .from(cats)
+      .where(and(eq(cats.id, catId), isNull(cats.memorialDate))),
+  );
+}
 
 /** D1 に保存する `NotificationRepository`。`d1` を省略すると Next.js のリクエストの D1 を使う */
 export function createNotificationRepository(
@@ -86,6 +100,8 @@ export function createNotificationRepository(
                 eq(notifications.id, id),
                 ne(notifications.status, "done"),
                 eq(cleaningTargets.isActive, true),
+                // メモリーへ移した猫には記録を追加しない
+                notMemorialCat(db, notifications.catId),
               ),
             ),
         ),
@@ -118,6 +134,8 @@ export function createNotificationRepository(
         eq(symptoms.catId, catId),
         ne(symptoms.status, "resolved"),
         isNull(symptoms.deletedAt),
+        // メモリーへ移した猫の記録は変えない
+        notMemorialCat(db, symptoms.catId),
       );
       // 2つの更新は同じバッチ（D1 では 1 トランザクション）で実行し、片方だけが反映されないようにする。
       // 更新の後は「未解消」の条件が偽になるため、履歴を先に追加する
@@ -173,7 +191,31 @@ export function createNotificationRepository(
             pushedAt: null,
             updatedAt: new Date(),
           })
-          .where(eq(notifications.id, id)),
+          .where(
+            and(
+              eq(notifications.id, id),
+              // メモリーへ移した猫の通知と、記録できる猫（メモリーへ移していない猫）のいない家の
+              // 通知は、閉じたあとに延期して Push を届け直さない
+              or(
+                isNull(notifications.catId),
+                notMemorialCat(db, notifications.catId),
+              ),
+              or(
+                isNull(notifications.householdId),
+                exists(
+                  db
+                    .select({ id: cats.id })
+                    .from(cats)
+                    .where(
+                      and(
+                        eq(cats.householdId, notifications.householdId),
+                        isNull(cats.memorialDate),
+                      ),
+                    ),
+                ),
+              ),
+            ),
+          ),
         db.delete(pushDeliveries).where(eq(pushDeliveries.notificationId, id)),
       ]);
     },

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import {
   getCatForUser,
   getHouseholdForUser,
@@ -50,6 +51,19 @@ export async function requireCatAccess(catId: string) {
 }
 
 /**
+ * `requireCatAccess` に加えて、記録・プロフィール・通知の設定を変えられる猫（メモリーへ移していない猫）で
+ * あることを確認する。メモリーへ移した猫なら、猫のページへ移動する。記録や設定を書き換える
+ * Server Action は、`requireCatAccess` ではなくこれを通す（メモリーへ移す・戻す、猫の削除は除く）
+ */
+export async function requireWritableCatAccess(catId: string) {
+  const access = await requireCatAccess(catId);
+  if (isMemorialCat(access.cat)) {
+    redirect(`/cats/${catId}`);
+  }
+  return access;
+}
+
+/**
  * ログイン中のユーザーが所属する家であることを確認し、ユーザーと家（家での権限を含む）を返す。
  * 存在しない家・所属していない家は区別せず 404 にする
  */
@@ -72,6 +86,15 @@ export const getAccessibleCat = cache(async (catId: string) => {
   const user = await requireUser();
   return getCatForUser(user.id, catId);
 });
+
+/**
+ * `getAccessibleCat` の、記録を追加・編集するページ向け。メモリーへ移した猫も null にする
+ * （ページは 404 にする。メモリーへ移した猫のページからは、追加・編集の導線を出さない）
+ */
+export async function getWritableCat(catId: string) {
+  const cat = await getAccessibleCat(catId);
+  return cat && !isMemorialCat(cat) ? cat : null;
+}
 
 /** ログイン中のユーザーが参照できる猫（所属する家の猫）の一覧。新しく登録した順 */
 export async function listCurrentUserCats() {

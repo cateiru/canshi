@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { BrushingIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getWritableCat } from "@/features/auth/presentation/session";
 import { getBrushingRecordById } from "@/features/brushing-records/infrastructure/queries";
 import { updateBrushingRecordAction } from "@/features/brushing-records/presentation/actions";
 import { BrushingRecordForm } from "@/features/brushing-records/presentation/BrushingRecordForm";
@@ -24,7 +24,7 @@ export default async function EditBrushingRecordPage({
 }: EditBrushingRecordPageProps) {
   const { catId, brushingRecordId } = await params;
   const [cat, brushingRecord] = await Promise.all([
-    getAccessibleCat(catId),
+    getWritableCat(catId),
     getBrushingRecordById(brushingRecordId),
   ]);
 

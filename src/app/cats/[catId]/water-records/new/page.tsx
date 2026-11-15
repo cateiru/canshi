@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { WaterIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { createWaterRecordAction } from "@/features/water-records/presentation/actions";
@@ -22,7 +22,7 @@ export default async function NewWaterRecordPage({
   params,
 }: NewWaterRecordPageProps) {
   const { catId } = await params;
-  const cat = await getAccessibleCat(catId);
+  const cat = await getWritableCat(catId);
 
   if (!cat) {
     notFound();

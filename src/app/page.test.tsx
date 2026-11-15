@@ -28,6 +28,7 @@ function buildCat(id: string): Cat {
     neuterStatus: null,
     coatColor: null,
     profileMediaAssetId: null,
+    memorialDate: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

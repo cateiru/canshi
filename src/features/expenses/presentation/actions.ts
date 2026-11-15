@@ -2,11 +2,16 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireCatAccess } from "@/features/auth/presentation/session";
+import {
+  requireCatAccess,
+  requireWritableCatAccess,
+} from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import {
   type LinkableHospitalVisit,
   listHospitalVisitsOnDate,
 } from "@/features/hospital-visits/infrastructure/queries";
+import { listCatsForUser } from "@/features/households/infrastructure/queries";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
 import { userActor } from "@/features/shared/recordActor";
@@ -21,6 +26,7 @@ import {
   expenseFormSchema,
 } from "../domain/schema";
 import {
+  getExpenseById,
   type HospitalExpenseCandidate,
   listHospitalExpensesOnDate,
 } from "../infrastructure/queries";
@@ -47,12 +53,39 @@ function parseFormData(formData: FormData) {
 
 /**
  * 導線になっている猫にログイン中のユーザーがアクセスできることを確認し、その猫の家の ID を返す。
- * 支出は家に属し、記録したページの猫の家の支出として扱うため、家はクライアントから受け取らない
+ * 支出は家に属し、記録したページの猫の家の支出として扱うため、家はクライアントから受け取らない。
+ * 支出を書き換えるとき（`writable`）は、メモリーへ移した猫のページからは書き換えられない
  */
-async function requireExpenseHousehold(catId: string) {
-  const { user, cat } = await requireCatAccess(catId);
+async function requireExpenseHousehold(
+  catId: string,
+  { writable }: { writable: boolean },
+) {
+  const { user, cat } = writable
+    ? await requireWritableCatAccess(catId)
+    : await requireCatAccess(catId);
   // ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照）
   return { user, householdId: cat.householdId as string };
+}
+
+const MEMORIAL_CAT_NOT_SELECTABLE_ERROR =
+  "メモリーに移したねこは、関連するねこに新しく加えられません";
+
+/**
+ * 関連する猫に、メモリーへ移した猫を新しく加えようとしていれば true。すでに関連する猫に
+ * 含まれている（`currentCatIds`）メモリーの猫は、そのまま残してよい
+ */
+async function addsMemorialCat(
+  userId: string,
+  catIds: readonly string[],
+  currentCatIds: readonly string[] = [],
+) {
+  const cats = await listCatsForUser(userId);
+  return cats.some(
+    (cat) =>
+      isMemorialCat(cat) &&
+      catIds.includes(cat.id) &&
+      !currentCatIds.includes(cat.id),
+  );
 }
 
 /** `catId` は記録したページの猫。支出はその猫の家に属する */
@@ -61,11 +94,16 @@ export async function createExpenseAction(
   _prevState: ExpenseFormState,
   formData: FormData,
 ): Promise<ExpenseFormState> {
-  const { user, householdId } = await requireExpenseHousehold(catId);
+  const { user, householdId } = await requireExpenseHousehold(catId, {
+    writable: true,
+  });
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+  if (await addsMemorialCat(user.id, parsed.data.catIds)) {
+    return { fieldErrors: { catIds: [MEMORIAL_CAT_NOT_SELECTABLE_ERROR] } };
   }
 
   const saved = await createExpense(householdId, parsed.data, userActor(user));
@@ -88,11 +126,17 @@ export async function updateExpenseAction(
   _prevState: ExpenseFormState,
   formData: FormData,
 ): Promise<ExpenseFormState> {
-  const { user, householdId } = await requireExpenseHousehold(catId);
+  const { user, householdId } = await requireExpenseHousehold(catId, {
+    writable: true,
+  });
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+  const current = await getExpenseById(householdId, id);
+  if (await addsMemorialCat(user.id, parsed.data.catIds, current?.catIds)) {
+    return { fieldErrors: { catIds: [MEMORIAL_CAT_NOT_SELECTABLE_ERROR] } };
   }
 
   const saved = await updateExpense(
@@ -117,7 +161,9 @@ export async function deleteExpenseAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  const { user, householdId } = await requireExpenseHousehold(catId);
+  const { user, householdId } = await requireExpenseHousehold(catId, {
+    writable: true,
+  });
   await deleteExpense(householdId, id, userActor(user));
   redirect(`/cats/${catId}/expenses`, "replace");
 }
@@ -134,7 +180,9 @@ export async function listLinkableHospitalVisitsAction(
   date: string,
   expenseRecordId?: string,
 ): Promise<LinkableHospitalVisit[]> {
-  const { householdId } = await requireExpenseHousehold(catId);
+  const { householdId } = await requireExpenseHousehold(catId, {
+    writable: false,
+  });
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];
@@ -150,7 +198,9 @@ export async function listSameDayHospitalExpensesAction(
   catId: string,
   date: string,
 ): Promise<HospitalExpenseCandidate[]> {
-  const { householdId } = await requireExpenseHousehold(catId);
+  const { householdId } = await requireExpenseHousehold(catId, {
+    writable: false,
+  });
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) {
     return [];

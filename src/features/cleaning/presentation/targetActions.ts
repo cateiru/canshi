@@ -1,7 +1,7 @@
 "use server";
 
 import type { CleaningTarget } from "@/db/schema";
-import { requireCatAccess } from "@/features/auth/presentation/session";
+import { requireWritableCatAccess } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   createCleaningTarget,
@@ -33,7 +33,7 @@ export async function createCleaningTargetAction(
   _prevState: CleaningTargetFormState,
   formData: FormData,
 ): Promise<CleaningTargetFormState> {
-  await requireCatAccess(catId);
+  await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -54,7 +54,7 @@ export async function createCleaningTargetFromPresetAction(
   frequencyValue: number,
   frequencyUnit: CleaningTarget["frequencyUnit"],
 ): Promise<SubmitRedirect> {
-  await requireCatAccess(catId);
+  await requireWritableCatAccess(catId);
   await createCleaningTarget(catId, {
     name,
     frequencyValue,
@@ -71,7 +71,7 @@ export async function updateCleaningTargetAction(
   _prevState: CleaningTargetFormState,
   formData: FormData,
 ): Promise<CleaningTargetFormState> {
-  await requireCatAccess(catId);
+  await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -89,7 +89,7 @@ export async function deleteCleaningTargetAction(
   catId: string,
   id: string,
 ): Promise<SubmitRedirect> {
-  await requireCatAccess(catId);
+  await requireWritableCatAccess(catId);
   await deleteCleaningTarget(catId, id);
   return { redirectTo: `/cats/${catId}/cleaning` };
 }

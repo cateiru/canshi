@@ -19,6 +19,8 @@ type TimelineEntryListProps = {
   emptyMessage: string;
   /** ページの描画を待たせないよう、読み込みを始めただけの Promise を受け取る */
   timeline: Promise<ListTimelineForMonthResult>;
+  /** true なら記録の編集の導線を出さない（メモリーへ移した猫のタイムライン） */
+  readOnly?: boolean;
 };
 
 /**
@@ -31,6 +33,7 @@ export async function TimelineEntryList({
   selectedDate,
   emptyMessage,
   timeline,
+  readOnly = false,
 }: TimelineEntryListProps) {
   const { entries, page, totalPages } = await timeline;
 
@@ -70,6 +73,7 @@ export async function TimelineEntryList({
                   isFirst={index === 0}
                   isLast={index === entries.length - 1}
                   foodProductImageUrls={foodProductImageUrls}
+                  readOnly={readOnly}
                   contributors={
                     recordType
                       ? contributors.get(

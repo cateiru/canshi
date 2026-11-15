@@ -3,7 +3,7 @@ import { TbPlus, TbStack2 } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
-import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { CLEANING_TARGET_PRESETS } from "@/features/cleaning/domain/presets";
 import { CleaningTargetForm } from "@/features/cleaning/presentation/CleaningTargetForm";
@@ -30,7 +30,7 @@ export default async function NewCleaningTargetPage({
   params,
 }: NewCleaningTargetPageProps) {
   const { catId } = await params;
-  const cat = await getAccessibleCat(catId);
+  const cat = await getWritableCat(catId);
 
   if (!cat) {
     notFound();

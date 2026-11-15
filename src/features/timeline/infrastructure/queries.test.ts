@@ -301,6 +301,53 @@ describe("listTimelineForMonth", () => {
     expect(filtered.entries.map((entry) => entry.type)).toEqual(["birthday"]);
   });
 
+  it("メモリーへ移した猫は、メモリーへ移した日を最後に、それより後の記録・記念日を含めない", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({
+        name: "そら",
+        sex: "male",
+        birthDate: "2015-08-20",
+        memorialDate: "2026-08-10",
+      })
+      .returning();
+    await db.insert(weightRecords).values([
+      {
+        catId: cat.id,
+        occurredAt: new Date("2026-08-10T23:59:00.000Z"),
+        inputMethod: "direct",
+        catWeightKg: 3.1,
+      },
+      {
+        catId: cat.id,
+        occurredAt: new Date("2026-08-11T00:00:00.000Z"),
+        inputMethod: "direct",
+        catWeightKg: 3.0,
+      },
+    ]);
+
+    const result = await listTimelineForMonth(cat.id, 2026, 8, {
+      includeAdjacentMonths: true,
+    });
+
+    expect(
+      result.entries.map((entry) => [
+        entry.type,
+        entry.occurredAt.toISOString(),
+      ]),
+    ).toEqual([
+      ["memorial", "2026-08-10T00:00:00.000Z"],
+      ["weight", "2026-08-10T23:59:00.000Z"],
+    ]);
+    expect(result.entries[0].record).toEqual({ date: "2026-08-10" });
+    // カレンダーにも、メモリーへ移した日より後の日付は載せない（誕生日の 8/20 も含めない）
+    expect([...result.datesByDay.keys()]).toEqual(["2026-08-10"]);
+    expect(result.datesByDay.get("2026-08-10")).toEqual(["memorial", "weight"]);
+
+    const nextMonth = await listTimelineForMonth(cat.id, 2026, 9);
+    expect(nextMonth.entries).toEqual([]);
+  });
+
   it("前後の月を含めると、カレンダーには前後の月の日付も載り、一覧は指定した月だけになる", async () => {
     const [cat] = await db
       .insert(cats)

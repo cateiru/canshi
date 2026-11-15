@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { MemoIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { resolveMediaLimits } from "@/features/media/domain/limits";
 import { toMediaAssetView } from "@/features/media/domain/view";
@@ -28,7 +28,7 @@ export default async function EditMemoRecordPage({
 }: EditMemoRecordPageProps) {
   const { catId, memoRecordId } = await params;
   const [cat, memoRecord] = await Promise.all([
-    getAccessibleCat(catId),
+    getWritableCat(catId),
     getMemoRecordById(memoRecordId),
   ]);
 

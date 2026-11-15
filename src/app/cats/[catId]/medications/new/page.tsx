@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
 import { resolveMediaLimits } from "@/features/media/domain/limits";
@@ -28,7 +28,7 @@ export default async function NewMedicationPage({
   params,
 }: NewMedicationPageProps) {
   const { catId } = await params;
-  const cat = await getAccessibleCat(catId);
+  const cat = await getWritableCat(catId);
 
   if (!cat) {
     notFound();

@@ -49,10 +49,11 @@ function dismissOpenNotificationsOf(
 }
 
 /**
- * 猫が 1 匹もいない家の、ごはんの時間の未対応（`pending`・`snoozed`）の通知を無視にする UPDATE 文。
- * 通知の生成は猫のいない家を対象にしないが、生成済みの通知は家の最後の猫を削除しても
- * 残り、記録できる猫がいないのに Push が送られてしまう。猫の削除と同じ batch の、
- * 猫の行を消す文の後に並べる。どの家の猫がいなくなったかを先に読まずに済むよう、操作する
+ * 記録できる猫（メモリーへ移していない猫）が 1 匹もいない家の、ごはんの時間の未対応
+ * （`pending`・`snoozed`）の通知を無視にする UPDATE 文。
+ * 通知の生成は記録できる猫のいない家を対象にしないが、生成済みの通知は家の最後の猫を削除・
+ * メモリーへ移しても残り、記録できる猫がいないのに Push が送られてしまう。猫の削除・メモリーへ
+ * 移す操作と同じ batch の、猫の行を書き換える文の後に並べる。どの家の猫がいなくなったかを先に読まずに済むよう、操作する
  * ユーザーが所属する家のうち、その時点で猫のいない家をまとめて対象にする（猫のいない家に
  * 未対応のごはんの通知が残っている必要はないため、削除が通らなかったときに実行しても
  * 問題ない）
@@ -72,6 +73,7 @@ export function dismissFeedingNotificationsOfCatlessHouseholds(
         sql`NOT EXISTS (
           SELECT 1 FROM ${cats}
           WHERE ${cats.householdId} = ${notifications.householdId}
+            AND ${cats.memorialDate} IS NULL
         )`,
         isHouseholdMemberCondition(notifications.householdId, userId),
       ),

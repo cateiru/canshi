@@ -47,13 +47,15 @@ vi.mock("@/features/auth/presentation/session", async () => {
   const { getCatForUser } = await import(
     "@/features/households/infrastructure/queries"
   );
+  const requireCatAccess = async (catId: string) => {
+    const cat = await getCatForUser(currentUserId, catId);
+    if (!cat) throw new Error("notFound");
+    return { user: { id: currentUserId }, cat };
+  };
   return {
     requireUser: async () => ({ id: currentUserId }),
-    requireCatAccess: async (catId: string) => {
-      const cat = await getCatForUser(currentUserId, catId);
-      if (!cat) throw new Error("notFound");
-      return { user: { id: currentUserId }, cat };
-    },
+    requireCatAccess,
+    requireWritableCatAccess: requireCatAccess,
   };
 });
 
@@ -1131,5 +1133,40 @@ describe("確認の後に記録が論理削除された場合", () => {
     expect(await db.select().from(hospitalVisits)).toHaveLength(1);
     expect(await db.select().from(expenseRecordHospitalVisits)).toEqual([]);
     expect(await db.select().from(expenseRecordCats)).toEqual([]);
+  });
+});
+
+describe("メモリーへ移した猫と支出", () => {
+  it("新しく関連する猫に加えられないが、関連済みならそのまま編集できる", async () => {
+    const { savedRecordId: id } = await createExpenseAction(
+      "tama",
+      {},
+      expenseForm({ catIds: ["tama", "mike"] }),
+    );
+    await db
+      .update(cats)
+      .set({ memorialDate: "2026-09-20" })
+      .where(eq(cats.id, "mike"));
+
+    const created = await createExpenseAction(
+      "tama",
+      {},
+      expenseForm({ catIds: ["tama", "mike"] }),
+    );
+    expect(created.fieldErrors?.catIds).toEqual([
+      "メモリーに移したねこは、関連するねこに新しく加えられません",
+    ]);
+
+    const updated = await updateExpenseAction(
+      "tama",
+      id as string,
+      {},
+      expenseForm({ amountYen: "2000", catIds: ["tama", "mike"] }),
+    );
+    expect(updated.savedRecordId).toBe(id);
+    expect(await getExpenseById("household-1", id as string)).toMatchObject({
+      amountYen: 2000,
+      catIds: expect.arrayContaining(["tama", "mike"]),
+    });
   });
 });

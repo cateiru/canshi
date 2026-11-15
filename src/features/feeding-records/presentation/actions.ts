@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import type { z } from "zod";
-import { requireCatAccess } from "@/features/auth/presentation/session";
+import { requireWritableCatAccess } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { userActor } from "@/features/shared/recordActor";
 import {
@@ -96,7 +96,7 @@ export async function createFeedingRecordAction(
   _prevState: FeedingRecordFormState,
   formData: FormData,
 ): Promise<FeedingRecordFormState> {
-  const { user, cat } = await requireCatAccess(catId);
+  const { user, cat } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -117,7 +117,7 @@ export async function updateFeedingRecordAction(
   _prevState: FeedingRecordFormState,
   formData: FormData,
 ): Promise<FeedingRecordFormState> {
-  const { user, cat } = await requireCatAccess(catId);
+  const { user, cat } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -141,7 +141,7 @@ export async function deleteFeedingRecordAction(
   catId: string,
   id: string,
 ): Promise<void> {
-  const { user } = await requireCatAccess(catId);
+  const { user } = await requireWritableCatAccess(catId);
   await deleteFeedingRecord(catId, id, userActor(user));
   redirect(`/cats/${catId}/feeding-records`, "replace");
 }

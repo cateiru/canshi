@@ -16,12 +16,21 @@ export type TimelineAdoptionRecord = {
   years: number;
 };
 
+/** メモリーへ移した日のエントリ */
+export type TimelineMemorialRecord = {
+  /** メモリーへ移した日（YYYY-MM-DD） */
+  date: string;
+};
+
 export type AnniversaryCat = {
   birthDate: string | null;
   adoptedAt: string | null;
+  /** メモリーへ移した日（YYYY-MM-DD）。メモリーへ移していなければ null */
+  memorialDate?: string | null;
 };
 
 export type MonthAnniversaries = {
+  memorials: TimelineMemorialRecord[];
   birthdays: TimelineBirthdayRecord[];
   adoptions: TimelineAdoptionRecord[];
 };
@@ -31,9 +40,10 @@ function pad2(n: number): string {
 }
 
 /**
- * 指定した年月に含まれる誕生日・お迎え記念日を返す。
+ * 指定した年月に含まれる誕生日・お迎え記念日・メモリーへ移した日を返す。
  * - 誕生日: 生まれた日、毎年の誕生日、1歳未満は毎月の生まれた日と同じ日
  * - お迎え記念日: お迎えした日と、毎年のお迎えした日と同じ日
+ * - メモリーへ移した日: その日だけ。メモリーへ移した猫は、この日より後の記念日を返さない
  *
  * 誕生日のお祝い（`getBirthdayMilestone`）と同じ判定を使い、生まれた日がその月にない場合
  * （31日生まれの4月、2/29 生まれの非うるう年など）は月末の日を記念日にする。
@@ -44,6 +54,7 @@ export function listAnniversariesForMonth(
   year: number,
   month: number, // 1-12
 ): MonthAnniversaries {
+  const memorials: TimelineMemorialRecord[] = [];
   const birthdays: TimelineBirthdayRecord[] = [];
   const adoptions: TimelineAdoptionRecord[] = [];
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -51,6 +62,15 @@ export function listAnniversariesForMonth(
   for (let day = 1; day <= daysInMonth; day++) {
     const date = `${year}-${pad2(month)}-${pad2(day)}`;
     const today = { year, month, day };
+
+    if (cat.memorialDate != null) {
+      if (date > cat.memorialDate) {
+        break;
+      }
+      if (date === cat.memorialDate) {
+        memorials.push({ date });
+      }
+    }
 
     if (cat.birthDate) {
       if (date === cat.birthDate) {
@@ -83,7 +103,7 @@ export function listAnniversariesForMonth(
     }
   }
 
-  return { birthdays, adoptions };
+  return { memorials, birthdays, adoptions };
 }
 
 /** 誕生日エントリの表示用の文言（例: 「生まれた日」「3歳の誕生日」「生後3ヶ月」） */
@@ -100,4 +120,9 @@ export function formatBirthdayRecord(record: TimelineBirthdayRecord): string {
 /** お迎え記念日エントリの表示用の文言（例: 「お迎えした日」「お迎えして3年」） */
 export function formatAdoptionRecord(record: TimelineAdoptionRecord): string {
   return record.years === 0 ? "お迎えした日" : `お迎えして${record.years}年`;
+}
+
+/** メモリーへ移した日のエントリの表示用の文言 */
+export function formatMemorialRecord(): string {
+  return "メモリーに移した日";
 }

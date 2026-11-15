@@ -4,16 +4,24 @@ import { revalidatePath } from "next/cache";
 import {
   requireCatAccess,
   requireUser,
+  requireWritableCatAccess,
 } from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import {
   createCatForUser,
   deleteCatForUser,
   markCatNeuteredForUser,
+  memorializeCatForUser,
+  restoreCatFromMemorialForUser,
   updateCatForUser,
 } from "../application/mutations";
 import type { SubmittedBirthDate } from "../domain/birthDate";
 import { HOUSEHOLD_NOT_ALLOWED_ERROR } from "../domain/cat";
+import {
+  isMemorialCat,
+  type MemorialFormFieldErrors,
+  memorialFormSchema,
+} from "../domain/memorial";
 import { parseProfileImageChange } from "../domain/profileImageForm";
 import {
   BIRTH_DATE_PRECISIONS,
@@ -153,7 +161,7 @@ export async function updateCatAction(
   _prevState: CatFormState,
   formData: FormData,
 ): Promise<CatFormState> {
-  const { user } = await requireCatAccess(id);
+  const { user } = await requireWritableCatAccess(id);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
@@ -191,9 +199,61 @@ export async function updateCatAction(
 export async function markCatNeuteredAction(
   id: string,
 ): Promise<{ error?: string }> {
-  const { user } = await requireCatAccess(id);
+  const { user } = await requireWritableCatAccess(id);
   const updated = await markCatNeuteredForUser(id, user.id);
   return updated ? {} : { error: "ねこが見つかりませんでした" };
+}
+
+export type MemorialFormState = SubmitRedirect & {
+  fieldErrors?: MemorialFormFieldErrors;
+  formError?: string;
+};
+
+/** 猫をメモリーへ移す。メモリーへ移した日を選んで送る */
+export async function memorializeCatAction(
+  id: string,
+  _prevState: MemorialFormState,
+  formData: FormData,
+): Promise<MemorialFormState> {
+  const { user, cat } = await requireCatAccess(id);
+  if (isMemorialCat(cat)) {
+    return { redirectTo: `/cats/${id}` };
+  }
+  const parsed = memorialFormSchema(cat).safeParse({
+    memorialDate: formData.get("memorialDate"),
+  });
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const updated = await memorializeCatForUser(
+    id,
+    user.id,
+    parsed.data.memorialDate,
+  );
+  if (!updated) {
+    return { formError: "ねこが見つかりませんでした" };
+  }
+  // 猫のページは、メモリーへ移したかで記録の導線などを出し分ける
+  revalidatePath(`/cats/${id}`, "layout");
+  return { redirectTo: `/cats/${id}` };
+}
+
+/** メモリーへ移した猫を元に戻す */
+export async function restoreCatFromMemorialAction(
+  id: string,
+): Promise<{ error?: string }> {
+  const { user, cat } = await requireCatAccess(id);
+  // ほかのメンバーが先に戻していたときは、そのまま戻した後の画面にする
+  if (!isMemorialCat(cat)) {
+    return {};
+  }
+  const restored = await restoreCatFromMemorialForUser(id, user.id);
+  if (!restored) {
+    return { error: "ねこが見つかりませんでした" };
+  }
+  revalidatePath(`/cats/${id}`, "layout");
+  return {};
 }
 
 export async function deleteCatAction(id: string): Promise<SubmitRedirect> {

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb, ButtonLink, RecordEmptyState } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { listFeedingPresets } from "@/features/feeding-presets/infrastructure/queries";
 import { listRecentlyUsedFoodProductIds } from "@/features/feeding-records/infrastructure/queries";
@@ -28,7 +28,7 @@ export default async function NewFeedingRecordPage({
   params,
 }: NewFeedingRecordPageProps) {
   const { catId } = await params;
-  const cat = await getAccessibleCat(catId);
+  const cat = await getWritableCat(catId);
 
   // 商品・プリセットは猫の家のものを使う。参照できる猫は必ず家に所属している
   if (!cat?.householdId) {

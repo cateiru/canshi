@@ -11,6 +11,7 @@ import {
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { listCleaningRecords } from "@/features/cleaning/infrastructure/recordQueries";
 import { getCleaningTargetById } from "@/features/cleaning/infrastructure/targetQueries";
 import { CleaningRecordChart } from "@/features/cleaning/presentation/CleaningRecordChart";
@@ -53,6 +54,8 @@ export default async function CleaningRecordsPage({
   if (!cat || !cleaningTarget || cleaningTarget.catId !== catId) {
     notFound();
   }
+  // メモリーへ移した猫は、記録を見返すだけにする（追加・編集・削除の導線を出さない）
+  const readOnly = isMemorialCat(cat);
 
   const records = await listCleaningRecords(targetId);
   const { page: pageParam } = await searchParams;
@@ -82,7 +85,7 @@ export default async function CleaningRecordsPage({
         <RecordPageHeading icon={BroomIcon}>
           {cleaningTarget.name}の実施記録
         </RecordPageHeading>
-        {cleaningTarget.isActive ? (
+        {cleaningTarget.isActive && !readOnly ? (
           <ButtonLink
             href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
             variant="primary"
@@ -105,7 +108,7 @@ export default async function CleaningRecordsPage({
         <RecordEmptyState
           icon={BroomIcon}
           actions={
-            cleaningTarget.isActive ? (
+            cleaningTarget.isActive && !readOnly ? (
               <ButtonLink
                 href={`/cats/${catId}/cleaning/targets/${targetId}/records/new`}
                 variant="primary"
@@ -134,23 +137,27 @@ export default async function CleaningRecordsPage({
                     <RecordContributors
                       contributors={contributorsByRecordId.get(record.id)}
                     />
-                    <IconButtonLink
-                      href={`/cats/${catId}/cleaning/targets/${targetId}/records/${record.id}/edit`}
-                      icon={TbPencil}
-                      aria-label="編集する"
-                      title="編集する"
-                    />
-                    <DeleteRecordButton
-                      action={deleteCleaningRecordAction.bind(
-                        null,
-                        catId,
-                        targetId,
-                        record.id,
-                      )}
-                      title="掃除記録の削除"
-                      description="この掃除記録を削除しますか？この操作は取り消せません。"
-                      iconOnly
-                    />
+                    {readOnly ? null : (
+                      <>
+                        <IconButtonLink
+                          href={`/cats/${catId}/cleaning/targets/${targetId}/records/${record.id}/edit`}
+                          icon={TbPencil}
+                          aria-label="編集する"
+                          title="編集する"
+                        />
+                        <DeleteRecordButton
+                          action={deleteCleaningRecordAction.bind(
+                            null,
+                            catId,
+                            targetId,
+                            record.id,
+                          )}
+                          title="掃除記録の削除"
+                          description="この掃除記録を削除しますか？この操作は取り消せません。"
+                          iconOnly
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 

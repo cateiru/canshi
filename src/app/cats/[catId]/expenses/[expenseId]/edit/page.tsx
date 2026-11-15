@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import {
-  getAccessibleCat,
+  getWritableCat,
   listCurrentUserCats,
 } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/domain/media";
 import { getExpenseById } from "@/features/expenses/infrastructure/queries";
 import { updateExpenseAction } from "@/features/expenses/presentation/actions";
@@ -33,7 +34,7 @@ export default async function EditExpensePage({
 }: EditExpensePageProps) {
   const { catId, expenseId } = await params;
   const [cat, allCats] = await Promise.all([
-    getAccessibleCat(catId),
+    getWritableCat(catId),
     listCurrentUserCats(),
   ]);
 
@@ -75,8 +76,12 @@ export default async function EditExpensePage({
       <ExpenseForm
         catId={catId}
         action={updateExpenseAction.bind(null, catId, expense.id)}
-        // 関連する猫は支出と同じ家の猫から選ぶ
-        cats={allCats.filter((entry) => entry.householdId === householdId)}
+        // 関連する猫は支出と同じ家の猫から選ぶ。メモリーへ移した猫は、すでに関連する猫に含まれているときだけ残す
+        cats={allCats.filter(
+          (entry) =>
+            entry.householdId === householdId &&
+            (!isMemorialCat(entry) || expense.catIds.includes(entry.id)),
+        )}
         expense={expense}
         initialLinkableHospitalVisits={
           linkableHospitalVisits

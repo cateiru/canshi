@@ -20,6 +20,7 @@ import type { MediaAssetView } from "@/features/media/domain/view";
 import type {
   TimelineAdoptionRecord,
   TimelineBirthdayRecord,
+  TimelineMemorialRecord,
 } from "./anniversaries";
 
 /*
@@ -27,10 +28,14 @@ import type {
  */
 
 /**
- * 記録ではなく、猫の生年月日・お迎え日から求める記念日の種別。
+ * 記録ではなく、猫の生年月日・お迎え日・メモリーへ移した日から求める記念日の種別。
  * カレンダーの1日のアイコンは表示数に上限があるため、記録より先に並べて必ず見えるようにする
  */
-export const TIMELINE_ANNIVERSARY_TYPES = ["birthday", "adoption"] as const;
+export const TIMELINE_ANNIVERSARY_TYPES = [
+  "memorial",
+  "birthday",
+  "adoption",
+] as const;
 
 export type TimelineAnniversaryType =
   (typeof TIMELINE_ANNIVERSARY_TYPES)[number];
@@ -127,6 +132,7 @@ export type TimelineFeedingRecord = {
 };
 
 export type TimelineEntry =
+  | TimelineEntryOf<"memorial", TimelineMemorialRecord>
   | TimelineEntryOf<"birthday", TimelineBirthdayRecord>
   | TimelineEntryOf<"adoption", TimelineAdoptionRecord>
   | TimelineEntryOf<"feeding", TimelineFeedingRecord>

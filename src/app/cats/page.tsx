@@ -19,10 +19,15 @@ import {
 } from "@/features/cats/domain/age";
 import { toBirthdayCelebrationCat } from "@/features/cats/domain/birthday";
 import { SEX_LABEL } from "@/features/cats/domain/labels";
+import {
+  getAgeReferenceDate,
+  isMemorialCat,
+} from "@/features/cats/domain/memorial";
 import { BirthdayCelebration } from "@/features/cats/presentation/BirthdayCelebration";
 import { CatAvatar } from "@/features/cats/presentation/CatAvatar";
 import { CatIcon } from "@/features/cats/presentation/CatIcon";
 import { CatsAddMenu } from "@/features/cats/presentation/CatsAddMenu";
+import { MemorialBadge } from "@/features/cats/presentation/MemorialBadge";
 import {
   listCatsForUser,
   listHouseholdsForUser,
@@ -47,8 +52,10 @@ function CatCardList({ catList }: { catList: Cat[] }) {
   return (
     <ul className={styles.householdCats}>
       {catList.map((cat) => {
+        // メモリーへ移した猫の年齢・お迎えからの期間は、メモリーへ移した日で止める
+        const ageReferenceDate = getAgeReferenceDate(cat);
         const timeSinceAdoption = cat.adoptedAt
-          ? calculateTimeSinceAdoption(cat.adoptedAt)
+          ? calculateTimeSinceAdoption(cat.adoptedAt, ageReferenceDate)
           : null;
 
         return (
@@ -62,9 +69,16 @@ function CatCardList({ catList }: { catList: Cat[] }) {
                   />
                   <div>
                     <h3 className={styles.catName}>{cat.name}</h3>
-                    <Badge>{SEX_LABEL[cat.sex]}</Badge>
+                    <div className={styles.badges}>
+                      <Badge>{SEX_LABEL[cat.sex]}</Badge>
+                      {isMemorialCat(cat) ? <MemorialBadge /> : null}
+                    </div>
                     {cat.birthDate ? (
-                      <p>{formatAge(calculateAge(cat.birthDate))}</p>
+                      <p>
+                        {formatAge(
+                          calculateAge(cat.birthDate, ageReferenceDate),
+                        )}
+                      </p>
                     ) : null}
                     {timeSinceAdoption ? (
                       <p>
@@ -93,7 +107,11 @@ export default async function CatsPage() {
 
   return (
     <main className={styles.main}>
-      <BirthdayCelebration cats={catList.map(toBirthdayCelebrationCat)} />
+      <BirthdayCelebration
+        cats={catList
+          .filter((cat) => !isMemorialCat(cat))
+          .map(toBirthdayCelebrationCat)}
+      />
       <Breadcrumb
         items={[{ label: "トップ", href: "/home" }, { label: "ねこ一覧" }]}
       />

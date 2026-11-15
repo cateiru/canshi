@@ -3,7 +3,12 @@ import { Suspense } from "react";
 import { TbTimeline } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import {
+  formatMemorialDate,
+  isMemorialCat,
+} from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
+import { MemorialNotice } from "@/features/cats/presentation/MemorialNotice";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -76,9 +81,12 @@ export default async function TimelinePage({
   // 基準にする（datetime.ts の getNaiveUtcNow を参照）。実UTCのまま使うと
   // JST 0時〜9時台にカレンダーの既定表示月・今日のハイライトが1日ずれる
   const nowDateKey = splitDateTimeUtc(getNaiveUtcNow()).date;
+  // メモリーへ移した猫は、メモリーへ移した日より後を表示しないため、初期表示をその日にする
+  const memorial = isMemorialCat(cat);
+  const initialDateKey = cat.memorialDate ?? nowDateKey;
   const currentMonth = {
-    year: Number.parseInt(nowDateKey.slice(0, 4), 10),
-    month: Number.parseInt(nowDateKey.slice(5, 7), 10),
+    year: Number.parseInt(initialDateKey.slice(0, 4), 10),
+    month: Number.parseInt(initialDateKey.slice(5, 7), 10),
   };
   const { year, month } = parseYm(ymParam, currentMonth);
   const ym = formatYm({ year, month });
@@ -89,7 +97,7 @@ export default async function TimelinePage({
   // 解除した場合など）とは ymParam の有無で区別できる
   const selectedDate =
     ymParam == null && dateParam == null
-      ? nowDateKey
+      ? initialDateKey
       : parseSelectedDate(dateParam, ym);
 
   // 記録の読み込みには時間がかかるため、ここでは待たずに読み込みを始めるだけにする。
@@ -136,6 +144,15 @@ export default async function TimelinePage({
         {cat.name}のタイムライン
       </RecordPageHeading>
 
+      {cat.memorialDate ? (
+        <MemorialNotice>
+          <p>
+            {formatMemorialDate(cat.memorialDate)}
+            にメモリーに移しました。この日までの思い出を表示しています。
+          </p>
+        </MemorialNotice>
+      ) : null}
+
       <Surface title="カレンダー">
         <TimelineCalendar
           catId={catId}
@@ -147,6 +164,7 @@ export default async function TimelinePage({
           selectedDate={selectedDate}
           prevHref={prevMonthHref}
           nextHref={nextMonthHref}
+          showMemorialLegend={memorial}
         />
       </Surface>
 
@@ -170,6 +188,7 @@ export default async function TimelinePage({
           selectedDate={selectedDate}
           emptyMessage={emptyMessage}
           timeline={timeline}
+          readOnly={memorial}
         />
       </Suspense>
     </main>
