@@ -30,6 +30,7 @@ const tree: McpPermissionTree = {
         {
           id: "cat-1",
           name: "たま",
+          memorial: false,
           checked: true,
           checkedRecordTypes: [...MCP_PERMISSION_RECORD_TYPES],
           writableRecordTypes: [],

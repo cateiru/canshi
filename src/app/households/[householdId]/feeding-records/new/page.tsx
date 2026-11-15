@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { resolveHouseholdFeedingRecordPath } from "@/features/feeding-schedules/domain/feedingRecordPath";
 import { listCatsForUser } from "@/features/households/infrastructure/queries";
 
@@ -10,7 +11,7 @@ type HouseholdFeedingRecordPageProps = {
 };
 
 /**
- * 家についてのごはんの通知から開く画面。家の今の猫が 1 匹ならその猫のごはん記録の追加画面へ、
+ * 家についてのごはんの通知から開く画面。家の今の猫（メモリーへ移した猫を除く）が 1 匹ならその猫のごはん記録の追加画面へ、
  * それ以外（複数いる・いない・家のメンバーでない）なら猫一覧へ移動する
  */
 export default async function HouseholdFeedingRecordPage({
@@ -18,8 +19,9 @@ export default async function HouseholdFeedingRecordPage({
 }: HouseholdFeedingRecordPageProps) {
   const { householdId } = await params;
   const user = await requireUser();
+  // メモリーへ移した猫には記録できないため、記録できる猫だけで数える
   const catIds = (await listCatsForUser(user.id))
-    .filter((cat) => cat.householdId === householdId)
+    .filter((cat) => cat.householdId === householdId && !isMemorialCat(cat))
     .map((cat) => cat.id);
   redirect(resolveHouseholdFeedingRecordPath(catIds));
 }

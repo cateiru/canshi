@@ -182,6 +182,12 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - メモリーへ移した猫の記録の追加・編集・削除、プロフィール・通知の設定の変更は、画面の Server Action では
     `requireWritableCatAccess`、MCP では `resolveWritableCat`・`resolveCatOperation` で断る。プロフィールの更新文
     （`updateForMember`・`markNeuteredForMember`）は WHERE でも `memorial_date IS NULL` を確かめる
+  - メモリーへ移す文（`memorializeForMember`）と同じ batch で、その猫の未対応の通知を `dismissed` にし、すべてのユーザーの
+    `mcp_permissions.writable_record_types` からその猫のキーを `json_remove` で外す。記録できる猫がいなくなった家の
+    ごはんの時間の通知も閉じる。メモリーから戻しても、閉じた通知・外した書き込みの許可は戻さない
+  - 通知の生成はメモリーへ移した猫を対象にせず、家のごはんの時間の通知もメモリーへ移した猫だけの家には作らない
+  - タイムラインは `memorial_date` の日に記念日のエントリ（`memorial`）を出し、それより後の記録・記念日を含めない
+    （発生日時は naive UTC のため、日付の文字列で比べる）。記録の行そのものは残り、記録の種類ごとの一覧には表示する
 
 ## ごはん記録（`feeding_records`・`feeding_record_items`・`feeding_presets`・`feeding_preset_items`）
 

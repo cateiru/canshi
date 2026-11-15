@@ -34,6 +34,7 @@ import {
 import {
   formatAdoptionRecord,
   formatBirthdayRecord,
+  formatMemorialRecord,
 } from "../domain/anniversaries";
 import { TIMELINE_TYPE_ICON, TIMELINE_TYPE_LABEL } from "../domain/labels";
 import {
@@ -51,6 +52,8 @@ type TimelineEntryCardProps = {
   foodProductImageUrls: Record<string, string>;
   /** 記録を作成・編集した人。記念日・履歴のない記録では undefined */
   contributors?: RecordContributions;
+  /** true なら編集の導線を出さない（メモリーへ移した猫のタイムライン） */
+  readOnly?: boolean;
 };
 
 export function TimelineEntryCard({
@@ -60,13 +63,14 @@ export function TimelineEntryCard({
   isLast,
   foodProductImageUrls,
   contributors,
+  readOnly = false,
 }: TimelineEntryCardProps) {
   const Icon = TIMELINE_TYPE_ICON[entry.type];
   // 記念日は時刻を持たないため、日付だけを表示する
   const occurredAtLabel = isTimelineAnniversaryType(entry.type)
     ? splitDateTimeUtc(entry.occurredAt).date
     : formatDateTimeUtc(entry.occurredAt);
-  // 記念日は猫の生年月日・お迎え日から求めるため、編集先は猫のプロフィールになる
+  // 記念日は猫の生年月日・お迎え日・メモリーへ移した日から求めるため、編集先は猫のプロフィールになる
   const editLabel = isTimelineAnniversaryType(entry.type)
     ? "ねこのプロフィールを編集する"
     : "編集する";
@@ -100,12 +104,14 @@ export function TimelineEntryCard({
               {occurredAtLabel}
             </time>
             <RecordContributors contributors={contributors} />
-            <IconButtonLink
-              href={getEditHref(catId, entry)}
-              icon={TbPencil}
-              aria-label={editLabel}
-              title={editLabel}
-            />
+            {readOnly ? null : (
+              <IconButtonLink
+                href={getEditHref(catId, entry)}
+                icon={TbPencil}
+                aria-label={editLabel}
+                title={editLabel}
+              />
+            )}
           </div>
         </div>
         {entry.media.length > 0 ? (
@@ -124,6 +130,7 @@ export function TimelineEntryCard({
 
 function getEditHref(catId: string, entry: TimelineEntry): string {
   switch (entry.type) {
+    case "memorial":
     case "birthday":
     case "adoption":
       return `/cats/${catId}/edit`;
@@ -166,6 +173,12 @@ function renderBody(
   foodProductImageUrls: Record<string, string>,
 ) {
   switch (entry.type) {
+    case "memorial":
+      return (
+        <div className={styles.body}>
+          <p>{formatMemorialRecord()}</p>
+        </div>
+      );
     case "birthday":
       return (
         <div className={styles.body}>

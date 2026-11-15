@@ -32,6 +32,36 @@ export async function updateCatForUser(
 }
 
 /**
+ * 猫をメモリーへ移す（`memorialDate` はメモリーへ移した日、YYYY-MM-DD）。まだ終わっていない通知を閉じ、
+ * AI との接続からこの猫への書き込みの許可を外す（`../domain/memorial.ts` 参照）。
+ * ユーザーが猫の家に所属していない・猫が見つからない・すでにメモリーへ移していれば false を返す
+ */
+export async function memorializeCatForUser(
+  catId: string,
+  userId: string,
+  memorialDate: string,
+  d1?: D1Database,
+): Promise<boolean> {
+  return createCatRepository(d1).memorializeForMember(
+    userId,
+    catId,
+    memorialDate,
+  );
+}
+
+/**
+ * メモリーへ移した猫を元に戻す。閉じた通知・外した AI との接続の書き込みの許可は戻さない。
+ * ユーザーが猫の家に所属していない・猫が見つからない・メモリーへ移していなければ false を返す
+ */
+export async function restoreCatFromMemorialForUser(
+  catId: string,
+  userId: string,
+  d1?: D1Database,
+): Promise<boolean> {
+  return createCatRepository(d1).restoreFromMemorialForMember(userId, catId);
+}
+
+/**
  * 猫の避妊・去勢手術の状況を「済」にする（避妊・去勢の通院記録を追加したときの確認で「はい」を選んだ場合）。
  * ほかのプロフィールの項目は変えない。ユーザーが猫の家に所属していない・猫が見つからなければ false を返す
  */

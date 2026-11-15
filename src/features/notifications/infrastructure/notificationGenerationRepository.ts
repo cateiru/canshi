@@ -114,9 +114,9 @@ export async function listRecentFeedingAtsByCat(
  * 家についての通知（ごはんの時間）を、条件をもう一度確かめたうえで INSERT する。
  * 記録を読んでから INSERT するまでの間に、別のリクエストでごはんが記録されたり、ごはんの時間が
  * 削除・オフにされたりすることがある。そのまま INSERT すると、もう不要な通知が残って Push まで
- * 送られてしまう。家の最後の猫が削除された場合も、その片付け（
+ * 送られてしまう。家の最後の猫が削除された・メモリーへ移された場合も、その片付け（
  * `dismissFeedingNotificationsOfCatlessHouseholds`）の後に INSERT されると通知が残ってしまう。
- * ごはんの時間がまだ有効で、家に猫がいて、範囲内に家の猫のごはん記録がないことの確認と INSERT を
+ * ごはんの時間がまだ有効で、家に記録できる猫がいて、範囲内に家の猫のごはん記録がないことの確認と INSERT を
  * 1 つの `INSERT ... SELECT` にし、両者の間に更新が割り込まないようにする。
  * 記録は判定した時刻（スケジュール実行の予定時刻）ではなく、INSERT する時点（`now`）までのものを
  * 数える。ステップが遅れたり再試行されたりして判定した時刻より後に記録された場合も、その記録の
@@ -171,11 +171,17 @@ export async function insertHouseholdNotification(
             eq(feedingSchedules.id, candidate.referenceId),
             eq(feedingSchedules.householdId, candidate.householdId),
             eq(enabledColumn, true),
+            // 記録できる猫（メモリーへ移していない猫）がいる家にだけ作る
             exists(
               db
                 .select({ exists: sql`1` })
                 .from(cats)
-                .where(eq(cats.householdId, candidate.householdId)),
+                .where(
+                  and(
+                    eq(cats.householdId, candidate.householdId),
+                    isNull(cats.memorialDate),
+                  ),
+                ),
             ),
             notExists(
               db

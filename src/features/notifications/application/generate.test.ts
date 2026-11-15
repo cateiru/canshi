@@ -331,6 +331,51 @@ describe("generateNotifications（ごはんの時間）", () => {
     await generateNotifications(new Date("2026-09-22T22:00:00.000Z"));
     expect(await listFeedingNotifications(household.id)).toEqual([]);
   });
+
+  it("メモリーへ移した猫だけの家には通知しない", async () => {
+    const { household, householdCats } = await setupHousehold("思い出の家", [
+      "ふく",
+    ]);
+    await db
+      .update(cats)
+      .set({ memorialDate: "2026-09-01" })
+      .where(eq(cats.id, householdCats[0].id));
+
+    // JST 2026-09-24 07:00・08:00
+    await generateNotifications(new Date("2026-09-23T22:00:00.000Z"));
+    await generateNotifications(new Date("2026-09-23T23:00:00.000Z"));
+    expect(await listFeedingNotifications(household.id)).toEqual([]);
+  });
+});
+
+describe("generateNotifications（メモリーへ移した猫）", () => {
+  it("誕生日・症状などの猫についての通知を作らない", async () => {
+    const [cat] = await db
+      .insert(cats)
+      .values({
+        name: "はな",
+        sex: "female",
+        birthDate: "2020-10-05",
+        memorialDate: "2026-09-01",
+      })
+      .returning();
+    await db.insert(symptoms).values({
+      catId: cat.id,
+      symptomType: "くしゃみ",
+      onsetAt: new Date("2026-08-01T09:00:00.000Z"),
+      status: "ongoing",
+    });
+
+    // JST 2026-10-05 18:00。誕生日で、症状の発症から 2 ヶ月
+    await generateNotifications(new Date("2026-10-05T09:00:00.000Z"));
+
+    expect(
+      await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.catId, cat.id)),
+    ).toEqual([]);
+  });
 });
 
 /**

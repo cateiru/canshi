@@ -19,6 +19,7 @@ const tree: McpPermissionTreeHousehold[] = [
       {
         id: "cat-1",
         name: "たま",
+        memorial: false,
         checked: true,
         checkedRecordTypes: allTypes,
         writableRecordTypes: [],
@@ -26,6 +27,7 @@ const tree: McpPermissionTreeHousehold[] = [
       {
         id: "cat-2",
         name: "みけ",
+        memorial: false,
         checked: true,
         checkedRecordTypes: allTypes,
         writableRecordTypes: [],
@@ -317,6 +319,7 @@ describe("McpPermissionTreeField", () => {
           {
             id: "cat-1",
             name: "たま",
+            memorial: false,
             checked: true,
             checkedRecordTypes: [],
             writableRecordTypes: [],

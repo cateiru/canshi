@@ -48,6 +48,8 @@ type TimelineCalendarProps = {
   selectedDate: string | null;
   prevHref: string;
   nextHref: string;
+  /** true なら凡例に「メモリー」を含める（メモリーへ移した猫のタイムライン） */
+  showMemorialLegend?: boolean;
 };
 
 function pad2(n: number): string {
@@ -91,6 +93,7 @@ export function TimelineCalendar({
   selectedDate,
   prevHref,
   nextHref,
+  showMemorialLegend = false,
 }: TimelineCalendarProps) {
   const { value: datesByDay, pending } = useLatestResolved(
     datesByDaySource,
@@ -148,7 +151,9 @@ export function TimelineCalendar({
       </CalendarSwipeArea>
 
       <ul className={styles.legend}>
-        {TIMELINE_RECORD_TYPES.map((type) => {
+        {TIMELINE_RECORD_TYPES.filter(
+          (type) => showMemorialLegend || type !== "memorial",
+        ).map((type) => {
           const Icon = TIMELINE_TYPE_ICON[type];
           return (
             <li key={type} className={styles.legendItem}>

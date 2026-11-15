@@ -1,0 +1,9 @@
+.badge {
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--color-record-memorial);
+}

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { CatIcon } from "@/features/cats/presentation/CatIcon";
+import { MemorialBadge } from "@/features/cats/presentation/MemorialBadge";
 import {
   TIMELINE_TYPE_ICON,
   TIMELINE_TYPE_LABEL,
@@ -134,12 +135,14 @@ export function McpPermissionTreeField({
                 checked.cats.has(cat.id) &&
                 isAllRecordsChecked(checked, cat.id),
             );
+            // メモリーへ移した猫には書き込めないため、家の「書く」はそれ以外の猫だけを対象にする
+            const writableCats = household.cats.filter((cat) => !cat.memorial);
             const allCatsWritable =
-              household.cats.length > 0 &&
-              household.cats.every((cat) =>
+              writableCats.length > 0 &&
+              writableCats.every((cat) =>
                 isAllRecordsWritable(checked, cat.id),
               );
-            const someCatsWritable = household.cats.some(
+            const someCatsWritable = writableCats.some(
               (cat) => (checked.writes.get(cat.id)?.size ?? 0) > 0,
             );
             const operations = checked.operations.get(household.id);
@@ -178,10 +181,10 @@ export function McpPermissionTreeField({
                       aria-label={`${household.name}の記録を書く`}
                       isSelected={allCatsWritable}
                       isIndeterminate={!allCatsWritable && someCatsWritable}
-                      isDisabled={household.cats.length === 0}
+                      isDisabled={writableCats.length === 0}
                       onChange={(value) =>
                         update((draft) => {
-                          for (const cat of household.cats) {
+                          for (const cat of writableCats) {
                             setCatWrites(draft, cat.id, value);
                           }
                           if (value) {
@@ -380,7 +383,8 @@ type CatPermissionItemProps = {
 
 /**
  * 猫の行。猫の名前を押すと、記録の種類ごとの「読む」「書く」を開閉する（既定では閉じる）。
- * 猫の「読む」「書く」は開閉のボタンの外に置き、閉じたままでもまとめて選べるようにする
+ * 猫の「読む」「書く」は開閉のボタンの外に置き、閉じたままでもまとめて選べるようにする。
+ * メモリーへ移した猫は、「書く」を選べない
  */
 function CatPermissionItem({
   cat,
@@ -413,6 +417,7 @@ function CatPermissionItem({
               aria-hidden="true"
             />
             <span className={styles.name}>{cat.name}</span>
+            {cat.memorial ? <MemorialBadge /> : null}
           </Button>
           <span className={styles.choices}>
             <Checkbox
@@ -427,6 +432,7 @@ function CatPermissionItem({
               aria-label={`${cat.name}の記録を書く`}
               isSelected={allWritable}
               isIndeterminate={!allWritable && (writeTypes?.size ?? 0) > 0}
+              isDisabled={cat.memorial}
               onChange={onCatWritesChange}
             >
               書く
@@ -464,6 +470,7 @@ function CatPermissionItem({
                     <Checkbox
                       aria-label={`${label}を書く`}
                       isSelected={writeTypes?.has(type) ?? false}
+                      isDisabled={cat.memorial}
                       onChange={(value) => onWriteChange(type, value)}
                     >
                       書く
@@ -605,9 +612,11 @@ export function toPermissions(
         permissions.excludedRecordTypes[cat.id] = excluded;
       }
       const writes = state.writes.get(cat.id);
-      const writable = MCP_PERMISSION_RECORD_TYPES.filter(
-        (type) => types?.has(type) && writes?.has(type),
-      );
+      const writable = cat.memorial
+        ? []
+        : MCP_PERMISSION_RECORD_TYPES.filter(
+            (type) => types?.has(type) && writes?.has(type),
+          );
       if (writable.length > 0) {
         permissions.writableRecordTypes[cat.id] = writable;
       }

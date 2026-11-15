@@ -1896,6 +1896,7 @@ describe("猫のプロフィール", () => {
       neuterStatusLabel: "去勢：済",
       coatColor: "red",
       coatLabel: "茶",
+      memorialDate: null,
     });
   });
 
@@ -1956,6 +1957,7 @@ describe("猫のプロフィール", () => {
       neuterStatusLabel: "避妊：済",
       coatColor: "tortoiseshell",
       coatLabel: "黒と茶",
+      memorialDate: null,
     });
   });
 

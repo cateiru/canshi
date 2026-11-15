@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { deleteRecordChangeLogsOf } from "@/db/recordChangeLog";
 import {
@@ -12,6 +12,7 @@ import {
   feedingRecords,
   hospitalVisits,
   householdMembers,
+  mcpPermissions,
   medicationDoses,
   medications,
   memoRecords,
@@ -96,6 +97,84 @@ export function createCatRepository(d1?: D1Database): CatRepository {
             )`,
             // メモリーへ移した猫のプロフィールは変えない
             isNull(cats.memorialDate),
+          ),
+        )
+        .returning({ id: cats.id });
+      return updated.length > 0;
+    },
+
+    async memorializeForMember(userId, catId, memorialDate) {
+      // 後の文は、猫がメモリーへ移っているときだけ実行する（家のメンバーでないなどで最初の文が
+      // 通らなかったときに、通知や書き込みの許可を変えないため）
+      const isMemorial = sql`EXISTS (
+        SELECT 1 FROM ${cats}
+        WHERE ${cats.id} = ${catId} AND ${cats.memorialDate} IS NOT NULL
+      )`;
+      // 猫の ID ごとに書き込みを許可した記録の種類（`{ [catId]: [...] }`）から、この猫のキーを外す
+      const catKeyPath = `$."${catId}"`;
+      const [updated] = await db.batch([
+        db
+          .update(cats)
+          .set({ memorialDate, updatedAt: new Date() })
+          .where(
+            and(
+              eq(cats.id, catId),
+              isNull(cats.memorialDate),
+              sql`EXISTS (
+                SELECT 1 FROM ${householdMembers}
+                WHERE ${householdMembers.householdId} = ${cats.householdId}
+                  AND ${householdMembers.userId} = ${userId}
+              )`,
+            ),
+          )
+          .returning({ id: cats.id }),
+        // メモリーへ移した猫には通知を出さない。まだ終わっていない通知（スヌーズ中を含む）も閉じ、
+        // 後から Push が届かないようにする。メモリーから戻しても開き直さない
+        db
+          .update(notifications)
+          .set({ status: "dismissed", updatedAt: new Date() })
+          .where(
+            and(
+              eq(notifications.catId, catId),
+              inArray(notifications.status, ["pending", "snoozed"]),
+              isMemorial,
+            ),
+          ),
+        // AI との接続からは書き込めないよう、どのユーザーの接続でも書き込みの許可を外す。
+        // 読み取りの許可は変えない。メモリーから戻しても許可は戻さない
+        db
+          .update(mcpPermissions)
+          .set({
+            writableRecordTypes: sql`json_remove(${mcpPermissions.writableRecordTypes}, ${catKeyPath})`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              isNotNull(
+                sql`json_type(${mcpPermissions.writableRecordTypes}, ${catKeyPath})`,
+              ),
+              isMemorial,
+            ),
+          ),
+        // 記録できる猫がいなくなった家に、ごはんの時間の通知を残さない
+        dismissFeedingNotificationsOfCatlessHouseholds(db, userId),
+      ]);
+      return updated.length > 0;
+    },
+
+    async restoreFromMemorialForMember(userId, catId) {
+      const updated = await db
+        .update(cats)
+        .set({ memorialDate: null, updatedAt: new Date() })
+        .where(
+          and(
+            eq(cats.id, catId),
+            isNotNull(cats.memorialDate),
+            sql`EXISTS (
+              SELECT 1 FROM ${householdMembers}
+              WHERE ${householdMembers.householdId} = ${cats.householdId}
+                AND ${householdMembers.userId} = ${userId}
+            )`,
           ),
         )
         .returning({ id: cats.id });

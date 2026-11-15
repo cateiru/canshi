@@ -18,6 +18,22 @@ export interface CatRepository {
     values: CatValues,
   ): Promise<boolean>;
   /**
+   * 猫をメモリーへ移す（`memorialDate` はメモリーへ移した日、YYYY-MM-DD）。あわせて、
+   * この猫のまだ終わっていない通知を閉じ、AI との接続（すべてのユーザーの接続）からこの猫への
+   * 記録の書き込みの許可を外す。記録できる猫がいなくなった家の、ごはんの時間の通知も閉じる。
+   * ユーザーが猫の家に所属していない・猫が見つからない・すでにメモリーへ移していれば false
+   */
+  memorializeForMember(
+    userId: string,
+    catId: string,
+    memorialDate: string,
+  ): Promise<boolean>;
+  /**
+   * メモリーへ移した猫を元に戻す。閉じた通知・外した書き込みの許可は戻さない。
+   * ユーザーが猫の家に所属していない・猫が見つからない・メモリーへ移していなければ false
+   */
+  restoreFromMemorialForMember(userId: string, catId: string): Promise<boolean>;
+  /**
    * 猫の避妊・去勢手術の状況を「済」にする。ほかのプロフィールの項目は変えない。
    * ユーザーが猫の家に所属していない・猫が見つからない・メモリーへ移した猫なら false
    */

@@ -553,6 +553,55 @@ export function AdoptionIcon(props: RecordIconProps) {
   );
 }
 
+export function MemorialIcon(props: RecordIconProps) {
+  // 花びらは中心（12, 8.5）のまわりに 5 枚並べ、花芯の塗りで花びらの根元の線を隠す
+  const petalAngles = [0, 72, 144, 216, 288];
+  const stem = "M12 13v9";
+  const leaf = "M12 18.5c0-2.5 2-4 4.5-4 0 2.5-2 4-4.5 4Z";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={
+        <>
+          <path fill="#bfe3b4" d={leaf} />
+          {petalAngles.map((angle) => (
+            <ellipse
+              key={angle}
+              fill="#f6c6de"
+              cx="12"
+              cy="5.25"
+              rx="2"
+              ry="3"
+              transform={`rotate(${angle} 12 8.5)`}
+            />
+          ))}
+        </>
+      }
+    >
+      <path className={styles.line} d={stem} />
+      <path d={leaf} />
+      {petalAngles.map((angle) => (
+        <ellipse
+          key={angle}
+          cx="12"
+          cy="5.25"
+          rx="2"
+          ry="3"
+          transform={`rotate(${angle} 12 8.5)`}
+        />
+      ))}
+      <circle
+        className={styles.foregroundFill}
+        fill="#f2d17b"
+        cx="12"
+        cy="8.5"
+        r="2"
+      />
+    </RecordIcon>
+  );
+}
+
 export function PhotoIcon(props: RecordIconProps) {
   const catTransform = "translate(3 5) scale(.75)";
 

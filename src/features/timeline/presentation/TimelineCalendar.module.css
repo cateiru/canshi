@@ -119,6 +119,10 @@
   color: var(--color-record-adoption);
 }
 
+.icon[data-record-type="memorial"] {
+  color: var(--color-record-memorial);
+}
+
 .icon[data-record-type="feeding"] {
   color: var(--color-record-feeding);
 }

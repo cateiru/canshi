@@ -9,7 +9,7 @@ describe("listAnniversariesForMonth", () => {
   it("生年月日・お迎え日がなければ何も返さない", () => {
     expect(
       listAnniversariesForMonth({ birthDate: null, adoptedAt: null }, 2026, 5),
-    ).toEqual({ birthdays: [], adoptions: [] });
+    ).toEqual({ memorials: [], birthdays: [], adoptions: [] });
   });
 
   it("1歳以上は毎年の誕生日だけを返す", () => {
@@ -66,7 +66,7 @@ describe("listAnniversariesForMonth", () => {
         2026,
         4,
       ),
-    ).toEqual({ birthdays: [], adoptions: [] });
+    ).toEqual({ memorials: [], birthdays: [], adoptions: [] });
   });
 
   it("生まれた日がない月は月末の日を記念日にする", () => {
@@ -139,5 +139,32 @@ describe("formatAdoptionRecord", () => {
     [2, "お迎えして2年"],
   ])("%i 年は「%s」", (years, expected) => {
     expect(formatAdoptionRecord({ date: "2026-05-10", years })).toBe(expected);
+  });
+});
+
+describe("listAnniversariesForMonth（メモリーへ移した猫）", () => {
+  const cat = {
+    birthDate: "2015-07-05",
+    adoptedAt: "2015-09-20",
+    memorialDate: "2026-07-10",
+  };
+
+  it("メモリーへ移した日を返し、それより後の記念日は返さない", () => {
+    expect(listAnniversariesForMonth(cat, 2026, 7)).toEqual({
+      memorials: [{ date: "2026-07-10" }],
+      birthdays: [{ date: "2026-07-05", ageMonths: 132 }],
+      adoptions: [],
+    });
+    expect(listAnniversariesForMonth(cat, 2026, 9)).toEqual({
+      memorials: [],
+      birthdays: [],
+      adoptions: [],
+    });
+  });
+
+  it("メモリーへ移した日より前の記念日は残す", () => {
+    expect(listAnniversariesForMonth(cat, 2025, 9).adoptions).toEqual([
+      { date: "2025-09-20", years: 10 },
+    ]);
   });
 });

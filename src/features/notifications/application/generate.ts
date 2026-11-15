@@ -1,3 +1,4 @@
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { listAllCats } from "@/features/cats/infrastructure/queries";
 import { listCleaningTargetsWithStatus } from "@/features/cleaning/infrastructure/targetQueries";
 import { NOTIFY_TIMEZONE } from "../domain/defaults";
@@ -26,7 +27,8 @@ export async function generateNotifications(
   d1?: D1Database,
 ): Promise<void> {
   const repository = createNotificationGenerationRepository(d1);
-  const cats = await listAllCats(d1);
+  // メモリーへ移した猫には通知を出さない（家のごはんの時間の通知でも、記録できる猫として数えない）
+  const cats = (await listAllCats(d1)).filter((cat) => !isMemorialCat(cat));
   const openSymptomsByCat = await repository.listOpenSymptomsByCat();
 
   for (const cat of cats) {
@@ -67,7 +69,7 @@ export async function generateNotifications(
 
 /**
  * 家についての通知（ごはんの時間）を判定し、まだ生成していない候補だけを書く。
- * 猫のいない家には出さない。ごはん記録は猫ごとのため、家の猫すべての記録をまとめて判定に使う
+ * 猫のいない家（メモリーへ移した猫だけの家を含む）には出さない。ごはん記録は猫ごとのため、家の猫すべての記録をまとめて判定に使う
  */
 async function generateHouseholdNotifications(
   repository: NotificationGenerationRepository,

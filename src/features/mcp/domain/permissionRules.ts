@@ -3,7 +3,7 @@ import type { TimelineRecordType } from "@/features/timeline/domain/timelineEntr
 
 /**
  * AI との接続（MCP）で読み取りを許可するかを選べる記録の種類。タイムラインの記録の種類
- * から、誕生日・お迎え日（猫のプロフィールの生年月日・お迎え日から求める記念日）を
+ * から、誕生日・お迎え日・メモリーへ移した日（猫のプロフィールから求める記念日）を
  * 除いたもの。記念日はプロフィールと同じく、猫を許可していれば読み取れる。
  *
  * クライアントのコンポーネントからも使うため、`TIMELINE_RECORD_TYPES`（DB に依存する
@@ -28,8 +28,12 @@ export const MCP_PERMISSION_RECORD_TYPES = [
 export type McpPermissionRecordType =
   (typeof MCP_PERMISSION_RECORD_TYPES)[number];
 
-/** タイムラインのうち、記録の種類の権限にかかわらず読み取れる記念日の種類 */
+/**
+ * タイムラインのうち、記録の種類の権限にかかわらず読み取れる記念日の種類
+ * （誕生日・お迎え日・メモリーへ移した日。どれも猫のプロフィールから求める）
+ */
 export const MCP_ALWAYS_ALLOWED_TIMELINE_TYPES = [
+  "memorial",
   "birthday",
   "adoption",
 ] as const satisfies readonly TimelineRecordType[];
@@ -324,6 +328,8 @@ export interface McpPermissionTreeHousehold {
 export interface McpPermissionTreeCat {
   id: string;
   name: string;
+  /** メモリーへ移した猫なら true。書き込みは選べない */
+  memorial: boolean;
   checked: boolean;
   /** 読み取りのチェックが付いている記録の種類 */
   checkedRecordTypes: McpPermissionRecordType[];
@@ -338,7 +344,12 @@ export interface McpPermissionTreeCat {
 export function buildMcpPermissionTree(
   permissions: McpPermissions,
   households: { id: string; name: string }[],
-  cats: { id: string; name: string; householdId: string | null }[],
+  cats: {
+    id: string;
+    name: string;
+    householdId: string | null;
+    memorialDate: string | null;
+  }[],
 ): McpPermissionTreeHousehold[] {
   return households.map((household) => {
     const householdChecked = !permissions.excludedHouseholdIds.includes(
@@ -356,16 +367,19 @@ export function buildMcpPermissionTree(
         .map((cat) => {
           const catChecked =
             householdChecked && !permissions.excludedCatIds.includes(cat.id);
+          const memorial = cat.memorialDate != null;
           return {
             id: cat.id,
             name: cat.name,
+            memorial,
             checked: catChecked,
             checkedRecordTypes: catChecked
               ? allowedMcpRecordTypes(permissions, cat.id)
               : [],
-            writableRecordTypes: catChecked
-              ? writableMcpRecordTypes(permissions, cat.id)
-              : [],
+            writableRecordTypes:
+              catChecked && !memorial
+                ? writableMcpRecordTypes(permissions, cat.id)
+                : [],
           };
         }),
     };
@@ -420,14 +434,19 @@ const mcpPermissionsInputSchema = z.object({
  * 外した猫は、外した家の猫でも保存する。画面では家を外すと猫のチェックも外れるため、
  * 猫が別の家へ引っ越しても、画面で見えていたとおり読み取れないままにする。
  * 外した家の猫・外した猫の記録の種類は、親を外せば読み取れないため保存しない。
- * 書き込みの範囲・家の操作は、読み取りを許可しているものだけを保存する。
+ * 書き込みの範囲・家の操作は、読み取りを許可しているものだけを保存する。書き込みの範囲は、
+ * メモリーへ移した猫の分は保存しない。
  * 共通のごはん商品の操作は、admin のユーザー（`accessible.canUseCatalog`）のときだけ保存する
  */
 export function parseMcpPermissionsInput(
   value: FormDataEntryValue | null,
   accessible: {
     householdIds: string[];
-    cats: { id: string; householdId: string | null }[];
+    cats: {
+      id: string;
+      householdId: string | null;
+      memorialDate: string | null;
+    }[];
     canUseCatalog: boolean;
   },
 ): McpPermissions | null {
@@ -473,11 +492,15 @@ export function parseMcpPermissionsInput(
         excluded.includes(type),
       );
     }
-    const writable = MCP_PERMISSION_RECORD_TYPES.filter(
-      (type) =>
-        !excluded.includes(type) &&
-        (parsed.data.writableRecordTypes[cat.id] ?? []).includes(type),
-    );
+    // メモリーへ移した猫には書き込めないため、書き込みの範囲は保存しない
+    const writable =
+      cat.memorialDate != null
+        ? []
+        : MCP_PERMISSION_RECORD_TYPES.filter(
+            (type) =>
+              !excluded.includes(type) &&
+              (parsed.data.writableRecordTypes[cat.id] ?? []).includes(type),
+          );
     if (writable.length > 0) {
       writableRecordTypes[cat.id] = writable;
     }
