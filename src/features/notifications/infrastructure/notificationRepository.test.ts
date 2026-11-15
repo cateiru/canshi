@@ -9,6 +9,7 @@ import {
   cats,
   cleaningRecords,
   cleaningTargets,
+  households,
   notifications,
   users,
 } from "@/db/schema";
@@ -87,6 +88,47 @@ describe("メモリーへ移した猫の通知", () => {
       "sora-cleaning": "dismissed",
       "tama-cleaning": "snoozed",
     });
+  });
+
+  it("記録できる猫のいない家の、閉じたごはんの通知を延期しても届け直さない", async () => {
+    await db.insert(households).values([
+      { id: "memorial-home", name: "思い出の家" },
+      { id: "home", name: "わが家" },
+    ]);
+    await db
+      .update(cats)
+      .set({ householdId: "memorial-home" })
+      .where(eq(cats.id, "sora"));
+    await db
+      .update(cats)
+      .set({ householdId: "home" })
+      .where(eq(cats.id, "tama"));
+    await db.insert(notifications).values(
+      ["memorial-home", "home"].map((householdId) => ({
+        id: `${householdId}-feeding`,
+        householdId,
+        kind: "feeding_time" as const,
+        dedupeKey: `${householdId}-feeding`,
+        title: "ごはんの時間です",
+        body: "",
+        url: "/",
+        dueAt: new Date("2026-07-01T09:00:00Z"),
+        status: "dismissed" as const,
+      })),
+    );
+    const repository = createNotificationRepository();
+    const until = new Date("2026-08-01T09:00:00Z");
+
+    await repository.snooze("memorial-home-feeding", until);
+    await repository.snooze("home-feeding", until);
+
+    const rows = await db.select().from(notifications);
+    expect(rows.find((row) => row.id === "memorial-home-feeding")?.status).toBe(
+      "dismissed",
+    );
+    expect(rows.find((row) => row.id === "home-feeding")?.status).toBe(
+      "snoozed",
+    );
   });
 
   it("掃除の通知を完了にしても、掃除の記録を追加しない", async () => {

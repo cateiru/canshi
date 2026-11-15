@@ -194,10 +194,25 @@ export function createNotificationRepository(
           .where(
             and(
               eq(notifications.id, id),
-              // メモリーへ移した猫の通知は、閉じたあとに延期して Push を届け直さない
+              // メモリーへ移した猫の通知と、記録できる猫（メモリーへ移していない猫）のいない家の
+              // 通知は、閉じたあとに延期して Push を届け直さない
               or(
                 isNull(notifications.catId),
                 notMemorialCat(db, notifications.catId),
+              ),
+              or(
+                isNull(notifications.householdId),
+                exists(
+                  db
+                    .select({ id: cats.id })
+                    .from(cats)
+                    .where(
+                      and(
+                        eq(cats.householdId, notifications.householdId),
+                        isNull(cats.memorialDate),
+                      ),
+                    ),
+                ),
               ),
             ),
           ),

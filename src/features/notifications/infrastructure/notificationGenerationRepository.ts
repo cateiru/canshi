@@ -284,7 +284,7 @@ export async function listOpenSymptomsByCat(
 /**
  * 症状の確認通知を、対象の症状がまだ存在し未解消である場合に限って INSERT する。
  * `listOpenSymptomsByCat` で読んでからここで INSERT するまでの間に、別のリクエストで症状が
- * 解消・削除されることがある。`notifications.reference_id` には外部キーがないため、そのまま
+ * 解消・削除されたり、猫がメモリーへ移されたりすることがある。`notifications.reference_id` には外部キーがないため、そのまま
  * INSERT すると解消済み・存在しない症状への通知が残ってしまう。症状の再確認と INSERT を
  * 1 つの `INSERT ... SELECT` にすることで、両者の間に更新が割り込まないようにする。
  * INSERT ... SELECT では `$defaultFn` や SQL の既定値が効かないため、全カラムの値を
@@ -327,6 +327,15 @@ export async function insertSymptomOngoingNotification(
             eq(symptoms.catId, candidate.catId),
             ne(symptoms.status, "resolved"),
             isNull(symptoms.deletedAt),
+            // 判定後に猫がメモリーへ移されていれば作らない（`insertCatNotification` と同じ理由）
+            exists(
+              db
+                .select({ exists: sql`1` })
+                .from(cats)
+                .where(
+                  and(eq(cats.id, symptoms.catId), isNull(cats.memorialDate)),
+                ),
+            ),
           ),
         ),
     )
@@ -375,18 +384,40 @@ export function createNotificationGenerationRepository(
     listRecentFeedingAtsByCat: (now) => listRecentFeedingAtsByCat(db, now),
 
     async insertCatNotification(candidate, message) {
+      // 猫の一覧を読んでから INSERT するまでの間に、猫がメモリーへ移されることがある。
+      // メモリーへ移す処理が未対応の通知を閉じた後に作ると Push まで届いてしまうため、
+      // 猫がメモリーへ移していないことの確認と INSERT を 1 つの `INSERT ... SELECT` にする。
+      // `$defaultFn` や SQL の既定値が効かないため、全カラムの値をテーブル定義の順に明示する
       await db
         .insert(notifications)
-        .values({
-          catId: candidate.catId,
-          kind: candidate.kind,
-          referenceId: candidate.referenceId,
-          dedupeKey: candidate.dedupeKey,
-          title: message.title,
-          body: message.body,
-          url: message.url,
-          dueAt: candidate.dueAt,
-        })
+        .select(
+          db
+            .select({
+              id: sql`${crypto.randomUUID()}`.as("id"),
+              catId: cats.id,
+              householdId: sql`null`.as("householdId"),
+              userId: sql`null`.as("userId"),
+              kind: sql`${candidate.kind}`.as("kind"),
+              referenceId: sql`${candidate.referenceId}`.as("referenceId"),
+              dedupeKey: sql`${candidate.dedupeKey}`.as("dedupeKey"),
+              title: sql`${message.title}`.as("title"),
+              body: sql`${message.body}`.as("body"),
+              url: sql`${message.url}`.as("url"),
+              dueAt: sql`${sql.param(candidate.dueAt, notifications.dueAt)}`.as(
+                "dueAt",
+              ),
+              status: sql`'pending'`.as("status"),
+              snoozedUntil: sql`null`.as("snoozedUntil"),
+              readAt: sql`null`.as("readAt"),
+              pushedAt: sql`null`.as("pushedAt"),
+              createdAt: sql`(unixepoch())`.as("createdAt"),
+              updatedAt: sql`(unixepoch())`.as("updatedAt"),
+            })
+            .from(cats)
+            .where(
+              and(eq(cats.id, candidate.catId), isNull(cats.memorialDate)),
+            ),
+        )
         .onConflictDoNothing({ target: notifications.dedupeKey });
     },
 
