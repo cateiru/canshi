@@ -9,6 +9,14 @@ export type FeedingChartPoint = {
 
 export type FeedingChartPeriod = "1m" | "3m" | "all";
 
+/** グラフに表示する値（食べた量・カロリー）。どちらか一方を切り替えて表示する */
+export type FeedingChartMetric = "intake" | "kcal";
+
+export const FEEDING_CHART_METRIC_LABEL: Record<FeedingChartMetric, string> = {
+  intake: "食べた量",
+  kcal: "カロリー",
+};
+
 export const FEEDING_CHART_PERIOD_LABEL: Record<FeedingChartPeriod, string> = {
   "1m": "直近1ヶ月",
   "3m": "直近3ヶ月",

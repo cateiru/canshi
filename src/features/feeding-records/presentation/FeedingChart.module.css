@@ -1,16 +1,10 @@
 .header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: var(--space-3);
   flex-wrap: wrap;
   margin-bottom: var(--space-4);
-}
-
-.charts {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
 }
 
 .chartLabel {

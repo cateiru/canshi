@@ -9,9 +9,7 @@ import {
   type KeyedLineSeries,
 } from "@/features/shared/KeyedLineLayers";
 import { usePrefersReducedMotion } from "@/features/shared/usePrefersReducedMotion";
-import type { FeedingChartPoint } from "./chart";
-
-export type FeedingChartMetric = "intake" | "kcal";
+import type { FeedingChartMetric, FeedingChartPoint } from "./chart";
 
 type FeedingChartCanvasProps = {
   /** 表示する期間に入る日 */
@@ -75,9 +73,14 @@ function formatAxisDateUtc(value: Date): string {
   }).format(value);
 }
 
+/**
+ * 食べた量・カロリーは切り替えて 1 つずつ表示するため、どちらもテーマカラーで描く
+ * （体重記録の推移グラフとも揃える）
+ */
+const SERIES_COLOR = "var(--color-accent)";
+
 type MetricConfig = {
   seriesId: string;
-  color: string;
   step: number;
   getValue: (point: FeedingChartPoint) => number;
   unitLabelLayer: LineCustomSvgLayer<KeyedLineSeries>;
@@ -86,16 +89,12 @@ type MetricConfig = {
 const METRIC_CONFIG: Record<FeedingChartMetric, MetricConfig> = {
   intake: {
     seriesId: "feedingIntakeG",
-    // 体重記録の推移グラフと同じ色にして「量」の指標であることを揃える
-    color: "var(--color-accent)",
     step: 5,
     getValue: (point) => point.totalIntakeG,
     unitLabelLayer: IntakeYAxisUnitLabel,
   },
   kcal: {
     seriesId: "feedingKcal",
-    // 水色ベースにして「量」グラフと視覚的に区別する
-    color: "var(--color-accent-cool)",
     step: 5,
     getValue: (point) => point.totalKcal,
     unitLabelLayer: KcalYAxisUnitLabel,
@@ -216,7 +215,7 @@ export default function FeedingChartCanvas({
         "legends",
         config.unitLabelLayer,
       ]}
-      colors={[config.color]}
+      colors={[SERIES_COLOR]}
       lineWidth={4}
       enableArea={true}
       areaBaselineValue={yMin}
