@@ -17,6 +17,7 @@ describe("catCoatIconStyle", () => {
   it("2 色が混ざるベース色は、斑のパターンで塗る", () => {
     expect(catCoatIconStyle("blue_cream", "cat-coat-1")).toEqual({
       "--illustration-cat-coat": 'url("#cat-coat-1") #8f98a5',
+      "--illustration-cat-coat-tiled": 'url("#cat-coat-1-tiled") #8f98a5',
       "--cat-coat-dark-line": "#525252",
     });
   });
@@ -33,6 +34,7 @@ describe("catCoatIconStyle", () => {
   it("isolate では、渡さない値を initial にして祖先の毛色を受け継がない", () => {
     expect(catCoatIconStyle(null, "cat-coat-1", { isolate: true })).toEqual({
       "--illustration-cat-coat": "initial",
+      "--illustration-cat-coat-tiled": "initial",
       "--illustration-cat-ear": "initial",
       "--cat-coat-light-feature": "initial",
       "--cat-coat-dark-line": "initial",
@@ -83,5 +85,13 @@ describe("CatCoatPatternDefs", () => {
       <CatCoatPatternDefs coatColor="tortoiseshell" patternId="cat-coat-1" />,
     );
     expect(container.querySelector("pattern#cat-coat-1")).not.toBeNull();
+  });
+
+  it("大きなイラスト用に、斑を敷き詰めたパターンも描く", () => {
+    const { container } = render(
+      <CatCoatPatternDefs coatColor="blue_cream" patternId="cat-coat-1" />,
+    );
+    const tiled = container.querySelector("pattern#cat-coat-1-tiled");
+    expect(tiled?.getAttribute("patternUnits")).toBe("userSpaceOnUse");
   });
 });

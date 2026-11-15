@@ -1,6 +1,7 @@
 import { type CSSProperties, useId } from "react";
 import {
   CAT_COAT_FILL_VARIABLE,
+  CAT_COAT_TILED_FILL_VARIABLE,
   ICON_OUTLINE_STROKE_VARIABLE,
 } from "@/components/ui/RecordIcons/RecordIcons";
 import {
@@ -11,11 +12,12 @@ import {
 import { getBcsIllustrationLayerSrc } from "./bcsIllustrations";
 
 /**
- * 猫の塗り。イラストアイコン（RecordIcons）と同じ変数を使い、猫のページでは毛色
- * （サビ・ブルークリームは斑の SVG パターン）で塗る。未設定なら元の画像のベージュ
+ * 猫の塗り。イラストアイコン（RecordIcons）と同じく、猫のページでは毛色で塗る。
+ * サビ・ブルークリームは、アイコンの斑を引き伸ばすと大きすぎるため、小さな斑を敷き詰めた
+ * パターンで塗る。未設定なら元の画像のベージュ
  */
 const fillStyle: CSSProperties = {
-  fill: `var(${CAT_COAT_FILL_VARIABLE}, ${BCS_ILLUSTRATION_DEFAULT_FILL})`,
+  fill: `var(${CAT_COAT_TILED_FILL_VARIABLE}, var(${CAT_COAT_FILL_VARIABLE}, ${BCS_ILLUSTRATION_DEFAULT_FILL}))`,
 };
 
 /** 輪郭。イラストアイコンと同じく、猫のページのダークテーマでは毛色に合わせた色になる */
@@ -80,12 +82,7 @@ export function BcsIllustration({
           <image href={getBcsIllustrationLayerSrc(name, "line")} {...box} />
         </mask>
       </defs>
-      {/* 毛色の斑（パターン）が猫ごとに付くよう、塗りは猫ごとの矩形に分ける */}
-      <g mask={`url(#${fillMaskId})`} style={fillStyle}>
-        {layers.regions.map((region) => (
-          <rect key={`${region.x}-${region.y}`} {...region} />
-        ))}
-      </g>
+      <rect {...box} mask={`url(#${fillMaskId})`} style={fillStyle} />
       {layers.hasOverlay ? (
         <image href={getBcsIllustrationLayerSrc(name, "overlay")} {...box} />
       ) : null}

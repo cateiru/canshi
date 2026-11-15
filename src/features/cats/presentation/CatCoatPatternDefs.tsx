@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import {
   CAT_COAT_FILL_VARIABLE,
+  CAT_COAT_TILED_FILL_VARIABLE,
   CAT_EAR_FILL_VARIABLE,
 } from "@/components/ui/RecordIcons/RecordIcons";
 import type { CatCoatColor } from "@/db/schema";
@@ -10,6 +11,8 @@ import {
   darkIconCoatFeatureColor,
   darkThemeIconLineColor,
   iconPalette,
+  TILED_COAT_ART_SIZE,
+  TiledCoatArt,
 } from "./CoatArt";
 
 /**
@@ -20,13 +23,24 @@ import {
 const LIGHT_FEATURE_VARIABLE = "--cat-coat-light-feature";
 const DARK_LINE_VARIABLE = "--cat-coat-dark-line";
 
+/**
+ * 大きなイラスト用の、斑を敷き詰めたパターンの 1 枚の大きさ。パターンを使う SVG の座標の単位で、
+ * 幅 840 の BCS のイラストで猫の胴に斑が 2〜3 個並ぶ大きさにしている
+ */
+const TILED_PATTERN_SIZE = 280;
+
+/** 大きなイラスト用の、斑を敷き詰めたパターンの id */
+function tiledPatternId(patternId: string): string {
+  return `${patternId}-tiled`;
+}
+
 /** catCoatIconStyle の style と一緒に付ける class。テーマに合わせて目・口・輪郭の色を選ぶ */
 export const CAT_COAT_ICON_SCOPE_CLASS = styles.coatScope;
 
 /**
  * イラストアイコン（RecordIcons）の猫を、毛色のベース色で塗るための style。この要素の中のアイコンに効く。
  * サビ・ブルークリームのように 2 色が混ざるベース色は、CatCoatPatternDefs と同じ patternId の
- * パターンで斑に塗る。黒系の毛色では耳の内側のピンクを塗らず、ライトテーマでは目・口を毛色ごとの色にする。
+ * パターンで斑に塗る（大きなイラスト用に、斑を敷き詰めたパターンの変数も設定する）。黒系の毛色では耳の内側のピンクを塗らず、ライトテーマでは目・口を毛色ごとの色にする。
  * ダークテーマでは、アイコン全体の輪郭と目・口を毛色ごとの同じ色にする。
  * 要素には CAT_COAT_ICON_SCOPE_CLASS も付ける。
  * ベース色が未設定なら何も設定せず、既定のクリーム色のままにする。
@@ -42,6 +56,7 @@ export function catCoatIconStyle(
   const reset: CSSProperties | undefined = isolate
     ? ({
         [CAT_COAT_FILL_VARIABLE]: "initial",
+        [CAT_COAT_TILED_FILL_VARIABLE]: "initial",
         [CAT_EAR_FILL_VARIABLE]: "initial",
         [LIGHT_FEATURE_VARIABLE]: "initial",
         [DARK_LINE_VARIABLE]: "initial",
@@ -57,6 +72,11 @@ export function catCoatIconStyle(
     [CAT_COAT_FILL_VARIABLE]: palette.patch
       ? `url("#${patternId}") ${palette.fill}`
       : palette.fill,
+    ...(palette.patch
+      ? {
+          [CAT_COAT_TILED_FILL_VARIABLE]: `url("#${tiledPatternId(patternId)}") ${palette.fill}`,
+        }
+      : {}),
     [DARK_LINE_VARIABLE]: darkThemeIconLineColor(coatColor),
     ...(featureColor
       ? {
@@ -76,6 +96,7 @@ type CatCoatPatternDefsProps = {
 /**
  * 2 色が混ざるベース色（サビ・ブルークリーム）でイラストアイコンの猫を塗る SVG パターン。
  * 塗る形（顔・胴・前足）ごとに、その外接矩形いっぱいに毛色の見本と同じ斑を敷く。
+ * 大きなイラスト用に、小さな斑を敷き詰めたパターン（`<patternId>-tiled`）も置く。
  * display: none の SVG の中のパターンは参照できないため、大きさ 0 の見えない SVG に置く
  */
 export function CatCoatPatternDefs({
@@ -102,6 +123,15 @@ export function CatCoatPatternDefs({
           preserveAspectRatio="xMidYMid slice"
         >
           <CoatArt palette={palette} />
+        </pattern>
+        <pattern
+          id={tiledPatternId(patternId)}
+          patternUnits="userSpaceOnUse"
+          width={TILED_PATTERN_SIZE}
+          height={TILED_PATTERN_SIZE}
+          viewBox={`0 0 ${TILED_COAT_ART_SIZE} ${TILED_COAT_ART_SIZE}`}
+        >
+          <TiledCoatArt palette={palette} />
         </pattern>
       </defs>
     </svg>

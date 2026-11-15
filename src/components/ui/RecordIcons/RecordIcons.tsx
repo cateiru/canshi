@@ -12,6 +12,12 @@ export type RecordIconProps = IconBaseProps & {
  */
 export const CAT_COAT_FILL_VARIABLE = "--illustration-cat-coat";
 
+/**
+ * 大きなイラスト（体重記録の BCS のイラストなど）の猫の塗り。2 色が混ざる毛色のときだけ設定し、
+ * 小さな斑を敷き詰めた SVG パターンで塗る。未設定なら CAT_COAT_FILL_VARIABLE を使う
+ */
+export const CAT_COAT_TILED_FILL_VARIABLE = "--illustration-cat-coat-tiled";
+
 /** 猫の目・口の線の色を差し替える CSS 変数。濃い毛色で目・口が塗りに沈まないようにする */
 export const CAT_FEATURE_STROKE_VARIABLE = "--illustration-cat-feature";
 

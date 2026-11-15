@@ -13,7 +13,7 @@ import { createRequire } from "node:module";
  * - `<名前>-overlay.png`：白い手・オレンジの点線（元の色のまま）。ガイドの画像だけ
  *
  * 画面では下から 塗り・重ね・輪郭 の順に描くと、元の画像と同じ見た目になる。
- * 塗りの範囲の位置（猫ごとの外接矩形）は src/features/weight-records/presentation/bcsIllustrationLayers.ts に書き出す。
+ * 画像の大きさなどは src/features/weight-records/presentation/bcsIllustrationLayers.ts に書き出す。
  */
 
 const require = createRequire(import.meta.url);
@@ -39,12 +39,6 @@ const SEEDS = {
   white: [252, 252, 252],
   accent: [240, 136, 62],
 };
-
-/** 塗りの範囲の行・列の合計（ピクセル数）がこの値以下なら、猫のない隙間とみなす */
-const EMPTY_THRESHOLD = 1;
-
-/** この幅（px）より狭い範囲は、猫ではなく塗りのむらとして無視する */
-const MIN_REGION_SIZE = 16;
 
 function distance(a, b) {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -90,41 +84,6 @@ function unmix(c, p, q) {
   );
   const mixed = [0, 1, 2].map((i) => q[i] + d[i] * t);
   return { t, error: distance(c, mixed) };
-}
-
-/** アルファのマスクの列・行ごとの合計から、猫のある範囲（隙間で区切った区間）を求める */
-function spans(totals, threshold) {
-  const result = [];
-  let start = null;
-  totals.forEach((total, index) => {
-    if (total > threshold && start === null) start = index;
-    if (total <= threshold && start !== null) {
-      result.push([start, index]);
-      start = null;
-    }
-  });
-  if (start !== null) result.push([start, totals.length]);
-  return result.filter(([from, to]) => to - from >= MIN_REGION_SIZE);
-}
-
-/** 塗りの範囲を、上下の隙間で区切った猫ごとの外接矩形にする（毛色の斑を猫ごとに敷くため） */
-function fillRegions(fill, width, height) {
-  const rowTotals = Array.from({ length: height }, (_, y) => {
-    let total = 0;
-    for (let x = 0; x < width; x++) total += fill[y * width + x];
-    return total;
-  });
-  return spans(rowTotals, EMPTY_THRESHOLD * 255).map(([top, bottom]) => {
-    const columnTotals = Array.from({ length: width }, (_, x) => {
-      let total = 0;
-      for (let y = top; y < bottom; y++) total += fill[y * width + x];
-      return total;
-    });
-    const columns = spans(columnTotals, EMPTY_THRESHOLD * 255);
-    const left = columns[0][0];
-    const right = columns[columns.length - 1][1];
-    return { x: left, y: top, width: right - left, height: bottom - top };
-  });
 }
 
 async function split(name) {
@@ -237,7 +196,6 @@ async function split(name) {
     width,
     height,
     hasOverlay,
-    regions: fillRegions(fill, width, height),
     fillColor,
   };
 }
@@ -254,32 +212,18 @@ const toHex = (color) =>
 
 const entries = results
   .map(
-    ({ name, width, height, hasOverlay, regions }) =>
-      `  "${name}": {\n    width: ${width},\n    height: ${height},\n    hasOverlay: ${hasOverlay},\n    regions: [\n${regions
-        .map(
-          (region) =>
-            `      { x: ${region.x}, y: ${region.y}, width: ${region.width}, height: ${region.height} },`,
-        )
-        .join("\n")}\n    ],\n  },`,
+    ({ name, width, height, hasOverlay }) =>
+      `  "${name}": { width: ${width}, height: ${height}, hasOverlay: ${hasOverlay} },`,
   )
   .join("\n");
 
 const manifest = `// このファイルは scripts/split-bcs-illustrations.mjs が生成する。手で編集しない。
-
-export type BcsIllustrationRegion = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
 
 export type BcsIllustrationLayers = {
   width: number;
   height: number;
   /** 白い手・オレンジの点線など、元の色のまま重ねる画像があるか */
   hasOverlay: boolean;
-  /** 猫ごとの塗りの外接矩形。毛色の斑（SVG パターン）を猫ごとに敷くために分ける */
-  regions: BcsIllustrationRegion[];
 };
 
 /** 元の画像の塗りの色。毛色が未設定のときに使う */
@@ -304,6 +248,6 @@ execFileSync(
   { stdio: "inherit" },
 );
 
-for (const { name, regions, fillColor } of results) {
-  console.log(name, toHex(fillColor), `${regions.length} region(s)`);
+for (const { name, fillColor } of results) {
+  console.log(name, toHex(fillColor));
 }

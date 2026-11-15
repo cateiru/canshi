@@ -109,7 +109,8 @@ BCS 3 の上面図は、[参考画像の BCS 3](https://storage.googleapis.com/s
 画面（`src/features/weight-records/presentation/BcsIllustration.tsx`）では、インライン SVG で下から 塗り・重ね・輪郭 の順に重ねる。
 塗りはイラストアイコンと同じ `--illustration-cat-coat`、輪郭は `--illustration-outline` を使うため、猫のページでは毛色（サビ・ブルークリームは斑）で塗られ、ダークテーマでは輪郭も毛色に合わせた色になる。
 毛色が未設定のときは元の画像のベージュで塗る。
-猫ごとの塗りの範囲（斑を猫ごとに敷くための外接矩形）は、スクリプトが `bcsIllustrationLayers.ts` に書き出す。
+サビ・ブルークリームの斑は、アイコンの斑（見本の柄を形いっぱいに引き伸ばす）を使うと大きすぎるため、小さな斑を敷き詰めたパターン（`--illustration-cat-coat-tiled`、`CoatArt.tsx` の `TiledCoatArt`）で塗る。
+画像の大きさなどは、スクリプトが `bcsIllustrationLayers.ts` に書き出す。
 
 このため、新しく画像を作るときも、塗りはベージュ 1 色・輪郭は濃紺 1 色で、影やグラデーションを付けないことが必要になる。
 毛色ごとの見た目は開発用ページ `/dev/bcs-illustrations`（VRT あり）で確認できる。
