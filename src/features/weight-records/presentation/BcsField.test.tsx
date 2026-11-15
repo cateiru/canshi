@@ -36,6 +36,24 @@ describe("BcsField", () => {
     expect(getHiddenInput(container)?.value).toBe("");
   });
 
+  it("選択肢のイラストは読み上げず、見方のイラストは説明を読み上げる", () => {
+    const { container } = render(<BcsField />);
+
+    const option = screen.getByRole("radio", { name: "BCS 3 理想体重" });
+    expect(
+      option.closest("label")?.querySelector("svg[aria-hidden='true']"),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("img", {
+        name: "ねこを真上から見て、肋骨の後ろにある腰のくびれを確かめる様子",
+        hidden: true,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelector("image[href='/images/bcs/bcs-3-fill.png']"),
+    ).not.toBeNull();
+  });
+
   it("エラーメッセージを表示する", () => {
     render(<BcsField errorMessage="BCSは1〜5から選択してください" />);
 

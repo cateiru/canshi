@@ -838,6 +838,27 @@ for (const theme of ["light", "dark"]) {
   });
 }
 
+// 体重記録の BCS のイラストを毛色ごとに並べた開発用ページ（src/app/dev/bcs-illustrations）。
+// 毛色の塗り（サビ・ブルークリームの斑を含む）と輪郭の色を、ライト・ダークテーマとも撮る
+for (const theme of ["light", "dark"]) {
+  test(`BCS のイラストの一覧（${theme}）の見た目`, async ({
+    page,
+    baseURL,
+  }, testInfo) => {
+    await page
+      .context()
+      .addCookies([{ name: "canshi-theme", value: theme, url: baseURL }]);
+    await page.goto("/dev/bcs-illustrations");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(
+      page.getByRole("heading", { name: "BCS のイラストの一覧" }),
+    ).toBeVisible();
+    // 塗り・輪郭のマスクの画像（SVG の image）を読み終えてから撮る
+    await page.waitForLoadState("networkidle");
+    await takeSnapshot(page, testInfo);
+  });
+}
+
 // うんち記録の一覧のグラフは実行日を今日として期間を切り、VRT の固定データ（2024-06）が
 // どの期間にも入らないため、固定の今日・記録で描く開発用ページ（src/app/dev/poop-chart）を撮る
 for (const period of ["1週間", "半年"]) {
