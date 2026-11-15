@@ -24,6 +24,8 @@ import { expect, takeSnapshot, test } from "./vrt-snapshot";
 //   水の記録は 51 件登録し、記録一覧のページング（1 ページ 50 件）の表示にも使う
 // - APPROXIMATE_CAT: あいまいモードのごはん記録だけを登録した猫。ごはん記録一覧・
 //   タイムラインのあいまいモード表示用
+// - MEMORIAL_CAT: メモリー（思い出）へ移した猫。記録の追加・編集の導線を出さない表示と、
+//   タイムラインをメモリーへ移した日で区切る表示用
 //
 // 以下は対象外 (意図的な除外):
 // - "/" : 登録済みの猫の数によってリダイレクト先が変わる (top-page.spec.ts 参照)
@@ -43,6 +45,7 @@ const EMPTY_CAT = "vrt-cat-empty";
 const CAT = "vrt-cat-populated";
 const BUSY_CAT = "vrt-cat-busy";
 const APPROXIMATE_CAT = "vrt-cat-approximate";
+const MEMORIAL_CAT = "vrt-cat-memorial";
 const YM = "2024-06";
 
 // CAT の誕生日（フィクスチャの生年月日 2015-04-01 と同じ 4/1）に実行すると、猫一覧・猫の詳細で
@@ -952,6 +955,55 @@ test("プロフィール画像の切り抜きモーダルの見た目", async ({
     dialog.getByRole("button", { name: "この範囲で決定する" }),
   ).toBeEnabled();
   await takeSnapshot(page, testInfo, { fullPage: false });
+});
+
+test("メモリーへ移すダイアログの見た目", async ({ page }, testInfo) => {
+  await page.goto(`/cats/${CAT}/edit`);
+  await page.getByRole("button", { name: "メモリーへ移す" }).click();
+  const dialog = page.getByRole("dialog", { name: "メモリーへ移す" });
+  await expect(dialog).toBeVisible();
+  // 日付の初期値は実行日のため、固定の日付にしてから撮る（送信はしない）
+  const date = dialog.getByLabel("メモリーへ移す日");
+  await date.fill("2024-06-20");
+  await date.blur();
+  await takeSnapshot(page, testInfo, { fullPage: false });
+});
+
+// メモリーへ移した猫の年齢・お迎えからの期間は、メモリーへ移した日で止まるため実行日時に依存しない
+test("猫の詳細ページ（メモリー）の見た目", async ({ page }, testInfo) => {
+  await page.goto(`/cats/${MEMORIAL_CAT}`);
+  await expect(
+    page.getByRole("heading", { name: "VRT思い出猫", exact: true }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+test("猫の編集ページ（メモリー）の見た目", async ({ page }, testInfo) => {
+  await page.goto(`/cats/${MEMORIAL_CAT}/edit`);
+  await expect(
+    page.getByRole("button", { name: "メモリーから戻す" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+test("体重記録（メモリー）の見た目", async ({ page }, testInfo) => {
+  await page.goto(`/cats/${MEMORIAL_CAT}/weight-records`);
+  await expect(
+    page.getByRole("heading", { name: "VRT思い出猫の体重記録" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+// クエリなしで開くと、メモリーへ移した日（2024-06-20）を選んだ状態になる
+test("タイムライン（メモリー）の見た目", async ({ page }, testInfo) => {
+  await page.goto(`/cats/${MEMORIAL_CAT}/timeline`);
+  await expect(
+    page.getByRole("heading", { name: "VRT思い出猫のタイムライン" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("article", { name: "メモリー 2024-06-20" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
 });
 
 test("タイムライン（何もないケース）の見た目", async ({ page }, testInfo) => {

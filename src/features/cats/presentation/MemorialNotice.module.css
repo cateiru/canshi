@@ -1,0 +1,32 @@
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  border: var(--border-width) solid var(--color-record-memorial);
+  border-radius: 12px;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-ink);
+  background-color: color-mix(
+    in srgb,
+    var(--color-record-memorial) 8%,
+    var(--color-bg)
+  );
+  font-size: var(--text-sm);
+  line-height: var(--line-height-body);
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+  color: var(--color-record-memorial);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.body p {
+  margin: 0;
+}

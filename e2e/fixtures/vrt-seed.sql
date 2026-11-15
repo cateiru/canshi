@@ -162,6 +162,18 @@ VALUES ('vrt-feeding-item-1', 'vrt-feeding-1', 'vrt-food-1', 50, 0, 50, 175, 0);
 
 -- あいまいモードのごはん記録。グラム単位の値・推定値は持たず、段階だけを持つ
 -- 黒系の毛色（黒と茶）の猫。猫のページのアイコンで、2 色の斑で塗り、ライトテーマでは目・口を白に、耳の内側を塗らない見た目を撮る
+-- メモリー（思い出）へ移した猫。猫一覧のバッジ・猫の詳細・編集・記録一覧・タイムラインの見た目を撮る。
+-- メモリーへ移した日（2024-06-20）より後の体重記録は、タイムラインには出ず、体重記録の一覧には出る
+INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, coat_color, memorial_date, created_at, updated_at)
+VALUES ('vrt-cat-memorial', 'VRT思い出猫', 'male', '2010-03-10', '雑種', '2010-05-01', 'cream', '2024-06-20',
+  strftime('%s', '2024-05-29 00:00:00'), strftime('%s', '2024-05-29 00:00:00'));
+
+INSERT INTO weight_records (id, cat_id, occurred_at, input_method, cat_weight_kg, bcs, created_at, updated_at)
+VALUES ('vrt-memorial-weight-1', 'vrt-cat-memorial', strftime('%s', '2024-06-18 09:00:00'), 'direct', 3.6, 2,
+  strftime('%s', '2024-06-18 09:00:00'), strftime('%s', '2024-06-18 09:00:00')),
+  ('vrt-memorial-weight-2', 'vrt-cat-memorial', strftime('%s', '2024-06-25 09:00:00'), 'direct', 3.5, 2,
+  strftime('%s', '2024-06-25 09:00:00'), strftime('%s', '2024-06-25 09:00:00'));
+
 INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, coat_color, created_at, updated_at)
 VALUES ('vrt-cat-approximate', 'VRTあいまい猫', 'unknown', NULL, NULL, NULL, 'tortoiseshell',
   strftime('%s', '2024-05-30 00:00:00'), strftime('%s', '2024-05-30 00:00:00'));

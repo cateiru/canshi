@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { formatMemorialDate } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
+import { MemorialNotice } from "@/features/cats/presentation/MemorialNotice";
 import { getCatNotificationSettingsPageData } from "@/features/notifications/infrastructure/settingsQueries";
 import { NotificationSettingsForm } from "@/features/notifications/presentation/NotificationSettingsForm";
 import { updateCatNotificationSettingsAction } from "@/features/notifications/presentation/settingsActions";
@@ -27,6 +29,31 @@ export default async function CatNotificationSettingsPage({
 
   if (!cat) {
     notFound();
+  }
+
+  // メモリーへ移した猫にはお知らせを出さないため、設定は表示しない
+  if (cat.memorialDate) {
+    return (
+      <main className={styles.main}>
+        <Breadcrumb
+          items={[
+            { label: "トップ", href: "/home" },
+            { label: "設定", href: "/settings" },
+            { label: "通知設定", href: "/settings/notifications" },
+            { label: cat.name },
+          ]}
+        />
+        <RecordPageHeading icon={NotificationSettingsIcon}>
+          {cat.name}の通知設定
+        </RecordPageHeading>
+        <MemorialNotice>
+          <p>
+            {formatMemorialDate(cat.memorialDate)}
+            にメモリーに移したため、このねこのお知らせは届きません。
+          </p>
+        </MemorialNotice>
+      </main>
+    );
   }
 
   const { settings, cleaningTargets } =

@@ -4,6 +4,7 @@ import { Alert, Breadcrumb, ButtonLink, NavCard } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { listCurrentUserCats } from "@/features/auth/presentation/session";
+import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { CatAvatar } from "@/features/cats/presentation/CatAvatar";
 import { CatIcon } from "@/features/cats/presentation/CatIcon";
 import { PushSubscriptionToggle } from "@/features/push/presentation/PushSubscriptionToggle";
@@ -102,6 +103,11 @@ export default async function NotificationSettingsPage() {
                     />
                   }
                   title={cat.name}
+                  description={
+                    isMemorialCat(cat)
+                      ? "メモリーに移したため、お知らせは届きません"
+                      : undefined
+                  }
                 />
               </li>
             ))}

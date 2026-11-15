@@ -17,11 +17,17 @@ import {
 import { formatBirthDate } from "@/features/cats/domain/birthDate";
 import { toBirthdayCelebrationCat } from "@/features/cats/domain/birthday";
 import { SEX_LABEL } from "@/features/cats/domain/labels";
+import {
+  formatMemorialDate,
+  getAgeReferenceDate,
+} from "@/features/cats/domain/memorial";
 import { deleteCatAction } from "@/features/cats/presentation/actions";
 import { BirthdayCelebration } from "@/features/cats/presentation/BirthdayCelebration";
 import { CatAvatar } from "@/features/cats/presentation/CatAvatar";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { DeleteCatButton } from "@/features/cats/presentation/DeleteCatButton";
+import { MemorialBadge } from "@/features/cats/presentation/MemorialBadge";
+import { MemorialNotice } from "@/features/cats/presentation/MemorialNotice";
 import { RecordNavGrid } from "@/features/cats/presentation/RecordNavGrid";
 import styles from "./page.module.css";
 
@@ -41,13 +47,17 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
     notFound();
   }
 
+  // メモリーへ移した猫の年齢・お迎えからの期間は、メモリーへ移した日で止める
+  const ageReferenceDate = getAgeReferenceDate(cat);
   const timeSinceAdoption = cat.adoptedAt
-    ? calculateTimeSinceAdoption(cat.adoptedAt)
+    ? calculateTimeSinceAdoption(cat.adoptedAt, ageReferenceDate)
     : null;
 
   return (
     <main className={styles.main}>
-      <BirthdayCelebration cats={[toBirthdayCelebrationCat(cat)]} />
+      {cat.memorialDate ? null : (
+        <BirthdayCelebration cats={[toBirthdayCelebrationCat(cat)]} />
+      )}
       <Breadcrumb
         items={[
           { label: "トップ", href: "/home" },
@@ -63,7 +73,10 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
           size="lg"
         />
         <div className={styles.nameRow}>
-          <h1 className={styles.name}>{cat.name}</h1>
+          <div className={styles.nameGroup}>
+            <h1 className={styles.name}>{cat.name}</h1>
+            {cat.memorialDate ? <MemorialBadge /> : null}
+          </div>
           <ButtonLink
             href={`/cats/${cat.id}/edit`}
             variant="secondary"
@@ -74,6 +87,15 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
           </ButtonLink>
         </div>
       </div>
+
+      {cat.memorialDate ? (
+        <MemorialNotice>
+          <p>
+            {formatMemorialDate(cat.memorialDate)}
+            にメモリーに移しました。これまでの記録を思い出として見返せます。
+          </p>
+        </MemorialNotice>
+      ) : null}
 
       <Collapsible
         title="基本情報"
@@ -89,7 +111,7 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
               ? formatBirthDate(cat.birthDate, cat.birthDatePrecision)
               : "未設定"}
             {cat.birthDate
-              ? `（${formatAge(calculateAge(cat.birthDate))}）`
+              ? `（${formatAge(calculateAge(cat.birthDate, ageReferenceDate))}）`
               : ""}
           </dd>
           <dt>猫種</dt>
@@ -101,6 +123,12 @@ export default async function CatDetailPage({ params }: CatDetailPageProps) {
               ? `（お迎えから${formatTimeSinceAdoption(timeSinceAdoption)}）`
               : ""}
           </dd>
+          {cat.memorialDate ? (
+            <>
+              <dt>メモリー</dt>
+              <dd>{cat.memorialDate}</dd>
+            </>
+          ) : null}
         </dl>
       </Collapsible>
 

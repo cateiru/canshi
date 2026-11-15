@@ -1,0 +1,27 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+  padding-left: var(--space-6);
+  font-size: var(--text-sm);
+  list-style: disc;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.errorMessage {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-error-strong);
+}
