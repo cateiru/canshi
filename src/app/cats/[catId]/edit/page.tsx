@@ -5,10 +5,15 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { updateCatAction } from "@/features/cats/presentation/actions";
 import { CatForm } from "@/features/cats/presentation/CatForm";
 import { CatIcon } from "@/features/cats/presentation/CatIcon";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}を編集する`,
+);
 
 type EditCatPageProps = {
   params: Promise<{ catId: string }>;

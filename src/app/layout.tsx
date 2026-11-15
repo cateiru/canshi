@@ -16,7 +16,11 @@ import styles from "./layout.module.css";
 export const dynamic = "force-dynamic";
 
 const metadata: Metadata = {
-  title: "CANSHI",
+  // 各ページは `title: "ページ名"` だけを書き、ここで「ページ名 | CANSHI」にする
+  title: {
+    default: "CANSHI",
+    template: "%s | CANSHI",
+  },
   description: "愛猫の記録アプリ",
   openGraph: {
     title: "CANSHI",

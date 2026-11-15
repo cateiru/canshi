@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { getWeightRecordById } from "@/features/weight-records/infrastructure/queries";
 import { updateWeightRecordAction } from "@/features/weight-records/presentation/actions";
@@ -9,6 +10,10 @@ import { WeightRecordForm } from "@/features/weight-records/presentation/WeightR
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の体重記録を編集する`,
+);
 
 type EditWeightRecordPageProps = {
   params: Promise<{ catId: string; weightRecordId: string }>;

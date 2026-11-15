@@ -15,6 +15,7 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { listMedicationDoses } from "@/features/medications/infrastructure/doseQueries";
 import { getMedicationById } from "@/features/medications/infrastructure/queries";
 import { deleteMedicationDoseAction } from "@/features/medications/presentation/doseActions";
+import { medicationPageMetadata } from "@/features/medications/presentation/medicationPageMetadata";
 import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
 import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
@@ -28,6 +29,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = medicationPageMetadata(
+  (medicationName) => `${medicationName}の投薬実績`,
+);
 
 type MedicationDosesPageProps = {
   params: Promise<{ catId: string; medicationId: string }>;

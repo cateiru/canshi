@@ -5,10 +5,15 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { getBrushingRecordById } from "@/features/brushing-records/infrastructure/queries";
 import { updateBrushingRecordAction } from "@/features/brushing-records/presentation/actions";
 import { BrushingRecordForm } from "@/features/brushing-records/presentation/BrushingRecordForm";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のブラッシング記録を編集する`,
+);
 
 type EditBrushingRecordPageProps = {
   params: Promise<{ catId: string; brushingRecordId: string }>;

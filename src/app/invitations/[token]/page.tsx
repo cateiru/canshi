@@ -11,7 +11,7 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "家への招待 | CANSHI",
+  title: "家への招待",
   // 招待 URL にはトークンが含まれるため、遷移先へ URL を送らない
   referrer: "no-referrer",
 };

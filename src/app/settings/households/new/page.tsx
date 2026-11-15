@@ -9,7 +9,7 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "家を作成する | CANSHI",
+  title: "家を作成する",
 };
 
 export const dynamic = "force-dynamic";

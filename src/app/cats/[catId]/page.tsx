@@ -20,11 +20,14 @@ import { SEX_LABEL } from "@/features/cats/domain/labels";
 import { deleteCatAction } from "@/features/cats/presentation/actions";
 import { BirthdayCelebration } from "@/features/cats/presentation/BirthdayCelebration";
 import { CatAvatar } from "@/features/cats/presentation/CatAvatar";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { DeleteCatButton } from "@/features/cats/presentation/DeleteCatButton";
 import { RecordNavGrid } from "@/features/cats/presentation/RecordNavGrid";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata((catName) => catName);
 
 type CatDetailPageProps = {
   params: Promise<{ catId: string }>;

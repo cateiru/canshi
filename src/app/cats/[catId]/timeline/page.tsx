@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { TbTimeline } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -19,6 +20,10 @@ import { TimelineEntryListSkeleton } from "@/features/timeline/presentation/Time
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のタイムライン`,
+);
 
 const PAGE_SIZE = 20;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;

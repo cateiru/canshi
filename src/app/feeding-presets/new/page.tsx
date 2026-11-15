@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
 import { requireUser } from "@/features/auth/presentation/session";
 import { createFeedingPresetAction } from "@/features/feeding-presets/presentation/actions";
@@ -11,6 +12,10 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "ごはんプリセットを登録する",
+};
 
 type NewFeedingPresetPageProps = {
   // プリセット一覧の家のまとまりから来たときに、その家を最初から選んでおく

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { getShampooRecordById } from "@/features/shampoo-records/infrastructure/queries";
 import { updateShampooRecordAction } from "@/features/shampoo-records/presentation/actions";
 import { ShampooRecordForm } from "@/features/shampoo-records/presentation/ShampooRecordForm";
@@ -9,6 +10,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のシャンプー記録を編集する`,
+);
 
 type EditShampooRecordPageProps = {
   params: Promise<{ catId: string; shampooRecordId: string }>;

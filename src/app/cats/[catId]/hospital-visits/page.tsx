@@ -12,6 +12,7 @@ import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { NEUTER_TERM } from "@/features/cats/domain/labels";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { formatYen } from "@/features/expenses/domain/labels";
 import { listExpensesByHospitalVisitIds } from "@/features/expenses/infrastructure/queries";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/domain/media";
@@ -39,6 +40,10 @@ import { listSymptoms } from "@/features/symptoms/infrastructure/queries";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の通院記録`,
+);
 
 type HospitalVisitsPageProps = {
   params: Promise<{ catId: string }>;

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TbPlus } from "react-icons/tb";
 import {
@@ -47,6 +48,10 @@ import { formatYm, parseYm, shiftYm } from "@/features/shared/yearMonth";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "支出記録",
+};
 
 type ExpensesPageProps = {
   params: Promise<{ catId: string }>;

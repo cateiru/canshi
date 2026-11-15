@@ -2,12 +2,17 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { WaterIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { createWaterRecordAction } from "@/features/water-records/presentation/actions";
 import { WaterRecordForm } from "@/features/water-records/presentation/WaterRecordForm";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の水を記録する`,
+);
 
 type NewWaterRecordPageProps = {
   params: Promise<{ catId: string }>;

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { TbPlus, TbSettings } from "react-icons/tb";
 import {
@@ -32,6 +33,10 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "ねこ一覧",
+};
 
 /** 家ごとの開閉状態を保存する localStorage のキー */
 function householdExpandedStorageKey(householdId: string) {

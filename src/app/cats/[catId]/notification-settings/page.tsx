@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { getCatNotificationSettingsPageData } from "@/features/notifications/infrastructure/settingsQueries";
 import { NotificationSettingsForm } from "@/features/notifications/presentation/NotificationSettingsForm";
 import { updateCatNotificationSettingsAction } from "@/features/notifications/presentation/settingsActions";
@@ -9,6 +10,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の通知設定`,
+);
 
 type NotificationSettingsPageProps = {
   params: Promise<{ catId: string }>;

@@ -4,11 +4,16 @@ import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { getCleaningTargetById } from "@/features/cleaning/infrastructure/targetQueries";
 import { CleaningRecordForm } from "@/features/cleaning/presentation/CleaningRecordForm";
+import { cleaningTargetPageMetadata } from "@/features/cleaning/presentation/cleaningTargetPageMetadata";
 import { createCleaningRecordAction } from "@/features/cleaning/presentation/recordActions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = cleaningTargetPageMetadata(
+  (targetName) => `${targetName}を記録する`,
+);
 
 type NewCleaningRecordPageProps = {
   params: Promise<{ catId: string; targetId: string }>;

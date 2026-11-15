@@ -7,7 +7,7 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "見た目設定 | CANSHI",
+  title: "見た目設定",
 };
 
 export default async function AppearanceSettingsPage() {

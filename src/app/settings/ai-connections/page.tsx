@@ -13,7 +13,7 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "AIとの接続 | CANSHI",
+  title: "AIとの接続",
 };
 
 export const dynamic = "force-dynamic";

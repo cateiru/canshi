@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Badge, Breadcrumb, ButtonLink } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
@@ -47,6 +48,10 @@ import listStyles from "../page.module.css";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "共通のごはん商品から探す",
+};
 
 type SearchFoodProductsPageProps = {
   // 検索条件（`parseCatalogSearchParams`）と、追加先の家（`householdId`）

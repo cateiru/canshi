@@ -15,6 +15,7 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { SHED_AMOUNT_LABEL } from "@/features/brushing-records/domain/labels";
 import { listBrushingRecords } from "@/features/brushing-records/infrastructure/queries";
 import { deleteBrushingRecordAction } from "@/features/brushing-records/presentation/actions";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
 import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { calculateElapsedDays } from "@/features/shampoo-records/domain/calculations";
@@ -29,6 +30,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のブラッシング記録`,
+);
 
 type BrushingRecordsPageProps = {
   params: Promise<{ catId: string }>;

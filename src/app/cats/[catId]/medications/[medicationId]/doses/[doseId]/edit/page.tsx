@@ -6,10 +6,15 @@ import { getMedicationDoseById } from "@/features/medications/infrastructure/dos
 import { getMedicationById } from "@/features/medications/infrastructure/queries";
 import { updateMedicationDoseAction } from "@/features/medications/presentation/doseActions";
 import { MedicationDoseForm } from "@/features/medications/presentation/MedicationDoseForm";
+import { medicationPageMetadata } from "@/features/medications/presentation/medicationPageMetadata";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = medicationPageMetadata(
+  (medicationName) => `${medicationName}の投薬実績を編集する`,
+);
 
 type EditMedicationDosePageProps = {
   params: Promise<{ catId: string; medicationId: string; doseId: string }>;

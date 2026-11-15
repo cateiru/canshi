@@ -50,3 +50,16 @@ describe("共有画像のメタデータ", () => {
     expect(metadata.metadataBase?.toString()).toBe("http://localhost:3000/");
   });
 });
+
+describe("title", () => {
+  it("各ページの title に「 | CANSHI」を付け、title のないページは「CANSHI」にする", async () => {
+    mockHeaders.mockResolvedValue(new Headers({ host: "localhost:3000" }));
+
+    const metadata = await generateMetadata();
+
+    expect(metadata.title).toEqual({
+      default: "CANSHI",
+      template: "%s | CANSHI",
+    });
+  });
+});

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Breadcrumb, FilterTabs, Tabs } from "@/components/ui";
 import { requireUser } from "@/features/auth/presentation/session";
 import { listCatsForUser } from "@/features/households/infrastructure/queries";
@@ -11,6 +12,10 @@ import { NotificationList } from "@/features/notifications/presentation/Notifica
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "通知センター",
+};
 
 type NotificationsPageProps = {
   searchParams: Promise<{ catId?: string }>;
