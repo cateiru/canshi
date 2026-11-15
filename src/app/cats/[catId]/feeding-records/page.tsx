@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { sumFeedingTotals } from "@/features/feeding-records/domain/calculations";
 import {
   FEEDING_MODE_LABEL,
@@ -46,6 +47,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のごはん記録`,
+);
 
 type FeedingRecordsPageProps = {
   params: Promise<{ catId: string }>;

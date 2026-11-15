@@ -11,6 +11,7 @@ import {
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
 import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { calculateElapsedDays } from "@/features/shampoo-records/domain/calculations";
@@ -27,6 +28,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のシャンプー記録`,
+);
 
 type ShampooRecordsPageProps = {
   params: Promise<{ catId: string }>;

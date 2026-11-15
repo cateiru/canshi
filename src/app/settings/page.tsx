@@ -11,7 +11,7 @@ import {
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "設定 | CANSHI",
+  title: "設定",
 };
 
 const settings = [

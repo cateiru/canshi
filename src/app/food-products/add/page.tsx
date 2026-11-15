@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { TbPencil, TbSearch } from "react-icons/tb";
 import { Breadcrumb, NavCard } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
@@ -14,6 +15,10 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "ごはん商品を登録する",
+};
 
 type AddFoodProductPageProps = {
   // 家の商品一覧やごはん記録の画面から来たときは、その家の指定を検索・手動の登録へ引き継ぐ

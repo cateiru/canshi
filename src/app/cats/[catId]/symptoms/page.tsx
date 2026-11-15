@@ -12,6 +12,7 @@ import {
 import { SymptomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/domain/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
 import { toMediaAssetView } from "@/features/media/domain/view";
@@ -34,6 +35,10 @@ import { deleteSymptomAction } from "@/features/symptoms/presentation/actions";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の症状記録`,
+);
 
 const STATUS_BADGE_COLOR = {
   ongoing: "warning",

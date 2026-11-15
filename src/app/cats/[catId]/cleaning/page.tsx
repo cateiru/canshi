@@ -11,6 +11,7 @@ import {
 } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { listCleaningTargetsWithStatus } from "@/features/cleaning/infrastructure/targetQueries";
 import { quickCreateCleaningRecordAction } from "@/features/cleaning/presentation/recordActions";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
@@ -18,6 +19,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の掃除記録`,
+);
 
 type CleaningPageProps = {
   params: Promise<{ catId: string }>;

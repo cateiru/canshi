@@ -19,7 +19,7 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "AIとの接続 | CANSHI",
+  title: "AIとの接続",
   // 認可リクエストの URL（state など）を外部の遷移先へ送らない。`no-referrer` にすると
   // 同意ボタンの POST に `Origin: null` が付き、Worker の Origin の確認で拒否されてしまう
   referrer: "same-origin",

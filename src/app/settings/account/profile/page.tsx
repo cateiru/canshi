@@ -8,7 +8,7 @@ import { UserProfileForm } from "@/features/users/presentation/UserProfileForm";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "プロフィールを編集する | CANSHI",
+  title: "プロフィールを編集する",
 };
 
 export const dynamic = "force-dynamic";

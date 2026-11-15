@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
 import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
@@ -30,6 +31,10 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "ごはん商品一覧",
+};
 
 /** 家ごとの開閉状態を保存する localStorage のキー */
 function householdExpandedStorageKey(householdId: string) {

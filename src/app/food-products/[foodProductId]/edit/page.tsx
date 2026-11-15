@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { requireUser } from "@/features/auth/presentation/session";
@@ -15,6 +16,15 @@ export const dynamic = "force-dynamic";
 type EditFoodProductPageProps = {
   params: Promise<{ foodProductId: string }>;
 };
+
+export async function generateMetadata({
+  params,
+}: EditFoodProductPageProps): Promise<Metadata> {
+  const { foodProductId } = await params;
+  const user = await requireUser();
+  const foodProduct = await getFoodProductForUser(user.id, foodProductId);
+  return foodProduct ? { title: `${foodProduct.name}を編集する` } : {};
+}
 
 export default async function EditFoodProductPage({
   params,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { requireUser } from "@/features/auth/presentation/session";
@@ -11,6 +12,10 @@ import {
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "ごはんプリセットを編集する",
+};
 
 type EditFeedingPresetPageProps = {
   params: Promise<{ presetId: string }>;

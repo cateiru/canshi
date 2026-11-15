@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb, ButtonLink, RecordEmptyState } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { listFeedingPresets } from "@/features/feeding-presets/infrastructure/queries";
 import { listRecentlyUsedFoodProductIds } from "@/features/feeding-records/infrastructure/queries";
 import { createFeedingRecordAction } from "@/features/feeding-records/presentation/actions";
@@ -14,6 +15,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のごはんを記録する`,
+);
 
 type NewFeedingRecordPageProps = {
   params: Promise<{ catId: string }>;

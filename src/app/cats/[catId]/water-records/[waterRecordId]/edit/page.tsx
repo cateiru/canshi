@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { WaterIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { getWaterRecordById } from "@/features/water-records/infrastructure/queries";
 import { updateWaterRecordAction } from "@/features/water-records/presentation/actions";
@@ -9,6 +10,10 @@ import { WaterRecordForm } from "@/features/water-records/presentation/WaterReco
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の水の記録を編集する`,
+);
 
 type EditWaterRecordPageProps = {
   params: Promise<{ catId: string; waterRecordId: string }>;

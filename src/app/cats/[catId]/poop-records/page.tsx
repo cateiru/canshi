@@ -12,6 +12,7 @@ import {
 import { PoopIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { toMediaAssetView } from "@/features/media/domain/view";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
 import { MediaGallery } from "@/features/media/presentation/MediaGallery";
@@ -34,6 +35,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のうんち記録`,
+);
 
 type PoopRecordsPageProps = {
   params: Promise<{ catId: string }>;

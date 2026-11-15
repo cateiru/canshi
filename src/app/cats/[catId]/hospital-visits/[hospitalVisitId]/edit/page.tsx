@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { getExpenseByHospitalVisitId } from "@/features/expenses/infrastructure/queries";
 import { HOSPITAL_VISIT_MEDIA_TYPE } from "@/features/hospital-visits/domain/media";
 import { getHospitalVisitById } from "@/features/hospital-visits/infrastructure/queries";
@@ -15,6 +16,10 @@ import { listSymptoms } from "@/features/symptoms/infrastructure/queries";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の通院記録を編集する`,
+);
 
 type EditHospitalVisitPageProps = {
   params: Promise<{ catId: string; hospitalVisitId: string }>;

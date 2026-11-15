@@ -11,7 +11,7 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "家の設定 | CANSHI",
+  title: "家の設定",
 };
 
 export const dynamic = "force-dynamic";

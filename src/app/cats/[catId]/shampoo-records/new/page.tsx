@@ -2,12 +2,17 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { ShampooIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { createShampooRecordAction } from "@/features/shampoo-records/presentation/actions";
 import { ShampooRecordForm } from "@/features/shampoo-records/presentation/ShampooRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のシャンプーを記録する`,
+);
 
 type NewShampooRecordPageProps = {
   params: Promise<{ catId: string }>;

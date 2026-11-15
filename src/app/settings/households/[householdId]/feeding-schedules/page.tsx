@@ -23,7 +23,7 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "ごはんの時間 | CANSHI",
+  title: "ごはんの時間",
 };
 
 export const dynamic = "force-dynamic";

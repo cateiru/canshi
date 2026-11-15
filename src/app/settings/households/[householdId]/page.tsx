@@ -13,7 +13,10 @@ import {
   FoodProductIcon,
   HouseholdIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
-import { requireHouseholdAccess } from "@/features/auth/presentation/session";
+import {
+  requireHouseholdAccess,
+  requireUser,
+} from "@/features/auth/presentation/session";
 import { HOUSEHOLD_INVITATION_MAX_AGE_SECONDS } from "@/features/households/domain/household";
 import {
   HOUSEHOLD_HAS_CATS_MESSAGE,
@@ -21,6 +24,7 @@ import {
 } from "@/features/households/domain/labels";
 import {
   countHouseholdCats,
+  getHouseholdForUser,
   listHouseholdMembers,
   listPendingHouseholdInvitations,
 } from "@/features/households/infrastructure/queries";
@@ -43,15 +47,21 @@ import { Surface } from "@/features/shared/Surface";
 import { UserAvatar } from "@/features/users/presentation/UserAvatar";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = {
-  title: "家の設定 | CANSHI",
-};
-
 export const dynamic = "force-dynamic";
 
 type HouseholdSettingsPageProps = {
   params: Promise<{ householdId: string }>;
 };
+
+/** title は見出しと同じく家の名前にする。所属していない家なら付けない（ページ本体が 404 にする） */
+export async function generateMetadata({
+  params,
+}: HouseholdSettingsPageProps): Promise<Metadata> {
+  const { householdId } = await params;
+  const user = await requireUser();
+  const household = await getHouseholdForUser(user.id, householdId);
+  return household ? { title: household.name } : {};
+}
 
 export default async function HouseholdSettingsPage({
   params,

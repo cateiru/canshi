@@ -14,6 +14,7 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { listCleaningRecords } from "@/features/cleaning/infrastructure/recordQueries";
 import { getCleaningTargetById } from "@/features/cleaning/infrastructure/targetQueries";
 import { CleaningRecordChart } from "@/features/cleaning/presentation/CleaningRecordChart";
+import { cleaningTargetPageMetadata } from "@/features/cleaning/presentation/cleaningTargetPageMetadata";
 import { deleteCleaningRecordAction } from "@/features/cleaning/presentation/recordActions";
 import { toCleaningRecordCalendarData } from "@/features/cleaning/presentation/recordChart";
 import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
@@ -29,6 +30,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = cleaningTargetPageMetadata(
+  (targetName) => `${targetName}の実施記録`,
+);
 
 type CleaningRecordsPageProps = {
   params: Promise<{ catId: string; targetId: string }>;

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { TbClock, TbDeviceMobile, TbPaw } from "react-icons/tb";
 import { Alert, Breadcrumb, ButtonLink, NavCard } from "@/components/ui";
 import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
@@ -11,6 +12,10 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "通知設定",
+};
 
 export default async function NotificationSettingsPage() {
   const cats = await listCurrentUserCats();

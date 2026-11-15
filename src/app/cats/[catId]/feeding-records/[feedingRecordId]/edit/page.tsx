@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { listFeedingPresets } from "@/features/feeding-presets/infrastructure/queries";
 import {
   getFeedingRecordById,
@@ -17,6 +18,10 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のごはん記録を編集する`,
+);
 
 type EditFeedingRecordPageProps = {
   params: Promise<{ catId: string; feedingRecordId: string }>;

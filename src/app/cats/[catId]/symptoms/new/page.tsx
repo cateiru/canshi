@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { SymptomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
 import { resolveMediaLimits } from "@/features/media/domain/limits";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -13,6 +14,10 @@ import { SymptomForm } from "@/features/symptoms/presentation/SymptomForm";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の症状を記録する`,
+);
 
 type NewSymptomPageProps = {
   params: Promise<{ catId: string }>;

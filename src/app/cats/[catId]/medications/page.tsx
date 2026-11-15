@@ -11,6 +11,7 @@ import {
 import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { Medication } from "@/db/schema";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/domain/labels";
 import { listHospitalVisits } from "@/features/hospital-visits/infrastructure/queries";
 import { toMediaAssetView } from "@/features/media/domain/view";
@@ -37,6 +38,10 @@ import { listSymptoms } from "@/features/symptoms/infrastructure/queries";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の服薬予定`,
+);
 
 type MedicationsPageProps = {
   params: Promise<{ catId: string }>;

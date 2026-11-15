@@ -4,10 +4,15 @@ import { BrushingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { createBrushingRecordAction } from "@/features/brushing-records/presentation/actions";
 import { BrushingRecordForm } from "@/features/brushing-records/presentation/BrushingRecordForm";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}のブラッシングを記録する`,
+);
 
 type NewBrushingRecordPageProps = {
   params: Promise<{ catId: string }>;

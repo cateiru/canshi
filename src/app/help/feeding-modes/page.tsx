@@ -13,7 +13,7 @@ import styles from "./page.module.css";
 const PAGE_TITLE = "「厳格モード」「あいまいモード」とは？";
 
 export const metadata: Metadata = {
-  title: `${PAGE_TITLE} | CANSHI`,
+  title: PAGE_TITLE,
 };
 
 const givenAmountLevels = Object.values(GIVEN_AMOUNT_LEVEL_LABEL).join("・");

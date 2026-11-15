@@ -15,10 +15,6 @@ import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = {
-  title: "AIとの接続 | CANSHI",
-};
-
 export const dynamic = "force-dynamic";
 
 /** アプリが名前を名乗っていないときの表示 */
@@ -33,6 +29,16 @@ const NO_LAST_USED_AT = "記録がありません";
 type AiConnectionPageProps = {
   params: Promise<{ connectionId: string }>;
 };
+
+/** title は見出しと同じくアプリの名前にする。ほかのユーザーの接続・解除した接続なら付けない */
+export async function generateMetadata({
+  params,
+}: AiConnectionPageProps): Promise<Metadata> {
+  const { connectionId } = await params;
+  const user = await requireUser();
+  const connection = await getUserMcpConnection(user.id, connectionId);
+  return connection ? { title: connection.clientName ?? UNNAMED_CLIENT } : {};
+}
 
 /**
  * AI との接続の 1 つについて、そのアプリから読み取れる範囲と書き込める範囲を設定するページ。

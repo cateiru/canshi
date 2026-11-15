@@ -16,7 +16,7 @@ import styles from "./page.module.css";
 const PAGE_TITLE = "「ごはんプリセット」とは？";
 
 export const metadata: Metadata = {
-  title: `${PAGE_TITLE} | CANSHI`,
+  title: PAGE_TITLE,
 };
 
 type FeedingPresetsHelpPageProps = {

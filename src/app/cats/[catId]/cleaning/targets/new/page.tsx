@@ -4,6 +4,7 @@ import { Breadcrumb } from "@/components/ui";
 import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { CLEANING_TARGET_PRESETS } from "@/features/cleaning/domain/presets";
 import { CleaningTargetForm } from "@/features/cleaning/presentation/CleaningTargetForm";
 import { CleaningTargetPresetButton } from "@/features/cleaning/presentation/CleaningTargetPresetButton";
@@ -16,6 +17,10 @@ import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の掃除対象を追加する`,
+);
 
 type NewCleaningTargetPageProps = {
   params: Promise<{ catId: string }>;

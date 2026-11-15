@@ -26,7 +26,7 @@ import { UserAvatar } from "@/features/users/presentation/UserAvatar";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "アカウント設定 | CANSHI",
+  title: "アカウント設定",
 };
 
 export const dynamic = "force-dynamic";

@@ -12,7 +12,7 @@ import { getCurrentUser } from "@/features/auth/presentation/session";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "ログイン | CANSHI",
+  title: "ログイン",
 };
 
 export const dynamic = "force-dynamic";

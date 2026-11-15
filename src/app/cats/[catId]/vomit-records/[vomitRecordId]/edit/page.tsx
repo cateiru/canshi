@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
 import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
+import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { resolveMediaLimits } from "@/features/media/domain/limits";
 import { toMediaAssetView } from "@/features/media/domain/view";
 import { listMediaAssetsByRecord } from "@/features/media/infrastructure/queries";
@@ -13,6 +14,10 @@ import { VomitRecordForm } from "@/features/vomit-records/presentation/VomitReco
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = catPageMetadata(
+  (catName) => `${catName}の嘔吐記録を編集する`,
+);
 
 type EditVomitRecordPageProps = {
   params: Promise<{ catId: string; vomitRecordId: string }>;

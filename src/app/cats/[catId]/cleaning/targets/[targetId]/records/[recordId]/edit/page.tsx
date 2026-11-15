@@ -5,11 +5,16 @@ import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { getCleaningRecordById } from "@/features/cleaning/infrastructure/recordQueries";
 import { getCleaningTargetById } from "@/features/cleaning/infrastructure/targetQueries";
 import { CleaningRecordForm } from "@/features/cleaning/presentation/CleaningRecordForm";
+import { cleaningTargetPageMetadata } from "@/features/cleaning/presentation/cleaningTargetPageMetadata";
 import { updateCleaningRecordAction } from "@/features/cleaning/presentation/recordActions";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
 
 export const dynamic = "force-dynamic";
+
+export const generateMetadata = cleaningTargetPageMetadata(
+  (targetName) => `${targetName}の記録を編集する`,
+);
 
 type EditCleaningRecordPageProps = {
   params: Promise<{ catId: string; targetId: string; recordId: string }>;
