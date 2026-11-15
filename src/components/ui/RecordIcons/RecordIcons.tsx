@@ -12,6 +12,18 @@ export type RecordIconProps = IconBaseProps & {
  */
 export const CAT_COAT_FILL_VARIABLE = "--illustration-cat-coat";
 
+/**
+ * 大きなイラスト（体重記録の BCS のイラストなど）の猫の塗り。2 色が混ざる毛色のときだけ設定し、
+ * 小さな斑を敷き詰めた SVG パターンで塗る。未設定なら CAT_COAT_FILL_VARIABLE を使う
+ */
+export const CAT_COAT_TILED_FILL_VARIABLE = "--illustration-cat-coat-tiled";
+
+/**
+ * 大きなイラスト（体重記録の BCS のイラストなど）の猫の輪郭の色。内側の線で体型を見るため、
+ * 黒系の毛色では塗りに沈まない色にする。未設定なら ICON_OUTLINE_STROKE_VARIABLE を使う
+ */
+export const CAT_LINE_VARIABLE = "--illustration-cat-line";
+
 /** 猫の目・口の線の色を差し替える CSS 変数。濃い毛色で目・口が塗りに沈まないようにする */
 export const CAT_FEATURE_STROKE_VARIABLE = "--illustration-cat-feature";
 
@@ -26,7 +38,8 @@ export const CAT_EAR_FILL_VARIABLE = "--illustration-cat-ear";
 
 const DEFAULT_CAT_EAR = "#f4b0a3";
 
-const DEFAULT_CAT_COAT = "#f5dfb7";
+/** 毛色が未設定のときの猫の塗り（クリーム色） */
+export const DEFAULT_CAT_COAT = "#f5dfb7";
 
 // 24px グリッド・1.5px 線・丸い線端。SVG のまま描画し、拡大時も鮮明に保つ。
 const outlineAttributes = {

@@ -12,6 +12,7 @@
  */
 .coatScope {
   --illustration-cat-feature: var(--cat-coat-light-feature);
+  --illustration-cat-line: var(--cat-coat-light-line);
 }
 
 /*
@@ -21,11 +22,13 @@
 :root[data-theme="dark"] .coatScope {
   --illustration-cat-feature: var(--cat-coat-dark-line);
   --illustration-outline: var(--cat-coat-dark-line);
+  --illustration-cat-line: var(--cat-coat-dark-line);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not([data-theme="dark"]) .coatScope {
     --illustration-cat-feature: var(--cat-coat-dark-line);
     --illustration-outline: var(--cat-coat-dark-line);
+    --illustration-cat-line: var(--cat-coat-dark-line);
   }
 }

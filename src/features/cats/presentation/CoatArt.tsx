@@ -55,6 +55,19 @@ const ICON_DARK_COAT_FEATURE_COLOR: Partial<Record<CatCoatColor, string>> = {
 };
 
 /**
+ * 黒系の濃い毛色の、ライトテーマでの大きなイラスト（BCS のイラスト）の猫の輪郭の色。
+ * 既定の濃い輪郭では、脚の付け根やお腹のラインなど体型を見る内側の線が塗りに沈むため、
+ * アイコンの目・口と同じように明るくする。サビは目・口の白だと白い背景に輪郭が溶けるため、黒と同じ灰色にする
+ */
+const LARGE_ILLUSTRATION_LIGHT_LINE_COLOR: Partial<
+  Record<CatCoatColor, string>
+> = {
+  black: "#bbbbbb",
+  dark_brown: "#3c2c2c",
+  tortoiseshell: "#bbbbbb",
+};
+
+/**
  * ダークテーマで、その毛色の猫を描くアイコンの輪郭と目・口に使う色（両方を同じ色にする）。
  * ライトテーマでは輪郭は既定の濃い色のままで、目・口は黒系だけ ICON_DARK_COAT_FEATURE_COLOR にする
  */
@@ -86,6 +99,13 @@ export function iconPalette(coatColor: CatCoatColor): CoatPalette {
   return ICON_COAT_COLOR_OVERRIDE[coatColor] ?? COAT_COLOR_SWATCH[coatColor];
 }
 
+/** 黒系の濃い毛色なら、ライトテーマでの大きなイラストの猫の輪郭の色を返す。それ以外は null */
+export function largeIllustrationLightLineColor(
+  coatColor: CatCoatColor,
+): string | null {
+  return LARGE_ILLUSTRATION_LIGHT_LINE_COLOR[coatColor] ?? null;
+}
+
 /**
  * 黒系の濃い毛色なら、ライトテーマでのアイコンの猫の目・口の色を返す（耳の内側も塗らない）。それ以外は null
  */
@@ -93,6 +113,48 @@ export function darkIconCoatFeatureColor(
   coatColor: CatCoatColor,
 ): string | null {
   return ICON_DARK_COAT_FEATURE_COLOR[coatColor] ?? null;
+}
+
+/**
+ * 敷き詰めたときに斑がつながる柄（96×96）。端をまたぐ斑は、反対側の端にも同じ形を描く
+ */
+const TILED_PATCHES = [
+  "M4 20C10 10 22 14 30 8C38 2 46 10 40 20C34 28 26 24 18 32C10 40 0 30 4 20Z",
+  "M70 34C76 26 86 32 94 28C102 24 104 40 96 46C88 52 92 62 82 62C72 62 64 42 70 34Z",
+  "M30 74C36 66 48 72 54 82C60 92 52 102 42 100C34 98 38 90 28 90C18 90 24 80 30 74Z",
+  "M56 6C60 0 72 2 70 10C68 16 62 14 60 20C58 24 52 12 56 6Z",
+  "M10 56C14 50 22 54 20 62C18 68 8 64 10 56Z",
+  "M48 42C52 38 60 42 58 48C56 54 46 48 48 42Z",
+  "M76 78C80 72 90 76 88 84C86 90 74 86 76 78Z",
+].join("");
+
+const TILE_OFFSETS = [-96, 0, 96].flatMap((x) =>
+  [-96, 0, 96].map((y) => `translate(${x} ${y})`),
+);
+
+/** TiledCoatArt の 1 枚の大きさ（viewBox の単位） */
+export const TILED_COAT_ART_SIZE = 96;
+
+/**
+ * 2 色が混ざる毛色を、敷き詰めてもつなぎ目が出ない 96×96 の正方形に描いた絵。
+ * 大きなイラストの猫を、見本（CoatArt）を引き伸ばすより細かい斑で塗るために使う
+ */
+export function TiledCoatArt({ palette }: { palette: CoatPalette }) {
+  return (
+    <>
+      <path d="M0 0H96V96H0Z" fill={palette.fill} />
+      {palette.patch
+        ? TILE_OFFSETS.map((transform) => (
+            <path
+              key={transform}
+              d={TILED_PATCHES}
+              fill={palette.patch}
+              transform={transform}
+            />
+          ))
+        : null}
+    </>
+  );
 }
 
 /**

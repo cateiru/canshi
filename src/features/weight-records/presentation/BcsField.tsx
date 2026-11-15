@@ -15,10 +15,11 @@ import {
   isBodyConditionScore,
 } from "../domain/labels";
 import styles from "./BcsField.module.css";
+import { BcsIllustration } from "./BcsIllustration";
 import {
   type BcsGuideIllustrationKey,
-  getBcsGuideIllustrationSrc,
-  getBcsIllustrationSrc,
+  getBcsGuideIllustrationName,
+  getBcsIllustrationName,
 } from "./bcsIllustrations";
 
 // RadioGroup の値は文字列のため、「未設定」を表す値を別に用意する
@@ -91,9 +92,8 @@ export function BcsField({ defaultValue, errorMessage }: BcsFieldProps) {
               className={styles.option}
               aria-label={`BCS ${bcs} ${BCS_LABEL[bcs]}`}
             >
-              <img
-                src={getBcsIllustrationSrc(bcs)}
-                alt=""
+              <BcsIllustration
+                name={getBcsIllustrationName(bcs)}
                 className={styles.illustration}
                 width={210}
                 height={210}
@@ -125,9 +125,9 @@ export function BcsField({ defaultValue, errorMessage }: BcsFieldProps) {
         <ol className={styles.guideSteps}>
           {GUIDE_STEPS.map((step) => (
             <li key={step.key} className={styles.guideStep}>
-              <img
-                src={getBcsGuideIllustrationSrc(step.key)}
-                alt={step.alt}
+              <BcsIllustration
+                name={getBcsGuideIllustrationName(step.key)}
+                label={step.alt}
                 className={styles.guideIllustration}
                 width={210}
                 height={128}

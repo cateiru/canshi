@@ -2,7 +2,9 @@
 
 体重記録フォームの BCS（ボディコンディションスコア）入力で使うイラストを、画像生成 AI（GPT-6-Astra）に依頼するための文面をまとめる。
 
-`public/images/bcs/` に透過 PNG 8 枚を配置済み。暫定の簡易 SVG は差し替え済み。
+生成した透過 PNG 8 枚は `docs/illustrations/bcs/` に置いている（暫定の簡易 SVG は差し替え済み）。
+画面では猫を毛色で塗り替えるため、この PNG をそのままは使わず、`pnpm bcs:generate`
+（`scripts/split-bcs-illustrations.mjs`）で塗り・輪郭・重ねる画像の層に分けて `public/images/bcs/` に書き出す。
 
 内蔵の `image_gen` で BCS 3 を最初に生成し、残りの画像はその画像を参照して画風と構図を揃えた。
 上から見るガイドは、点線の楕円が腰のくびれを囲むように追加で修正した。
@@ -94,10 +96,29 @@ BCS 3 の上面図は、[参考画像の BCS 3](https://storage.googleapis.com/s
 - 脇腹にわずかなひだ（たるんだ皮膚）があることが分かるように描く。
 ```
 
+## 毛色で塗り替える仕組み
+
+`scripts/split-bcs-illustrations.mjs` は、各ピクセルの色を画像の数色（ベージュの塗り・濃紺の輪郭・白い手・オレンジの点線）の混ざりとして求め、次の層に分ける。
+
+| ファイル名 | 内容 |
+| --- | --- |
+| `<名前>-fill.png` | 猫の塗りの範囲（アルファのマスク）。画面で毛色を塗る |
+| `<名前>-line.png` | 輪郭の範囲（アルファのマスク）。画面で輪郭の色を塗る |
+| `<名前>-overlay.png` | 白い手・オレンジの点線を元の色のまま重ねる画像（ガイドの 3 枚だけ） |
+
+画面（`src/features/weight-records/presentation/BcsIllustration.tsx`）では、インライン SVG で下から 塗り・重ね・輪郭 の順に重ねる。
+塗りはイラストアイコンと同じ `--illustration-cat-coat`、輪郭は `--illustration-outline` を使うため、猫のページでは毛色（サビ・ブルークリームは斑）で塗られ、ダークテーマでは輪郭も毛色に合わせた色になる。
+毛色が未設定のときは、アイコンと同じクリーム色（`#f5dfb7`）で塗る。
+輪郭は、黒系の毛色（黒・こげ茶・黒と茶）のライトテーマでは、明るい色（`--illustration-cat-line`。黒・黒と茶は `#bbbbbb`、こげ茶は `#3c2c2c`）で描く。脚の付け根やお腹のラインなど、体型を見る手がかりの内側の線が塗りに沈まないようにするため。
+サビ・ブルークリームの斑は、アイコンの斑（見本の柄を形いっぱいに引き伸ばす）を使うと大きすぎるため、小さな斑を敷き詰めたパターン（`--illustration-cat-coat-tiled`、`CoatArt.tsx` の `TiledCoatArt`）で塗る。
+画像の大きさなどは、スクリプトが `bcsIllustrationLayers.ts` に書き出す。
+
+このため、新しく画像を作るときも、塗りはベージュ 1 色・輪郭は濃紺 1 色で、影やグラデーションを付けないことが必要になる。
+毛色ごとの見た目は開発用ページ `/dev/bcs-illustrations`（VRT あり）で確認できる。
+
 ## 差し替え手順
 
-1. 生成した画像を上の表のファイル名で `public/images/bcs/` に置く。
-2. 必要に応じて WebP に変換する（その場合は拡張子を `.webp` にそろえる）。
-3. `src/features/weight-records/presentation/bcsIllustrations.ts` の `BCS_ILLUSTRATION_EXT` を `"png"`（または `"webp"`）に変更する。
-4. 形式を変更した場合は、使わなくなった旧画像を削除する。
-5. 体重記録フォーム（`/cats/{catId}/weight-records/new`）を開き、スマートフォン幅と PC 幅で表示を確認する。
+1. 生成した画像を上の表のファイル名で `docs/illustrations/bcs/` に置く。
+2. `pnpm bcs:generate` を実行し、`public/images/bcs/` の層の画像と `bcsIllustrationLayers.ts` を作り直す。
+3. `/dev/bcs-illustrations` で、毛色ごとに塗り・輪郭が崩れていないか（塗りに白い点が出ていないかなど）を確認する。
+4. 体重記録フォーム（`/cats/{catId}/weight-records/new`）を開き、スマートフォン幅と PC 幅で表示を確認する。

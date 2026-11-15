@@ -9,7 +9,7 @@ describe("isPublicPath", () => {
     "/sw.js",
     "/offline",
     "/icons/icon-192.png",
-    "/images/bcs/bcs-1.png",
+    "/images/bcs/bcs-1-fill.png",
     "/opengraph-image.png",
   ])("%s はログインなしで取得できる", (pathname) => {
     expect(isPublicPath(pathname)).toBe(true);
