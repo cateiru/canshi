@@ -11,6 +11,9 @@ describe("isPublicPath", () => {
     "/icons/icon-192.png",
     "/images/bcs/bcs-1-fill.png",
     "/opengraph-image.png",
+    "/help",
+    "/help/feeding-modes",
+    "/help/records/poop-records",
   ])("%s はログインなしで取得できる", (pathname) => {
     expect(isPublicPath(pathname)).toBe(true);
   });
@@ -25,6 +28,7 @@ describe("isPublicPath", () => {
     "/api/media",
     "/api/media/uploads",
     "/media/asset-1",
+    "/helper",
   ])("%s はログインが必要", (pathname) => {
     expect(isPublicPath(pathname)).toBe(false);
   });

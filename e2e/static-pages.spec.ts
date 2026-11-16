@@ -48,3 +48,39 @@ test("ごはんプリセットのヘルプページから、家のプリセッ�
     page.getByRole("link", { name: "プリセット一覧を見る" }),
   ).toHaveAttribute("href", "/feeding-presets?householdId=household-1");
 });
+
+test("ホームからヘルプを開き、記事を読める", async ({ page }) => {
+  await page.goto("/home");
+  await page.getByRole("link", { name: /ヘルプを見る/ }).click();
+  await expect(page).toHaveURL("/help");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "ヘルプ" }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: /うんち記録/ }).click();
+  await expect(page).toHaveURL("/help/records/poop-records");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "うんち記録" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: /うんちを記録する画面/ }),
+  ).toBeVisible();
+
+  await page
+    .getByRole("navigation", { name: "パンくずリスト" })
+    .getByRole("link", { name: "記録のつけ方" })
+    .click();
+  await expect(page).toHaveURL("/help/records");
+});
+
+test.describe("ログインしていないとき", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("ヘルプはログインしなくても見られる", async ({ page }) => {
+    await page.goto("/help/create-household");
+    await expect(page).toHaveURL("/help/create-household");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "家の作り方・家族の招待" }),
+    ).toBeVisible();
+  });
+});

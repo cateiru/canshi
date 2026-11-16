@@ -4,6 +4,7 @@ import {
   AccountSettingsIcon,
   AiConnectionIcon,
   AppearanceSettingsIcon,
+  HelpIcon,
   HouseholdIcon,
   NotificationSettingsIcon,
   ReleaseNotesIcon,
@@ -50,6 +51,12 @@ const settings = [
     icon: AiConnectionIcon,
   },
   {
+    href: "/help",
+    title: "ヘルプ",
+    description: "はじめ方や記録のつけ方など、アプリの使い方を確認します。",
+    icon: HelpIcon,
+  },
+  {
     href: "/release-notes",
     title: "更新情報",
     description: "アプリの新機能や改善内容を確認します。",
@@ -65,7 +72,7 @@ export default function SettingsPage() {
       />
       <h1>設定</h1>
       <p>
-        アカウントや家、通知、見た目の設定、AIとの接続、アプリの更新情報を確認できます。
+        アカウントや家、通知、見た目の設定、AIとの接続、アプリのヘルプと更新情報を確認できます。
       </p>
 
       <nav aria-label="設定メニュー">

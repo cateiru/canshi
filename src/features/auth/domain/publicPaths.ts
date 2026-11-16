@@ -13,7 +13,15 @@ const PUBLIC_PATH_PREFIXES = [
   "/opengraph-image",
 ];
 
+/** 未ログインでも見られるページ（そのパスと、その下のパス）。ヘルプはログイン前にも読めるようにする */
+const PUBLIC_PAGE_PATHS = ["/help"];
+
 /** middleware（`src/middleware.ts`）でセッションを確認しないパスかどうか */
 export function isPublicPath(pathname: string) {
-  return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  return (
+    PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
+    PUBLIC_PAGE_PATHS.some(
+      (path) => pathname === path || pathname.startsWith(`${path}/`),
+    )
+  );
 }

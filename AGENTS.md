@@ -33,6 +33,11 @@
 分かれてしまった場合も、最終的にはその PR の変更点として 1 件のエントリにまとめること
 （`items` は複数行の箇条書きにしてよい）。
 
+## ヘルプの更新
+
+画面の操作や記録の項目を変えたときは、ヘルプ（`/help/*`）の説明とスクリーンショットも合わせて
+更新すること。構成とスクリーンショットの撮り直し方は [`src/features/help/README.md`](src/features/help/README.md) を参照。
+
 ## バージョンアップ（必須）
 
 上記のリリースノートを追記する際、`version` をどれだけ上げるか（パッチ／マイナー／
@@ -86,7 +91,7 @@ PR のレビューコメント（インラインコメント・レビュー本�
 - `domain/`：DB に触れない業務の規則。エンティティ・値オブジェクト・リポジトリの interface・入力の規則
   （`schema.ts`）・純粋な計算（`calculations.ts`）・表示名（`labels.ts`）を置く。ほかの層・DB・Next.js・React に依存しない。
 
-`shared`・`navigation`・`pwa`・`release-notes` は業務の規則を持たないため、層に分けずに置く。
+`shared`・`navigation`・`pwa`・`release-notes`・`help` は業務の規則を持たないため、層に分けずに置く。
 `src/db/schema`（テーブル定義・型・定数）は、どの層から import してもよい。
 
 ### エンティティ・値オブジェクト・リポジトリ

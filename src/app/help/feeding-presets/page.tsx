@@ -1,22 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { TbList, TbPlus } from "react-icons/tb";
-import { Breadcrumb, ButtonLink } from "@/components/ui";
-import { FeedingPresetIcon } from "@/components/ui/RecordIcons/RecordIcons";
+import { ButtonLink } from "@/components/ui";
 import {
   FEEDING_MODE_HELP_HREF,
   FEEDING_MODE_LABEL,
   GIVEN_AMOUNT_LEVEL_LABEL,
   LEFTOVER_LEVEL_LABEL,
 } from "@/features/feeding-records/domain/labels";
-import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
+import { HelpArticle } from "@/features/help/HelpArticle";
+import styles from "@/features/help/HelpContent.module.css";
+import { HelpScreenshot } from "@/features/help/HelpScreenshot";
+import { getHelpTopic } from "@/features/help/topics";
 import { Surface } from "@/features/shared/Surface";
-import styles from "./page.module.css";
 
-const PAGE_TITLE = "「ごはんプリセット」とは？";
+const SLUG = "feeding-presets";
 
 export const metadata: Metadata = {
-  title: PAGE_TITLE,
+  title: getHelpTopic(SLUG).title,
 };
 
 type FeedingPresetsHelpPageProps = {
@@ -35,19 +36,16 @@ export default async function FeedingPresetsHelpPage({
       : "";
 
   return (
-    <main className={styles.main}>
-      <Breadcrumb
-        items={[{ label: "トップ", href: "/home" }, { label: PAGE_TITLE }]}
-      />
-
-      <RecordPageHeading icon={FeedingPresetIcon}>
-        {PAGE_TITLE}
-      </RecordPageHeading>
-      <p>
-        ごはんプリセットは、よくあげるごはんの商品と量の組み合わせを登録しておく機能です。ごはんを記録するときにプリセットを選ぶだけで、商品と与えた量が入力されます。
-      </p>
-
-      <Surface title="記録するときの使い方" className={styles.section}>
+    <HelpArticle
+      slug={SLUG}
+      lead={
+        <p>
+          ごはんプリセットは、よくあげるごはんの商品と量の組み合わせを登録しておく機能です。ごはんを記録するときにプリセットを選ぶだけで、商品と与えた量が入力されます。
+        </p>
+      }
+      related={["household-food", "records/feeding-records", "feeding-modes"]}
+    >
+      <Surface title="記録するときの使い方" gap="md">
         <ul className={styles.points}>
           <li>
             ごはんを記録する画面の「プリセット」から使いたいプリセットを選ぶと、商品・与えた量・記録方法がプリセットの内容で入力されます。
@@ -63,7 +61,7 @@ export default async function FeedingPresetsHelpPage({
         </ul>
       </Surface>
 
-      <Surface title="登録できる内容" className={styles.section}>
+      <Surface title="登録できる内容" gap="md">
         <ul className={styles.points}>
           <li>プリセット名（例: 朝ごはん、おやつ）</li>
           <li>
@@ -85,6 +83,11 @@ export default async function FeedingPresetsHelpPage({
             プリセットは家ごとに登録し、同じ家のメンバー全員で使えます。設定の「家の設定」から家を選び、「ごはんプリセット一覧」で登録・編集・削除できます。
           </li>
         </ul>
+        <HelpScreenshot
+          name="feeding-preset-new"
+          alt="ごはんプリセットを登録する画面。プリセット名・記録方法・商品と与えた量の入力欄が並んでいる"
+          caption="ごはんプリセットを登録する画面"
+        />
       </Surface>
 
       <div className={styles.actions}>
@@ -102,6 +105,6 @@ export default async function FeedingPresetsHelpPage({
           プリセット一覧を見る
         </ButtonLink>
       </div>
-    </main>
+    </HelpArticle>
   );
 }

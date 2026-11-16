@@ -139,6 +139,16 @@ test("ホームページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+// 記事のページはスクリーンショットの画像（遅延読み込み）を多く含み、画像を撮り直すたびに
+// 差分になるため、記事の一覧だけを撮る
+test("ヘルプ一覧ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/help");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "ヘルプ" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 test("猫一覧ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/cats");
   await expect(page.getByRole("heading", { name: "ねこ一覧" })).toBeVisible();
