@@ -1,7 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireWritableCatAccess } from "@/features/auth/presentation/session";
+import {
+  redirectFromMemorialCat,
+  requireWritableCatAccess,
+} from "@/features/auth/presentation/session";
 import type { SubmitRedirect } from "@/features/navigation/types";
 import { userActor } from "@/features/shared/recordActor";
 import {
@@ -44,7 +47,9 @@ export async function createWeightRecordAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  await createWeightRecord(catId, parsed.data, userActor(user));
+  if (!(await createWeightRecord(catId, parsed.data, userActor(user)))) {
+    redirectFromMemorialCat(catId);
+  }
 
   return { redirectTo: `/cats/${catId}/weight-records` };
 }

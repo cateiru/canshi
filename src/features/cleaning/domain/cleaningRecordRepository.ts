@@ -6,7 +6,7 @@ import type { CleaningRecordContent } from "./cleaningRecord";
  * 実装は `../infrastructure/cleaningRecordRepository.ts`
  */
 export interface CleaningRecordRepository {
-  /** 実施記録の実施日時を読む。見つからなければ null */
+  /** 実施記録の実施日時を読む。見つからない・猫がメモリーへ移されていれば null */
   findPerformedAt(
     catId: string,
     cleaningTargetId: string,
@@ -14,7 +14,8 @@ export interface CleaningRecordRepository {
   ): Promise<Date | null>;
   /**
    * 実施記録を追加し、その ID を返す。`completeNotificationsDueBefore` を渡すと、
-   * その日時より前の予定日の掃除の通知を同じ batch で完了にする
+   * その日時より前の予定日の掃除の通知を同じ batch で完了にする。
+   * 猫がメモリーへ移されていれば、どちらも行わず null
    */
   add(
     catId: string,
@@ -22,8 +23,8 @@ export interface CleaningRecordRepository {
     content: CleaningRecordContent,
     completeNotificationsDueBefore: Date | null,
     actor: RecordActor,
-  ): Promise<string>;
-  /** 実施記録を書き換える。見つからなければ false。通知の扱いは `add` と同じ */
+  ): Promise<string | null>;
+  /** 実施記録を書き換える。見つからない・猫がメモリーへ移されていれば false。通知の扱いは `add` と同じ */
   update(
     catId: string,
     cleaningTargetId: string,
@@ -32,7 +33,7 @@ export interface CleaningRecordRepository {
     completeNotificationsDueBefore: Date | null,
     actor: RecordActor,
   ): Promise<boolean>;
-  /** 実施記録を論理削除する。見つからない・削除済みなら false */
+  /** 実施記録を論理削除する。見つからない・削除済み・猫がメモリーへ移されていれば false */
   remove(
     catId: string,
     cleaningTargetId: string,

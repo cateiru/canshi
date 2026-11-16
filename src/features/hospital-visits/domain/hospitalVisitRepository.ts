@@ -13,7 +13,7 @@ export interface HospitalVisitRepository {
   existsForCat(catId: string, id: string): Promise<boolean>;
   /**
    * 通院記録を病院代とあわせて追加し、その ID を返す。関連する症状がこの猫のもので削除されて
-   * いなければ追加し、そうでなければ何も保存せず null
+   * いなければ追加し、そうでない・猫がメモリーへ移されていれば何も保存せず null
    */
   add(
     catId: string,
@@ -23,7 +23,7 @@ export interface HospitalVisitRepository {
   ): Promise<string | null>;
   /**
    * 通院記録を病院代とあわせて書き換える。見つからない・削除済み、または関連する症状がこの猫の
-   * もので削除されていなければ何も保存せず false
+   * もので削除されていない・猫がメモリーへ移されていれば何も保存せず false
    */
   update(
     catId: string,
@@ -33,7 +33,8 @@ export interface HospitalVisitRepository {
     actor: RecordActor,
   ): Promise<boolean>;
   /**
-   * 通院記録を論理削除する。症状・投薬・支出記録からの紐付けは外し、それらの記録は残す
+   * 通院記録を論理削除する。症状・投薬・支出記録からの紐付けは外し、それらの記録は残す。
+   * 見つからない・削除済み・猫がメモリーへ移されていれば、どれも行わず false
    */
-  remove(catId: string, id: string, actor: RecordActor): Promise<void>;
+  remove(catId: string, id: string, actor: RecordActor): Promise<boolean>;
 }

@@ -140,7 +140,7 @@ import {
 import { decodeImageBase64, MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
 
 /** 書き込む猫。ユーザーが参照でき、この接続からの読み取りも許可している */
-type WritableCat = { id: string; householdId: string };
+type WritableCat = { id: string; householdId: string; name: string };
 
 type SaveResult = { id: string } | { error: string };
 
@@ -231,6 +231,18 @@ function optionalText(label: string, maxLength: number) {
 
 const RECORD_NOT_FOUND_ERROR = "記録が見つかりませんでした";
 
+/**
+ * 追加の結果をツールの結果にする。ID が null なのは、確認の後、書き込みの前に猫がメモリーへ移され、
+ * 追加の文の中で断られたとき
+ */
+function toCreatedResult(cat: WritableCat, id: string | null): SaveResult {
+  return id == null
+    ? {
+        error: `「${cat.name}」はメモリー（思い出）に移されたため、記録を追加できませんでした`,
+      }
+    : { id };
+}
+
 const COMMON_DESCRIPTION =
   "日時は日本時間で指定する。" +
   "編集では指定した項目だけを変更し、省略した項目は今の値のまま。";
@@ -274,9 +286,11 @@ const poopRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, connection, cat, data }) => ({
-    id: await createPoopRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
-  }),
+  create: async ({ ctx, connection, cat, data }) =>
+    toCreatedResult(
+      cat,
+      await createPoopRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
+    ),
   update: async ({ ctx, connection, cat, id, data }) =>
     (await updatePoopRecord(cat.id, id, data, mcpActor(connection), ctx.env.DB))
       ? { id }
@@ -319,9 +333,11 @@ const vomitRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, connection, cat, data }) => ({
-    id: await createVomitRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
-  }),
+  create: async ({ ctx, connection, cat, data }) =>
+    toCreatedResult(
+      cat,
+      await createVomitRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
+    ),
   update: async ({ ctx, connection, cat, id, data }) =>
     (await updateVomitRecord(
       cat.id,
@@ -376,9 +392,11 @@ const waterRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, connection, cat, data }) => ({
-    id: await createWaterRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
-  }),
+  create: async ({ ctx, connection, cat, data }) =>
+    toCreatedResult(
+      cat,
+      await createWaterRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
+    ),
   update: async ({ ctx, connection, cat, id, data }) =>
     (await updateWaterRecord(
       cat.id,
@@ -452,14 +470,11 @@ const weightRecordTool = defineRecordTool({
     }
     return values;
   },
-  create: async ({ ctx, connection, cat, data }) => ({
-    id: await createWeightRecord(
-      cat.id,
-      data,
-      mcpActor(connection),
-      ctx.env.DB,
+  create: async ({ ctx, connection, cat, data }) =>
+    toCreatedResult(
+      cat,
+      await createWeightRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
     ),
-  }),
   update: async ({ ctx, connection, cat, id, data }) =>
     (await updateWeightRecord(
       cat.id,
@@ -495,14 +510,11 @@ const shampooRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, connection, cat, data }) => ({
-    id: await createShampooRecord(
-      cat.id,
-      data,
-      mcpActor(connection),
-      ctx.env.DB,
+  create: async ({ ctx, connection, cat, data }) =>
+    toCreatedResult(
+      cat,
+      await createShampooRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
     ),
-  }),
   update: async ({ ctx, connection, cat, id, data }) =>
     (await updateShampooRecord(
       cat.id,
@@ -561,14 +573,16 @@ const brushingRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, connection, cat, data }) => ({
-    id: await createBrushingRecord(
-      cat.id,
-      data,
-      mcpActor(connection),
-      ctx.env.DB,
+  create: async ({ ctx, connection, cat, data }) =>
+    toCreatedResult(
+      cat,
+      await createBrushingRecord(
+        cat.id,
+        data,
+        mcpActor(connection),
+        ctx.env.DB,
+      ),
     ),
-  }),
   update: async ({ ctx, connection, cat, id, data }) =>
     (await updateBrushingRecord(
       cat.id,
@@ -875,9 +889,11 @@ const memoTool = defineRecordTool({
     }
     return values;
   },
-  create: async ({ ctx, connection, cat, data }) => ({
-    id: await createMemoRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
-  }),
+  create: async ({ ctx, connection, cat, data }) =>
+    toCreatedResult(
+      cat,
+      await createMemoRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
+    ),
   update: async ({ ctx, connection, cat, id, data }) =>
     (await updateMemoRecord(cat.id, id, data, mcpActor(connection), ctx.env.DB))
       ? { id }

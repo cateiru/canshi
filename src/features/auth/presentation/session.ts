@@ -58,9 +58,17 @@ export async function requireCatAccess(catId: string) {
 export async function requireWritableCatAccess(catId: string) {
   const access = await requireCatAccess(catId);
   if (isMemorialCat(access.cat)) {
-    redirect(`/cats/${catId}`);
+    redirectFromMemorialCat(catId);
   }
   return access;
+}
+
+/**
+ * メモリーへ移した猫の記録を書き換えようとしたときに、猫のページへ移動する。`requireWritableCatAccess` の
+ * 確認の後、書き込みの前に猫がメモリーへ移され、書き込みが文の中で断られたとき（追加の ID が null など）にも使う
+ */
+export function redirectFromMemorialCat(catId: string): never {
+  redirect(`/cats/${catId}`);
 }
 
 /**

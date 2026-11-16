@@ -1,5 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { insertWhere, writableCatCondition } from "@/db/conditionalInsert";
 import { deleteRecordChangeLogsOf } from "@/db/recordChangeLog";
 import {
   cleaningRecords,
@@ -16,6 +17,9 @@ export function createCleaningTargetRepository(
   const db = getDb(d1);
   const byId = (catId: string, id: string) =>
     and(eq(cleaningTargets.id, id), eq(cleaningTargets.catId, catId));
+  // 書き込みの文の条件。メモリーへ移した猫の掃除対象は書き換えない
+  const writableById = (catId: string, id: string) =>
+    and(byId(catId, id), writableCatCondition(catId));
 
   /** 新しい掃除対象を一覧の末尾に並べるための並び順 */
   async function nextSortOrder(catId: string): Promise<number> {
@@ -48,17 +52,19 @@ export function createCleaningTargetRepository(
       return target ?? null;
     },
     async add(catId, content) {
-      await db.insert(cleaningTargets).values({
-        catId,
-        ...content,
-        sortOrder: await nextSortOrder(catId),
-      });
+      // メモリーへ移した猫には追加しない
+      await insertWhere(
+        db,
+        cleaningTargets,
+        { catId, ...content, sortOrder: await nextSortOrder(catId) },
+        writableCatCondition(catId),
+      );
     },
     async update(catId, id, content) {
       const result = await db
         .update(cleaningTargets)
         .set({ ...content, updatedAt: new Date() })
-        .where(byId(catId, id))
+        .where(writableById(catId, id))
         .returning({ id: cleaningTargets.id });
       return result.length > 0;
     },
@@ -66,7 +72,9 @@ export function createCleaningTargetRepository(
       // cleaning_records から cleaning_targets への外部キー制約があるため実施記録も同時に削除する。
       // notifications・notification_settings の reference_id もこの対象を指しうるため
       // （`28`）、同じ batch でまとめて削除する。delete の間に別リクエストが
-      // 割り込まないよう、D1 の batch で原子的に実行する
+      // 割り込まないよう、D1 の batch で原子的に実行する。
+      // メモリーへ移した猫の掃除対象は、どの文も削除しない
+      const writable = writableCatCondition(catId);
       await db.batch([
         // 実施記録を物理削除するため、履歴も消す
         deleteRecordChangeLogsOf(
@@ -76,6 +84,7 @@ export function createCleaningTargetRepository(
           and(
             eq(cleaningRecords.cleaningTargetId, id),
             eq(cleaningRecords.catId, catId),
+            writable,
           ),
         ),
         db
@@ -84,6 +93,7 @@ export function createCleaningTargetRepository(
             and(
               eq(cleaningRecords.cleaningTargetId, id),
               eq(cleaningRecords.catId, catId),
+              writable,
             ),
           ),
         db
@@ -93,6 +103,7 @@ export function createCleaningTargetRepository(
               eq(notifications.kind, "cleaning_due"),
               eq(notifications.referenceId, id),
               eq(notifications.catId, catId),
+              writable,
             ),
           ),
         db
@@ -102,9 +113,10 @@ export function createCleaningTargetRepository(
               eq(notificationSettings.kind, "cleaning_due"),
               eq(notificationSettings.referenceId, id),
               eq(notificationSettings.catId, catId),
+              writable,
             ),
           ),
-        db.delete(cleaningTargets).where(byId(catId, id)),
+        db.delete(cleaningTargets).where(writableById(catId, id)),
       ]);
     },
   };

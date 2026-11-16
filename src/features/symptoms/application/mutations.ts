@@ -101,6 +101,5 @@ export async function deleteSymptom(
 ): Promise<boolean> {
   const repository = createSymptomRepository(d1);
   if (!(await repository.existsForCat(catId, id))) return false;
-  await repository.remove(catId, id, actor);
-  return true;
+  return repository.remove(catId, id, actor);
 }

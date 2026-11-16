@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm";
 import type { SQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
 import type { getDb } from "./client";
+import { cats } from "./schema";
 
 type Db = ReturnType<typeof getDb>;
 
@@ -35,6 +36,36 @@ export function liveRowCondition(
       AND ${table.catId} = ${catId}
       AND ${table.deletedAt} IS NULL
   )`;
+}
+
+/**
+ * 猫がメモリーへ移されていない（`cats.memorial_date IS NULL`）ときだけ真になる条件。
+ * 猫の記録などを書き込む文に含め、画面・MCP での確認（`requireWritableCatAccess`・`resolveWritableCat`）の後、
+ * 書き込みの前に別の家族が猫をメモリーへ移した場合に、記録が追加・編集・削除されないようにする
+ */
+export function writableCatCondition(catId: string): SQL {
+  return sql`EXISTS (
+    SELECT 1 FROM ${cats}
+    WHERE ${cats.id} = ${catId}
+      AND ${cats.memorialDate} IS NULL
+  )`;
+}
+
+/**
+ * 猫の記録が削除されずにあり、猫がメモリーへ移されていないときだけ真になる条件
+ * （`liveRowCondition` と `writableCatCondition` を合わせたもの）。記録の書き込みと同じ batch に並べる
+ * 履歴などの文に含め、記録の文が断られたときに、ほかの文だけが通らないようにする
+ */
+export function writableRowCondition(
+  table: SQLiteTable & {
+    id: SQLiteColumn;
+    catId: SQLiteColumn;
+    deletedAt: SQLiteColumn;
+  },
+  catId: string,
+  id: string,
+): SQL {
+  return sql`${liveRowCondition(table, catId, id)} AND ${writableCatCondition(catId)}`;
 }
 
 /** 列の値を INSERT ... SELECT の SELECT に並べる式にする。値が無ければ列の既定値を使う */

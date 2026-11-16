@@ -1,6 +1,10 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { liveRowCondition } from "@/db/conditionalInsert";
+import {
+  insertWhere,
+  writableCatCondition,
+  writableRowCondition,
+} from "@/db/conditionalInsert";
 import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import { poopRecords } from "@/db/schema";
 import type { PoopRecordRepository } from "../domain/poopRecordRepository";
@@ -15,20 +19,33 @@ export function createPoopRecordRepository(
       eq(poopRecords.id, id),
       eq(poopRecords.catId, catId),
       isNull(poopRecords.deletedAt),
+      // メモリーへ移した猫の記録は書き換えない
+      writableCatCondition(catId),
     );
   return {
     async add(catId, content, actor) {
       const id = crypto.randomUUID();
-      await db.batch([
-        db.insert(poopRecords).values({ id, catId, ...content }),
-        insertRecordChangeLog(db, {
-          recordType: "poop_record",
-          recordId: id,
-          action: "create",
-          actor,
-        }),
+      // メモリーへ移した猫には記録を追加しない
+      const [created] = await db.batch([
+        insertWhere(
+          db,
+          poopRecords,
+          { id, catId, ...content },
+          writableCatCondition(catId),
+        ).returning({ id: poopRecords.id }),
+        // 挿入が断られたときは履歴も追加しない
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "poop_record",
+            recordId: id,
+            action: "create",
+            actor,
+          },
+          writableRowCondition(poopRecords, catId, id),
+        ),
       ]);
-      return id;
+      return created.length > 0 ? id : null;
     },
     async update(catId, id, content, actor) {
       const [updated] = await db.batch([
@@ -40,7 +57,7 @@ export function createPoopRecordRepository(
         insertRecordChangeLog(
           db,
           { recordType: "poop_record", recordId: id, action: "update", actor },
-          liveRowCondition(poopRecords, catId, id),
+          writableRowCondition(poopRecords, catId, id),
         ),
       ]);
       return updated.length > 0;
@@ -51,7 +68,7 @@ export function createPoopRecordRepository(
         insertRecordChangeLog(
           db,
           { recordType: "poop_record", recordId: id, action: "delete", actor },
-          liveRowCondition(poopRecords, catId, id),
+          writableRowCondition(poopRecords, catId, id),
         ),
         db
           .update(poopRecords)

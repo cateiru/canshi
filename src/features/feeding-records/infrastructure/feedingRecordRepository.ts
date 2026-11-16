@@ -1,5 +1,6 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { writableCatCondition } from "@/db/conditionalInsert";
 import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import {
   cats,
@@ -11,16 +12,28 @@ import {
 import type { FeedingRecordItemContent } from "../domain/feedingRecord";
 import type { FeedingRecordRepository } from "../domain/feedingRecordRepository";
 
-/** INSERT ... SELECT の取得元。猫がまだ `householdId` の家にいるときだけ 1 行を返す */
+/**
+ * INSERT ... SELECT の取得元。猫がまだ `householdId` の家にいて、メモリーへ移されていないときだけ
+ * 1 行を返す
+ */
 function catInHouseholdRow(catId: string, householdId: string) {
-  return and(eq(cats.id, catId), eq(cats.householdId, householdId));
+  return and(
+    eq(cats.id, catId),
+    eq(cats.householdId, householdId),
+    isNull(cats.memorialDate),
+  );
 }
 
-/** 猫がまだ `householdId` の家にいるときだけ真になる条件（UPDATE・DELETE の WHERE に含める） */
+/**
+ * 猫がまだ `householdId` の家にいて、メモリーへ移されていないときだけ真になる条件
+ * （UPDATE・DELETE の WHERE に含める）
+ */
 function catInHouseholdCondition(catId: string, householdId: string) {
   return sql`EXISTS (
     SELECT 1 FROM ${cats}
-    WHERE ${cats.id} = ${catId} AND ${cats.householdId} = ${householdId}
+    WHERE ${cats.id} = ${catId}
+      AND ${cats.householdId} = ${householdId}
+      AND ${cats.memorialDate} IS NULL
   )`;
 }
 
@@ -160,7 +173,7 @@ export function createFeedingRecordRepository(
       actor,
     ) {
       const feedingRecordId = crypto.randomUUID();
-      // 記録も明細と同じく、猫が確認した時点の家にいるときだけ挿入する
+      // 記録も明細と同じく、猫が確認した時点の家にいて、メモリーへ移されていないときだけ挿入する
       const [created] = await db.batch([
         db
           .insert(feedingRecords)
@@ -211,7 +224,7 @@ export function createFeedingRecordRepository(
       completeNotificationsOnSave,
       actor,
     ) {
-      // 更新・明細の削除と挿入・通知の完了のいずれも、猫が確認した時点の家にいて、
+      // 更新・明細の削除と挿入・通知の完了のいずれも、猫が確認した時点の家にいてメモリーへ移されておらず、
       // 記録が削除されていないときだけ行う
       const [updated] = await db.batch([
         db
@@ -225,6 +238,7 @@ export function createFeedingRecordRepository(
           .where(
             and(
               eq(feedingRecords.id, id),
+              eq(feedingRecords.catId, catId),
               isNull(feedingRecords.deletedAt),
               catInHouseholdCondition(catId, householdId),
             ),
@@ -265,7 +279,7 @@ export function createFeedingRecordRepository(
 
     async remove(catId, id, actor) {
       // 論理削除。明細は記録の中身として残す（削除済みの記録の明細は、記録と一緒に読み取りから除く）。
-      // 削除の後は記録が条件に一致しないため、履歴を先に追加する
+      // 削除の後は記録が条件に一致しないため、履歴を先に追加する。メモリーへ移した猫の記録は削除しない
       const [, deleted] = await db.batch([
         insertRecordChangeLog(
           db,
@@ -275,7 +289,7 @@ export function createFeedingRecordRepository(
             action: "delete",
             actor,
           },
-          liveRecordCondition(catId, id),
+          and(liveRecordCondition(catId, id), writableCatCondition(catId)),
         ),
         db
           .update(feedingRecords)
@@ -285,6 +299,7 @@ export function createFeedingRecordRepository(
               eq(feedingRecords.id, id),
               eq(feedingRecords.catId, catId),
               isNull(feedingRecords.deletedAt),
+              writableCatCondition(catId),
             ),
           )
           .returning({ id: feedingRecords.id }),

@@ -1,5 +1,6 @@
 import { and, eq, exists, inArray, isNull, lt } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { insertWhere, writableCatCondition } from "@/db/conditionalInsert";
 import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import { cleaningRecords, notifications } from "@/db/schema";
 import type { CleaningRecordRepository } from "../domain/cleaningRecordRepository";
@@ -15,9 +16,11 @@ export function createCleaningRecordRepository(
       eq(cleaningRecords.catId, catId),
       eq(cleaningRecords.cleaningTargetId, cleaningTargetId),
       isNull(cleaningRecords.deletedAt),
+      // メモリーへ移した猫の記録は書き換えない
+      writableCatCondition(catId),
     );
 
-  // 実施記録が削除されずにあること。記録の保存と同じ batch に並べる文の条件にする
+  // 実施記録が削除されずにあり、猫がメモリーへ移されていないこと。記録の保存と同じ batch に並べる文の条件にする
   const recordIsLive = (catId: string, cleaningTargetId: string, id: string) =>
     exists(
       db
@@ -74,16 +77,25 @@ export function createCleaningRecordRepository(
       actor,
     ) {
       const id = crypto.randomUUID();
-      await db.batch([
-        db
-          .insert(cleaningRecords)
-          .values({ id, catId, cleaningTargetId, ...content }),
-        insertRecordChangeLog(db, {
-          recordType: "cleaning_record",
-          recordId: id,
-          action: "create",
-          actor,
-        }),
+      // メモリーへ移した猫には記録を追加しない
+      const [created] = await db.batch([
+        insertWhere(
+          db,
+          cleaningRecords,
+          { id, catId, cleaningTargetId, ...content },
+          writableCatCondition(catId),
+        ).returning({ id: cleaningRecords.id }),
+        // 挿入が断られたときは履歴も追加しない
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "cleaning_record",
+            recordId: id,
+            action: "create",
+            actor,
+          },
+          recordIsLive(catId, cleaningTargetId, id),
+        ),
         ...completeNotifications(
           catId,
           cleaningTargetId,
@@ -91,7 +103,7 @@ export function createCleaningRecordRepository(
           completeNotificationsDueBefore,
         ),
       ]);
-      return id;
+      return created.length > 0 ? id : null;
     },
     async update(
       catId,

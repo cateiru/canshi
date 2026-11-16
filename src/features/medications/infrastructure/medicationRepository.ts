@@ -1,6 +1,11 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { insertWhere, liveRowCondition } from "@/db/conditionalInsert";
+import {
+  insertWhere,
+  liveRowCondition,
+  writableCatCondition,
+  writableRowCondition,
+} from "@/db/conditionalInsert";
 import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import {
   hospitalVisits,
@@ -22,11 +27,15 @@ export function createMedicationRepository(
       eq(medications.id, id),
       eq(medications.catId, catId),
       isNull(medications.deletedAt),
+      // メモリーへ移した猫の記録は書き換えない
+      writableCatCondition(catId),
     );
   // 関連する症状・通院記録が、この猫のもので削除されていないこと。確認の後に論理削除された場合に、
-  // 削除済みの記録を指したまま保存しないよう、書き込みの文の中でも確かめる
+  // 削除済みの記録を指したまま保存しないよう、書き込みの文の中でも確かめる。
+  // あわせて、猫がメモリーへ移されていないことも確かめる
   const referencesAreLive = (catId: string, content: MedicationContent) =>
     and(
+      writableCatCondition(catId),
       liveRowCondition(symptoms, catId, content.symptomId),
       liveRowCondition(hospitalVisits, catId, content.hospitalVisitId),
     );
@@ -52,7 +61,7 @@ export function createMedicationRepository(
         insertRecordChangeLog(
           db,
           { recordType: "medication", recordId: id, action: "create", actor },
-          liveRowCondition(medications, catId, id),
+          writableRowCondition(medications, catId, id),
         ),
       ]);
       return created.length > 0 ? id : null;
@@ -68,7 +77,7 @@ export function createMedicationRepository(
           db,
           { recordType: "medication", recordId: id, action: "update", actor },
           and(
-            liveRowCondition(medications, catId, id),
+            writableRowCondition(medications, catId, id),
             referencesAreLive(catId, content),
           ),
         ),
@@ -80,20 +89,23 @@ export function createMedicationRepository(
       // 割り込まないよう、D1 の batch で原子的に実行する。
       // 削除の後は記録が条件に一致しないため、履歴を先に追加する。投薬実績の履歴は 1 件ずつ残す。
       // INSERT ... SELECT では列の既定値が使われないため、列はテーブル定義と同じ並びにすべて書く
+      // どの文も、服薬予定を削除できるとき（猫がメモリーへ移されていないときなど）だけ行う
       const deletedAt = new Date();
-      await db.batch([
+      const removable = writableRowCondition(medications, catId, id);
+      const [, , , deleted] = await db.batch([
         db.insert(recordChangeLogs).select(
           sql`SELECT lower(hex(randomblob(16))), 'medication_dose', ${medicationDoses.id}, 'delete',
               ${actor.userId}, ${actor.mcpClientId}, unixepoch()
             FROM ${medicationDoses}
             WHERE ${medicationDoses.medicationId} = ${id}
               AND ${medicationDoses.catId} = ${catId}
-              AND ${medicationDoses.deletedAt} IS NULL`,
+              AND ${medicationDoses.deletedAt} IS NULL
+              AND ${removable}`,
         ),
         insertRecordChangeLog(
           db,
           { recordType: "medication", recordId: id, action: "delete", actor },
-          liveRowCondition(medications, catId, id),
+          removable,
         ),
         db
           .update(medicationDoses)
@@ -103,10 +115,16 @@ export function createMedicationRepository(
               eq(medicationDoses.medicationId, id),
               eq(medicationDoses.catId, catId),
               isNull(medicationDoses.deletedAt),
+              removable,
             ),
           ),
-        db.update(medications).set({ deletedAt }).where(byId(catId, id)),
+        db
+          .update(medications)
+          .set({ deletedAt })
+          .where(byId(catId, id))
+          .returning({ id: medications.id }),
       ]);
+      return deleted.length > 0;
     },
     async setArchivedAt(catId, id, archivedAt, actor) {
       await db.batch([
@@ -117,7 +135,7 @@ export function createMedicationRepository(
         insertRecordChangeLog(
           db,
           { recordType: "medication", recordId: id, action: "update", actor },
-          liveRowCondition(medications, catId, id),
+          writableRowCondition(medications, catId, id),
         ),
       ]);
     },

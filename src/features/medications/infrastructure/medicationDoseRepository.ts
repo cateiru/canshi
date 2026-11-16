@@ -1,5 +1,6 @@
 import { and, eq, exists, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { writableCatCondition } from "@/db/conditionalInsert";
 import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import { medicationDoses, medications } from "@/db/schema";
 import type { MedicationDoseRepository } from "../domain/medicationDoseRepository";
@@ -15,8 +16,10 @@ export function createMedicationDoseRepository(
       eq(medicationDoses.catId, catId),
       eq(medicationDoses.medicationId, medicationId),
       isNull(medicationDoses.deletedAt),
+      // メモリーへ移した猫の記録は書き換えない
+      writableCatCondition(catId),
     );
-  // 投薬実績が削除されずにあること。履歴の文を、記録の文と同じ条件で通すために使う
+  // 投薬実績が削除されずにあり、猫がメモリーへ移されていないこと。履歴の文を、記録の文と同じ条件で通すために使う
   const doseIsLive = (catId: string, medicationId: string, id: string) =>
     exists(
       db
@@ -27,7 +30,8 @@ export function createMedicationDoseRepository(
   return {
     async add(catId, medicationId, content, actor) {
       const id = crypto.randomUUID();
-      // 服薬予定がこの猫のもので削除されていないときだけ、INSERT ... SELECT で 1 文で挿入する。
+      // 服薬予定がこの猫のもので削除されておらず、猫がメモリーへ移されていないときだけ、
+      // INSERT ... SELECT で 1 文で挿入する。
       // INSERT ... SELECT では列の既定値が使われないため ID はここで作り、列はテーブル定義と同じ並びにする
       const [created] = await db.batch([
         db
@@ -40,7 +44,8 @@ export function createMedicationDoseRepository(
           FROM ${medications}
           WHERE ${medications.id} = ${medicationId}
             AND ${medications.catId} = ${catId}
-            AND ${medications.deletedAt} IS NULL`,
+            AND ${medications.deletedAt} IS NULL
+            AND ${writableCatCondition(catId)}`,
           )
           .returning({ id: medicationDoses.id }),
         // 挿入が断られたときは履歴も追加しない

@@ -96,8 +96,7 @@ export async function deleteMedication(
 ): Promise<boolean> {
   const repository = createMedicationRepository(d1);
   if (!(await repository.existsForCat(catId, id))) return false;
-  await repository.remove(catId, id, actor);
-  return true;
+  return repository.remove(catId, id, actor);
 }
 
 /**

@@ -10,7 +10,7 @@ export interface MedicationRepository {
   existsForCat(catId: string, id: string): Promise<boolean>;
   /**
    * 服薬予定を追加し、その ID を返す。関連する症状・通院記録がこの猫のもので削除されていなければ
-   * 追加し、そうでなければ null
+   * 追加し、そうでない・猫がメモリーへ移されていれば null
    */
   add(
     catId: string,
@@ -19,7 +19,7 @@ export interface MedicationRepository {
   ): Promise<string | null>;
   /**
    * 服薬予定を書き換える。見つからない・削除済み、または関連する症状・通院記録がこの猫のもので
-   * 削除されていなければ書き換えず false
+   * 削除されていない・猫がメモリーへ移されていれば書き換えず false
    */
   update(
     catId: string,
@@ -27,9 +27,12 @@ export interface MedicationRepository {
     content: MedicationContent,
     actor: RecordActor,
   ): Promise<boolean>;
-  /** 服薬予定を、投薬実績ごと論理削除する */
-  remove(catId: string, id: string, actor: RecordActor): Promise<void>;
-  /** 服薬歴へ移した日時を設定する。null なら服薬予定に戻す */
+  /**
+   * 服薬予定を、投薬実績ごと論理削除する。見つからない・削除済み・猫がメモリーへ移されていれば、
+   * どれも削除せず false
+   */
+  remove(catId: string, id: string, actor: RecordActor): Promise<boolean>;
+  /** 服薬歴へ移した日時を設定する。null なら服薬予定に戻す。猫がメモリーへ移されていれば何もしない */
   setArchivedAt(
     catId: string,
     id: string,

@@ -14,14 +14,14 @@ export interface CleaningTargetRepository {
     id: string,
     options: { activeOnly: boolean },
   ): Promise<CleaningTargetSchedule | null>;
-  /** 掃除対象を一覧の末尾に追加する */
+  /** 掃除対象を一覧の末尾に追加する。猫がメモリーへ移されていれば追加しない */
   add(catId: string, content: CleaningTargetContent): Promise<void>;
-  /** 掃除対象を書き換える。見つからなければ false */
+  /** 掃除対象を書き換える。見つからない・猫がメモリーへ移されていれば false */
   update(
     catId: string,
     id: string,
     content: CleaningTargetContent,
   ): Promise<boolean>;
-  /** 掃除対象を、実施記録・通知・通知設定ごと削除する */
+  /** 掃除対象を、実施記録・通知・通知設定ごと削除する。猫がメモリーへ移されていれば何も削除しない */
   remove(catId: string, id: string): Promise<void>;
 }
