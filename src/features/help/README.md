@@ -22,6 +22,8 @@ pnpm help:screenshots
 ```
 
 `pnpm help:screenshots` は `pnpm dev` を起動して `e2e/help-screenshots.capture.ts` を実行する。
+撮影する環境のフォントによらず同じ見た目になるよう、撮影時は Google Fonts から Noto Sans JP を読み込んで
+日本語のフォントをそろえる（インターネットに接続できる環境で実行すること）。
 起動済みの dev サーバーを使う場合は、通知設定の画面を撮れるよう
 `NEXT_PUBLIC_VAPID_PUBLIC_KEY=help-screenshots pnpm dev` で起動しておくこと
 （`playwright.help-screenshots.config.ts` 参照）。

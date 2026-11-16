@@ -32,12 +32,38 @@ const CAT_NAME = "こむぎ";
 const FOOD_PRODUCT_NAME = "ドライフード チキン味";
 const PRESET_NAME = "朝ごはん";
 
+const JAPANESE_FONT_CSS_URL =
+  "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=block";
+
 const captured = new Set<HelpScreenshotName>();
 
 /** 撮影の邪魔になる要素（開発用のオーバーレイ・遷移中のバー）を隠す */
 async function hideOverlays(page: Page) {
   await page.addStyleTag({
     content: "nextjs-portal, .bprogress { display: none !important; }",
+  });
+}
+
+/**
+ * 日本語のフォントを Noto Sans JP（アプリのフォントの指定にも含まれる）にそろえる。
+ * フォントの指定の先頭は system-ui のため、撮影する環境の既定のフォントで描かれ、Linux では
+ * 中国語のフォントの字形になることがある。環境によらず同じ見た目で撮れるよう、Web フォントを読み込む
+ */
+async function useJapaneseFont(page: Page) {
+  await page.addStyleTag({
+    content: `@import url("${JAPANESE_FONT_CSS_URL}");
+:root { --font-sans: "Noto Sans JP", sans-serif !important; }
+input, textarea, select, button { font-family: inherit; }`,
+  });
+  await page.evaluate(async () => {
+    // 画面にある文字の分だけ読み込まれるため、表示中の文字を指定して読み込みを待つ
+    const text = document.body.innerText;
+    await Promise.all(
+      ["400", "700"].map((weight) =>
+        document.fonts.load(`${weight} 16px "Noto Sans JP"`, text),
+      ),
+    );
+    await document.fonts.ready;
   });
 }
 
@@ -58,6 +84,7 @@ async function highlight(locator: Locator) {
 async function capture(page: Page, name: HelpScreenshotName) {
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   await hideOverlays(page);
+  await useJapaneseFont(page);
   // 最後に入力した欄のフォーカスの枠が写らないようにする（押す場所は highlight の枠で示す）
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) {
@@ -154,7 +181,7 @@ test("ヘルプのスクリーンショットを撮る", async ({ page }) => {
   await expect(async () => {
     await issueButton.click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 2000 });
-  }).toPass();
+  }).toPass({ timeout: 30_000 });
   // 招待 URL は撮るたびに変わり、開発環境のアドレスでもあるため、例の URL に置き換えて撮る
   await page
     .getByRole("dialog")
@@ -215,7 +242,7 @@ test("ヘルプのスクリーンショットを撮る", async ({ page }) => {
   await fillAndKeep(page.getByLabel("与える量（g）"), "30");
   await capture(page, "feeding-preset-new");
   await page.getByRole("button", { name: "登録する" }).click();
-  await expect(page).toHaveURL(/feeding-presets/);
+  await expect(page).toHaveURL(/\/feeding-presets(\?.*)?$/);
 
   // ごはん記録
   await page.goto(`${catPath}/feeding-records/new`);
@@ -225,7 +252,7 @@ test("ヘルプのスクリーンショットを撮る", async ({ page }) => {
     await expect(page.getByLabel("与えた量（g）")).toHaveValue("30", {
       timeout: 1000,
     });
-  }).toPass();
+  }).toPass({ timeout: 30_000 });
   await highlight(presetButton);
   await capture(page, "record-feeding");
   await presetButton.evaluate((element) => {
@@ -322,6 +349,31 @@ test("ヘルプのスクリーンショットを撮る", async ({ page }) => {
   ).toBeVisible();
   await capture(page, "timeline");
 
+  // AI との接続の同意画面。本番では Worker が付けるヘッダーを、ここでは自分で付けて開く。
+  // setExtraHTTPHeaders だとフォントなどほかのサイトへのリクエストにも付き、CORS で読み込めなく
+  // なるため、同意画面へのリクエストだけに付ける。通知の撮影で Service Worker を登録すると、
+  // リクエストが Service Worker を通って page.route で書き換えられなくなるため、通知より先に撮る
+  const isConsentPage = (url: URL) => url.pathname === "/oauth/authorize";
+  const consentHeader = encodeMcpConsentRequest({
+    clientId: "help-client",
+    clientName: "ChatGPT",
+    redirectUri: "https://chatgpt.com/connector/oauth/callback",
+  });
+  await page.route(isConsentPage, (route) =>
+    route.continue({
+      headers: {
+        ...route.request().headers(),
+        [MCP_CONSENT_HEADER]: consentHeader,
+      },
+    }),
+  );
+  await page.goto(
+    "/oauth/authorize?response_type=code&client_id=help-client&redirect_uri=https%3A%2F%2Fchatgpt.com%2Fconnector%2Foauth%2Fcallback&state=help",
+  );
+  await expect(page.getByRole("button", { name: "許可する" })).toBeVisible();
+  await capture(page, "ai-consent");
+  await page.unroute(isConsentPage);
+
   // 通知。next dev では Service Worker を登録しないため、通知の設定の確認が終わるよう自分で登録する
   await page.goto("/settings/notifications");
   await page.evaluate(() => navigator.serviceWorker.register("/sw.js"));
@@ -342,21 +394,6 @@ test("ヘルプのスクリーンショットを撮る", async ({ page }) => {
   await page.goto(`${catPath}/notification-settings`);
   await expect(page.getByRole("button", { name: "保存する" })).toBeVisible();
   await capture(page, "cat-notification-settings");
-
-  // AI との接続の同意画面。本番では Worker が付けるヘッダーを、ここでは自分で付けて開く
-  await page.setExtraHTTPHeaders({
-    [MCP_CONSENT_HEADER]: encodeMcpConsentRequest({
-      clientId: "help-client",
-      clientName: "ChatGPT",
-      redirectUri: "https://chatgpt.com/connector/oauth/callback",
-    }),
-  });
-  await page.goto(
-    "/oauth/authorize?response_type=code&client_id=help-client&redirect_uri=https%3A%2F%2Fchatgpt.com%2Fconnector%2Foauth%2Fcallback&state=help",
-  );
-  await expect(page.getByRole("button", { name: "許可する" })).toBeVisible();
-  await capture(page, "ai-consent");
-  await page.setExtraHTTPHeaders({});
 
   // 撮り漏れがないことを確かめる
   expect(HELP_SCREENSHOT_NAMES.filter((name) => !captured.has(name))).toEqual(
