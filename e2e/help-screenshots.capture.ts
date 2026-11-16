@@ -49,7 +49,7 @@ async function hideOverlays(page: Page) {
  * フォントの指定の先頭は system-ui のため、撮影する環境の既定のフォントで描かれ、Linux では
  * 中国語のフォントの字形になることがある。環境によらず同じ見た目で撮れるよう、Web フォントを読み込む
  */
-async function useJapaneseFont(page: Page) {
+async function applyJapaneseFont(page: Page) {
   await page.addStyleTag({
     content: `@import url("${JAPANESE_FONT_CSS_URL}");
 :root { --font-sans: "Noto Sans JP", sans-serif !important; }
@@ -57,7 +57,7 @@ input, textarea, select, button { font-family: inherit; }`,
   });
   await page.evaluate(async () => {
     // 画面にある文字の分だけ読み込まれるため、表示中の文字を指定して読み込みを待つ
-    const text = document.body.innerText;
+    const text = document.body.textContent ?? "";
     await Promise.all(
       ["400", "700"].map((weight) =>
         document.fonts.load(`${weight} 16px "Noto Sans JP"`, text),
@@ -84,7 +84,7 @@ async function highlight(locator: Locator) {
 async function capture(page: Page, name: HelpScreenshotName) {
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   await hideOverlays(page);
-  await useJapaneseFont(page);
+  await applyJapaneseFont(page);
   // 最後に入力した欄のフォーカスの枠が写らないようにする（押す場所は highlight の枠で示す）
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) {
