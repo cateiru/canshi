@@ -1,6 +1,10 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { liveRowCondition } from "@/db/conditionalInsert";
+import {
+  insertWhere,
+  writableCatCondition,
+  writableRowCondition,
+} from "@/db/conditionalInsert";
 import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import { shampooRecords } from "@/db/schema";
 import type { ShampooRecordRepository } from "../domain/shampooRecordRepository";
@@ -15,20 +19,33 @@ export function createShampooRecordRepository(
       eq(shampooRecords.id, id),
       eq(shampooRecords.catId, catId),
       isNull(shampooRecords.deletedAt),
+      // メモリーへ移した猫の記録は書き換えない
+      writableCatCondition(catId),
     );
   return {
     async add(catId, content, actor) {
       const id = crypto.randomUUID();
-      await db.batch([
-        db.insert(shampooRecords).values({ id, catId, ...content }),
-        insertRecordChangeLog(db, {
-          recordType: "shampoo_record",
-          recordId: id,
-          action: "create",
-          actor,
-        }),
+      // メモリーへ移した猫には記録を追加しない
+      const [created] = await db.batch([
+        insertWhere(
+          db,
+          shampooRecords,
+          { id, catId, ...content },
+          writableCatCondition(catId),
+        ).returning({ id: shampooRecords.id }),
+        // 挿入が断られたときは履歴も追加しない
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "shampoo_record",
+            recordId: id,
+            action: "create",
+            actor,
+          },
+          writableRowCondition(shampooRecords, catId, id),
+        ),
       ]);
-      return id;
+      return created.length > 0 ? id : null;
     },
     async update(catId, id, content, actor) {
       const [updated] = await db.batch([
@@ -45,7 +62,7 @@ export function createShampooRecordRepository(
             action: "update",
             actor,
           },
-          liveRowCondition(shampooRecords, catId, id),
+          writableRowCondition(shampooRecords, catId, id),
         ),
       ]);
       return updated.length > 0;
@@ -61,7 +78,7 @@ export function createShampooRecordRepository(
             action: "delete",
             actor,
           },
-          liveRowCondition(shampooRecords, catId, id),
+          writableRowCondition(shampooRecords, catId, id),
         ),
         db
           .update(shampooRecords)

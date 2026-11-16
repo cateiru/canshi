@@ -6,19 +6,19 @@ import type { WeightRecordContent } from "./weightRecord";
  * 実装は `../infrastructure/weightRecordRepository.ts`
  */
 export interface WeightRecordRepository {
-  /** 記録を追加し、その ID を返す */
+  /** 記録を追加し、その ID を返す。猫がメモリーへ移されていれば追加せず null */
   add(
     catId: string,
     content: WeightRecordContent,
     actor: RecordActor,
-  ): Promise<string>;
-  /** 記録を書き換える。見つからなければ false */
+  ): Promise<string | null>;
+  /** 記録を書き換える。見つからない・猫がメモリーへ移されていれば false */
   update(
     catId: string,
     id: string,
     content: WeightRecordContent,
     actor: RecordActor,
   ): Promise<boolean>;
-  /** 記録を論理削除する（削除日時を入れる）。見つからない・削除済みなら false */
+  /** 記録を論理削除する（削除日時を入れる）。見つからない・削除済み・猫がメモリーへ移されていれば false */
   remove(catId: string, id: string, actor: RecordActor): Promise<boolean>;
 }

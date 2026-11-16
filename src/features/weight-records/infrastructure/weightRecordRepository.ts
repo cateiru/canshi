@@ -1,6 +1,10 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { liveRowCondition } from "@/db/conditionalInsert";
+import {
+  insertWhere,
+  writableCatCondition,
+  writableRowCondition,
+} from "@/db/conditionalInsert";
 import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import { weightRecords } from "@/db/schema";
 import type { WeightRecordRepository } from "../domain/weightRecordRepository";
@@ -15,20 +19,33 @@ export function createWeightRecordRepository(
       eq(weightRecords.id, id),
       eq(weightRecords.catId, catId),
       isNull(weightRecords.deletedAt),
+      // メモリーへ移した猫の記録は書き換えない
+      writableCatCondition(catId),
     );
   return {
     async add(catId, content, actor) {
       const id = crypto.randomUUID();
-      await db.batch([
-        db.insert(weightRecords).values({ id, catId, ...content }),
-        insertRecordChangeLog(db, {
-          recordType: "weight_record",
-          recordId: id,
-          action: "create",
-          actor,
-        }),
+      // メモリーへ移した猫には記録を追加しない
+      const [created] = await db.batch([
+        insertWhere(
+          db,
+          weightRecords,
+          { id, catId, ...content },
+          writableCatCondition(catId),
+        ).returning({ id: weightRecords.id }),
+        // 挿入が断られたときは履歴も追加しない
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "weight_record",
+            recordId: id,
+            action: "create",
+            actor,
+          },
+          writableRowCondition(weightRecords, catId, id),
+        ),
       ]);
-      return id;
+      return created.length > 0 ? id : null;
     },
     async update(catId, id, content, actor) {
       const [updated] = await db.batch([
@@ -45,7 +62,7 @@ export function createWeightRecordRepository(
             action: "update",
             actor,
           },
-          liveRowCondition(weightRecords, catId, id),
+          writableRowCondition(weightRecords, catId, id),
         ),
       ]);
       return updated.length > 0;
@@ -61,7 +78,7 @@ export function createWeightRecordRepository(
             action: "delete",
             actor,
           },
-          liveRowCondition(weightRecords, catId, id),
+          writableRowCondition(weightRecords, catId, id),
         ),
         db
           .update(weightRecords)

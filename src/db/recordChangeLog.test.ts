@@ -175,6 +175,7 @@ describe("猫の記録（同じ形のリポジトリ）", () => {
       it("作成・編集・削除した人を残す", async () => {
         const repo = repository();
         const id = await repo.add("tama", content(values), actor);
+        if (id == null) throw new Error("追加できなかった");
         expect(await repo.update("tama", id, content(values), aiActor)).toBe(
           true,
         );
@@ -190,6 +191,7 @@ describe("猫の記録（同じ形のリポジトリ）", () => {
       it("書き込みが断られたときは残さない", async () => {
         const repo = repository();
         const id = await repo.add("tama", content(values), actor);
+        if (id == null) throw new Error("追加できなかった");
         await db.delete(recordChangeLogs);
 
         // 別の猫の記録
@@ -289,6 +291,7 @@ describe("掃除の記録", () => {
     const repo = createCleaningRecordRepository();
     const values = { performedAt: at, memo: null };
     const id = await repo.add("tama", "target", values, null, actor);
+    if (id == null) throw new Error("追加できなかった");
     expect(await repo.update("tama", "target", id, values, null, aiActor)).toBe(
       true,
     );
@@ -692,6 +695,9 @@ describe("物理削除", () => {
       content({ occurredAt: at, consistency: "normal" }),
       actor,
     );
+    if (tamaRecord == null || kuroRecord == null) {
+      throw new Error("追加できなかった");
+    }
     const symptom = await createSymptomRepository().add(
       "tama",
       content({ symptomType: "くしゃみ", onsetAt: at, status: "ongoing" }),
@@ -731,6 +737,7 @@ describe("物理削除", () => {
     const values = { performedAt: at, memo: null };
     await repo.add("tama", "target", values, null, actor);
     const otherId = await repo.add("tama", "other-target", values, null, actor);
+    if (otherId == null) throw new Error("追加できなかった");
 
     await createCleaningTargetRepository().remove("tama", "target");
 

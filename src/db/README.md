@@ -182,6 +182,17 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - メモリーへ移した猫の記録の追加・編集・削除、プロフィール・通知の設定の変更は、画面の Server Action では
     `requireWritableCatAccess`、MCP では `resolveWritableCat`・`resolveCatOperation` で断る。プロフィールの更新文
     （`updateForMember`・`markNeuteredForMember`）は WHERE でも `memorial_date IS NULL` を確かめる
+  - 記録（論理削除と同じ記録テーブルのうち、猫に属する 13 テーブル）と掃除対象を書き込むリポジトリの文も、
+    `src/db/conditionalInsert.ts` の `writableCatCondition`（記録の行は `writableRowCondition`）で
+    `memorial_date IS NULL` を確かめる（#576）。確認の後、書き込みの前に別の家族が猫をメモリーへ移した場合に、
+    移した直後の記録が追加・編集・削除されないようにするため。同じ batch に並べる履歴・明細・紐付けの解除・通知の完了・
+    病院代の文にも同じ条件を付け、記録の文だけが断られてほかの文が通ることを防ぐ
+    - 書き込めなかったときは、追加は ID の代わりに null、編集・削除は false を返す（見つからないときと同じ）。
+      うんち・体重などの同じ形の記録の追加で null が返ると、画面は `redirectFromMemorialCat` で猫のページへ移し
+      （`requireWritableCatAccess` と同じ）、MCP はメモリーへ移されたことを伝えるエラーを返す。編集・削除と、
+      ほかの記録（関連する記録・服薬予定・家などの条件でも断られうるもの）の追加は、これまでの断られたときと同じ扱いにする
+    - 家のメンバーであることは、今は記録の文の中では確かめない（画面・MCP の確認だけ。ごはん記録は猫が確認した
+      時点の家にいることを確かめる）
   - メモリーへ移す文（`memorializeForMember`）と同じ batch で、その猫の未対応の通知を `dismissed` にし、すべてのユーザーの
     `mcp_permissions.writable_record_types` からその猫のキーを `json_remove` で外す。記録できる猫がいなくなった家の
     ごはんの時間の通知も閉じる。メモリーから戻しても、閉じた通知・外した書き込みの許可は戻さない

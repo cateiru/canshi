@@ -1,6 +1,10 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { liveRowCondition } from "@/db/conditionalInsert";
+import {
+  insertWhere,
+  writableCatCondition,
+  writableRowCondition,
+} from "@/db/conditionalInsert";
 import { insertRecordChangeLog } from "@/db/recordChangeLog";
 import { brushingRecords } from "@/db/schema";
 import type { BrushingRecordRepository } from "../domain/brushingRecordRepository";
@@ -15,20 +19,33 @@ export function createBrushingRecordRepository(
       eq(brushingRecords.id, id),
       eq(brushingRecords.catId, catId),
       isNull(brushingRecords.deletedAt),
+      // メモリーへ移した猫の記録は書き換えない
+      writableCatCondition(catId),
     );
   return {
     async add(catId, content, actor) {
       const id = crypto.randomUUID();
-      await db.batch([
-        db.insert(brushingRecords).values({ id, catId, ...content }),
-        insertRecordChangeLog(db, {
-          recordType: "brushing_record",
-          recordId: id,
-          action: "create",
-          actor,
-        }),
+      // メモリーへ移した猫には記録を追加しない
+      const [created] = await db.batch([
+        insertWhere(
+          db,
+          brushingRecords,
+          { id, catId, ...content },
+          writableCatCondition(catId),
+        ).returning({ id: brushingRecords.id }),
+        // 挿入が断られたときは履歴も追加しない
+        insertRecordChangeLog(
+          db,
+          {
+            recordType: "brushing_record",
+            recordId: id,
+            action: "create",
+            actor,
+          },
+          writableRowCondition(brushingRecords, catId, id),
+        ),
       ]);
-      return id;
+      return created.length > 0 ? id : null;
     },
     async update(catId, id, content, actor) {
       const [updated] = await db.batch([
@@ -45,7 +62,7 @@ export function createBrushingRecordRepository(
             action: "update",
             actor,
           },
-          liveRowCondition(brushingRecords, catId, id),
+          writableRowCondition(brushingRecords, catId, id),
         ),
       ]);
       return updated.length > 0;
@@ -61,7 +78,7 @@ export function createBrushingRecordRepository(
             action: "delete",
             actor,
           },
-          liveRowCondition(brushingRecords, catId, id),
+          writableRowCondition(brushingRecords, catId, id),
         ),
         db
           .update(brushingRecords)

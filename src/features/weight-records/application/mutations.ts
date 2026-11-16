@@ -9,13 +9,13 @@ import { createWeightRecordRepository } from "../infrastructure/weightRecordRepo
  * `getCloudflareContext()` を使えないため、D1 は引数で受け取る
  */
 
-/** 記録を追加し、その ID を返す */
+/** 記録を追加し、その ID を返す。猫がメモリーへ移されていれば追加せず null */
 export async function createWeightRecord(
   catId: string,
   data: WeightRecordFormInput,
   actor: RecordActor,
   d1?: D1Database,
-): Promise<string> {
+): Promise<string | null> {
   return createWeightRecordRepository(d1).add(
     catId,
     toWeightRecordContent(data),
@@ -23,7 +23,7 @@ export async function createWeightRecord(
   );
 }
 
-/** 猫の記録を更新する。見つからなければ false */
+/** 猫の記録を更新する。見つからない・猫がメモリーへ移されていれば false */
 export async function updateWeightRecord(
   catId: string,
   id: string,
@@ -39,7 +39,7 @@ export async function updateWeightRecord(
   );
 }
 
-/** 猫の記録を論理削除する（削除日時を入れ、一覧・タイムライン・集計から除く）。見つからなければ false */
+/** 猫の記録を論理削除する（削除日時を入れ、一覧・タイムライン・集計から除く）。見つからない・猫がメモリーへ移されていれば false */
 export async function deleteWeightRecord(
   catId: string,
   id: string,

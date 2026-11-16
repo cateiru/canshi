@@ -1,7 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireWritableCatAccess } from "@/features/auth/presentation/session";
+import {
+  redirectFromMemorialCat,
+  requireWritableCatAccess,
+} from "@/features/auth/presentation/session";
 import { syncRecordMediaFromForm } from "@/features/media/presentation/attach";
 import type { MediaFormState } from "@/features/media/presentation/useMediaFormAction";
 import { userActor } from "@/features/shared/recordActor";
@@ -47,6 +50,9 @@ export async function createMemoRecordAction(
   }
 
   const id = await createMemoRecord(catId, parsed.data, userActor(user));
+  if (id == null) {
+    redirectFromMemorialCat(catId);
+  }
 
   const mediaError = await syncRecordMediaFromForm(
     MEMO_RECORD_MEDIA_TYPE,

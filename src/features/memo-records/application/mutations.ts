@@ -9,13 +9,13 @@ import { createMemoRecordRepository } from "../infrastructure/memoRecordReposito
  * `getCloudflareContext()` を使えないため、D1 は引数で受け取る
  */
 
-/** 記録を追加し、その ID を返す */
+/** 記録を追加し、その ID を返す。猫がメモリーへ移されていれば追加せず null */
 export async function createMemoRecord(
   catId: string,
   data: MemoRecordFormInput,
   actor: RecordActor,
   d1?: D1Database,
-): Promise<string> {
+): Promise<string | null> {
   return createMemoRecordRepository(d1).add(
     catId,
     toMemoRecordContent(data),
@@ -23,7 +23,7 @@ export async function createMemoRecord(
   );
 }
 
-/** 猫の記録を更新する。見つからなければ false */
+/** 猫の記録を更新する。見つからない・猫がメモリーへ移されていれば false */
 export async function updateMemoRecord(
   catId: string,
   id: string,
@@ -41,7 +41,7 @@ export async function updateMemoRecord(
 
 /**
  * 猫の記録を論理削除する（削除日時を入れ、一覧・タイムライン・集計から除く）。
- * 紐付く画像（R2 のオブジェクトと media_assets 行）は消さずに残す。見つからなければ false
+ * 紐付く画像（R2 のオブジェクトと media_assets 行）は消さずに残す。見つからない・猫がメモリーへ移されていれば false
  */
 export async function deleteMemoRecord(
   catId: string,

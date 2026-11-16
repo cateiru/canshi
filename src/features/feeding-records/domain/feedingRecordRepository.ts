@@ -17,7 +17,7 @@ export interface FeedingRecordRepository {
   /** 猫の記録の日時を読む。見つからなければ null */
   findOccurredAtForCat(catId: string, id: string): Promise<Date | null>;
   /**
-   * 記録を明細ごと追加し、その ID を返す。猫が `householdId` の家にいなければ null。
+   * 記録を明細ごと追加し、その ID を返す。猫が `householdId` の家にいない・メモリーへ移されていれば null。
    * `completeNotifications` なら、家の未対応のごはんの時間の通知を同じ batch で完了にする
    */
   addWhileCatInHousehold(
@@ -27,7 +27,9 @@ export interface FeedingRecordRepository {
     completeNotifications: boolean,
     actor: RecordActor,
   ): Promise<string | null>;
-  /** 記録を書き換え、明細を入れ直す。猫が `householdId` の家にいなければ false */
+  /**
+   * 記録を書き換え、明細を入れ直す。猫が `householdId` の家にいない・メモリーへ移されていれば false
+   */
   updateWhileCatInHousehold(
     catId: string,
     householdId: string,
@@ -36,6 +38,6 @@ export interface FeedingRecordRepository {
     completeNotifications: boolean,
     actor: RecordActor,
   ): Promise<boolean>;
-  /** 猫の記録を論理削除する（明細は残す）。見つからない・削除済みなら false */
+  /** 猫の記録を論理削除する（明細は残す）。見つからない・削除済み・猫がメモリーへ移されていれば false */
   remove(catId: string, id: string, actor: RecordActor): Promise<boolean>;
 }
