@@ -1,0 +1,230 @@
+/* 家・ねこ・記録の関係を表す家系図のような図。家を真ん中に、上の人・下のねこを線でつなぐ */
+
+.figure {
+  --tree-line-width: 2px;
+  --tree-line-height: var(--space-4);
+  --tree-line-color: var(--color-border-input);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 440px;
+  margin-inline: auto;
+}
+
+/* 家の上に並べる人。下の家へ向けて線を集める */
+.parents {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding-bottom: var(--tree-line-height);
+  list-style: none;
+}
+
+.parents::after {
+  position: absolute;
+  bottom: 0;
+  left: calc(50% - var(--tree-line-width) / 2);
+  height: var(--tree-line-height);
+  border-left: var(--tree-line-width) solid var(--tree-line-color);
+  content: "";
+}
+
+.parent {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 0 2px var(--tree-line-height);
+}
+
+.parent::before,
+.parent::after {
+  position: absolute;
+  bottom: 0;
+  width: 50%;
+  height: var(--tree-line-height);
+  border-bottom: var(--tree-line-width) solid var(--tree-line-color);
+  content: "";
+}
+
+.parent::before {
+  right: calc(50% - var(--tree-line-width) / 2);
+}
+
+.parent::after {
+  left: calc(50% - var(--tree-line-width) / 2);
+  border-left: var(--tree-line-width) solid var(--tree-line-color);
+}
+
+.parent:first-child::before,
+.parent:last-child::after {
+  border: 0;
+}
+
+.parent:first-child::after {
+  border-bottom-left-radius: 10px;
+}
+
+.parent:last-child::before {
+  border-right: var(--tree-line-width) solid var(--tree-line-color);
+  border-bottom-right-radius: 10px;
+}
+
+/* 家・ねこの下に並べる子。親から下へ縦の線を引く */
+.children {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding-top: var(--tree-line-height);
+  list-style: none;
+}
+
+.children::before {
+  position: absolute;
+  top: 0;
+  left: calc(50% - var(--tree-line-width) / 2);
+  height: var(--tree-line-height);
+  border-left: var(--tree-line-width) solid var(--tree-line-color);
+  content: "";
+}
+
+/* 子 1 つ分。上端に兄弟をつなぐ横の線と、子へ下りる縦の線を引く */
+.branch {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: var(--tree-line-height) 2px 0;
+}
+
+.branch::before,
+.branch::after {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: var(--tree-line-height);
+  border-top: var(--tree-line-width) solid var(--tree-line-color);
+  content: "";
+}
+
+.branch::before {
+  right: calc(50% - var(--tree-line-width) / 2);
+}
+
+.branch::after {
+  left: calc(50% - var(--tree-line-width) / 2);
+  border-left: var(--tree-line-width) solid var(--tree-line-color);
+}
+
+/* 両端の子は外側へ線を伸ばさず、角を丸めて下ろす */
+.branch:first-child::before,
+.branch:last-child::after {
+  border: 0;
+}
+
+.branch:first-child::after {
+  border-top-left-radius: 10px;
+}
+
+.branch:last-child::before {
+  border-right: var(--tree-line-width) solid var(--tree-line-color);
+  border-top-right-radius: 10px;
+}
+
+/* 子が 1 つだけなら、親からまっすぐ下ろす */
+.branch:only-child {
+  padding-top: 0;
+}
+
+.branch:only-child::before,
+.branch:only-child::after {
+  display: none;
+}
+
+.node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  text-align: center;
+}
+
+.household {
+  padding: var(--space-2) var(--space-6);
+  border: 2px solid var(--color-accent-border);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-bg));
+}
+
+.nodeIcon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: var(--space-1);
+}
+
+.household .nodeIcon {
+  width: 40px;
+  height: 40px;
+}
+
+.kind {
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  line-height: var(--line-height-heading);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+  white-space: nowrap;
+}
+
+.records {
+  gap: var(--space-1);
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+}
+
+.recordList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.record {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-xs);
+  line-height: var(--line-height-heading);
+  white-space: nowrap;
+}
+
+.recordIcon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.caption {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
