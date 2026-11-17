@@ -51,6 +51,16 @@
   flex-shrink: 0;
 }
 
+/*
+ * 共通のアイコンボタンの hover の背景（ink 7%）は、アクセント色の淡いパネルの上では濁ったグレーに
+ * 見えるため、パネルの上のほかのボタンと同じ地の色にする。共通のスタイルより確実に優先されるよう、
+ * パネルのクラスを付けて詳細度を上げる
+ */
+.panel .quit:hover,
+.panel .quit[data-hovered] {
+  background: var(--color-bg);
+}
+
 .steps {
   display: flex;
   gap: var(--space-1);
