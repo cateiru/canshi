@@ -37,6 +37,8 @@ export const HELP_SCREENSHOT_NAMES = [
   "notification-settings",
   "cat-notification-settings",
   "ai-consent",
+  "install-banner-ios",
+  "install-banner-android",
 ] as const;
 
 export type HelpScreenshotName = (typeof HELP_SCREENSHOT_NAMES)[number];

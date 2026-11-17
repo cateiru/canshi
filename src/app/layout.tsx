@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/features/auth/presentation/session";
 import { NavigationProgress } from "@/features/navigation/NavigationProgress";
 import { NavigationTracker } from "@/features/navigation/NavigationTracker";
 import { NotificationBadge } from "@/features/notifications/presentation/NotificationBadge";
+import { InstallAppBanner } from "@/features/pwa/InstallAppBanner";
 import { ServiceWorkerRegistration } from "@/features/pwa/ServiceWorkerRegistration";
 import { TourGuideLoader } from "@/features/tour/presentation/TourGuideLoader";
 import "@/styles/globals.css";
@@ -107,6 +108,8 @@ export default async function RootLayout({
         {user ? <TourGuideLoader /> : null}
         <div className={styles.content}>{children}</div>
         <Footer />
+        {/* ホーム画面から開いていないときに、画面の下に追加を勧める */}
+        <InstallAppBanner />
         <ToastRegionRoot />
         <ServiceWorkerRegistration />
         <Suspense fallback={null}>
