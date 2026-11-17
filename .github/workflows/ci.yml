@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# 同じ PR・ブランチに新しいコミットが来たら、古い CI（E2E・VRT を含む）を止める
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     runs-on: ubuntu-latest
