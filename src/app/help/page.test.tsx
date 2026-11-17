@@ -1,6 +1,11 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import HelpIndexPage from "./page";
+
+// はじめてガイドのカードは、ログイン中かを調べる非同期のコンポーネントのため、ここでは描画しない
+vi.mock("@/features/tour/presentation/TourStartCard", () => ({
+  TourStartCard: () => null,
+}));
 
 describe("HelpIndexPage", () => {
   it("記事をカテゴリごとに表示する", () => {

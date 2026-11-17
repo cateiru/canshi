@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { fillAndKeep } from "./helpers";
+import { fillAndKeep, quitTourGuide } from "./helpers";
 
 // 家の設定（名前の変更・招待 URL）と、猫一覧の家ごとのまとまりの開閉を検証する。
 // メンバーを外す・オーナーを移譲する・招待 URL で別のユーザーが参加する操作は、
@@ -475,6 +475,8 @@ test("家に所属していないユーザーは、猫一覧から家を作成�
       .fill(`e2e-new-household-${Date.now()}@example.com`);
     await page.getByRole("button", { name: "ログイン" }).click();
     await expect(page).toHaveURL(/\/cats$/);
+    // はじめてログインしたユーザーには、はじめてガイドが出る。ここでは猫一覧からの導線を確かめるため、やめておく
+    await quitTourGuide(page);
 
     await expect(page.getByText("所属している家がありません。")).toBeVisible();
     // 家がないうちは猫を登録できないため、追加メニューを出さない

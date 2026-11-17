@@ -10,6 +10,7 @@
 - `HelpArticle.tsx`: 記事の共通の枠（パンくず・見出し・関連するヘルプ）
 - `HelpSteps.tsx`・`HelpScreenshot.tsx`: 手順と、スマートフォンの画面のスクリーンショット
 - 記事のページは `src/app/help/<slug>/page.tsx` に置く
+- ヘルプの一覧（`/help`）には、はじめてガイド（`src/features/tour`）をはじめるカードを、ログイン中だけ出す
 
 ## スクリーンショット
 

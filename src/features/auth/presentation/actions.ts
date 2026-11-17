@@ -4,6 +4,12 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  shouldStartTourOnLogin,
+  TOUR_COOKIE_NAME,
+  TOUR_STEPS,
+} from "@/features/tour/domain/tour";
+import { tourCookieOptions } from "@/features/tour/presentation/tourState";
 import { loginWithEmail } from "../application/login";
 import { sanitizeCallbackUrl } from "../domain/callbackUrl";
 import {
@@ -36,17 +42,19 @@ export async function developmentLoginAction(
     throw new Error("メールアドレスを入力してください");
   }
 
-  const { token, expiresAt } = await loginWithEmail(
+  const { token, expiresAt, isNewUser } = await loginWithEmail(
     email,
     env,
     (await headers()).get("user-agent"),
   );
-  (await cookies()).set(
-    SESSION_COOKIE_NAME,
-    token,
-    sessionCookieOptions(expiresAt),
-  );
-  redirect(sanitizeCallbackUrl(formData.get("callbackUrl")));
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, token, sessionCookieOptions(expiresAt));
+  const callbackUrl = sanitizeCallbackUrl(formData.get("callbackUrl"));
+  // はじめてログインしたユーザーには、はじめてガイドを家の作成から表示する（OIDC のコールバックと同じ）
+  if (shouldStartTourOnLogin(isNewUser, callbackUrl)) {
+    cookieStore.set(TOUR_COOKIE_NAME, TOUR_STEPS[0], tourCookieOptions());
+  }
+  redirect(callbackUrl);
 }
 
 /** セッションを DB から削除し、Cookie も消す。削除後は古い Cookie が残っても使えない */

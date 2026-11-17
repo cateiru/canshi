@@ -9,6 +9,7 @@ import { NavigationProgress } from "@/features/navigation/NavigationProgress";
 import { NavigationTracker } from "@/features/navigation/NavigationTracker";
 import { NotificationBadge } from "@/features/notifications/presentation/NotificationBadge";
 import { ServiceWorkerRegistration } from "@/features/pwa/ServiceWorkerRegistration";
+import { TourGuideLoader } from "@/features/tour/presentation/TourGuideLoader";
 import "@/styles/globals.css";
 import styles from "./layout.module.css";
 
@@ -102,6 +103,8 @@ export default async function RootLayout({
             </>
           ) : null}
         </header>
+        {/* はじめてガイドの途中のときだけ、今のステップの案内を出す */}
+        {user ? <TourGuideLoader /> : null}
         <div className={styles.content}>{children}</div>
         <Footer />
         <ToastRegionRoot />
