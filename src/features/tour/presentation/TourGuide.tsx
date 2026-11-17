@@ -267,6 +267,7 @@ export function TourGuide({ view: serverView }: TourGuideProps) {
         {canLeaveTourStep(step, view.progress) ? (
           <Button
             variant={isDone ? "primary" : "secondary"}
+            className={isDone ? undefined : styles.secondaryOnPanel}
             isDisabled={isPending}
             onPress={advance}
           >
@@ -349,7 +350,7 @@ function ChecklistItem({
         href={href}
         variant="secondary"
         rightIcon={TbChevronRight}
-        className={styles.checkAction}
+        className={`${styles.checkAction} ${styles.secondaryOnPanel}`}
         aria-label={`${label}を${isChecked ? "確認する" : "設定する"}`}
       >
         {isChecked ? "確認する" : "設定する"}

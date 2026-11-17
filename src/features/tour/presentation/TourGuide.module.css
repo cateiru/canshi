@@ -144,6 +144,14 @@
   margin-left: auto;
 }
 
+/*
+ * パネルの上に置く secondary のボタン。共通の secondary の背景（ink 4%）はアクセント色の淡い背景に
+ * 溶け込んで形が見えにくいため、白い背景にしてボタンの形をはっきりさせる
+ */
+.secondaryOnPanel {
+  background-color: var(--color-bg);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
