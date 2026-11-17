@@ -18,7 +18,7 @@ import {
   getTourView,
   loadTourProgress,
   readTourPosition,
-  tourCookieOptions,
+  writeTourPosition,
 } from "./tourState";
 
 /**
@@ -29,7 +29,7 @@ export async function startTourAction(): Promise<void> {
   const user = await requireUser();
   const { householdId, progress } = await loadTourProgress(user.id);
   const step = resumeTourPosition(progress);
-  (await cookies()).set(TOUR_COOKIE_NAME, step, tourCookieOptions());
+  await writeTourPosition(user.id, step);
   if (!isTourStepDone(step, progress)) {
     redirect(tourStepHref(step, householdId));
   }
@@ -42,7 +42,7 @@ export async function startTourAction(): Promise<void> {
  */
 export async function advanceTourAction(from: TourStep): Promise<void> {
   const user = await requireUser();
-  const position = await readTourPosition();
+  const position = await readTourPosition(user.id);
   if (!position) {
     return;
   }
@@ -55,7 +55,7 @@ export async function advanceTourAction(from: TourStep): Promise<void> {
   }
 
   const next = nextTourPosition(from);
-  (await cookies()).set(TOUR_COOKIE_NAME, next, tourCookieOptions());
+  await writeTourPosition(user.id, next);
   if (next !== "done" && !isTourStepDone(next, progress)) {
     redirect(tourStepHref(next, householdId));
   }

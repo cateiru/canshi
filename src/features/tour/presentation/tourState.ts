@@ -12,7 +12,8 @@ import {
 import {
   EMPTY_TOUR_PROGRESS,
   effectiveTourPosition,
-  parseTourPosition,
+  encodeTourCookie,
+  parseTourCookie,
   TOUR_COOKIE_MAX_AGE_SECONDS,
   TOUR_COOKIE_NAME,
   type TourPosition,
@@ -63,22 +64,42 @@ export async function loadTourProgress(
   };
 }
 
-/** Cookie のガイドの位置。ガイドの途中でなければ null */
-export async function readTourPosition(): Promise<TourPosition | null> {
-  return parseTourPosition((await cookies()).get(TOUR_COOKIE_NAME)?.value);
+/** ユーザーのガイドの位置。ガイドの途中でない・別のユーザーの Cookie なら null */
+export async function readTourPosition(
+  userId: string,
+): Promise<TourPosition | null> {
+  return parseTourCookie(
+    (await cookies()).get(TOUR_COOKIE_NAME)?.value,
+    userId,
+  );
+}
+
+/** ユーザーのガイドの位置を Cookie に書く（Server Action から使う） */
+export async function writeTourPosition(
+  userId: string,
+  position: TourPosition,
+) {
+  (await cookies()).set(
+    TOUR_COOKIE_NAME,
+    encodeTourCookie(userId, position),
+    tourCookieOptions(),
+  );
 }
 
 /**
  * ガイドのパネルに表示する状態。ガイドの途中でない・ログインしていないときは null。
- * ガイドの途中でなければ DB を読まない（ふだんの表示を遅くしない）
+ * ガイドの Cookie がなければ DB を読まない（ふだんの表示を遅くしない）
  */
 export const getTourView = cache(async (): Promise<TourView | null> => {
-  const position = await readTourPosition();
-  if (!position) {
+  if (!(await cookies()).has(TOUR_COOKIE_NAME)) {
     return null;
   }
   const user = await getCurrentUser();
   if (!user) {
+    return null;
+  }
+  const position = await readTourPosition(user.id);
+  if (!position) {
     return null;
   }
   const { householdId, progress } = await loadTourProgress(user.id);

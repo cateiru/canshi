@@ -25,5 +25,5 @@ export async function loginWithEmail(
   const isNewUser = (await findUserByEmailHash(emailHash)) === null;
   const user = await findOrCreateUserByEmailHash(emailHash);
   const session = await createSession(user.id, { userAgent });
-  return { ...session, isNewUser };
+  return { ...session, userId: user.id, isNewUser };
 }

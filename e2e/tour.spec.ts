@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { DEVELOPMENT_LOGIN_EMAIL } from "../src/features/auth/infrastructure/developmentLogin";
 import { fillAndKeep } from "./helpers";
 
 // はじめてガイドは、はじめてログインしたユーザーに出るため、保存済みのセッションを使わず、
@@ -134,4 +135,23 @@ test("ガイドはいつでもやめられ、ヘルプから続きを再開で�
   await expect(
     guide.getByText("名前などを入力して「登録する」を押してください。"),
   ).toBeVisible();
+});
+
+test("同じブラウザで別のユーザーに切り替えると、前のユーザーのガイドは出ない", async ({
+  page,
+}) => {
+  await loginAsNewUser(page);
+  await expect(guideOf(page)).toBeVisible();
+
+  // ログアウトせずにセッションの Cookie だけを消し、ガイドの Cookie が残った状態で
+  // 既存のユーザー（e2e のユーザー）としてログインし直す
+  await page.context().clearCookies({ name: "canshi-session" });
+  await page.goto("/login");
+  await fillAndKeep(
+    page.getByLabel("メールアドレス（開発用）"),
+    DEVELOPMENT_LOGIN_EMAIL,
+  );
+  await page.getByRole("button", { name: "ログイン" }).click();
+  await expect(page).toHaveURL(/\/(cats|home)/);
+  await expect(guideOf(page)).toHaveCount(0);
 });

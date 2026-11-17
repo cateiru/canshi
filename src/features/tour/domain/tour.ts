@@ -3,7 +3,9 @@
  * ごはんの時間・プリセットの登録の順に、既存の登録画面へ案内する。
  *
  * どこまで進んだかはこの端末の Cookie にだけ持ち、DB には保存しない。各ステップの登録が済んでいるかは、
- * 表示のたびに家のデータから求める（`TourProgress`）
+ * 表示のたびに家のデータから求める（`TourProgress`）。
+ * 同じブラウザで別のユーザーに切り替えても前のユーザーのガイドが出ないよう、Cookie にはガイドを
+ * はじめたユーザーの ID も持ち、ログイン中のユーザーと違えば読まない（`parseTourCookie`）
  */
 
 /** ガイドの位置を保存する Cookie の名前。Cookie がなければガイドは表示しない */
@@ -45,7 +47,30 @@ export const EMPTY_TOUR_PROGRESS: TourProgress = {
   preset: false,
 };
 
-/** Cookie の値をガイドの位置にする。知らない値は null（ガイドを表示しない） */
+/** Cookie の値。ガイドをはじめたユーザーの ID と、ガイドの位置をつなげる */
+export function encodeTourCookie(userId: string, position: TourPosition) {
+  return `${userId}:${position}`;
+}
+
+/**
+ * Cookie の値から、ログイン中のユーザーのガイドの位置を読む。別のユーザーの Cookie・知らない値は
+ * null（ガイドを表示しない）
+ */
+export function parseTourCookie(
+  value: unknown,
+  userId: string,
+): TourPosition | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const separator = value.lastIndexOf(":");
+  if (separator === -1 || value.slice(0, separator) !== userId) {
+    return null;
+  }
+  return parseTourPosition(value.slice(separator + 1));
+}
+
+/** ガイドの位置の文字列を読む。知らない値は null */
 export function parseTourPosition(value: unknown): TourPosition | null {
   if (value === "done") {
     return value;

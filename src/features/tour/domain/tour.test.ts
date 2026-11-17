@@ -3,10 +3,12 @@ import {
   canLeaveTourStep,
   EMPTY_TOUR_PROGRESS,
   effectiveTourPosition,
+  encodeTourCookie,
   isTourHiddenPath,
   isTourStepDone,
   isTourStepPage,
   nextTourPosition,
+  parseTourCookie,
   parseTourPosition,
   resumeTourPosition,
   shouldStartTourOnLogin,
@@ -29,6 +31,20 @@ describe("parseTourPosition", () => {
     expect(parseTourPosition("done")).toBe("done");
     expect(parseTourPosition("unknown")).toBeNull();
     expect(parseTourPosition(undefined)).toBeNull();
+  });
+});
+
+describe("parseTourCookie", () => {
+  it("ログイン中のユーザーの Cookie だけを読む", () => {
+    const value = encodeTourCookie("user-1", "food");
+    expect(parseTourCookie(value, "user-1")).toBe("food");
+    expect(parseTourCookie(value, "user-2")).toBeNull();
+  });
+
+  it("ユーザーの ID がない古い形式・知らない値は読まない", () => {
+    expect(parseTourCookie("food", "user-1")).toBeNull();
+    expect(parseTourCookie("user-1:unknown", "user-1")).toBeNull();
+    expect(parseTourCookie(undefined, "user-1")).toBeNull();
   });
 });
 
