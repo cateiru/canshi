@@ -62,11 +62,6 @@
   outline-color: var(--color-focus-ring);
 }
 
-.link .title {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
 .iconFrame {
   position: relative;
   display: inline-flex;
@@ -111,6 +106,11 @@
 .title {
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-heading);
+}
+
+.link .title {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .description {
