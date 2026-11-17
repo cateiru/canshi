@@ -332,10 +332,10 @@ function ChecklistItem({
         .filter(Boolean)
         .join(" ")}
     >
-      {/* 登録済みは、箱いっぱいの大きさのチェックを描く（アイコンの TbSquareCheck は中のチェックが小さい） */}
+      {/* 登録済みは、枠の内側に収まる大きさのチェックを描く（アイコンの TbSquareCheck は中のチェックが小さい） */}
       <span className={styles.checkBox} aria-hidden="true">
         {isChecked ? (
-          <ScaledIcon icon={TbCheck} size={20} className={styles.checkMark} />
+          <ScaledIcon icon={TbCheck} size={14} className={styles.checkMark} />
         ) : null}
       </span>
       {/* 登録済みの項目名には打ち消し線を引く。線は読み上げられないため、状態を文字でも伝える */}

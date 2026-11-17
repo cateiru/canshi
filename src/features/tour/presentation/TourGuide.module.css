@@ -120,11 +120,11 @@
   border-color: var(--color-accent-strong);
 }
 
-/* 箱からはみ出さない範囲で、できるだけ大きく太く描く */
+/* 枠（18px・線 2px）の内側 14px に収め、線を少し太くして読みやすくする */
 .checkMark {
   flex-shrink: 0;
   color: var(--color-accent-strong);
-  stroke-width: 3.5;
+  stroke-width: 3;
 }
 
 .checkLabel {
