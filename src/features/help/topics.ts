@@ -1,5 +1,4 @@
 import type { IconType } from "react-icons";
-import { TbFlag } from "react-icons/tb";
 import {
   AiConnectionIcon,
   CatFaceIcon,
@@ -41,13 +40,6 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     id: "getting-started",
     title: "はじめに",
     topics: [
-      {
-        slug: "first-guide",
-        title: "はじめてガイドの使い方",
-        description:
-          "家の作成からごはんの設定までを順番に案内するガイドの進め方と、やめ方・再開のしかたです。",
-        icon: TbFlag,
-      },
       {
         slug: "households-and-cats",
         title: "「家」と「ねこ」とは？",

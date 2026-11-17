@@ -4,6 +4,7 @@ import {
   EMPTY_TOUR_PROGRESS,
   effectiveTourPosition,
   encodeTourCookie,
+  isTourComplete,
   isTourHiddenPath,
   isTourStepDone,
   isTourStepPage,
@@ -92,6 +93,22 @@ describe("nextTourPosition", () => {
     expect(nextTourPosition("cat")).toBe("food");
     expect(nextTourPosition("food")).toBe("feeding");
     expect(nextTourPosition("feeding")).toBe("done");
+  });
+});
+
+describe("isTourComplete", () => {
+  it("すべてのステップの登録が済んでいれば完了にする", () => {
+    expect(isTourComplete(ALL_DONE)).toBe(true);
+    // ごはんの時間・プリセットは、どちらかがあればよい
+    expect(isTourComplete({ ...ALL_DONE, preset: false })).toBe(true);
+  });
+
+  it("登録していないステップがあれば完了にしない", () => {
+    expect(isTourComplete(EMPTY_TOUR_PROGRESS)).toBe(false);
+    expect(isTourComplete({ ...ALL_DONE, food: false })).toBe(false);
+    expect(
+      isTourComplete({ ...ALL_DONE, schedule: false, preset: false }),
+    ).toBe(false);
   });
 });
 

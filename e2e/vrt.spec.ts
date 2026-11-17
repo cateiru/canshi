@@ -145,7 +145,8 @@ test("ホームページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
-// ログイン中のため、はじめてガイドをはじめるカードも写る
+// フィクスチャのユーザーは、はじめてガイドのステップをすべて登録済みのため、ガイドをはじめる欄は出ない
+// （出る見た目は「はじめてガイド」の「ヘルプ一覧（ガイドをはじめる欄）の見た目」で撮る）
 test("ヘルプ一覧ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/help");
   await expect(
@@ -1829,6 +1830,20 @@ test.describe("はじめてガイド", () => {
         });
       });
     }
+
+    // まだ登録が済んでいないユーザーには、ヘルプの一覧にガイドをはじめる欄を出す。
+    // ガイドのパネルが重ならないよう、ガイドの Cookie を消してから撮る
+    test("ヘルプ一覧（ガイドをはじめる欄）の見た目", async ({
+      page,
+    }, testInfo) => {
+      await loginAsNewUser(page);
+      await page.context().clearCookies({ name: TOUR_COOKIE_NAME });
+      await page.goto("/help");
+      await expect(
+        page.getByRole("button", { name: "ガイドをはじめる" }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
 
     test("ガイドをやめたあとの見た目", async ({ page }, testInfo) => {
       await loginAsNewUser(page);

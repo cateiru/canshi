@@ -99,8 +99,16 @@ export function nextTourPosition(step: TourStep): TourPosition {
 }
 
 /**
+ * すべてのステップの登録が済んでいるか。済んでいれば、ヘルプにガイドをはじめる欄を出さない
+ * （`TourStartCard`）
+ */
+export function isTourComplete(progress: TourProgress) {
+  return TOUR_STEPS.every((step) => isTourStepDone(step, progress));
+}
+
+/**
  * ヘルプからガイドをはじめる（再開する）ときの位置。まだ登録していない最初のステップから案内する。
- * すべて登録済みなら、おさらいとして最初から案内する
+ * すべて登録済みのときはヘルプにはじめる欄を出さないが、古い画面から送られたときに備えて最初から案内する
  */
 export function resumeTourPosition(progress: TourProgress): TourStep {
   return (

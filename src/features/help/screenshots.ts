@@ -7,9 +7,6 @@
  * （`screenshots.test.ts` で、ここにある名前の画像がすべてあることを確かめている）
  */
 export const HELP_SCREENSHOT_NAMES = [
-  "tour-start",
-  "tour-feeding",
-  "tour-help",
   "cats-empty",
   "household-new",
   "household-detail",
