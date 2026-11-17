@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
 
+# 同じ PR に新しいコミットが来たら、古い CI（E2E・VRT を含む）を止める。
+# main への push は全コミットの VRT ベースラインを残すため、実行ごとに別グループにする。
+# cancel-in-progress を false にするだけでは、同じグループの待機中の実行が置き換わる
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     runs-on: ubuntu-latest

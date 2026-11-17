@@ -11,6 +11,12 @@ on:
         required: false
         default: ""
 
+# CI と /e2e コメントのどちらから呼ばれても、同じ PR の古い E2E を止める。
+# 呼び出し元の CI 自体をキャンセルしないよう、CI とは別のグループ名にする
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
