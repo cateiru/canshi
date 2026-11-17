@@ -6,6 +6,8 @@ import type { HelpScreenshotName } from "./screenshots";
 export type HelpStep = {
   title: ReactNode;
   body?: ReactNode;
+  /** 本文の下に添える、その手順の画面への導線（`HelpShortcuts`） */
+  action?: ReactNode;
   screenshot?: { name: HelpScreenshotName; alt: string };
 };
 
@@ -28,6 +30,9 @@ export function HelpSteps({ steps }: HelpStepsProps) {
               <span>{step.title}</span>
             </p>
             {step.body ? <div className={styles.body}>{step.body}</div> : null}
+            {step.action ? (
+              <div className={styles.action}>{step.action}</div>
+            ) : null}
           </div>
           {step.screenshot ? (
             <HelpScreenshot

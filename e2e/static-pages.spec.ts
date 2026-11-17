@@ -73,6 +73,24 @@ test("ホームからヘルプを開き、記事を読める", async ({ page }) 
   await expect(page).toHaveURL("/help/records");
 });
 
+test("ログイン中は、ヘルプの手順から自分の家の画面へ進める", async ({
+  page,
+}) => {
+  await page.goto("/help/create-household");
+  await expect(
+    page.getByRole("link", { name: "家を作成する", exact: true }),
+  ).toHaveAttribute("href", "/settings/households/new");
+
+  await page.goto("/help/add-cat");
+  await expect(
+    page.getByRole("link", { name: /にねこを登録する$/ }).first(),
+  ).toHaveAttribute("href", /^\/cats\/new\?householdId=/);
+
+  await page.goto("/help/notifications");
+  await page.getByRole("link", { name: "通知設定", exact: true }).click();
+  await expect(page).toHaveURL("/settings/notifications");
+});
+
 test.describe("ログインしていないとき", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -82,5 +100,9 @@ test.describe("ログインしていないとき", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "家の作り方・家族の招待" }),
     ).toBeVisible();
+    // 自分の家の画面への導線は、ログインしていないときは出さない
+    await expect(
+      page.getByRole("link", { name: "家を作成する", exact: true }),
+    ).toHaveCount(0);
   });
 });

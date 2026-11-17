@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
+import { HelpShortcuts } from "@/features/help/HelpShortcuts";
 import { HelpSteps } from "@/features/help/HelpSteps";
 import { getHelpTopic } from "@/features/help/topics";
 import { NOTIFY_TIME } from "@/features/notifications/domain/defaults";
@@ -34,6 +35,7 @@ export default function NotificationsHelpPage() {
           steps={[
             {
               title: "設定の「通知設定」を開きます",
+              action: <HelpShortcuts target="notification-settings" />,
             },
             {
               title: "「この端末で通知を受け取る」をオンにします",
@@ -111,6 +113,7 @@ export default function NotificationsHelpPage() {
           steps={[
             {
               title: "通知設定の「ねこごとの通知設定」から、ねこを選びます",
+              action: <HelpShortcuts target="cat-notification-settings" />,
             },
             {
               title:

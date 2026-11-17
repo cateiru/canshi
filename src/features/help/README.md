@@ -9,6 +9,8 @@
 - `recordHelps.ts`: 記録の種類ごとの記事（`/help/records/<記録の種類>`）の中身
 - `HelpArticle.tsx`: 記事の共通の枠（パンくず・見出し・関連するヘルプ）
 - `HelpSteps.tsx`・`HelpScreenshot.tsx`: 手順と、スマートフォンの画面のスクリーンショット
+- `HelpShortcuts.tsx`・`shortcuts.ts`: 手順に添える、ログイン中のユーザーの家・ねこの画面への導線
+  （`HelpSteps` の `action` に渡す）。ログインしていないときや、開く先の家・ねこがないときは出さない
 - 記事のページは `src/app/help/<slug>/page.tsx` に置く
 - ヘルプの一覧（`/help`）には、はじめてガイド（`src/features/tour`）をはじめるカードを、ログイン中だけ出す
 

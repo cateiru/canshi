@@ -1,5 +1,9 @@
 import type { Page } from "@playwright/test";
-import { HELP_CATEGORIES, helpHref } from "../src/features/help/topics";
+import {
+  getHelpTopic,
+  HELP_CATEGORIES,
+  helpHref,
+} from "../src/features/help/topics";
 import {
   encodeMcpConsentRequest,
   MCP_CONSENT_HEADER,
@@ -135,6 +139,26 @@ test.describe("ログインページ", () => {
   test("ログインページの見た目", async ({ page }, testInfo) => {
     await page.goto("/login");
     await expect(page.getByRole("button", { name: "ログイン" })).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+});
+
+// ヘルプの記事は、ログイン中だけ手順に自分の家・ねこの画面への導線を出す（上の「ヘルプ「…」の見た目」）。
+// ログインしていないときの、導線のない見た目を撮る
+test.describe("ログインしていないときのヘルプ", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("ヘルプ「ねこの登録方法」（ログインしていないとき）の見た目", async ({
+    page,
+  }, testInfo) => {
+    await page.goto(helpHref("add-cat"));
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: getHelpTopic("add-cat").title,
+      }),
+    ).toBeVisible();
+    await loadAllImages(page);
     await takeSnapshot(page, testInfo);
   });
 });

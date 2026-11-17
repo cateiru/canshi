@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
+import { HelpShortcuts } from "@/features/help/HelpShortcuts";
 import { HelpSteps } from "@/features/help/HelpSteps";
 import { getHelpTopic, helpHref } from "@/features/help/topics";
 import { Surface } from "@/features/shared/Surface";
@@ -39,6 +40,7 @@ export default function HouseholdFoodHelpPage() {
             {
               title:
                 "家の設定の「ごはん商品一覧」を開き、「商品を登録する」を押します",
+              action: <HelpShortcuts target="food-products" />,
               body: (
                 <p>
                   登録の方法を「共通のごはん商品から探す」か「手動で入力する」から選びます。
@@ -75,6 +77,7 @@ export default function HouseholdFoodHelpPage() {
           steps={[
             {
               title: "家の設定の「ごはんの時間」を開き、時刻を選んで追加します",
+              action: <HelpShortcuts target="feeding-schedules" />,
               body: (
                 <>
                   <p>
