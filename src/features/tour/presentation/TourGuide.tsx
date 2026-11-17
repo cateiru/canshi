@@ -2,14 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import {
-  TbArrowRight,
-  TbCheck,
-  TbChevronRight,
-  TbSquare,
-  TbSquareCheck,
-  TbX,
-} from "react-icons/tb";
+import { TbArrowRight, TbCheck, TbChevronRight, TbX } from "react-icons/tb";
 import { addToast, Button, ButtonLink } from "@/components/ui";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
@@ -341,12 +334,12 @@ function ChecklistItem({
         .filter(Boolean)
         .join(" ")}
     >
-      <ScaledIcon
-        icon={isChecked ? TbSquareCheck : TbSquare}
-        aria-hidden="true"
-        size={20}
-        className={styles.checkBox}
-      />
+      {/* 共通の Checkbox と同じく、登録済みは塗りつぶした箱にチェックを描く（ひと目で分かる大きさにする） */}
+      <span className={styles.checkBox} aria-hidden="true">
+        {isChecked ? (
+          <ScaledIcon icon={TbCheck} size={18} className={styles.checkMark} />
+        ) : null}
+      </span>
       {/* 登録済みの項目名には打ち消し線を引く。線は読み上げられないため、状態を文字でも伝える */}
       <span className={styles.checkLabel}>
         <span className={styles.checkName}>{label}</span>
