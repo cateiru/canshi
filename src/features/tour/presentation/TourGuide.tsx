@@ -1,8 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { TbArrowRight, TbCheck, TbX } from "react-icons/tb";
+import {
+  TbArrowRight,
+  TbCheck,
+  TbChevronRight,
+  TbSquare,
+  TbSquareCheck,
+  TbX,
+} from "react-icons/tb";
 import { addToast, Button, ButtonLink } from "@/components/ui";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
@@ -78,11 +86,10 @@ const STEP_CONTENT: Record<TourStep, StepContent> = {
     description:
       "ごはんの時間を登録すると、その時間にお知らせが届きます。ごはんプリセットは、よくあげるごはんの組み合わせを登録して、記録を手早くする機能です。",
     doneTitle: "ごはんの時間・プリセットを登録しました",
-    doneDescription:
-      "もう一方もあわせて登録できます。登録を終えたら、ガイドを完了してください。",
+    doneDescription: "どちらも登録しました。ガイドを完了してください。",
     linkLabel: "ごはんの時間の登録へ進む",
     pageHint:
-      "この画面で登録できます。ごはんの時間とプリセットは、どちらか一方だけでもかまいません。",
+      "この画面で登録できます。登録するとチェックが付きます。どちらか一方だけでもかまいません。",
   },
 };
 
@@ -172,6 +179,11 @@ export function TourGuide({ view: serverView }: TourGuideProps) {
   const content = STEP_CONTENT[step];
   const stepNumber = TOUR_STEPS.indexOf(step) + 1;
   const isDone = isTourStepDone(step, view.progress);
+  // ごはんの時間・プリセットは、チェックリストの両方にチェックが付いたら登録を終えた表示にする
+  const isComplete =
+    step === "feeding"
+      ? view.progress.schedule && view.progress.preset
+      : isDone;
   const onStepPage = isTourStepPage(step, pathname);
   const next = nextTourPosition(step);
   const advance = () => {
@@ -223,7 +235,7 @@ export function TourGuide({ view: serverView }: TourGuideProps) {
       </ol>
 
       <h2 className={styles.title}>
-        {isDone ? (
+        {isComplete ? (
           <ScaledIcon
             icon={TbCheck}
             aria-hidden="true"
@@ -231,29 +243,29 @@ export function TourGuide({ view: serverView }: TourGuideProps) {
             className={styles.doneIcon}
           />
         ) : null}
-        {isDone ? content.doneTitle : content.title}
+        {isComplete ? content.doneTitle : content.title}
       </h2>
       <p className={styles.description}>
-        {stepDescription(content, isDone, onStepPage)}
+        {stepDescription(content, isComplete, onStepPage)}
       </p>
 
       {step === "feeding" ? (
-        <ul className={styles.links}>
+        <ul className={styles.checklist}>
           <li>
-            <FeedingLink
+            <ChecklistLink
               href={tourScheduleHref(view.householdId)}
-              isDone={view.progress.schedule}
+              isChecked={view.progress.schedule}
             >
-              ごはんの時間の登録へ進む
-            </FeedingLink>
+              ごはんの時間を登録する
+            </ChecklistLink>
           </li>
           <li>
-            <FeedingLink
+            <ChecklistLink
               href={tourPresetHref(view.householdId)}
-              isDone={view.progress.preset}
+              isChecked={view.progress.preset}
             >
-              ごはんプリセットの登録へ進む
-            </FeedingLink>
+              ごはんプリセットを登録する
+            </ChecklistLink>
           </li>
         </ul>
       ) : null}
@@ -315,24 +327,44 @@ function Panel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function FeedingLink({
+/**
+ * チェックリストの 1 行。登録画面へのリンクで、登録済みならチェックを付ける。
+ * チェックは登録の有無から決まり、押して切り替えるものではないため、checkbox にはしない
+ */
+function ChecklistLink({
   href,
-  isDone,
+  isChecked,
   children,
 }: {
   href: string;
-  isDone: boolean;
+  isChecked: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <ButtonLink
+    <Link
       href={href}
-      variant="secondary"
-      leftIcon={isDone ? TbCheck : undefined}
-      rightIcon={TbArrowRight}
+      className={[styles.checkItem, isChecked && styles.checkItemChecked]
+        .filter(Boolean)
+        .join(" ")}
     >
-      {children}
-      {isDone ? <span className={styles.registered}>（登録済み）</span> : null}
-    </ButtonLink>
+      <ScaledIcon
+        icon={isChecked ? TbSquareCheck : TbSquare}
+        aria-hidden="true"
+        size={20}
+        className={styles.checkBox}
+      />
+      <span className={styles.checkLabel}>
+        {children}
+        <span className={styles.checkStatus}>
+          {isChecked ? "登録済み" : "未登録"}
+        </span>
+      </span>
+      <ScaledIcon
+        icon={TbChevronRight}
+        aria-hidden="true"
+        size={16}
+        className={styles.checkArrow}
+      />
+    </Link>
   );
 }

@@ -78,11 +78,17 @@ test("はじめてログインすると、家の作成からごはんの時間�
     /\/settings\/households\/[^/]+\/feeding-schedules$/,
   );
   await expect(
-    guide.getByRole("link", { name: "ごはんプリセットの登録へ進む" }),
+    guide.getByRole("link", { name: "ごはんプリセットを登録する 未登録" }),
   ).toHaveAttribute("href", /^\/feeding-presets\/new\?householdId=/);
 
+  // ごはんの時間を登録すると、チェックリストにチェックが付く
+  await page.getByRole("button", { name: "追加する" }).click();
+  await expect(
+    guide.getByRole("link", { name: "ごはんの時間を登録する 登録済み" }),
+  ).toBeVisible();
+
   // 完了の案内を閉じると、パネルが消える
-  await pressInGuide(page, "スキップして完了する", "準備ができました");
+  await pressInGuide(page, "ガイドを完了する", "準備ができました");
   await guide.getByRole("button", { name: "ガイドを閉じる" }).click();
   await expect(guide).toBeHidden();
   await page.reload();
