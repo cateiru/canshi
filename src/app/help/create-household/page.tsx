@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
+import { HelpShortcuts } from "@/features/help/HelpShortcuts";
 import { HelpSteps } from "@/features/help/HelpSteps";
 import { getHelpTopic } from "@/features/help/topics";
 import { HOUSEHOLD_INVITATION_MAX_AGE_SECONDS } from "@/features/households/domain/household";
@@ -32,6 +33,7 @@ export default function CreateHouseholdHelpPage() {
           steps={[
             {
               title: "ねこ一覧の「家を作成する」を押します",
+              action: <HelpShortcuts target="household-new" />,
               body: (
                 <p>
                   まだ家がないときは、ねこ一覧に家の作成の案内が表示されます。家を持っているときは、ねこ一覧の「追加する」や、設定の「家の設定」からも作成できます。
@@ -64,6 +66,7 @@ export default function CreateHouseholdHelpPage() {
           steps={[
             {
               title: "設定の「家の設定」から、招待したい家を開きます",
+              action: <HelpShortcuts target="household-invitation" />,
               body: (
                 <p>
                   家の設定では、家の名前・メンバー・ごはんの設定・招待を管理できます。

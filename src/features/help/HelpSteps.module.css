@@ -51,6 +51,15 @@
   color: var(--color-ink-muted);
 }
 
+.action {
+  padding-left: calc(1.75em + var(--space-2));
+}
+
+/* 導線がないとき（ログインしていないときなど）は余白を残さない */
+.action:empty {
+  display: none;
+}
+
 @media (max-width: 600px) {
   .step {
     grid-template-columns: minmax(0, 1fr);

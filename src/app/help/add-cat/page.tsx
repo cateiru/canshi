@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
+import { HelpShortcuts } from "@/features/help/HelpShortcuts";
 import { HelpSteps } from "@/features/help/HelpSteps";
 import { getHelpTopic } from "@/features/help/topics";
 import { Surface } from "@/features/shared/Surface";
@@ -27,6 +28,7 @@ export default function AddCatHelpPage() {
           steps={[
             {
               title: "ねこ一覧の「追加する」から「ねこを登録する」を選びます",
+              action: <HelpShortcuts target="cat-new" />,
               body: <p>家がまだないときは、先に家を作成してください。</p>,
             },
             {
@@ -48,6 +50,7 @@ export default function AddCatHelpPage() {
             },
             {
               title: "登録したねこの画面から、記録をはじめます",
+              action: <HelpShortcuts target="cat-detail" />,
               body: (
                 <p>
                   ねこの画面には、ごはん・うんち・体重などの記録の入り口が並んでいます。
