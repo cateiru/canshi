@@ -1,5 +1,6 @@
 import type { IconType } from "react-icons";
 import {
+  AddToHomeScreenIcon,
   AiConnectionIcon,
   CatFaceIcon,
   FeedingIcon,
@@ -59,6 +60,13 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         description:
           "ねこを家に登録し、プロフィールや大切な日を設定する方法です。",
         icon: CatFaceIcon,
+      },
+      {
+        slug: "add-to-home-screen",
+        title: "ホーム画面に追加する方法",
+        description:
+          "CANSHI をスマートフォンのホーム画面に追加して、アプリのように使う方法です。",
+        icon: AddToHomeScreenIcon,
       },
     ],
   },

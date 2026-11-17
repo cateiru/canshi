@@ -887,3 +887,16 @@ export function AiConnectionIcon(props: RecordIconProps) {
     </RecordIcon>
   );
 }
+
+export function AddToHomeScreenIcon(props: RecordIconProps) {
+  const phone =
+    "M8.5 2h7A2.5 2.5 0 0 1 18 4.5v15a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 6 19.5v-15A2.5 2.5 0 0 1 8.5 2Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#b7d7ee" d={phone} />}>
+      <path d={phone} />
+      <path d="M11 19h2" />
+      <path d="M12 7.5v6m-3-3h6" />
+    </RecordIcon>
+  );
+}

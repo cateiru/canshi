@@ -179,6 +179,28 @@ test("ヘルプ一覧ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+// ホーム画面への追加を勧めるバナー（src/features/pwa/InstallAppBanner.tsx）は、iOS で
+// ホーム画面から開いていないときに画面の下に出る。iPhone の UA と画面の大きさで撮る
+// （Android の、その場で追加するボタンは `beforeinstallprompt` が発火しないと出ないため撮らない）
+test.describe("ホーム画面への追加のバナー", () => {
+  test.use({
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+
+  test("ホーム画面への追加のバナー（iOS）の見た目", async ({
+    page,
+  }, testInfo) => {
+    await page.goto("/help");
+    await expect(page.getByRole("link", { name: "追加方法" })).toBeVisible();
+    // 画面に固定して出すため、ページ全体ではなく見えている範囲を撮る
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+});
+
 /**
  * ページ内の画像をすべて読み込む。ヘルプのスクリーンショットは遅延読み込みのため、
  * ページ全体を撮っても画面の外の画像は読み込まれず、空の枠のまま写ってしまう
