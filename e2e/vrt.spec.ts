@@ -5,6 +5,10 @@ import {
   MCP_CONSENT_HEADER,
 } from "../src/features/mcp/presentation/consent";
 import { createPng } from "../src/features/media/testing/createPng";
+import {
+  TOUR_COOKIE_NAME,
+  type TourPosition,
+} from "../src/features/tour/domain/tour";
 import { fillAndKeep } from "./helpers";
 import { expect, takeSnapshot, test } from "./vrt-snapshot";
 
@@ -140,6 +144,7 @@ test("ホームページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+// ログイン中のため、はじめてガイドをはじめるカードも写る
 test("ヘルプ一覧ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/help");
   await expect(
@@ -1594,4 +1599,272 @@ test("通院記録の追加後の避妊・去勢の確認ダイアログの見�
     ),
   ).toBeVisible();
   await takeSnapshot(page, testInfo, { fullPage: false });
+});
+
+// はじめてガイド（初回ログインしたユーザー向けのガイドツアー）。ガイドの位置は Cookie にだけ持ち、
+// 各ステップが登録済みかどうかは家のデータから決まるため、状態ごとに次のように撮り分ける。
+// - 未登録の状態：毎回新しいユーザーでログインし（はじめてのログインでガイドがはじまる）、必要なら
+//   家だけ作る。家の名前は固定にし、撮るたびに同じ見た目にする
+// - 登録済みの状態：家・ねこ・ごはん・ごはんの時間・プリセットを登録済みのフィクスチャのユーザーに、
+//   ガイドの Cookie を付けて撮る（このテストのブラウザのコンテキストだけに付くため、ほかのテストには出ない）
+// ガイドのパネルはページの上端に出るため、表示領域だけを撮る
+test.describe("はじめてガイド", () => {
+  const TOUR_HOUSEHOLD_NAME = "VRTガイドの家";
+
+  /** ガイドの位置を Cookie に書く。次にページを開いたときに、その位置の案内が出る */
+  async function setTourPosition(page: Page, position: TourPosition) {
+    await page.context().addCookies([
+      {
+        name: TOUR_COOKIE_NAME,
+        value: position,
+        url: "http://localhost:3000",
+      },
+    ]);
+  }
+
+  function guideOf(page: Page) {
+    return page.getByRole("region", { name: "はじめてガイド" });
+  }
+
+  test.describe("未登録の状態", () => {
+    // 新しいユーザーでログインするため、保存済みのセッションを使わない
+    test.use({ storageState: { cookies: [], origins: [] } });
+
+    /** 新しいユーザーでログインする。はじめてのログインのため、ガイドが家の作成からはじまる */
+    async function loginAsNewUser(page: Page) {
+      await page.goto("/login");
+      await fillAndKeep(
+        page.getByLabel("メールアドレス（開発用）"),
+        `vrt-tour-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
+      );
+      await page.getByRole("button", { name: "ログイン" }).click();
+      await expect(page).toHaveURL(/\/home$/);
+    }
+
+    /** 家を作成し、家の ID を返す */
+    async function createHousehold(page: Page) {
+      await page.goto("/settings/households/new");
+      await fillAndKeep(
+        page.getByRole("textbox", { name: "家の名前" }),
+        TOUR_HOUSEHOLD_NAME,
+      );
+      await page.getByRole("button", { name: "家を作成する" }).click();
+      // 作成すると、作成した家のページへ移る（作成画面の `/settings/households/new` とは区別する）
+      await page.waitForURL(
+        (url) =>
+          /^\/settings\/households\/[^/]+$/.test(url.pathname) &&
+          !url.pathname.endsWith("/new"),
+      );
+      const householdId = new URL(page.url()).pathname.split("/").at(-1);
+      if (!householdId) {
+        throw new Error("作成した家の ID を読み取れませんでした");
+      }
+      return householdId;
+    }
+
+    test("家の作成（未登録）の見た目", async ({ page }, testInfo) => {
+      await loginAsNewUser(page);
+      await expect(
+        guideOf(page).getByRole("heading", { name: "家を作成しましょう" }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("家の作成（登録画面）の見た目", async ({ page }, testInfo) => {
+      await loginAsNewUser(page);
+      await page.goto("/settings/households/new");
+      await expect(
+        guideOf(page).getByText(
+          "家の名前を入力して「家を作成する」を押してください。",
+        ),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("家の作成（登録済み）の見た目", async ({ page }, testInfo) => {
+      await loginAsNewUser(page);
+      await createHousehold(page);
+      await page.goto("/home");
+      await expect(
+        guideOf(page).getByRole("heading", { name: "家の準備ができました" }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("ねこの登録（未登録）の見た目", async ({ page }, testInfo) => {
+      await loginAsNewUser(page);
+      await createHousehold(page);
+      await setTourPosition(page, "cat");
+      await page.goto("/home");
+      await expect(
+        guideOf(page).getByRole("heading", { name: "ねこを登録しましょう" }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("ねこの登録（登録画面）の見た目", async ({ page }, testInfo) => {
+      await loginAsNewUser(page);
+      const householdId = await createHousehold(page);
+      await setTourPosition(page, "cat");
+      await page.goto(`/cats/new?householdId=${householdId}`);
+      await expect(
+        guideOf(page).getByText(
+          "名前などを入力して「登録する」を押してください。",
+        ),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("ごはんの登録（未登録）の見た目", async ({ page }, testInfo) => {
+      await loginAsNewUser(page);
+      await createHousehold(page);
+      await setTourPosition(page, "food");
+      await page.goto("/home");
+      await expect(
+        guideOf(page).getByRole("heading", { name: "ごはんを登録しましょう" }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("ごはんの登録（登録画面）の見た目", async ({ page }, testInfo) => {
+      await loginAsNewUser(page);
+      const householdId = await createHousehold(page);
+      await setTourPosition(page, "food");
+      await page.goto(`/food-products/add?householdId=${householdId}`);
+      await expect(
+        guideOf(page).getByText(
+          "共通のごはん商品から探すか、手動で入力して、ごはんを登録してください。",
+        ),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("ごはんの時間・プリセット（未登録）の見た目", async ({
+      page,
+    }, testInfo) => {
+      await loginAsNewUser(page);
+      await createHousehold(page);
+      await setTourPosition(page, "feeding");
+      await page.goto("/home");
+      await expect(
+        guideOf(page).getByRole("link", { name: "ごはんの時間を設定する" }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("ごはんの時間・プリセット（登録画面）の見た目", async ({
+      page,
+    }, testInfo) => {
+      await loginAsNewUser(page);
+      const householdId = await createHousehold(page);
+      await setTourPosition(page, "feeding");
+      await page.goto(`/settings/households/${householdId}/feeding-schedules`);
+      await expect(
+        guideOf(page).getByText(
+          "この画面で登録できます。ごはんの時間とプリセットは、どちらか一方だけでもかまいません。",
+        ),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    // ごはんの時間だけを登録し、チェックリストの片方にだけチェックが付いた状態。
+    // チェックリストの行の折り返しも確かめるため、スマートフォン幅でも撮る
+    for (const viewport of [
+      { label: "PC幅", size: undefined },
+      { label: "スマートフォン幅", size: { width: 375, height: 812 } },
+    ]) {
+      test.describe(viewport.label, () => {
+        if (viewport.size) {
+          test.use({ viewport: viewport.size });
+        }
+
+        test("ごはんの時間・プリセット（ごはんの時間だけ登録済み）の見た目", async ({
+          page,
+        }, testInfo) => {
+          await loginAsNewUser(page);
+          const householdId = await createHousehold(page);
+          await setTourPosition(page, "feeding");
+          await page.goto(
+            `/settings/households/${householdId}/feeding-schedules`,
+          );
+          await expect(async () => {
+            await page.getByRole("button", { name: "追加する" }).click();
+            await expect(
+              guideOf(page).getByRole("link", {
+                name: "ごはんの時間を確認する",
+              }),
+            ).toBeVisible({ timeout: 2000 });
+          }).toPass();
+          // 追加した時刻の表示を撮影に含めないよう、ガイドの見た目だけが変わる別のページで撮る
+          await page.goto("/home");
+          await expect(
+            guideOf(page).getByRole("link", {
+              name: "ごはんの時間を確認する",
+            }),
+          ).toBeVisible();
+          await takeSnapshot(page, testInfo, { fullPage: false });
+        });
+      });
+    }
+
+    test("ガイドをやめたあとの見た目", async ({ page }, testInfo) => {
+      await loginAsNewUser(page);
+      const guide = guideOf(page);
+      // ハイドレーション前に押すと反応しないため、パネルが消えるまで押し直す
+      await expect(async () => {
+        if (await guide.isVisible()) {
+          await guide.getByRole("button", { name: "ガイドをやめる" }).click();
+        }
+        await expect(guide).toBeHidden({ timeout: 1000 });
+      }).toPass();
+      await expect(
+        page.getByText(
+          "はじめてガイドをやめました。ヘルプからいつでも再開できます。",
+        ),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+  });
+
+  test.describe("登録済みの状態", () => {
+    test("ねこの登録（登録済み）の見た目", async ({ page }, testInfo) => {
+      await setTourPosition(page, "cat");
+      await page.goto("/home");
+      await expect(
+        guideOf(page).getByRole("heading", { name: "ねこを登録しました" }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("ごはんの登録（登録済み）の見た目", async ({ page }, testInfo) => {
+      await setTourPosition(page, "food");
+      await page.goto("/home");
+      await expect(
+        guideOf(page).getByRole("heading", { name: "ごはんを登録しました" }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("ごはんの時間・プリセット（どちらも登録済み）の見た目", async ({
+      page,
+    }, testInfo) => {
+      await setTourPosition(page, "feeding");
+      await page.goto("/home");
+      await expect(
+        guideOf(page).getByRole("heading", {
+          name: "ごはんの時間・プリセットを登録しました",
+        }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("完了の見た目", async ({ page }, testInfo) => {
+      await setTourPosition(page, "done");
+      await page.goto("/home");
+      await expect(
+        guideOf(page).getByRole("heading", { name: "準備ができました" }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+  });
 });
