@@ -179,9 +179,9 @@ test("ヘルプ一覧ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
-// ホーム画面への追加を勧めるバナー（src/features/pwa/InstallAppBanner.tsx）は、iOS で
-// ホーム画面から開いていないときに画面の下に出る。iPhone の UA と画面の大きさで撮る
-// （Android の、その場で追加するボタンは `beforeinstallprompt` が発火しないと出ないため撮らない）
+// ホーム画面への追加を勧めるバナー（src/features/pwa/InstallAppBanner.tsx）は、ホーム画面から
+// 開いていないときに画面の下に出る。iOS は追加方法のヘルプへのリンク、Android はその場で追加する
+// ボタンを出す。スマートフォンの UA と画面の大きさで撮る
 test.describe("ホーム画面への追加のバナー", () => {
   test.use({
     userAgent:
@@ -198,6 +198,38 @@ test.describe("ホーム画面への追加のバナー", () => {
     await expect(page.getByRole("link", { name: "追加方法" })).toBeVisible();
     // 画面に固定して出すため、ページ全体ではなく見えている範囲を撮る
     await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+
+  test.describe("Android", () => {
+    test.use({
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+    });
+
+    test("ホーム画面への追加のバナー（Android）の見た目", async ({
+      page,
+    }, testInfo) => {
+      await page.goto("/help");
+      await expect(
+        page.getByRole("heading", { level: 1, name: "ヘルプ" }),
+      ).toBeVisible();
+      // ブラウザがインストールできると判断したときに発火するイベントは、撮影のブラウザでは
+      // 発火しないため、同じイベントを発火してバナーを出す。ハイドレーション前に発火すると
+      // 受け取られないため、出るまで繰り返す
+      const installButton = page.getByRole("button", { name: "追加する" });
+      await expect(async () => {
+        await page.evaluate(() => {
+          window.dispatchEvent(
+            Object.assign(new Event("beforeinstallprompt"), {
+              prompt: async () => {},
+              userChoice: new Promise(() => {}),
+            }),
+          );
+        });
+        await expect(installButton).toBeVisible({ timeout: 2000 });
+      }).toPass({ timeout: 30_000 });
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
   });
 });
 
