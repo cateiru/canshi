@@ -1,7 +1,7 @@
 import { ButtonLink, NavCard } from "@/components/ui";
 import {
+  HelpIcon,
   ReleaseNotesIcon,
-  SettingsIcon,
 } from "@/components/ui/RecordIcons/RecordIcons";
 import { CatIcon } from "@/features/cats/presentation/CatIcon";
 import styles from "./page.module.css";
@@ -31,11 +31,11 @@ export default function Home() {
       </section>
       <nav aria-label="ホームメニュー" className={styles.menu}>
         <NavCard
-          href="/settings"
-          icon={SettingsIcon}
-          title="設定を開く"
+          href="/help"
+          icon={HelpIcon}
+          title="ヘルプを見る"
           titleAs="h2"
-          description="家や通知などの設定をまとめて管理。"
+          description="はじめ方や記録のつけ方など、使い方をご案内。"
         />
         <NavCard
           href="/release-notes"

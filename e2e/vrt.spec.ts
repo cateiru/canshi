@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { HELP_CATEGORIES, helpHref } from "../src/features/help/topics";
 import {
   encodeMcpConsentRequest,
   MCP_CONSENT_HEADER,
@@ -138,6 +139,41 @@ test("ホームページの見た目", async ({ page }, testInfo) => {
   await expect(page.getByRole("heading", { name: "CANSHI" })).toBeVisible();
   await takeSnapshot(page, testInfo);
 });
+
+test("ヘルプ一覧ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/help");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "ヘルプ" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+/**
+ * ページ内の画像をすべて読み込む。ヘルプのスクリーンショットは遅延読み込みのため、
+ * ページ全体を撮っても画面の外の画像は読み込まれず、空の枠のまま写ってしまう
+ */
+async function loadAllImages(page: Page) {
+  await page.evaluate(async () => {
+    const images = [...document.images];
+    for (const image of images) {
+      image.loading = "eager";
+    }
+    await Promise.all(images.map((image) => image.decode()));
+  });
+}
+
+// ヘルプの記事はすべて撮る（記事の一覧は src/features/help/topics.ts）。
+// スクリーンショットの画像（`pnpm help:screenshots`）を撮り直すと、記事のページにも差分が出る
+for (const topic of HELP_CATEGORIES.flatMap((category) => category.topics)) {
+  test(`ヘルプ「${topic.title}」の見た目`, async ({ page }, testInfo) => {
+    await page.goto(helpHref(topic.slug));
+    await expect(
+      page.getByRole("heading", { level: 1, name: topic.title }),
+    ).toBeVisible();
+    await loadAllImages(page);
+    await takeSnapshot(page, testInfo);
+  });
+}
 
 test("猫一覧ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/cats");
@@ -301,24 +337,6 @@ test("ごはんプリセット登録ページ（あいまいモード）の見�
   await page.getByRole("radio", { name: "あいまいモード" }).click();
   await expect(
     page.getByRole("radiogroup", { name: "与える量" }).first(),
-  ).toBeVisible();
-  await takeSnapshot(page, testInfo);
-});
-
-test("記録方法のヘルプページの見た目", async ({ page }, testInfo) => {
-  await page.goto("/help/feeding-modes");
-  await expect(
-    page.getByRole("heading", {
-      name: "「厳格モード」「あいまいモード」とは？",
-    }),
-  ).toBeVisible();
-  await takeSnapshot(page, testInfo);
-});
-
-test("ごはんプリセットのヘルプページの見た目", async ({ page }, testInfo) => {
-  await page.goto("/help/feeding-presets");
-  await expect(
-    page.getByRole("heading", { name: "「ごはんプリセット」とは？" }),
   ).toBeVisible();
   await takeSnapshot(page, testInfo);
 });

@@ -778,6 +778,19 @@ export function ReleaseNotesIcon(props: RecordIconProps) {
   );
 }
 
+export function HelpIcon(props: RecordIconProps) {
+  const bubble =
+    "M12 2.5c5.25 0 9.5 3.75 9.5 8.5s-4.25 8.5-9.5 8.5q-1.75 0-3.25-.5L4 21.5l1.25-4.25Q2.5 14.75 2.5 11c0-4.75 4.25-8.5 9.5-8.5Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#b2d3aa" d={bubble} />}>
+      <path d={bubble} />
+      <path d="M9.75 8.75a2.25 2.25 0 1 1 3.25 2c-.75.4-1 .9-1 1.75" />
+      <path d="M12 15.5h.01" strokeWidth="2" />
+    </RecordIcon>
+  );
+}
+
 export function AppearanceSettingsIcon(props: RecordIconProps) {
   const palette =
     "M12 2.5c-5.25 0-9.5 4-9.5 9.25C2.5 17.5 6.5 21.5 12 21.5h1.25c2 0 2.95-2.25 1.5-3.75-.75-.75-.25-2.25 1-2.25h1.75c2.5 0 4-1.75 4-4.25C21.5 6.5 17.25 2.5 12 2.5Z";

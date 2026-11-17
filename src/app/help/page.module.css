@@ -1,0 +1,20 @@
+.main {
+  composes: page from "../../features/shared/PageLayout.module.css";
+}
+
+.category {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.categoryTitle {
+  font-size: var(--text-lg);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+}

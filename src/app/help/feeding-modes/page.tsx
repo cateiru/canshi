@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import { Breadcrumb } from "@/components/ui";
-import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import {
   FEEDING_MODE_LABEL,
   GIVEN_AMOUNT_LEVEL_LABEL,
   LEFTOVER_LEVEL_LABEL,
 } from "@/features/feeding-records/domain/labels";
-import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
+import { HelpArticle } from "@/features/help/HelpArticle";
+import styles from "@/features/help/HelpContent.module.css";
+import { HelpScreenshot } from "@/features/help/HelpScreenshot";
+import { getHelpTopic } from "@/features/help/topics";
 import { Surface } from "@/features/shared/Surface";
-import styles from "./page.module.css";
 
-const PAGE_TITLE = "「厳格モード」「あいまいモード」とは？";
+const SLUG = "feeding-modes";
 
 export const metadata: Metadata = {
-  title: PAGE_TITLE,
+  title: getHelpTopic(SLUG).title,
 };
 
 const givenAmountLevels = Object.values(GIVEN_AMOUNT_LEVEL_LABEL).join("・");
@@ -21,19 +21,18 @@ const leftoverLevels = Object.values(LEFTOVER_LEVEL_LABEL).join("・");
 
 export default function FeedingModesHelpPage() {
   return (
-    <main className={styles.main}>
-      <Breadcrumb
-        items={[{ label: "トップ", href: "/home" }, { label: PAGE_TITLE }]}
-      />
-
-      <RecordPageHeading icon={FeedingIcon}>{PAGE_TITLE}</RecordPageHeading>
-      <p>
-        ごはん記録とごはんプリセットでは、量の記録方法を「
-        {FEEDING_MODE_LABEL.strict}」と「{FEEDING_MODE_LABEL.approximate}
-        」から選べます。量をきちんと量れる日は厳格モード、量れない日や手早く記録したい日はあいまいモード、というように記録ごとに使い分けられます。
-      </p>
-
-      <Surface title={FEEDING_MODE_LABEL.strict} className={styles.section}>
+    <HelpArticle
+      slug={SLUG}
+      lead={
+        <p>
+          ごはん記録とごはんプリセットでは、量の記録方法を「
+          {FEEDING_MODE_LABEL.strict}」と「{FEEDING_MODE_LABEL.approximate}
+          」から選べます。量をきちんと量れる日は厳格モード、量れない日や手早く記録したい日はあいまいモード、というように記録ごとに使い分けられます。
+        </p>
+      }
+      related={["records/feeding-records", "feeding-presets"]}
+    >
+      <Surface title={FEEDING_MODE_LABEL.strict} gap="md">
         <ul className={styles.points}>
           <li>与えた量・残した量をグラム単位で記録します。</li>
           <li>
@@ -43,10 +42,7 @@ export default function FeedingModesHelpPage() {
         </ul>
       </Surface>
 
-      <Surface
-        title={FEEDING_MODE_LABEL.approximate}
-        className={styles.section}
-      >
+      <Surface title={FEEDING_MODE_LABEL.approximate} gap="md">
         <ul className={styles.points}>
           <li>与えた量を「{givenAmountLevels}」の3段階で記録します。</li>
           <li>残した量を「{leftoverLevels}」の3段階で記録します。</li>
@@ -56,7 +52,20 @@ export default function FeedingModesHelpPage() {
         </ul>
       </Surface>
 
-      <Surface title="選び方のポイント" className={styles.section}>
+      <div className={styles.screenshotRow}>
+        <HelpScreenshot
+          name="feeding-mode-strict"
+          alt={`ごはんを記録する画面で「${FEEDING_MODE_LABEL.strict}」を選び、与えた量・残した量をグラムで入力している`}
+          caption={FEEDING_MODE_LABEL.strict}
+        />
+        <HelpScreenshot
+          name="feeding-mode-approximate"
+          alt={`ごはんを記録する画面で「${FEEDING_MODE_LABEL.approximate}」を選び、与えた量・残した量を段階で選んでいる`}
+          caption={FEEDING_MODE_LABEL.approximate}
+        />
+      </div>
+
+      <Surface title="選び方のポイント" gap="md">
         <ul className={styles.points}>
           <li>
             記録方法は1回のごはん記録ごとに選びます。複数の商品を与えた場合も、その記録のすべての商品に同じ記録方法が使われます（商品ごとに分けることはできません）。
@@ -70,6 +79,6 @@ export default function FeedingModesHelpPage() {
           </li>
         </ul>
       </Surface>
-    </main>
+    </HelpArticle>
   );
 }

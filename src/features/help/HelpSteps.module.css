@@ -1,0 +1,59 @@
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  list-style: none;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  align-items: start;
+  gap: var(--space-6);
+}
+
+/* 画像のない手順は文章を横いっぱいに広げる */
+.step:not(:has(figure)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-bold);
+}
+
+.number {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.75em;
+  height: 1.75em;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: var(--text-sm);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: calc(1.75em + var(--space-2));
+  color: var(--color-ink-muted);
+}
+
+@media (max-width: 600px) {
+  .step {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+}

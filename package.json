@@ -1,6 +1,6 @@
 {
   "name": "canshi",
-  "version": "0.74.1",
+  "version": "0.75.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -23,6 +23,7 @@
     "vrt:reg": "reg-suit run",
     "vrt:admin": "playwright test --config=playwright.admin-vrt.config.ts",
     "vrt:admin:reg": "reg-suit run --config regconfig.admin.json",
+    "help:screenshots": "playwright test --config=playwright.help-screenshots.config.ts",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",

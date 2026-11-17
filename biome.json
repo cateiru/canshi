@@ -55,6 +55,7 @@
         "src/features/shared/**/*.tsx",
         "src/features/navigation/**/*.tsx",
         "src/features/pwa/**/*.tsx",
+        "src/features/help/**/*.tsx",
         "!**/*.test.ts",
         "!**/*.test.tsx"
       ],

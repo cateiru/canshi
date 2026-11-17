@@ -1,0 +1,57 @@
+/* ヘルプの記事の本文で共通に使う見た目 */
+
+.points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: var(--space-4);
+  list-style: disc;
+}
+
+.inlineLink {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.terms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.terms dt {
+  font-weight: var(--font-weight-bold);
+}
+
+.terms dd {
+  margin-top: var(--space-1);
+  color: var(--color-ink-muted);
+}
+
+.code {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-base);
+  background: color-mix(in srgb, var(--color-ink) 6%, var(--color-bg));
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.screenshotRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+}
