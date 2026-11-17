@@ -16,6 +16,8 @@ const RECORDS: { label: string; icon: IconType }[] = [
   { label: "体重", icon: WeightIcon },
 ];
 
+const MEMBER_ROLES = ["オーナー", "メンバー"];
+
 const CAT_NAMES = ["こむぎ", "あずき"];
 
 function TreeNode({
@@ -60,42 +62,41 @@ function RecordsNode() {
 }
 
 /**
- * 家・ねこ・記録の関係を表す家系図のような図。家の下にメンバーとねこを、ねこの下に記録を線でつなぎ、
- * 「どれがどこに属するか」を見て分かるようにする。読み上げでは入れ子のリストとして読める
+ * 家・ねこ・記録の関係を表す家系図のような図。家を真ん中に置き、上にメンバー（人）を、下にねこを、
+ * ねこの下に記録を線でつなぎ、人とねこの立場の違いと「どれがどこに属するか」を見て分かるようにする
  */
 export function HouseholdRelationDiagram() {
   return (
     <figure className={styles.figure}>
-      <ul className={styles.tree}>
-        <li className={styles.root}>
-          <TreeNode
-            icon={HouseholdIcon}
-            kind="家"
-            label="わが家"
-            variant="household"
-          />
-          <ul className={styles.children}>
-            <li className={styles.branch}>
-              <TreeNode icon={AccountSettingsIcon} kind="人" label="オーナー" />
+      <div className={styles.tree}>
+        <ul className={styles.parents} aria-label="メンバー">
+          {MEMBER_ROLES.map((role) => (
+            <li key={role} className={styles.parent}>
+              <TreeNode icon={AccountSettingsIcon} kind="人" label={role} />
             </li>
-            <li className={styles.branch}>
-              <TreeNode icon={AccountSettingsIcon} kind="人" label="メンバー" />
+          ))}
+        </ul>
+        <TreeNode
+          icon={HouseholdIcon}
+          kind="家"
+          label="わが家"
+          variant="household"
+        />
+        <ul className={styles.children} aria-label="ねこ">
+          {CAT_NAMES.map((name) => (
+            <li key={name} className={styles.branch}>
+              <TreeNode icon={CatFaceIcon} kind="ねこ" label={name} />
+              <ul className={styles.children}>
+                <li className={styles.branch}>
+                  <RecordsNode />
+                </li>
+              </ul>
             </li>
-            {CAT_NAMES.map((name) => (
-              <li key={name} className={styles.branch}>
-                <TreeNode icon={CatFaceIcon} kind="ねこ" label={name} />
-                <ul className={styles.children}>
-                  <li className={styles.branch}>
-                    <RecordsNode />
-                  </li>
-                </ul>
-              </li>
-            ))}
-          </ul>
-        </li>
-      </ul>
+          ))}
+        </ul>
+      </div>
       <figcaption className={styles.caption}>
-        家にはメンバー（人）とねこが所属し、記録はねこごとにつけます。メンバーは全員、家のねこの記録を見たり追加したりできます。
+        家を真ん中に、上が家のメンバー（人）、下が家のねこです。記録はねこごとにつけ、メンバーは全員、家のねこの記録を見たり追加したりできます。
       </figcaption>
     </figure>
   );

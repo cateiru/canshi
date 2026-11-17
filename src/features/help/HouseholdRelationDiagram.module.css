@@ -1,4 +1,4 @@
-/* 家・ねこ・記録の関係を表す家系図のような図。親子を線でつなぐ */
+/* 家・ねこ・記録の関係を表す家系図のような図。家を真ん中に、上の人・下のねこを線でつなぐ */
 
 .figure {
   --tree-line-width: 2px;
@@ -11,19 +11,77 @@
 }
 
 .tree {
-  width: 100%;
-  max-width: 560px;
-  margin-inline: auto;
-  list-style: none;
-}
-
-.root {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  max-width: 440px;
+  margin-inline: auto;
 }
 
-/* 子の並び。親から下へ縦の線を引く */
+/* 家の上に並べる人。下の家へ向けて線を集める */
+.parents {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding-bottom: var(--tree-line-height);
+  list-style: none;
+}
+
+.parents::after {
+  position: absolute;
+  bottom: 0;
+  left: calc(50% - var(--tree-line-width) / 2);
+  height: var(--tree-line-height);
+  border-left: var(--tree-line-width) solid var(--tree-line-color);
+  content: "";
+}
+
+.parent {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 0 2px var(--tree-line-height);
+}
+
+.parent::before,
+.parent::after {
+  position: absolute;
+  bottom: 0;
+  width: 50%;
+  height: var(--tree-line-height);
+  border-bottom: var(--tree-line-width) solid var(--tree-line-color);
+  content: "";
+}
+
+.parent::before {
+  right: calc(50% - var(--tree-line-width) / 2);
+}
+
+.parent::after {
+  left: calc(50% - var(--tree-line-width) / 2);
+  border-left: var(--tree-line-width) solid var(--tree-line-color);
+}
+
+.parent:first-child::before,
+.parent:last-child::after {
+  border: 0;
+}
+
+.parent:first-child::after {
+  border-bottom-left-radius: 10px;
+}
+
+.parent:last-child::before {
+  border-right: var(--tree-line-width) solid var(--tree-line-color);
+  border-bottom-right-radius: 10px;
+}
+
+/* 家・ねこの下に並べる子。親から下へ縦の線を引く */
 .children {
   position: relative;
   display: flex;
@@ -164,26 +222,6 @@
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-}
-
-/* 狭い画面では 4 列を収めるため、枠の余白と文字を小さくする */
-@media (max-width: 440px) {
-  .node {
-    padding: var(--space-2) var(--space-1);
-  }
-
-  .household {
-    padding: var(--space-2) var(--space-4);
-  }
-
-  .label {
-    font-size: var(--text-xs);
-  }
-
-  .recordIcon {
-    width: 14px;
-    height: 14px;
-  }
 }
 
 .caption {
