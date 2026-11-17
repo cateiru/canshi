@@ -4,6 +4,13 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  encodeTourCookie,
+  shouldStartTourOnLogin,
+  TOUR_COOKIE_NAME,
+  TOUR_STEPS,
+} from "@/features/tour/domain/tour";
+import { tourCookieOptions } from "@/features/tour/presentation/tourState";
 import { loginWithEmail } from "../application/login";
 import { sanitizeCallbackUrl } from "../domain/callbackUrl";
 import {
@@ -36,17 +43,26 @@ export async function developmentLoginAction(
     throw new Error("メールアドレスを入力してください");
   }
 
-  const { token, expiresAt } = await loginWithEmail(
+  const { token, expiresAt, userId, isNewUser } = await loginWithEmail(
     email,
     env,
     (await headers()).get("user-agent"),
   );
-  (await cookies()).set(
-    SESSION_COOKIE_NAME,
-    token,
-    sessionCookieOptions(expiresAt),
-  );
-  redirect(sanitizeCallbackUrl(formData.get("callbackUrl")));
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, token, sessionCookieOptions(expiresAt));
+  const callbackUrl = sanitizeCallbackUrl(formData.get("callbackUrl"));
+  // はじめてログインしたユーザーには、はじめてガイドを家の作成から表示する。それ以外のログインでは、
+  // 同じブラウザで前にログインしていたユーザーのガイドの Cookie を消す（OIDC のコールバックと同じ）
+  if (shouldStartTourOnLogin(isNewUser, callbackUrl)) {
+    cookieStore.set(
+      TOUR_COOKIE_NAME,
+      encodeTourCookie(userId, TOUR_STEPS[0]),
+      tourCookieOptions(),
+    );
+  } else {
+    cookieStore.delete(TOUR_COOKIE_NAME);
+  }
+  redirect(callbackUrl);
 }
 
 /** セッションを DB から削除し、Cookie も消す。削除後は古い Cookie が残っても使えない */
@@ -57,6 +73,7 @@ export async function logoutAction(): Promise<void> {
     await deleteSession(token);
   }
   cookieStore.delete(SESSION_COOKIE_NAME);
+  cookieStore.delete(TOUR_COOKIE_NAME);
   redirect("/login");
 }
 
@@ -68,7 +85,9 @@ export async function logoutAction(): Promise<void> {
 export async function logoutAllDevicesAction(): Promise<void> {
   const user = await requireUser();
   await deleteUserSessions(user.id);
-  (await cookies()).delete(SESSION_COOKIE_NAME);
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_COOKIE_NAME);
+  cookieStore.delete(TOUR_COOKIE_NAME);
   redirect("/login");
 }
 
@@ -87,6 +106,7 @@ export async function logoutSessionAction(sessionId: string): Promise<void> {
   );
   if (isCurrent) {
     cookieStore.delete(SESSION_COOKIE_NAME);
+    cookieStore.delete(TOUR_COOKIE_NAME);
     redirect("/login");
   }
   revalidatePath("/settings/account");

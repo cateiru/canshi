@@ -30,3 +30,18 @@ export async function openCatRegistration(page: Page) {
   await menuItem.click();
   await expect(page).toHaveURL(/\/cats\/new$/);
 }
+
+/**
+ * はじめてログインしたユーザーに出る「はじめてガイド」をやめる。
+ * ハイドレーション前に押すと反応しないため、パネルが消えるまで押し直す
+ */
+export async function quitTourGuide(page: Page) {
+  const guide = page.getByRole("region", { name: "はじめてガイド" });
+  await expect(guide).toBeVisible();
+  await expect(async () => {
+    if (await guide.isVisible()) {
+      await guide.getByRole("button", { name: "ガイドをやめる" }).click();
+    }
+    await expect(guide).toBeHidden({ timeout: 1000 });
+  }).toPass();
+}

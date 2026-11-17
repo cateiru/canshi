@@ -1,6 +1,7 @@
 import { createSession } from "../infrastructure/sessions";
 import {
   findOrCreateUserByEmailHash,
+  findUserByEmailHash,
   hashEmailWithEnv,
 } from "../infrastructure/users";
 
@@ -8,7 +9,9 @@ import {
  * 認証済みのメールアドレスでログインする。メールアドレスのハッシュに対応するユーザー
  * （いなければ新しく作ったユーザー）のセッションを作り、Cookie に保存するトークンと
  * 有効期限を返す。メールアドレスそのものは保存しない。`userAgent` はログインした
- * ブラウザの User-Agent で、端末一覧に表示するためにセッションに保存する
+ * ブラウザの User-Agent で、端末一覧に表示するためにセッションに保存する。
+ * `isNewUser` は、このログインでユーザーを新しく作ったか（はじめてのログインか）。
+ * はじめてガイドをはじめるかどうかの判断に使う
  */
 export async function loginWithEmail(
   email: string,
@@ -18,6 +21,9 @@ export async function loginWithEmail(
   >,
   userAgent: string | null,
 ) {
-  const user = await findOrCreateUserByEmailHash(hashEmailWithEnv(email, env));
-  return createSession(user.id, { userAgent });
+  const emailHash = hashEmailWithEnv(email, env);
+  const isNewUser = (await findUserByEmailHash(emailHash)) === null;
+  const user = await findOrCreateUserByEmailHash(emailHash);
+  const session = await createSession(user.id, { userAgent });
+  return { ...session, userId: user.id, isNewUser };
 }

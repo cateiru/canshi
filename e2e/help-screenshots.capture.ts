@@ -9,7 +9,7 @@ import {
   encodeMcpConsentRequest,
   MCP_CONSENT_HEADER,
 } from "../src/features/mcp/presentation/consent";
-import { fillAndKeep } from "./helpers";
+import { fillAndKeep, quitTourGuide } from "./helpers";
 
 // ヘルプ（`/help/*`）に載せるスクリーンショットを撮る。`pnpm help:screenshots` で実行する
 // （playwright.help-screenshots.config.ts）。
@@ -145,6 +145,8 @@ test("ヘルプのスクリーンショットを撮る", async ({ page }) => {
   );
   await page.getByRole("button", { name: "ログイン" }).click();
   await expect(page).not.toHaveURL(/\/login/);
+  // はじめてログインしたユーザーに出る、はじめてガイドのパネルが写らないようにする
+  await quitTourGuide(page);
 
   await page.goto("/settings/account/profile");
   await fillAndKeep(page.getByRole("textbox", { name: "名前" }), USER_NAME);

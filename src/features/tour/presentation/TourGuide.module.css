@@ -1,0 +1,179 @@
+/* ページの本文（PageLayout の .page）と同じ幅にそろえる */
+.wrapper {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-4) 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border-radius: 16px;
+  /* 記録カードなどの面（ink 4%）と見分けられるよう、アクセント色の淡い背景にする。外枠は付けない */
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-bg));
+  overflow-wrap: anywhere;
+  /* コントラストを上げたときだけ面の輪郭を描く（RecordCard と同じ） */
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
+}
+
+@media (max-width: 480px) {
+  .panel {
+    padding: var(--space-4);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.name {
+  font-weight: 700;
+  color: var(--color-accent-strong);
+}
+
+.quit {
+  flex-shrink: 0;
+}
+
+/*
+ * 共通のアイコンボタンの hover の背景（ink 7%）は、アクセント色の淡いパネルの上では濁ったグレーに
+ * 見えるため、パネルの上のほかのボタンと同じ地の色にする。共通のスタイルより確実に優先されるよう、
+ * パネルのクラスを付けて詳細度を上げる
+ */
+.panel .quit:hover,
+.panel .quit[data-hovered] {
+  background: var(--color-bg);
+}
+
+.steps {
+  display: flex;
+  gap: var(--space-1);
+  list-style: none;
+}
+
+.step {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+}
+
+.stepPast {
+  background: var(--color-accent);
+}
+
+.stepCurrent {
+  background: var(--color-accent-strong);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.doneIcon {
+  flex-shrink: 0;
+  color: var(--color-success-strong);
+}
+
+.description {
+  color: var(--color-ink);
+}
+
+/* ごはんの時間・プリセットのチェックリスト */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+/* 行は押せない（hover の変化を付けない）。幅が足りないときは、ボタンを次の行の右端へ送る */
+.checkItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+.checkBox {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(18px * var(--font-scale));
+  height: calc(18px * var(--font-scale));
+  border: 2px solid var(--color-ink-muted);
+  border-radius: var(--radius-base);
+}
+
+/* Checkbox の選択中の塗りと同じ色で、枠とチェックを描く */
+.checkItemChecked .checkBox {
+  border-color: var(--color-accent-strong);
+}
+
+/* 枠（18px・線 2px）の内側 14px に収め、線を少し太くして読みやすくする */
+.checkMark {
+  flex-shrink: 0;
+  color: var(--color-accent-strong);
+  stroke-width: 3;
+}
+
+.checkLabel {
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+/* 登録済みの項目は、打ち消し線と控えめな色で済んだことを示す */
+.checkItemChecked .checkName {
+  color: var(--color-ink-muted);
+  text-decoration: line-through;
+}
+
+.checkAction {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/*
+ * パネルの上に置く secondary のボタン。共通の secondary の背景（ink 4%）はアクセント色の淡い背景に
+ * 溶け込んで形が見えにくいため、白い背景にしてボタンの形をはっきりさせる
+ */
+.secondaryOnPanel {
+  background-color: var(--color-bg);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

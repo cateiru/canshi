@@ -14,6 +14,13 @@ import {
   requireOidcConfig,
   verifyIdToken,
 } from "@/features/auth/infrastructure/oidc";
+import {
+  encodeTourCookie,
+  shouldStartTourOnLogin,
+  TOUR_COOKIE_NAME,
+  TOUR_STEPS,
+} from "@/features/tour/domain/tour";
+import { tourCookieOptions } from "@/features/tour/presentation/tourState";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +84,7 @@ export async function GET(request: NextRequest) {
     return failed("ID トークンを取得・検証できませんでした", error);
   }
 
-  const { token, expiresAt } = await loginWithEmail(
+  const { token, expiresAt, userId, isNewUser } = await loginWithEmail(
     email,
     env,
     request.headers.get("user-agent"),
@@ -90,6 +97,17 @@ export async function GET(request: NextRequest) {
     token,
     sessionCookieOptions(expiresAt),
   );
+  // はじめてログインしたユーザーには、はじめてガイドを家の作成から表示する。それ以外のログインでは、
+  // 同じブラウザで前にログインしていたユーザーのガイドの Cookie を消す
+  if (shouldStartTourOnLogin(isNewUser, loginState.callbackUrl)) {
+    response.cookies.set(
+      TOUR_COOKIE_NAME,
+      encodeTourCookie(userId, TOUR_STEPS[0]),
+      tourCookieOptions(),
+    );
+  } else {
+    response.cookies.delete(TOUR_COOKIE_NAME);
+  }
   response.cookies.delete({
     name: OIDC_STATE_COOKIE_NAME,
     path: OIDC_CALLBACK_PATH,

@@ -3,6 +3,7 @@ import { Breadcrumb, NavCard } from "@/components/ui";
 import { HelpIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { HELP_CATEGORIES, helpHref } from "@/features/help/topics";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
+import { TourStartCard } from "@/features/tour/presentation/TourStartCard";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -22,6 +23,8 @@ export default function HelpIndexPage() {
         CANSHI
         の使い方をまとめています。はじめて使うときは「はじめに」から順に読むのがおすすめです。
       </p>
+
+      <TourStartCard />
 
       {HELP_CATEGORIES.map((category) => (
         <section
