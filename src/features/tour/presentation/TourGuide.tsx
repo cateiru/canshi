@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import {
@@ -89,7 +88,7 @@ const STEP_CONTENT: Record<TourStep, StepContent> = {
     doneDescription: "どちらも登録しました。ガイドを完了してください。",
     linkLabel: "ごはんの時間の登録へ進む",
     pageHint:
-      "この画面で登録できます。登録するとチェックが付きます。どちらか一方だけでもかまいません。",
+      "この画面で登録できます。ごはんの時間とプリセットは、どちらか一方だけでもかまいません。",
   },
 };
 
@@ -179,7 +178,7 @@ export function TourGuide({ view: serverView }: TourGuideProps) {
   const content = STEP_CONTENT[step];
   const stepNumber = TOUR_STEPS.indexOf(step) + 1;
   const isDone = isTourStepDone(step, view.progress);
-  // ごはんの時間・プリセットは、チェックリストの両方にチェックが付いたら登録を終えた表示にする
+  // ごはんの時間・プリセットは、両方を登録したら登録を終えた表示にする
   const isComplete =
     step === "feeding"
       ? view.progress.schedule && view.progress.preset
@@ -251,22 +250,16 @@ export function TourGuide({ view: serverView }: TourGuideProps) {
 
       {step === "feeding" ? (
         <ul className={styles.checklist}>
-          <li>
-            <ChecklistLink
-              href={tourScheduleHref(view.householdId)}
-              isChecked={view.progress.schedule}
-            >
-              ごはんの時間を登録する
-            </ChecklistLink>
-          </li>
-          <li>
-            <ChecklistLink
-              href={tourPresetHref(view.householdId)}
-              isChecked={view.progress.preset}
-            >
-              ごはんプリセットを登録する
-            </ChecklistLink>
-          </li>
+          <ChecklistItem
+            label="ごはんの時間"
+            href={tourScheduleHref(view.householdId)}
+            isChecked={view.progress.schedule}
+          />
+          <ChecklistItem
+            label="ごはんプリセット"
+            href={tourPresetHref(view.householdId)}
+            isChecked={view.progress.preset}
+          />
         </ul>
       ) : null}
 
@@ -328,21 +321,22 @@ function Panel({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * チェックリストの 1 行。登録画面へのリンクで、登録済みならチェックを付ける。
- * チェックは登録の有無から決まり、押して切り替えるものではないため、checkbox にはしない
+ * チェックリストの 1 行。チェックボックスは登録済みかどうかを示すだけの表示で、押せない。
+ * 登録済みになると、チェックを付けて項目名に打ち消し線を引く。
+ * 押すとチェックが付くように見えないよう、行そのものはリンクにせず、登録画面へ進む操作は
+ * 右側のボタンに分ける
  */
-function ChecklistLink({
+function ChecklistItem({
+  label,
   href,
   isChecked,
-  children,
 }: {
+  label: string;
   href: string;
   isChecked: boolean;
-  children: React.ReactNode;
 }) {
   return (
-    <Link
-      href={href}
+    <li
       className={[styles.checkItem, isChecked && styles.checkItemChecked]
         .filter(Boolean)
         .join(" ")}
@@ -353,18 +347,22 @@ function ChecklistLink({
         size={20}
         className={styles.checkBox}
       />
+      {/* 登録済みの項目名には打ち消し線を引く。線は読み上げられないため、状態を文字でも伝える */}
       <span className={styles.checkLabel}>
-        {children}
-        <span className={styles.checkStatus}>
-          {isChecked ? "登録済み" : "未登録"}
+        <span className={styles.checkName}>{label}</span>
+        <span className={styles.visuallyHidden}>
+          {isChecked ? "（登録済み）" : "（未登録）"}
         </span>
       </span>
-      <ScaledIcon
-        icon={TbChevronRight}
-        aria-hidden="true"
-        size={16}
-        className={styles.checkArrow}
-      />
-    </Link>
+      <ButtonLink
+        href={href}
+        variant="secondary"
+        rightIcon={TbChevronRight}
+        className={styles.checkAction}
+        aria-label={`${label}を${isChecked ? "確認する" : "設定する"}`}
+      >
+        {isChecked ? "確認する" : "設定する"}
+      </ButtonLink>
+    </li>
   );
 }
