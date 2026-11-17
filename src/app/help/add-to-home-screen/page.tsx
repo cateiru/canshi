@@ -36,11 +36,20 @@ export default function AddToHomeScreenHelpPage() {
             {
               title: "Safari で CANSHI を開きます",
               body: (
-                <p>
-                  Chrome
-                  などほかのブラウザでも、共有メニューから同じように追加できます。
-                </p>
+                <>
+                  <p>
+                    ホーム画面に追加していないときは、画面の下に案内が出ます。「追加方法」を押すと、このページが開きます。
+                  </p>
+                  <p>
+                    Chrome
+                    などほかのブラウザでも、共有メニューから同じように追加できます。
+                  </p>
+                </>
               ),
+              screenshot: {
+                name: "install-banner-ios",
+                alt: "ねこ一覧の画面の下に、「ホーム画面に追加しませんか？」の案内と「追加方法」のボタンが出ている",
+              },
             },
             {
               title: "画面の下（iPad では上）の共有ボタンを押します",
@@ -85,6 +94,10 @@ export default function AddToHomeScreenHelpPage() {
                   案内が出ないときは、右上の「︙」のメニューから「ホーム画面に追加」または「アプリをインストール」を選んでください。
                 </p>
               ),
+              screenshot: {
+                name: "install-banner-android",
+                alt: "ねこ一覧の画面の下に、「ホーム画面に追加しませんか？」の案内と「追加する」のボタンが出ている",
+              },
             },
             {
               title: "確認の画面で「インストール」を押します",

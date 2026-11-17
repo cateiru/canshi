@@ -133,7 +133,7 @@ async function selectOption(page: Page, label: string, option: string) {
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
-test("ヘルプのスクリーンショットを撮る", async ({ page }) => {
+test("ヘルプのスクリーンショットを撮る", async ({ page, browser }) => {
   test.setTimeout(15 * 60 * 1000);
   await mkdir(OUTPUT_DIR, { recursive: true });
 
@@ -396,6 +396,52 @@ test("ヘルプのスクリーンショットを撮る", async ({ page }) => {
   await page.goto(`${catPath}/notification-settings`);
   await expect(page.getByRole("button", { name: "保存する" })).toBeVisible();
   await capture(page, "cat-notification-settings");
+
+  // ホーム画面への追加のバナー（Android）。撮影のブラウザでは `beforeinstallprompt` が発火しないため、
+  // 同じイベントを発火してバナーを出す
+  await page.goto("/cats");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  const installButton = page.getByRole("button", { name: "追加する" });
+  await expect(async () => {
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        Object.assign(new Event("beforeinstallprompt"), {
+          prompt: async () => {},
+          userChoice: new Promise(() => {}),
+        }),
+      );
+    });
+    await expect(installButton).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await highlight(installButton);
+  await capture(page, "install-banner-android");
+
+  // ホーム画面への追加のバナー（iOS）。iPhone の UA で、同じログインのまま開く
+  const { baseURL, viewport, deviceScaleFactor, locale, timezoneId } =
+    test.info().project.use;
+  const iosContext = await browser.newContext({
+    baseURL,
+    viewport,
+    deviceScaleFactor,
+    isMobile: true,
+    hasTouch: true,
+    locale,
+    timezoneId,
+    colorScheme: "light",
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+    storageState: await page.context().storageState(),
+  });
+  try {
+    const iosPage = await iosContext.newPage();
+    await iosPage.goto("/cats");
+    const howToLink = iosPage.getByRole("link", { name: "追加方法" });
+    await expect(howToLink).toBeVisible();
+    await highlight(howToLink);
+    await capture(iosPage, "install-banner-ios");
+  } finally {
+    await iosContext.close();
+  }
 
   // 撮り漏れがないことを確かめる
   expect(HELP_SCREENSHOT_NAMES.filter((name) => !captured.has(name))).toEqual(
