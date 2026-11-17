@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
+import { HouseholdRelationDiagram } from "@/features/help/HouseholdRelationDiagram";
 import { getHelpTopic } from "@/features/help/topics";
 import { Surface } from "@/features/shared/Surface";
 
@@ -23,6 +24,7 @@ export default function HouseholdsAndCatsHelpPage() {
       related={["create-household", "add-cat", "records"]}
     >
       <Surface title="家・ねこ・記録の関係" gap="md">
+        <HouseholdRelationDiagram />
         <dl className={styles.terms}>
           <div>
             <dt>家</dt>
