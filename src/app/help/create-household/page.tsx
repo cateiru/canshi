@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { TbPlus, TbSettings } from "react-icons/tb";
+import { ButtonLink } from "@/components/ui";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
 import { HelpSteps } from "@/features/help/HelpSteps";
@@ -122,6 +124,19 @@ export default function CreateHouseholdHelpPage() {
           </li>
         </ul>
       </Surface>
+
+      <div className={styles.actions}>
+        <ButtonLink
+          href="/settings/households/new"
+          variant="primary"
+          leftIcon={TbPlus}
+        >
+          家を作成する
+        </ButtonLink>
+        <ButtonLink href="/settings/households" leftIcon={TbSettings}>
+          家の設定を開く
+        </ButtonLink>
+      </div>
     </HelpArticle>
   );
 }

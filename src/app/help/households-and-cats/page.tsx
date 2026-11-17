@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { TbList, TbPlus } from "react-icons/tb";
+import { ButtonLink } from "@/components/ui";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
+import { HouseholdDiagram } from "@/features/help/HouseholdDiagram";
 import { getHelpTopic } from "@/features/help/topics";
 import { Surface } from "@/features/shared/Surface";
 
@@ -23,6 +26,7 @@ export default function HouseholdsAndCatsHelpPage() {
       related={["create-household", "add-cat", "records"]}
     >
       <Surface title="家・ねこ・記録の関係" gap="md">
+        <HouseholdDiagram />
         <dl className={styles.terms}>
           <div>
             <dt>家</dt>
@@ -76,6 +80,19 @@ export default function HouseholdsAndCatsHelpPage() {
           実家のねこと自分の家のねこを分けて記録したいときなど、1人で複数の家に所属できます。ねこ一覧では、家ごとにまとめてねこを表示します。
         </p>
       </Surface>
+
+      <div className={styles.actions}>
+        <ButtonLink
+          href="/settings/households/new"
+          variant="primary"
+          leftIcon={TbPlus}
+        >
+          家を作成する
+        </ButtonLink>
+        <ButtonLink href="/cats" leftIcon={TbList}>
+          ねこ一覧を開く
+        </ButtonLink>
+      </div>
     </HelpArticle>
   );
 }

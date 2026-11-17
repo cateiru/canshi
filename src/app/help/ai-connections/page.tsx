@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { TbSettings } from "react-icons/tb";
+import { ButtonLink } from "@/components/ui";
+import {
+  AccountSettingsIcon,
+  AiConnectionIcon,
+  CatFaceIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
+import { HelpFlow } from "@/features/help/HelpFlow";
 import { HelpSteps } from "@/features/help/HelpSteps";
 import { getHelpTopic } from "@/features/help/topics";
 import { Surface } from "@/features/shared/Surface";
@@ -45,6 +53,27 @@ export default async function AiConnectionsHelpPage() {
       }
       related={["records"]}
     >
+      <HelpFlow
+        aria-label="AIとの接続のしくみ"
+        steps={[
+          {
+            icon: AccountSettingsIcon,
+            title: "あなた",
+            description: "「今朝のごはんを記録して」と AI に話しかけます",
+          },
+          {
+            icon: AiConnectionIcon,
+            title: "AI のアプリ",
+            description: "MCP を使って CANSHI に接続します",
+          },
+          {
+            icon: CatFaceIcon,
+            title: "CANSHI",
+            description: "許可した範囲だけ、記録を読み書きします",
+          },
+        ]}
+      />
+
       <Surface title="接続のしかた" gap="md">
         <HelpSteps
           steps={[
@@ -115,6 +144,16 @@ export default async function AiConnectionsHelpPage() {
           <li>AI が追加・編集した記録も、だれが記録したかの履歴に残ります。</li>
         </ul>
       </Surface>
+
+      <div className={styles.actions}>
+        <ButtonLink
+          href="/settings/ai-connections"
+          variant="primary"
+          leftIcon={TbSettings}
+        >
+          「AIとの接続」を開く
+        </ButtonLink>
+      </div>
     </HelpArticle>
   );
 }

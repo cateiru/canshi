@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { TbList, TbPlus } from "react-icons/tb";
+import { ButtonLink } from "@/components/ui";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
 import { HelpSteps } from "@/features/help/HelpSteps";
@@ -94,6 +96,15 @@ export default function AddCatHelpPage() {
           旅立ったねこは、ねこの編集画面から「メモリー」へ移せます。メモリーへ移すと記録の追加やお知らせが止まり、これまでの記録を思い出として見返せます。メモリーから戻すこともできます。
         </p>
       </Surface>
+
+      <div className={styles.actions}>
+        <ButtonLink href="/cats/new" variant="primary" leftIcon={TbPlus}>
+          ねこを登録する
+        </ButtonLink>
+        <ButtonLink href="/cats" leftIcon={TbList}>
+          ねこ一覧を開く
+        </ButtonLink>
+      </div>
     </HelpArticle>
   );
 }

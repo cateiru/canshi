@@ -9,7 +9,14 @@
 - `recordHelps.ts`: 記録の種類ごとの記事（`/help/records/<記録の種類>`）の中身
 - `HelpArticle.tsx`: 記事の共通の枠（パンくず・見出し・関連するヘルプ）
 - `HelpSteps.tsx`・`HelpScreenshot.tsx`: 手順と、スマートフォンの画面のスクリーンショット
+- `HelpFlow.tsx`: 矢印でつないだ流れの図（はじめての流れ・しくみの説明）。イラストのアイコンと短い説明を並べる
+- `HouseholdDiagram.tsx`: 家・メンバー・ねこ・記録の関係の図
+- `contextualHelp.ts`・`HeaderHelpLink.tsx`: ヘッダーのヘルプのリンク。開いている画面のパスから、
+  その画面の使い方の記事を選ぶ（対応する記事がなければ一覧へ進める）。画面や記事を追加したら
+  `contextualHelp.ts` の対応も見直す
 - 記事のページは `src/app/help/<slug>/page.tsx` に置く
+
+記事の最後には、説明した画面をすぐ開けるボタン（`HelpContent.module.css` の `.actions`）を置く。
 
 ## スクリーンショット
 

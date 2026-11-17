@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { TbSettings } from "react-icons/tb";
+import { ButtonLink } from "@/components/ui";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
 import { HelpSteps } from "@/features/help/HelpSteps";
@@ -113,6 +115,16 @@ export default function HouseholdFoodHelpPage() {
           を見てください。
         </p>
       </Surface>
+
+      <div className={styles.actions}>
+        <ButtonLink
+          href="/settings/households"
+          variant="primary"
+          leftIcon={TbSettings}
+        >
+          家の設定を開く
+        </ButtonLink>
+      </div>
     </HelpArticle>
   );
 }

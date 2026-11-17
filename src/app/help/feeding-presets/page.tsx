@@ -3,6 +3,11 @@ import Link from "next/link";
 import { TbList, TbPlus } from "react-icons/tb";
 import { ButtonLink } from "@/components/ui";
 import {
+  FeedingIcon,
+  FeedingPresetIcon,
+  FoodProductIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
+import {
   FEEDING_MODE_HELP_HREF,
   FEEDING_MODE_LABEL,
   GIVEN_AMOUNT_LEVEL_LABEL,
@@ -10,6 +15,7 @@ import {
 } from "@/features/feeding-records/domain/labels";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
+import { HelpFlow } from "@/features/help/HelpFlow";
 import { HelpScreenshot } from "@/features/help/HelpScreenshot";
 import { getHelpTopic } from "@/features/help/topics";
 import { Surface } from "@/features/shared/Surface";
@@ -45,6 +51,28 @@ export default async function FeedingPresetsHelpPage({
       }
       related={["household-food", "records/feeding-records", "feeding-modes"]}
     >
+      <HelpFlow
+        aria-label="ごはんプリセットのしくみ"
+        steps={[
+          {
+            icon: FeedingPresetIcon,
+            title: "プリセットを登録する",
+            description:
+              "例:「朝ごはん」＝ドライフード 30g ＋ ウェットフード 40g",
+          },
+          {
+            icon: FeedingIcon,
+            title: "記録するときに選ぶ",
+            description: "ごはんを記録する画面の「プリセット」から選びます",
+          },
+          {
+            icon: FoodProductIcon,
+            title: "商品と量が入力される",
+            description: "残した量だけ確認して記録します",
+          },
+        ]}
+      />
+
       <Surface title="記録するときの使い方" gap="md">
         <ul className={styles.points}>
           <li>
