@@ -109,22 +109,22 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: calc(24px * var(--font-scale));
-  height: calc(24px * var(--font-scale));
+  width: calc(18px * var(--font-scale));
+  height: calc(18px * var(--font-scale));
   border: 2px solid var(--color-ink-muted);
   border-radius: var(--radius-base);
-  background: var(--color-bg);
 }
 
-/* Checkbox の選択中の塗りと同じ色にする */
+/* Checkbox の選択中の塗りと同じ色で、枠とチェックを描く */
 .checkItemChecked .checkBox {
   border-color: var(--color-accent-strong);
-  background: var(--color-accent-strong);
 }
 
+/* 箱からはみ出さない範囲で、できるだけ大きく太く描く */
 .checkMark {
-  color: var(--color-bg);
-  stroke-width: 3;
+  flex-shrink: 0;
+  color: var(--color-accent-strong);
+  stroke-width: 3.5;
 }
 
 .checkLabel {

@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { TbArrowRight, TbCheck, TbChevronRight, TbX } from "react-icons/tb";
-import { addToast, Button, ButtonLink } from "@/components/ui";
+import { addToast, Button, ButtonLink, IconButton } from "@/components/ui";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
   canLeaveTourStep,
@@ -193,18 +193,16 @@ export function TourGuide({ view: serverView }: TourGuideProps) {
             ステップ {stepNumber} / {TOUR_STEPS.length}
           </span>
         </p>
-        <Button
-          variant="ghost"
+        <IconButton
+          icon={TbX}
           className={styles.quit}
-          leftIcon={TbX}
           aria-label="ガイドをやめる"
+          title="ガイドをやめる"
           isDisabled={isPending}
           onPress={() =>
             quit("はじめてガイドをやめました。ヘルプからいつでも再開できます。")
           }
-        >
-          やめる
-        </Button>
+        />
       </div>
       <ol className={styles.steps} aria-label="ガイドの進み具合">
         {TOUR_STEPS.map((item, index) => (
@@ -334,10 +332,10 @@ function ChecklistItem({
         .filter(Boolean)
         .join(" ")}
     >
-      {/* 共通の Checkbox と同じく、登録済みは塗りつぶした箱にチェックを描く（ひと目で分かる大きさにする） */}
+      {/* 登録済みは、箱いっぱいの大きさのチェックを描く（アイコンの TbSquareCheck は中のチェックが小さい） */}
       <span className={styles.checkBox} aria-hidden="true">
         {isChecked ? (
-          <ScaledIcon icon={TbCheck} size={18} className={styles.checkMark} />
+          <ScaledIcon icon={TbCheck} size={20} className={styles.checkMark} />
         ) : null}
       </span>
       {/* 登録済みの項目名には打ち消し線を引く。線は読み上げられないため、状態を文字でも伝える */}
