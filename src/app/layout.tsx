@@ -5,6 +5,7 @@ import { Footer, IconButtonLink, ToastRegionRoot } from "@/components/ui";
 import { SettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAppearance } from "@/features/appearance/infrastructure/queries";
 import { getCurrentUser } from "@/features/auth/presentation/session";
+import { HeaderHelpLink } from "@/features/help/HeaderHelpLink";
 import { NavigationProgress } from "@/features/navigation/NavigationProgress";
 import { NavigationTracker } from "@/features/navigation/NavigationTracker";
 import { NotificationBadge } from "@/features/notifications/presentation/NotificationBadge";
@@ -88,6 +89,8 @@ export default async function RootLayout({
         <div className={styles.statusBarEdge} aria-hidden="true" />
         <NavigationProgress />
         <header className={styles.header}>
+          {/* ヘルプはログインしていなくても見られるため、いつでも出す */}
+          <HeaderHelpLink className={styles.iconLink} />
           {/* 未ログイン（`/login`）では通知・設定へのリンクを出さない */}
           {user ? (
             <>

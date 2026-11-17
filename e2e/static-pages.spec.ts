@@ -73,6 +73,31 @@ test("ホームからヘルプを開き、記事を読める", async ({ page }) 
   await expect(page).toHaveURL("/help/records");
 });
 
+test("ヘッダーのヘルプから、開いている画面の使い方の記事を開ける", async ({
+  page,
+}) => {
+  await page.goto("/settings/notifications");
+  await page.getByRole("link", { name: "この画面のヘルプ" }).click();
+  await expect(page).toHaveURL("/help/notifications");
+
+  // 対応する記事がない画面では、ヘルプの一覧を開く
+  await page.goto("/settings");
+  await page
+    .getByRole("banner")
+    .getByRole("link", { name: "ヘルプ", exact: true })
+    .click();
+  await expect(page).toHaveURL("/help");
+});
+
+test("ヘルプの一覧の「はじめての流れ」から記事を開ける", async ({ page }) => {
+  await page.goto("/help");
+  await page
+    .getByRole("list", { name: "はじめての流れ" })
+    .getByRole("link", { name: /ねこを登録する/ })
+    .click();
+  await expect(page).toHaveURL("/help/add-cat");
+});
+
 test.describe("ログインしていないとき", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 

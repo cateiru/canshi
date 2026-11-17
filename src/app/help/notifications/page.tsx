@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { TbSettings } from "react-icons/tb";
+import { ButtonLink } from "@/components/ui";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
 import { HelpSteps } from "@/features/help/HelpSteps";
@@ -128,6 +130,16 @@ export default function NotificationsHelpPage() {
           ]}
         />
       </Surface>
+
+      <div className={styles.actions}>
+        <ButtonLink
+          href="/settings/notifications"
+          variant="primary"
+          leftIcon={TbSettings}
+        >
+          通知設定を開く
+        </ButtonLink>
+      </div>
     </HelpArticle>
   );
 }

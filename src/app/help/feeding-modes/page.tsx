@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Table } from "@/components/ui";
 import {
   FEEDING_MODE_LABEL,
   GIVEN_AMOUNT_LEVEL_LABEL,
@@ -32,6 +33,40 @@ export default function FeedingModesHelpPage() {
       }
       related={["records/feeding-records", "feeding-presets"]}
     >
+      <Surface title="違いの早見表" titleId="feeding-modes-comparison" gap="md">
+        <Table aria-labelledby="feeding-modes-comparison">
+          <thead>
+            <tr>
+              <td />
+              <th scope="col">{FEEDING_MODE_LABEL.strict}</th>
+              <th scope="col">{FEEDING_MODE_LABEL.approximate}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">与えた量</th>
+              <td>グラムで入力</td>
+              <td>{givenAmountLevels}から選ぶ</td>
+            </tr>
+            <tr>
+              <th scope="row">残した量</th>
+              <td>グラムで入力</td>
+              <td>{leftoverLevels}から選ぶ</td>
+            </tr>
+            <tr>
+              <th scope="row">食べた量・カロリー</th>
+              <td>計算してグラフに表示</td>
+              <td>計算しない</td>
+            </tr>
+            <tr>
+              <th scope="row">向いている場面</th>
+              <td>量をきちんと量れるとき</td>
+              <td>量れないとき・手早く記録したいとき</td>
+            </tr>
+          </tbody>
+        </Table>
+      </Surface>
+
       <Surface title={FEEDING_MODE_LABEL.strict} gap="md">
         <ul className={styles.points}>
           <li>与えた量・残した量をグラム単位で記録します。</li>

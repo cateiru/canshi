@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
-import { NavCard } from "@/components/ui";
+import { TbList } from "react-icons/tb";
+import { ButtonLink, NavCard } from "@/components/ui";
+import {
+  CatFaceIcon,
+  FeedingIcon,
+  MemoIcon,
+  ReleaseNotesIcon,
+} from "@/components/ui/RecordIcons/RecordIcons";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import styles from "@/features/help/HelpContent.module.css";
+import { HelpFlow } from "@/features/help/HelpFlow";
 import { HelpScreenshot } from "@/features/help/HelpScreenshot";
 import { HelpSteps } from "@/features/help/HelpSteps";
 import { RECORD_HELPS } from "@/features/help/recordHelps";
@@ -25,6 +33,16 @@ export default function RecordsHelpPage() {
       }
       related={["households-and-cats", "household-food"]}
     >
+      <HelpFlow
+        aria-label="記録の流れ"
+        steps={[
+          { icon: CatFaceIcon, title: "ねこを選ぶ" },
+          { icon: FeedingIcon, title: "記録の種類を選ぶ" },
+          { icon: MemoIcon, title: "入力して保存する" },
+          { icon: ReleaseNotesIcon, title: "タイムラインで見返す" },
+        ]}
+      />
+
       <Surface title="記録を追加する" gap="md">
         <HelpSteps
           steps={[
@@ -94,6 +112,12 @@ export default function RecordsHelpPage() {
           ))}
         </ul>
       </Surface>
+
+      <div className={styles.actions}>
+        <ButtonLink href="/cats" variant="primary" leftIcon={TbList}>
+          ねこ一覧を開いて記録する
+        </ButtonLink>
+      </div>
     </HelpArticle>
   );
 }
