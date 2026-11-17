@@ -9,6 +9,10 @@ import {
   encodeMcpConsentRequest,
   MCP_CONSENT_HEADER,
 } from "../src/features/mcp/presentation/consent";
+import {
+  encodeTourCookie,
+  TOUR_COOKIE_NAME,
+} from "../src/features/tour/domain/tour";
 import { fillAndKeep, quitTourGuide } from "./helpers";
 
 // ヘルプ（`/help/*`）に載せるスクリーンショットを撮る。`pnpm help:screenshots` で実行する
@@ -145,7 +149,27 @@ test("ヘルプのスクリーンショットを撮る", async ({ page }) => {
   );
   await page.getByRole("button", { name: "ログイン" }).click();
   await expect(page).not.toHaveURL(/\/login/);
-  // はじめてログインしたユーザーに出る、はじめてガイドのパネルが写らないようにする
+
+  // はじめてガイド。はじめてログインすると、家の作成から案内する
+  const guide = page.getByRole("region", { name: "はじめてガイド" });
+  const startLink = guide.getByRole("link", { name: "家の作成へ進む" });
+  await expect(startLink).toBeVisible();
+  await highlight(startLink);
+  await capture(page, "tour-start");
+  // ごはんの時間を登録したあとに、ガイドのステップ 4 を撮り直すため、ガイドの Cookie（ユーザーの ID を含む）を
+  // 取っておく。ほかの画面にガイドのパネルが写らないよう、撮るまではガイドをやめておく
+  const tourCookie = (await page.context().cookies()).find(
+    (cookie) => cookie.name === TOUR_COOKIE_NAME,
+  );
+  // サーバーが書いた Cookie の値は、`:` などがエンコードされている
+  const tourUserId = tourCookie
+    ? decodeURIComponent(tourCookie.value).split(":")[0]
+    : undefined;
+  if (!tourUserId) {
+    throw new Error(
+      "はじめてガイドの Cookie からユーザーの ID を読み取れませんでした",
+    );
+  }
   await quitTourGuide(page);
 
   await page.goto("/settings/account/profile");
@@ -237,6 +261,34 @@ test("ヘルプのスクリーンショットを撮る", async ({ page }) => {
   }
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await capture(page, "feeding-schedules");
+
+  // はじめてガイドのステップ 4（ごはんの時間だけ登録した状態）。撮ったらガイドの Cookie を消す
+  await page.context().addCookies([
+    {
+      name: TOUR_COOKIE_NAME,
+      value: encodeTourCookie(tourUserId, "feeding"),
+      url: new URL(page.url()).origin,
+    },
+  ]);
+  await page.reload();
+  const presetLink = guide.getByRole("link", {
+    name: "ごはんプリセットを設定する",
+  });
+  await expect(
+    guide.getByRole("link", { name: "ごはんの時間を確認する" }),
+  ).toBeVisible();
+  await highlight(presetLink);
+  await capture(page, "tour-feeding");
+  await page.context().clearCookies({ name: TOUR_COOKIE_NAME });
+
+  // ヘルプの一覧から、はじめてガイドをはじめ直せる
+  await page.goto("/help");
+  const tourStartCard = page.getByRole("region", { name: "はじめてガイド" });
+  await scrollToTop(tourStartCard);
+  await highlight(
+    tourStartCard.getByRole("button", { name: "ガイドをはじめる" }),
+  );
+  await capture(page, "tour-help");
 
   await page.goto(`/feeding-presets/new?householdId=${householdId}`);
   await fill(page, "プリセット名", PRESET_NAME);

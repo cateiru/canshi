@@ -6,6 +6,7 @@ import {
 } from "../src/features/mcp/presentation/consent";
 import { createPng } from "../src/features/media/testing/createPng";
 import {
+  encodeTourCookie,
   TOUR_COOKIE_NAME,
   type TourPosition,
 } from "../src/features/tour/domain/tour";
@@ -1610,13 +1611,35 @@ test("通院記録の追加後の避妊・去勢の確認ダイアログの見�
 // ガイドのパネルはページの上端に出るため、表示領域だけを撮る
 test.describe("はじめてガイド", () => {
   const TOUR_HOUSEHOLD_NAME = "VRTガイドの家";
+  /** フィクスチャの VRT ユーザーの ID（e2e/fixtures/vrt-seed.sql） */
+  const VRT_USER_ID = "vrt-user";
 
-  /** ガイドの位置を Cookie に書く。次にページを開いたときに、その位置の案内が出る */
-  async function setTourPosition(page: Page, position: TourPosition) {
-    await page.context().addCookies([
+  /**
+   * ガイドの位置を Cookie に書く。次にページを開いたときに、その位置の案内が出る。
+   * Cookie にはユーザーの ID も入れる。省略したときは、ログインではじまったガイドの Cookie から読む
+   */
+  async function setTourPosition(
+    page: Page,
+    position: TourPosition,
+    userId?: string,
+  ) {
+    const context = page.context();
+    const current = (await context.cookies()).find(
+      (cookie) => cookie.name === TOUR_COOKIE_NAME,
+    );
+    // サーバーが書いた Cookie の値は、`:` などがエンコードされている
+    const id =
+      userId ??
+      (current ? decodeURIComponent(current.value).split(":")[0] : undefined);
+    if (!id) {
+      throw new Error(
+        "ガイドの Cookie からユーザーの ID を読み取れませんでした",
+      );
+    }
+    await context.addCookies([
       {
         name: TOUR_COOKIE_NAME,
-        value: position,
+        value: encodeTourCookie(id, position),
         url: "http://localhost:3000",
       },
     ]);
@@ -1828,7 +1851,7 @@ test.describe("はじめてガイド", () => {
 
   test.describe("登録済みの状態", () => {
     test("ねこの登録（登録済み）の見た目", async ({ page }, testInfo) => {
-      await setTourPosition(page, "cat");
+      await setTourPosition(page, "cat", VRT_USER_ID);
       await page.goto("/home");
       await expect(
         guideOf(page).getByRole("heading", { name: "ねこを登録しました" }),
@@ -1837,7 +1860,7 @@ test.describe("はじめてガイド", () => {
     });
 
     test("ごはんの登録（登録済み）の見た目", async ({ page }, testInfo) => {
-      await setTourPosition(page, "food");
+      await setTourPosition(page, "food", VRT_USER_ID);
       await page.goto("/home");
       await expect(
         guideOf(page).getByRole("heading", { name: "ごはんを登録しました" }),
@@ -1848,7 +1871,7 @@ test.describe("はじめてガイド", () => {
     test("ごはんの時間・プリセット（どちらも登録済み）の見た目", async ({
       page,
     }, testInfo) => {
-      await setTourPosition(page, "feeding");
+      await setTourPosition(page, "feeding", VRT_USER_ID);
       await page.goto("/home");
       await expect(
         guideOf(page).getByRole("heading", {
@@ -1859,7 +1882,7 @@ test.describe("はじめてガイド", () => {
     });
 
     test("完了の見た目", async ({ page }, testInfo) => {
-      await setTourPosition(page, "done");
+      await setTourPosition(page, "done", VRT_USER_ID);
       await page.goto("/home");
       await expect(
         guideOf(page).getByRole("heading", { name: "準備ができました" }),
