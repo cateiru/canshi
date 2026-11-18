@@ -15,7 +15,7 @@ type HelpCodeBlockProps = {
 
 /**
  * ヘルプの本文で、そのまま入力してもらう値（URL など）を示すブロック。
- * Docusaurus の CodeBlock のように、右上のボタンで中身をコピーできる
+ * Docusaurus の CodeBlock のように、右のボタンで中身をコピーできる
  */
 export function HelpCodeBlock({ code }: HelpCodeBlockProps) {
   const [copied, setCopied] = useState(false);
