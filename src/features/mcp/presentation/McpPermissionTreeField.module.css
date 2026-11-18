@@ -98,7 +98,9 @@
   font-size: var(--text-sm);
 }
 
+/* 右に「読む」「書く」が並ぶため、右へははみ出さず、行の column-gap をチェックボックスとの間として残す */
 .catTrigger {
+  margin-inline-end: 0;
   font-weight: var(--font-weight-bold);
   font-size: var(--text-sm);
 }
