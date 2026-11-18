@@ -1,0 +1,41 @@
+/*
+ * Docusaurus の CodeBlock にならった、等幅の文字を背景付きの枠で囲み、右にコピーボタンを置くブロック。
+ * 長い値は折り返さずに横へスクロールし、コピーボタンと重ならないよう横に並べて上下中央にそろえる
+ */
+.block {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: 8px;
+  /* ヘルプの記事の面（4%）の上に置くため、それより一段濃くする */
+  background: color-mix(in srgb, var(--color-ink) 9%, var(--color-bg));
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-emphasis);
+}
+
+.pre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3);
+  overflow-x: auto;
+  color: var(--color-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-sm);
+  line-height: var(--line-height-body);
+  white-space: pre;
+}
+
+.copy {
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
