@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { HelpArticle } from "@/features/help/HelpArticle";
+import { HelpCodeBlock } from "@/features/help/HelpCodeBlock";
 import styles from "@/features/help/HelpContent.module.css";
 import { HelpSteps } from "@/features/help/HelpSteps";
 import { getHelpTopic } from "@/features/help/topics";
@@ -57,9 +58,7 @@ export default async function AiConnectionsHelpPage() {
                     サーバーやカスタムコネクタを追加する画面を開き、URL
                     に次の値を入力します。
                   </p>
-                  <p>
-                    <code className={styles.code}>{url}</code>
-                  </p>
+                  <HelpCodeBlock code={url} />
                   <p>
                     追加する画面の場所や名前は、AI
                     のアプリによって異なります。くわしくは、お使いの AI
