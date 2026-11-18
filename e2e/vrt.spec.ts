@@ -487,6 +487,30 @@ test("AIとの接続の読み取る範囲ページ（詳細な設定を開いた
   await takeSnapshot(page, testInfo);
 });
 
+test("AIとの接続の読み取る範囲ページ（ねこの行にカーソルを合わせたケース）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/settings/ai-connections/vrtGrant");
+  const details = page.getByRole("button", { name: "VRTの家の詳細な設定" });
+  // ハイドレーションの前に押すと開かないため、開くまで押し直す
+  await expect(async () => {
+    if ((await details.getAttribute("aria-expanded")) !== "true") {
+      await details.click();
+    }
+    await expect(details).toHaveAttribute("aria-expanded", "true", {
+      timeout: 1_000,
+    });
+  }).toPass();
+  // ホバーの背景と右の「読む」「書く」のチェックボックスの間が空いていることを撮る
+  const catTrigger = page.getByRole("button", {
+    name: "VRTテスト猫",
+    exact: true,
+  });
+  await catTrigger.hover();
+  await expect(catTrigger).toHaveAttribute("data-hovered", "true");
+  await takeSnapshot(page, testInfo);
+});
+
 test("MCP の同意画面の見た目", async ({ page }, testInfo) => {
   // 同意画面は、Worker（src/features/mcp/presentation/authorize.ts）が認可リクエストを検証して付ける
   // ヘッダーが無いと表示できない。VRT は Worker を通らない `next dev` に対して実行するため、
