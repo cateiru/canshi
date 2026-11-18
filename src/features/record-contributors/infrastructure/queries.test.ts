@@ -105,14 +105,17 @@ describe("listRecordContributors", () => {
             ],
             history: [
               {
+                action: "create",
                 contributorIndex: 0,
                 changedAt: new Date("2026-07-01T00:00:00Z"),
               },
               {
+                action: "update",
                 contributorIndex: 1,
                 changedAt: new Date("2026-07-02T00:00:00Z"),
               },
               {
+                action: "update",
                 contributorIndex: 0,
                 changedAt: new Date("2026-07-03T00:00:00Z"),
               },

@@ -3,12 +3,20 @@ import {
   Client,
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sql-js";
 import { migrate } from "drizzle-orm/sql-js/migrator";
 import initSqlJs from "sql.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
-import { cats, householdMembers, households, users } from "@/db/schema";
+import {
+  cats,
+  householdMembers,
+  households,
+  poopRecords,
+  recordChangeLogs,
+  users,
+} from "@/db/schema";
 import type { McpProps } from "../domain/props";
 
 // `./tools/tools.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替える
@@ -194,5 +202,84 @@ describe("canshiMcpHandler", () => {
     props = { userId: "user-2" };
     const result = await client.callTool({ name: "list_cats", arguments: {} });
     expect(result.isError).toBe(true);
+  });
+});
+
+describe("list_timeline", () => {
+  it("記録には作成・編集した人と日時を古い順に添え、記念日には添えない", async () => {
+    await db
+      .update(cats)
+      .set({ birthDate: "2025-10-05", birthDatePrecision: "day" })
+      .where(eq(cats.id, "cat-1"));
+    await db.insert(poopRecords).values([
+      {
+        id: "poop-1",
+        catId: "cat-1",
+        occurredAt: new Date("2026-10-10T00:00:00.000Z"),
+        consistency: "normal",
+      },
+      {
+        id: "poop-2",
+        catId: "cat-1",
+        occurredAt: new Date("2026-10-11T00:00:00.000Z"),
+        consistency: "normal",
+      },
+    ]);
+    await db.insert(recordChangeLogs).values([
+      {
+        recordType: "poop_record",
+        recordId: "poop-1",
+        action: "create",
+        userId: "user-1",
+        mcpClientId: "client-1",
+        createdAt: new Date("2026-10-10T00:01:00.000Z"),
+      },
+      {
+        recordType: "poop_record",
+        recordId: "poop-1",
+        action: "update",
+        userId: "user-1",
+        createdAt: new Date("2026-10-10T00:02:00.000Z"),
+      },
+    ]);
+
+    const { client } = await connect(user1, "auto");
+    const result = await client.callTool({
+      name: "list_timeline",
+      arguments: { catId: "cat-1", year: 2026, month: 10 },
+    });
+    const content = result.content as { type: "text"; text: string }[];
+    const value = JSON.parse(content[0].text) as {
+      entries: { id: string; type: string; changeHistory?: unknown[] }[];
+    };
+
+    expect(
+      value.entries.map(({ id, type, changeHistory }) => ({
+        id,
+        type,
+        changeHistory,
+      })),
+    ).toEqual([
+      { id: "poop-2", type: "poop", changeHistory: [] },
+      {
+        id: "poop-1",
+        type: "poop",
+        changeHistory: [
+          {
+            action: "create",
+            changedAt: "2026-10-10T00:01:00.000Z",
+            // 接続のクライアントを登録していないため、アプリの名前はわからない
+            changedBy: { kind: "ai", userName: "ユーザー1", clientName: null },
+          },
+          {
+            action: "update",
+            changedAt: "2026-10-10T00:02:00.000Z",
+            changedBy: { kind: "user", userName: "ユーザー1" },
+          },
+        ],
+      },
+      // 誕生日（生まれた日からの毎月の記念日）は記録ではないため、履歴を添えない
+      { id: expect.any(String), type: "birthday", changeHistory: undefined },
+    ]);
   });
 });
