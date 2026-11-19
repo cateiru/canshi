@@ -111,6 +111,42 @@ export default function CreateHouseholdHelpPage() {
         />
       </Surface>
 
+      <Surface title="アカウントを作成したときに招待 URL を開く" gap="md">
+        <p>
+          はじめてアカウントを作成すると、「招待URLはお持ちですか？」と聞く画面が表示されます。家族から招待
+          URL が届いているときは、この画面から招待の画面を開けます。
+        </p>
+        <HelpSteps
+          steps={[
+            {
+              title: "「もっている」を押します",
+              body: (
+                <p>
+                  招待 URL
+                  を持っていないときは「もっていない」を押すと、家の作成からご案内する「はじめてガイド」がはじまります。
+                </p>
+              ),
+              screenshot: {
+                name: "welcome-modal",
+                alt: "アカウントを作成したときの画面。「招待URLはお持ちですか？」と表示され、「もっている」「もっていない」のボタンが並んでいる",
+              },
+            },
+            {
+              title: "招待 URL を貼り付けて「適用」を押します",
+              body: (
+                <p>
+                  招待の画面が開きます。「参加する」を押すと、その家に参加できます。
+                </p>
+              ),
+              screenshot: {
+                name: "welcome-invitation",
+                alt: "招待 URL を入力する画面。招待 URL の入力欄と「適用」ボタンがある",
+              },
+            },
+          ]}
+        />
+      </Surface>
+
       <Surface title="困ったときは" gap="md">
         <ul className={styles.points}>
           <li>

@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { CAT_COAT_COLORS, type CatCoatColor } from "@/db/schema";
 import { COAT_COLOR_LABEL } from "@/features/cats/domain/labels";
 import { CatCoatIconScope } from "@/features/cats/presentation/CatCoatIconScope";
@@ -22,13 +21,9 @@ const COATS: { label: string; coatColor: CatCoatColor | null }[] = [
 /**
  * 体重記録の BCS のイラストをすべて、猫の毛色ごとに並べる開発用ページ。
  * 毛色の塗り・輪郭の色を、VRT（e2e/vrt.spec.ts）でライト・ダークテーマとも確かめる。
- * 本番では表示しない
+ * 本番では表示しない（`src/app/dev/layout.tsx`）
  */
 export default function BcsIllustrationsDevPage() {
-  if (process.env.NODE_ENV === "production") {
-    notFound();
-  }
-
   return (
     <main className={styles.main}>
       <h1 className={styles.title}>BCS のイラストの一覧</h1>

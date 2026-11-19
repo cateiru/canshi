@@ -475,8 +475,10 @@ test("家に所属していないユーザーは、猫一覧から家を作成�
       .fill(`e2e-new-household-${Date.now()}@example.com`);
     await page.getByRole("button", { name: "ログイン" }).click();
     await expect(page).toHaveURL(/\/cats$/);
-    // はじめてログインしたユーザーには、はじめてガイドが出る。ここでは猫一覧からの導線を確かめるため、やめておく
+    // はじめてログインしたユーザーには、ウェルカムモーダルとはじめてガイドが出る。ここでは猫一覧からの導線を
+    // 確かめるため、やめておく（ウェルカムモーダルを閉じるとホームへ移るため、猫一覧を開き直す）
     await quitTourGuide(page);
+    await page.goto("/cats");
 
     await expect(page.getByText("所属している家がありません。")).toBeVisible();
     // 家がないうちは猫を登録できないため、追加メニューを出さない

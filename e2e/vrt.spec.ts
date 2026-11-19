@@ -14,7 +14,7 @@ import {
   TOUR_COOKIE_NAME,
   type TourPosition,
 } from "../src/features/tour/domain/tour";
-import { fillAndKeep } from "./helpers";
+import { fillAndKeep, skipWelcomeModal } from "./helpers";
 import { expect, takeSnapshot, test } from "./vrt-snapshot";
 
 // ビジュアルリグレッションテスト (reg-suit)。
@@ -1756,8 +1756,10 @@ test.describe("はじめてガイド", () => {
     // 新しいユーザーでログインするため、保存済みのセッションを使わない
     test.use({ storageState: { cookies: [], origins: [] } });
 
-    /** 新しいユーザーでログインする。はじめてのログインのため、ガイドが家の作成からはじまる */
-    async function loginAsNewUser(page: Page) {
+    /** 新しいユーザーでログインする。はじめてのログインのため、ウェルカムモーダルが出る */
+    async function signUp(page: Page) {
+      // ウェルカムモーダルの紙吹雪（canvas）は撮るたびに違う見た目になるため、動きを減らす設定にして出さない
+      await page.emulateMedia({ reducedMotion: "reduce" });
       await page.goto("/login");
       await fillAndKeep(
         page.getByLabel("メールアドレス（開発用）"),
@@ -1766,6 +1768,45 @@ test.describe("はじめてガイド", () => {
       await page.getByRole("button", { name: "ログイン" }).click();
       await expect(page).toHaveURL(/\/home$/);
     }
+
+    /**
+     * 新しいユーザーでログインし、ウェルカムモーダルで「もっていない」を選ぶ。
+     * ガイドが家の作成からはじまる
+     */
+    async function loginAsNewUser(page: Page) {
+      await signUp(page);
+      await skipWelcomeModal(page);
+    }
+
+    test("ウェルカムモーダルの見た目", async ({ page }, testInfo) => {
+      await signUp(page);
+      await expect(
+        page.getByRole("dialog", {
+          name: "アカウントを作成いただきありがとうございます！",
+        }),
+      ).toBeVisible();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
+
+    test("ウェルカムモーダル（招待URLの入力）の見た目", async ({
+      page,
+    }, testInfo) => {
+      await signUp(page);
+      const welcome = page.getByRole("dialog", {
+        name: "アカウントを作成いただきありがとうございます！",
+      });
+      const invitationDialog = page.getByRole("dialog", {
+        name: "もっている招待URLを入力してください",
+      });
+      // ハイドレーション前に押すと反応しないため、入力画面に変わるまで押し直す
+      await expect(async () => {
+        if (await welcome.isVisible()) {
+          await welcome.getByRole("button", { name: "もっている" }).click();
+        }
+        await expect(invitationDialog).toBeVisible({ timeout: 2000 });
+      }).toPass();
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    });
 
     /** 家を作成し、家の ID を返す */
     async function createHousehold(page: Page) {

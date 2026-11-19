@@ -1,6 +1,5 @@
 "use client";
 
-import { notFound } from "next/navigation";
 import { useState } from "react";
 import {
   Alert,
@@ -79,10 +78,6 @@ const TAB_ITEMS = [
 
 export default function ComponentsPreviewPage() {
   const [modalOpen, setModalOpen] = useState(false);
-
-  if (process.env.NODE_ENV === "production") {
-    notFound();
-  }
 
   return (
     <main className={styles.main}>

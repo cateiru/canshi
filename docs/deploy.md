@@ -72,6 +72,8 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
     ログインできてしまう
   - プレビューの URL は Workers 全体の Access で保護する（「Cloudflare Access 設定」節）。
     Access を通れる人は、プレビューでは任意のメールアドレスで（つまり誰としてでも）ログインできる
+  - 同じフラグで、開発用のページ（`/dev/*`。部品の一覧・メディアのアップロードの確認など）も表示する
+    （`isDevPagesEnabled`。本番では 404）
 - Cron Triggers はプレビューでは動かない（`scheduled` が呼ばれない）ため、定期通知の生成・Push の送信・
   期限切れの OAuth の行の削除は行われない。Workflow（`NOTIFICATION_WORKFLOW`）は本番の Workflow を
   共有することになるため、バインドしていない

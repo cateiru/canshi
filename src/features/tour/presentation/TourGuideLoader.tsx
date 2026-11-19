@@ -1,8 +1,15 @@
 import { TourGuide } from "./TourGuide";
-import { getTourView } from "./tourState";
+import { getTourView, isWelcomePending } from "./tourState";
+import { WelcomeModal } from "./WelcomeModal";
 
-/** ガイドの途中のときだけ、はじめてガイドのパネルを出す（レイアウトに置く） */
+/**
+ * はじめてログインした直後はウェルカムモーダルを、ガイドの途中のときははじめてガイドのパネルを出す
+ * （レイアウトに置く）
+ */
 export async function TourGuideLoader() {
+  if (await isWelcomePending()) {
+    return <WelcomeModal />;
+  }
   const view = await getTourView();
   return view ? <TourGuide view={view} /> : null;
 }

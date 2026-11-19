@@ -1,6 +1,8 @@
 /*
  * はじめてガイド（初回ログインしたユーザー向けのガイドツアー）。家の作成 → ねこの登録 → ごはんの登録 →
  * ごはんの時間・プリセットの登録の順に、既存の登録画面へ案内する。
+ * はじめてログインしたときは、ガイドの前にウェルカムモーダル（`welcome`）を出し、招待 URL を
+ * 持っていれば招待のページへ、持っていなければガイドへ進める。
  *
  * どこまで進んだかはこの端末の Cookie にだけ持ち、DB には保存しない。各ステップの登録が済んでいるかは、
  * 表示のたびに家のデータから求める（`TourProgress`）。
@@ -21,6 +23,12 @@ export type TourStep = (typeof TOUR_STEPS)[number];
 
 /** ガイドの位置。`done` はすべてのステップを終えて、完了の案内を出している状態 */
 export type TourPosition = TourStep | "done";
+
+/** ウェルカムモーダルを出している状態。招待 URL を持っているかを選ぶまで、ガイドははじめない */
+export const TOUR_WELCOME = "welcome";
+
+/** ガイドの Cookie に保存する状態。ウェルカムモーダルか、ガイドの位置 */
+export type TourCookieState = TourPosition | typeof TOUR_WELCOME;
 
 /** 各ステップで登録するものが、すでにあるか */
 export type TourProgress = {
@@ -47,19 +55,19 @@ export const EMPTY_TOUR_PROGRESS: TourProgress = {
   preset: false,
 };
 
-/** Cookie の値。ガイドをはじめたユーザーの ID と、ガイドの位置をつなげる */
-export function encodeTourCookie(userId: string, position: TourPosition) {
-  return `${userId}:${position}`;
+/** Cookie の値。ガイドをはじめたユーザーの ID と、ガイドの位置（またはウェルカムモーダル）をつなげる */
+export function encodeTourCookie(userId: string, state: TourCookieState) {
+  return `${userId}:${state}`;
 }
 
 /**
- * Cookie の値から、ログイン中のユーザーのガイドの位置を読む。別のユーザーの Cookie・知らない値は
- * null（ガイドを表示しない）
+ * Cookie の値から、ログイン中のユーザーのガイドの状態を読む。別のユーザーの Cookie・知らない値は
+ * null（ガイドもウェルカムモーダルも表示しない）
  */
 export function parseTourCookie(
   value: unknown,
   userId: string,
-): TourPosition | null {
+): TourCookieState | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -67,7 +75,8 @@ export function parseTourCookie(
   if (separator === -1 || value.slice(0, separator) !== userId) {
     return null;
   }
-  return parseTourPosition(value.slice(separator + 1));
+  const state = value.slice(separator + 1);
+  return state === TOUR_WELCOME ? state : parseTourPosition(state);
 }
 
 /** ガイドの位置の文字列を読む。知らない値は null */
@@ -183,7 +192,7 @@ export function isTourStepPage(step: TourStep, pathname: string) {
   }
 }
 
-/** ガイドのパネルを出さないページ。ほかの操作の途中で、ガイドが邪魔になる画面 */
+/** ガイドのパネル・ウェルカムモーダルを出さないページ。ほかの操作の途中で、ガイドが邪魔になる画面 */
 export function isTourHiddenPath(pathname: string) {
   return ["/login", "/oauth", "/invitations", "/offline"].some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
@@ -191,12 +200,10 @@ export function isTourHiddenPath(pathname: string) {
 }
 
 /**
- * ログインしたときにガイドをはじめるか。はじめてログインした（ユーザーを新しく作った）ときにはじめる。
- * 招待 URL から来たときは、家を作らずに招待された家に参加するため、はじめない
+ * ログインしたときにウェルカムモーダルを出すか。はじめてログインした（ユーザーを新しく作った）ときに出し、
+ * 招待 URL を持っていなければ、そのままはじめてガイドへ進める。
+ * 招待 URL から来たときは、家を作らずに招待された家に参加するため、どちらも出さない
  */
-export function shouldStartTourOnLogin(
-  isNewUser: boolean,
-  callbackUrl: string,
-) {
+export function shouldWelcomeOnLogin(isNewUser: boolean, callbackUrl: string) {
   return isNewUser && !callbackUrl.startsWith("/invitations/");
 }

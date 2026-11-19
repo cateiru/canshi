@@ -156,6 +156,8 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
   await highlight(appearanceLink);
   await capture(page, "login-appearance-link");
 
+  // ウェルカムモーダルの紙吹雪（canvas）が写らないよう、動きを減らす設定にする
+  await page.emulateMedia({ reducedMotion: "reduce" });
   // 毎回新しいユーザーにして、前回撮ったときのデータが写らないようにする
   await page.goto("/login");
   await fillAndKeep(
@@ -164,7 +166,34 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
   );
   await page.getByRole("button", { name: "ログイン" }).click();
   await expect(page).not.toHaveURL(/\/login/);
-  // はじめてログインしたユーザーに出る、はじめてガイドのパネルが写らないようにする
+
+  // はじめてログインしたユーザーに出るウェルカムモーダル
+  const welcome = page.getByRole("dialog", {
+    name: "アカウントを作成いただきありがとうございます！",
+  });
+  const welcomeInvitation = page.getByRole("dialog", {
+    name: "もっている招待URLを入力してください",
+  });
+  await expect(welcome).toBeVisible();
+  await highlight(welcome.getByRole("button", { name: "もっている" }));
+  await capture(page, "welcome-modal");
+  // ハイドレーション前に押すと反応しないため、入力画面に変わるまで押し直す
+  await expect(async () => {
+    if (await welcome.isVisible()) {
+      await welcome.getByRole("button", { name: "もっている" }).click();
+    }
+    await expect(welcomeInvitation).toBeVisible({ timeout: 2000 });
+  }).toPass();
+  await fillAndKeep(
+    welcomeInvitation.getByRole("textbox", { name: "招待URL" }),
+    "https://canshi.example.com/invitations/xxxxxxxx",
+  );
+  await highlight(welcomeInvitation.getByRole("button", { name: "適用" }));
+  await capture(page, "welcome-invitation");
+  // 右上の ✕ で、もっているかどうかの選択に戻る
+  await welcomeInvitation.getByRole("button", { name: "閉じる" }).click();
+
+  // ウェルカムモーダルとはじめてガイドのパネルが、ほかの画面に写らないようにする
   await quitTourGuide(page);
 
   await page.goto("/settings/account/profile");

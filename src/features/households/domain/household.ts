@@ -19,6 +19,37 @@ export function householdInvitationPath(token: string) {
   return `/invitations/${token}`;
 }
 
+/** 招待 URL のトークンに使う文字（`generateSessionToken` の base64url） */
+const INVITATION_TOKEN_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+/**
+ * 入力された招待 URL から、招待のトークンを取り出す。`https://…/invitations/<トークン>` の形の URL のほか、
+ * `/invitations/<トークン>` のパスや、トークンだけの入力も受け付ける。
+ * 開く先はいつもこのサービスの招待のページにするため、URL のドメインは見ない。
+ * 招待 URL の形でなければ null
+ */
+export function householdInvitationTokenFromUrl(input: unknown): string | null {
+  if (typeof input !== "string") {
+    return null;
+  }
+  const value = input.trim();
+  if (INVITATION_TOKEN_PATTERN.test(value)) {
+    return value;
+  }
+  let pathname: string;
+  try {
+    pathname = new URL(value, "https://canshi.invalid").pathname;
+  } catch {
+    return null;
+  }
+  const match = /^\/invitations\/([^/]+)\/?$/.exec(pathname);
+  if (!match) {
+    return null;
+  }
+  const token = match[1];
+  return INVITATION_TOKEN_PATTERN.test(token) ? token : null;
+}
+
 /** `now` に発行した招待の有効期限 */
 export function householdInvitationExpiresAt(now: Date): Date {
   return new Date(now.getTime() + HOUSEHOLD_INVITATION_MAX_AGE_SECONDS * 1000);

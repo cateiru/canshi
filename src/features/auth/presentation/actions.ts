@@ -6,9 +6,9 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   encodeTourCookie,
-  shouldStartTourOnLogin,
+  shouldWelcomeOnLogin,
   TOUR_COOKIE_NAME,
-  TOUR_STEPS,
+  TOUR_WELCOME,
 } from "@/features/tour/domain/tour";
 import { tourCookieOptions } from "@/features/tour/presentation/tourState";
 import { loginWithEmail } from "../application/login";
@@ -51,12 +51,12 @@ export async function developmentLoginAction(
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, token, sessionCookieOptions(expiresAt));
   const callbackUrl = sanitizeCallbackUrl(formData.get("callbackUrl"));
-  // はじめてログインしたユーザーには、はじめてガイドを家の作成から表示する。それ以外のログインでは、
-  // 同じブラウザで前にログインしていたユーザーのガイドの Cookie を消す（OIDC のコールバックと同じ）
-  if (shouldStartTourOnLogin(isNewUser, callbackUrl)) {
+  // はじめてログインしたユーザーには、ウェルカムモーダルを表示する（そのあと、はじめてガイドへ進む）。
+  // それ以外のログインでは、同じブラウザで前にログインしていたユーザーのガイドの Cookie を消す（OIDC のコールバックと同じ）
+  if (shouldWelcomeOnLogin(isNewUser, callbackUrl)) {
     cookieStore.set(
       TOUR_COOKIE_NAME,
-      encodeTourCookie(userId, TOUR_STEPS[0]),
+      encodeTourCookie(userId, TOUR_WELCOME),
       tourCookieOptions(),
     );
   } else {

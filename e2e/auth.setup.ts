@@ -41,8 +41,9 @@ setup("ログインして家を用意する", async ({ page }) => {
     );
   }).toPass({ intervals: [1_000, 2_000, 5_000], timeout: 60_000 });
 
-  // ローカルの D1 を作り直した直後は、このログインがはじめてのログインになり、はじめてガイドがはじまる。
-  // ガイドのパネルが各テストの画面に出ないよう、ガイドの Cookie は保存しない（ガイドは e2e/tour.spec.ts で確認する）
+  // ローカルの D1 を作り直した直後は、このログインがはじめてのログインになり、ウェルカムモーダルが出る。
+  // ウェルカムモーダル・ガイドのパネルが各テストの画面に出ないよう、ガイドの Cookie は保存しない
+  // （どちらも e2e/tour.spec.ts で確認する）
   await page.context().clearCookies({ name: TOUR_COOKIE_NAME });
   await page.context().storageState({ path: AUTH_STORAGE_STATE });
 });

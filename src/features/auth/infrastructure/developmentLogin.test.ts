@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   isDangerousDevelopmentLoginEnabled,
   isDevelopmentLoginEnabled,
+  isDevPagesEnabled,
 } from "./developmentLogin";
 
 const OIDC_ENV = {
@@ -74,5 +75,30 @@ describe("isDevelopmentLoginEnabled", () => {
 
     expect(isDevelopmentLoginEnabled({})).toBe(true);
     expect(isDevelopmentLoginEnabled(OIDC_ENV)).toBe(false);
+  });
+});
+
+describe("isDevPagesEnabled", () => {
+  it("開発環境では出す", () => {
+    vi.stubEnv("NODE_ENV", "development");
+
+    expect(isDevPagesEnabled({})).toBe(true);
+  });
+
+  it("本番ビルドでは、フラグがなければ出さない", () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    expect(isDevPagesEnabled({})).toBe(false);
+    expect(
+      isDevPagesEnabled({ DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN: "false" }),
+    ).toBe(false);
+  });
+
+  it("本番ビルドでも、フラグが有効なら出す（Worker Previews）", () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    expect(
+      isDevPagesEnabled({ DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN: "true" }),
+    ).toBe(true);
   });
 });

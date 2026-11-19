@@ -16,6 +16,8 @@ import {
   parseTourCookie,
   TOUR_COOKIE_MAX_AGE_SECONDS,
   TOUR_COOKIE_NAME,
+  TOUR_WELCOME,
+  type TourCookieState,
   type TourPosition,
   type TourProgress,
   type TourView,
@@ -64,15 +66,41 @@ export async function loadTourProgress(
   };
 }
 
-/** ユーザーのガイドの位置。ガイドの途中でない・別のユーザーの Cookie なら null */
-export async function readTourPosition(
+/** ユーザーのガイドの状態（ウェルカムモーダルかガイドの位置）。どちらでもない・別のユーザーの Cookie なら null */
+export async function readTourCookieState(
   userId: string,
-): Promise<TourPosition | null> {
+): Promise<TourCookieState | null> {
   return parseTourCookie(
     (await cookies()).get(TOUR_COOKIE_NAME)?.value,
     userId,
   );
 }
+
+/**
+ * ユーザーのガイドの位置。ガイドの途中でない・別のユーザーの Cookie なら null。
+ * ウェルカムモーダルを出しているあいだは、まだガイドをはじめていないため null
+ */
+export async function readTourPosition(
+  userId: string,
+): Promise<TourPosition | null> {
+  const state = await readTourCookieState(userId);
+  return state === TOUR_WELCOME ? null : state;
+}
+
+/**
+ * ウェルカムモーダルを出すか。はじめてログインしたあと、招待 URL を持っているかを選ぶまで出す。
+ * ガイドの Cookie がなければ DB を読まない（ふだんの表示を遅くしない）
+ */
+export const isWelcomePending = cache(async (): Promise<boolean> => {
+  if (!(await cookies()).has(TOUR_COOKIE_NAME)) {
+    return false;
+  }
+  const user = await getCurrentUser();
+  if (!user) {
+    return false;
+  }
+  return (await readTourCookieState(user.id)) === TOUR_WELCOME;
+});
 
 /** ユーザーのガイドの位置を Cookie に書く（Server Action から使う） */
 export async function writeTourPosition(
