@@ -66,22 +66,24 @@ export function Modal({
       <AriaModal className={`${styles.modal} ${styles[size]}`}>
         <Dialog className={styles.dialog}>
           <CatEarFrame className={styles.panel}>
-            <div className={styles.scrollArea}>
-              {closeButtonLabel ? (
-                <div className={styles.header}>
-                  {heading}
-                  <IconButton
-                    icon={TbX}
-                    aria-label={closeButtonLabel}
-                    className={styles.closeButton}
-                    onPress={onClose}
-                  />
-                </div>
-              ) : (
-                heading
-              )}
-              {children}
-            </div>
+            {/*
+             * 見出しと閉じるボタンはスクロールする領域の外に置く。中身が長くても上に残り、
+             * 閉じるボタンを右に寄せても、スクロールする領域からはみ出さない
+             */}
+            {closeButtonLabel ? (
+              <div className={styles.header}>
+                {heading}
+                <IconButton
+                  icon={TbX}
+                  aria-label={closeButtonLabel}
+                  className={styles.closeButton}
+                  onPress={onClose}
+                />
+              </div>
+            ) : (
+              heading
+            )}
+            <div className={styles.scrollArea}>{children}</div>
           </CatEarFrame>
         </Dialog>
       </AriaModal>
