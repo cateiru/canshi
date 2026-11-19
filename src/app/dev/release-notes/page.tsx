@@ -17,6 +17,7 @@ export default function ReleaseNotesDevPage() {
   return (
     <ReleaseNotesView
       notes={sortReleaseNotes(releaseNotesSchema.parse(fixture))}
+      basePath="/dev/release-notes"
     />
   );
 }
