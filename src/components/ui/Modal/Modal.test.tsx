@@ -27,9 +27,21 @@ describe("Modal", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("closeButtonLabel がなければ、閉じるボタンを出さない", () => {
+  it("閉じられるモーダルは、closeButtonLabel がなくても右上に「閉じる」ボタンを出す", () => {
+    const onClose = vi.fn();
     render(
-      <Modal open title="確認" onClose={vi.fn()}>
+      <Modal open title="確認" onClose={onClose}>
+        内容
+      </Modal>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "閉じる" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("閉じられないモーダルは、closeButtonLabel がなければ閉じるボタンを出さない", () => {
+    render(
+      <Modal open title="確認" isDismissable={false} onClose={vi.fn()}>
         内容
       </Modal>,
     );

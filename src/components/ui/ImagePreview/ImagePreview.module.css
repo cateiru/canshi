@@ -57,8 +57,3 @@
   flex-direction: column;
   gap: var(--space-3);
 }
-
-.viewerActions {
-  display: flex;
-  justify-content: flex-end;
-}

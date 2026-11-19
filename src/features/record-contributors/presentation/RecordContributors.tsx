@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button as AriaButton } from "react-aria-components";
 import { TbRobot } from "react-icons/tb";
-import { Button, Modal } from "@/components/ui";
+import { Modal } from "@/components/ui";
 import { MCP_CLIENT_APP_ICON } from "@/features/mcp/presentation/clientIcons";
 import { formatTimestampJst } from "@/features/shared/datetime";
 import { UserAvatar } from "@/features/users/presentation/UserAvatar";
@@ -78,11 +78,6 @@ export function RecordContributors({ contributors }: RecordContributorsProps) {
         onClose={() => setIsHistoryOpen(false)}
       >
         <RecordChangeHistory contributions={contributors} labels={labels} />
-        <div className={styles.actions}>
-          <Button variant="secondary" onPress={() => setIsHistoryOpen(false)}>
-            閉じる
-          </Button>
-        </div>
       </Modal>
     </>
   );

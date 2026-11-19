@@ -32,7 +32,7 @@ export type MediaGalleryProps = {
   markedLabel?: string;
   /** モーダル内の操作ボタン（表示中の添付に対する操作） */
   renderActions?: (asset: MediaAssetView) => ReactNode;
-  /** 「閉じる」ボタンの左に並べる操作ボタン（表示中の添付に対する操作） */
+  /** 「前へ」「次へ」の右に並べる操作ボタン（表示中の添付に対する操作） */
   renderNavActions?: (asset: MediaAssetView) => ReactNode;
 };
 
@@ -121,36 +121,37 @@ export function MediaGallery({
                 />
               )}
             </ImageStage>
-            <div className={styles.nav}>
-              {assets.length > 1 ? (
-                <div className={styles.pager}>
-                  <Button
-                    variant="secondary"
-                    isDisabled={!hasPrev}
-                    onPress={() => setOpenIndex((index) => (index ?? 0) - 1)}
-                    leftIcon={TbChevronLeft}
-                  >
-                    前へ
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    isDisabled={!hasNext}
-                    onPress={() => setOpenIndex((index) => (index ?? 0) + 1)}
-                    rightIcon={TbChevronRight}
-                  >
-                    次へ
-                  </Button>
-                </div>
-              ) : (
-                <span />
-              )}
-              <div className={styles.navRight}>
-                {renderNavActions ? renderNavActions(current) : null}
-                <Button variant="secondary" onPress={() => setOpenIndex(null)}>
-                  閉じる
-                </Button>
+            {assets.length > 1 || renderNavActions ? (
+              <div className={styles.nav}>
+                {assets.length > 1 ? (
+                  <div className={styles.pager}>
+                    <Button
+                      variant="secondary"
+                      isDisabled={!hasPrev}
+                      onPress={() => setOpenIndex((index) => (index ?? 0) - 1)}
+                      leftIcon={TbChevronLeft}
+                    >
+                      前へ
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      isDisabled={!hasNext}
+                      onPress={() => setOpenIndex((index) => (index ?? 0) + 1)}
+                      rightIcon={TbChevronRight}
+                    >
+                      次へ
+                    </Button>
+                  </div>
+                ) : (
+                  <span />
+                )}
+                {renderNavActions ? (
+                  <div className={styles.navRight}>
+                    {renderNavActions(current)}
+                  </div>
+                ) : null}
               </div>
-            </div>
+            ) : null}
             {renderActions ? (
               <div className={styles.actions}>{renderActions(current)}</div>
             ) : null}

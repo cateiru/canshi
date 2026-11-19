@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TbCake } from "react-icons/tb";
-import { Button, Modal } from "@/components/ui";
+import { Modal } from "@/components/ui";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
   type BirthdayCelebrationCat,
@@ -147,9 +147,6 @@ export function BirthdayCelebrationModal({
               ※ 換算は一般的な目安です。成長の早さには個体差があります。
             </p>
           </div>
-          <Button variant="primary" onPress={onClose} className={styles.close}>
-            閉じる
-          </Button>
         </div>
       </Modal>
     </>

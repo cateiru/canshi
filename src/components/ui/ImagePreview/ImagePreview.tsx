@@ -1,7 +1,6 @@
 "use client";
 
 import { type ReactNode, useState } from "react";
-import { Button } from "../Button/Button";
 import { Modal } from "../Modal/Modal";
 import styles from "./ImagePreview.module.css";
 import { type ImageFit, ImageStage } from "./ImageStage";
@@ -95,11 +94,6 @@ export function ImagePreview({
           <ImageStage fit={fit}>
             <img src={previewSrc} alt={alt} />
           </ImageStage>
-          <div className={styles.viewerActions}>
-            <Button variant="secondary" onPress={() => setIsOpen(false)}>
-              閉じる
-            </Button>
-          </div>
         </div>
       </Modal>
     </>

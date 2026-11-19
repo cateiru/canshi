@@ -26,8 +26,9 @@ export type ModalProps = {
    */
   isDismissable?: boolean;
   /**
-   * 指定すると、右上に閉じるボタン（✕）を出し、押したときに `onClose` を呼ぶ。
-   * 値はボタンの読み上げ用のラベル
+   * 右上の閉じるボタン（✕）の読み上げ用のラベル。押したときは `onClose` を呼ぶ。
+   * 閉じられるモーダル（`isDismissable` が true）では、省略しても「閉じる」で必ず出す。
+   * 閉じられないモーダルでは、指定したときだけ出す
    */
   closeButtonLabel?: string;
   children: ReactNode;
@@ -39,9 +40,11 @@ export function Modal({
   onClose,
   size = "md",
   isDismissable = true,
-  closeButtonLabel,
+  closeButtonLabel: closeButtonLabelProp,
   children,
 }: ModalProps) {
+  const closeButtonLabel =
+    closeButtonLabelProp ?? (isDismissable ? "閉じる" : undefined);
   const heading = title ? (
     <Heading slot="title" className={styles.title}>
       {title}
@@ -63,22 +66,24 @@ export function Modal({
       <AriaModal className={`${styles.modal} ${styles[size]}`}>
         <Dialog className={styles.dialog}>
           <CatEarFrame className={styles.panel}>
-            <div className={styles.scrollArea}>
-              {closeButtonLabel ? (
-                <div className={styles.header}>
-                  {heading}
-                  <IconButton
-                    icon={TbX}
-                    aria-label={closeButtonLabel}
-                    className={styles.closeButton}
-                    onPress={onClose}
-                  />
-                </div>
-              ) : (
-                heading
-              )}
-              {children}
-            </div>
+            {/*
+             * 見出しと閉じるボタンはスクロールする領域の外に置く。中身が長くても上に残り、
+             * 閉じるボタンを右に寄せても、スクロールする領域からはみ出さない
+             */}
+            {closeButtonLabel ? (
+              <div className={styles.header}>
+                {heading}
+                <IconButton
+                  icon={TbX}
+                  aria-label={closeButtonLabel}
+                  className={styles.closeButton}
+                  onPress={onClose}
+                />
+              </div>
+            ) : (
+              heading
+            )}
+            <div className={styles.scrollArea}>{children}</div>
           </CatEarFrame>
         </Dialog>
       </AriaModal>
