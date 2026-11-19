@@ -1,0 +1,40 @@
+.main {
+  composes: page from "../../../features/shared/PageLayout.module.css";
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.description {
+  color: var(--color-ink-muted);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.heading {
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.subsection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.subheading {
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
