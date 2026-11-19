@@ -3,10 +3,9 @@
 import { usePathname } from "next/navigation";
 import { type FormEvent, useState, useTransition } from "react";
 import { TbArrowRight } from "react-icons/tb";
-import { Button, FormField, Modal } from "@/components/ui";
+import { BurstConfetti, Button, FormField, Modal } from "@/components/ui";
 import { isTourHiddenPath } from "../domain/tour";
 import { applyInvitationUrlAction, skipInvitationAction } from "./actions";
-import { BurstConfetti } from "./BurstConfetti";
 import styles from "./WelcomeModal.module.css";
 
 type WelcomeStep = "choice" | "invitation";

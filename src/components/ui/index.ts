@@ -1,6 +1,7 @@
 export * from "./Alert/Alert";
 export * from "./Badge/Badge";
 export * from "./Breadcrumb/Breadcrumb";
+export * from "./BurstConfetti/BurstConfetti";
 export * from "./Button/Button";
 export * from "./Button/ButtonLink";
 export * from "./Button/IconButton";

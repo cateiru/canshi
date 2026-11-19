@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TbCake } from "react-icons/tb";
-import { Modal } from "@/components/ui";
+import { BurstConfetti, Modal } from "@/components/ui";
 import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
   type BirthdayCelebrationCat,
@@ -16,7 +16,6 @@ import {
 } from "../domain/birthday";
 import styles from "./BirthdayCelebration.module.css";
 import { CatAvatar } from "./CatAvatar";
-import { Confetti } from "./Confetti";
 
 type Celebration = {
   cat: BirthdayCelebrationCat;
@@ -45,7 +44,7 @@ function markCelebrated(storageKey: string): void {
 }
 
 /**
- * 猫の誕生日（1歳未満は毎月の記念日）にページを開くと、紙吹雪とお祝いのモーダルを表示する。
+ * 猫の誕生日（1歳未満は毎月の記念日）にページを開くと、紙吹雪（ウェルカムモーダルと同じ）とお祝いのモーダルを表示する。
  * 節目かどうかは端末のローカル日付で判定し、猫・節目ごとに端末で1度だけ表示する。
  * 同じ日にお祝いする猫が複数いる場合は、閉じるたびに次の猫のお祝いを表示する
  */
@@ -115,7 +114,7 @@ export function BirthdayCelebrationModal({
 
   return (
     <>
-      <Confetti />
+      <BurstConfetti />
       <Modal
         open
         onClose={onClose}
