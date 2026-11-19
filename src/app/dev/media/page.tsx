@@ -1,6 +1,5 @@
 "use client";
 
-import { notFound } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Card, FormField } from "@/components/ui";
 import { DEV_MEDIA_RECORD_TYPE } from "@/features/media/domain/recordTypes";
@@ -18,16 +17,12 @@ type UploadLog = {
 
 /**
  * メディアアップロード基盤の動作確認用ページ。
- * 記録に紐付けずに R2 へのアップロード・配信・削除を試せる。本番では表示しない
+ * 記録に紐付けずに R2 へのアップロード・配信・削除を試せる。本番では表示しない（`src/app/dev/layout.tsx`）
  */
 export default function MediaDevPage() {
   const [recordId, setRecordId] = useState(() => crypto.randomUUID());
   const [logs, setLogs] = useState<UploadLog[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-
-  if (process.env.NODE_ENV === "production") {
-    notFound();
-  }
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) {

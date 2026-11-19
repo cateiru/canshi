@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import * as RecordIcons from "@/components/ui/RecordIcons/RecordIcons";
 import { CAT_COAT_COLORS, type CatCoatColor } from "@/db/schema";
@@ -42,13 +41,9 @@ function IconGrid({ monochrome = false }: { monochrome?: boolean }) {
 /**
  * イラストアイコン（RecordIcons）をすべて、猫の毛色ごとと単色表示で並べる開発用ページ。
  * 毛色の塗り・黒系の目・口・輪郭の色を、VRT（e2e/vrt.spec.ts）でライト・ダークテーマとも確かめる。
- * 本番では表示しない
+ * 本番では表示しない（`src/app/dev/layout.tsx`）
  */
 export default function RecordIconsDevPage() {
-  if (process.env.NODE_ENV === "production") {
-    notFound();
-  }
-
   return (
     <main className={styles.main}>
       <h1 className={styles.title}>イラストアイコンの一覧</h1>

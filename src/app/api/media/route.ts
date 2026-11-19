@@ -1,3 +1,5 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { isDevPagesEnabled } from "@/features/auth/infrastructure/developmentLogin";
 import { getCurrentUser } from "@/features/auth/presentation/session";
 import { canAttachToMediaRecordOwner } from "@/features/media/application/access";
 import {
@@ -55,9 +57,10 @@ export async function POST(request: Request) {
   }
 
   let catId: string | null;
+  // 開発用のページ（`/dev/media`）からの、記録に添付しないアップロード。本番では受け付けない
   if (
     recordType === DEV_MEDIA_RECORD_TYPE &&
-    process.env.NODE_ENV !== "production"
+    isDevPagesEnabled(getCloudflareContext().env)
   ) {
     catId = null;
   } else {
