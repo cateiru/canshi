@@ -1,0 +1,11 @@
+.main {
+  composes: page from "../../features/shared/PageLayout.module.css";
+}
+
+.description {
+  color: var(--color-ink-muted);
+}
+
+.list {
+  composes: list from "../../features/shared/PageLayout.module.css";
+}
