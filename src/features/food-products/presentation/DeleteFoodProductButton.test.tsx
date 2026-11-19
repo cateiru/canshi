@@ -51,7 +51,7 @@ describe("DeleteFoodProductButton", () => {
       within(dialog).queryByRole("button", { name: "削除する" }),
     ).toBeNull();
 
-    fireEvent.click(within(dialog).getByText("閉じる"));
+    fireEvent.click(within(dialog).getByRole("button", { name: "閉じる" }));
     expect(action).not.toHaveBeenCalled();
   });
 });

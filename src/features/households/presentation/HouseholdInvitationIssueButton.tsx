@@ -103,9 +103,6 @@ export function HouseholdInvitationIssueButton({
                   共有する
                 </Button>
               ) : null}
-              <Button variant="secondary" onPress={handleClose}>
-                閉じる
-              </Button>
             </div>
           </div>
         ) : null}

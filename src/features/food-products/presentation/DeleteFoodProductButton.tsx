@@ -49,14 +49,7 @@ export function DeleteFoodProductButton({
       />
       <Modal open={open} title="商品の削除" onClose={() => setOpen(false)}>
         {inUseMessage ? (
-          <>
-            <p>{inUseMessage}。</p>
-            <div className={styles.actions}>
-              <Button variant="secondary" onPress={() => setOpen(false)}>
-                閉じる
-              </Button>
-            </div>
-          </>
+          <p>{inUseMessage}。</p>
         ) : (
           <>
             <p>

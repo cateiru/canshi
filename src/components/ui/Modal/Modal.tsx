@@ -26,8 +26,9 @@ export type ModalProps = {
    */
   isDismissable?: boolean;
   /**
-   * 指定すると、右上に閉じるボタン（✕）を出し、押したときに `onClose` を呼ぶ。
-   * 値はボタンの読み上げ用のラベル
+   * 右上の閉じるボタン（✕）の読み上げ用のラベル。押したときは `onClose` を呼ぶ。
+   * 閉じられるモーダル（`isDismissable` が true）では、省略しても「閉じる」で必ず出す。
+   * 閉じられないモーダルでは、指定したときだけ出す
    */
   closeButtonLabel?: string;
   children: ReactNode;
@@ -39,9 +40,11 @@ export function Modal({
   onClose,
   size = "md",
   isDismissable = true,
-  closeButtonLabel,
+  closeButtonLabel: closeButtonLabelProp,
   children,
 }: ModalProps) {
+  const closeButtonLabel =
+    closeButtonLabelProp ?? (isDismissable ? "閉じる" : undefined);
   const heading = title ? (
     <Heading slot="title" className={styles.title}>
       {title}

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { MediaAssetView } from "../domain/view";
 import { MediaGallery } from "./MediaGallery";
@@ -40,5 +40,17 @@ describe("MediaGallery", () => {
       screen.getByRole("dialog", { name: "写真 2 / 2" }).querySelector("video"),
     ).toHaveAttribute("src", "/media/b");
     expect(screen.getByRole("button", { name: "次へ" })).toBeDisabled();
+  });
+
+  it("右上の閉じるボタンでモーダルを閉じる", () => {
+    render(<MediaGallery assets={[asset("a")]} title="写真" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "写真 1 を表示" }));
+    const dialog = screen.getByRole("dialog", { name: "写真 1 / 1" });
+    // 添付が 1 件のときは、前後へ移動するボタンを出さない
+    expect(screen.queryByRole("button", { name: "次へ" })).toBeNull();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "閉じる" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
