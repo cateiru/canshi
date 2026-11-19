@@ -4,8 +4,8 @@ import { listReleaseNotes } from "@/features/release-notes/data";
 import ReleaseNotesPage from "./page";
 
 describe("ReleaseNotesPage", () => {
-  it("release-notes.json の内容を表示する", () => {
-    render(<ReleaseNotesPage />);
+  it("release-notes.json の内容を表示する", async () => {
+    render(await ReleaseNotesPage({ searchParams: Promise.resolve({}) }));
 
     const [latest] = listReleaseNotes();
     expect(
