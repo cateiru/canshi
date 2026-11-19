@@ -74,14 +74,12 @@ const KITTEN_HUMAN_AGE_BY_MONTH = [1, 3, 5, 6, 8, 9, 10, 12, 13, 14, 14];
 
 /**
  * 猫の年齢を人間の年齢に換算した目安を返す。
- * 1歳以上は一般によく使われる換算（1歳≒15歳、2歳≒24歳、以降は1年ごとに4歳ずつ加算）に従う
+ * 1歳以上は一般によく使われる換算式 `24 ＋（猫の年齢 − 2）× 4` に従う（1歳≒20歳、2歳≒24歳、3歳≒28歳）。
+ * 1歳未満は換算表（`KITTEN_HUMAN_AGE_BY_MONTH`）を使う
  */
 export function toHumanAge(milestone: BirthdayMilestone): number {
   if (milestone.kind === "monthly") {
     return KITTEN_HUMAN_AGE_BY_MONTH[milestone.months - 1];
-  }
-  if (milestone.years <= 1) {
-    return 15;
   }
   return 24 + (milestone.years - 2) * 4;
 }

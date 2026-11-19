@@ -136,9 +136,10 @@ describe("formatMilestoneAge", () => {
 
 describe("toHumanAge", () => {
   it.each([
-    [1, 15],
+    [1, 20],
     [2, 24],
     [3, 28],
+    [4, 32],
     [10, 56],
     [15, 76],
   ])("%i歳は人間の約%i歳", (years, humanAge) => {
