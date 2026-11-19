@@ -12,7 +12,7 @@ import {
   parseTourCookie,
   parseTourPosition,
   resumeTourPosition,
-  shouldStartTourOnLogin,
+  shouldWelcomeOnLogin,
   type TourProgress,
   tourStepHref,
 } from "./tour";
@@ -39,6 +39,12 @@ describe("parseTourCookie", () => {
   it("ログイン中のユーザーの Cookie だけを読む", () => {
     const value = encodeTourCookie("user-1", "food");
     expect(parseTourCookie(value, "user-1")).toBe("food");
+    expect(parseTourCookie(value, "user-2")).toBeNull();
+  });
+
+  it("ウェルカムモーダルの状態を読む", () => {
+    const value = encodeTourCookie("user-1", "welcome");
+    expect(parseTourCookie(value, "user-1")).toBe("welcome");
     expect(parseTourCookie(value, "user-2")).toBeNull();
   });
 
@@ -172,13 +178,13 @@ describe("isTourHiddenPath", () => {
   });
 });
 
-describe("shouldStartTourOnLogin", () => {
+describe("shouldWelcomeOnLogin", () => {
   it("はじめてログインしたときにはじめる", () => {
-    expect(shouldStartTourOnLogin(true, "/")).toBe(true);
-    expect(shouldStartTourOnLogin(false, "/")).toBe(false);
+    expect(shouldWelcomeOnLogin(true, "/")).toBe(true);
+    expect(shouldWelcomeOnLogin(false, "/")).toBe(false);
   });
 
   it("招待 URL から来たときははじめない", () => {
-    expect(shouldStartTourOnLogin(true, "/invitations/token")).toBe(false);
+    expect(shouldWelcomeOnLogin(true, "/invitations/token")).toBe(false);
   });
 });

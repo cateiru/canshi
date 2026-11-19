@@ -1,0 +1,21 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* 選択肢は横幅いっぱいに広げ、文字を左・矢印を右に寄せる */
+.choice {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.submit {
+  width: 100%;
+}

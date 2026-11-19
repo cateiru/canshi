@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { skipWelcomeModal } from "./helpers";
 
 // ログイン前の状態を確認するため、保存済みのセッションを使わない
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -233,12 +234,17 @@ test("別のメールアドレスでログインすると、別のユーザー�
 }) => {
   // e2e は `next dev` に対して実行するため、`/login` は開発用のログインになる
   // （Cloudflare Access を通さず、入力したメールアドレスでログインする）
+  // 毎回新しいユーザーにする（ローカルの D1 に前回のユーザーが残っていても、同じ結果になるように）
   await page.goto("/login?callbackUrl=%2Fsettings%2Faccount%2Fprofile");
   await page
     .getByLabel("メールアドレス（開発用）")
-    .fill("e2e-another-user@example.com");
+    .fill(`e2e-another-user-${Date.now()}@example.com`);
   await page.getByRole("button", { name: "ログイン" }).click();
   await expect(page).toHaveURL(/\/settings\/account\/profile$/);
+  // はじめてログインしたユーザーにはウェルカムモーダルが出るため、「もっていない」を選んで閉じる
+  // （ホームへ移るため、プロフィールの画面を開き直す）
+  await skipWelcomeModal(page);
+  await page.goto("/settings/account/profile");
 
   // 新しく作ったユーザーは、メールアドレスから名前を作らない
   await expect(page.getByRole("textbox", { name: "名前" })).toHaveValue(

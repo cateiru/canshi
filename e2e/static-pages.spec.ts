@@ -3,7 +3,10 @@ import { expect, test } from "@playwright/test";
 // CRUD 操作を持たない静的なページの表示内容を確認する
 test("更新情報ページに見出しとリリースノートが表示される", async ({ page }) => {
   await page.goto("/release-notes");
-  await expect(page.getByRole("heading", { name: "更新情報" })).toBeVisible();
+  // リリースノートの見出しにも「更新情報」を含むものがあるため、ページの見出しと完全一致で探す
+  await expect(
+    page.getByRole("heading", { name: "更新情報", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("listitem").first()).toBeVisible();
 });
 

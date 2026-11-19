@@ -37,3 +37,18 @@ export function isDevelopmentLoginEnabled(env: DevelopmentLoginEnv) {
   }
   return process.env.NODE_ENV === "development" && getOidcConfig(env) === null;
 }
+
+/**
+ * 開発用のページ（`/dev/*`。部品の一覧・VRT 用の固定表示など）を出すかどうか。
+ * `next dev` と、`DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN` を有効にした Worker Previews（本番とは別の
+ * D1・R2 を使う）でだけ出し、本番では出さない（プレビューは本番ビルドのため、`process.env.NODE_ENV`
+ * だけでは切り替えられない）
+ */
+export function isDevPagesEnabled(
+  env: Pick<CloudflareEnv, "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN">,
+) {
+  return (
+    process.env.NODE_ENV !== "production" ||
+    isDangerousDevelopmentLoginEnabled(env)
+  );
+}

@@ -104,7 +104,7 @@ export default async function RootLayout({
             </>
           ) : null}
         </header>
-        {/* はじめてガイドの途中のときだけ、今のステップの案内を出す */}
+        {/* はじめてログインした直後はウェルカムモーダルを、はじめてガイドの途中は今のステップの案内を出す */}
         {user ? <TourGuideLoader /> : null}
         <div className={styles.content}>{children}</div>
         <Footer />

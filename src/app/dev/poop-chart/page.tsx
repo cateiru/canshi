@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import type { PoopRecord } from "@/db/schema";
 import { toPoopChartPoints } from "@/features/poop-records/presentation/chart";
 import { PoopRecordChart } from "@/features/poop-records/presentation/PoopRecordChart";
@@ -47,13 +46,9 @@ function buildFixtureRecords(): Pick<
 /**
  * うんち記録の「うんちの時間帯」のグラフを、固定の今日・記録で表示する開発用ページ。
  * 本物の一覧は実行日を今日として期間を切るため、VRT（e2e/vrt.spec.ts）では
- * こちらを撮ってグラフ本体の見た目を確かめる。本番では表示しない
+ * こちらを撮ってグラフ本体の見た目を確かめる。本番では表示しない（`src/app/dev/layout.tsx`）
  */
 export default function PoopChartDevPage() {
-  if (process.env.NODE_ENV === "production") {
-    notFound();
-  }
-
   return (
     <main className={styles.main}>
       <PoopRecordChart
