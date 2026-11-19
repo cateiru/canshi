@@ -80,7 +80,12 @@
   margin-bottom: 0;
 }
 
+/*
+ * 押しやすさのためボタンは見出しの 1 行より高い。上下に負の余白を取り、ボタンの中心を見出しの
+ * 1 行目の中心に揃える（見出しが折り返しても 1 行目の横に並ぶ）
+ */
 .closeButton {
   flex: none;
   margin-left: auto;
+  margin-block: calc((var(--text-lg) * var(--line-height-heading) - 44px) / 2);
 }
