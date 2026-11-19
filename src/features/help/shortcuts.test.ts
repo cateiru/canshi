@@ -24,6 +24,7 @@ const ALL_TARGETS: HelpShortcutTarget[] = [
   "food-products",
   "feeding-schedules",
   "notification-settings",
+  "appearance-settings",
   "cat-notification-settings",
 ];
 
@@ -35,7 +36,7 @@ describe("buildHelpShortcuts", () => {
     },
   );
 
-  it("家やねこがなくても、家の作成と通知設定の導線は出す", () => {
+  it("家やねこがなくても、家の作成・通知設定・見た目設定の導線は出す", () => {
     const empty: HelpShortcutContext = { households: [], cats: [] };
     expect(buildHelpShortcuts("household-new", empty)).toEqual([
       { href: "/settings/households/new", label: "家を作成する" },
@@ -43,9 +44,14 @@ describe("buildHelpShortcuts", () => {
     expect(buildHelpShortcuts("notification-settings", empty)).toEqual([
       { href: "/settings/notifications", label: "通知設定" },
     ]);
+    expect(buildHelpShortcuts("appearance-settings", empty)).toEqual([
+      { href: "/settings/appearance", label: "見た目設定" },
+    ]);
     for (const target of ALL_TARGETS.filter(
       (target) =>
-        target !== "household-new" && target !== "notification-settings",
+        target !== "household-new" &&
+        target !== "notification-settings" &&
+        target !== "appearance-settings",
     )) {
       expect(buildHelpShortcuts(target, empty)).toEqual([]);
     }

@@ -38,3 +38,15 @@ export function sanitizeCallbackUrl(value: unknown): string {
   }
   return `${url.pathname}${url.search}${url.hash}`;
 }
+
+/**
+ * ログイン後の遷移先を `callbackUrl` に付けた URL を返す。ログイン画面と、ログイン前に開ける
+ * 見た目設定を行き来しても遷移先を失わないようにする。既定値のときは付けない。
+ * `callbackUrl` は `sanitizeCallbackUrl` で確かめた値を渡すこと
+ */
+export function withCallbackUrl(path: string, callbackUrl: string): string {
+  if (callbackUrl === DEFAULT_CALLBACK_URL) {
+    return path;
+  }
+  return `${path}?${new URLSearchParams({ callbackUrl })}`;
+}

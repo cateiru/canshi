@@ -13,8 +13,12 @@ const PUBLIC_PATH_PREFIXES = [
   "/opengraph-image",
 ];
 
-/** 未ログインでも見られるページ（そのパスと、その下のパス）。ヘルプはログイン前にも読めるようにする */
-const PUBLIC_PAGE_PATHS = ["/help"];
+/**
+ * 未ログインでも見られるページ（そのパスと、その下のパス）。ヘルプはログイン前にも読めるようにする。
+ * 見た目設定は端末ごとの cookie に保存するだけでアカウントに関係しないため、
+ * ログイン画面の文字の大きさや配色もログイン前に変えられるようにする
+ */
+const PUBLIC_PAGE_PATHS = ["/help", "/settings/appearance"];
 
 /** middleware（`src/middleware.ts`）でセッションを確認しないパスかどうか */
 export function isPublicPath(pathname: string) {
