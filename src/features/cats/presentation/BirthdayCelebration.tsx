@@ -86,16 +86,39 @@ export function BirthdayCelebration({
     return null;
   }
 
-  const { cat, milestone } = current;
-  const age = formatMilestoneAge(milestone);
   const close = () => setQueue((prev) => prev.slice(1));
 
   return (
+    <BirthdayCelebrationModal
+      key={current.storageKey}
+      cat={current.cat}
+      milestone={current.milestone}
+      onClose={close}
+    />
+  );
+}
+
+/**
+ * お祝いの紙吹雪とモーダル。表示するかどうかの判定は持たず、渡された節目のお祝いをそのまま表示する。
+ * 開発用ページ（`/dev/modals`）でも、日付や端末の記録に関わらず表示を確かめるために使う
+ */
+export function BirthdayCelebrationModal({
+  cat,
+  milestone,
+  onClose,
+}: {
+  cat: Pick<BirthdayCelebrationCat, "name" | "profileMediaAssetId">;
+  milestone: BirthdayMilestone;
+  onClose: () => void;
+}) {
+  const age = formatMilestoneAge(milestone);
+
+  return (
     <>
-      <Confetti key={current.storageKey} />
+      <Confetti />
       <Modal
         open
-        onClose={close}
+        onClose={onClose}
         title={
           <span className={styles.title}>
             <ScaledIcon icon={TbCake} aria-hidden="true" size={24} />
@@ -124,7 +147,7 @@ export function BirthdayCelebration({
               ※ 換算は一般的な目安です。成長の早さには個体差があります。
             </p>
           </div>
-          <Button variant="primary" onPress={close} className={styles.close}>
+          <Button variant="primary" onPress={onClose} className={styles.close}>
             閉じる
           </Button>
         </div>

@@ -18,20 +18,44 @@ type WelcomeStep = "choice" | "invitation";
  */
 export function WelcomeModal() {
   const pathname = usePathname();
-  const [step, setStep] = useState<WelcomeStep>("choice");
-  const [isSkipping, startSkip] = useTransition();
-  const [invitationUrl, setInvitationUrl] = useState("");
-  const [error, setError] = useState<string>();
-  const [isApplying, startApply] = useTransition();
 
   // 招待のページなど、ほかの操作の途中の画面では出さない（はじめてガイドのパネルと同じ）
   if (isTourHiddenPath(pathname)) {
     return null;
   }
 
+  return (
+    <WelcomeModalView
+      onSkip={skipInvitationAction}
+      onApply={applyInvitationUrlAction}
+    />
+  );
+}
+
+type WelcomeModalViewProps = {
+  /** 「もっていない」を選んだとき */
+  onSkip: () => Promise<void>;
+  /**
+   * 招待 URL を「適用」したとき。適用できなければエラーを返す（適用できたときは、本物ではサーバーが
+   * 招待のページへ移すため返らない）
+   */
+  onApply: (invitationUrl: string) => Promise<{ error?: string } | undefined>;
+};
+
+/**
+ * ウェルカムモーダルの見た目と操作。選んだあとの処理は受け取り、Cookie もページの位置も見ない。
+ * 開発用ページ（`/dev/modals`）で、ログインの状態に関わらず表示を確かめるためにも使う
+ */
+export function WelcomeModalView({ onSkip, onApply }: WelcomeModalViewProps) {
+  const [step, setStep] = useState<WelcomeStep>("choice");
+  const [isSkipping, startSkip] = useTransition();
+  const [invitationUrl, setInvitationUrl] = useState("");
+  const [error, setError] = useState<string>();
+  const [isApplying, startApply] = useTransition();
+
   const skip = () => {
     startSkip(async () => {
-      await skipInvitationAction();
+      await onSkip();
     });
   };
 
@@ -40,8 +64,8 @@ export function WelcomeModal() {
   const apply = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     startApply(async () => {
-      const result = await applyInvitationUrlAction(invitationUrl);
-      setError(result.error);
+      const result = await onApply(invitationUrl);
+      setError(result?.error);
     });
   };
 

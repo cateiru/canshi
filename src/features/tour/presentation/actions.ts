@@ -10,6 +10,7 @@ import {
 import {
   canLeaveTourStep,
   effectiveTourPosition,
+  INVALID_INVITATION_URL_MESSAGE,
   isTourStepDone,
   nextTourPosition,
   resumeTourPosition,
@@ -96,10 +97,7 @@ export async function applyInvitationUrlAction(
   const user = await requireUser();
   const token = householdInvitationTokenFromUrl(invitationUrl);
   if (!token) {
-    return {
-      error:
-        "招待URLの形式が正しくありません。届いた招待URLをそのまま貼り付けてください。",
-    };
+    return { error: INVALID_INVITATION_URL_MESSAGE };
   }
   if ((await readTourCookieState(user.id)) === TOUR_WELCOME) {
     (await cookies()).delete(TOUR_COOKIE_NAME);
