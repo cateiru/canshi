@@ -13,7 +13,9 @@ test("未ログインでページを開くとログイン画面にリダイレ�
   await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fsettings$/);
   await expect(page.getByRole("button", { name: "ログイン" })).toBeVisible();
   // 未ログインではヘッダーの通知・設定へのリンクを出さない
-  await expect(page.getByRole("link", { name: "設定" })).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "設定", exact: true }),
+  ).toHaveCount(0);
 
   await page.getByRole("button", { name: "ログイン" }).click();
 
@@ -21,6 +23,37 @@ test("未ログインでページを開くとログイン画面にリダイレ�
   await expect(
     page.getByRole("heading", { name: "設定", exact: true }),
   ).toBeVisible();
+});
+
+test("未ログインでもログイン画面から見た目設定を開いて変えられる", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await page.getByRole("link", { name: /見た目設定/ }).click();
+  await expect(page).toHaveURL("/settings/appearance");
+  await expect(
+    page.getByRole("heading", { name: "見た目設定", exact: true }),
+  ).toBeVisible();
+
+  const html = page.locator("html");
+  await page.getByRole("radio", { name: "特大", exact: true }).click();
+  await expect(html).toHaveAttribute("data-font-size", "xlarge");
+  // cookie の保存（Server Action）が終わるのを待つ
+  await expect
+    .poll(async () =>
+      (await page.context().cookies()).map(({ name, value }) =>
+        [name, value].join("="),
+      ),
+    )
+    .toContain("canshi-font-size=xlarge");
+
+  // パンくずからログイン画面へ戻ると、変えた文字の大きさで表示される
+  await page
+    .getByRole("navigation", { name: "パンくずリスト" })
+    .getByRole("link", { name: "ログイン" })
+    .click();
+  await expect(page).toHaveURL(LOGIN_PAGE_URL);
+  await expect(html).toHaveAttribute("data-font-size", "xlarge");
 });
 
 test("DB にないセッションの Cookie ではログインしたことにならない", async ({

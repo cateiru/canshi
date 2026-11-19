@@ -14,6 +14,7 @@ describe("isPublicPath", () => {
     "/help",
     "/help/feeding-modes",
     "/help/records/poop-records",
+    "/settings/appearance",
   ])("%s はログインなしで取得できる", (pathname) => {
     expect(isPublicPath(pathname)).toBe(true);
   });
@@ -24,6 +25,8 @@ describe("isPublicPath", () => {
     "/cats",
     "/cats/abc/poop-records",
     "/settings",
+    "/settings/account",
+    "/settings/appearance-other",
     "/api/auth/session",
     "/api/media",
     "/api/media/uploads",

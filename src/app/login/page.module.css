@@ -55,6 +55,18 @@
   min-width: 160px;
 }
 
+.appearanceLink {
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.appearanceLink:hover {
+  color: var(--color-ink);
+}
+
 @media (max-width: 600px) {
   .welcome {
     padding: var(--space-8) var(--space-4);
