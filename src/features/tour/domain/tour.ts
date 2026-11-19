@@ -27,6 +27,10 @@ export type TourPosition = TourStep | "done";
 /** ウェルカムモーダルを出している状態。招待 URL を持っているかを選ぶまで、ガイドははじめない */
 export const TOUR_WELCOME = "welcome";
 
+/** ウェルカムモーダルで、入力が招待 URL の形でなかったときのエラー */
+export const INVALID_INVITATION_URL_MESSAGE =
+  "招待URLの形式が正しくありません。届いた招待URLをそのまま貼り付けてください。";
+
 /** ガイドの Cookie に保存する状態。ウェルカムモーダルか、ガイドの位置 */
 export type TourCookieState = TourPosition | typeof TOUR_WELCOME;
 

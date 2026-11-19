@@ -47,14 +47,14 @@ export function BirthdayCelebrationPreview() {
   );
 
   return (
-    <main className={styles.main}>
-      <h1 className={styles.title}>誕生日のお祝いの確認</h1>
+    <section className={styles.section}>
+      <h2 className={styles.heading}>誕生日のお祝い</h2>
       <p className={styles.description}>
         節目を選ぶと、その日のお祝いの紙吹雪とモーダルを表示します。日付やこの端末でのお祝い済みの記録に関わらず、何度でも開けます。
       </p>
 
-      <section className={styles.section}>
-        <h2 className={styles.heading}>猫</h2>
+      <section className={styles.subsection}>
+        <h3 className={styles.subheading}>猫</h3>
         <FormField label="名前" value={name} onChange={setName} />
         <FormField
           label="プロフィール画像の media asset ID（任意）"
@@ -64,13 +64,13 @@ export function BirthdayCelebrationPreview() {
         />
       </section>
 
-      <section className={styles.section}>
-        <h2 className={styles.heading}>毎月の記念日（1歳未満）</h2>
+      <section className={styles.subsection}>
+        <h3 className={styles.subheading}>毎月の記念日（1歳未満）</h3>
         {renderButtons(MONTHLY_MILESTONES)}
       </section>
 
-      <section className={styles.section}>
-        <h2 className={styles.heading}>誕生日（1歳以上）</h2>
+      <section className={styles.subsection}>
+        <h3 className={styles.subheading}>誕生日（1歳以上）</h3>
         {renderButtons(YEARLY_MILESTONES)}
       </section>
 
@@ -85,6 +85,6 @@ export function BirthdayCelebrationPreview() {
           onClose={() => setOpened(null)}
         />
       ) : null}
-    </main>
+    </section>
   );
 }

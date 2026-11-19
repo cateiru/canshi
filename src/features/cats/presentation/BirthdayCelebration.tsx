@@ -100,7 +100,7 @@ export function BirthdayCelebration({
 
 /**
  * お祝いの紙吹雪とモーダル。表示するかどうかの判定は持たず、渡された節目のお祝いをそのまま表示する。
- * 開発用ページ（`/dev/birthday-celebration`）でも、日付や端末の記録に関わらず表示を確かめるために使う
+ * 開発用ページ（`/dev/modals`）でも、日付や端末の記録に関わらず表示を確かめるために使う
  */
 export function BirthdayCelebrationModal({
   cat,
