@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui";
+import { Alert, Button } from "@/components/ui";
 import {
   householdInvitationPath,
   householdInvitationTokenFromUrl,
@@ -34,9 +34,9 @@ export function WelcomeModalPreview() {
         <Button onPress={open}>ウェルカムモーダルを開く</Button>
       </div>
       {result ? (
-        <p role="status" className={styles.result}>
+        <Alert color="success" role="status">
           {result}
-        </p>
+        </Alert>
       ) : null}
 
       {openedKey !== null ? (
