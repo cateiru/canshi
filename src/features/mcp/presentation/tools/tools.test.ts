@@ -814,6 +814,95 @@ describe("メモ", () => {
       expect(result.error).toBe(`catId="${catId}" の猫が見つかりません`);
     }
   });
+
+  it("一覧には、作成・編集した人と日時を古い順に添える", async () => {
+    await db.insert(memoRecords).values([
+      { id: "memo-1", catId: "cat-1", content: "履歴あり" },
+      { id: "memo-2", catId: "cat-1", content: "履歴なし" },
+    ]);
+    await db.insert(recordChangeLogs).values([
+      {
+        recordType: "memo_record",
+        recordId: "memo-1",
+        action: "create",
+        userId: "user-2",
+        createdAt: new Date("2026-10-01T00:00:00.000Z"),
+      },
+      {
+        recordType: "memo_record",
+        recordId: "memo-1",
+        action: "update",
+        userId: "user-1",
+        mcpClientId: "client-1",
+        createdAt: new Date("2026-10-02T00:00:00.000Z"),
+      },
+      {
+        recordType: "memo_record",
+        recordId: "memo-1",
+        action: "delete",
+        userId: "user-1",
+        createdAt: new Date("2026-10-03T00:00:00.000Z"),
+      },
+    ]);
+
+    const result = await call("list_memos", { catId: "cat-1" });
+
+    const memos = result.value?.memos as {
+      id: string;
+      changeHistory: unknown[];
+    }[];
+    expect(
+      Object.fromEntries(memos.map((memo) => [memo.id, memo.changeHistory])),
+    ).toEqual({
+      "memo-1": [
+        {
+          action: "create",
+          changedAt: "2026-10-01T00:00:00.000Z",
+          changedBy: { kind: "user", userName: "ユーザー2" },
+        },
+        {
+          action: "update",
+          changedAt: "2026-10-02T00:00:00.000Z",
+          // 接続のクライアントを登録していないため、アプリの名前はわからない
+          changedBy: { kind: "ai", userName: "ユーザー1", clientName: null },
+        },
+      ],
+      "memo-2": [],
+    });
+  });
+
+  it("服薬予定の一覧にも、作成・編集した人と日時を添える", async () => {
+    await db.insert(medications).values({
+      id: "medication-1",
+      catId: "cat-1",
+      name: "くすり",
+      doseAmount: "1錠",
+      dosesPerDay: 1,
+      startDate: "2026-10-01",
+    });
+    await db.insert(recordChangeLogs).values({
+      recordType: "medication",
+      recordId: "medication-1",
+      action: "create",
+      userId: "user-1",
+      createdAt: new Date("2026-10-01T00:00:00.000Z"),
+    });
+
+    const result = await call("list_medications", { catId: "cat-1" });
+
+    expect(result.value?.medications).toEqual([
+      expect.objectContaining({
+        id: "medication-1",
+        changeHistory: [
+          {
+            action: "create",
+            changedAt: "2026-10-01T00:00:00.000Z",
+            changedBy: { kind: "user", userName: "ユーザー1" },
+          },
+        ],
+      }),
+    ]);
+  });
 });
 
 describe("ごはん商品", () => {

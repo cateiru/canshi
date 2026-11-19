@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
+  type RecordChangeLogAction,
   type RecordChangeLogRecordType,
   recordChangeLogs,
   users,
@@ -33,6 +34,7 @@ export function recordContributorKey(
 type ContributionRow = {
   recordType: RecordChangeLogRecordType;
   recordId: string;
+  action: RecordChangeLogAction;
   userId: string;
   mcpClientId: string | null;
   userName: string;
@@ -79,6 +81,7 @@ export async function listRecordContributors(
           .select({
             recordType: recordChangeLogs.recordType,
             recordId: recordChangeLogs.recordId,
+            action: recordChangeLogs.action,
             userId: recordChangeLogs.userId,
             mcpClientId: recordChangeLogs.mcpClientId,
             userName: users.name,
@@ -127,7 +130,12 @@ export async function listRecordContributors(
         toRecordContributor(row, visibleIconUserIds, clientSummaries),
       );
     }
-    contributions.history.push({ contributorIndex, changedAt: row.createdAt });
+    contributions.history.push({
+      // 削除の履歴は読んでいない
+      action: row.action === "create" ? "create" : "update",
+      contributorIndex,
+      changedAt: row.createdAt,
+    });
     result.set(key, contributions);
   }
   return result;

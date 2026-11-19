@@ -5,6 +5,7 @@ import {
   EXPENSE_CATEGORIES,
   GIVEN_AMOUNT_LEVELS,
   LEFTOVER_LEVELS,
+  type RecordChangeLogRecordType,
 } from "@/db/schema";
 import {
   createBrushingRecord,
@@ -80,6 +81,10 @@ import {
 import { poopRecordFormSchema } from "@/features/poop-records/domain/schema";
 import { getPoopRecordForCat } from "@/features/poop-records/infrastructure/queries";
 import {
+  listRecordContributors,
+  recordContributorKey,
+} from "@/features/record-contributors/infrastructure/queries";
+import {
   createShampooRecord,
   updateShampooRecord,
 } from "@/features/shampoo-records/application/mutations";
@@ -128,6 +133,10 @@ import {
   toCheckboxValue,
   toOptionalValue,
 } from "../formValues";
+import {
+  CHANGE_HISTORY_DESCRIPTION,
+  toChangeHistorySummary,
+} from "../summaries";
 import {
   catNotFoundMessage,
   errorResult,
@@ -1438,7 +1447,8 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
     {
       title: "服薬予定の一覧を取得",
       description:
-        "猫の服薬予定（薬）の一覧を取得する。投薬の記録を追加するときの medicationId に使う。",
+        "猫の服薬予定（薬）の一覧を取得する。投薬の記録を追加するときの medicationId に使う。" +
+        CHANGE_HISTORY_DESCRIPTION,
       inputSchema: {
         catId: z.string().describe("猫の ID（list_cats で取得できる）"),
       },
@@ -1450,6 +1460,12 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
         return errorResult(allowed.error);
       }
       const medications = await listMedications(catId, ctx.env.DB);
+      const changeHistoryOf = await loadChangeHistories(
+        ctx,
+        allowed.connection,
+        "medication",
+        medications.map((medication) => medication.id),
+      );
       return jsonResult({
         medications: medications.map((medication) => ({
           id: medication.id,
@@ -1459,6 +1475,7 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
           startDate: medication.startDate,
           endDate: medication.endDate,
           archived: medication.archivedAt != null,
+          changeHistory: changeHistoryOf(medication.id),
         })),
       });
     },
@@ -1472,7 +1489,8 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
         "猫のメモの一覧を取得する。日付を残さないメモ（recordedAt が null）はタイムライン" +
         "（list_timeline）に載らないため、メモを読むときはこのツールを使う。" +
         "日付を残さないメモ（新しく作った順）、日付を残したメモ（recordedAt の新しい順）の順に並ぶ。" +
-        `1 ページは ${MEMO_PAGE_SIZE} 件で、hasMore が true なら次のページがある。`,
+        `1 ページは ${MEMO_PAGE_SIZE} 件で、hasMore が true なら次のページがある。` +
+        CHANGE_HISTORY_DESCRIPTION,
       inputSchema: {
         catId: z.string().describe("猫の ID（list_cats で取得できる）"),
         page: z
@@ -1491,6 +1509,12 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
       }
       const records = await listMemoRecords(catId, ctx.env.DB);
       const paged = paginate(records, page ?? 1, MEMO_PAGE_SIZE);
+      const changeHistoryOf = await loadChangeHistories(
+        ctx,
+        allowed.connection,
+        "memo_record",
+        paged.items.map((record) => record.id),
+      );
       return jsonResult({
         memos: paged.items.map((record) => ({
           id: record.id,
@@ -1498,6 +1522,7 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
           content: record.content,
           createdAt: record.createdAt,
           updatedAt: record.updatedAt,
+          changeHistory: changeHistoryOf(record.id),
         })),
         page: paged.page,
         hasMore: paged.page < paged.totalPages,
@@ -1517,7 +1542,7 @@ async function resolveReadableCat(
   ctx: McpToolContext,
   catId: string,
   recordType: McpPermissionRecordType,
-): Promise<{ ok: true } | { error: string }> {
+): Promise<{ connection: McpConnection } | { error: string }> {
   const connection = await ctx.resolveConnection();
   if ("error" in connection) {
     return connection;
@@ -1533,5 +1558,26 @@ async function resolveReadableCat(
   ) {
     return { error: catNotFoundMessage(catId) };
   }
-  return { ok: true };
+  return { connection };
+}
+
+/**
+ * 1 種類の記録の作成・編集の履歴を、記録の ID ごとに `changeHistory` の形で返す。
+ * 記録を読めることは、呼び出し元で確かめておくこと
+ */
+async function loadChangeHistories(
+  ctx: McpToolContext,
+  connection: McpConnection,
+  recordType: RecordChangeLogRecordType,
+  recordIds: readonly string[],
+) {
+  const contributions = await listRecordContributors(
+    recordIds.map((recordId) => ({ recordType, recordId })),
+    connection.userId,
+    ctx.env.DB,
+  );
+  return (recordId: string) =>
+    toChangeHistorySummary(
+      contributions.get(recordContributorKey(recordType, recordId)) ?? null,
+    );
 }

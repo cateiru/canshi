@@ -1,3 +1,4 @@
+import type { RecordChangeLogAction } from "@/db/schema";
 import type { McpClientApp } from "@/features/mcp/domain/clientApp";
 
 /**
@@ -39,6 +40,11 @@ export function formatRecordContributorLabel(
 
 /** 作成・編集の履歴の 1 件（1 回の保存） */
 export type RecordChangeHistoryEntry = {
+  /**
+   * 作成か編集か。履歴を残し始める（`0064`）より前に作られた記録では、作成の履歴が無く、
+   * 先頭が編集になる
+   */
+  action: Exclude<RecordChangeLogAction, "delete">;
   /** 保存した人。`RecordContributions.contributors` の添字 */
   contributorIndex: number;
   /** 保存した日時 */
@@ -52,6 +58,6 @@ export type RecordChangeHistoryEntry = {
 export type RecordContributions = {
   /** 作成・編集した人（最初に操作した順。作成した人が先頭） */
   contributors: RecordContributor[];
-  /** 作成・編集の履歴（古い順。先頭が作成） */
+  /** 作成・編集の履歴（古い順） */
   history: RecordChangeHistoryEntry[];
 };

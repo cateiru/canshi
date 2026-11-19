@@ -23,6 +23,7 @@ function contributionsOf(
   return {
     contributors,
     history: contributors.map((_, index) => ({
+      action: index === 0 ? "create" : "update",
       contributorIndex: index,
       changedAt: new Date(Date.UTC(2026, 6, 1 + index)),
     })),
@@ -97,14 +98,17 @@ describe("RecordContributors", () => {
           ],
           history: [
             {
+              action: "create",
               contributorIndex: 0,
               changedAt: new Date("2026-07-01T00:05:00Z"),
             },
             {
+              action: "update",
               contributorIndex: 1,
               changedAt: new Date("2026-07-02T15:30:00Z"),
             },
             {
+              action: "update",
               contributorIndex: 0,
               changedAt: new Date("2026-07-03T03:00:00Z"),
             },

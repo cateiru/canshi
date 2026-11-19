@@ -7,6 +7,11 @@ import {
   listCatsForUser,
   listHouseholdsForUser,
 } from "@/features/households/infrastructure/queries";
+import {
+  listRecordContributors,
+  recordContributorKey,
+} from "@/features/record-contributors/infrastructure/queries";
+import { getTimelineRecordChangeLogType } from "@/features/timeline/domain/timelineEntry";
 import { listTimelineForMonth } from "@/features/timeline/infrastructure/queries";
 import {
   allowedMcpRecordTypes,
@@ -23,7 +28,11 @@ import {
   MISSING_USER_ERROR_MESSAGE,
 } from "../domain/props";
 import { getMcpPermissions } from "../infrastructure/permissions";
-import { toCatSummary, toTimelineEntrySummary } from "./summaries";
+import {
+  CHANGE_HISTORY_DESCRIPTION,
+  toCatSummary,
+  toTimelineEntrySummary,
+} from "./summaries";
 import { registerCatalogFoodProductTools } from "./tools/catalogFoodProducts";
 import { registerCatTools } from "./tools/cats";
 import { errorResult, jsonResult, type McpToolContext } from "./tools/context";
@@ -256,6 +265,8 @@ export function createCanshiMcpServer(
         'ブラッシング記録（type="brushing"）の shedAmount（抜け毛の量）は less=少ない、' +
         "usual=いつも通り、more=多い（未選択は null）。" +
         'メモ（type="memo"）は日付を残したものだけを含む。日付を残さないメモも読むときは list_memos を使う。' +
+        "記念日・メモリーのエントリを除く記録には、誰がいつ作成・編集したかの changeHistory が含まれる。" +
+        CHANGE_HISTORY_DESCRIPTION +
         "ユーザーが読み取りを許可していない種類の記録は含まれない。",
       inputSchema: {
         catId: z.string().describe("猫の ID（list_cats で取得できる）"),
@@ -296,8 +307,26 @@ export function createCanshiMcpServer(
         },
         env.DB,
       );
+      const contributions = await listRecordContributors(
+        result.entries.flatMap((entry) => {
+          const recordType = getTimelineRecordChangeLogType(entry.type);
+          return recordType ? [{ recordType, recordId: entry.id }] : [];
+        }),
+        connection.userId,
+        env.DB,
+      );
       return jsonResult({
-        entries: result.entries.map(toTimelineEntrySummary),
+        entries: result.entries.map((entry) => {
+          const recordType = getTimelineRecordChangeLogType(entry.type);
+          return toTimelineEntrySummary(
+            entry,
+            recordType
+              ? (contributions.get(
+                  recordContributorKey(recordType, entry.id),
+                ) ?? null)
+              : undefined,
+          );
+        }),
         hasMore: result.hasMore,
       });
     },
