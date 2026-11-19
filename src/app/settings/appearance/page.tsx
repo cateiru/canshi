@@ -3,6 +3,10 @@ import { Breadcrumb } from "@/components/ui";
 import { AppearanceSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAppearance } from "@/features/appearance/infrastructure/queries";
 import { AppearanceSettings } from "@/features/appearance/presentation/AppearanceSettings";
+import {
+  sanitizeCallbackUrl,
+  withCallbackUrl,
+} from "@/features/auth/domain/callbackUrl";
 import { getCurrentUser } from "@/features/auth/presentation/session";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
@@ -11,14 +15,21 @@ export const metadata: Metadata = {
   title: "見た目設定",
 };
 
+type AppearanceSettingsPageProps = {
+  searchParams: Promise<{ callbackUrl?: string | string[] }>;
+};
+
 /**
  * 見た目設定。端末ごとの cookie に保存するだけなので、ログインしていなくても開ける
  * （`src/features/auth/domain/publicPaths.ts`）
  */
-export default async function AppearanceSettingsPage() {
-  const [appearance, user] = await Promise.all([
+export default async function AppearanceSettingsPage({
+  searchParams,
+}: AppearanceSettingsPageProps) {
+  const [appearance, user, { callbackUrl }] = await Promise.all([
     getAppearance(),
     getCurrentUser(),
+    searchParams,
   ]);
 
   return (
@@ -31,8 +42,18 @@ export default async function AppearanceSettingsPage() {
                 { label: "設定", href: "/settings" },
                 { label: "見た目設定" },
               ]
-            : // 未ログインではトップ・設定を開けないため、ログイン画面へ戻れるようにする
-              [{ label: "ログイン", href: "/login" }, { label: "見た目設定" }]
+            : // 未ログインではトップ・設定を開けないため、ログイン画面へ戻れるようにする。
+              // ログイン画面から引き継いだログイン後の遷移先も戻す
+              [
+                {
+                  label: "ログイン",
+                  href: withCallbackUrl(
+                    "/login",
+                    sanitizeCallbackUrl(callbackUrl),
+                  ),
+                },
+                { label: "見た目設定" },
+              ]
         }
       />
 

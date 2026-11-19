@@ -3,7 +3,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Alert, Button, FormField } from "@/components/ui";
-import { sanitizeCallbackUrl } from "@/features/auth/domain/callbackUrl";
+import {
+  sanitizeCallbackUrl,
+  withCallbackUrl,
+} from "@/features/auth/domain/callbackUrl";
 import {
   DEVELOPMENT_LOGIN_EMAIL,
   isDevelopmentLoginEnabled,
@@ -80,8 +83,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </Button>
           </form>
         )}
-        {/* 見た目設定はアカウントに関係しないため、ログイン前でも変えられる */}
-        <Link href="/settings/appearance" className={styles.appearanceLink}>
+        {/* 見た目設定はアカウントに関係しないため、ログイン前でも変えられる。
+            見た目設定からログイン画面へ戻ってもログイン後の遷移先を失わないよう、callbackUrl を引き継ぐ */}
+        <Link
+          href={withCallbackUrl("/settings/appearance", callbackUrl)}
+          className={styles.appearanceLink}
+        >
           見た目設定（文字の大きさ・配色）
         </Link>
       </section>

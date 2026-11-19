@@ -25,12 +25,15 @@ test("未ログインでページを開くとログイン画面にリダイレ�
   ).toBeVisible();
 });
 
-test("未ログインでもログイン画面から見た目設定を開いて変えられる", async ({
+test("未ログインでもログイン画面から見た目設定を開いて変えられ、ログイン後は元のページへ戻る", async ({
   page,
 }) => {
-  await page.goto("/login");
+  await page.goto("/notifications");
+  await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fnotifications$/);
   await page.getByRole("link", { name: /見た目設定/ }).click();
-  await expect(page).toHaveURL("/settings/appearance");
+  await expect(page).toHaveURL(
+    "/settings/appearance?callbackUrl=%2Fnotifications",
+  );
   await expect(
     page.getByRole("heading", { name: "見た目設定", exact: true }),
   ).toBeVisible();
@@ -52,8 +55,12 @@ test("未ログインでもログイン画面から見た目設定を開いて�
     .getByRole("navigation", { name: "パンくずリスト" })
     .getByRole("link", { name: "ログイン" })
     .click();
-  await expect(page).toHaveURL(LOGIN_PAGE_URL);
+  await expect(page).toHaveURL("/login?callbackUrl=%2Fnotifications");
   await expect(html).toHaveAttribute("data-font-size", "xlarge");
+
+  // 見た目設定を行き来しても、ログイン後の遷移先は失われない
+  await page.getByRole("button", { name: "ログイン" }).click();
+  await expect(page).toHaveURL(/\/notifications$/);
 });
 
 test("DB にないセッションの Cookie ではログインしたことにならない", async ({

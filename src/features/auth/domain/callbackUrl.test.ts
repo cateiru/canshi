@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CALLBACK_URL, sanitizeCallbackUrl } from "./callbackUrl";
+import {
+  DEFAULT_CALLBACK_URL,
+  sanitizeCallbackUrl,
+  withCallbackUrl,
+} from "./callbackUrl";
 
 describe("sanitizeCallbackUrl", () => {
   it("アプリ内のパスはそのまま返す", () => {
@@ -36,5 +40,17 @@ describe("sanitizeCallbackUrl", () => {
     "/cats/../login?callbackUrl=%2F",
   ])("%j は既定値にする", (value) => {
     expect(sanitizeCallbackUrl(value)).toBe(DEFAULT_CALLBACK_URL);
+  });
+});
+
+describe("withCallbackUrl", () => {
+  it("遷移先をエンコードして callbackUrl に付ける", () => {
+    expect(
+      withCallbackUrl("/settings/appearance", "/invitations/abc?x=1"),
+    ).toBe("/settings/appearance?callbackUrl=%2Finvitations%2Fabc%3Fx%3D1");
+  });
+
+  it("既定値のときは付けない", () => {
+    expect(withCallbackUrl("/login", DEFAULT_CALLBACK_URL)).toBe("/login");
   });
 });

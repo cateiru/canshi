@@ -2,6 +2,7 @@ import type { IconType } from "react-icons";
 import {
   AddToHomeScreenIcon,
   AiConnectionIcon,
+  AppearanceSettingsIcon,
   CatFaceIcon,
   FeedingIcon,
   FeedingPresetIcon,
@@ -125,6 +126,13 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         description:
           "ごはんの時間や記念日、お手入れのお知らせを受け取る方法です。",
         icon: NotificationSettingsIcon,
+      },
+      {
+        slug: "appearance",
+        title: "見た目の設定",
+        description:
+          "画面の明るさ・アクセントカラー・見やすさ・文字の大きさを変える方法です。ログイン前でも変えられます。",
+        icon: AppearanceSettingsIcon,
       },
       {
         slug: "ai-connections",

@@ -137,6 +137,25 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
   test.setTimeout(15 * 60 * 1000);
   await mkdir(OUTPUT_DIR, { recursive: true });
 
+  // ログイン前の、ログイン画面から見た目設定への導線
+  await page.goto("/login");
+  const appearanceLink = page.getByRole("link", {
+    name: "見た目設定（文字の大きさ・配色）",
+  });
+  await expect(appearanceLink).toBeVisible();
+  // 撮影は開発用のログイン（メールアドレスの入力欄）で行うため、本番と同じく
+  // 「ログイン」ボタンだけが見えるように入力欄を隠して撮る
+  await page.getByLabel("メールアドレス（開発用）").evaluate((input) => {
+    // フォームの直下にある、入力欄のまとまり（ラベルを含む）を隠す
+    let field: Element = input;
+    while (field.parentElement && field.parentElement.tagName !== "FORM") {
+      field = field.parentElement;
+    }
+    (field as HTMLElement).style.display = "none";
+  });
+  await highlight(appearanceLink);
+  await capture(page, "login-appearance-link");
+
   // 毎回新しいユーザーにして、前回撮ったときのデータが写らないようにする
   await page.goto("/login");
   await fillAndKeep(
@@ -396,6 +415,12 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
   await page.goto(`${catPath}/notification-settings`);
   await expect(page.getByRole("button", { name: "保存する" })).toBeVisible();
   await capture(page, "cat-notification-settings");
+
+  await page.goto("/settings/appearance");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "見た目設定" }),
+  ).toBeVisible();
+  await capture(page, "appearance-settings");
 
   // ホーム画面への追加のバナー（Android）。撮影のブラウザでは `beforeinstallprompt` が発火しないため、
   // 同じイベントを発火してバナーを出す

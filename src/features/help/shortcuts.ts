@@ -40,6 +40,8 @@ export type HelpShortcutTarget =
   | "feeding-schedules"
   /** 通知設定（ログイン中なら出す） */
   | "notification-settings"
+  /** 見た目設定（ログイン中なら出す。ログイン前はログイン画面のリンクから開く） */
+  | "appearance-settings"
   /** ねこごとの通知設定（メモリーへ移したねこは変えられないため除く） */
   | "cat-notification-settings";
 
@@ -98,6 +100,8 @@ export function buildHelpShortcuts(
       }));
     case "notification-settings":
       return [{ href: "/settings/notifications", label: "通知設定" }];
+    case "appearance-settings":
+      return [{ href: "/settings/appearance", label: "見た目設定" }];
     case "cat-notification-settings":
       return activeCats(cats).map((cat) => ({
         href: `/cats/${encodeURIComponent(cat.id)}/notification-settings`,
