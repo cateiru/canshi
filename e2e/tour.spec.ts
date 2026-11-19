@@ -97,8 +97,8 @@ test("ウェルカムモーダルで招待 URL を入力すると、招待のペ
     invitationDialog.getByText(/招待URLの形式が正しくありません/),
   ).toBeVisible();
 
-  // 戻ると、もっているかどうかの選択に戻る
-  await invitationDialog.getByRole("button", { name: "戻る" }).click();
+  // 右上の ✕ を押すと、もっているかどうかの選択に戻る
+  await invitationDialog.getByRole("button", { name: "閉じる" }).click();
   await expect(welcome).toBeVisible();
   await welcome.getByRole("button", { name: "もっている" }).click();
 

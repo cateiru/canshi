@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { type FormEvent, useState, useTransition } from "react";
-import { TbArrowLeft, TbArrowRight } from "react-icons/tb";
+import { TbArrowRight } from "react-icons/tb";
 import { Button, FormField, Modal } from "@/components/ui";
 import { isTourHiddenPath } from "../domain/tour";
 import { applyInvitationUrlAction, skipInvitationAction } from "./actions";
@@ -51,7 +51,9 @@ export function WelcomeModal() {
       <Modal
         open
         isDismissable={false}
-        onClose={() => {}}
+        // 招待 URL の入力画面では、右上の ✕ で「もっているか」の選択に戻る
+        closeButtonLabel={step === "invitation" ? "閉じる" : undefined}
+        onClose={() => setStep("choice")}
         title={
           step === "choice"
             ? "アカウントを作成いただきありがとうございます！"
@@ -90,7 +92,6 @@ export function WelcomeModal() {
               inputMode="url"
               autoComplete="off"
               placeholder="https://…/invitations/…"
-              description="家族などから届いた招待URLを貼り付けてください。"
               value={invitationUrl}
               onChange={(value) => {
                 setInvitationUrl(value);
@@ -102,25 +103,14 @@ export function WelcomeModal() {
               isRequired
               autoFocus
             />
-            <div className={styles.choices}>
-              <Button
-                type="submit"
-                variant="primary"
-                className={styles.submit}
-                isDisabled={isApplying}
-              >
-                {isApplying ? "適用しています..." : "適用"}
-              </Button>
-              <Button
-                variant="ghost"
-                leftIcon={TbArrowLeft}
-                className={styles.back}
-                isDisabled={isApplying}
-                onPress={() => setStep("choice")}
-              >
-                戻る
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              variant="primary"
+              className={styles.submit}
+              isDisabled={isApplying}
+            >
+              {isApplying ? "適用しています..." : "適用"}
+            </Button>
           </form>
         )}
       </Modal>

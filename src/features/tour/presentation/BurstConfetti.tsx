@@ -4,14 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./BurstConfetti.module.css";
 
 const PIECE_COUNT = 140;
-/** 紙吹雪を描き続ける時間。最後の 1 秒で薄くして消す */
-const LIFETIME_MS = 5500;
-const FADE_MS = 1000;
+/** 紙吹雪を描き続ける時間。最後の 0.8 秒で薄くして消す */
+const LIFETIME_MS = 3500;
+const FADE_MS = 800;
 /** 1 フレーム（60fps）あたりの重力と空気抵抗。値は見た目で決めた */
 const GRAVITY = 0.16;
 const DRAG = 0.965;
 /** ひらひら舞うときの落ちる速さの上限 */
-const MAX_FALL_SPEED = 2.4;
+const MAX_FALL_SPEED = 3;
 
 /** 見た目設定のアクセント色などに合わせる。読めなかったときは既定のテーマの色を使う */
 const COLOR_TOKENS: [token: string, fallback: string][] = [

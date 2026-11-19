@@ -45,11 +45,17 @@
   min-height: 0;
 }
 
+/*
+ * スクロールさせると、はみ出した部分が切り取られる。横幅いっぱいのボタンや入力欄のフォーカスの枠
+ * （outline）が左右で切れないよう、内側に余白を取り、同じだけ外側へ広げて中身の位置は変えない
+ */
 .scrollArea {
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
+  padding: var(--space-2);
+  margin: calc(var(--space-2) * -1);
 }
 
 .title {
@@ -58,4 +64,23 @@
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-heading);
   margin-bottom: var(--space-4);
+}
+
+/* 閉じるボタンを出すときは、見出しと横に並べ、ボタンを右上に置く */
+.header {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.header .title {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.closeButton {
+  flex: none;
+  margin-left: auto;
 }

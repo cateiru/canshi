@@ -7,6 +7,8 @@ import {
   Heading,
   ModalOverlay,
 } from "react-aria-components";
+import { TbX } from "react-icons/tb";
+import { IconButton } from "../Button/IconButton";
 import { CatEarFrame } from "../CatEarFrame/CatEarFrame";
 import styles from "./Modal.module.css";
 
@@ -23,6 +25,11 @@ export type ModalProps = {
    * 選ぶまで閉じない
    */
   isDismissable?: boolean;
+  /**
+   * 指定すると、右上に閉じるボタン（✕）を出し、押したときに `onClose` を呼ぶ。
+   * 値はボタンの読み上げ用のラベル
+   */
+  closeButtonLabel?: string;
   children: ReactNode;
 };
 
@@ -32,8 +39,15 @@ export function Modal({
   onClose,
   size = "md",
   isDismissable = true,
+  closeButtonLabel,
   children,
 }: ModalProps) {
+  const heading = title ? (
+    <Heading slot="title" className={styles.title}>
+      {title}
+    </Heading>
+  ) : null;
+
   return (
     <ModalOverlay
       isOpen={open}
@@ -50,11 +64,19 @@ export function Modal({
         <Dialog className={styles.dialog}>
           <CatEarFrame className={styles.panel}>
             <div className={styles.scrollArea}>
-              {title ? (
-                <Heading slot="title" className={styles.title}>
-                  {title}
-                </Heading>
-              ) : null}
+              {closeButtonLabel ? (
+                <div className={styles.header}>
+                  {heading}
+                  <IconButton
+                    icon={TbX}
+                    aria-label={closeButtonLabel}
+                    className={styles.closeButton}
+                    onPress={onClose}
+                  />
+                </div>
+              ) : (
+                heading
+              )}
               {children}
             </div>
           </CatEarFrame>

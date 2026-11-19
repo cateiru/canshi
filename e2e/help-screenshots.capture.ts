@@ -190,7 +190,8 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
   );
   await highlight(welcomeInvitation.getByRole("button", { name: "適用" }));
   await capture(page, "welcome-invitation");
-  await welcomeInvitation.getByRole("button", { name: "戻る" }).click();
+  // 右上の ✕ で、もっているかどうかの選択に戻る
+  await welcomeInvitation.getByRole("button", { name: "閉じる" }).click();
 
   // ウェルカムモーダルとはじめてガイドのパネルが、ほかの画面に写らないようにする
   await quitTourGuide(page);
