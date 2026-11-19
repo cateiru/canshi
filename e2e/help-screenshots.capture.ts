@@ -164,7 +164,7 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
   );
   await page.getByRole("button", { name: "ログイン" }).click();
   await expect(page).not.toHaveURL(/\/login/);
-  // はじめてログインしたユーザーに出る、はじめてガイドのパネルが写らないようにする
+  // はじめてログインしたユーザーに出る、ウェルカムモーダルとはじめてガイドのパネルが写らないようにする
   await quitTourGuide(page);
 
   await page.goto("/settings/account/profile");

@@ -18,6 +18,11 @@ export type ModalProps = {
   onClose: () => void;
   /** md: 確認ダイアログ向け（既定）。lg: 画像・動画の表示など幅を広く使う用途向け */
   size?: ModalSize;
+  /**
+   * 外側を押す・Escape キーで閉じられるか（既定は閉じられる）。false のときは、中のボタンで
+   * 選ぶまで閉じない
+   */
+  isDismissable?: boolean;
   children: ReactNode;
 };
 
@@ -26,6 +31,7 @@ export function Modal({
   title,
   onClose,
   size = "md",
+  isDismissable = true,
   children,
 }: ModalProps) {
   return (
@@ -36,7 +42,8 @@ export function Modal({
           onClose();
         }
       }}
-      isDismissable
+      isDismissable={isDismissable}
+      isKeyboardDismissDisabled={!isDismissable}
       className={styles.overlay}
     >
       <AriaModal className={`${styles.modal} ${styles[size]}`}>

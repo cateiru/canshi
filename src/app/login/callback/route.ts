@@ -16,9 +16,9 @@ import {
 } from "@/features/auth/infrastructure/oidc";
 import {
   encodeTourCookie,
-  shouldStartTourOnLogin,
+  shouldWelcomeOnLogin,
   TOUR_COOKIE_NAME,
-  TOUR_STEPS,
+  TOUR_WELCOME,
 } from "@/features/tour/domain/tour";
 import { tourCookieOptions } from "@/features/tour/presentation/tourState";
 
@@ -97,12 +97,12 @@ export async function GET(request: NextRequest) {
     token,
     sessionCookieOptions(expiresAt),
   );
-  // はじめてログインしたユーザーには、はじめてガイドを家の作成から表示する。それ以外のログインでは、
-  // 同じブラウザで前にログインしていたユーザーのガイドの Cookie を消す
-  if (shouldStartTourOnLogin(isNewUser, loginState.callbackUrl)) {
+  // はじめてログインしたユーザーには、ウェルカムモーダルを表示する（そのあと、はじめてガイドへ進む）。
+  // それ以外のログインでは、同じブラウザで前にログインしていたユーザーのガイドの Cookie を消す
+  if (shouldWelcomeOnLogin(isNewUser, loginState.callbackUrl)) {
     response.cookies.set(
       TOUR_COOKIE_NAME,
-      encodeTourCookie(userId, TOUR_STEPS[0]),
+      encodeTourCookie(userId, TOUR_WELCOME),
       tourCookieOptions(),
     );
   } else {

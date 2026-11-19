@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { DEVELOPMENT_LOGIN_EMAIL } from "../src/features/auth/infrastructure/developmentLogin";
-import { fillAndKeep } from "./helpers";
+import { fillAndKeep, skipWelcomeModal } from "./helpers";
 
 // はじめてガイドは、はじめてログインしたユーザーに出るため、保存済みのセッションを使わず、
 // 毎回新しいユーザーでログインする（`next dev` の `/login` は入力したメールアドレスでログインする）
@@ -25,7 +25,14 @@ async function pressInGuide(page: Page, name: string, after: string) {
   }).toPass();
 }
 
-async function loginAsNewUser(page: Page) {
+function welcomeOf(page: Page) {
+  return page.getByRole("dialog", {
+    name: "アカウントを作成いただきありがとうございます！",
+  });
+}
+
+/** 新しいユーザーでログインする。ウェルカムモーダルが出たところで止める */
+async function signUp(page: Page) {
   await page.goto("/login");
   await fillAndKeep(
     page.getByLabel("メールアドレス（開発用）"),
@@ -33,7 +40,84 @@ async function loginAsNewUser(page: Page) {
   );
   await page.getByRole("button", { name: "ログイン" }).click();
   await expect(page).toHaveURL(/\/home$/);
+  await expect(welcomeOf(page)).toBeVisible();
 }
+
+/** 新しいユーザーでログインし、ウェルカムモーダルで「もっていない」を選んでガイドをはじめる */
+async function loginAsNewUser(page: Page) {
+  await signUp(page);
+  await skipWelcomeModal(page);
+}
+
+test("はじめてログインするとウェルカムモーダルが出て、招待 URL を持っていなければガイドをはじめる", async ({
+  page,
+}) => {
+  await signUp(page);
+  const welcome = welcomeOf(page);
+  await expect(
+    welcome.getByText("とつぜんですが、招待URLはお持ちですか？"),
+  ).toBeVisible();
+  // ウェルカムモーダルのあいだは、ガイドのパネルを出さない
+  await expect(guideOf(page)).toHaveCount(0);
+
+  // Escape キーでは閉じない
+  await page.keyboard.press("Escape");
+  await expect(welcome).toBeVisible();
+
+  await skipWelcomeModal(page);
+  await expect(guideOf(page).getByText("ステップ 1 / 4")).toBeVisible();
+
+  // 選んだあとは、ページを開き直してもウェルカムモーダルは出ない
+  await page.reload();
+  await expect(welcomeOf(page)).toHaveCount(0);
+  await expect(guideOf(page)).toBeVisible();
+});
+
+test("ウェルカムモーダルで招待 URL を入力すると、招待のページへ移り、ガイドははじめない", async ({
+  page,
+}) => {
+  await signUp(page);
+  const welcome = welcomeOf(page);
+  const invitationDialog = page.getByRole("dialog", {
+    name: "もっている招待URLを入力してください",
+  });
+  // ハイドレーション前に押すと反応しないため、入力画面に変わるまで押し直す
+  await expect(async () => {
+    if (await welcome.isVisible()) {
+      await welcome.getByRole("button", { name: "もっている" }).click();
+    }
+    await expect(invitationDialog).toBeVisible({ timeout: 2000 });
+  }).toPass();
+
+  // 招待 URL の形でなければ、エラーを出してモーダルのまま
+  const input = invitationDialog.getByRole("textbox", { name: "招待URL" });
+  await fillAndKeep(input, "https://example.com/cats");
+  await invitationDialog.getByRole("button", { name: "適用" }).click();
+  await expect(
+    invitationDialog.getByText(/招待URLの形式が正しくありません/),
+  ).toBeVisible();
+
+  // 戻ると、もっているかどうかの選択に戻る
+  await invitationDialog.getByRole("button", { name: "戻る" }).click();
+  await expect(welcome).toBeVisible();
+  await welcome.getByRole("button", { name: "もっている" }).click();
+
+  await fillAndKeep(
+    invitationDialog.getByRole("textbox", { name: "招待URL" }),
+    "http://localhost:3000/invitations/e2e-welcome-token",
+  );
+  await invitationDialog.getByRole("button", { name: "適用" }).click();
+  await expect(page).toHaveURL(/\/invitations\/e2e-welcome-token$/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // 招待のページから離れても、ウェルカムモーダルもガイドも出ない
+  await page.goto("/home");
+  await expect(
+    page.getByRole("heading", { name: "CANSHI", level: 1 }),
+  ).toBeVisible();
+  await expect(welcomeOf(page)).toHaveCount(0);
+  await expect(guideOf(page)).toHaveCount(0);
+});
 
 test("はじめてログインすると、家の作成からごはんの時間・プリセットまで順に案内する", async ({
   page,

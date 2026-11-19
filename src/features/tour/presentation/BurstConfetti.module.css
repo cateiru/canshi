@@ -1,0 +1,13 @@
+/* Modal の overlay（z-index: 100）より手前、トースト（z-index: 200）より奥に重ねる */
+.container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 150;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

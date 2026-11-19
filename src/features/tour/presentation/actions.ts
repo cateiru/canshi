@@ -4,12 +4,18 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/features/auth/presentation/session";
 import {
+  householdInvitationPath,
+  householdInvitationTokenFromUrl,
+} from "@/features/households/domain/household";
+import {
   canLeaveTourStep,
   effectiveTourPosition,
   isTourStepDone,
   nextTourPosition,
   resumeTourPosition,
   TOUR_COOKIE_NAME,
+  TOUR_STEPS,
+  TOUR_WELCOME,
   type TourStep,
   type TourView,
   tourStepHref,
@@ -17,6 +23,7 @@ import {
 import {
   getTourView,
   loadTourProgress,
+  readTourCookieState,
   readTourPosition,
   writeTourPosition,
 } from "./tourState";
@@ -74,4 +81,40 @@ export async function quitTourAction(): Promise<void> {
  */
 export async function getTourViewAction(): Promise<TourView | null> {
   return getTourView();
+}
+
+/** ウェルカムモーダルで招待 URL を適用したときの結果。適用できたときは招待のページへ移るため返らない */
+export type ApplyInvitationUrlResult = { error: string };
+
+/**
+ * ウェルカムモーダルで「招待 URL をもっている」を選び、入力した招待 URL を適用する。
+ * 招待された家に参加するため、はじめてガイドははじめず、招待のページへ移る
+ */
+export async function applyInvitationUrlAction(
+  invitationUrl: unknown,
+): Promise<ApplyInvitationUrlResult> {
+  const user = await requireUser();
+  const token = householdInvitationTokenFromUrl(invitationUrl);
+  if (!token) {
+    return {
+      error:
+        "招待URLの形式が正しくありません。届いた招待URLをそのまま貼り付けてください。",
+    };
+  }
+  if ((await readTourCookieState(user.id)) === TOUR_WELCOME) {
+    (await cookies()).delete(TOUR_COOKIE_NAME);
+  }
+  redirect(householdInvitationPath(token));
+}
+
+/**
+ * ウェルカムモーダルで「招待 URL をもっていない」を選ぶ。モーダルを閉じて、はじめてガイドを家の作成から
+ * はじめ、ホームへ移る
+ */
+export async function skipInvitationAction(): Promise<void> {
+  const user = await requireUser();
+  if ((await readTourCookieState(user.id)) === TOUR_WELCOME) {
+    await writeTourPosition(user.id, TOUR_STEPS[0]);
+  }
+  redirect("/home");
 }

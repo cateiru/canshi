@@ -32,10 +32,31 @@ export async function openCatRegistration(page: Page) {
 }
 
 /**
- * はじめてログインしたユーザーに出る「はじめてガイド」をやめる。
+ * はじめてログインしたユーザーに出るウェルカムモーダルで「もっていない」を選ぶ。
+ * モーダルが閉じてホームへ移り、はじめてガイドがはじまる。
+ * ハイドレーション前に押すと反応しないため、モーダルが消えるまで押し直す
+ */
+export async function skipWelcomeModal(page: Page) {
+  const dialog = page.getByRole("dialog", {
+    name: "アカウントを作成いただきありがとうございます！",
+  });
+  await expect(dialog).toBeVisible();
+  await expect(async () => {
+    if (await dialog.isVisible()) {
+      await dialog.getByRole("button", { name: "もっていない" }).click();
+    }
+    await expect(dialog).toBeHidden({ timeout: 2000 });
+  }).toPass();
+  await expect(page).toHaveURL(/\/home$/);
+}
+
+/**
+ * はじめてログインしたユーザーに出る、ウェルカムモーダルを閉じて「はじめてガイド」をやめる。
+ * ウェルカムモーダルで「もっていない」を選ぶとホームへ移るため、そのあとの画面は呼び出し側で開き直す。
  * ハイドレーション前に押すと反応しないため、パネルが消えるまで押し直す
  */
 export async function quitTourGuide(page: Page) {
+  await skipWelcomeModal(page);
   const guide = page.getByRole("region", { name: "はじめてガイド" });
   await expect(guide).toBeVisible();
   await expect(async () => {
