@@ -68,6 +68,27 @@ CI の管理画面の VRT を実行するかの判定（`.github/workflows/ci.ym
 実行する。
 
 ```bash
-pnpm typecheck   # tsc --noEmit
-pnpm test        # vitest run（UI コンポーネントは jsdom で実行する）
+pnpm typecheck         # tsc --noEmit
+pnpm test              # vitest run（UI コンポーネントは jsdom で実行する）
+pnpm storybook         # Storybook を http://localhost:6006 で起動する
+pnpm build-storybook   # Storybook を storybook-static/ にビルドする
 ```
+
+## Storybook
+
+UI コンポーネントとデザイントークンの見本を Storybook（`@storybook/react-vite`）で表示する。
+ストーリーは各コンポーネントの隣に `<コンポーネント>.stories.tsx` として置き、設定は `.storybook/` に置く。
+
+- `.storybook/preview.tsx` で tokens.css と、メインアプリの `globals.css` のうち文字・背景・リセットの
+  指定（`.storybook/preview.css`）を読み込む。
+- ツールバーで、見た目設定のテーマ・アクセントカラー・コントラスト・文字サイズを切り替えられる
+  （メインアプリと同じく `<html>` の data 属性を書き換える）。
+- リンクを含むコンポーネントは `linkComponent` を渡さず、素の `<a>` で表示する。
+
+コンポーネントを足したり、見た目の出し分け（props）を足したりしたときは、ストーリーも合わせて追加する。
+
+PR で `packages/shared/`・依存関係（`pnpm-lock.yaml`・`pnpm-workspace.yaml`）・`.github/workflows/ci.yml` を
+変えたときは、CI（`.github/workflows/ci.yml` の `shared-storybook`）が Storybook をビルドし、VRT と同じ
+[public-storage-cdk](https://github.com/cateiru/public-storage-cdk) のバケットの
+`canshi/shared-storybook/<PR の先頭のコミット>/` に置いて、URL を PR にコメントする。
+置いたファイルには `auto-expire` タグを付け、180 日後に自動で消す。

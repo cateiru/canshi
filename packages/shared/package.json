@@ -14,7 +14,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "react-aria-components": "catalog:",
@@ -25,6 +27,7 @@
     "react-dom": "^19"
   },
   "devDependencies": {
+    "@storybook/react-vite": "^10.6.7",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
@@ -34,7 +37,9 @@
     "jsdom": "catalog:",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "storybook": "^10.6.7",
     "typescript": "catalog:",
+    "vite": "^8.3.1",
     "vitest": "catalog:"
   },
   "packageManager": "pnpm@12.21.0"
