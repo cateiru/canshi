@@ -18,7 +18,7 @@ beforeEach(async () => {
   };
 });
 
-const ORIGIN = "https://canshi-admin.cateiru.dev";
+const ORIGIN = "https://admin.canshi.app";
 
 function request(path: string, init: RequestInit = {}) {
   return createApp().request(`${ORIGIN}${path}`, init, env);

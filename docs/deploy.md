@@ -53,6 +53,42 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 
 - ステージング環境を用意するかどうか
 
+## 本番のドメイン
+
+ドメイン `canshi.app` は Cloudflare Registrar で取得し、同じアカウントのゾーンとして管理している。
+
+| 用途 | ホスト名 | 設定する場所 |
+| --- | --- | --- |
+| メインアプリ（Worker 名 `canshi`） | `canshi.app` | `wrangler.toml` の `routes` |
+| 管理画面（Worker 名 `canshi-admin`） | `admin.canshi.app` | `packages/admin/wrangler.jsonc` の `routes` |
+
+どちらも `custom_domain` として設定し、`wrangler deploy`（Workers Builds の本番のデプロイ）のときに
+カスタムドメインが作られる。`wrangler deploy` は設定に書いたカスタムドメインだけを Worker に付け、
+それ以外のカスタムドメインは外すため、ダッシュボードでカスタムドメインを足さない。
+
+以前は `canshi.cateiru.dev`（メインアプリ）と `canshi-admin.cateiru.dev`（管理画面）で公開していた。
+リリース前だったため、旧ドメインからのリダイレクトは用意していない。
+
+### ホスト名を変えるときの手順
+
+ログイン（Cookie）・PWA・Web Push の購読・MCP のトークンはホスト名ごとに分かれるため、ホスト名を
+変えると、利用者はログイン・ホーム画面への追加・通知の許可・コネクタの接続をやり直すことになる。
+
+**1. と 2. は、ホスト名を変える PR を `main` にマージする前に行う。**
+
+1. メインアプリの SaaS OIDC アプリ（「ログイン（Cloudflare Access の OIDC）」節）の Redirect URL に、
+   新しいホスト名の `https://<ホスト名>/login/callback` を足す。古い Redirect URL はまだ消さない。
+2. 管理画面のホスト名を変えるときは、新しいホスト名の Self-hosted アプリケーションを作り、管理者だけを
+   許可するポリシーを付ける（「管理画面」節の「初回の公開手順」の 2.）。
+3. PR をマージし、`canshi` と `canshi-admin` のビルドが成功して、新しいホスト名のカスタムドメインが
+   作られ、古いカスタムドメインが外れたことを確かめる。
+4. Workers & Pages → `canshi` → Access で、新しいホスト名を Access の対象から外す
+   （「Cloudflare Access 設定」節）。外すまでは、メインアプリを開くと Access のログイン画面が挟まる。
+5. 新しいゾーンの Bot Fight Mode をオフにする（「MCP サーバー」節の「トラブルシューティング」）。
+6. 「Cloudflare Access 設定」節と「管理画面」節の動作確認を行う。
+7. SaaS OIDC アプリから古い Redirect URL を消し、古いホスト名の Self-hosted アプリケーションと、
+   `canshi` の Worker 単位の Access に残った古いホスト名の設定を消す。
+
 ## プレビュー（Worker Previews）
 
 `main` 以外のブランチは、Workers Builds が [Worker Previews](https://developers.cloudflare.com/workers/previews/)
@@ -185,7 +221,7 @@ SaaS OIDC アプリの作成:
 
 1. Zero Trust の Access controls > Applications で **SaaS** アプリケーションを追加し、
    認証プロトコルに **OIDC** を選ぶ。
-2. Redirect URL に `https://canshi.cateiru.dev/login/callback` を登録する。スコープは `openid` と
+2. Redirect URL に `https://canshi.app/login/callback` を登録する。スコープは `openid` と
    `email` だけにする。PKCE を有効にする。
 3. メインアプリの利用者を許可するポリシーを付ける（Workers 全体の Access と同じポリシーでよい）。
    メインアプリの本番ドメインは Access で保護していないため、このポリシーが「誰が CANSHI を
@@ -304,7 +340,7 @@ MEDIA_STORAGE_LIMIT_BYTES = "10737418240"
 
 Cloudflare ダッシュボードの Workers & Pages で、Workers 全体を保護する設定を `All traffic` として設定済み（2026-09 時点）。この設定により、既存・新規 Worker の本番 URL とプレビュー URL へのリクエストは、Worker が実行される前に Access で評価される。
 
-メインアプリ（Worker 名 `canshi`）は、Worker 単位の設定で本番のカスタムドメイン（`canshi.cateiru.dev`）だけを Access の対象から外している（2026-10 時点）。本番ドメインでの利用者の制限は、アプリのログイン（Access の SaaS OIDC アプリ。「ログインと家」節を参照）で行う。
+メインアプリ（Worker 名 `canshi`）は、Worker 単位の設定で本番のカスタムドメイン（`canshi.app`）だけを Access の対象から外している（2026-10 時点）。本番ドメインでの利用者の制限は、アプリのログイン（Access の SaaS OIDC アプリ。「ログインと家」節を参照）で行う。
 
 - `src/middleware.ts` が、`src/features/auth/domain/publicPaths.ts` に挙げたパス（`/login`、PWA の manifest・アイコンなど）以外のすべてのリクエストで、D1 のログインセッションを確認する
 - ログインできるのは、SaaS OIDC アプリのポリシーで許可された人だけになる。初めてログインしたメールアドレスではユーザーが作られるため、このポリシーが「誰が CANSHI を使えるか」を決める
@@ -329,7 +365,7 @@ Access の設定は、ホスト名・パス単位、Worker 単位、Workers 全�
 1. Zero Trust の Access controls > Policies を開く。
 2. メインアプリの SaaS OIDC アプリに適用しているポリシーを開く。Workers 全体の Access と同じ再利用可能なポリシーを使っている場合は、プレビュー URL の許可対象も同時に変わる。
 3. Include ルールのメールアドレスまたはグループを更新して保存する。
-4. 利用者を削除したときは、管理画面（`canshi-admin.cateiru.dev`）でそのユーザーを「すべての端末からログアウト」させる。ポリシーから外しても、ログイン済みのセッションは有効期限まで使えるためである。
+4. 利用者を削除したときは、管理画面（`admin.canshi.app`）でそのユーザーを「すべての端末からログアウト」させる。ポリシーから外しても、ログイン済みのセッションは有効期限まで使えるためである。
 5. 次の動作確認を実施する。
 
 許可対象の具体的なメールアドレスやグループは機密性のある運用情報として扱い、リポジトリには記載しない。
@@ -378,7 +414,7 @@ wrangler secret put VAPID_SUBJECT
 
 `docs/plans/32_mcp_oidc_overview.md` の方針に基づき、ChatGPT などの外部 AI エージェントが
 CANSHI のデータを参照できる MCP サーバーを、メインアプリの Worker の `/mcp` で公開している
-（`src/features/mcp/`）。コネクタに登録する URL は `https://canshi.cateiru.dev/mcp`。
+（`src/features/mcp/`）。コネクタに登録する URL は `https://canshi.app/mcp`。
 認可サーバーの実装は `@cloudflare/workers-oauth-provider` で、ログインはメインアプリの
 ログイン（セッション）をそのまま使う。
 
@@ -395,7 +431,7 @@ CANSHI のデータを参照できる MCP サーバーを、メインアプリ�
   Registration（DCR、`/oauth/register`）の両方を受け付ける。CIMD の文書を取得するため、
   `wrangler.toml` の互換性フラグに `global_fetch_strictly_public` を入れている。CIMD のクライアントは
   同じアプリのすべての接続で `client_id` が同じため、接続ごとの読み取りの範囲もアプリごとに共有する
-- アクセストークンは MCP サーバーの URL（`https://canshi.cateiru.dev/mcp`、RFC 8707 の resource）に
+- アクセストークンは MCP サーバーの URL（`https://canshi.app/mcp`、RFC 8707 の resource）に
   紐づける（`src/worker.ts` の `resourceMetadata`、オリジンごとに決める）。
   `@cloudflare/workers-oauth-provider` を 0.10 系から 1 系へ上げたとき、これと違う resource に
   紐づいていた接続は、トークンの更新で `invalid_grant` になり、一度だけ接続し直しになる
@@ -438,14 +474,15 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
 - **無料プランの Bot Fight Mode はパス単位で除外できない**ため、対処は以下のいずれか
   - **Free プラン**: ゾーン全体で Bot Fight Mode をオフにする
     （Cloudflare ダッシュボード → 対象ゾーン → Security → Bots）。
-    CANSHI の本番（`cateiru.dev` ゾーン）はこの方法で解決した
+    CANSHI の本番は以前の `cateiru.dev` ゾーンでこの方法で解決したため、`canshi.app` ゾーンでも
+    オフにする
   - **Pro プラン以上**: Super Bot Fight Mode に切り替え、
     `/mcp`・`/oauth/*`・`/.well-known/oauth*` にスキップルールを追加する
 
 ## 管理画面
 
 運用者向けの管理画面を、メインアプリとは別の Cloudflare Workers（`packages/admin/`、Worker 名
-`canshi-admin`）として用意している。公開ホスト名は `canshi-admin.cateiru.dev`
+`canshi-admin`）として用意している。公開ホスト名は `admin.canshi.app`
 （`packages/admin/wrangler.jsonc` の `routes` で `custom_domain` として設定。本番の `workers.dev` は
 作らない。Worker Previews の URL だけは workers.dev に作る。「管理画面の自動デプロイとプレビュー」節）。メインアプリと同じ D1（`canshi-db`）と R2（`canshi-media`）を直接参照し、
 ユーザー・家の一覧を閲覧できる。書き換えるデータは次のものだけ。
@@ -459,7 +496,7 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
 せず全ユーザー・全家の情報を表示するため、メインアプリの利用者（家族など）を含む Workers 全体の
 Access のポリシーではなく、**管理者だけを許可する専用のポリシー**で保護する。
 
-`canshi-admin.cateiru.dev` の Self-hosted アプリケーションを作れば、Workers 全体の Access より
+`admin.canshi.app` の Self-hosted アプリケーションを作れば、Workers 全体の Access より
 具体的な設定として優先される（「Cloudflare Access 設定」節）。また、以前の MCP サーバーの
 カスタムドメイン（`mcp.canshi.cateiru.dev`）には Workers 全体の Access が適用されなかったため、
 Workers 全体の Access だけには頼れない。Self-hosted アプリケーションは
@@ -470,13 +507,13 @@ Workers 全体の Access だけには頼れない。Self-hosted アプリケー�
 1. Zero Trust の Access controls > Policies で、管理者（運用者）だけを Include するポリシーを作る。
    Workers 全体の Access に適用している、メインアプリの利用者全員を許可するポリシーは使わない。
 2. Access controls > Applications で **Self-hosted** アプリケーションを追加し、ドメインに
-   `canshi-admin.cateiru.dev` を指定して、1. のポリシーだけを付ける。
+   `admin.canshi.app` を指定して、1. のポリシーだけを付ける。
 3. `pnpm --filter @canshi/admin run deploy` でデプロイする（カスタムドメインも作成される）。
 4. すぐに次の動作確認を実施する。
 
 ### 動作確認
 
-- ログアウト状態で `https://canshi-admin.cateiru.dev/` を開き、Access のログイン画面が表示される
+- ログアウト状態で `https://admin.canshi.app/` を開き、Access のログイン画面が表示される
   ことを確認する（一覧が表示されたら、直ちに Worker を削除する）
 - 管理者ではないメインアプリの利用者のアカウントで認証し、拒否されることを確認する
 - 管理者のアカウントで認証し、ユーザー・家の一覧を閲覧できることを確認する
@@ -504,7 +541,7 @@ GitHub Actions からはデプロイしない。`canshi-admin` の Worker を同
 - 管理画面はアプリ内で認証しないため、プレビューの URL・バージョンの URL も管理者だけに見せる。
   `canshi-admin` の Worker 単位の Access（**Previews only**。Zero Trust では
   `canshi-admin - Cloudflare Workers`、destination が `preview_worker`）に管理者だけを許可するポリシーを
-  付けて保護する。本番のカスタムドメインは `canshi-admin.cateiru.dev` の Self-hosted アプリケーションが守る
+  付けて保護する。本番のカスタムドメインは `admin.canshi.app` の Self-hosted アプリケーションが守る
 
 `wrangler.jsonc` の `preview_urls` は `wrangler deploy`（本番のデプロイ）のときだけ反映される。
 
@@ -546,7 +583,7 @@ GitHub Actions からはデプロイしない。`canshi-admin` の Worker を同
 4. ログインしていないブラウザ（シークレットウィンドウなど）で次を開き、Access のログイン画面が出ることを
    確かめる。管理者ではないメインアプリの利用者のアカウントで認証し、拒否されることも確かめる。
    一覧が表示されたら、直ちに `wrangler.jsonc` の `preview_urls` を `false` に戻してデプロイする。
-   - `https://canshi-admin.cateiru.dev/`
+   - `https://admin.canshi.app/`
    - 管理画面を変えたブランチのプレビューの URL と、そのデプロイの URL（ビルドのログに出る）
 5. 最初のプレビューのビルドのログで、`DB` が `canshi-preview-db`、`MEDIA_BUCKET` が
    `canshi-media-preview` を指していることを確かめる。
