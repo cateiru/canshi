@@ -205,9 +205,6 @@ importers:
       '@nivo/scatterplot':
         specifier: ^0.99.0
         version: 0.99.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@noble/hashes':
-        specifier: 2.4.0
-        version: 2.4.0
       '@react-spring/web':
         specifier: 10.1.2
         version: 10.1.2(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -5982,7 +5979,8 @@ snapshots:
     transitivePeerDependencies:
       - react-dom
 
-  '@noble/hashes@2.4.0': {}
+  '@noble/hashes@2.4.0':
+    optional: true
 
   '@node-minify/core@10.5.0':
     dependencies:

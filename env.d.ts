@@ -10,9 +10,6 @@ interface Env {
   ACCESS_DISCOVERY_URL?: string;
   ACCESS_CLIENT_ID?: string;
   ACCESS_CLIENT_SECRET?: string;
-  // メールアドレスをハッシュにするときの SALT（`src/features/auth/domain/emailHash.ts`）。
-  // `users.email` を持たない以前のユーザーを `email_hash` で探すときだけ使う（#593）
-  EMAIL_HASH_SALT?: string;
   // `"true"` のとき、Access（OIDC）を通さない開発用のログインを有効にする
   // （`src/features/auth/infrastructure/developmentLogin.ts`）。Worker Previews の
   // `[previews.vars]` だけで設定し、本番には決して設定しない

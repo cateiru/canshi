@@ -121,10 +121,9 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   表示せず、本人も変えられない（変更はお問い合わせで受け、`pnpm user:link-email` で設定する）
   - 初めてログインしたメールアドレスでは、ユーザーを新しく作る。名前はメールアドレスから作らず、
     既定の名前にする
-  - 以前はメールアドレスを SALT（`EMAIL_HASH_SALT`）を使って argon2id でハッシュにし、`users.email_hash` に
-    保存していた（#593 で変更）。`email` が NULL のユーザーのセッションは無効にし、次のログインで
-    `email_hash` で見つけて `email` を保存する。全員の `email` がそろったら `email_hash` を削除する
-    （`docs/deploy.md` の「メールアドレスの保存への移行手順」）
+  - 以前はメールアドレスを argon2id でハッシュにして `users.email_hash` に保存していた。#593 で `email` に移し、
+    `email_hash` は削除した（`docs/deploy.md` の「メールアドレスの保存への移行手順」）。移行の前からの
+    ユーザーのために、`email` は NULL を許している
 - `users.role` はアプリ全体の権限（`admin`・`member`）。ユーザーが 1 件もないときに最初に
   ログインしたユーザーは `admin`
 - `users.name`・`users.icon_media_asset_id` は本人がアカウント設定の「プロフィールを編集する」（`/settings/account/profile`）で変えられる。

@@ -1,4 +1,4 @@
-// `src/features/auth/domain/emailHash.ts` と同じく、Node.js から直接実行するスクリプト
+// Node.js から直接実行するスクリプト
 // （`scripts/link-user-email.mts`・`scripts/link-household.mts`）からも import する。
 // パスエイリアス（`@/`）を使わず、ほかのモジュールに依存しないようにする
 

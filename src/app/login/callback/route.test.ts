@@ -146,7 +146,6 @@ describe("/login/start → /login/callback", () => {
     // ログインしたブラウザの User-Agent をセッションに保存する（端末一覧の表示用）
     expect(loginWithEmail).toHaveBeenCalledWith(
       "Owner@Example.com",
-      env,
       USER_AGENT,
     );
 

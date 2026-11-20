@@ -491,6 +491,13 @@
       "when": 1795138686321,
       "tag": "0069_users_email",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "6",
+      "when": 1795139647711,
+      "tag": "0070_drop_users_email_hash",
+      "breakpoints": true
     }
   ]
 }
