@@ -12,16 +12,16 @@
     "cf-typegen": "wrangler types --strict-vars=false"
   },
   "dependencies": {
-    "drizzle-orm": "^0.45.4",
+    "drizzle-orm": "catalog:",
     "hono": "^4.13.13"
   },
   "devDependencies": {
-    "@types/node": "^26.0.0",
-    "@types/sql.js": "^1.4.11",
-    "sql.js": "^1.14.2",
-    "typescript": "^5",
-    "vitest": "^5.0.0",
-    "wrangler": "^4.135.0"
+    "@types/node": "catalog:",
+    "@types/sql.js": "catalog:",
+    "sql.js": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
   },
   "packageManager": "pnpm@12.21.0"
 }

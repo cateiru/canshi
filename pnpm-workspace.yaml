@@ -1,6 +1,18 @@
 packages:
   - "packages/*"
 
+# アプリ（ルート）と管理画面（packages/admin）の両方で使うパッケージのバージョンは、ここでまとめて決める。
+# 各 package.json では "catalog:" と書く。両方で使うパッケージを足すときもここに追加する
+# https://pnpm.io/ja/catalogs
+catalog:
+  "@types/node": ^26.0.0
+  "@types/sql.js": ^1.4.11
+  drizzle-orm: ^0.45.4
+  sql.js: ^1.14.2
+  typescript: ^5
+  vitest: ^5.0.0
+  wrangler: ^4.135.0
+
 allowBuilds:
   core-js-pure: false
   esbuild: true
