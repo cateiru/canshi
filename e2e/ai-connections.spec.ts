@@ -1,9 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { expect, type Locator, test } from "@playwright/test";
-import {
-  DEVELOPMENT_EMAIL_HASH_SALT,
-  hashEmail,
-} from "../src/features/auth/domain/emailHash";
+import { normalizeEmail } from "../src/features/auth/domain/email";
 import { DEVELOPMENT_LOGIN_EMAIL } from "../src/features/auth/infrastructure/developmentLogin";
 
 const CLIENT_ID = "e2e-client";
@@ -34,9 +31,8 @@ async function executeSql(command: string) {
   }).toPass({ intervals: [1_000, 2_000, 5_000], timeout: 60_000 });
 }
 
-const loginUserId = `(SELECT id FROM users WHERE email_hash = '${hashEmail(
+const loginUserId = `(SELECT id FROM users WHERE email = '${normalizeEmail(
   DEVELOPMENT_LOGIN_EMAIL,
-  DEVELOPMENT_EMAIL_HASH_SALT,
 )}')`;
 
 // 範囲のページで記録の種類を選べるよう、ログインユーザーの家に猫も追加する。CI では

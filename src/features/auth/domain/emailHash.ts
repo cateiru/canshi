@@ -1,8 +1,13 @@
 // メインアプリ（Workers）に加えて、Node.js から直接実行するスクリプト
 // （`scripts/link-user-email.mts`・`scripts/link-household.mts`）からも import する。
 // 同じ処理でハッシュにしないと別のユーザーとして扱われるため、このファイルは
-// パスエイリアス（`@/`）を使わず、npm パッケージ以外に依存しないようにする
+// パスエイリアス（`@/`）を使わず、npm パッケージと `./email.ts` 以外に依存しないようにする。
+//
+// メールアドレスはハッシュにせず `users.email` に保存するようになった（#593）。このファイルは、
+// `email` を持たない既存のユーザーをログイン時に `email_hash` で探すためだけに残している。
+// 全員の `email` がそろったら `email_hash` の列ごと削除する
 import { argon2id } from "@noble/hashes/argon2.js";
+import { normalizeEmail } from "./email.ts";
 
 /**
  * argon2id のパラメータ（OWASP の推奨値: メモリ 19 MiB・反復 2 回・並列度 1）。
@@ -25,11 +30,6 @@ export const MIN_EMAIL_HASH_SALT_LENGTH = 16;
  * 本番では使わない（`getEmailHashSalt` は未設定ならエラーにする）
  */
 export const DEVELOPMENT_EMAIL_HASH_SALT = "canshi-development-email-hash-salt";
-
-/** メールアドレスの大文字・小文字や前後の空白の違いで別のユーザーにならないよう揃える */
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
 
 /**
  * `EMAIL_HASH_SALT` を返す。未設定の場合は、開発環境（`allowDevelopmentSalt`）なら
@@ -55,10 +55,9 @@ export function getEmailHashSalt(
 
 /**
  * メールアドレスを正規化してから、SALT を使って argon2id でハッシュにする（16 進文字列）。
- * DB にはこの値だけを保存し、同じユーザーかどうかもこの値で判定する。
  * 同じメールアドレス・SALT からは常に同じ値になる。
  *
- * CPU を 200 ms 以上使うため、ログイン時（OIDC のコールバック）など必要なときだけ呼び、
+ * CPU を 200 ms 以上使うため、ログイン時に `email` でユーザーが見つからなかったときだけ呼び、
  * リクエストごとの認証（middleware）では呼ばない
  */
 export function hashEmail(email: string, salt: string): string {

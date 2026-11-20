@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Cloudflare Access でログインしたあとの戻り先。認可コードを ID トークンに交換して
- * メールアドレスを確かめ、そのハッシュに対応するユーザー（いなければ新しく作る）の
+ * メールアドレスを確かめ、そのメールアドレスのユーザー（いなければ新しく作る）の
  * セッションを作る。失敗したときは `/login` に戻し、エラーを表示する
  */
 export async function GET(request: NextRequest) {

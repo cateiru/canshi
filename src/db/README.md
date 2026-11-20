@@ -115,13 +115,16 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 通知設定の「テスト通知を送る」は、ユーザー自身の購読へのテスト通知を `push_test_requests` に予約し、
     次のスケジュール実行で送って行を削除する（`src/features/push/infrastructure/sendTestPush.ts`）。予約は購読ごとに 1 件
     （`subscription_id` が一意）で、通知（`notifications`）は作らない
-- ログインは Cloudflare Access の OIDC で行い、ID トークンのメールアドレスだけを受け取る。DB には
-  メールアドレスそのものを保存せず、環境変数の SALT（`EMAIL_HASH_SALT`）を使って argon2id で
-  ハッシュにした値を `users.email_hash`（一意）に保存し、同じユーザーかどうかもこの値で判定する
-  （`src/features/auth/domain/emailHash.ts`・`src/features/auth/infrastructure/users.ts`）
+- ログインは Cloudflare Access の OIDC で行い、ID トークンのメールアドレスだけを受け取る。メールアドレスは
+  正規化して `users.email`（一意）に保存し、同じユーザーかどうかもこの値で判定する
+  （`src/features/auth/domain/email.ts`・`src/features/auth/infrastructure/users.ts`）。メールアドレスは画面に
+  表示せず、本人も変えられない（変更はお問い合わせで受け、`pnpm user:link-email` で設定する）
   - 初めてログインしたメールアドレスでは、ユーザーを新しく作る。名前はメールアドレスから作らず、
     既定の名前にする
-  - OIDC の導入前に作られたユーザーは `email_hash` が NULL のため、`pnpm user:link-email` で紐付ける
+  - 以前はメールアドレスを SALT（`EMAIL_HASH_SALT`）を使って argon2id でハッシュにし、`users.email_hash` に
+    保存していた（#593 で変更）。`email` が NULL のユーザーのセッションは無効にし、次のログインで
+    `email_hash` で見つけて `email` を保存する。全員の `email` がそろったら `email_hash` を削除する
+    （`docs/deploy.md` の「メールアドレスの保存への移行手順」）
 - `users.role` はアプリ全体の権限（`admin`・`member`）。ユーザーが 1 件もないときに最初に
   ログインしたユーザーは `admin`
 - `users.name`・`users.icon_media_asset_id` は本人がアカウント設定の「プロフィールを編集する」（`/settings/account/profile`）で変えられる。

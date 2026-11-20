@@ -484,6 +484,13 @@
       "when": 1794726552616,
       "tag": "0068_cat_memorial_date",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "6",
+      "when": 1795138686321,
+      "tag": "0069_users_email",
+      "breakpoints": true
     }
   ]
 }

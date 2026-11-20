@@ -13,17 +13,14 @@
 //   pnpm household:link --remote [--user-id <id> | --email <メールアドレス>] [--name <家の名前>] [--yes]
 //
 // - `--user-id` で ID を、`--email` でログインに使うメールアドレスを指定してユーザーを選ぶ。
-//   `--email` は環境変数 `EMAIL_HASH_SALT` でハッシュにしてから探す（`--local` で未設定なら
-//   開発用の SALT を使う。`scripts/link-user-email.mts` と同じ）
+//   `--email` は `users.email` から探す（メールアドレスをハッシュにして保存していたころのユーザーは、
+//   一度ログインするまで見つからない）
 // - どちらも省略すると、最初に登録されたユーザーを使う
 // - ユーザーがすでに家に所属している場合は新しく作らず、その家に猫を紐付ける（何度実行しても同じ結果になる）
 // - `--remote` では実行前に確認する。`--yes` で確認を省略できる
 import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
-import {
-  getEmailHashSalt,
-  hashEmail,
-} from "../src/features/auth/domain/emailHash.ts";
+import { normalizeEmail } from "../src/features/auth/domain/email.ts";
 import {
   confirmOrExit,
   createExecutor,
@@ -74,16 +71,8 @@ function findUser(): NamedRow | undefined {
     )[0];
   }
   if (args.email) {
-    let salt: string;
-    try {
-      salt = getEmailHashSalt(process.env.EMAIL_HASH_SALT, {
-        allowDevelopmentSalt: args.local,
-      });
-    } catch (error) {
-      fail(error instanceof Error ? error.message : String(error));
-    }
     return execute<NamedRow>(
-      `SELECT id, name FROM users WHERE email_hash = ${quote(hashEmail(args.email, salt))} LIMIT 1`,
+      `SELECT id, name FROM users WHERE email = ${quote(normalizeEmail(args.email))} LIMIT 1`,
     )[0];
   }
   return execute<NamedRow>(
