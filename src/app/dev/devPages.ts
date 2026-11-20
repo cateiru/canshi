@@ -4,6 +4,7 @@ import {
   TbChartDots,
   TbComponents,
   TbConfetti,
+  TbError404,
   TbIcons,
   TbNews,
   TbScale,
@@ -71,5 +72,12 @@ export const DEV_PAGES: readonly DevPage[] = [
     description:
       "うんち記録のグラフを、固定の今日・記録で表示します。VRT で撮るページです。",
     icon: TbChartDots,
+  },
+  {
+    slug: "error-page",
+    title: "エラーページ",
+    description:
+      "予期しないエラーのときに出るページを、エラーを起こさずに表示します。VRT で撮るページです。",
+    icon: TbError404,
   },
 ];
