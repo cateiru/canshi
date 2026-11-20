@@ -22,14 +22,21 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 保存ボタンは、ほかのフォームと同じく横長にする */
 .footer {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column;
 }
 
+/*
+ * 保存の結果を読み上げる領域は常に置いておき、文言があるときだけボタンとの間を空ける
+ * （gap にすると、空のときもボタンの下に余白ができる）
+ */
 .message {
   color: var(--color-ink-muted);
   font-size: var(--text-sm);
+}
+
+.message:not(:empty) {
+  margin-top: var(--space-3);
 }
