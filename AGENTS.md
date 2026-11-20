@@ -139,3 +139,7 @@ PR のレビューコメント（インラインコメント・レビュー本�
 
 - 開発コマンド・ディレクトリ構成は [`README.md`](README.md) を参照。
 - DB 設計規約は [`src/db/README.md`](src/db/README.md) を参照。
+- メインアプリ・管理画面（`packages/admin`）・今後の LP などで共通の実装（デザイントークン・UI コンポーネント）は
+  `packages/shared`（`@canshi/shared`）に置く。Next.js・Hono などに依存しないものだけを置き、リンク・ページ移動は
+  props（`linkComponent`・`navigate`）で差し込む。メインアプリの画面は今までどおり `@/components/ui`（`next/link` を
+  差し込んだもの）から import する。詳細は [`packages/shared/README.md`](packages/shared/README.md) を参照。

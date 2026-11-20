@@ -1,6 +1,6 @@
+import { HelpIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
 import { Breadcrumb, NavCard } from "@/components/ui";
-import { HelpIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { HELP_CATEGORIES, helpHref } from "@/features/help/topics";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { TourStartCard } from "@/features/tour/presentation/TourStartCard";

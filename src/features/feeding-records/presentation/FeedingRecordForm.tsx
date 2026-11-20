@@ -1,5 +1,6 @@
 "use client";
 
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -20,7 +21,6 @@ import {
   Select,
   Textarea,
 } from "@/components/ui";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { FoodProduct } from "@/db/schema";
 import {
   type FeedingMode,

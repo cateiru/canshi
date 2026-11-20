@@ -1,6 +1,6 @@
 /* 面の見た目（背景・角丸・余白・コントラストを上げたときの輪郭）は RecordCard と共通 */
 .surface {
-  composes: card from "../../components/ui/RecordCard/RecordCard.module.css";
+  composes: card from "@canshi/shared/ui/RecordCard.module.css";
 }
 
 .title {

@@ -1,10 +1,10 @@
 "use client";
 
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import Link from "next/link";
 import { useId } from "react";
 import { TbAdjustments, TbHelpCircle } from "react-icons/tb";
 import { SegmentedControl } from "@/components/ui";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { FEEDING_MODES, type FeedingMode } from "@/db/schema/feeding-modes";
 import { FEEDING_MODE_HELP_HREF, FEEDING_MODE_LABEL } from "../domain/labels";
 import styles from "./FeedingModeField.module.css";

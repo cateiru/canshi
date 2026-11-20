@@ -1,9 +1,9 @@
+import { AiConnectionIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { TbEye, TbUser } from "react-icons/tb";
 import { Alert, Button, Heading } from "@/components/ui";
-import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import { getMcpPermissionTree } from "@/features/mcp/infrastructure/permissions";
 import { ConsentActionsHint } from "@/features/mcp/presentation/ConsentActionsHint";

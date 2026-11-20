@@ -1,8 +1,8 @@
+import { SettingsIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 import { Footer, IconButtonLink, ToastRegionRoot } from "@/components/ui";
-import { SettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAppearance } from "@/features/appearance/infrastructure/queries";
 import { getCurrentUser } from "@/features/auth/presentation/session";
 import { NavigationProgress } from "@/features/navigation/NavigationProgress";
@@ -72,7 +72,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // 見た目設定は src/styles/tokens.css が <html> の data 属性で切り替える
+  // 見た目設定は @canshi/shared の tokens.css（packages/shared/src/styles/tokens.css）が <html> の data 属性で切り替える
   const [{ theme, accent, contrast, fontSize }, user] = await Promise.all([
     getAppearance(),
     getCurrentUser(),

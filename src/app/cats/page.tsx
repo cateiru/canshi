@@ -1,3 +1,4 @@
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { TbPlus, TbSettings } from "react-icons/tb";
@@ -8,7 +9,6 @@ import {
   Collapsible,
   IconButtonLink,
 } from "@/components/ui";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { Cat } from "@/db/schema";
 import { requireUser } from "@/features/auth/presentation/session";
 import {

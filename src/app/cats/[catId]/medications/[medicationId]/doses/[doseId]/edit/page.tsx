@@ -1,6 +1,6 @@
+import { MedicationIcon } from "@canshi/shared/ui/RecordIcons";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getWritableCat } from "@/features/auth/presentation/session";
 import { getMedicationDoseById } from "@/features/medications/infrastructure/doseQueries";
 import { getMedicationById } from "@/features/medications/infrastructure/queries";

@@ -1,6 +1,6 @@
+import { AccountSettingsIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/ui";
-import { AccountSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/presentation/session";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { updateUserProfileAction } from "@/features/users/presentation/actions";

@@ -12,6 +12,7 @@
     "cf-typegen": "wrangler types --strict-vars=false"
   },
   "dependencies": {
+    "@canshi/shared": "workspace:*",
     "drizzle-orm": "catalog:",
     "hono": "^4.13.13"
   },

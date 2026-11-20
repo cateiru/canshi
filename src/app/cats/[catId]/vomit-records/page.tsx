@@ -1,3 +1,5 @@
+import { VomitIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import {
@@ -9,8 +11,6 @@ import {
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
-import { VomitIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";

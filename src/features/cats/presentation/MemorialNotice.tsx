@@ -1,6 +1,6 @@
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import type { ReactNode } from "react";
 import { TbFlower } from "react-icons/tb";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import styles from "./MemorialNotice.module.css";
 
 type MemorialNoticeProps = {

@@ -1,3 +1,4 @@
+import { MedicationIcon } from "@canshi/shared/ui/RecordIcons";
 import { notFound } from "next/navigation";
 import { TbActivity, TbPencil, TbPlus } from "react-icons/tb";
 import {
@@ -8,7 +9,6 @@ import {
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
-import { MedicationIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import type { Medication } from "@/db/schema";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { isMemorialCat } from "@/features/cats/domain/memorial";

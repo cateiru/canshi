@@ -1,5 +1,3 @@
-import type { IconType } from "react-icons";
-import { TbTimeline } from "react-icons/tb";
 import {
   BroomIcon,
   BrushingIcon,
@@ -14,7 +12,9 @@ import {
   VomitIcon,
   WaterIcon,
   WeightIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
+} from "@canshi/shared/ui/RecordIcons";
+import type { IconType } from "react-icons";
+import { TbTimeline } from "react-icons/tb";
 
 export type RecordNavItem = {
   href: (catId: string) => string;

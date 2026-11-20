@@ -1,6 +1,6 @@
+import { HouseholdIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/ui";
-import { HouseholdIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/presentation/session";
 import { createHouseholdAction } from "@/features/households/presentation/actions";
 import { HouseholdCreateForm } from "@/features/households/presentation/HouseholdCreateForm";

@@ -1,8 +1,8 @@
 "use client";
 
+import { HouseholdIcon } from "@canshi/shared/ui/RecordIcons";
 import { TbPlus } from "react-icons/tb";
 import { DropdownMenu } from "@/components/ui";
-import { HouseholdIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { CatIcon } from "./CatIcon";
 
 /** 猫一覧のヘッダーに置く、猫の登録と家の作成を選べるメニュー */

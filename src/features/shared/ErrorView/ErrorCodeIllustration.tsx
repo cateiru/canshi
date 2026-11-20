@@ -1,5 +1,5 @@
+import { DEFAULT_CAT_COAT } from "@canshi/shared/ui/RecordIcons";
 import { useId } from "react";
-import { DEFAULT_CAT_COAT } from "@/components/ui/RecordIcons/RecordIcons";
 import styles from "./ErrorView.module.css";
 
 /** イラストで描ける数字。エラーページで使う 404・500 の数字だけを用意する */

@@ -1,5 +1,6 @@
 "use client";
 
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { useActionState } from "react";
 import {
   TbCake,
@@ -10,7 +11,6 @@ import {
   TbWash,
 } from "react-icons/tb";
 import { Button, Checkbox, FormField } from "@/components/ui";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { CleaningTarget } from "@/db/schema";
 import { Surface } from "@/features/shared/Surface";
 import type { ResolvedNotificationSettings } from "../domain/rules";

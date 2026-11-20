@@ -1,10 +1,10 @@
 "use client";
 
+import { PhotoIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { useState } from "react";
 import { TbCheck, TbId } from "react-icons/tb";
 import { Alert, addToast, Button, FormField } from "@/components/ui";
-import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { ProfileImageField } from "@/features/cats/presentation/ProfileImageField";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { Surface } from "@/features/shared/Surface";

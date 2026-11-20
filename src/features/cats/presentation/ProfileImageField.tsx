@@ -1,11 +1,11 @@
 "use client";
 
+import { getButtonClassName } from "@canshi/shared/ui/buttonStyles";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { Button as AriaButton, FileTrigger } from "react-aria-components";
 import { TbPhotoPlus, TbTrash } from "react-icons/tb";
 import { Button, Modal } from "@/components/ui";
-import { getButtonClassName } from "@/components/ui/Button/buttonStyles";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { discardPendingMediaAction } from "@/features/media/presentation/actions";
 import { uploadPendingMedia } from "@/features/media/presentation/upload";
 import {

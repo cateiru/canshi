@@ -1,5 +1,5 @@
+import { FeedingIcon } from "@canshi/shared/ui/RecordIcons";
 import { ImagePreview } from "@/components/ui";
-import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 
 import styles from "./FoodProductImage.module.css";
 

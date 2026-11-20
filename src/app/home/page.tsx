@@ -1,8 +1,5 @@
+import { HelpIcon, ReleaseNotesIcon } from "@canshi/shared/ui/RecordIcons";
 import { ButtonLink, NavCard } from "@/components/ui";
-import {
-  HelpIcon,
-  ReleaseNotesIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
 import { CatIcon } from "@/features/cats/presentation/CatIcon";
 import styles from "./page.module.css";
 

@@ -1,5 +1,5 @@
+import { NotificationSettingsIcon } from "@canshi/shared/ui/RecordIcons";
 import { IconButtonLink } from "@/components/ui";
-import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { countUnreadNotifications } from "../infrastructure/queries";
 import styles from "./NotificationBadge.module.css";
 

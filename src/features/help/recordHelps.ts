@@ -1,4 +1,3 @@
-import type { IconType } from "react-icons";
 import {
   BroomIcon,
   BrushingIcon,
@@ -13,7 +12,8 @@ import {
   VomitIcon,
   WaterIcon,
   WeightIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
+} from "@canshi/shared/ui/RecordIcons";
+import type { IconType } from "react-icons";
 import type { HelpScreenshotName } from "./screenshots";
 
 /** 記録の項目 1 つの説明 */

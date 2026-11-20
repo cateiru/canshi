@@ -1,4 +1,3 @@
-import type { IconType } from "react-icons";
 import {
   AddToHomeScreenIcon,
   AiConnectionIcon,
@@ -10,7 +9,8 @@ import {
   HouseholdIcon,
   NotificationSettingsIcon,
   ReleaseNotesIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
+} from "@canshi/shared/ui/RecordIcons";
+import type { IconType } from "react-icons";
 import { RECORD_HELPS } from "./recordHelps";
 
 /** ヘルプの記事 1 件。`/help/<slug>` で表示する */

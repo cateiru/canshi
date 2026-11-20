@@ -1,6 +1,6 @@
 // 見た目設定（テーマ・アクセントカラー・コントラスト・文字サイズ）。端末ごとの設定として cookie に保存し、
 // RootLayout が <html data-theme data-accent data-contrast data-font-size> に出力して
-// src/styles/tokens.css で色と文字サイズを切り替える。
+// @canshi/shared の tokens.css（packages/shared/src/styles/tokens.css）で色と文字サイズを切り替える。
 
 export const THEMES = ["light", "dark", "system"] as const;
 export type Theme = (typeof THEMES)[number];

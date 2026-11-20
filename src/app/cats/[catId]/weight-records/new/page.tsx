@@ -1,6 +1,6 @@
+import { WeightIcon } from "@canshi/shared/ui/RecordIcons";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { WeightIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";

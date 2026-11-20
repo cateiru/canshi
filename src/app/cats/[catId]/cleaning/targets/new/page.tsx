@@ -1,8 +1,8 @@
+import { BroomIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { notFound } from "next/navigation";
 import { TbPlus, TbStack2 } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
-import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { CLEANING_TARGET_PRESETS } from "@/features/cleaning/domain/presets";

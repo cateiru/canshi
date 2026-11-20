@@ -15,6 +15,12 @@ import {
 // reg-suit は画像同士を比較するツールなので、ここでは実際にPNGスクリーンショットを撮って
 // `regconfig.json` の `core.actualDir` に書き出す。
 //
+// 比較（`regconfig.json`・`regconfig.admin.json`）は、1 ピクセルでも違えば差分にする
+// （`thresholdRate: 0`）。ただし色の差のしきい値（`matchingThreshold`、pixelmatch の threshold）は
+// 0.01 にして、角丸の縁などで実行のたびに色が 1〜2 だけ揺れるアンチエイリアスの差は差分にしない
+// （モーダルの角で数ピクセルだけ揺れて、変更と関係なく差分になっていた）。色の各成分が 3 以上
+// 変わる変化は 0.01 でも検出できることを確かめている
+//
 // `ignoreSelectors` も同様に、Chromatic では「比較から除外する領域」だったが、
 // reg-suit にそのような概念はないため、Playwright の `screenshot({ mask })` で
 // 該当要素を塗りつぶしてから撮影することで、実行日時などに依存する領域を

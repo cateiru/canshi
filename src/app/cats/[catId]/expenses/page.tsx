@@ -1,3 +1,4 @@
+import { ExpenseIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TbPlus } from "react-icons/tb";
@@ -8,7 +9,6 @@ import {
   MonthNav,
   RecordEmptyState,
 } from "@/components/ui";
-import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import {
   getAccessibleCat,
   listCurrentUserCats,

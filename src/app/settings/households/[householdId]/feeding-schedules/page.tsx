@@ -1,3 +1,5 @@
+import { FeedingScheduleIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import type { Metadata } from "next";
 import { TbClock, TbPlus } from "react-icons/tb";
 import {
@@ -7,8 +9,6 @@ import {
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
-import { FeedingScheduleIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireHouseholdAccess } from "@/features/auth/presentation/session";
 import { listFeedingSchedules } from "@/features/feeding-schedules/infrastructure/queries";
 import {

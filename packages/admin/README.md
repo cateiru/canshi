@@ -28,10 +28,11 @@ Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-ad
 | `POST /food-product-requests/:requestId/complete` | リクエストを完了にし、リクエストしたユーザーへの通知を作る（Push はメインアプリの次の定期送信で送る）。完了は取り消せない。終わると `/food-product-requests` に戻る |
 
 見た目はメインアプリのデザインルール（[`docs/idea/design.md`](../../docs/idea/design.md)）に揃え、
-`src/views/styles.ts` にメインアプリの `src/styles/tokens.css` と同じトークンを写して使う。
-ダークテーマ・コントラスト・文字サイズの切り替えは持たず、ライトテーマに固定する。
-メインアプリでトークンの値を変えたときは `src/views/styles.ts` も合わせて更新すること
-（`src/views/styles.test.ts` が `tokens.css` と照合するため、食い違いはテストで検出できる）。
+デザイントークンはメインアプリと同じ [`@canshi/shared`](../shared) の `tokens.css` をそのまま使う
+（`src/views/styles.ts` で文字列として import し、`<style>` に埋め込む。`.css` は `wrangler.jsonc` の
+`rules` で Text モジュールにし、テストでは `vitest.config.ts` のプラグインで同じように読み込む）。
+ダークテーマ・コントラスト・文字サイズの切り替えは持たず、`<html>` に `data-theme="light"` を付けて
+ライトテーマに固定する。メインアプリでトークンの値を変えると、管理画面の見た目も同じように変わる。
 
 書き込みを伴う `POST` は、Hono の CSRF ミドルウェアで同じオリジンからの送信だけを受け付ける
 （Cloudflare Access の Cookie は、ほかのサイトからのフォーム送信にも付きうるため）。
@@ -68,6 +69,10 @@ pnpm run preview # wrangler preview --ignore-base-config（通常は main 以外
 リポジトリルートの `e2e-admin/vrt.spec.ts`、設定は `playwright.admin-vrt.config.ts` と
 `regconfig.admin.json` にある。データはメインアプリの VRT と同じ固定フィクスチャ
 （`e2e/fixtures/vrt-seed.sql`）を使う。
+
+比較はメインアプリの VRT と同じく、1 ピクセルでも違えば差分にし、色の差のしきい値
+（`matchingThreshold`）だけ 0.01 にして、実行のたびに揺れるアンチエイリアスの差を無視する
+（理由は `e2e/vrt-snapshot.ts` の冒頭のコメントを参照）。
 
 CI の `vrt-admin` ジョブは、main への push では毎回、PR では管理画面に関わるファイル
 （このパッケージ・`e2e-admin/`・VRT の設定とフィクスチャ・マイグレーション・

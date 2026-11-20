@@ -1,5 +1,7 @@
 "use client";
 
+import { PhotoIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { useState } from "react";
 import { TbCalendar, TbCheck, TbPalette } from "react-icons/tb";
 import {
@@ -11,8 +13,6 @@ import {
   RadioGroup,
   Select,
 } from "@/components/ui";
-import { PhotoIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { Cat } from "@/db/schema";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import { Surface } from "@/features/shared/Surface";
