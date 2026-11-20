@@ -148,6 +148,7 @@ export function FeedingPresetForm({
       <FormField
         name="name"
         label="プリセット名"
+        placeholder="夕ご飯"
         defaultValue={preset?.name}
         errorMessage={state.fieldErrors?.name?.[0]}
         isRequired
