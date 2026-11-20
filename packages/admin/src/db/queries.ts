@@ -1,12 +1,9 @@
 /**
  * 管理画面が表示するデータを D1 から読み出すクエリ。
  *
- * メインアプリの Drizzle スキーマ（`src/db/schema`）は import しない。パッケージ境界を
- * またぐと Next.js 向けの tsconfig・パスエイリアスに連鎖的に依存してしまうため
- * ため、生の SQL で書く。
- * そのため、メインアプリでテーブル・列を変更したときはここも合わせて更新すること
- * （`queries.test.ts` はリポジトリルートの `drizzle/` のマイグレーションを適用した DB で
- * 実行するため、列名の食い違いはテストで検出できる）。
+ * メインアプリの Drizzle スキーマ（`./schema`）を使い、SQL を文字列で組み立てない
+ * （値はすべてバインドパラメーターで渡す）。`queries.test.ts` はリポジトリルートの `drizzle/` の
+ * マイグレーションを適用した DB で実行するため、スキーマとマイグレーションの食い違いもテストで検出できる。
  *
  * 管理画面は基本的に閲覧用で、書き込みはユーザーの権限の変更と、ユーザーのセッションの削除
  * （すべての端末からログアウトさせる）、家へのメンバーの追加・削除、共通のごはん商品の
@@ -14,8 +11,24 @@
  * そのときの通知の作成（`catalogFoodProductRequests.ts`）だけにする。
  */
 
-/** このファイルのクエリが使う D1 の機能（テストで sql.js に差し替えるため最小限にする） */
-export type AdminDb = Pick<D1Database, "prepare" | "batch">;
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  gt,
+  isNull,
+  max,
+  notExists,
+  sql,
+} from "drizzle-orm";
+import { insertWhere } from "../../../../src/db/conditionalInsert";
+import type { AdminDb } from "./client";
+import { cats, householdMembers, households, sessions, users } from "./schema";
+
+export type { AdminDb } from "./client";
 
 export interface Overview {
   userCount: number;
@@ -70,74 +83,38 @@ export interface AdminHousehold {
   members: HouseholdMember[];
 }
 
-type OverviewRow = {
-  user_count: number;
-  household_count: number;
-  cat_count: number;
-  unassigned_cat_count: number;
-};
-
-type UserRow = {
-  id: string;
-  name: string;
-  role: string;
-  created_at: number;
-  active_session_count: number;
-  latest_session_expires_at: number | null;
-};
-
-type HouseholdRow = {
-  id: string;
-  name: string;
-  created_at: number;
-  cat_count: number;
-};
-
-type MembershipRow = {
-  household_id: string;
-  household_name: string;
-  user_id: string;
-  user_name: string;
-  role: string;
-};
-
-/** D1 の `integer(..., { mode: "timestamp" })` 列（unix 秒）を Date にする */
-function fromUnixSeconds(value: number) {
-  return new Date(value * 1000);
+/** 家のメンバーの一覧（オーナーを先にし、家に加わった順） */
+function listMemberships(db: AdminDb) {
+  return db
+    .select({
+      householdId: householdMembers.householdId,
+      householdName: households.name,
+      userId: householdMembers.userId,
+      userName: users.name,
+      role: householdMembers.role,
+    })
+    .from(householdMembers)
+    .innerJoin(households, eq(households.id, householdMembers.householdId))
+    .innerJoin(users, eq(users.id, householdMembers.userId))
+    .orderBy(
+      desc(eq(householdMembers.role, "owner")),
+      asc(householdMembers.createdAt),
+      asc(householdMembers.userId),
+    );
 }
-
-function toUnixSeconds(date: Date) {
-  return Math.floor(date.getTime() / 1000);
-}
-
-const MEMBERSHIPS_SQL = `
-SELECT
-  hm.household_id,
-  h.name AS household_name,
-  hm.user_id,
-  u.name AS user_name,
-  hm.role
-FROM household_members hm
-JOIN households h ON h.id = hm.household_id
-JOIN users u ON u.id = hm.user_id
-ORDER BY hm.role = 'owner' DESC, hm.created_at, hm.user_id`;
 
 export async function getOverview(db: AdminDb): Promise<Overview> {
-  const { results } = await db
-    .prepare(
-      `SELECT
-        (SELECT COUNT(*) FROM users) AS user_count,
-        (SELECT COUNT(*) FROM households) AS household_count,
-        (SELECT COUNT(*) FROM cats) AS cat_count,
-        (SELECT COUNT(*) FROM cats WHERE household_id IS NULL) AS unassigned_cat_count`,
-    )
-    .all<OverviewRow>();
-  const row = results[0];
+  const [[user], [household], [cat], [unassignedCat]] = await Promise.all([
+    db.select({ count: count() }).from(users),
+    db.select({ count: count() }).from(households),
+    db.select({ count: count() }).from(cats),
+    db.select({ count: count() }).from(cats).where(isNull(cats.householdId)),
+  ]);
   return {
-    userCount: row.user_count,
-    householdCount: row.household_count,
-    catCount: row.cat_count,
-    unassignedCatCount: row.unassigned_cat_count,
+    userCount: user.count,
+    householdCount: household.count,
+    catCount: cat.count,
+    unassignedCatCount: unassignedCat.count,
   };
 }
 
@@ -149,77 +126,69 @@ export async function listUsers(
   db: AdminDb,
   now: Date = new Date(),
 ): Promise<AdminUser[]> {
-  const [users, memberships] = await db.batch([
+  const [userRows, memberships] = await Promise.all([
     db
-      .prepare(
-        `SELECT
-          u.id,
-          u.name,
-          u.role,
-          u.created_at,
-          COUNT(s.user_id) AS active_session_count,
-          MAX(s.expires_at) AS latest_session_expires_at
-        FROM users u
-        LEFT JOIN sessions s ON s.user_id = u.id AND s.expires_at > ?1
-        GROUP BY u.id
-        ORDER BY u.created_at, u.id`,
+      .select({
+        id: users.id,
+        name: users.name,
+        role: users.role,
+        createdAt: users.createdAt,
+        activeSessionCount: count(sessions.userId),
+        latestSessionExpiresAt: max(sessions.expiresAt),
+      })
+      .from(users)
+      .leftJoin(
+        sessions,
+        and(eq(sessions.userId, users.id), gt(sessions.expiresAt, now)),
       )
-      .bind(toUnixSeconds(now)),
-    db.prepare(MEMBERSHIPS_SQL),
+      .groupBy(users.id)
+      .orderBy(asc(users.createdAt), asc(users.id)),
+    listMemberships(db),
   ]);
 
   const householdsByUser = new Map<string, UserMembership[]>();
-  for (const row of memberships.results as MembershipRow[]) {
-    const list = householdsByUser.get(row.user_id) ?? [];
+  for (const row of memberships) {
+    const list = householdsByUser.get(row.userId) ?? [];
     list.push({
-      householdId: row.household_id,
-      householdName: row.household_name,
+      householdId: row.householdId,
+      householdName: row.householdName,
       role: row.role,
     });
-    householdsByUser.set(row.user_id, list);
+    householdsByUser.set(row.userId, list);
   }
 
-  return (users.results as UserRow[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    role: row.role,
-    createdAt: fromUnixSeconds(row.created_at),
-    activeSessionCount: row.active_session_count,
-    latestSessionExpiresAt:
-      row.latest_session_expires_at === null
-        ? null
-        : fromUnixSeconds(row.latest_session_expires_at),
+  return userRows.map((row) => ({
+    ...row,
     households: householdsByUser.get(row.id) ?? [],
   }));
 }
 
 /** 家の一覧（作成順）。メンバーはオーナーを先にする */
 export async function listHouseholds(db: AdminDb): Promise<AdminHousehold[]> {
-  const [households, memberships] = await db.batch([
-    db.prepare(
-      `SELECT
-        h.id,
-        h.name,
-        h.created_at,
-        (SELECT COUNT(*) FROM cats c WHERE c.household_id = h.id) AS cat_count
-      FROM households h
-      ORDER BY h.created_at, h.id`,
-    ),
-    db.prepare(MEMBERSHIPS_SQL),
+  const [householdRows, memberships] = await Promise.all([
+    db
+      .select({
+        id: households.id,
+        name: households.name,
+        createdAt: households.createdAt,
+        catCount: count(cats.id),
+      })
+      .from(households)
+      .leftJoin(cats, eq(cats.householdId, households.id))
+      .groupBy(households.id)
+      .orderBy(asc(households.createdAt), asc(households.id)),
+    listMemberships(db),
   ]);
 
   const membersByHousehold = new Map<string, HouseholdMember[]>();
-  for (const row of memberships.results as MembershipRow[]) {
-    const list = membersByHousehold.get(row.household_id) ?? [];
-    list.push({ userId: row.user_id, userName: row.user_name, role: row.role });
-    membersByHousehold.set(row.household_id, list);
+  for (const row of memberships) {
+    const list = membersByHousehold.get(row.householdId) ?? [];
+    list.push({ userId: row.userId, userName: row.userName, role: row.role });
+    membersByHousehold.set(row.householdId, list);
   }
 
-  return (households.results as HouseholdRow[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    createdAt: fromUnixSeconds(row.created_at),
-    catCount: row.cat_count,
+  return householdRows.map((row) => ({
+    ...row,
     members: membersByHousehold.get(row.id) ?? [],
   }));
 }
@@ -233,11 +202,11 @@ export async function deleteUserSessions(
   db: AdminDb,
   userId: string,
 ): Promise<number> {
-  const result = await db
-    .prepare("DELETE FROM sessions WHERE user_id = ?1")
-    .bind(userId)
-    .run();
-  return result.meta.changes;
+  const deleted = await db
+    .delete(sessions)
+    .where(eq(sessions.userId, userId))
+    .returning({ tokenHash: sessions.tokenHash });
+  return deleted.length;
 }
 
 export type UserRoleChangeResult = { ok: true } | { ok: false; error: string };
@@ -255,13 +224,12 @@ export async function updateUserRole(
   if (!isUserRole(role)) {
     return { ok: false, error: `権限 ${role} は選べません` };
   }
-  const result = await db
-    .prepare(
-      "UPDATE users SET role = ?2, updated_at = unixepoch() WHERE id = ?1",
-    )
-    .bind(userId, role)
-    .run();
-  if (result.meta.changes === 0) {
+  const updated = await db
+    .update(users)
+    .set({ role, updatedAt: sql`(unixepoch())` })
+    .where(eq(users.id, userId))
+    .returning({ id: users.id });
+  if (updated.length === 0) {
     return { ok: false, error: "権限を変えるユーザーが見つかりませんでした" };
   }
   return { ok: true };
@@ -281,19 +249,34 @@ export async function addHouseholdMember(
   householdId: string,
   userId: string,
 ): Promise<HouseholdMemberChangeResult> {
-  const result = await db
-    .prepare(
-      `INSERT INTO household_members (household_id, user_id, role)
-      SELECT ?1, ?2, 'member'
-      WHERE EXISTS (SELECT 1 FROM households WHERE id = ?1)
-        AND EXISTS (SELECT 1 FROM users WHERE id = ?2)
-        AND NOT EXISTS (
-          SELECT 1 FROM household_members WHERE household_id = ?1 AND user_id = ?2
-        )`,
-    )
-    .bind(householdId, userId)
-    .run();
-  if (result.meta.changes === 0) {
+  const inserted = await insertWhere(
+    db,
+    householdMembers,
+    { householdId, userId, role: "member" },
+    and(
+      exists(
+        db
+          .select({ id: households.id })
+          .from(households)
+          .where(eq(households.id, householdId)),
+      ),
+      exists(
+        db.select({ id: users.id }).from(users).where(eq(users.id, userId)),
+      ),
+      notExists(
+        db
+          .select({ userId: householdMembers.userId })
+          .from(householdMembers)
+          .where(
+            and(
+              eq(householdMembers.householdId, householdId),
+              eq(householdMembers.userId, userId),
+            ),
+          ),
+      ),
+    ),
+  ).returning({ userId: householdMembers.userId });
+  if (inserted.length === 0) {
     return {
       ok: false,
       error:
@@ -313,14 +296,17 @@ export async function removeHouseholdMember(
   householdId: string,
   userId: string,
 ): Promise<HouseholdMemberChangeResult> {
-  const result = await db
-    .prepare(
-      `DELETE FROM household_members
-      WHERE household_id = ?1 AND user_id = ?2 AND role = 'member'`,
+  const deleted = await db
+    .delete(householdMembers)
+    .where(
+      and(
+        eq(householdMembers.householdId, householdId),
+        eq(householdMembers.userId, userId),
+        eq(householdMembers.role, "member"),
+      ),
     )
-    .bind(householdId, userId)
-    .run();
-  if (result.meta.changes === 0) {
+    .returning({ userId: householdMembers.userId });
+  if (deleted.length === 0) {
     return {
       ok: false,
       error:

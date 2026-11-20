@@ -6,11 +6,16 @@ import {
   type SQLWrapper,
   sql,
 } from "drizzle-orm";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 import type { SQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
-import type { getDb } from "./client";
+import type * as schema from "./schema";
 import { cats } from "./schema";
 
-type Db = ReturnType<typeof getDb>;
+/**
+ * `getDb()` の戻り値と同じ型。`./client`（`@opennextjs/cloudflare` に依存する）を import せずに
+ * 書き、管理画面（`packages/admin`）からもこのファイルを使えるようにする
+ */
+type Db = DrizzleD1Database<typeof schema>;
 
 /**
  * 論理削除する記録（`deleted_at` を持つ）が、指定した猫のもので削除されずにあるときだけ真になる条件。

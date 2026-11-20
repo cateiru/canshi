@@ -24,6 +24,7 @@ import {
   StorageLimitError,
   updateCatalogFoodProduct,
 } from "./db/catalogFoodProducts";
+import { type AdminDb, createAdminDb } from "./db/client";
 import {
   addHouseholdMember,
   deleteUserSessions,
@@ -119,12 +120,16 @@ async function checkImage(file: File | null): Promise<CheckedImage | null> {
  * （docs/deploy.md の「管理画面」節）
  */
 export function createApp() {
-  const app = new Hono<{ Bindings: Env }>();
+  const app = new Hono<{ Bindings: Env; Variables: { db: AdminDb } }>();
 
   app.use(secureHeaders());
   // Cloudflare Access の Cookie はほかのサイトからのフォーム送信にも付きうるため、
   // 書き込みを伴う POST は同じオリジンからのものだけを受け付ける
   app.use(csrf());
+  app.use(async (c, next) => {
+    c.set("db", createAdminDb(c.env.DB));
+    await next();
+  });
   app.use(async (c, next) => {
     await next();
     // 全ユーザー・全家の情報を含むため、ブラウザや中間のキャッシュに残さない
@@ -132,7 +137,7 @@ export function createApp() {
   });
 
   app.get("/", async (c) => {
-    const overview = await getOverview(c.env.DB);
+    const overview = await getOverview(c.var.db);
     return c.html(
       <Layout title="概要" currentPath="/">
         <OverviewPage overview={overview} />
@@ -141,7 +146,7 @@ export function createApp() {
   });
 
   app.get("/users", async (c) => {
-    const users = await listUsers(c.env.DB);
+    const users = await listUsers(c.var.db);
     // すべての端末からログアウトさせた直後は、対象のユーザーを結果として表示する
     const loggedOutUserId = c.req.query("loggedOut");
     const loggedOutUser = users.find((user) => user.id === loggedOutUserId);
@@ -172,7 +177,7 @@ export function createApp() {
     const userId = c.req.param("userId");
     const body = await c.req.parseBody();
     const role = typeof body.role === "string" ? body.role : "";
-    const result = await updateUserRole(c.env.DB, userId, role);
+    const result = await updateUserRole(c.var.db, userId, role);
     return c.redirect(
       usersRoleResultUrl(result.ok ? "updated" : "update-failed", userId),
       303,
@@ -182,14 +187,14 @@ export function createApp() {
   // ユーザーをすべての端末からログアウトさせる（ログインセッションをすべて削除する）
   app.post("/users/:userId/sessions/delete", async (c) => {
     const userId = c.req.param("userId");
-    await deleteUserSessions(c.env.DB, userId);
+    await deleteUserSessions(c.var.db, userId);
     return c.redirect(`/users?loggedOut=${encodeURIComponent(userId)}`, 303);
   });
 
   app.get("/households", async (c) => {
     const [households, users] = await Promise.all([
-      listHouseholds(c.env.DB),
-      listUsers(c.env.DB),
+      listHouseholds(c.var.db),
+      listUsers(c.var.db),
     ]);
     // メンバーを追加・削除した直後は、その結果を表示する
     const result = MEMBER_CHANGE_RESULTS.find(
@@ -217,7 +222,7 @@ export function createApp() {
     const householdId = c.req.param("householdId");
     const body = await c.req.parseBody();
     const userId = typeof body.userId === "string" ? body.userId : "";
-    const result = await addHouseholdMember(c.env.DB, householdId, userId);
+    const result = await addHouseholdMember(c.var.db, householdId, userId);
     return c.redirect(
       householdsResultUrl(
         result.ok ? "added" : "add-failed",
@@ -232,7 +237,7 @@ export function createApp() {
   app.post("/households/:householdId/members/:userId/delete", async (c) => {
     const householdId = c.req.param("householdId");
     const userId = c.req.param("userId");
-    const result = await removeHouseholdMember(c.env.DB, householdId, userId);
+    const result = await removeHouseholdMember(c.var.db, householdId, userId);
     return c.redirect(
       householdsResultUrl(
         result.ok ? "removed" : "remove-failed",
@@ -244,7 +249,7 @@ export function createApp() {
   });
 
   app.get("/food-products", async (c) => {
-    const products = await listCatalogFoodProducts(c.env.DB);
+    const products = await listCatalogFoodProducts(c.var.db);
     // 登録・更新・削除した直後は、その結果を表示する
     const result = CATALOG_CHANGE_RESULTS.find(
       (value) => value === c.req.query("catalogChange"),
@@ -315,7 +320,7 @@ export function createApp() {
     }
     try {
       const id = await createCatalogFoodProduct(
-        c.env.DB,
+        c.var.db,
         c.env.MEDIA_BUCKET,
         parsed.values,
         image,
@@ -332,7 +337,7 @@ export function createApp() {
 
   app.get("/food-products/:productId/edit", async (c) => {
     const product = await getCatalogFoodProduct(
-      c.env.DB,
+      c.var.db,
       c.req.param("productId"),
     );
     if (!product) {
@@ -355,7 +360,7 @@ export function createApp() {
   // 共通のごはん商品を更新する（家に追加済みの商品には反映しない）
   app.post("/food-products/:productId", async (c) => {
     const productId = c.req.param("productId");
-    const product = await getCatalogFoodProduct(c.env.DB, productId);
+    const product = await getCatalogFoodProduct(c.var.db, productId);
     if (!product) {
       return c.notFound();
     }
@@ -386,7 +391,7 @@ export function createApp() {
     }
     try {
       const updated = await updateCatalogFoodProduct(
-        c.env.DB,
+        c.var.db,
         c.env.MEDIA_BUCKET,
         productId,
         parsed.values,
@@ -411,7 +416,7 @@ export function createApp() {
   // 共通のごはん商品を削除する（家に追加済みの商品は残る）
   app.post("/food-products/:productId/delete", async (c) => {
     const deleted = await deleteCatalogFoodProduct(
-      c.env.DB,
+      c.var.db,
       c.env.MEDIA_BUCKET,
       c.req.param("productId"),
     );
@@ -422,7 +427,7 @@ export function createApp() {
   });
 
   app.get("/food-product-requests", async (c) => {
-    const { open, completed } = await listCatalogFoodProductRequests(c.env.DB);
+    const { open, completed } = await listCatalogFoodProductRequests(c.var.db);
     // 完了にした直後は、その結果を表示する
     const result = REQUEST_COMPLETION_RESULTS.find(
       (value) => value === c.req.query("completion"),
@@ -448,7 +453,7 @@ export function createApp() {
   // リクエストを完了にし、リクエストしたユーザーに通知する
   app.post("/food-product-requests/:requestId/complete", async (c) => {
     const requestId = c.req.param("requestId");
-    const result = await completeCatalogFoodProductRequest(c.env.DB, requestId);
+    const result = await completeCatalogFoodProductRequest(c.var.db, requestId);
     if (result === "not-found") {
       return c.notFound();
     }
@@ -461,7 +466,7 @@ export function createApp() {
 
   // 共通のごはん商品の画像。管理画面の一覧・編集フォームで表示する
   app.get("/food-products/:productId/image", async (c) => {
-    const image = await getCatalogImage(c.env.DB, c.req.param("productId"));
+    const image = await getCatalogImage(c.var.db, c.req.param("productId"));
     const object = image ? await c.env.MEDIA_BUCKET.get(image.objectKey) : null;
     if (!image || !object) {
       return c.notFound();

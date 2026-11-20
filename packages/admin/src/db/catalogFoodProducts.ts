@@ -2,20 +2,22 @@
  * 共通のごはん商品（`catalog_food_products`）と、その画像（`media_assets` の
  * `record_type = 'catalog_food_product'`・R2 のオブジェクト）を読み書きする。
  *
- * `queries.ts` と同じく、メインアプリの Drizzle スキーマ・メディアの処理は import せず生の SQL と
+ * `queries.ts` と同じく、メインアプリの Drizzle スキーマで読み書きする。メディアの処理は import せず
  * R2 の API で書く。画像は 1 商品に 1 枚で、メインアプリのメディアと同じく
  * `{record_type}/{record_id}/{asset_id}` のキーで R2 に置く。管理画面はサムネイルを作らないため
  * `thumbnail_object_key` は NULL にする（メインアプリは元データの URL で表示する）
  */
+import { and, asc, eq, exists, isNull, sql } from "drizzle-orm";
+import type { BatchItem, BatchResponse } from "drizzle-orm/batch";
+import { insertWhere } from "../../../../src/db/conditionalInsert";
 import type {
   CatalogFoodProductValues,
   LifeStage,
-  NutritionType,
   PackageSize,
-  TextureType,
 } from "../catalog/form";
 import type { CatalogImageMimeType } from "../catalog/image";
-import type { AdminDb } from "./queries";
+import type { AdminDb } from "./client";
+import { catalogFoodProducts, foodProducts, mediaAssets } from "./schema";
 
 /** メインアプリの `CATALOG_FOOD_PRODUCT_MEDIA_TYPE` と同じ値 */
 export const CATALOG_FOOD_PRODUCT_MEDIA_TYPE = "catalog_food_product";
@@ -43,62 +45,66 @@ export interface NewCatalogImage {
   mimeType: CatalogImageMimeType;
 }
 
-type CatalogFoodProductRow = {
-  id: string;
-  name: string;
-  manufacturer: string | null;
-  kcal_per_100g: number;
-  package_amount_g: number;
-  package_unit: string | null;
-  package_sizes: string;
-  nutrition_type: NutritionType;
-  texture_type: TextureType;
-  life_stages: string;
-  target_breed: string | null;
-  search_keywords: string;
-  image_asset_id: string | null;
-  added_count: number;
-  created_at: number;
-  updated_at: number;
+/**
+ * この商品の画像の行（`media_assets`）に絞り込む条件。商品の ID の代わりに列を渡すと、
+ * 商品の SELECT の中の相関サブクエリの条件になる
+ */
+function productImagesCondition(
+  productId: string | typeof catalogFoodProducts.id,
+) {
+  return and(
+    eq(mediaAssets.recordType, CATALOG_FOOD_PRODUCT_MEDIA_TYPE),
+    eq(mediaAssets.recordId, productId),
+  );
+}
+
+/** 画像の行のうち、R2 のオブジェクトの片付けと配信に使う列 */
+const IMAGE_COLUMNS = {
+  id: mediaAssets.id,
+  objectKey: mediaAssets.objectKey,
+  thumbnailObjectKey: mediaAssets.thumbnailObjectKey,
+  mimeType: mediaAssets.mimeType,
 };
 
 type ImageRow = {
   id: string;
-  object_key: string;
-  thumbnail_object_key: string | null;
-  mime_type: string;
+  objectKey: string;
+  thumbnailObjectKey: string | null;
+  mimeType: string;
 };
 
-const SELECT_SQL = `
-SELECT
-  c.*,
-  (
-    SELECT m.id FROM media_assets m
-    WHERE m.record_type = '${CATALOG_FOOD_PRODUCT_MEDIA_TYPE}' AND m.record_id = c.id
-    ORDER BY m.sort_order, m.created_at
-    LIMIT 1
-  ) AS image_asset_id,
-  (SELECT COUNT(*) FROM food_products f WHERE f.catalog_food_product_id = c.id) AS added_count
-FROM catalog_food_products c`;
-
-function parseLifeStages(value: string): LifeStage[] {
-  try {
-    const parsed: unknown = JSON.parse(value);
-    return Array.isArray(parsed) ? (parsed as LifeStage[]) : [];
-  } catch {
-    return [];
-  }
+/** 商品の一覧・1 件の取得に使う SELECT（画像の ID と、家に追加された数を合わせて読む） */
+function selectCatalogFoodProducts(db: AdminDb) {
+  const imageAssetId = db
+    .select({ id: mediaAssets.id })
+    .from(mediaAssets)
+    .where(productImagesCondition(catalogFoodProducts.id))
+    .orderBy(asc(mediaAssets.sortOrder), asc(mediaAssets.createdAt))
+    .limit(1);
+  return db
+    .select({
+      product: catalogFoodProducts,
+      imageAssetId: sql<string | null>`(${imageAssetId})`,
+      addedCount: db.$count(
+        foodProducts,
+        eq(foodProducts.catalogFoodProductId, catalogFoodProducts.id),
+      ),
+    })
+    .from(catalogFoodProducts);
 }
 
-function parseSearchKeywords(value: string): string[] {
-  try {
-    const parsed: unknown = JSON.parse(value);
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === "string")
-      : [];
-  } catch {
-    return [];
-  }
+type CatalogFoodProductRow = Awaited<
+  ReturnType<typeof selectCatalogFoodProducts>
+>[number];
+
+function parseLifeStages(value: unknown): LifeStage[] {
+  return Array.isArray(value) ? (value as LifeStage[]) : [];
+}
+
+function parseSearchKeywords(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
 }
 
 /**
@@ -106,17 +112,13 @@ function parseSearchKeywords(value: string): string[] {
  * 2 件目以降だけを使う（メインアプリの `catalogPackageSizes` と同じ）。候補を知らない古い管理画面が
  * `package_amount_g`・`package_unit` だけを登録・更新した場合も、その値を反映するため
  */
-function parsePackageSizes(row: CatalogFoodProductRow): PackageSize[] {
-  const first = { amountG: row.package_amount_g, unit: row.package_unit };
-  let rest: PackageSize[] = [];
-  try {
-    const parsed: unknown = JSON.parse(row.package_sizes);
-    if (Array.isArray(parsed)) {
-      rest = (parsed as PackageSize[]).slice(1);
-    }
-  } catch {
-    // 先頭の候補だけにする
-  }
+function parsePackageSizes(
+  product: CatalogFoodProductRow["product"],
+): PackageSize[] {
+  const first = { amountG: product.packageAmountG, unit: product.packageUnit };
+  const rest: PackageSize[] = Array.isArray(product.packageSizes)
+    ? product.packageSizes.slice(1)
+    : [];
   return [
     first,
     ...rest.filter(
@@ -125,30 +127,36 @@ function parsePackageSizes(row: CatalogFoodProductRow): PackageSize[] {
   ];
 }
 
-function toCatalogFoodProduct(row: CatalogFoodProductRow): CatalogFoodProduct {
+function toCatalogFoodProduct({
+  product,
+  imageAssetId,
+  addedCount,
+}: CatalogFoodProductRow): CatalogFoodProduct {
   return {
-    id: row.id,
-    name: row.name,
-    manufacturer: row.manufacturer,
-    kcalPer100g: row.kcal_per_100g,
-    packageSizes: parsePackageSizes(row),
-    nutritionType: row.nutrition_type,
-    textureType: row.texture_type,
-    lifeStages: parseLifeStages(row.life_stages),
-    targetBreed: row.target_breed,
-    searchKeywords: parseSearchKeywords(row.search_keywords),
-    imageAssetId: row.image_asset_id,
-    addedCount: row.added_count,
-    createdAt: new Date(row.created_at * 1000),
-    updatedAt: new Date(row.updated_at * 1000),
+    id: product.id,
+    name: product.name,
+    manufacturer: product.manufacturer,
+    kcalPer100g: product.kcalPer100g,
+    packageSizes: parsePackageSizes(product),
+    nutritionType: product.nutritionType,
+    textureType: product.textureType,
+    lifeStages: parseLifeStages(product.lifeStages),
+    targetBreed: product.targetBreed,
+    searchKeywords: parseSearchKeywords(product.searchKeywords),
+    imageAssetId,
+    addedCount,
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
   };
 }
 
-function objectKeysOf(rows: ImageRow[]) {
+function objectKeysOf(
+  rows: Pick<ImageRow, "objectKey" | "thumbnailObjectKey">[],
+) {
   return rows.flatMap((row) =>
-    row.thumbnail_object_key
-      ? [row.object_key, row.thumbnail_object_key]
-      : [row.object_key],
+    row.thumbnailObjectKey
+      ? [row.objectKey, row.thumbnailObjectKey]
+      : [row.objectKey],
   );
 }
 
@@ -156,48 +164,43 @@ function objectKeysOf(rows: ImageRow[]) {
 export async function listCatalogFoodProducts(
   db: AdminDb,
 ): Promise<CatalogFoodProduct[]> {
-  const { results } = await db
-    .prepare(
-      `${SELECT_SQL}
-      ORDER BY c.manufacturer IS NULL, c.manufacturer, c.name, c.id`,
-    )
-    .all<CatalogFoodProductRow>();
-  return results.map(toCatalogFoodProduct);
+  const rows = await selectCatalogFoodProducts(db).orderBy(
+    asc(isNull(catalogFoodProducts.manufacturer)),
+    asc(catalogFoodProducts.manufacturer),
+    asc(catalogFoodProducts.name),
+    asc(catalogFoodProducts.id),
+  );
+  return rows.map(toCatalogFoodProduct);
 }
 
 export async function getCatalogFoodProduct(
   db: AdminDb,
   id: string,
 ): Promise<CatalogFoodProduct | null> {
-  const { results } = await db
-    .prepare(`${SELECT_SQL} WHERE c.id = ?1`)
-    .bind(id)
-    .all<CatalogFoodProductRow>();
-  return results[0] ? toCatalogFoodProduct(results[0]) : null;
+  const [row] = await selectCatalogFoodProducts(db).where(
+    eq(catalogFoodProducts.id, id),
+  );
+  return row ? toCatalogFoodProduct(row) : null;
 }
+
+/** 元データとサムネイルを合わせた容量 */
+const TOTAL_BYTES = sql<number>`coalesce(sum(${mediaAssets.sizeBytes}), 0) + coalesce(sum(${mediaAssets.thumbnailSizeBytes}), 0)`;
 
 /** 商品の今の画像の、元データとサムネイルを合わせた容量 */
 async function sumProductImageBytes(db: AdminDb, productId: string) {
-  const { results } = await db
-    .prepare(
-      `SELECT coalesce(sum(size_bytes), 0) + coalesce(sum(thumbnail_size_bytes), 0) AS total
-      FROM media_assets WHERE record_type = ?1 AND record_id = ?2`,
-    )
-    .bind(CATALOG_FOOD_PRODUCT_MEDIA_TYPE, productId)
-    .all<{ total: number }>();
-  return Number(results[0]?.total ?? 0);
+  const [row] = await db
+    .select({ total: TOTAL_BYTES })
+    .from(mediaAssets)
+    .where(productImagesCondition(productId));
+  return Number(row?.total ?? 0);
 }
 
-async function listImageRows(db: AdminDb, productId: string) {
-  const { results } = await db
-    .prepare(
-      `SELECT id, object_key, thumbnail_object_key, mime_type FROM media_assets
-      WHERE record_type = ?1 AND record_id = ?2
-      ORDER BY sort_order, created_at`,
-    )
-    .bind(CATALOG_FOOD_PRODUCT_MEDIA_TYPE, productId)
-    .all<ImageRow>();
-  return results;
+function listImageRows(db: AdminDb, productId: string): Promise<ImageRow[]> {
+  return db
+    .select(IMAGE_COLUMNS)
+    .from(mediaAssets)
+    .where(productImagesCondition(productId))
+    .orderBy(asc(mediaAssets.sortOrder), asc(mediaAssets.createdAt));
 }
 
 export async function getCatalogImage(
@@ -205,7 +208,7 @@ export async function getCatalogImage(
   productId: string,
 ): Promise<CatalogImage | null> {
   const [row] = await listImageRows(db, productId);
-  return row ? { objectKey: row.object_key, mimeType: row.mime_type } : null;
+  return row ? { objectKey: row.objectKey, mimeType: row.mimeType } : null;
 }
 
 /** メディアの保存容量の上限を超えるため、画像を保存しなかった */
@@ -220,13 +223,8 @@ export class StorageLimitError extends Error {
 
 /** 元データとサムネイルを合わせた、メディアの今の使用容量（メインアプリの `sumMediaStorageBytes` と同じ） */
 async function sumMediaStorageBytes(db: AdminDb): Promise<number> {
-  const { results } = await db
-    .prepare(
-      `SELECT coalesce(sum(size_bytes), 0) + coalesce(sum(thumbnail_size_bytes), 0) AS total
-      FROM media_assets`,
-    )
-    .all<{ total: number }>();
-  return Number(results[0]?.total ?? 0);
+  const [row] = await db.select({ total: TOTAL_BYTES }).from(mediaAssets);
+  return Number(row?.total ?? 0);
 }
 
 /**
@@ -256,33 +254,41 @@ async function putImage(
   await bucket.put(objectKey, image.bytes, {
     httpMetadata: { contentType: image.mimeType },
   });
-  const statement = db
-    .prepare(
-      // 画像の行は商品を外部キーで参照しないため、同時に商品が削除されていたら追加しない
-      `INSERT INTO media_assets
-        (id, cat_id, uploaded_by_user_id, record_type, record_id, object_key,
-         thumbnail_object_key, mime_type, size_bytes, sort_order)
-      SELECT ?1, NULL, NULL, ?2, ?3, ?4, NULL, ?5, ?6, 0
-      WHERE EXISTS (SELECT 1 FROM catalog_food_products WHERE id = ?3)`,
-    )
-    .bind(
-      assetId,
-      CATALOG_FOOD_PRODUCT_MEDIA_TYPE,
-      productId,
+  // 画像の行は商品を外部キーで参照しないため、同時に商品が削除されていたら追加しない
+  const statement = insertWhere(
+    db,
+    mediaAssets,
+    {
+      id: assetId,
+      catId: null,
+      uploadedByUserId: null,
+      recordType: CATALOG_FOOD_PRODUCT_MEDIA_TYPE,
+      recordId: productId,
       objectKey,
-      image.mimeType,
-      image.bytes.byteLength,
-    );
+      thumbnailObjectKey: null,
+      mimeType: image.mimeType,
+      sizeBytes: image.bytes.byteLength,
+      sortOrder: 0,
+    },
+    exists(
+      db
+        .select({ id: catalogFoodProducts.id })
+        .from(catalogFoodProducts)
+        .where(eq(catalogFoodProducts.id, productId)),
+    ),
+  );
   return { objectKey, statement };
 }
 
 /** 文を実行し、失敗したら先に置いた画像を R2 から片付けて投げ直す */
-async function batchWithImage(
+async function batchWithImage<
+  T extends Readonly<[BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]>,
+>(
   db: AdminDb,
   bucket: AdminBucket,
-  statements: D1PreparedStatement[],
+  statements: T,
   uploadedKey: string | null,
-) {
+): Promise<BatchResponse<T>> {
   try {
     return await db.batch(statements);
   } catch (error) {
@@ -294,24 +300,24 @@ async function batchWithImage(
 }
 
 /**
- * 文に渡す値。`package_amount_g`・`package_unit` には、内容量の候補を追加する前のコード
+ * 書き込む列の値。`package_amount_g`・`package_unit` には、内容量の候補を追加する前のコード
  * （デプロイ前のメインアプリなど）のために先頭の候補を書く
  */
-function valueParams(values: CatalogFoodProductValues) {
+function valueColumns(values: CatalogFoodProductValues) {
   const [first] = values.packageSizes;
-  return [
-    values.name,
-    values.manufacturer,
-    values.kcalPer100g,
-    first.amountG,
-    first.unit,
-    values.nutritionType,
-    values.textureType,
-    JSON.stringify(values.lifeStages),
-    values.targetBreed,
-    JSON.stringify(values.packageSizes),
-    JSON.stringify(values.searchKeywords),
-  ];
+  return {
+    name: values.name,
+    manufacturer: values.manufacturer,
+    kcalPer100g: values.kcalPer100g,
+    packageAmountG: first.amountG,
+    packageUnit: first.unit,
+    nutritionType: values.nutritionType,
+    textureType: values.textureType,
+    lifeStages: values.lifeStages,
+    targetBreed: values.targetBreed,
+    packageSizes: values.packageSizes,
+    searchKeywords: values.searchKeywords,
+  };
 }
 
 /** 共通のごはん商品を登録し、ID を返す */
@@ -324,14 +330,8 @@ export async function createCatalogFoodProduct(
 ): Promise<string> {
   const id = crypto.randomUUID();
   const insert = db
-    .prepare(
-      `INSERT INTO catalog_food_products
-        (id, name, manufacturer, kcal_per_100g, package_amount_g, package_unit,
-         nutrition_type, texture_type, life_stages, target_breed, package_sizes,
-         search_keywords)
-      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
-    )
-    .bind(id, ...valueParams(values));
+    .insert(catalogFoodProducts)
+    .values({ id, ...valueColumns(values) });
   const uploaded = image
     ? await putImage(db, bucket, id, image, storageLimitBytes)
     : null;
@@ -369,7 +369,17 @@ export async function updateCatalogFoodProduct(
   if (!(await getCatalogFoodProduct(db, id))) {
     return false;
   }
-  const replacesImage = options.image != null || options.removeImage;
+  const update = db
+    .update(catalogFoodProducts)
+    .set({ ...valueColumns(values), updatedAt: sql`(unixepoch())` })
+    .where(eq(catalogFoodProducts.id, id))
+    .returning({ id: catalogFoodProducts.id });
+
+  // 画像を変えないときは、商品の行だけを更新する
+  if (options.image == null && !options.removeImage) {
+    return (await update).length > 0;
+  }
+
   const uploaded = options.image
     ? await putImage(
         db,
@@ -380,40 +390,21 @@ export async function updateCatalogFoodProduct(
         await sumProductImageBytes(db, id),
       )
     : null;
-
-  const statements = [
-    db
-      .prepare(
-        `UPDATE catalog_food_products SET
-          name = ?2, manufacturer = ?3, kcal_per_100g = ?4, package_amount_g = ?5,
-          package_unit = ?6, nutrition_type = ?7, texture_type = ?8, life_stages = ?9,
-          target_breed = ?10, package_sizes = ?11, search_keywords = ?12,
-          updated_at = unixepoch()
-        WHERE id = ?1
-        RETURNING id`,
-      )
-      .bind(id, ...valueParams(values)),
-    ...(replacesImage
-      ? [
-          db
-            .prepare(
-              `DELETE FROM media_assets WHERE record_type = ?1 AND record_id = ?2
-              RETURNING id, object_key, thumbnail_object_key, mime_type`,
-            )
-            .bind(CATALOG_FOOD_PRODUCT_MEDIA_TYPE, id),
-        ]
-      : []),
-    ...(uploaded ? [uploaded.statement] : []),
-  ];
-  const results = await batchWithImage(
+  const deleteImages = db
+    .delete(mediaAssets)
+    .where(productImagesCondition(id))
+    .returning(IMAGE_COLUMNS);
+  const [updated, oldImages] = await batchWithImage(
     db,
     bucket,
-    statements,
+    uploaded
+      ? [update, deleteImages, uploaded.statement]
+      : [update, deleteImages],
     uploaded?.objectKey ?? null,
   );
   // 存在の確認から batch までの間に商品が削除されていたら、何も更新されていない
   // （画像の行も追加されない）ため、置いた画像を片付けて見つからなかったことにする
-  if (results[0].results.length === 0) {
+  if (updated.length === 0) {
     if (uploaded) {
       await bucket.delete(uploaded.objectKey).catch((error: unknown) => {
         console.error(
@@ -425,7 +416,6 @@ export async function updateCatalogFoodProduct(
     }
     return false;
   }
-  const oldImages = replacesImage ? (results[1].results as ImageRow[]) : [];
 
   // 古い画像の行はもう無いため、R2 の削除に失敗しても参照先のない行は残らない。
   // 失敗したときは R2 に使われないオブジェクトが残るだけなので、記録して続ける
@@ -462,16 +452,14 @@ export async function deleteCatalogFoodProduct(
   }
   const [deletedImages] = await db.batch([
     db
-      .prepare(
-        `DELETE FROM media_assets WHERE record_type = ?1 AND record_id = ?2
-        RETURNING id, object_key, thumbnail_object_key, mime_type`,
-      )
-      .bind(CATALOG_FOOD_PRODUCT_MEDIA_TYPE, id),
-    db.prepare("DELETE FROM catalog_food_products WHERE id = ?1").bind(id),
+      .delete(mediaAssets)
+      .where(productImagesCondition(id))
+      .returning(IMAGE_COLUMNS),
+    db.delete(catalogFoodProducts).where(eq(catalogFoodProducts.id, id)),
   ]);
   // 上で読んでから batch までの間に、同時の差し替えで画像の行が追加されていたら、その画像も
   // R2 から削除する。行はもう無いため、失敗しても参照先のない行は残らない（記録して続ける）
-  const addedKeys = objectKeysOf(deletedImages.results as ImageRow[]).filter(
+  const addedKeys = objectKeysOf(deletedImages).filter(
     (key) => !keys.includes(key),
   );
   if (addedKeys.length > 0) {

@@ -473,6 +473,12 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - `src/db/client.ts` の `getDb()` で、Cloudflare bindings（`@opennextjs/cloudflare` の `getCloudflareContext()`）経由の D1 バインディングから Drizzle インスタンスを取得できる
 - Server Actions・Route Handler からはこの `getDb()` を通して DB にアクセスする
+- 管理画面（`packages/admin`）と運用スクリプト（`scripts/*.mts`）も、`src/db/schema` を import して Drizzle で
+  D1 を読み書きし、SQL を文字列で組み立てない。そのため、`src/db/schema` のファイルと `src/db/conditionalInsert.ts` は
+  `drizzle-orm` と拡張子なしの相対パスだけを import し、`@/` のパスエイリアスや `src/db/client.ts`
+  （`@opennextjs/cloudflare` に依存する）を import しない
+  - 運用スクリプトは `scripts/d1.mts` の `openDatabase` で、wrangler の `getPlatformProxy` から D1 のバインディングを取る
+    （`--local` はローカルの SQLite、`--remote` はリモートのバインディング）
 - D1 は 1 クエリあたりのバインドパラメーターが 100 個までなので、`inArray` などに可変長の値を渡すときは `src/db/batch.ts` の `chunkForBoundParameters` で分割して実行する。明細など可変長の行を 1 回の INSERT にまとめるときも同様で、`chunkRowsForInsert` で行を分割し、分割した INSERT を同じ `db.batch` に並べる
 
 ## テストについて

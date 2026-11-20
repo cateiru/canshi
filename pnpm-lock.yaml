@@ -311,6 +311,9 @@ importers:
 
   packages/admin:
     dependencies:
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(@opentelemetry/api@1.10.0)(@types/sql.js@1.4.11)(sql.js@1.16.0)
       hono:
         specifier: ^4.13.13
         version: 4.13.18
