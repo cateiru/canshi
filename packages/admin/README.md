@@ -70,6 +70,10 @@ pnpm run preview # wrangler preview --ignore-base-config（通常は main 以外
 `regconfig.admin.json` にある。データはメインアプリの VRT と同じ固定フィクスチャ
 （`e2e/fixtures/vrt-seed.sql`）を使う。
 
+比較はメインアプリの VRT と同じく、1 ピクセルでも違えば差分にし、色の差のしきい値
+（`matchingThreshold`）だけ 0.01 にして、実行のたびに揺れるアンチエイリアスの差を無視する
+（理由は `e2e/vrt-snapshot.ts` の冒頭のコメントを参照）。
+
 CI の `vrt-admin` ジョブは、main への push では毎回、PR では管理画面に関わるファイル
 （このパッケージ・`e2e-admin/`・VRT の設定とフィクスチャ・マイグレーション・
 依存関係（`pnpm-workspace.yaml` の catalog を含む）・ワークフロー）を変えたときだけ実行する。結果は PR に「管理画面の VRT (reg-suit) 結果」として
