@@ -9,11 +9,10 @@
   // （src/views/styles.ts）。テストでは vitest.config.ts のプラグインで同じように読み込む
   "rules": [{ "type": "Text", "globs": ["**/*.css"], "fallthrough": true }],
 
-  // 本番公開ホスト名。メインアプリ（canshi.cateiru.dev）・MCP サーバー
-  // （mcp.canshi.cateiru.dev）とは別ホスト名にする。アプリ内では認証しないため、
+  // 本番公開ホスト名。メインアプリ（canshi.app）とは別ホスト名にする。アプリ内では認証しないため、
   // デプロイ前に Zero Trust でこのホスト名の Self-hosted アプリケーションを作り、
   // 管理者だけを許可するポリシーを付ける（docs/deploy.md の「管理画面」節を参照）
-  "routes": [{ "pattern": "canshi-admin.cateiru.dev", "custom_domain": true }],
+  "routes": [{ "pattern": "admin.canshi.app", "custom_domain": true }],
   // 本番はカスタムドメインだけで公開し、workers.dev は作らない。
   // Worker Previews（main 以外のブランチで Workers Builds が実行する `wrangler preview`）の
   // workers.dev の URL だけを有効にする。`preview_urls` は `wrangler deploy`（本番のデプロイ）の

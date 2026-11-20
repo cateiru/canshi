@@ -12,6 +12,15 @@ compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 # Worker Previews（`wrangler preview`）の workers.dev の URL を有効にする。
 # `wrangler deploy`（本番のデプロイ）のときだけ反映される（`docs/deploy.md` の「プレビュー」節）
 preview_urls = true
+# 本番公開ホスト名。`wrangler deploy` は、ここに書いたカスタムドメインだけをこの Worker に付け、
+# それ以外のカスタムドメインは外す（ダッシュボードで付けたものも外れる）。管理画面
+# （`packages/admin/wrangler.jsonc`、admin.canshi.app）とは別ホスト名にする。
+# ホスト名を変えるときは、先に Access の SaaS OIDC アプリの Redirect URL を足しておく
+# （`docs/deploy.md` の「本番のドメイン」節）
+routes = [{ pattern = "canshi.app", custom_domain = true }]
+# 本番はカスタムドメインだけで公開し、workers.dev は作らない（`routes` があるときの既定値も
+# false だが、明示する）。Worker Previews の URL は上の `preview_urls` で作る
+workers_dev = false
 
 [assets]
 directory = ".open-next/assets"

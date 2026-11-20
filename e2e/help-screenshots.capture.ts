@@ -321,7 +321,7 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
     .getByLabel("招待 URL")
     .evaluate((input) => {
       (input as HTMLInputElement).value =
-        "https://canshi.cateiru.dev/invitations/xxxxxxxxxxxxxxxx";
+        "https://canshi.app/invitations/xxxxxxxxxxxxxxxx";
     });
   await capture(page, "household-invitation");
   await page.keyboard.press("Escape");

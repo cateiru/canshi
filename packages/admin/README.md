@@ -1,7 +1,7 @@
 # @canshi/admin
 
 CANSHI の運用者向けの管理画面。メインアプリ（`canshi`）とは別の
-Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`canshi-admin.cateiru.dev` で公開する。
+Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`admin.canshi.app` で公開する。
 [Hono](https://hono.dev/) の JSX でサーバーサイドレンダリングする。
 
 基本的には閲覧用で、書き込みはユーザーの権限の変更と、ユーザーをすべての端末からログアウトさせる
@@ -91,7 +91,7 @@ pnpm vrt:admin
 
 管理画面はアプリ内では認証せず、Cloudflare Access に任せる。家ごとの絞り込みをせず全ユーザー・
 全家の情報を表示するため、メインアプリの利用者（家族など）を含む Workers 全体の Access の
-ポリシーではなく、`canshi-admin.cateiru.dev` の Self-hosted アプリケーションに管理者だけを
+ポリシーではなく、`admin.canshi.app` の Self-hosted アプリケーションに管理者だけを
 許可するポリシーを付けて保護する。Self-hosted アプリケーションは Workers 全体の Access より
 優先され、Workers 全体の Access が適用されないカスタムドメインも確実に保護できる。
 
