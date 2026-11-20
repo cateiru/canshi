@@ -15,7 +15,7 @@
 
 .illustration {
   display: block;
-  width: min(100%, 360px);
+  width: min(100%, 380px);
   height: auto;
 }
 
@@ -53,13 +53,6 @@
 /* 数字。背景に直接描くため、線はダークテーマで明るくなる --color-illustration-line にする */
 .digit {
   fill: color-mix(in srgb, var(--color-accent) 22%, var(--color-bg));
-  stroke: var(--color-illustration-line, #2e3142);
-  stroke-width: 3;
-}
-
-/* 0 の穴。奥行きが出るよう、背景より少し暗くする */
-.hole {
-  fill: color-mix(in srgb, var(--color-ink) 14%, var(--color-bg));
   stroke: var(--color-illustration-line, #2e3142);
   stroke-width: 3;
 }

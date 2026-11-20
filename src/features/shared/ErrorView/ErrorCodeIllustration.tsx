@@ -13,13 +13,15 @@ const CODE_DIGITS: Record<ErrorCode, readonly [Digit, "0", Digit]> = {
   "500": ["5", "0", "0"],
 };
 
-// 数字は 1 文字あたり幅 90・高さ 140（y = 10〜150）の枠に描き、15 ずつ空けて並べる
-const DIGIT_WIDTH = 90;
-const DIGIT_GAP = 15;
+// 数字は 1 文字あたり幅 100・高さ 140（y = 10〜150）の枠に描き、12 ずつ空けて並べる。
+// 太字に見えるよう、線の太さ（棒の幅）はおよそ 28 にそろえる
+const DIGIT_WIDTH = 100;
+const DIGIT_GAP = 12;
 const MARGIN_X = 5;
+const VIEW_BOX_WIDTH = MARGIN_X * 2 + DIGIT_WIDTH * 3 + DIGIT_GAP * 2;
 const ZERO_CENTER_Y = 80;
-const ZERO_OUTER = { rx: 45, ry: 70 };
-const ZERO_INNER = { rx: 20, ry: 46 };
+const ZERO_OUTER = { rx: 50, ry: 70 };
+const ZERO_INNER = { rx: 21, ry: 43 };
 
 function digitLeft(index: number) {
   return MARGIN_X + index * (DIGIT_WIDTH + DIGIT_GAP);
@@ -28,25 +30,25 @@ function digitLeft(index: number) {
 /** 斜めの線と横棒の「4」。内側の三角形を evenodd でくり抜く */
 function fourPath(x: number) {
   return [
-    `M${x + 52} 10H${x + 72}V100H${x + 90}V120H${x + 72}V150H${x + 52}V120H${x}V100Z`,
-    `M${x + 52} 46V100H${x + 20.8}Z`,
+    `M${x + 56} 10H${x + 84}V96H${x + 100}V122H${x + 84}V150H${x + 56}V122H${x}V96Z`,
+    `M${x + 56} 57.7V96H${x + 31}Z`,
   ].join("");
 }
 
 /** 上の横棒・左の縦棒・下の丸い腹からなる「5」 */
 function fivePath(x: number) {
   return [
-    `M${x + 6} 10H${x + 86}V30H${x + 26}L${x + 24.5} 62`,
-    `C${x + 32} 58 ${x + 40} 56 ${x + 48} 56`,
-    `C${x + 73} 56 ${x + 90} 75 ${x + 90} 101`,
-    `C${x + 90} 129 ${x + 70} 150 ${x + 44} 150`,
-    `C${x + 26} 150 ${x + 10} 142 ${x + 2} 128`,
-    `L${x + 19} 115`,
-    `C${x + 25} 125 ${x + 34} 130 ${x + 44} 130`,
-    `C${x + 59} 130 ${x + 70} 118 ${x + 70} 102`,
-    `C${x + 70} 86 ${x + 60} 76 ${x + 47} 76`,
-    `C${x + 37} 76 ${x + 29} 81 ${x + 24} 87`,
-    `L${x + 4.5} 84Z`,
+    `M${x + 6} 10H${x + 94}V38H${x + 34}L${x + 33} 58`,
+    `C${x + 40} 55 ${x + 48} 54 ${x + 55} 54`,
+    `C${x + 82} 54 ${x + 100} 74 ${x + 100} 102`,
+    `C${x + 100} 131 ${x + 78} 150 ${x + 50} 150`,
+    `C${x + 30} 150 ${x + 12} 142 ${x + 2} 127`,
+    `L${x + 24} 111`,
+    `C${x + 30} 119 ${x + 39} 123 ${x + 49} 123`,
+    `C${x + 63} 123 ${x + 72} 114 ${x + 72} 102`,
+    `C${x + 72} 89 ${x + 63} 81 ${x + 50} 81`,
+    `C${x + 42} 81 ${x + 35} 84 ${x + 31} 89`,
+    `L${x + 4} 85Z`,
   ].join("");
 }
 
@@ -63,33 +65,28 @@ function DigitShape({ digit, x }: { digit: Digit; x: number }) {
   }
 }
 
+/** 楕円を 2 つの円弧で描くパス。evenodd で重ねて 0 の穴をくり抜くのに使う */
+function ellipsePath(cx: number, { rx, ry }: { rx: number; ry: number }) {
+  return `M${cx - rx} ${ZERO_CENTER_Y}a${rx} ${ry} 0 1 0 ${rx * 2} 0a${rx} ${ry} 0 1 0 ${-rx * 2} 0Z`;
+}
+
+/** 「0」。穴は塗らずにくり抜き、背景が透けて見えるようにする */
 function ZeroRing({ cx }: { cx: number }) {
   return (
-    <>
-      <ellipse
-        className={styles.digit}
-        cx={cx}
-        cy={ZERO_CENTER_Y}
-        rx={ZERO_OUTER.rx}
-        ry={ZERO_OUTER.ry}
-      />
-      <ellipse
-        className={styles.hole}
-        cx={cx}
-        cy={ZERO_CENTER_Y}
-        rx={ZERO_INNER.rx}
-        ry={ZERO_INNER.ry}
-      />
-    </>
+    <path
+      className={styles.digit}
+      fillRule="evenodd"
+      d={ellipsePath(cx, ZERO_OUTER) + ellipsePath(cx, ZERO_INNER)}
+    />
   );
 }
 
 // 猫の顔は RecordIcons の猫と同じ形（24px グリッド）を拡大して描く
 const catFace =
   "M5 7V2l4 2.5a12 12 0 0 1 6 0L19 2v5a4 4 0 0 1 1 2.5c0 3-3.5 5-8 5s-8-2-8-5A4 4 0 0 1 5 7Z";
-const CAT_SCALE = 2.5;
+const CAT_SCALE = 2.2;
 /** 顔の上端（耳の先）の y。0 の穴の下のほうから顔を出す */
-const CAT_TOP = 88;
+const CAT_TOP = 94;
 
 /**
  * 0 の穴からのぞく猫と、0 の後ろから出ているしっぽ。
@@ -98,7 +95,7 @@ const CAT_TOP = 88;
 function PeekingCat({ cx, clipId }: { cx: number; clipId: string }) {
   const faceTransform = `translate(${cx - 12 * CAT_SCALE} ${CAT_TOP - 2 * CAT_SCALE}) scale(${CAT_SCALE})`;
   // 前足は、穴の縁が顔の下の端の高さで左右に広がる位置に置く
-  const pawY = 118;
+  const pawY = 119;
   const pawOffsetX = 11;
 
   return (
@@ -155,9 +152,9 @@ function PeekingCat({ cx, clipId }: { cx: number; clipId: string }) {
 /** 0 の右下の後ろから伸び、くるんと上を向くしっぽ */
 function Tail({ cx }: { cx: number }) {
   const d = [
-    `M${cx + 20} 135`,
-    `C${cx + 38} 150 ${cx + 54} 154 ${cx + 62} 145`,
-    `C${cx + 68} 137 ${cx + 65} 127 ${cx + 58} 130`,
+    `M${cx + 22} 135`,
+    `C${cx + 40} 152 ${cx + 56} 156 ${cx + 64} 147`,
+    `C${cx + 70} 139 ${cx + 67} 129 ${cx + 60} 132`,
   ].join("");
 
   return (
@@ -180,7 +177,7 @@ export function ErrorCodeIllustration({ code }: { code: ErrorCode }) {
   return (
     <svg
       className={styles.illustration}
-      viewBox="0 0 310 162"
+      viewBox={`0 0 ${VIEW_BOX_WIDTH} 162`}
       fill="none"
       strokeLinecap="round"
       strokeLinejoin="round"
