@@ -39,7 +39,7 @@
     "react-dom": "19.3.1",
     "storybook": "^10.6.7",
     "typescript": "catalog:",
-    "vite": "^8.3.1",
+    "vite": "^8.3.3",
     "vitest": "catalog:"
   },
   "packageManager": "pnpm@12.21.0"
