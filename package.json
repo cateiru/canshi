@@ -47,7 +47,7 @@
     "@noble/hashes": "2.4.0",
     "@react-spring/web": "10.1.2",
     "agents": "^0.33.0",
-    "drizzle-orm": "^0.45.2",
+    "drizzle-orm": "catalog:",
     "jose": "^6.2.12",
     "next": "16.4.5",
     "react": "19.3.1",
@@ -64,10 +64,10 @@
     "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
-    "@types/node": "^26.0.0",
+    "@types/node": "catalog:",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/sql.js": "^1.4.11",
+    "@types/sql.js": "catalog:",
     "@vitejs/plugin-react": "^6.1.1",
     "autoprefixer": "^10.5.5",
     "drizzle-kit": "^0.31.10",
@@ -76,10 +76,10 @@
     "reg-keygen-git-hash-plugin": "^0.14.5",
     "reg-publish-s3-plugin": "^0.14.4",
     "reg-suit": "^0.14.5",
-    "sql.js": "^1.14.2",
-    "typescript": "^5",
-    "vitest": "^5.0.0",
-    "wrangler": "^4.135.0"
+    "sql.js": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
   },
   "packageManager": "pnpm@12.21.0"
 }

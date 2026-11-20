@@ -50,6 +50,13 @@ pnpm run deploy  # wrangler deploy（通常は main へのマージで Workers B
 pnpm run preview # wrangler preview --ignore-base-config（通常は main 以外のブランチで Workers Builds が実行する）
 ```
 
+### 依存関係
+
+メインアプリと管理画面の両方で使うパッケージ（`drizzle-orm`・`wrangler`・`vitest` など）は、
+[pnpm の catalogs](https://pnpm.io/ja/catalogs) でバージョンをまとめて管理している。
+バージョンはリポジトリルートの `pnpm-workspace.yaml` の `catalog` に書き、各 `package.json` では
+`"catalog:"` と書く。両方で使うパッケージを足すときも `catalog` に追加する。
+
 ### ローカルでの起動
 
 `pnpm dev` は `--persist-to ../../.wrangler/state` でメインアプリと同じローカル D1 を参照する。
@@ -63,8 +70,8 @@ pnpm run preview # wrangler preview --ignore-base-config（通常は main 以外
 （`e2e/fixtures/vrt-seed.sql`）を使う。
 
 CI の `vrt-admin` ジョブは、main への push では毎回、PR では管理画面に関わるファイル
-（このパッケージ・`e2e-admin/`・VRT の設定とフィクスチャ・マイグレーション・依存関係・
-ワークフロー）を変えたときだけ実行する。結果は PR に「管理画面の VRT (reg-suit) 結果」として
+（このパッケージ・`e2e-admin/`・VRT の設定とフィクスチャ・マイグレーション・
+依存関係（`pnpm-workspace.yaml` の catalog を含む）・ワークフロー）を変えたときだけ実行する。結果は PR に「管理画面の VRT (reg-suit) 結果」として
 コメントされる。
 
 ローカルではリポジトリルートで次のように実行する（`pnpm vrt:admin` が `pnpm dev` を起動する）。
