@@ -82,12 +82,21 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
    許可するポリシーを付ける（「管理画面」節の「初回の公開手順」の 2.）。
 3. PR をマージし、`canshi` と `canshi-admin` のビルドが成功して、新しいホスト名のカスタムドメインが
    作られ、古いカスタムドメインが外れたことを確かめる。
-4. Workers & Pages → `canshi` → Access で、新しいホスト名を Access の対象から外す
-   （「Cloudflare Access 設定」節）。外すまでは、メインアプリを開くと Access のログイン画面が挟まる。
-5. 新しいゾーンの Bot Fight Mode をオフにする（「MCP サーバー」節の「トラブルシューティング」）。
+4. Workers & Pages → `canshi` → Access で、Worker 単位の Access の対象がプレビューだけで、新しい
+   ホスト名が含まれていないことを確かめる（「Cloudflare Access 設定」節）。2026-11 時点の
+   `canshi - Cloudflare Workers` の対象は `preview_worker` だけで、本番のカスタムドメインは対象外。
+5. 新しいゾーンの Bot Fight Mode がオフであることを確かめる（「MCP サーバー」節の「トラブルシューティング」。
+   `cf bot-management get --zone <ゾーン>` の `fight_mode`）。
 6. 「Cloudflare Access 設定」節と「管理画面」節の動作確認を行う。
-7. SaaS OIDC アプリから古い Redirect URL を消し、古いホスト名の Self-hosted アプリケーションと、
-   `canshi` の Worker 単位の Access に残った古いホスト名の設定を消す。
+7. SaaS OIDC アプリから古い Redirect URL を消し、古いホスト名の Self-hosted アプリケーションを消す。
+   SaaS OIDC アプリの `logo_url`・`saas_app.app_launcher_url` も新しいホスト名に変える。
+
+Access のアプリケーションは、ダッシュボードのほか Cloudflare CLI（`cf`）の
+`cf zero-trust access applications`（`list`・`get`・`create`・`update`・`delete`）でも操作できる。
+`update` は PUT で、送らなかった項目は消えるため、`get` の結果から変える項目だけを書き換えた本文を
+`--body` で送る（`policies` は `[{ "id": ..., "precedence": ... }]` の形にする）。先に `--dry-run` で
+本文を確かめ、更新後にもう一度 `get` して、変えた項目以外が変わっていないことを比べる。`get` の結果には
+ポリシーの対象のメールアドレスが含まれるため、ログやリポジトリに残さない。
 
 ## プレビュー（Worker Previews）
 
@@ -340,7 +349,7 @@ MEDIA_STORAGE_LIMIT_BYTES = "10737418240"
 
 Cloudflare ダッシュボードの Workers & Pages で、Workers 全体を保護する設定を `All traffic` として設定済み（2026-09 時点）。この設定により、既存・新規 Worker の本番 URL とプレビュー URL へのリクエストは、Worker が実行される前に Access で評価される。
 
-メインアプリ（Worker 名 `canshi`）は、Worker 単位の設定で本番のカスタムドメイン（`canshi.app`）だけを Access の対象から外している（2026-10 時点）。本番ドメインでの利用者の制限は、アプリのログイン（Access の SaaS OIDC アプリ。「ログインと家」節を参照）で行う。
+メインアプリ（Worker 名 `canshi`）は、Worker 単位の Access の対象をプレビューだけ（**Previews only**。Zero Trust では `canshi - Cloudflare Workers`、destination が `preview_worker`）にして、本番のカスタムドメイン（`canshi.app`）を Access の対象から外している（2026-11 に確認）。本番ドメインでの利用者の制限は、アプリのログイン（Access の SaaS OIDC アプリ。「ログインと家」節を参照）で行う。
 
 - `src/middleware.ts` が、`src/features/auth/domain/publicPaths.ts` に挙げたパス（`/login`、PWA の manifest・アイコンなど）以外のすべてのリクエストで、D1 のログインセッションを確認する
 - ログインできるのは、SaaS OIDC アプリのポリシーで許可された人だけになる。初めてログインしたメールアドレスではユーザーが作られるため、このポリシーが「誰が CANSHI を使えるか」を決める
