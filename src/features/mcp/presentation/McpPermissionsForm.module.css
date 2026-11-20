@@ -4,13 +4,8 @@
   gap: var(--space-4);
 }
 
+/* 保存ボタンは、ほかのフォームと同じく横長にする */
 .actions {
   display: flex;
-  justify-content: flex-end;
-}
-
-@media (max-width: 600px) {
-  .actions > button {
-    width: 100%;
-  }
+  flex-direction: column;
 }

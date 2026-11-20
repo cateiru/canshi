@@ -9,9 +9,9 @@
   font-size: var(--text-sm);
 }
 
+/* 保存ボタンは、ほかのフォームと同じく横長にする */
 .footer {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-3);
 }
