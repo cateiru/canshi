@@ -82,6 +82,7 @@ export function createHouseholdInvitationRepository(
           householdId: households.id,
           householdName: households.name,
           createdByName: users.name,
+          createdByIconMediaAssetId: users.iconMediaAssetId,
           expiresAt: householdInvitations.expiresAt,
           acceptedByUserId: householdInvitations.acceptedByUserId,
           isMember: sql<number>`EXISTS (

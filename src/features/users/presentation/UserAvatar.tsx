@@ -7,6 +7,11 @@ type UserAvatarProps = {
   className?: string;
   name: string;
   iconMediaAssetId: string | null;
+  /**
+   * 画像の URL。省略すると `iconMediaAssetId` のサムネイル（`/media/<id>/thumbnail`）を使う。
+   * 同じ家のメンバー以外のアイコンを、別の経路で配信して表示するときに渡す
+   */
+  iconUrl?: string;
   size?: "xs" | "sm" | "md" | "lg";
 };
 
@@ -18,6 +23,7 @@ export function UserAvatar({
   className,
   name,
   iconMediaAssetId,
+  iconUrl,
   size = "sm",
 }: UserAvatarProps) {
   return (
@@ -27,7 +33,11 @@ export function UserAvatar({
         .join(" ")}
     >
       <ImagePreview
-        src={iconMediaAssetId ? mediaThumbnailUrl(iconMediaAssetId) : null}
+        src={
+          iconMediaAssetId
+            ? (iconUrl ?? mediaThumbnailUrl(iconMediaAssetId))
+            : null
+        }
         alt={`${name}のアイコン`}
         className={iconMediaAssetId ? styles.image : styles.placeholder}
         fallback={<TbUser aria-hidden="true" size="60%" />}

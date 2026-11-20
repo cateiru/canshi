@@ -18,3 +18,90 @@
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+
+/* 参加する人（自分）と家を線でつないだ図 */
+.diagram {
+  display: grid;
+  grid-template-columns: minmax(0, 10rem) auto minmax(0, 10rem);
+  justify-content: center;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-3);
+  border-radius: 12px;
+  background: var(--color-bg);
+}
+
+.node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.nodeName {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.householdIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: calc(64px * var(--font-scale));
+  height: calc(64px * var(--font-scale));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-bg));
+}
+
+/* アイコン（64px）の中央の高さに線を引く */
+.connector {
+  width: calc(96px * var(--font-scale));
+  height: 3px;
+  margin-top: calc(32px * var(--font-scale) - 1.5px);
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+
+.message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.inviterAvatar {
+  align-self: flex-start;
+}
+
+.description {
+  text-align: center;
+}
+
+.expires {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+/* MCP の同意画面と同じく、2 つのボタンを横長に並べる */
+.decision {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+@media (max-width: 600px) {
+  .decision {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .connector {
+    width: calc(40px * var(--font-scale));
+  }
+}

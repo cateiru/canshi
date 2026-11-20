@@ -9,6 +9,7 @@ import {
   householdInvitations,
   householdMembers,
   households,
+  mediaAssets,
   users,
 } from "@/db/schema";
 import { HOUSEHOLD_INVITATION_MAX_AGE_SECONDS } from "../domain/household";
@@ -198,6 +199,7 @@ describe("acceptHouseholdInvitation", () => {
       status: "valid",
       householdName: "わが家",
       createdByName: "オーナー",
+      createdByIconMediaAssetId: null,
     });
 
     expect(await acceptHouseholdInvitation(token, "guest")).toEqual({
@@ -213,6 +215,28 @@ describe("acceptHouseholdInvitation", () => {
     const [invitation] = await db.select().from(householdInvitations);
     expect(invitation.acceptedByUserId).toBe("guest");
     expect(invitation.acceptedAt).not.toBeNull();
+  });
+
+  it("招待した人のアイコンを設定していれば、招待のページに表示するアイコンの ID を返す", async () => {
+    await db.insert(mediaAssets).values({
+      id: "owner-icon",
+      catId: null,
+      uploadedByUserId: "owner",
+      recordType: "user_icon",
+      recordId: "owner",
+      objectKey: "user_icon/owner-icon",
+      mimeType: "image/jpeg",
+    });
+    await db
+      .update(users)
+      .set({ iconMediaAssetId: "owner-icon" })
+      .where(eq(users.id, "owner"));
+    const { token } = await issueInvitation();
+
+    expect(await getHouseholdInvitationPreview(token, "guest")).toMatchObject({
+      status: "valid",
+      createdByIconMediaAssetId: "owner-icon",
+    });
   });
 
   it("招待の使用済み化とメンバーの追加は、1 つの batch（トランザクション）で行う", async () => {
