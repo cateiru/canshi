@@ -189,6 +189,32 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/shared/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "next": "packages/shared は特定のフレームワーク（Next.js・Hono）やアプリの実装に依存しないでください。ルーターのリンクなどは props で受け取ります（packages/shared/README.md 参照）",
+                  "hono": "packages/shared は特定のフレームワーク（Next.js・Hono）やアプリの実装に依存しないでください。ルーターのリンクなどは props で受け取ります（packages/shared/README.md 参照）",
+                  "drizzle-orm": "packages/shared は特定のフレームワーク（Next.js・Hono）やアプリの実装に依存しないでください。ルーターのリンクなどは props で受け取ります（packages/shared/README.md 参照）",
+                  "@opennextjs/cloudflare": "packages/shared は特定のフレームワーク（Next.js・Hono）やアプリの実装に依存しないでください。ルーターのリンクなどは props で受け取ります（packages/shared/README.md 参照）"
+                },
+                "patterns": [
+                  {
+                    "group": ["next/**", "hono/**", "drizzle-orm/**", "@/**"],
+                    "message": "packages/shared は特定のフレームワーク（Next.js・Hono）やアプリの実装に依存しないでください。ルーターのリンクなどは props で受け取ります（packages/shared/README.md 参照）"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

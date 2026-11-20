@@ -1,4 +1,3 @@
-import type { IconType } from "react-icons";
 import {
   AdoptionIcon,
   BirthdayIcon,
@@ -16,7 +15,8 @@ import {
   VomitIcon,
   WaterIcon,
   WeightIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
+} from "@canshi/shared/ui/RecordIcons";
+import type { IconType } from "react-icons";
 
 import type { TimelineRecordType } from "./timelineEntry";
 

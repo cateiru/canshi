@@ -1,3 +1,5 @@
+import { BrushingIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import {
@@ -8,8 +10,6 @@ import {
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
-import { BrushingIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { BrushingRecord } from "@/db/schema";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { SHED_AMOUNT_LABEL } from "@/features/brushing-records/domain/labels";

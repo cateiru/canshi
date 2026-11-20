@@ -1,7 +1,7 @@
+import { ExpenseIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { ExpenseIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import {
   getWritableCat,
   listCurrentUserCats,

@@ -1,6 +1,6 @@
+import { BroomIcon } from "@canshi/shared/ui/RecordIcons";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getWritableCat } from "@/features/auth/presentation/session";
 import { getCleaningRecordById } from "@/features/cleaning/infrastructure/recordQueries";
 import { getCleaningTargetById } from "@/features/cleaning/infrastructure/targetQueries";

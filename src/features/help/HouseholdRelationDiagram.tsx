@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-import type { IconType } from "react-icons";
 import {
   AccountSettingsIcon,
   CatFaceIcon,
@@ -7,7 +5,9 @@ import {
   HouseholdIcon,
   PoopIcon,
   WeightIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
+} from "@canshi/shared/ui/RecordIcons";
+import type { ReactNode } from "react";
+import type { IconType } from "react-icons";
 import styles from "./HouseholdRelationDiagram.module.css";
 
 const RECORDS: { label: string; icon: IconType }[] = [

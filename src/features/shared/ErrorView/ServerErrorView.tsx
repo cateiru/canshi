@@ -1,7 +1,7 @@
 "use client";
 
+import { getButtonClassName } from "@canshi/shared/ui/buttonStyles";
 import { Button } from "@/components/ui";
-import { getButtonClassName } from "@/components/ui/Button/buttonStyles";
 import { ErrorView } from "./ErrorView";
 
 type ServerErrorViewProps = {

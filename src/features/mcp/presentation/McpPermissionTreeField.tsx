@@ -1,14 +1,11 @@
 "use client";
 
+import { FoodProductIcon, HouseholdIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { useState } from "react";
 import { Button, Disclosure, DisclosurePanel } from "react-aria-components";
 import { TbTriangleFilled } from "react-icons/tb";
 import { Checkbox } from "@/components/ui";
-import {
-  FoodProductIcon,
-  HouseholdIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { CatIcon } from "@/features/cats/presentation/CatIcon";
 import { MemorialBadge } from "@/features/cats/presentation/MemorialBadge";
 import {

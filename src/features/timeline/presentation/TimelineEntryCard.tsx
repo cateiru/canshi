@@ -1,10 +1,7 @@
+import { CalorieIcon, FeedingIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { TbPencil } from "react-icons/tb";
 import { Badge, ButtonLink, IconButtonLink } from "@/components/ui";
-import {
-  CalorieIcon,
-  FeedingIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { BrushingRecord } from "@/db/schema";
 import { SHED_AMOUNT_LABEL } from "@/features/brushing-records/domain/labels";
 import {

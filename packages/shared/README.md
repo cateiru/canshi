@@ -1,39 +1,63 @@
 # @canshi/shared
 
-メインアプリ（リポジトリルートの `canshi`）と管理画面（[`packages/admin`](../admin)）の両方で使う
-共通の実装を置くパッケージ。
+メインアプリ（リポジトリルートの `canshi`）・管理画面（[`packages/admin`](../admin)）と、今後作る
+LP などのパッケージで使う共通の実装を置くパッケージ。
 
 ## 置くもの・置かないもの
 
-両方から使えるよう、特定のフレームワークに依存しないものだけを置く。
+どのアプリからも使えるよう、特定のフレームワーク（Next.js・Hono）やアプリの実装に依存しないものだけを置く。
 
-- 置く：CSS、React・Next.js・Hono に依存しない TypeScript（純粋な関数・定数など）
-- 置かない：React のコンポーネント（`src/components/ui` など）、Next.js・Hono・`@opennextjs/cloudflare`
-  に依存するもの、D1・R2 を読み書きするもの、業務の規則（各機能の `domain/` に置く）
+- 置く：CSS、React のコンポーネント（React Aria・CSS Modules を使ってよい）、純粋な関数・定数
+- 置かない：Next.js（`next/*`）・Hono・`@opennextjs/cloudflare` に依存するもの、D1・R2 を読み書きするもの、
+  アプリの実装（`@/*`）を import するもの、業務の規則（各機能の `domain/` に置く）
 
-メインアプリの `src/components/ui` は React（React Aria・CSS Modules）で書かれており、Hono の JSX で
-サーバーサイドレンダリングする管理画面ではそのまま使えないため、このパッケージには移していない。
-管理画面とメインアプリの見た目は、下のデザイントークンを共有して揃える。
+Next.js などへの依存は Biome の `noRestrictedImports`（`biome.json` の `packages/shared/**` の overrides）で禁止している。
 
-ビルドの手順は持たず、ソースのまま（`.css`・`.ts`）を `package.json` の `exports` で公開する。
+ビルドの手順は持たず、ソース（`.css`・`.ts`・`.tsx`）を `package.json` の `exports` で公開する。
 使う側（Next.js・wrangler・Vitest）がそれぞれバンドルする。
 
 | パス | 内容 |
 | --- | --- |
 | `@canshi/shared/styles/tokens.css`（`src/styles/tokens.css`） | デザイントークン（色・文字・余白などの CSS カスタムプロパティ）。見た目設定のテーマ・アクセントカラー・コントラスト・文字サイズは `<html>` の data 属性で切り替える |
+| `@canshi/shared/ui`（`src/ui/index.ts`） | UI コンポーネント（Button・Modal・Select など）。CSS Modules のクラスはトークンを参照するため、使う側で tokens.css を読み込んでおく |
+| `@canshi/shared/ui/RecordIcons`・`ui/ScaledIcon`・`ui/buttonStyles` | `ui` の index に含めていない記録のアイコンと、アイコンの大きさ・ボタンのクラス名の部品 |
+| `@canshi/shared/ui/RecordCard.module.css` | 記録カードの面の CSS（CSS Modules の `composes` で使う） |
+
+## リンク・ページ移動の差し込み（DI）
+
+リンクを含むコンポーネント（`ButtonLink`・`IconButtonLink`・`NavCard`・`Breadcrumb`・`FilterTabs`・`Footer`・
+`Pagination`・`MonthNav`）は、リンクを描くコンポーネントを `linkComponent` で受け取る
+（`src/ui/Link/Link.tsx` の `LinkComponent`）。省略すると素の `<a>`（`AnchorLink`）で描く。
+`DropdownMenu` は、メニュー項目の `href` へ移動する関数を `navigate` で受け取る。省略するとブラウザの通常の移動になる。
+
+`LinkComponent` が受け取る props は、`<a>` の属性と `href`（文字列）に、移動の仕方のヒント
+（`replace`・`transitionTypes`）を足したもの。ヒントに対応しない実装では無視してよい。
+
+Server Component からも使えるよう、React の Context ではなく props で渡す（Context は Client Component でしか
+読めず、アイコンなどの関数を Server Component から Client Component へ渡すこともできないため）。
+使う側は、ルーターのリンクを差し込んだ同じ名前のコンポーネントを用意して使う。
+
+- メインアプリ：`src/components/ui/index.ts` が `@canshi/shared/ui` をすべて export し、リンクを含むものを
+  `next/link` を差し込んだもの（`src/components/ui/links.tsx`）で、`DropdownMenu` を `useRouter().push` を
+  差し込んだもの（`src/components/ui/DropdownMenu.tsx`）で上書きする。画面からは今までどおり
+  `@/components/ui` から import する。
+- Next.js 以外（LP など）：`linkComponent` を省略すれば素の `<a>` で動く。ルーターを使うときは、
+  同じように差し込んだものを用意する。
 
 ## 使う側
 
-- メインアプリ：`src/styles/globals.css` の先頭で `@import "@canshi/shared/styles/tokens.css";` する。
-- 管理画面：`src/views/styles.ts` で tokens.css を文字列として import し、`<style>` に埋め込む
-  （`wrangler.jsonc` の `rules` で `.css` を Text モジュールにし、テストでは `vitest.config.ts` の
-  プラグインで同じように読み込む）。`<html>` に `data-theme="light"` を付け、ライトテーマ・標準の
-  コントラスト・標準の文字サイズに固定する。
+- メインアプリ：`src/styles/globals.css` の先頭で `@import "@canshi/shared/styles/tokens.css";` し、UI は
+  `@/components/ui`（上の差し込み）から使う。
+- 管理画面：Hono の JSX でサーバーサイドレンダリングするため、React の `ui` は使わず、tokens.css だけを使う。
+  `src/views/styles.ts` で tokens.css を文字列として import し、`<style>` に埋め込む（`wrangler.jsonc` の
+  `rules` で `.css` を Text モジュールにし、テストでは `vitest.config.ts` のプラグインで同じように読み込む）。
+  `<html>` に `data-theme="light"` を付け、ライトテーマ・標準のコントラスト・標準の文字サイズに固定する。
 
-両方で使うものを足すときは、`package.json` の `exports` に追加する。依存を足すときは、両方で使う
-パッケージのバージョンはリポジトリルートの `pnpm-workspace.yaml` の `catalog` で決める。
+公開するものを足すときは、`package.json` の `exports` に追加する。依存を足すときは、複数のパッケージで使う
+もののバージョンをリポジトリルートの `pnpm-workspace.yaml` の `catalog` で決める（`react`・`react-dom` は
+例外で、ルートの `package.json` と同じ版を `devDependencies` に書く。理由は `pnpm-workspace.yaml` のコメントを参照）。
 
-管理画面は、このパッケージが変わったときもデプロイし直す必要がある。Workers Builds の
+管理画面は tokens.css を使うため、このパッケージが変わったときもデプロイし直す必要がある。Workers Builds の
 Build watch paths（[`docs/deploy.md`](../../docs/deploy.md) の「管理画面の自動デプロイとプレビュー」節）と、
 CI の管理画面の VRT を実行するかの判定（`.github/workflows/ci.yml` の `admin-changes`）に
 `packages/shared/` を含めている。
@@ -45,5 +69,5 @@ CI の管理画面の VRT を実行するかの判定（`.github/workflows/ci.ym
 
 ```bash
 pnpm typecheck   # tsc --noEmit
-pnpm test        # vitest run
+pnpm test        # vitest run（UI コンポーネントは jsdom で実行する）
 ```

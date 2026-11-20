@@ -1,17 +1,18 @@
-import Link from "next/link";
-import type { ComponentProps } from "react";
+import {
+  AnchorLink,
+  type LinkComponentProps,
+  type LinkProps,
+} from "../Link/Link";
 import { ScaledIcon } from "../ScaledIcon/ScaledIcon";
 import { getIconButtonClassName } from "./buttonStyles";
 import { ICON_BUTTON_ICON_SIZE, type IconButtonIcon } from "./iconButtonIcon";
 
-export type IconButtonLinkProps = Omit<
-  ComponentProps<typeof Link>,
-  "aria-label"
-> & {
-  icon: IconButtonIcon;
-  /** 文字のないリンクのため、読み上げ用のラベルを必須にする */
-  "aria-label": string;
-};
+export type IconButtonLinkProps = Omit<LinkProps, "aria-label"> &
+  LinkComponentProps & {
+    icon: IconButtonIcon;
+    /** 文字のないリンクのため、読み上げ用のラベルを必須にする */
+    "aria-label": string;
+  };
 
 /**
  * 編集ページへのリンクなど、アイコンだけのボタン型のリンク。
@@ -21,6 +22,7 @@ export function IconButtonLink({
   icon: Icon,
   className,
   children,
+  linkComponent: Link = AnchorLink,
   ...props
 }: IconButtonLinkProps) {
   return (

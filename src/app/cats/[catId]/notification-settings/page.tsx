@@ -1,6 +1,6 @@
+import { NotificationSettingsIcon } from "@canshi/shared/ui/RecordIcons";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { formatMemorialDate } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";

@@ -1,8 +1,8 @@
+import { SettingsIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 import { Footer, IconButtonLink, ToastRegionRoot } from "@/components/ui";
-import { SettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAppearance } from "@/features/appearance/infrastructure/queries";
 import { getCurrentUser } from "@/features/auth/presentation/session";
 import { NavigationProgress } from "@/features/navigation/NavigationProgress";

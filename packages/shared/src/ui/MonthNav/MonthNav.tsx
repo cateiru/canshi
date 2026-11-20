@@ -1,8 +1,9 @@
 import { TbChevronLeft, TbChevronRight } from "react-icons/tb";
 import { ButtonLink } from "../Button/ButtonLink";
+import type { LinkComponentProps } from "../Link/Link";
 import styles from "./MonthNav.module.css";
 
-export type MonthNavProps = {
+export type MonthNavProps = LinkComponentProps & {
   year: number;
   month: number; // 1-12
   prevHref: string;
@@ -18,10 +19,12 @@ export function MonthNav({
   prevHref,
   nextHref,
   transitionTypes,
+  linkComponent,
 }: MonthNavProps) {
   return (
     <nav className={styles.monthNav} aria-label="表示する月">
       <ButtonLink
+        linkComponent={linkComponent}
         href={prevHref}
         transitionTypes={transitionTypes?.prev}
         variant="ghost"
@@ -34,6 +37,7 @@ export function MonthNav({
         {year}年{month}月
       </span>
       <ButtonLink
+        linkComponent={linkComponent}
         href={nextHref}
         transitionTypes={transitionTypes?.next}
         variant="ghost"

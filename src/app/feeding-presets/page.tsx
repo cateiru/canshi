@@ -1,8 +1,8 @@
+import { FeedingPresetIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import type { Metadata } from "next";
 import { TbPencil, TbPlus } from "react-icons/tb";
 import { Badge, Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
-import { FeedingPresetIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import { listFeedingPresetsForUser } from "@/features/feeding-presets/infrastructure/queries";
 import { deleteFeedingPresetAction } from "@/features/feeding-presets/presentation/actions";

@@ -1,8 +1,8 @@
+import { NotificationSettingsIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import type { Metadata } from "next";
 import { TbClock, TbDeviceMobile, TbPaw } from "react-icons/tb";
 import { Alert, Breadcrumb, ButtonLink, NavCard } from "@/components/ui";
-import { NotificationSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { listCurrentUserCats } from "@/features/auth/presentation/session";
 import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { CatAvatar } from "@/features/cats/presentation/CatAvatar";

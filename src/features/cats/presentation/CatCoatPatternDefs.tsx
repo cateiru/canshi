@@ -1,9 +1,9 @@
-import type { CSSProperties } from "react";
 import {
   CAT_COAT_FILL_VARIABLE,
   CAT_COAT_TILED_FILL_VARIABLE,
   CAT_EAR_FILL_VARIABLE,
-} from "@/components/ui/RecordIcons/RecordIcons";
+} from "@canshi/shared/ui/RecordIcons";
+import type { CSSProperties } from "react";
 import type { CatCoatColor } from "@/db/schema";
 import styles from "./CatCoatPatternDefs.module.css";
 import {

@@ -1,6 +1,6 @@
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { TbFlag } from "react-icons/tb";
 import { Button } from "@/components/ui";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getCurrentUser } from "@/features/auth/presentation/session";
 import { Surface } from "@/features/shared/Surface";
 import { isTourComplete } from "../domain/tour";

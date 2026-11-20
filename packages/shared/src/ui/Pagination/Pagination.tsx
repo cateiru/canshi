@@ -1,8 +1,9 @@
 import { TbChevronLeft, TbChevronRight } from "react-icons/tb";
 import { ButtonLink } from "../Button/ButtonLink";
+import type { LinkComponentProps } from "../Link/Link";
 import styles from "./Pagination.module.css";
 
-export type PaginationProps = {
+export type PaginationProps = LinkComponentProps & {
   page: number;
   totalPages: number;
   /** 指定したページへのリンク先を返す */
@@ -13,7 +14,12 @@ export type PaginationProps = {
  * 「前のページ」「次のページ」への移動リンクと現在のページ番号を並べるナビ。
  * 1ページに収まる場合は何も表示しない。
  */
-export function Pagination({ page, totalPages, getHref }: PaginationProps) {
+export function Pagination({
+  page,
+  totalPages,
+  getHref,
+  linkComponent,
+}: PaginationProps) {
   if (totalPages <= 1) {
     return null;
   }
@@ -23,6 +29,7 @@ export function Pagination({ page, totalPages, getHref }: PaginationProps) {
       <span className={styles.slot}>
         {page > 1 ? (
           <ButtonLink
+            linkComponent={linkComponent}
             href={getHref(page - 1)}
             variant="secondary"
             leftIcon={TbChevronLeft}
@@ -37,6 +44,7 @@ export function Pagination({ page, totalPages, getHref }: PaginationProps) {
       <span className={styles.slot}>
         {page < totalPages ? (
           <ButtonLink
+            linkComponent={linkComponent}
             href={getHref(page + 1)}
             variant="secondary"
             rightIcon={TbChevronRight}

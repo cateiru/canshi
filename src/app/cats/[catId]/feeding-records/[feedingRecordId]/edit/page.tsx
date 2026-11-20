@@ -1,6 +1,6 @@
+import { FeedingIcon } from "@canshi/shared/ui/RecordIcons";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { FeedingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { listFeedingPresets } from "@/features/feeding-presets/infrastructure/queries";

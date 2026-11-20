@@ -1,3 +1,9 @@
+import {
+  FeedingPresetIcon,
+  FeedingScheduleIcon,
+  FoodProductIcon,
+  HouseholdIcon,
+} from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
 import {
   Badge,
@@ -7,12 +13,6 @@ import {
   TableActionCell,
   TableActionHeader,
 } from "@/components/ui";
-import {
-  FeedingPresetIcon,
-  FeedingScheduleIcon,
-  FoodProductIcon,
-  HouseholdIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
 import {
   requireHouseholdAccess,
   requireUser,

@@ -1,36 +1,15 @@
-export * from "./Alert/Alert";
-export * from "./Badge/Badge";
-export * from "./Breadcrumb/Breadcrumb";
-export * from "./BurstConfetti/BurstConfetti";
-export * from "./Button/Button";
-export * from "./Button/ButtonLink";
-export * from "./Button/IconButton";
-export * from "./Button/IconButtonLink";
-export * from "./Card/Card";
-export * from "./CatEarFrame/CatEarFrame";
-export * from "./Checkbox/Checkbox";
-export * from "./Collapsible/Collapsible";
-export * from "./ComboBox/ComboBox";
-export * from "./DropdownMenu/DropdownMenu";
-export * from "./FilterTabs/FilterTabs";
-export * from "./Footer/Footer";
-export * from "./FormField/FormField";
-export * from "./FormGroup/FormGroup";
-export * from "./FormRow/FormRow";
-export * from "./Heading/Heading";
-export * from "./ImagePreview/ImagePreview";
-export * from "./ImagePreview/ImageStage";
-export * from "./Modal/Modal";
-export * from "./MonthNav/MonthNav";
-export * from "./NavCard/NavCard";
-export * from "./Pagination/Pagination";
-export * from "./Radio/Radio";
-export * from "./RecordCard/RecordCard";
-export * from "./ScaledIcon/ScaledIcon";
-export * from "./SegmentedControl/SegmentedControl";
-export * from "./Select/Select";
-export * from "./Slider/Slider";
-export * from "./Table/Table";
-export * from "./Tabs/Tabs";
-export * from "./Textarea/Textarea";
-export * from "./Toast/Toast";
+// メインアプリ（Next.js）で使う UI コンポーネント。実体は `@canshi/shared/ui`（packages/shared/src/ui）に置き、
+// リンク・ページ移動を含むものだけ、Next.js のもの（`next/link`・`useRouter`）を差し込んだものを
+// ここで同じ名前で export して上書きする（明示した export は `export *` より優先される）
+export * from "@canshi/shared/ui";
+export { DropdownMenu } from "./DropdownMenu";
+export {
+  Breadcrumb,
+  ButtonLink,
+  FilterTabs,
+  Footer,
+  IconButtonLink,
+  MonthNav,
+  NavCard,
+  Pagination,
+} from "./links";

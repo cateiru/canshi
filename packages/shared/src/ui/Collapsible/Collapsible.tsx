@@ -8,7 +8,7 @@ import {
   Heading,
 } from "react-aria-components";
 import { TbTriangleFilled } from "react-icons/tb";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
+import { ScaledIcon } from "../ScaledIcon/ScaledIcon";
 import styles from "./Collapsible.module.css";
 
 export type CollapsibleProps = {

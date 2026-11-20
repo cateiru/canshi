@@ -1,3 +1,5 @@
+import { AccountSettingsIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { TbDevices, TbLogout, TbPencil } from "react-icons/tb";
@@ -10,8 +12,6 @@ import {
   TableActionCell,
   TableActionHeader,
 } from "@/components/ui";
-import { AccountSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { formatDeviceName } from "@/features/auth/domain/deviceName";
 import { SESSION_COOKIE_NAME } from "@/features/auth/domain/sessionToken";
 import { listUserSessions } from "@/features/auth/infrastructure/sessions";

@@ -1,6 +1,6 @@
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import type { Metadata } from "next";
 import { Breadcrumb, ButtonLink } from "@/components/ui";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import { createCatAction } from "@/features/cats/presentation/actions";
 import { CatForm } from "@/features/cats/presentation/CatForm";

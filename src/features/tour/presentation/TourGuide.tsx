@@ -1,10 +1,10 @@
 "use client";
 
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { TbArrowRight, TbCheck, TbChevronRight, TbX } from "react-icons/tb";
 import { addToast, Button, ButtonLink, IconButton } from "@/components/ui";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
   canLeaveTourStep,
   isTourHiddenPath,

@@ -10,8 +10,8 @@ ChatGPT などの外部 AI エージェントからデータを参照できる M
 `/mcp` で公開しています（[`src/features/mcp`](src/features/mcp)）。
 
 ユーザー・家などを確認できる運用者向けの管理画面を
-[`packages/admin`](packages/admin) に同梱しています。メインアプリと管理画面で共通の実装
-（デザイントークンなど）は [`packages/shared`](packages/shared) にまとめています。
+[`packages/admin`](packages/admin) に同梱しています。メインアプリと管理画面などで共通の実装
+（デザイントークン・UI コンポーネント）は [`packages/shared`](packages/shared) にまとめています。
 
 ## LICENSE
 

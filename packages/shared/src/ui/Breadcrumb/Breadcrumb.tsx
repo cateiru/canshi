@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AnchorLink, type LinkComponentProps } from "../Link/Link";
 import styles from "./Breadcrumb.module.css";
 
 export type BreadcrumbItem = {
@@ -8,11 +8,14 @@ export type BreadcrumbItem = {
   replace?: boolean;
 };
 
-export type BreadcrumbProps = {
+export type BreadcrumbProps = LinkComponentProps & {
   items: BreadcrumbItem[];
 };
 
-export function Breadcrumb({ items }: BreadcrumbProps) {
+export function Breadcrumb({
+  items,
+  linkComponent: Link = AnchorLink,
+}: BreadcrumbProps) {
   return (
     <nav aria-label="パンくずリスト" className={styles.nav}>
       <ol className={styles.list}>

@@ -4,15 +4,36 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./styles/tokens.css": "./src/styles/tokens.css"
+    "./styles/tokens.css": "./src/styles/tokens.css",
+    "./ui": "./src/ui/index.ts",
+    "./ui/RecordIcons": "./src/ui/RecordIcons/RecordIcons.tsx",
+    "./ui/ScaledIcon": "./src/ui/ScaledIcon/ScaledIcon.tsx",
+    "./ui/buttonStyles": "./src/ui/Button/buttonStyles.ts",
+    "./ui/RecordCard.module.css": "./src/ui/RecordCard/RecordCard.module.css"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "react-aria-components": "catalog:",
+    "react-icons": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "^19",
+    "react-dom": "^19"
+  },
   "devDependencies": {
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "jsdom": "catalog:",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

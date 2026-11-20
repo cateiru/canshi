@@ -1,6 +1,6 @@
+import { BrushingIcon } from "@canshi/shared/ui/RecordIcons";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/ui";
-import { BrushingIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getWritableCat } from "@/features/auth/presentation/session";
 import { createBrushingRecordAction } from "@/features/brushing-records/presentation/actions";
 import { BrushingRecordForm } from "@/features/brushing-records/presentation/BrushingRecordForm";

@@ -1,14 +1,11 @@
 "use client";
 
+import { CalorieIcon, FeedingIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import dynamic from "next/dynamic";
 import { type ComponentType, useMemo, useState } from "react";
 import type { IconBaseProps } from "react-icons";
 import { Collapsible, SegmentedControl } from "@/components/ui";
-import {
-  CalorieIcon,
-  FeedingIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
   FEEDING_CHART_METRIC_LABEL,
   FEEDING_CHART_PERIOD_LABEL,

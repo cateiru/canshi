@@ -1,8 +1,8 @@
+import { FoodProductIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import type { Metadata } from "next";
 import { TbPencil, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink, IconButtonLink } from "@/components/ui";
-import { FoodProductIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import {
   FOOD_PRODUCT_IN_USE_MESSAGE,

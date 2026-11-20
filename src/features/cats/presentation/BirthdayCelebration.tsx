@@ -1,9 +1,9 @@
 "use client";
 
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { useEffect, useState } from "react";
 import { TbCake } from "react-icons/tb";
 import { BurstConfetti, Modal } from "@/components/ui";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import {
   type BirthdayCelebrationCat,
   type BirthdayMilestone,

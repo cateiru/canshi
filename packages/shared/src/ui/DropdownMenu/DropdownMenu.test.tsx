@@ -2,11 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DropdownMenu } from "./DropdownMenu";
 
-const router = vi.hoisted(() => ({ push: vi.fn() }));
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => router,
-}));
+const navigate = vi.fn();
 
 const ITEMS = [
   { id: "cat", label: "猫を登録する", href: "/cats/new" },
@@ -19,7 +15,7 @@ const ITEMS = [
 
 describe("DropdownMenu", () => {
   beforeEach(() => {
-    router.push.mockClear();
+    navigate.mockClear();
   });
 
   it("ボタンを押すまでメニューを開かない", () => {
@@ -29,8 +25,8 @@ describe("DropdownMenu", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  it("ボタンを押すとメニューを開き、選んだ項目のページへ移動する", () => {
-    render(<DropdownMenu label="追加する" items={ITEMS} />);
+  it("ボタンを押すとメニューを開き、選んだ項目のページへ navigate で移動する", () => {
+    render(<DropdownMenu label="追加する" items={ITEMS} navigate={navigate} />);
 
     fireEvent.click(screen.getByRole("button", { name: "追加する" }));
     expect(
@@ -38,7 +34,7 @@ describe("DropdownMenu", () => {
     ).toBeVisible();
 
     fireEvent.click(screen.getByRole("menuitem", { name: "家を作成する" }));
-    expect(router.push).toHaveBeenCalledWith(
+    expect(navigate).toHaveBeenCalledWith(
       "/settings/households/new?from=cats",
       undefined,
     );
@@ -55,6 +51,7 @@ describe("DropdownMenu", () => {
           { id: "large", label: "70g" },
         ]}
         onAction={onAction}
+        navigate={navigate}
       />,
     );
 
@@ -62,7 +59,7 @@ describe("DropdownMenu", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "70g" }));
 
     expect(onAction).toHaveBeenCalledWith("large");
-    expect(router.push).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it("無効にするとボタンを押せない", () => {

@@ -1,5 +1,3 @@
-import type { Metadata } from "next";
-import { Breadcrumb, NavCard } from "@/components/ui";
 import {
   AccountSettingsIcon,
   AiConnectionIcon,
@@ -8,7 +6,9 @@ import {
   HouseholdIcon,
   NotificationSettingsIcon,
   ReleaseNotesIcon,
-} from "@/components/ui/RecordIcons/RecordIcons";
+} from "@canshi/shared/ui/RecordIcons";
+import type { Metadata } from "next";
+import { Breadcrumb, NavCard } from "@/components/ui";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {

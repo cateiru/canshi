@@ -1,7 +1,7 @@
+import { AiConnectionIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
 import { TbEye, TbPlugConnected } from "react-icons/tb";
 import { Breadcrumb, ButtonLink, Heading } from "@/components/ui";
-import { AiConnectionIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { requireUser } from "@/features/auth/presentation/session";
 import { listUserMcpConnections } from "@/features/mcp/infrastructure/connections";
 import { getMcpClientIcon } from "@/features/mcp/presentation/clientIcons";

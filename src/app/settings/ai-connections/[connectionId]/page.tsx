@@ -1,8 +1,8 @@
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TbEye } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { requireUser } from "@/features/auth/presentation/session";
 import { getUserMcpConnection } from "@/features/mcp/infrastructure/connections";
 import { getMcpPermissionTree } from "@/features/mcp/infrastructure/permissions";

@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { TbCheck } from "react-icons/tb";
+import { AnchorLink, type LinkComponentProps } from "../Link/Link";
 import styles from "./FilterTabs.module.css";
 
 export type FilterTabItem = {
@@ -8,7 +8,7 @@ export type FilterTabItem = {
   label: string;
 };
 
-export type FilterTabsProps = {
+export type FilterTabsProps = LinkComponentProps & {
   items: readonly FilterTabItem[];
   /** 選択中の項目の key */
   selectedKey: string;
@@ -25,6 +25,7 @@ export function FilterTabs({
   items,
   selectedKey,
   className,
+  linkComponent: Link = AnchorLink,
   ...props
 }: FilterTabsProps) {
   return (

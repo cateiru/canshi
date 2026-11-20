@@ -1,13 +1,24 @@
 packages:
   - "packages/*"
 
-# アプリ（ルート）と管理画面（packages/admin）の両方で使うパッケージのバージョンは、ここでまとめて決める。
-# 各 package.json では "catalog:" と書く。両方で使うパッケージを足すときもここに追加する
+# アプリ（ルート）・管理画面（packages/admin）・共通のパッケージ（packages/shared）のうち、複数で使う
+# パッケージのバージョンは、ここでまとめて決める。各 package.json では "catalog:" と書く。
+# 複数で使うパッケージを足すときもここに追加する。
+# ただし react・react-dom は、Biome がルートの package.json の版を読んで React 向けの規則を有効にするため、
+# catalog に入れずに各 package.json に同じ版を書く（packages/shared の devDependencies もルートと揃える）
 # https://pnpm.io/ja/catalogs
 catalog:
+  "@testing-library/jest-dom": ^7.0.1
+  "@testing-library/react": ^16.3.3
   "@types/node": ^26.0.0
+  "@types/react": ^19
+  "@types/react-dom": ^19
   "@types/sql.js": ^1.4.11
+  "@vitejs/plugin-react": ^6.1.1
   drizzle-orm: ^0.45.4
+  jsdom: ^31.0.0
+  react-aria-components: ^1.21.1
+  react-icons: ^5.7.0
   sql.js: ^1.14.2
   typescript: ^5
   vitest: ^5.0.0

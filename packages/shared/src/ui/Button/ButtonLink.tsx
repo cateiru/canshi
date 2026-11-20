@@ -1,9 +1,13 @@
-import Link from "next/link";
-import type { ComponentProps } from "react";
+import {
+  AnchorLink,
+  type LinkComponentProps,
+  type LinkProps,
+} from "../Link/Link";
 import { ButtonContent, type ButtonIconProps } from "./ButtonContent";
 import { type ButtonVariant, getButtonClassName } from "./buttonStyles";
 
-export type ButtonLinkProps = ComponentProps<typeof Link> &
+export type ButtonLinkProps = LinkProps &
+  LinkComponentProps &
   ButtonIconProps & {
     variant?: ButtonVariant;
   };
@@ -14,6 +18,7 @@ export function ButtonLink({
   leftIcon,
   rightIcon,
   children,
+  linkComponent: Link = AnchorLink,
   ...props
 }: ButtonLinkProps) {
   return (

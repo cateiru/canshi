@@ -1,6 +1,6 @@
+import { AppearanceSettingsIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/ui";
-import { AppearanceSettingsIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAppearance } from "@/features/appearance/infrastructure/queries";
 import { AppearanceSettings } from "@/features/appearance/presentation/AppearanceSettings";
 import {

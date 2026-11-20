@@ -1,6 +1,6 @@
 import type { ComponentType, HTMLAttributes, ReactNode } from "react";
 import type { IconBaseProps } from "react-icons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
+import { ScaledIcon } from "../ScaledIcon/ScaledIcon";
 import styles from "./RecordCard.module.css";
 
 export type RecordCardProps = HTMLAttributes<HTMLElement> & {

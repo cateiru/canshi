@@ -1,6 +1,6 @@
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { TbCalendar, TbPencil } from "react-icons/tb";
 import { Badge, IconButtonLink, RecordCard } from "@/components/ui";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import type { HospitalVisit, MediaAsset } from "@/db/schema";
 import { hospitalVisitOptionLabel } from "@/features/hospital-visits/domain/labels";
 import { toMediaAssetView } from "@/features/media/domain/view";

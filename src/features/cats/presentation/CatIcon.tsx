@@ -1,1 +1,1 @@
-export { CatFaceIcon as CatIcon } from "@/components/ui/RecordIcons/RecordIcons";
+export { CatFaceIcon as CatIcon } from "@canshi/shared/ui/RecordIcons";

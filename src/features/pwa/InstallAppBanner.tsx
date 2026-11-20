@@ -1,11 +1,11 @@
 "use client";
 
+import { AddToHomeScreenIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { TbChevronRight, TbX } from "react-icons/tb";
 import { Button, ButtonLink, IconButton } from "@/components/ui";
-import { AddToHomeScreenIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import styles from "./InstallAppBanner.module.css";
 import {
   ADD_TO_HOME_SCREEN_HELP_SLUG,

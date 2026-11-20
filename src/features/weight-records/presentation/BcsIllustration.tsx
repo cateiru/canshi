@@ -1,11 +1,11 @@
-import { type CSSProperties, useId } from "react";
 import {
   CAT_COAT_FILL_VARIABLE,
   CAT_COAT_TILED_FILL_VARIABLE,
   CAT_LINE_VARIABLE,
   DEFAULT_CAT_COAT,
   ICON_OUTLINE_STROKE_VARIABLE,
-} from "@/components/ui/RecordIcons/RecordIcons";
+} from "@canshi/shared/ui/RecordIcons";
+import { type CSSProperties, useId } from "react";
 import {
   BCS_ILLUSTRATION_LAYERS,
   type BcsIllustrationName,

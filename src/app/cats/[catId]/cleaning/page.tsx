@@ -1,3 +1,4 @@
+import { BroomIcon } from "@canshi/shared/ui/RecordIcons";
 import { notFound } from "next/navigation";
 import { TbPencil, TbPlus } from "react-icons/tb";
 import {
@@ -9,7 +10,6 @@ import {
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
-import { BroomIcon } from "@/components/ui/RecordIcons/RecordIcons";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";

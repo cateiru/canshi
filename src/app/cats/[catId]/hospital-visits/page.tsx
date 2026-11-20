@@ -1,3 +1,5 @@
+import { HospitalIcon } from "@canshi/shared/ui/RecordIcons";
+import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { notFound } from "next/navigation";
 import { TbClock, TbPencil, TbPlus } from "react-icons/tb";
 import {
@@ -8,8 +10,6 @@ import {
   RecordCard,
   RecordEmptyState,
 } from "@/components/ui";
-import { HospitalIcon } from "@/components/ui/RecordIcons/RecordIcons";
-import { ScaledIcon } from "@/components/ui/ScaledIcon/ScaledIcon";
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { NEUTER_TERM } from "@/features/cats/domain/labels";
 import { isMemorialCat } from "@/features/cats/domain/memorial";

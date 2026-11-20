@@ -1,5 +1,5 @@
+import * as RecordIcons from "@canshi/shared/ui/RecordIcons";
 import type { ComponentType } from "react";
-import * as RecordIcons from "@/components/ui/RecordIcons/RecordIcons";
 import { CAT_COAT_COLORS, type CatCoatColor } from "@/db/schema";
 import { COAT_COLOR_LABEL } from "@/features/cats/domain/labels";
 import { CatCoatIconScope } from "@/features/cats/presentation/CatCoatIconScope";
