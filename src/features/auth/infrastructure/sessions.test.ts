@@ -32,8 +32,8 @@ beforeEach(async () => {
     migrationsFolder: "./drizzle",
   });
   await db.insert(users).values([
-    { id: "user-1", name: "管理者", role: "admin" },
-    { id: "user-2", name: "家族" },
+    { id: "user-1", name: "管理者", role: "admin", email: "owner@example.com" },
+    { id: "user-2", name: "家族", email: "family@example.com" },
   ]);
 });
 
@@ -88,6 +88,21 @@ describe("createSession / getSessionUser", () => {
       .set({ expiresAt: new Date(Date.now() - 1000) })
       .where(eq(sessions.tokenHash, await hashSessionToken(token)));
     expect(await getSessionUser(token)).toBeNull();
+  });
+
+  it("メールアドレスを持たないユーザーのセッションでは null（ログインし直してもらう）", async () => {
+    await db
+      .insert(users)
+      .values({ id: "legacy", name: "以前のユーザー", emailHash: "hash" });
+    const { token } = await createSession("legacy");
+
+    expect(await getSessionUser(token)).toBeNull();
+
+    await db
+      .update(users)
+      .set({ email: "legacy@example.com" })
+      .where(eq(users.id, "legacy"));
+    expect((await getSessionUser(token))?.id).toBe("legacy");
   });
 
   it("新しくログインすると、同じユーザーの期限切れのセッションを削除する", async () => {

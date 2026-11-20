@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { getEmailHashSalt, hashEmail } from "../domain/emailHash";
@@ -14,7 +14,7 @@ export const INITIAL_USER_NAME = "管理者";
 export const NEW_USER_NAME = "ユーザー";
 
 /**
- * 環境変数の SALT でメールアドレスをハッシュにする。開発環境（`next dev`）と、
+ * 環境変数の SALT でメールアドレスをハッシュにする（`email` を持たない既存のユーザーを探すときだけ使う）。開発環境（`next dev`）と、
  * `DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN` を有効にした Worker Previews（本番とは別の D1 を使う）に
  * 限り、`EMAIL_HASH_SALT` が未設定でも開発用の SALT を使う
  */
@@ -33,42 +33,79 @@ export function hashEmailWithEnv(
   return hashEmail(email, salt);
 }
 
-/** メールアドレスのハッシュに対応するユーザー。いなければ null */
-export async function findUserByEmailHash(emailHash: string, d1?: D1Database) {
+/** メールアドレス（`normalizeEmail` で正規化した値）のユーザー。いなければ null */
+export async function findUserByEmail(email: string, d1?: D1Database) {
   const db = getDb(d1);
   const [user] = await db
     .select()
     .from(users)
-    .where(eq(users.emailHash, emailHash))
+    .where(eq(users.email, email))
     .limit(1);
   return user ?? null;
 }
 
 /**
- * ログインしたメールアドレスのハッシュに対応するユーザーを返し、いなければ作る。
- * ユーザーが 1 件もなければ管理者として、それ以外は一般のユーザーとして作る。
- *
- * 同じメールアドレスで同時にログインしても 2 件作られないよう、「いなければ挿入」を
- * `email_hash` の一意制約と `ON CONFLICT DO NOTHING` で 1 つの INSERT 文にする
- * （SQLite では 1 文の実行がアトミック。`INSERT ... SELECT` に `ON CONFLICT` を付けるときは、
- * 構文の曖昧さを避けるため `WHERE true` が必要）
+ * メールアドレスのハッシュに対応し、まだ `email` を持たない既存のユーザー。いなければ null。
+ * メールアドレスをハッシュにして保存していたころ（#593 より前）のユーザーを探すために使う
  */
-export async function findOrCreateUserByEmailHash(
+export async function findUnlinkedUserByEmailHash(
   emailHash: string,
   d1?: D1Database,
 ) {
   const db = getDb(d1);
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.emailHash, emailHash), isNull(users.email)))
+    .limit(1);
+  return user ?? null;
+}
+
+/**
+ * `email` を持たない既存のユーザーに、ログインしたメールアドレスを保存してユーザーを返す。
+ * 同じユーザーが同時にログインしても上書きし合わないよう、`email` が NULL のときだけ更新する
+ */
+export async function linkUserEmail(
+  userId: string,
+  email: string,
+  d1?: D1Database,
+) {
+  const db = getDb(d1);
+  await db
+    .update(users)
+    .set({ email, updatedAt: new Date() })
+    .where(and(eq(users.id, userId), isNull(users.email)));
+  const user = await findUserByEmail(email, d1);
+  if (user?.id !== userId) {
+    throw new Error(
+      "ログインしたユーザーにメールアドレスを保存できませんでした",
+    );
+  }
+  return user;
+}
+
+/**
+ * ログインしたメールアドレスのユーザーを返し、いなければ作る。
+ * ユーザーが 1 件もなければ管理者として、それ以外は一般のユーザーとして作る。
+ *
+ * 同じメールアドレスで同時にログインしても 2 件作られないよう、「いなければ挿入」を
+ * `email` の一意制約と `ON CONFLICT DO NOTHING` で 1 つの INSERT 文にする
+ * （SQLite では 1 文の実行がアトミック。`INSERT ... SELECT` に `ON CONFLICT` を付けるときは、
+ * 構文の曖昧さを避けるため `WHERE true` が必要）
+ */
+export async function findOrCreateUserByEmail(email: string, d1?: D1Database) {
+  const db = getDb(d1);
   await db.run(sql`
-    INSERT INTO ${users} (id, name, role, email_hash)
+    INSERT INTO ${users} (id, name, role, email)
     SELECT
       ${crypto.randomUUID()},
       CASE WHEN EXISTS (SELECT 1 FROM ${users}) THEN ${NEW_USER_NAME} ELSE ${INITIAL_USER_NAME} END,
       CASE WHEN EXISTS (SELECT 1 FROM ${users}) THEN 'member' ELSE 'admin' END,
-      ${emailHash}
+      ${email}
     WHERE true
-    ON CONFLICT (email_hash) DO NOTHING
+    ON CONFLICT (email) DO NOTHING
   `);
-  const user = await findUserByEmailHash(emailHash, d1);
+  const user = await findUserByEmail(email, d1);
   if (!user) {
     throw new Error("ログインしたユーザーを作成できませんでした");
   }

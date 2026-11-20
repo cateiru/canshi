@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, lte, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { sessions, users } from "@/db/schema";
 import { normalizeUserAgent } from "../domain/deviceName";
@@ -37,7 +37,11 @@ export async function createSession(
 
 /**
  * セッショントークンに対応するユーザーを返す。存在しない・期限切れのセッションや、
- * セッションのユーザーが削除されている場合は null
+ * セッションのユーザーが削除されている場合は null。
+ *
+ * メールアドレス（`users.email`）を持たないユーザーのセッションも null にする。メールアドレスを
+ * ハッシュにして保存していたころ（#593 より前）のユーザーをログアウトさせ、次のログインで
+ * メールアドレスを保存させるため。全員のメールアドレスがそろったら、この条件は外してよい
  */
 export async function getSessionUser(token: string, d1?: D1Database) {
   const db = getDb(d1);
@@ -49,6 +53,7 @@ export async function getSessionUser(token: string, d1?: D1Database) {
       and(
         eq(sessions.tokenHash, await hashSessionToken(token)),
         gt(sessions.expiresAt, new Date()),
+        isNotNull(users.email),
       ),
     )
     .limit(1);

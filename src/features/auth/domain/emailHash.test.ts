@@ -4,7 +4,6 @@ import {
   DEVELOPMENT_EMAIL_HASH_SALT,
   getEmailHashSalt,
   hashEmail,
-  normalizeEmail,
 } from "./emailHash";
 
 const SALT = "test-salt-0123456789";
@@ -29,16 +28,11 @@ describe("hashEmail", () => {
     expect(hashEmail("family@example.com", SALT)).not.toBe(hash);
   });
 
-  it("e2e・VRT の seed（e2e/fixtures/vrt-seed.sql）のハッシュと一致する", () => {
+  // 既存のユーザーの email_hash と一致しなくなるため、パラメータを変えていないことを確かめる
+  it("同じメールアドレス・SALT からは以前と同じハッシュになる", () => {
     expect(hashEmail("e2e@example.com", DEVELOPMENT_EMAIL_HASH_SALT)).toBe(
       "67534d9e2c2cbdba8b5cc51b13f29cda8a204335369ea791404d411d86e9a59e",
     );
-  });
-});
-
-describe("normalizeEmail", () => {
-  it("前後の空白を除いて小文字にする", () => {
-    expect(normalizeEmail(" Foo@Example.com\n")).toBe("foo@example.com");
   });
 });
 

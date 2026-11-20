@@ -28,11 +28,9 @@
 
 -- 猫はすべて VRT 用の家に所属させる。`/login` の開発用ログインで VRT ユーザーとして
 -- ログインできるよう、e2e/auth.setup.ts がログインに使うメールアドレス（e2e@example.com）を
--- 開発用の SALT でハッシュにした値を email_hash にする
--- (src/features/auth/emailHash.test.ts で同じ値になることを確認している)
-INSERT INTO users (id, name, role, email_hash, created_at, updated_at)
-VALUES ('vrt-user', 'VRTユーザー', 'admin',
-  '67534d9e2c2cbdba8b5cc51b13f29cda8a204335369ea791404d411d86e9a59e',
+-- email にする
+INSERT INTO users (id, name, role, email, created_at, updated_at)
+VALUES ('vrt-user', 'VRTユーザー', 'admin', 'e2e@example.com',
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
 INSERT INTO households (id, name, created_at, updated_at)

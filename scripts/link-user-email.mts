@@ -1,24 +1,17 @@
-// 既存のユーザーに、ログインに使うメールアドレス（のハッシュ）を紐付けるスクリプト。
+// ユーザーのログインに使うメールアドレス（users.email）を設定するスクリプト。
 //
-// Cloudflare Access の OIDC でのログインを導入する前から使っていたユーザーは、メールアドレスの
-// ハッシュ（users.email_hash）を持たない。そのままログインすると、同じ人でも別の新しいユーザーが
-// 作られてしまうため、導入前にこのスクリプトで紐付ける（docs/deploy.md 参照）。
-// メールアドレスそのものは保存せず、アプリと同じ方法（`src/features/auth/domain/emailHash.ts`）で
-// ハッシュにした値だけを保存する。
+// メールアドレスは画面に表示せず、本人も変えられない。メールアドレスの変更はお問い合わせで受け、
+// このスクリプトで設定する（docs/deploy.md 参照）。メールアドレスは、アプリと同じ方法
+// （`src/features/auth/domain/email.ts`）で正規化して保存する。
 //
 // 使い方:
-//   EMAIL_HASH_SALT=<本番と同じ SALT> pnpm user:link-email --remote --user-id <id> --email <メールアドレス> [--yes]
+//   pnpm user:link-email --remote --user-id <id> --email <メールアドレス> [--yes]
 //   pnpm user:link-email --local [--persist-to ./.wrangler/state] --user-id <id> --email <メールアドレス>
 //
-// - SALT は環境変数 `EMAIL_HASH_SALT` から読む。本番（`wrangler secret put EMAIL_HASH_SALT`）と
-//   違う値にすると、ログインしても一致しない。`--local` で未設定なら開発用の SALT を使う
 // - 別のユーザーがすでに同じメールアドレスで登録されている場合は、何もせずにエラーにする
 // - `--remote` では実行前に確認する。`--yes` で確認を省略できる
 import { parseArgs } from "node:util";
-import {
-  getEmailHashSalt,
-  hashEmail,
-} from "../src/features/auth/domain/emailHash.ts";
+import { normalizeEmail } from "../src/features/auth/domain/email.ts";
 import {
   confirmOrExit,
   createExecutor,
@@ -48,43 +41,34 @@ if (!args.email?.includes("@")) {
   fail("--email にメールアドレスを指定してください");
 }
 
-let salt: string;
-try {
-  salt = getEmailHashSalt(process.env.EMAIL_HASH_SALT, {
-    allowDevelopmentSalt: args.local,
-  });
-} catch (error) {
-  fail(error instanceof Error ? error.message : String(error));
-}
-
 const execute = createExecutor({
   local: args.local,
   persistTo: args["persist-to"],
 });
 
-type UserRow = { id: string; name: string; email_hash: string | null };
+type UserRow = { id: string; name: string; email: string | null };
 
 const userId = args["user-id"];
-const emailHash = hashEmail(args.email, salt);
+const email = normalizeEmail(args.email);
 
 const [user] = execute<UserRow>(
-  `SELECT id, name, email_hash FROM users WHERE id = ${quote(userId)} LIMIT 1`,
+  `SELECT id, name, email FROM users WHERE id = ${quote(userId)} LIMIT 1`,
 );
 if (!user) {
   fail(`ユーザー ${userId} が見つかりません`);
 }
-if (user.email_hash === emailHash) {
+if (user.email === email) {
   console.log(
-    `ユーザー ${user.name}（${user.id}）にはこのメールアドレスが紐付いています`,
+    `ユーザー ${user.name}（${user.id}）にはこのメールアドレスが設定されています`,
   );
   process.exit(0);
 }
 const [other] = execute<UserRow>(
-  `SELECT id, name, email_hash FROM users WHERE email_hash = ${quote(emailHash)} LIMIT 1`,
+  `SELECT id, name, email FROM users WHERE email = ${quote(email)} LIMIT 1`,
 );
 if (other) {
   fail(
-    `このメールアドレスはすでに別のユーザー ${other.name}（${other.id}）に紐付いています`,
+    `このメールアドレスはすでに別のユーザー ${other.name}（${other.id}）に設定されています`,
   );
 }
 
@@ -93,9 +77,9 @@ console.log(
 );
 console.log(`ユーザー: ${user.name}（${user.id}）`);
 console.log(
-  user.email_hash
-    ? "紐付いているメールアドレスを置き換える"
-    : "メールアドレスを新しく紐付ける",
+  user.email
+    ? "設定されているメールアドレスを置き換える"
+    : "メールアドレスを新しく設定する",
 );
 
 if (args.remote && !args.yes) {
@@ -103,6 +87,6 @@ if (args.remote && !args.yes) {
 }
 
 execute(
-  `UPDATE users SET email_hash = ${quote(emailHash)}, updated_at = unixepoch() WHERE id = ${quote(user.id)}`,
+  `UPDATE users SET email = ${quote(email)}, updated_at = unixepoch() WHERE id = ${quote(user.id)}`,
 );
-console.log("メールアドレスを紐付けました");
+console.log("メールアドレスを設定しました");

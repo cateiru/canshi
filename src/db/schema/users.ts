@@ -8,18 +8,23 @@ import {
 import { mediaAssets } from "./media-assets";
 
 /**
- * アプリの利用者。Cloudflare Access の OIDC でログインし、ID トークンのメールアドレスを
- * ハッシュにした値（`email_hash`）で同じユーザーかを判定する（`src/features/auth/infrastructure/users.ts`）。
- * 個人情報をできるだけ持たないため、メールアドレスそのものは保存しない
+ * アプリの利用者。Cloudflare Access の OIDC でログインし、ID トークンのメールアドレス（`email`）で
+ * 同じユーザーかを判定する（`src/features/auth/infrastructure/users.ts`）。
+ * メールアドレスは画面には表示せず、本人も変えられない（変更はお問い合わせで受け、
+ * `pnpm user:link-email` で行う）
  */
 export const users = sqliteTable("users", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
-  // ログインに使うメールアドレスを、環境変数の SALT を使って argon2id でハッシュにした値
-  // （`src/features/auth/domain/emailHash.ts`）。メールアドレスによる同一ユーザーの判定はこの値で行う。
-  // OIDC の導入前に作られたユーザーは、`pnpm user:link-email` で紐付けるまで NULL
+  // ログインに使うメールアドレス（`normalizeEmail` で正規化した値）。同じユーザーかの判定はこの値で行う。
+  // 0069 より前に作られたユーザーは、次にログインする（`email_hash` で見つかる）まで NULL。
+  // NULL のユーザーのセッションは無効にして、ログインし直してもらう（`getSessionUser`）
+  email: text("email").unique(),
+  // メールアドレスを SALT を使って argon2id でハッシュにした値（`src/features/auth/domain/emailHash.ts`）。
+  // `email` へ移すまでの間だけ、`email` が NULL のユーザーを探すのに使う。新しいユーザーには保存しない。
+  // 全員の `email` がそろったら列ごと削除する（#593）
   emailHash: text("email_hash").unique(),
   // アプリ全体の権限。家の中での権限（household_members.role）とは別
   role: text("role", { enum: ["admin", "member"] })
