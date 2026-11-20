@@ -419,3 +419,118 @@ jobs:
         run: |
           echo "::error::reg-suit detected ${{ steps.vrt-summary.outputs.failed }} visual difference(s) in the admin screens. See the report URL in the PR comment or job summary posted above."
           exit 1
+
+  # 共通のパッケージ（packages/shared）の Storybook を公開するかを決める。PR で packages/shared か
+  # 依存関係（Storybook の更新など）・このワークフローを変えたときだけ公開する
+  shared-changes:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-slim
+    permissions:
+      pull-requests: read
+    outputs:
+      shared: ${{ steps.filter.outputs.shared }}
+    steps:
+      - name: Detect changes that affect the shared package
+        id: filter
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          PATTERN='^(packages/shared/|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/ci\.yml$)'
+          # admin-changes と同じく、一覧を先に受け取ってから探す（SIGPIPE で一致なしと判定されないように）
+          FILES="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename')"
+          if grep -qE "$PATTERN" <<<"$FILES"; then
+            echo "shared=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "shared=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # packages/shared の Storybook をビルドし、VRT と同じ public-storage-cdk のバケットに置いて、
+  # PR にリンクをコメントする。コミットごとに別の場所（canshi/shared-storybook/<コミット>/）に置く
+  shared-storybook:
+    needs: shared-changes
+    if: ${{ needs.shared-changes.outputs.shared == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    env:
+      S3_BUCKET: cateiru-public-storage
+      S3_PATH_PREFIX: canshi/shared-storybook
+      REPORT_DOMAIN: storage.cateiru.dev
+      # pull_request イベントの checkout はマージコミットになるため、PR のブランチの先頭のコミットで場所を決める
+      COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".node-version"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Storybook
+        run: pnpm --filter @canshi/shared build-storybook
+
+      # public-storage-cdk (https://github.com/cateiru/public-storage-cdk) が発行する OIDC ロールを使う
+      - name: Configure AWS credentials (public-storage-cdk)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::211125784910:role/github-actions-public-storage
+          aws-region: us-east-1
+          role-skip-session-tagging: true
+
+      # 共有のバケットのため --delete は付けない。コミットごとに場所が変わるため、CloudFront の
+      # キャッシュを無効化する必要もない
+      - name: Upload Storybook
+        run: |
+          set -euo pipefail
+          aws s3 sync packages/shared/storybook-static \
+            "s3://${S3_BUCKET}/${S3_PATH_PREFIX}/${COMMIT_SHA}/" --only-show-errors
+
+      # VRT と同じく auto-expire タグを付け、public-storage-cdk のライフサイクルルールで 180 日後に消す
+      - name: Tag uploaded files as auto-expire
+        run: |
+          set -euo pipefail
+          PREFIX="${S3_PATH_PREFIX}/${COMMIT_SHA}/"
+          aws s3api list-objects-v2 --bucket "$S3_BUCKET" --prefix "$PREFIX" \
+            --query 'Contents[].Key' --output text \
+            | tr '\t' '\n' \
+            | grep -v '^$' \
+            | xargs -P 8 -I {} aws s3api put-object-tagging \
+                --bucket "$S3_BUCKET" --key "{}" \
+                --tagging 'TagSet=[{Key=auto-expire,Value=true}]'
+
+      - name: Build Storybook comment
+        id: storybook-comment
+        run: |
+          set -euo pipefail
+          URL="https://${REPORT_DOMAIN}/${S3_PATH_PREFIX}/${COMMIT_SHA}/index.html"
+          {
+            echo "## 共通のパッケージ（packages/shared）の Storybook"
+            echo ""
+            echo "[Storybook を見る](${URL})（${COMMIT_SHA:0:7} 時点）"
+          } > storybook-comment.md
+          {
+            echo "message<<STORYBOOK_COMMENT_EOF"
+            cat storybook-comment.md
+            echo "STORYBOOK_COMMENT_EOF"
+          } >> "$GITHUB_OUTPUT"
+          cat storybook-comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post Storybook URL to the pull request
+        uses: hasura/comment-progress@v2.3.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          number: ${{ github.event.pull_request.number }}
+          id: shared-storybook
+          recreate: true
+          message: ${{ steps.storybook-comment.outputs.message }}
