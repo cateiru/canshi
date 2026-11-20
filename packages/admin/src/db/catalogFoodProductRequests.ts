@@ -1,8 +1,20 @@
-import type { AdminDb } from "./queries";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  exists,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
+import { insertWhere } from "../../../../src/db/conditionalInsert";
+import type { AdminDb } from "./client";
+import { catalogFoodProductRequests, notifications, users } from "./schema";
 
 /**
  * 共通のごはん商品のリクエスト（`catalog_food_product_requests`）の一覧と、完了の処理。
- * メインアプリのスキーマは import しないため（`queries.ts` の冒頭を参照）、生の SQL で書く。
+ * `queries.ts` と同じく、メインアプリの Drizzle スキーマで読み書きする。
  * 完了の処理はメインアプリの MCP（`src/features/catalog-food-products/application/requests.ts` の
  * `completeCatalogFoodProductRequest`）と同じ通知を作るため、文言・重複を防ぐキーを揃えること
  */
@@ -21,31 +33,33 @@ export interface CatalogFoodProductRequest {
   completedAt: Date | null;
 }
 
-type RequestRow = {
-  id: string;
-  user_name: string;
-  search_query: string;
-  label: string;
-  created_at: number;
-  completed_at: number | null;
-};
-
-function toRequest(row: RequestRow): CatalogFoodProductRequest {
-  return {
-    id: row.id,
-    userName: row.user_name,
-    searchQuery: row.search_query,
-    label: row.label,
-    createdAt: new Date(row.created_at * 1000),
-    completedAt:
-      row.completed_at === null ? null : new Date(row.completed_at * 1000),
-  };
+/** リクエストと、リクエストしたユーザーの名前を読む SELECT */
+function selectRequests(db: AdminDb) {
+  return db
+    .select({
+      id: catalogFoodProductRequests.id,
+      userId: catalogFoodProductRequests.userId,
+      userName: users.name,
+      searchQuery: catalogFoodProductRequests.searchQuery,
+      label: catalogFoodProductRequests.label,
+      createdAt: catalogFoodProductRequests.createdAt,
+      completedAt: catalogFoodProductRequests.completedAt,
+    })
+    .from(catalogFoodProductRequests)
+    .innerJoin(users, eq(users.id, catalogFoodProductRequests.userId));
 }
 
-const SELECT_REQUESTS_SQL = `
-SELECT r.id, u.name AS user_name, r.search_query, r.label, r.created_at, r.completed_at
-FROM catalog_food_product_requests r
-JOIN users u ON u.id = r.user_id`;
+function toRequest({
+  userId: _userId,
+  ...request
+}: Awaited<
+  ReturnType<typeof selectRequests>
+>[number]): CatalogFoodProductRequest {
+  return request;
+}
+
+/** 同じ日時のリクエストを登録順に並べるための rowid */
+const REQUEST_ROWID = sql`${catalogFoodProductRequests}.rowid`;
 
 /**
  * リクエストの一覧。対応を待っているものは古い順（待っている時間が長い順）にすべて、完了にしたものは
@@ -55,24 +69,21 @@ export async function listCatalogFoodProductRequests(db: AdminDb): Promise<{
   open: CatalogFoodProductRequest[];
   completed: CatalogFoodProductRequest[];
 }> {
-  const [open, completed] = await db.batch([
-    db.prepare(
-      `${SELECT_REQUESTS_SQL}
-      WHERE r.completed_at IS NULL
-      ORDER BY r.created_at, r.rowid`,
-    ),
-    db
-      .prepare(
-        `${SELECT_REQUESTS_SQL}
-        WHERE r.completed_at IS NOT NULL
-        ORDER BY r.completed_at DESC, r.rowid DESC
-        LIMIT ?1`,
+  const [open, completed] = await Promise.all([
+    selectRequests(db)
+      .where(isNull(catalogFoodProductRequests.completedAt))
+      .orderBy(asc(catalogFoodProductRequests.createdAt), asc(REQUEST_ROWID)),
+    selectRequests(db)
+      .where(isNotNull(catalogFoodProductRequests.completedAt))
+      .orderBy(
+        desc(catalogFoodProductRequests.completedAt),
+        desc(REQUEST_ROWID),
       )
-      .bind(COMPLETED_REQUEST_LIST_LIMIT),
+      .limit(COMPLETED_REQUEST_LIST_LIMIT),
   ]);
   return {
-    open: (open.results as RequestRow[]).map(toRequest),
-    completed: (completed.results as RequestRow[]).map(toRequest),
+    open: open.map(toRequest),
+    completed: completed.map(toRequest),
   };
 }
 
@@ -106,49 +117,48 @@ export async function completeCatalogFoodProductRequest(
   db: AdminDb,
   requestId: string,
 ): Promise<CompleteRequestResult> {
-  const { results } = await db
-    .prepare(
-      `SELECT r.id, u.name AS user_name, r.search_query, r.label, r.created_at, r.completed_at
-      FROM catalog_food_product_requests r
-      JOIN users u ON u.id = r.user_id
-      WHERE r.id = ?1`,
-    )
-    .bind(requestId)
-    .all<RequestRow>();
-  const row = results[0];
+  const [row] = await selectRequests(db).where(
+    eq(catalogFoodProductRequests.id, requestId),
+  );
   if (!row) {
     return "not-found";
   }
-  if (row.completed_at !== null) {
+  if (row.completedAt !== null) {
     return "already-completed";
   }
-  const message = completedNotificationMessage(toRequest(row));
+  const message = completedNotificationMessage(row);
+  const stillOpen = and(
+    eq(catalogFoodProductRequests.id, requestId),
+    isNull(catalogFoodProductRequests.completedAt),
+  );
   const [, updated] = await db.batch([
-    db
-      .prepare(
-        `INSERT INTO notifications
-          (id, user_id, kind, reference_id, dedupe_key, title, body, url, due_at, status)
-        SELECT ?1, r.user_id, 'catalog_request_completed', r.id, ?2, ?3, ?4, ?5, unixepoch(), 'pending'
-        FROM catalog_food_product_requests r
-        WHERE r.id = ?6 AND r.completed_at IS NULL
-        ON CONFLICT (dedupe_key) DO NOTHING`,
-      )
-      .bind(
-        crypto.randomUUID(),
-        `catalog_request_completed:${requestId}`,
-        message.title,
-        message.body,
-        message.url,
-        requestId,
+    insertWhere(
+      db,
+      notifications,
+      {
+        id: crypto.randomUUID(),
+        userId: row.userId,
+        kind: "catalog_request_completed",
+        referenceId: requestId,
+        dedupeKey: `catalog_request_completed:${requestId}`,
+        title: message.title,
+        body: message.body,
+        url: message.url,
+        dueAt: new Date(),
+        status: "pending",
+      },
+      exists(
+        db
+          .select({ id: catalogFoodProductRequests.id })
+          .from(catalogFoodProductRequests)
+          .where(stillOpen),
       ),
+    ).onConflictDoNothing({ target: notifications.dedupeKey }),
     db
-      .prepare(
-        `UPDATE catalog_food_product_requests
-        SET completed_at = unixepoch()
-        WHERE id = ?1 AND completed_at IS NULL
-        RETURNING id`,
-      )
-      .bind(requestId),
+      .update(catalogFoodProductRequests)
+      .set({ completedAt: sql`(unixepoch())` })
+      .where(stillOpen)
+      .returning({ id: catalogFoodProductRequests.id }),
   ]);
-  return updated.results.length > 0 ? "completed" : "already-completed";
+  return updated.length > 0 ? "completed" : "already-completed";
 }

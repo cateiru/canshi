@@ -1,10 +1,14 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import initSqlJs, { type Database, type SqlValue } from "sql.js";
-import type { AdminDb } from "../db/queries";
+import initSqlJs, {
+  type Database,
+  type SqlValue,
+  type Statement,
+} from "sql.js";
+import { type AdminDb, createAdminDb } from "../db/client";
 
-// メインアプリのマイグレーション（リポジトリルートの `drizzle/`）。管理画面の生 SQL が
+// メインアプリのマイグレーション（リポジトリルートの `drizzle/`）。管理画面のクエリが
 // 実際のスキーマと食い違っていないことを確かめるため、同じマイグレーションを適用する
 const MIGRATIONS_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -41,38 +45,68 @@ class SqlJsStatement {
     return new SqlJsStatement(this.db, this.sql, params);
   }
 
-  async all<T>() {
+  private collect<T>(read: (statement: Statement) => T) {
     const statement = this.db.prepare(this.sql);
     try {
       statement.bind(this.params);
-      const results: T[] = [];
+      const rows: T[] = [];
       while (statement.step()) {
-        results.push(statement.getAsObject() as T);
+        rows.push(read(statement));
       }
-      return { results, success: true, meta: {} };
+      return rows;
     } finally {
       statement.free();
     }
   }
 
-  async run() {
-    this.db.run(this.sql, this.params);
+  async all<T>() {
+    const results = this.collect((statement) => statement.getAsObject() as T);
     return {
-      results: [],
+      results,
       success: true,
       meta: { changes: this.db.getRowsModified() },
     };
   }
+
+  async raw<T>() {
+    return this.collect((statement) => statement.get() as T);
+  }
+
+  async first<T>() {
+    return (await this.all<T>()).results[0] ?? null;
+  }
+
+  async run() {
+    return this.all();
+  }
 }
 
 /**
- * sql.js の DB を、`src/db/queries.ts` が使う範囲（`prepare`・`bind`・`all`・`run`・`batch`）だけ
- * D1 と同じ形で呼べるようにする
+ * sql.js の DB を、Drizzle の D1 ドライバーと `app.test.tsx` が使う範囲
+ * （`prepare`・`bind`・`all`・`raw`・`first`・`run`・`batch`）だけ D1 と同じ形で呼べるようにする。
+ * `batch` は D1 と同じく 1 つのトランザクションで実行し、どれかが失敗したらすべて取り消す
  */
-export function toAdminDb(db: Database): AdminDb {
+export function toD1(db: Database): D1Database {
   return {
     prepare: (sql: string) => new SqlJsStatement(db, sql),
-    batch: (statements: SqlJsStatement[]) =>
-      Promise.all(statements.map((statement) => statement.all())),
-  } as unknown as AdminDb;
+    batch: async (statements: SqlJsStatement[]) => {
+      db.run("BEGIN");
+      try {
+        const results = [];
+        for (const statement of statements) {
+          results.push(await statement.all());
+        }
+        db.run("COMMIT");
+        return results;
+      } catch (error) {
+        db.run("ROLLBACK");
+        throw error;
+      }
+    },
+  } as unknown as D1Database;
+}
+
+/** sql.js の DB を使う、管理画面の Drizzle のインスタンスを作る */
+export function toAdminDb(db: Database): AdminDb {
+  return createAdminDb(toD1(db));
 }

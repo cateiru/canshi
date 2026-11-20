@@ -128,10 +128,17 @@ INSERT・DELETE（`household_members` テーブル）、
 共通のごはん商品を登録・更新・削除する INSERT・UPDATE・DELETE（`catalog_food_products` テーブルと、
 その画像の `media_assets` の行）だけを発行する。R2 は共通のごはん商品の画像の保存・削除だけに使う。
 
-メインアプリの Drizzle スキーマ（`src/db/schema`）は import せず、`src/db/queries.ts` に生の SQL で
-書いている（パッケージ境界をまたぐと Next.js 向けの tsconfig・パスエイリアスに連鎖的に依存して
-しまうため）。メインアプリでテーブル・列を変更したときは `src/db/queries.ts`・
-`src/db/catalogFoodProducts.ts` も、ごはん商品の入力の規則を変えたときは `src/catalog/form.ts` も
-合わせて更新すること。`src/db/queries.test.ts` はリポジトリ
-ルートの `drizzle/` のマイグレーションをすべて適用した DB（sql.js）で実行するため、列名の
-食い違いはテストで検出できる。
+D1 の読み書きは、メインアプリの Drizzle スキーマ（リポジトリルートの `src/db/schema`。
+`src/db/schema.ts` から再 export する）を使って Drizzle で行い、SQL を文字列で組み立てない
+（値はすべてバインドパラメーターで渡す）。条件付きの INSERT はメインアプリの
+`src/db/conditionalInsert.ts` の `insertWhere` を使う。どちらも `drizzle-orm` と相対パスだけを
+import するため、Next.js 向けの tsconfig・パスエイリアスには依存しない。
+メインアプリでテーブル・列を変更したときは、管理画面のクエリもスキーマに合わせて型が変わるので、
+`pnpm --filter @canshi/admin typecheck`・`test` で確かめること。ごはん商品の入力の規則を変えたときは
+`src/catalog/form.ts` も合わせて更新する。`src/db/queries.test.ts` などはリポジトリ
+ルートの `drizzle/` のマイグレーションをすべて適用した DB（sql.js を D1 の形に包んだもの。
+`src/test/d1.ts`）で実行するため、スキーマとマイグレーションの食い違いもテストで検出できる。
+
+Drizzle の D1 ドライバーは、`batch` の結果を列名をキーにしたオブジェクトから並べ直すため、
+同じ列名（`name` など）を持つテーブルを結合した SELECT を `batch` に入れると値を取り違える。
+読み取りは `batch` に入れず、`Promise.all` で並べること。

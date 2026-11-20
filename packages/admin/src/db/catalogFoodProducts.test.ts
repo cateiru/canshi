@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createMigratedDatabase, toAdminDb } from "../test/d1";
+import { createMigratedDatabase, toD1 } from "../test/d1";
 import { createJpeg } from "../test/jpeg";
 import { createFakeBucket } from "../test/r2";
 import {
@@ -8,7 +8,7 @@ import {
   deleteCatalogFoodProduct,
   updateCatalogFoodProduct,
 } from "./catalogFoodProducts";
-import type { AdminDb } from "./queries";
+import { type AdminDb, createAdminDb } from "./client";
 
 // 共通のごはん商品の画像の更新と削除が同時に行われたときに、行・R2 のオブジェクトが孤立しないことを確かめる。
 // `beforeBatch` で、存在の確認などを終えてから batch を実行するまでの間に起きた変更を差し込む
@@ -26,29 +26,31 @@ const VALUES = {
 const IMAGE = { bytes: createJpeg(100, 100), mimeType: "image/jpeg" as const };
 const LIMIT = 1024 * 1024;
 
+let d1: D1Database;
 let db: AdminDb;
 let fake: ReturnType<typeof createFakeBucket>;
 let bucket: AdminBucket;
 let beforeBatch: (() => Promise<void>) | undefined;
 
 beforeEach(async () => {
-  const raw = toAdminDb(await createMigratedDatabase());
+  const raw = toD1(await createMigratedDatabase());
   beforeBatch = undefined;
-  db = {
+  d1 = {
     prepare: raw.prepare.bind(raw),
     batch: (async (statements: D1PreparedStatement[]) => {
       const hook = beforeBatch;
       beforeBatch = undefined;
       await hook?.();
       return raw.batch(statements);
-    }) as AdminDb["batch"],
-  };
+    }) as D1Database["batch"],
+  } as D1Database;
+  db = createAdminDb(d1);
   fake = createFakeBucket();
   bucket = fake.bucket;
 });
 
 async function countImages(productId: string) {
-  const { results } = await db
+  const { results } = await d1
     .prepare(
       "SELECT COUNT(*) AS count FROM media_assets WHERE record_type = 'catalog_food_product' AND record_id = ?1",
     )

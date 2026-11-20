@@ -11,14 +11,19 @@
 // - 別のユーザーがすでに同じメールアドレスで登録されている場合は、何もせずにエラーにする
 // - `--remote` では実行前に確認する。`--yes` で確認を省略できる
 import { parseArgs } from "node:util";
+import { eq, sql } from "drizzle-orm";
 import { normalizeEmail } from "../src/features/auth/domain/email.ts";
 import {
-  confirmOrExit,
-  createExecutor,
+  confirm,
   fail,
   ID_PATTERN,
-  quote,
+  openDatabase,
+  runScript,
+  type ScriptDb,
+  schema,
 } from "./d1.mts";
+
+const { users } = schema;
 
 const { values: args } = parseArgs({
   options: {
@@ -31,62 +36,71 @@ const { values: args } = parseArgs({
   },
 });
 
-if (args.local === args.remote) {
-  fail("--local か --remote のどちらか一方を指定してください");
-}
-if (!args["user-id"] || !ID_PATTERN.test(args["user-id"])) {
-  fail("--user-id にユーザーの ID を指定してください");
-}
-if (!args.email?.includes("@")) {
-  fail("--email にメールアドレスを指定してください");
+async function findUserBy(db: ScriptDb, column: "id" | "email", value: string) {
+  const [user] = await db
+    .select({ id: users.id, name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users[column], value))
+    .limit(1);
+  return user;
 }
 
-const execute = createExecutor({
-  local: args.local,
-  persistTo: args["persist-to"],
+await runScript(async () => {
+  if (args.local === args.remote) {
+    fail("--local か --remote のどちらか一方を指定してください");
+  }
+  const userId = args["user-id"];
+  if (!userId || !ID_PATTERN.test(userId)) {
+    fail("--user-id にユーザーの ID を指定してください");
+  }
+  if (!args.email?.includes("@")) {
+    fail("--email にメールアドレスを指定してください");
+  }
+  const email = normalizeEmail(args.email);
+
+  const { db, close } = await openDatabase({
+    local: args.local,
+    persistTo: args["persist-to"],
+  });
+  try {
+    const user = await findUserBy(db, "id", userId);
+    if (!user) {
+      fail(`ユーザー ${userId} が見つかりません`);
+    }
+    if (user.email === email) {
+      console.log(
+        `ユーザー ${user.name}（${user.id}）にはこのメールアドレスが設定されています`,
+      );
+      return;
+    }
+    const other = await findUserBy(db, "email", email);
+    if (other) {
+      fail(
+        `このメールアドレスはすでに別のユーザー ${other.name}（${other.id}）に設定されています`,
+      );
+    }
+
+    console.log(
+      `対象のデータベース: ${args.local ? "ローカル" : "本番（remote）"}`,
+    );
+    console.log(`ユーザー: ${user.name}（${user.id}）`);
+    console.log(
+      user.email
+        ? "設定されているメールアドレスを置き換える"
+        : "メールアドレスを新しく設定する",
+    );
+
+    if (args.remote && !args.yes && !(await confirm())) {
+      console.log("中止しました");
+      return;
+    }
+
+    await db
+      .update(users)
+      .set({ email, updatedAt: sql`(unixepoch())` })
+      .where(eq(users.id, user.id));
+    console.log("メールアドレスを設定しました");
+  } finally {
+    await close();
+  }
 });
-
-type UserRow = { id: string; name: string; email: string | null };
-
-const userId = args["user-id"];
-const email = normalizeEmail(args.email);
-
-const [user] = execute<UserRow>(
-  `SELECT id, name, email FROM users WHERE id = ${quote(userId)} LIMIT 1`,
-);
-if (!user) {
-  fail(`ユーザー ${userId} が見つかりません`);
-}
-if (user.email === email) {
-  console.log(
-    `ユーザー ${user.name}（${user.id}）にはこのメールアドレスが設定されています`,
-  );
-  process.exit(0);
-}
-const [other] = execute<UserRow>(
-  `SELECT id, name, email FROM users WHERE email = ${quote(email)} LIMIT 1`,
-);
-if (other) {
-  fail(
-    `このメールアドレスはすでに別のユーザー ${other.name}（${other.id}）に設定されています`,
-  );
-}
-
-console.log(
-  `対象のデータベース: ${args.local ? "ローカル" : "本番（remote）"}`,
-);
-console.log(`ユーザー: ${user.name}（${user.id}）`);
-console.log(
-  user.email
-    ? "設定されているメールアドレスを置き換える"
-    : "メールアドレスを新しく設定する",
-);
-
-if (args.remote && !args.yes) {
-  await confirmOrExit();
-}
-
-execute(
-  `UPDATE users SET email = ${quote(email)}, updated_at = unixepoch() WHERE id = ${quote(user.id)}`,
-);
-console.log("メールアドレスを設定しました");

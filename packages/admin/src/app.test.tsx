@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app";
-import { createMigratedDatabase, toAdminDb } from "./test/d1";
+import { createMigratedDatabase, toD1 } from "./test/d1";
 import { seed } from "./test/fixtures";
 import { createJpeg } from "./test/jpeg";
 import { createFakeBucket } from "./test/r2";
@@ -13,7 +13,7 @@ beforeEach(async () => {
   seed(database);
   bucket = createFakeBucket();
   env = {
-    DB: toAdminDb(database) as D1Database,
+    DB: toD1(database),
     MEDIA_BUCKET: bucket.bucket,
   };
 });
