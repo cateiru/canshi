@@ -989,6 +989,42 @@ for (const theme of ["light", "dark"]) {
   });
 }
 
+// エラーページ。404 は存在しない URL を開いて撮り、予期しないエラーのページは
+// `next dev` だとエラーの表示（dev overlay）が重なるため、同じ中身を描く開発用ページ（src/app/dev/error-page）を撮る。
+// 数字と猫のイラストの色をライト・ダークテーマとも撮る
+for (const theme of ["light", "dark"]) {
+  test(`ページが見つからないときのページ（${theme}）の見た目`, async ({
+    page,
+    baseURL,
+  }, testInfo) => {
+    await page
+      .context()
+      .addCookies([{ name: "canshi-theme", value: theme, url: baseURL }]);
+    const response = await page.goto("/vrt-page-not-found");
+    expect(response?.status()).toBe(404);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(
+      page.getByRole("heading", { name: "ページが見つかりません" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+
+  test(`予期しないエラーのページ（${theme}）の見た目`, async ({
+    page,
+    baseURL,
+  }, testInfo) => {
+    await page
+      .context()
+      .addCookies([{ name: "canshi-theme", value: theme, url: baseURL }]);
+    await page.goto("/dev/error-page");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(
+      page.getByRole("heading", { name: "エラーが発生しました" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+}
+
 // うんち記録の一覧のグラフは実行日を今日として期間を切り、VRT の固定データ（2024-06）が
 // どの期間にも入らないため、固定の今日・記録で描く開発用ページ（src/app/dev/poop-chart）を撮る
 for (const period of ["1週間", "半年"]) {

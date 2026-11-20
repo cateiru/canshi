@@ -1,0 +1,99 @@
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-4);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.illustration {
+  display: block;
+  width: min(100%, 380px);
+  height: auto;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.title {
+  font-size: var(--text-xl);
+}
+
+.description {
+  color: var(--color-ink-muted);
+}
+
+.errorId {
+  color: var(--color-ink-subtle);
+  font-size: var(--text-sm);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.actions > * {
+  min-height: 48px;
+}
+
+/* 数字。背景に直接描くため、線はダークテーマで明るくなる --color-illustration-line にする */
+.digit {
+  fill: color-mix(in srgb, var(--color-accent) 22%, var(--color-bg));
+  stroke: var(--color-illustration-line, #2e3142);
+  stroke-width: 3;
+}
+
+.holeRim {
+  fill: none;
+  stroke: var(--color-illustration-line, #2e3142);
+  stroke-width: 3;
+}
+
+/* 猫の輪郭。RecordIcons の猫と同じく、毛色の塗りに接する線は --color-illustration-outline にする */
+.catLine {
+  stroke: var(--color-illustration-outline, #2e3142);
+  stroke-width: 1.5;
+}
+
+.pawLine {
+  stroke: var(--color-illustration-outline, #2e3142);
+  stroke-width: 3;
+}
+
+.catCoat {
+  fill: var(--illustration-cat-coat, #f5dfb7);
+}
+
+.catEar {
+  fill: var(--illustration-cat-ear, #f4b0a3);
+  stroke: none;
+}
+
+.catEye {
+  fill: var(--color-illustration-outline, #2e3142);
+  stroke: none;
+}
+
+.tailOutline {
+  stroke: var(--color-illustration-outline, #2e3142);
+  stroke-width: 11;
+}
+
+.tailCoat {
+  stroke: var(--illustration-cat-coat, #f5dfb7);
+  stroke-width: 6;
+}
