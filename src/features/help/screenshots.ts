@@ -11,6 +11,7 @@ export const HELP_SCREENSHOT_NAMES = [
   "household-new",
   "household-detail",
   "household-invitation",
+  "household-join",
   "welcome-modal",
   "welcome-invitation",
   "cat-new",

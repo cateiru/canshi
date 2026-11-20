@@ -1,6 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import {
+  type Browser,
+  expect,
+  type Locator,
+  type Page,
+  test,
+} from "@playwright/test";
 import {
   HELP_SCREENSHOT_NAMES,
   type HelpScreenshotName,
@@ -27,6 +33,8 @@ const OUTPUT_DIR = path.join(process.cwd(), "public/images/help");
 const HIGHLIGHT_COLOR = "#e8590c";
 
 const USER_NAME = "ねこ好き";
+/** 招待された家族の名前 */
+const INVITEE_NAME = "ねこ好きの家族";
 const HOUSEHOLD_NAME = "わが家";
 const CAT_NAME = "こむぎ";
 const FOOD_PRODUCT_NAME = "ドライフード チキン味";
@@ -133,6 +141,77 @@ async function selectOption(page: Page, label: string, option: string) {
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
+/**
+ * 招待された家族として、招待 URL を開いたときの画面を撮る。撮影するユーザーとは別の新しいユーザーで
+ * ログインし、ウェルカムモーダルの「もっている」から招待 URL を開く。家の中身が変わらないよう、
+ * 「参加する」は押さない
+ */
+async function captureInvitationAsInvitee(
+  browser: Browser,
+  invitationPath: string,
+) {
+  const { baseURL, viewport, deviceScaleFactor, locale, timezoneId } =
+    test.info().project.use;
+  const context = await browser.newContext({
+    baseURL,
+    viewport,
+    deviceScaleFactor,
+    isMobile: true,
+    hasTouch: true,
+    locale,
+    timezoneId,
+    colorScheme: "light",
+    reducedMotion: "reduce",
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto("/login");
+    await fillAndKeep(
+      page.getByLabel("メールアドレス（開発用）"),
+      `help-invitee-${Date.now()}@example.com`,
+    );
+    await page.getByRole("button", { name: "ログイン" }).click();
+    await expect(page).not.toHaveURL(/\/login/);
+
+    const welcome = page.getByRole("dialog", {
+      name: "アカウントを作成いただきありがとうございます！",
+    });
+    const welcomeInvitation = page.getByRole("dialog", {
+      name: "もっている招待URLを入力してください",
+    });
+    // ハイドレーション前に押すと反応しないため、入力画面に変わるまで押し直す
+    await expect(async () => {
+      if (await welcome.isVisible()) {
+        await welcome.getByRole("button", { name: "もっている" }).click();
+      }
+      await expect(welcomeInvitation).toBeVisible({ timeout: 2000 });
+    }).toPass();
+    await fillAndKeep(
+      welcomeInvitation.getByRole("textbox", { name: "招待URL" }),
+      new URL(invitationPath, page.url()).toString(),
+    );
+    await welcomeInvitation.getByRole("button", { name: "適用" }).click();
+    await expect(page).toHaveURL(invitationPath);
+
+    // 図に出る名前を、メールアドレスから作られた名前ではなく家族らしい名前にする
+    await page.goto("/settings/account/profile");
+    await fillAndKeep(
+      page.getByRole("textbox", { name: "名前" }),
+      INVITEE_NAME,
+    );
+    await page.getByRole("button", { name: "保存する" }).click();
+    await expect(page).toHaveURL("/settings/account");
+
+    await page.goto(invitationPath);
+    const joinButton = page.getByRole("button", { name: "参加する" });
+    await expect(joinButton).toBeVisible();
+    await highlight(joinButton);
+    await capture(page, "household-join");
+  } finally {
+    await context.close();
+  }
+}
+
 test("ヘルプのスクリーンショットを撮る", async ({ page, browser }) => {
   test.setTimeout(15 * 60 * 1000);
   await mkdir(OUTPUT_DIR, { recursive: true });
@@ -232,6 +311,10 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
     await issueButton.click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 2000 });
   }).toPass({ timeout: 30_000 });
+  // 招待された家族が開く画面を撮るため、置き換える前の招待 URL を控えておく
+  const invitationPath = new URL(
+    await page.getByRole("dialog").getByLabel("招待 URL").inputValue(),
+  ).pathname;
   // 招待 URL は撮るたびに変わり、開発環境のアドレスでもあるため、例の URL に置き換えて撮る
   await page
     .getByRole("dialog")
@@ -243,6 +326,9 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
   await capture(page, "household-invitation");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // 招待された家族が招待 URL を開いた画面。別の新しいユーザーで、ウェルカムモーダルから開く
+  await captureInvitationAsInvitee(browser, invitationPath);
 
   // ねこの登録
   await page.goto(`/cats/new?householdId=${householdId}`);

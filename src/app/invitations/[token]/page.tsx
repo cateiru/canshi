@@ -8,6 +8,7 @@ import { HouseholdInvitationAcceptButton } from "@/features/households/presentat
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
+import { UserAvatar } from "@/features/users/presentation/UserAvatar";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -38,19 +39,52 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
 
       {preview.status === "valid" ? (
         <Surface className={styles.content}>
-          <p>
-            {preview.createdByName}さんから「
-            <strong>{preview.householdName}</strong>
-            」に招待されています。参加すると、この家のねこの記録を見たり書いたりできるようになります。
+          <div className={styles.diagram}>
+            <div className={styles.node}>
+              <UserAvatar
+                name={user.name}
+                iconMediaAssetId={user.iconMediaAssetId}
+                size="md"
+              />
+              <span className={styles.nodeName}>{user.name}</span>
+            </div>
+            <span className={styles.connector} aria-hidden="true" />
+            <div className={styles.node}>
+              <span className={styles.householdIcon}>
+                <HouseholdIcon size="60%" aria-hidden="true" />
+              </span>
+              <span className={styles.nodeName}>{preview.householdName}</span>
+            </div>
+          </div>
+          <p className={styles.message}>
+            <UserAvatar
+              name={preview.createdByName}
+              iconMediaAssetId={preview.createdByIconMediaAssetId}
+              iconUrl={
+                preview.createdByIconMediaAssetId
+                  ? inviterIconUrl(token, preview.createdByIconMediaAssetId)
+                  : undefined
+              }
+              size="xs"
+              className={styles.inviterAvatar}
+            />
+            <span>
+              <strong>{preview.createdByName}</strong>さんから「
+              <strong>{preview.householdName}</strong>」へ招待されています。
+            </span>
           </p>
-          <p className={styles.note}>
+          <p className={styles.description}>
+            参加すると、この家のねこの記録を見たり書いたりできるようになります。
+          </p>
+          <p className={styles.expires}>
             有効期限: {formatDateTimeUtc(getNaiveUtcNow(preview.expiresAt))}
           </p>
-          <div className={styles.actions}>
+          <div className={styles.decision}>
             <HouseholdInvitationAcceptButton
               householdName={preview.householdName}
               action={acceptHouseholdInvitationAction.bind(null, token)}
             />
+            <ButtonLink href="/home">キャンセル</ButtonLink>
           </div>
         </Surface>
       ) : preview.status === "member" ? (
@@ -81,4 +115,12 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
       )}
     </main>
   );
+}
+
+/**
+ * 招待した人のアイコン画像の URL（`./inviter-icon/route.ts`）。アイコンを変えたときに
+ * 古い画像のキャッシュを使わないよう、画像の ID を付ける
+ */
+function inviterIconUrl(token: string, iconMediaAssetId: string) {
+  return `/invitations/${encodeURIComponent(token)}/inviter-icon?v=${encodeURIComponent(iconMediaAssetId)}`;
 }

@@ -60,6 +60,8 @@ export type HouseholdInvitationLookup = {
   householdId: string;
   householdName: string;
   createdByName: string;
+  /** 招待した人のアイコン画像（media_assets）の ID。未設定なら null */
+  createdByIconMediaAssetId: string | null;
   expiresAt: Date;
   acceptedByUserId: string | null;
   /** 開いたユーザーがすでにその家のメンバーか */
@@ -75,6 +77,7 @@ export type HouseholdInvitationPreview =
       status: "valid";
       householdName: string;
       createdByName: string;
+      createdByIconMediaAssetId: string | null;
       expiresAt: Date;
     };
 
@@ -101,6 +104,7 @@ export function toHouseholdInvitationPreview(
     status: "valid",
     householdName: invitation.householdName,
     createdByName: invitation.createdByName,
+    createdByIconMediaAssetId: invitation.createdByIconMediaAssetId,
     expiresAt: invitation.expiresAt,
   };
 }
