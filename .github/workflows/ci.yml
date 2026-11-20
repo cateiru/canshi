@@ -268,8 +268,11 @@ jobs:
           # メインアプリの Drizzle スキーマと条件付き INSERT・共通のパッケージ（デザイントークンなど）・
           # 依存関係（Playwright・wrangler・Hono など）・このワークフロー
           PATTERN='^(packages/admin/|packages/shared/|e2e-admin/|e2e/vrt-snapshot\.ts$|e2e/fixtures/vrt-seed\.sql$|playwright\.admin-vrt\.config\.ts$|regconfig\.admin\.json$|drizzle/|src/db/schema/|src/db/conditionalInsert\.ts$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/ci\.yml$|\.github/actions/)'
-          if gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
-            --jq '.[].filename' | grep -qE "$PATTERN"; then
+          # 一覧を先に受け取ってから探す。パイプで grep -q に渡すと、grep が最初の一致で終わったあとも
+          # gh が次のページを書き込もうとして SIGPIPE で失敗し、pipefail で一致なしと判定されてしまう
+          FILES="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename')"
+          if grep -qE "$PATTERN" <<<"$FILES"; then
             echo "admin=true" >> "$GITHUB_OUTPUT"
           else
             echo "admin=false" >> "$GITHUB_OUTPUT"
