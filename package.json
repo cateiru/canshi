@@ -36,6 +36,7 @@
   "dependencies": {
     "@block65/webcrypto-web-push": "^2.0.0",
     "@bprogress/next": "3.2.12",
+    "@canshi/shared": "workspace:*",
     "@cf-wasm/photon": "^0.4.0",
     "@cloudflare/workers-oauth-provider": "^1.2.4",
     "@modelcontextprotocol/server": "2.4.0",

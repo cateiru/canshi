@@ -5,6 +5,10 @@
   "compatibility_date": "2026-09-06",
   "compatibility_flags": ["nodejs_compat"],
 
+  // CSS（`@canshi/shared` の tokens.css）は文字列として import し、<style> に埋め込む
+  // （src/views/styles.ts）。テストでは vitest.config.ts のプラグインで同じように読み込む
+  "rules": [{ "type": "Text", "globs": ["**/*.css"], "fallthrough": true }],
+
   // 本番公開ホスト名。メインアプリ（canshi.cateiru.dev）・MCP サーバー
   // （mcp.canshi.cateiru.dev）とは別ホスト名にする。アプリ内では認証しないため、
   // デプロイ前に Zero Trust でこのホスト名の Self-hosted アプリケーションを作り、

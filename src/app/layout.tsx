@@ -72,7 +72,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // 見た目設定は src/styles/tokens.css が <html> の data 属性で切り替える
+  // 見た目設定は @canshi/shared の tokens.css（packages/shared/src/styles/tokens.css）が <html> の data 属性で切り替える
   const [{ theme, accent, contrast, fontSize }, user] = await Promise.all([
     getAppearance(),
     getCurrentUser(),

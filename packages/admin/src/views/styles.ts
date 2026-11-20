@@ -1,63 +1,20 @@
 // 管理画面の CSS。見た目はメインアプリのデザインルール（docs/idea/design.md）に揃える。
 //
-// トークンの正はメインアプリの `src/styles/tokens.css`。パッケージ境界をまたいで import せず、
-// ライトテーマ・標準のコントラスト・標準の文字サイズのときの値だけを写している。管理画面は
-// ダークテーマ・コントラスト・文字サイズの切り替えを持たず、ライトテーマに固定する。
-// 写した値が tokens.css とずれていないことは styles.test.ts で確認している。
+// トークンはメインアプリと同じ `@canshi/shared` の `tokens.css` をそのまま使う（写しを持たない）。
+// 管理画面はダークテーマ・コントラスト・文字サイズの切り替えを持たず、`<html>` に
+// `data-theme="light"` を付けて（Layout.tsx の `THEME`）ライトテーマ・標準のコントラスト・標準の
+// 文字サイズに固定する。
 
-/** tokens.css の `:root` と同じ名前・値で宣言するトークン */
-export const TOKENS = {
-  "--color-bg": "#fff",
-  "--color-ink": "#2e3142",
-  "--color-accent": "#ec995a",
-  "--color-success-strong": "#26732e",
-  "--color-warning-strong": "#806000",
-  "--color-error": "#f25c4b",
-  "--color-error-strong": "#bd3528",
-  "--color-info-strong": "#245da8",
-  "--color-accent-strong": "#9a4b13",
-  "--color-focus-ring": "var(--color-accent-strong)",
-  "--font-sans":
-    'system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", "Noto Sans JP", sans-serif',
-  "--text-xl": "26px",
-  "--text-lg": "20px",
-  "--text-md": "17px",
-  "--text-sm": "15px",
-  "--text-xs": "12px",
-  "--text-input": "16px",
-  "--font-weight-bold": "700",
-  "--font-weight-regular": "400",
-  "--line-height-body": "1.7",
-  "--line-height-heading": "1.4",
-  "--space-1": "4px",
-  "--space-2": "8px",
-  "--space-3": "12px",
-  "--space-4": "16px",
-  "--space-6": "24px",
-  "--space-8": "32px",
-  "--space-10": "40px",
-  "--radius-base": "4px",
-  "--border-width": "1px",
-  "--transition-base": "150ms ease",
-  "--focus-ring-width": "2px",
-  "--focus-ring-offset": "1px",
-} as const;
+import TOKENS_CSS from "@canshi/shared/styles/tokens.css";
 
-const tokenDeclarations = Object.entries(TOKENS)
-  .map(([name, value]) => `  ${name}: ${value};`)
-  .join("\n");
+/** `<html>` の `data-theme`。端末がダークテーマでも tokens.css のダークテーマを当てない */
+export const THEME = "light";
 
 // 固定の CSS。JSX の子要素として渡すと `"`・`>` がエスケープされて壊れるため、
 // dangerouslySetInnerHTML で埋め込む（利用者の入力は含めないこと）
 export const STYLES = `
+${TOKENS_CSS}
 :root {
-  color-scheme: light;
-${tokenDeclarations}
-  /* tokens.css で --mix-* の割合から計算している色。標準のコントラストの割合で固定する */
-  --color-border: color-mix(in srgb, var(--color-ink) 20%, var(--color-bg));
-  --color-border-input: color-mix(in srgb, var(--color-ink) 62%, var(--color-bg));
-  --color-ink-muted: color-mix(in srgb, var(--color-ink) 78%, var(--color-bg));
-  --color-ink-subtle: color-mix(in srgb, var(--color-ink) 70%, var(--color-bg));
   /* 淡い背景の面（記録カードと同じ）と、その hover */
   --color-surface: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
   --color-surface-hover: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));

@@ -60,7 +60,8 @@ describe("画面", () => {
     const html = await (await request("/")).text();
     expect(html).toContain('<meta name="color-scheme" content="light"/>');
     expect(html).toContain("color-scheme: light;");
-    expect(html).not.toContain("prefers-color-scheme");
+    // tokens.css のダークテーマ（端末がダークのとき）は data-theme が light だと当たらない
+    expect(html).toContain('<html lang="ja" data-theme="light">');
   });
 
   it("ユーザー一覧で、利用者の入力した名前をエスケープして表示する", async () => {

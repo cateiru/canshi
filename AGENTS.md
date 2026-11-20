@@ -139,3 +139,6 @@ PR のレビューコメント（インラインコメント・レビュー本�
 
 - 開発コマンド・ディレクトリ構成は [`README.md`](README.md) を参照。
 - DB 設計規約は [`src/db/README.md`](src/db/README.md) を参照。
+- メインアプリと管理画面（`packages/admin`）で共通の実装（デザイントークンなど）は `packages/shared`
+  （`@canshi/shared`）に置く。フレームワークに依存しないものだけを置く。詳細は
+  [`packages/shared/README.md`](packages/shared/README.md) を参照。

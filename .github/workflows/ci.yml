@@ -43,6 +43,12 @@ jobs:
       - name: Test (admin)
         run: pnpm --filter @canshi/admin test
 
+      - name: Type check (shared)
+        run: pnpm --filter @canshi/shared typecheck
+
+      - name: Test (shared)
+        run: pnpm --filter @canshi/shared test
+
       - name: Build
         run: pnpm build
 
@@ -259,8 +265,9 @@ jobs:
             exit 0
           fi
           # 管理画面のコード・VRT の設定とフィクスチャ・マイグレーション・管理画面が import する
-          # メインアプリの Drizzle スキーマと条件付き INSERT・依存関係（Playwright・wrangler・Hono など）・このワークフロー
-          PATTERN='^(packages/admin/|e2e-admin/|e2e/vrt-snapshot\.ts$|e2e/fixtures/vrt-seed\.sql$|playwright\.admin-vrt\.config\.ts$|regconfig\.admin\.json$|drizzle/|src/db/schema/|src/db/conditionalInsert\.ts$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/ci\.yml$|\.github/actions/)'
+          # メインアプリの Drizzle スキーマと条件付き INSERT・共通のパッケージ（デザイントークンなど）・
+          # 依存関係（Playwright・wrangler・Hono など）・このワークフロー
+          PATTERN='^(packages/admin/|packages/shared/|e2e-admin/|e2e/vrt-snapshot\.ts$|e2e/fixtures/vrt-seed\.sql$|playwright\.admin-vrt\.config\.ts$|regconfig\.admin\.json$|drizzle/|src/db/schema/|src/db/conditionalInsert\.ts$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/ci\.yml$|\.github/actions/)'
           if gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
             --jq '.[].filename' | grep -qE "$PATTERN"; then
             echo "admin=true" >> "$GITHUB_OUTPUT"

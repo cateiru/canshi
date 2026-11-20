@@ -1,5 +1,5 @@
 import type { Child } from "hono/jsx";
-import { STYLES } from "./styles";
+import { STYLES, THEME } from "./styles";
 
 const NAV_ITEMS = [
   { href: "/", label: "概要" },
@@ -25,7 +25,7 @@ export function Layout(props: {
   children: Child;
 }) {
   return (
-    <html lang="ja">
+    <html lang="ja" data-theme={THEME}>
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
