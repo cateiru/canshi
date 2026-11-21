@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { fillAndKeep } from "./helpers";
+import { expect, type Locator, test } from "@playwright/test";
+import { fillAndKeep, openCatRegistration } from "./helpers";
 
 const LIGHT_BG = "rgb(255, 255, 255)";
 const DARK_BG = "rgb(28, 30, 39)";
@@ -185,10 +185,19 @@ for (const fontSize of ["small", "medium", "large", "xlarge"]) {
   });
 }
 
+// 共通の部品（packages/shared）の見た目は Storybook の VRT（e2e-shared/vrt.spec.ts）で撮るが、
+// 文字サイズに合わせた拡大縮小は、アプリの画面（<html> の data 属性）で効いていることをここで確かめる
 test("文字サイズを変えるとボタン・選択欄・カレンダーの目印も拡大縮小する", async ({
   page,
   baseURL,
 }) => {
+  const catName = `テスト猫-${Date.now()}`;
+  await openCatRegistration(page);
+  await page.getByLabel("名前").fill(catName);
+  await page.getByRole("button", { name: "登録する" }).click();
+  await expect(page.getByRole("heading", { name: catName })).toBeVisible();
+  const catPath = new URL(page.url()).pathname;
+
   await page.setViewportSize({ width: 320, height: 800 });
   for (const [fontSize, scale] of [
     ["small", 0.9],
@@ -201,48 +210,17 @@ test("文字サイズを変えるとボタン・選択欄・カレンダーの�
       .addCookies([
         { name: "canshi-font-size", value: fontSize, url: baseURL },
       ]);
-    await page.goto("/dev/components");
-    const checkbox = page.locator("label").filter({
-      has: page.getByRole("checkbox", { name: "ドライフード", exact: true }),
-    });
-    const radio = page.locator("label").filter({
-      has: page.getByRole("radio", { name: "メス", exact: true }),
-    });
-    for (const [name, icon, width, height] of [
-      [
-        "追加メニュー",
-        page
-          .getByRole("button", { name: "追加する", exact: true })
-          .locator("svg"),
-        18,
-        18,
-      ],
-      [
-        "月送り",
-        page.getByRole("link", { name: "前の月", exact: true }).locator("svg"),
-        18,
-        18,
-      ],
-      [
-        "選択欄の矢印",
-        page.getByRole("button", { name: /性別/ }).locator("svg"),
-        10,
-        6,
-      ],
-      [
-        "チェックボックス",
-        checkbox.locator('span[aria-hidden="true"]'),
-        18,
-        18,
-      ],
-      ["ラジオ", radio.locator('span[aria-hidden="true"]'), 18, 18],
-      [
-        "カレンダーの凡例",
-        page.locator('li > svg[data-record-type="feeding"]').first(),
-        14,
-        14,
-      ],
-    ] as const) {
+
+    const expectSize = async (
+      name: string,
+      icon: Locator,
+      width: number,
+      height: number,
+    ) => {
+      await expect(page.locator("html")).toHaveAttribute(
+        "data-font-size",
+        fontSize,
+      );
       const bounds = await icon.boundingBox();
       expect(bounds?.width, `${name}・${fontSize}`).toBeCloseTo(
         width * scale,
@@ -252,8 +230,78 @@ test("文字サイズを変えるとボタン・選択欄・カレンダーの�
         height * scale,
         1,
       );
-    }
+    };
+
+    await page.goto("/cats");
+    await expectSize(
+      "追加メニュー",
+      page
+        .getByRole("button", { name: "追加する", exact: true })
+        .locator("svg")
+        .first(),
+      18,
+      18,
+    );
+
+    await page.goto("/cats/new");
+    await expectSize(
+      "選択欄の矢印",
+      page.getByRole("button", { name: /性別/ }).locator("svg"),
+      10,
+      6,
+    );
+    await expectSize(
+      "ラジオ",
+      page
+        .locator("label")
+        .filter({
+          // 避妊・去勢の「済」（毛色の選択肢にも「未設定」があるため、こちらで探す）
+          has: page.getByRole("radio", { name: "済", exact: true }),
+        })
+        .locator('span[aria-hidden="true"]'),
+      18,
+      18,
+    );
+
+    await page.goto(`${catPath}/notification-settings`);
+    await expectSize(
+      "チェックボックス",
+      page
+        .locator("label")
+        .filter({
+          has: page.getByRole("checkbox", {
+            name: "年ごとの誕生日を通知する",
+            exact: true,
+          }),
+        })
+        .locator('span[aria-hidden="true"]'),
+      18,
+      18,
+    );
+
+    await page.goto(`${catPath}/timeline`);
+    await expectSize(
+      "月送り",
+      page.getByRole("link", { name: "前の月", exact: true }).locator("svg"),
+      18,
+      18,
+    );
+    await expectSize(
+      "カレンダーの凡例",
+      page.locator('li > svg[data-record-type="feeding"]').first(),
+      14,
+      14,
+    );
   }
+
+  await page.goto(catPath);
+  await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "削除する" })
+    .click();
+  await expect(page).toHaveURL(/\/cats$/);
 });
 
 test("特大文字でも狭い画面のプロフィール名とIDに十分な幅を確保する", async ({

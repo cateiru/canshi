@@ -70,11 +70,15 @@ const ignoreSelectorsByPage = new WeakMap<Page, string[]>();
 
 export const test = base.extend<VrtFixtures>({
   ignoreSelectors: [[], { option: true }],
-  page: async ({ page, ignoreSelectors }, use) => {
-    ignoreSelectorsByPage.set(page, [
-      ...ALWAYS_MASKED_SELECTORS,
-      ...ignoreSelectors,
-    ]);
+  page: async ({ page, ignoreSelectors }, use, testInfo) => {
+    // 共通のパッケージの VRT（playwright.shared-vrt.config.ts）は、アプリのフッターではなく
+    // Footer の部品そのものを撮るため、プロジェクトの `metadata.vrtMaskFooter: false` で
+    // 常にマスクする要素を外す
+    const alwaysMasked =
+      testInfo.project.metadata?.vrtMaskFooter === false
+        ? []
+        : ALWAYS_MASKED_SELECTORS;
+    ignoreSelectorsByPage.set(page, [...alwaysMasked, ...ignoreSelectors]);
     await use(page);
     ignoreSelectorsByPage.delete(page);
   },
@@ -100,7 +104,7 @@ export type TakeSnapshotOptions = {
   fullPage?: boolean;
   /**
    * aria-busy="true" の要素（読み込み中の部分）がなくなるまで待ってから撮影するか（既定は true）。
-   * 読み込み中の見た目そのものを撮るページ（コンポーネントプレビューのスケルトンなど）では false にする
+   * 読み込み中の見た目そのもの（スケルトンなど）を撮るときは false にする
    */
   waitForLoaded?: boolean;
 };

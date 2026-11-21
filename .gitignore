@@ -24,6 +24,7 @@ packages/shared/storybook-static/
 # VRT (reg-suit)
 /.reg/
 /.reg-admin/
+/.reg-shared/
 /vrt-screenshots/
 
 # env

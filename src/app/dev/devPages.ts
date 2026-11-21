@@ -2,7 +2,6 @@ import type { ComponentType } from "react";
 import type { IconBaseProps } from "react-icons";
 import {
   TbChartDots,
-  TbComponents,
   TbConfetti,
   TbError404,
   TbIcons,
@@ -24,13 +23,6 @@ export type DevPage = {
  * ページを追加したらここにも追加する（`devPages.test.ts` で、ディレクトリとの食い違いを確かめる）
  */
 export const DEV_PAGES: readonly DevPage[] = [
-  {
-    slug: "components",
-    title: "コンポーネントプレビュー",
-    description:
-      "ボタン・フォーム・モーダルなどの共通部品と、色・余白・文字の大きさのトークンを並べます。",
-    icon: TbComponents,
-  },
   {
     slug: "modals",
     title: "モーダル",

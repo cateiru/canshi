@@ -180,7 +180,7 @@ Alert はバッジと異なり、状態色（info・success・warning・error）
 - 画面固有の背景・角丸・余白は CSS Modules で指定する。共通コンポーネントを拡張するときは、既存画面への影響を確認する
 - Toast はページ内の 1 箇所（ルートレイアウト）にのみ `ToastRegionRoot` をマウントし、`addToast()` で通知を積む
 
-コンポーネントの一覧・動作は `/dev/components`（開発時のみ表示）で確認できる。
+コンポーネントの一覧・動作は、共通のパッケージの Storybook（`pnpm --filter @canshi/shared storybook`。[`packages/shared/README.md`](../../packages/shared/README.md) 参照）で確認できる。
 
 記録画面の実装例:
 

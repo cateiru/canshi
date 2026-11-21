@@ -23,6 +23,8 @@
     "vrt:reg": "reg-suit run",
     "vrt:admin": "playwright test --config=playwright.admin-vrt.config.ts",
     "vrt:admin:reg": "reg-suit run --config regconfig.admin.json",
+    "vrt:shared": "pnpm --filter @canshi/shared build-storybook && playwright test --config=playwright.shared-vrt.config.ts",
+    "vrt:shared:reg": "reg-suit run --config regconfig.shared.json",
     "help:screenshots": "playwright test --config=playwright.help-screenshots.config.ts",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
