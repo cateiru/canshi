@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, takeSnapshot, test } from "../e2e/vrt-snapshot";
 
 // 管理画面（packages/admin）のビジュアルリグレッションテスト (reg-suit)。
@@ -8,7 +9,15 @@ import { expect, takeSnapshot, test } from "../e2e/vrt-snapshot";
 // データが残っていると、その分も一覧に表示される。
 //
 // 書き込み（ログアウトさせる・メンバーの追加・削除・共通のごはん商品の登録・リクエストの完了など）はデータを変えてしまうため実行せず、
-// 結果の表示はリダイレクト先の URL のクエリで再現する（packages/admin/src/app.tsx）
+// 結果の表示は、書き込みのあとに移動する URL のクエリで再現する（packages/admin/src/client/App.tsx）。
+// 画面は React の SPA で、データは開いてから API で読み込むため、読み込み中の表示（aria-busy）が
+// 消えるのを待ってから撮る
+
+/** `path` を開き、API からの読み込みが終わるまで待つ */
+async function open(page: Page, path: string) {
+  await page.goto(path);
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+}
 
 const PAGES = [
   { title: "概要", path: "/" },
@@ -31,7 +40,7 @@ for (const viewport of [
 
     for (const page of PAGES) {
       test(`${page.title}の見た目`, async ({ page: browserPage }, testInfo) => {
-        await browserPage.goto(page.path);
+        await open(browserPage, page.path);
         await expect(
           browserPage.getByRole("heading", { level: 2, name: page.title }),
         ).toBeVisible();
@@ -44,7 +53,7 @@ for (const viewport of [
 test("すべての端末からログアウトさせた結果の見た目", async ({
   page,
 }, testInfo) => {
-  await page.goto("/users?loggedOut=vrt-inviter");
+  await open(page, "/users?loggedOut=vrt-inviter");
   await expect(page.getByRole("status")).toHaveText(
     "VRT招待者 をすべての端末からログアウトさせました。",
   );
@@ -52,7 +61,8 @@ test("すべての端末からログアウトさせた結果の見た目", async
 });
 
 test("家にメンバーを追加した結果の見た目", async ({ page }, testInfo) => {
-  await page.goto(
+  await open(
+    page,
     "/households?memberChange=added&household=vrt-household&user=vrt-inviter",
   );
   await expect(page.getByRole("status")).toContainText(
@@ -64,7 +74,8 @@ test("家にメンバーを追加した結果の見た目", async ({ page }, tes
 test("家にメンバーを追加できなかった結果の見た目", async ({
   page,
 }, testInfo) => {
-  await page.goto(
+  await open(
+    page,
     "/households?memberChange=add-failed&household=vrt-household&user=vrt-inviter",
   );
   await expect(page.getByRole("alert")).toContainText(
@@ -74,7 +85,7 @@ test("家にメンバーを追加できなかった結果の見た目", async ({
 });
 
 test("共通のごはん商品の編集ページの見た目", async ({ page }, testInfo) => {
-  await page.goto("/food-products/vrt-catalog-1/edit");
+  await open(page, "/food-products/vrt-catalog-1/edit");
   await expect(
     page.getByRole("heading", {
       level: 2,
@@ -85,7 +96,10 @@ test("共通のごはん商品の編集ページの見た目", async ({ page }, 
 });
 
 test("共通のごはん商品を登録した結果の見た目", async ({ page }, testInfo) => {
-  await page.goto("/food-products?catalogChange=created&product=vrt-catalog-2");
+  await open(
+    page,
+    "/food-products?catalogChange=created&product=vrt-catalog-2",
+  );
   await expect(page.getByRole("status")).toHaveText(
     "VRTまぐろパウチ を登録しました。",
   );
@@ -93,7 +107,8 @@ test("共通のごはん商品を登録した結果の見た目", async ({ page 
 });
 
 test("共通のごはん商品を検索した結果の見た目", async ({ page }, testInfo) => {
-  await page.goto(
+  await open(
+    page,
     `/food-products?manufacturer=${encodeURIComponent("VRTフーズ")}&q=${encodeURIComponent("まぐろ")}`,
   );
   await expect(page.getByText("2 件中 1 件")).toBeVisible();
@@ -103,11 +118,27 @@ test("共通のごはん商品を検索した結果の見た目", async ({ page 
 test("共通のごはん商品のリクエストを完了にした結果の見た目", async ({
   page,
 }, testInfo) => {
-  await page.goto(
+  await open(
+    page,
     "/food-product-requests?completion=completed&request=vrt-request-done",
   );
   await expect(page.getByRole("status")).toContainText(
     "のリクエストを完了にし、VRT招待者 に通知しました。",
+  );
+  await takeSnapshot(page, testInfo);
+});
+
+test("共通のごはん商品を削除する前の確認の見た目", async ({
+  page,
+}, testInfo) => {
+  await open(
+    page,
+    `/food-products?manufacturer=${encodeURIComponent("VRTフーズ")}&q=${encodeURIComponent("まぐろ")}`,
+  );
+  // 確認ダイアログを開くだけで、削除はしない
+  await page.getByRole("button", { name: "VRTまぐろパウチを削除する" }).click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "VRTまぐろパウチ を削除しますか？",
   );
   await takeSnapshot(page, testInfo);
 });

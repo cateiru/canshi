@@ -14,7 +14,7 @@ LP などのパッケージで使う共通の実装を置くパッケージ。
 Next.js などへの依存は Biome の `noRestrictedImports`（`biome.json` の `packages/shared/**` の overrides）で禁止している。
 
 ビルドの手順は持たず、ソース（`.css`・`.ts`・`.tsx`）を `package.json` の `exports` で公開する。
-使う側（Next.js・wrangler・Vitest）がそれぞれバンドルする。
+使う側（Next.js・Vite・Vitest）がそれぞれバンドルする。
 
 | パス | 内容 |
 | --- | --- |
@@ -48,16 +48,16 @@ Server Component からも使えるよう、React の Context ではなく props
 
 - メインアプリ：`src/styles/globals.css` の先頭で `@import "@canshi/shared/styles/tokens.css";` し、UI は
   `@/components/ui`（上の差し込み）から使う。
-- 管理画面：Hono の JSX でサーバーサイドレンダリングするため、React の `ui` は使わず、tokens.css だけを使う。
-  `src/views/styles.ts` で tokens.css を文字列として import し、`<style>` に埋め込む（`wrangler.jsonc` の
-  `rules` で `.css` を Text モジュールにし、テストでは `vitest.config.ts` のプラグインで同じように読み込む）。
+- 管理画面：React の SPA（`packages/admin/src/client`）で、`src/client/global.css` の先頭で
+  `@import "@canshi/shared/styles/tokens.css";` し、UI は `@canshi/shared/ui` から直接使う。リンクを含むものには
+  react-router のリンクを差し込んだ `RouterLink`（`src/client/RouterLink.tsx`）を `linkComponent` で渡す。
   `<html>` に `data-theme="light"` を付け、ライトテーマ・標準のコントラスト・標準の文字サイズに固定する。
 
 公開するものを足すときは、`package.json` の `exports` に追加する。依存を足すときは、複数のパッケージで使う
 もののバージョンをリポジトリルートの `pnpm-workspace.yaml` の `catalog` で決める（`react`・`react-dom` は
 例外で、ルートの `package.json` と同じ版を `devDependencies` に書く。理由は `pnpm-workspace.yaml` のコメントを参照）。
 
-管理画面は tokens.css を使うため、このパッケージが変わったときもデプロイし直す必要がある。Workers Builds の
+管理画面は tokens.css と UI コンポーネントを使うため、このパッケージが変わったときもデプロイし直す必要がある。Workers Builds の
 Build watch paths（[`docs/deploy.md`](../../docs/deploy.md) の「管理画面の自動デプロイとプレビュー」節）と、
 CI の管理画面の VRT を実行するかの判定（`.github/workflows/ci.yml` の `admin-changes`）に
 `packages/shared/` を含めている。

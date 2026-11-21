@@ -16,6 +16,7 @@ import type {
   PackageSize,
 } from "../catalog/form";
 import type { CatalogImageMimeType } from "../catalog/image";
+import type { CatalogFoodProduct } from "../models";
 import type { AdminDb } from "./client";
 import { catalogFoodProducts, foodProducts, mediaAssets } from "./schema";
 
@@ -25,15 +26,7 @@ export const CATALOG_FOOD_PRODUCT_MEDIA_TYPE = "catalog_food_product";
 /** このファイルが使う R2 の機能（テストで差し替えるため最小限にする） */
 export type AdminBucket = Pick<R2Bucket, "put" | "get" | "delete">;
 
-export interface CatalogFoodProduct extends CatalogFoodProductValues {
-  id: string;
-  /** 画像の `media_assets.id`。画像がなければ null */
-  imageAssetId: string | null;
-  /** この商品から家に追加されたごはん商品の数 */
-  addedCount: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type { CatalogFoodProduct } from "../models";
 
 export interface CatalogImage {
   objectKey: string;

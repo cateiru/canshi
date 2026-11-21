@@ -1,0 +1,28 @@
+/* 件数。淡い背景の面に、ラベルを控えめに・数値を大きく表示する */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-4);
+}
+
+.stat {
+  border-radius: 12px;
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.stat dt {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.stat dd {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 警告の中のコマンド。Alert の白い文字に合わせる */
+.code {
+  color: inherit;
+}

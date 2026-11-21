@@ -18,6 +18,9 @@ packages/*/.wrangler/
 /test-results/
 /e2e/.auth/
 
+# 管理画面の画面（SPA）の vite build の出力
+packages/admin/dist/
+
 # Storybook (packages/shared の build-storybook の出力)
 packages/shared/storybook-static/
 

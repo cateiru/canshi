@@ -9,6 +9,10 @@ import {
   sql,
 } from "drizzle-orm";
 import { insertWhere } from "../../../../src/db/conditionalInsert";
+import {
+  type CatalogFoodProductRequest,
+  COMPLETED_REQUEST_LIST_LIMIT,
+} from "../models";
 import type { AdminDb } from "./client";
 import { catalogFoodProductRequests, notifications, users } from "./schema";
 
@@ -19,19 +23,8 @@ import { catalogFoodProductRequests, notifications, users } from "./schema";
  * `completeCatalogFoodProductRequest`）と同じ通知を作るため、文言・重複を防ぐキーを揃えること
  */
 
-/** 完了にしたリクエストを一覧に表示する件数の上限 */
-export const COMPLETED_REQUEST_LIST_LIMIT = 50;
-
-export interface CatalogFoodProductRequest {
-  id: string;
-  userName: string;
-  /** 検索ページの URL のクエリ（`q=...&textureType=...`） */
-  searchQuery: string;
-  /** 検索条件の要約（リクエストしたときにメインアプリが作ったもの） */
-  label: string;
-  createdAt: Date;
-  completedAt: Date | null;
-}
+export type { CatalogFoodProductRequest } from "../models";
+export { COMPLETED_REQUEST_LIST_LIMIT } from "../models";
 
 /** リクエストと、リクエストしたユーザーの名前を読む SELECT */
 function selectRequests(db: AdminDb) {

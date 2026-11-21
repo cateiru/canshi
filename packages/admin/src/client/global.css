@@ -1,0 +1,71 @@
+/*
+ * 管理画面全体の CSS。見た目はメインアプリのデザインルール（docs/idea/design.md）に揃え、
+ * トークンはメインアプリと同じ `@canshi/shared` の tokens.css を使う。部品の見た目は
+ * `@canshi/shared/ui` の CSS Modules が持つため、ここには文字・背景・リセットだけを書く
+ * （メインアプリの src/styles/globals.css のうち、部品の見た目に関わるもの）。
+ *
+ * 管理画面はダークテーマ・コントラスト・文字サイズの切り替えを持たず、index.html の `<html>` に
+ * `data-theme="light"` を付けてライトテーマ・標準のコントラスト・標準の文字サイズに固定する
+ */
+@import "@canshi/shared/styles/tokens.css";
+
+:root {
+  /* 淡い背景の面（記録カードと同じ）と、その hover */
+  --color-surface: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
+  --color-surface-hover: color-mix(
+    in srgb,
+    var(--color-ink) 7%,
+    var(--color-bg)
+  );
+}
+
+html {
+  background-color: var(--color-bg);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body);
+  color: var(--color-ink);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-wrap: break-word;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: var(--line-height-heading);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+code {
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+ul {
+  list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-base: 0ms;
+  }
+}

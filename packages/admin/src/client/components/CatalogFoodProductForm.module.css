@@ -1,0 +1,138 @@
+/* メインアプリのごはん商品のフォームと同じ幅・間隔にする */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 800px;
+}
+
+.packageSizeRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* 内容量の候補の行（g・単位・削除ボタン） */
+.packageSizeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+/*
+ * 削除ボタンを入力欄と同じ高さに揃える。エラーで入力欄の下が伸びてもずれないよう、上から
+ * ラベル（1 行）と間隔の分を空け、高さ 48px の入力欄と 44px のボタンの差の半分を足す
+ */
+.removeButton {
+  margin-top: calc(
+    var(--text-sm) *
+    var(--line-height-body) +
+    var(--space-1) +
+    2px
+  );
+}
+
+.checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.imageField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.description {
+  font-size: var(--text-sm);
+  color: var(--color-ink-subtle);
+}
+
+.error {
+  font-size: var(--text-sm);
+  color: var(--color-error-strong);
+}
+
+.images {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.image {
+  display: block;
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+/* 商品画像の選択欄（メインアプリの画像の選択欄）。透明なファイル入力欄を点線の枠に重ねる */
+.fileChooser {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  width: 100%;
+  max-width: 320px;
+  min-height: 160px;
+  padding: var(--space-4);
+  border: var(--border-width) dashed var(--color-ink);
+  border-radius: var(--radius-base);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.fileChooser:hover,
+.fileChooser:has(input:focus-visible) {
+  border-color: var(--color-accent);
+  background-color: color-mix(
+    in srgb,
+    var(--color-accent) 12%,
+    var(--color-bg)
+  );
+}
+
+.fileChooser:has(input:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.fileChooser:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.fileChooser input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.fileChooserTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.fileChooserNote {
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}

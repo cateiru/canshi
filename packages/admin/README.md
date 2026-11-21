@@ -2,40 +2,73 @@
 
 CANSHI の運用者向けの管理画面。メインアプリ（`canshi`）とは別の
 Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`admin.canshi.app` で公開する。
-[Hono](https://hono.dev/) の JSX でサーバーサイドレンダリングする。
+
+画面は React の SPA（`src/client/`）で、`vite build` で `dist/client` に書き出し、Workers の静的アセット
+（`wrangler.jsonc` の `assets`）として配信する。サーバーは [Hono](https://hono.dev/) の JSON の API
+（`/api/*`、`src/app.ts`）だけを持ち、画面はこの API を呼んで表示・書き込みを行う。
+
+すべてのリクエストを Worker が受け（`assets.run_worker_first`）、`/api/*` は API で、それ以外は静的アセットで
+返す。静的アセットにないパス（`/users` など）は SPA の `index.html` を返し（`not_found_handling`）、
+react-router が表示するページを決める。Worker を通すため、画面の HTML にも `secureHeaders` のヘッダーが付く。
 
 基本的には閲覧用で、書き込みはユーザーの権限の変更と、ユーザーをすべての端末からログアウトさせる
 操作、家へのメンバーの追加・削除、共通のごはん商品の登録・編集・削除、共通のごはん商品のリクエストの
 完了だけを持つ。
+
+## ページ
 
 | パス | 内容 |
 | --- | --- |
 | `/` | ユーザー・家・猫の件数と、家に所属していない猫の数（`pnpm household:link` の実行漏れの検知） |
 | `/users` | ユーザーの一覧（権限・所属する家・有効なログインセッションの数と期限）。ユーザーごとに権限を変えるフォームを、有効なセッションがあるユーザーには「すべての端末からログアウト」ボタンを表示する |
 | `/households` | 家の一覧（メンバーとその権限・猫の数）。家ごとに、まだメンバーでないユーザーを追加するフォームと、オーナー以外のメンバーを外すボタンを表示する |
-| `POST /users/:userId/role` | フォームの `role`（`admin` または `member`）にユーザーのアプリ全体の権限（`users.role`）を変える。終わると `/users` に戻る |
-| `POST /users/:userId/sessions/delete` | ユーザーのログインセッションをすべて削除する（すべての端末からログアウトさせる）。終わると `/users` に戻る |
-| `POST /households/:householdId/members` | フォームの `userId` のユーザーを家のメンバー（`member`）として追加する。すでにメンバーなら何もしない。終わると `/households` に戻る |
-| `POST /households/:householdId/members/:userId/delete` | ユーザーを家から外す。家にオーナーがいなくならないよう、オーナーは外せない（メインアプリでオーナーを移譲してから外す）。終わると `/households` に戻る |
-| `/food-products` | 共通のごはん商品の一覧（画像・区分・カロリー・内容量・対象・家に追加された数）。どの家のユーザーも、メインアプリでごはん商品を登録するときに検索して家に追加できる。メーカーごとに折りたたんで表示し（メーカー名のない商品は最後にまとめる）、まとまりごとの検索フォームで、そのメーカーの商品を商品名・検索キーワードで絞り込める（`?manufacturer=<メーカー名>&q=<検索語>`。メーカー名のないまとまりは `manufacturer` を空にする）。検索したまとまりと、登録・更新した商品のまとまりだけを開いて表示する。閉じているまとまりの中身は `<template>` に入れて DOM に置かず、開いたときにスクリプトで差し込む（商品が数百件あると、パスワードマネージャーの拡張機能が開くたびに DOM 全体を調べ直してページが固まるため）。行の削除ボタンは、ページに 1 つの削除フォームから送る |
+| `/food-products` | 共通のごはん商品の一覧（画像・区分・カロリー・内容量・対象・家に追加された数）。どの家のユーザーも、メインアプリでごはん商品を登録するときに検索して家に追加できる。メーカーごとに折りたたんで表示し（メーカー名のない商品は最後にまとめる）、まとまりごとの検索フォームで、そのメーカーの商品を商品名・検索キーワードで絞り込める（`?manufacturer=<メーカー名>&q=<検索語>`。メーカー名のないまとまりは `manufacturer` を空にする）。検索したまとまりと、登録・更新した商品のまとまりだけを開いて表示する。閉じているまとまりの中身は描かない（商品が数百件あると、パスワードマネージャーの拡張機能が開くたびに DOM 全体を調べ直してページが固まるため） |
 | `/food-products/new` | 共通のごはん商品の登録フォーム |
-| `POST /food-products` | 共通のごはん商品を登録する。終わると `/food-products` に戻る |
 | `/food-products/:productId/edit` | 共通のごはん商品の編集フォーム |
-| `POST /food-products/:productId` | 共通のごはん商品を更新する。画像を選び直したとき・削除を選んだときは古い画像を削除する。家に追加済みの商品は内容を写したものなので変わらない。終わると `/food-products` に戻る |
-| `POST /food-products/:productId/delete` | 共通のごはん商品と画像を削除する。家に追加済みの商品は残り、追加元（`food_products.catalog_food_product_id`）だけが NULL になる。終わると `/food-products` に戻る |
-| `/food-products/:productId/image` | 共通のごはん商品の画像（一覧・編集フォームで表示する） |
 | `/food-product-requests` | 共通のごはん商品のリクエストの一覧。ユーザーがメインアプリで検索して見つからなかったときに送った検索条件を、対応を待っているもの（古い順）と完了にしたもの（新しい順に 50 件）に分けて表示する |
-| `POST /food-product-requests/:requestId/complete` | リクエストを完了にし、リクエストしたユーザーへの通知を作る（Push はメインアプリの次の定期送信で送る）。完了は取り消せない。終わると `/food-product-requests` に戻る |
+
+ログアウトさせる・家から外す・商品を削除する・リクエストを完了にする操作は、確認のダイアログを出してから行う。
+書き込みが終わると、結果を表示する URL（`/users?roleChange=updated&user=<ID>`・
+`/households?memberChange=added&household=<ID>&user=<ID>`・`/food-products?catalogChange=created&product=<ID>`・
+`/food-product-requests?completion=completed&request=<ID>` など）へ移動する。同じ URL を開けば結果の表示を
+再現できるため、VRT では書き込まずに撮る。
+
+## API
+
+| パス | 内容 |
+| --- | --- |
+| `GET /api/overview` | 概要の件数 |
+| `GET /api/users` | ユーザーの一覧 |
+| `POST /api/users/:userId/role` | JSON の `role`（`admin` または `member`）にユーザーのアプリ全体の権限（`users.role`）を変える。選べない権限なら 400 |
+| `DELETE /api/users/:userId/sessions` | ユーザーのログインセッションをすべて削除する（すべての端末からログアウトさせる） |
+| `GET /api/households` | 家の一覧と、メンバーとして追加する候補（全ユーザー） |
+| `POST /api/households/:householdId/members` | JSON の `userId` のユーザーを家のメンバー（`member`）として追加する。すでにメンバーなら 400 |
+| `DELETE /api/households/:householdId/members/:userId` | ユーザーを家から外す。家にオーナーがいなくならないよう、オーナーは外せない（400。メインアプリでオーナーを移譲してから外す） |
+| `GET /api/food-products` | 共通のごはん商品の一覧（メーカー名・商品名の順） |
+| `POST /api/food-products` | 共通のごはん商品を登録する（`multipart/form-data`。項目は `src/catalog/form.ts`）。入力に誤りがあれば 400、保存容量の上限を超えるなら 507 で、項目ごとのエラーを返す |
+| `GET /api/food-products/:productId` | 共通のごはん商品 1 件 |
+| `PUT /api/food-products/:productId` | 共通のごはん商品を更新する。画像を選び直したとき・削除を選んだときは古い画像を削除する。家に追加済みの商品は内容を写したものなので変わらない |
+| `DELETE /api/food-products/:productId` | 共通のごはん商品と画像を削除する。家に追加済みの商品は残り、追加元（`food_products.catalog_food_product_id`）だけが NULL になる |
+| `GET /api/food-products/:productId/image` | 共通のごはん商品の画像（一覧・編集フォームで表示する） |
+| `GET /api/food-product-requests` | 共通のごはん商品のリクエストの一覧（対応を待っているものと完了にしたもの） |
+| `POST /api/food-product-requests/:requestId/complete` | リクエストを完了にし、リクエストしたユーザーへの通知を作る（Push はメインアプリの次の定期送信で送る）。完了は取り消せない。すでに完了なら `already-completed` を返す |
+
+API の JSON の型は `src/api/types.ts` にあり、画面とサーバーの両方で使う（日時は ISO 8601 の文字列）。
+画面とサーバーで共用するファイル（`src/api/`・`src/models.ts`・`src/catalog/form.ts`・`search.ts`・`image.ts`）は、
+D1・Drizzle・Workers の型に依存させない。
+
+書き込み（GET・HEAD 以外）は、`Origin` が同じオリジンのものだけを受け付ける（Cloudflare Access の Cookie は、
+ほかのサイトからの送信にも付きうるため。ブラウザは GET・HEAD 以外の送信には同じオリジンでも `Origin` を付ける）。
+API の応答には `Cache-Control: no-store` を付け、全ユーザー・全家の情報をキャッシュに残さない。
+
+## 見た目
 
 見た目はメインアプリのデザインルール（[`docs/idea/design.md`](../../docs/idea/design.md)）に揃え、
-デザイントークンはメインアプリと同じ [`@canshi/shared`](../shared) の `tokens.css` をそのまま使う
-（`src/views/styles.ts` で文字列として import し、`<style>` に埋め込む。`.css` は `wrangler.jsonc` の
-`rules` で Text モジュールにし、テストでは `vitest.config.ts` のプラグインで同じように読み込む）。
-ダークテーマ・コントラスト・文字サイズの切り替えは持たず、`<html>` に `data-theme="light"` を付けて
-ライトテーマに固定する。メインアプリでトークンの値を変えると、管理画面の見た目も同じように変わる。
-
-書き込みを伴う `POST` は、Hono の CSRF ミドルウェアで同じオリジンからの送信だけを受け付ける
-（Cloudflare Access の Cookie は、ほかのサイトからのフォーム送信にも付きうるため）。
+UI コンポーネント（Button・Table・Select・Modal・Collapsible など）とデザイントークン（`tokens.css`）は
+メインアプリと同じ [`@canshi/shared`](../shared) のものを使う。リンクを含むコンポーネントには、react-router の
+リンクを差し込んだ `RouterLink`（`src/client/RouterLink.tsx`）を `linkComponent` で渡す。
+ダークテーマ・コントラスト・文字サイズの切り替えは持たず、`index.html` の `<html>` に `data-theme="light"` を
+付けてライトテーマに固定する。メインアプリでトークンや部品を変えると、管理画面の見た目も同じように変わる。
 
 ## 開発コマンド
 
@@ -43,17 +76,23 @@ Cloudflare Workers（Worker 名 `canshi-admin`）として動作し、`admin.can
 実行する。
 
 ```bash
-pnpm dev         # wrangler dev でローカル起動（メインアプリのローカル D1 を参照する）
-pnpm typecheck   # tsc --noEmit
-pnpm test        # vitest run
+pnpm dev         # 画面をビルドしてから wrangler dev でローカル起動（メインアプリのローカル D1 を参照する）
+pnpm dev:client  # 画面だけを Vite の開発サーバーで動かす（API は別に起動した pnpm dev の 8787 番へ送る）
+pnpm build       # 画面を dist/client にビルドする（vite build）
+pnpm typecheck   # tsc -b（サーバーは tsconfig.worker.json、画面は tsconfig.client.json）
+pnpm test        # vitest run（サーバーは node、画面は jsdom で実行する）
 pnpm cf-typegen  # wrangler.jsonc から worker-configuration.d.ts を再生成
-pnpm run deploy  # wrangler deploy（通常は main へのマージで Workers Builds が実行する）
-pnpm run preview # wrangler preview --ignore-base-config（通常は main 以外のブランチで Workers Builds が実行する）
+pnpm run deploy  # 画面をビルドしてから wrangler deploy（通常は main へのマージで Workers Builds が実行する）
+pnpm run preview # 画面をビルドしてから wrangler preview --ignore-base-config（通常は main 以外のブランチで Workers Builds が実行する）
 ```
+
+`dist/client` は `.gitignore` に入れている。`pnpm dev`・`deploy`・`preview` は先に `vite build` を実行するため、
+Workers Builds の設定（ビルドコマンド・デプロイコマンド）を変える必要はない。
 
 ### 依存関係
 
-メインアプリと管理画面の両方で使うパッケージ（`drizzle-orm`・`wrangler`・`vitest` など）は、
+メインアプリと管理画面（と共通のパッケージ）で使うパッケージ（`drizzle-orm`・`wrangler`・`vitest`・
+`vite`・`react-aria-components` など）は、
 [pnpm の catalogs](https://pnpm.io/ja/catalogs) でバージョンをまとめて管理している。
 バージョンはリポジトリルートの `pnpm-workspace.yaml` の `catalog` に書き、各 `package.json` では
 `"catalog:"` と書く。両方で使うパッケージを足すときも `catalog` に追加する。
@@ -62,6 +101,10 @@ pnpm run preview # wrangler preview --ignore-base-config（通常は main 以外
 
 `pnpm dev` は `--persist-to ../../.wrangler/state` でメインアプリと同じローカル D1 を参照する。
 テーブルが無い場合は、先にリポジトリルートで `pnpm db:migrate:local` を実行しておく。
+
+`pnpm dev` は起動するときに画面を 1 回ビルドするだけで、画面のファイルを変えても作り直さない。画面を
+直しながら確かめるときは、`pnpm dev` を起動したまま別の端末で `pnpm dev:client` を起動し、Vite の開発サーバー
+（既定で 5173 番）を開く。
 
 ### ビジュアルリグレッションテスト（VRT）
 
@@ -112,12 +155,11 @@ Worker 単位の Access で保護する。設定と確認の手順は [`docs/dep
 
 ## 共通のごはん商品の画像
 
-画像は選んだときに開くダイアログで範囲を選ばせ、ブラウザで一辺 800px 以下の正方形の JPEG に
-切り抜いてから送り（フォームのスクリプト。EXIF の位置情報なども落ちる）、サムネイルは作らずに
+画像は選んだときに開くダイアログ（`src/client/components/ImageCropModal.tsx`）で範囲を選ばせ、
+ブラウザで一辺 800px 以下の正方形の JPEG に切り抜いてから送り（EXIF の位置情報なども落ちる）、サムネイルは作らずに
 そのまま R2 に保存する。Workers では画像をデコード・再エンコードしないため、サーバーでも切り抜いた形
 （1MB 以下・一辺 800px 以下の正方形で、Exif・XMP・IPTC のセグメントを持たない JPEG）であることを
-JPEG のマーカーから確かめ、スクリプトが動かなかった・切り抜きが終わる前に送られたなどで元のまま
-届いた画像は断る（`src/catalog/image.ts`）。
+JPEG のマーカーから確かめ、画面を通さずに送られたなどで元のまま届いた画像は断る（`src/catalog/image.ts`）。
 
 画像は 1 商品に 1 枚。差し替えでは、更新と同じ batch の中でその時点の画像の行をすべて削除してから
 新しい行を追加するため、同時に差し替えても 1 枚だけが残る（削除した行の R2 のオブジェクトも消す）。
