@@ -9,10 +9,13 @@ import type {
 } from "../catalog/form";
 import type {
   AdminHousehold,
+  AdminHouseholdDetail,
   AdminUser,
+  AdminUserDetail,
   CatalogFoodProduct,
   CatalogFoodProductRequest,
   Overview,
+  UserOption,
 } from "../models";
 
 /** JSON にした値の型。日時（`Date`）は ISO 8601 の文字列になる */
@@ -36,8 +39,22 @@ export type HouseholdJson = Json<AdminHousehold>;
 
 export interface HouseholdsResponse {
   households: HouseholdJson[];
-  /** メンバーとして追加する候補（全ユーザー） */
-  users: UserJson[];
+}
+
+export type UserOptionJson = Json<UserOption>;
+
+export type UserDetailJson = Json<AdminUserDetail>;
+
+export interface UserDetailResponse {
+  user: UserDetailJson;
+}
+
+export type HouseholdDetailJson = Json<AdminHouseholdDetail>;
+
+export interface HouseholdDetailResponse {
+  household: HouseholdDetailJson;
+  /** 全ユーザー（メンバーとして追加する候補と、追加・削除の結果の表示に使う） */
+  users: UserOptionJson[];
 }
 
 export type CatalogFoodProductJson = Json<CatalogFoodProduct>;

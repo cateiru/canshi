@@ -25,15 +25,10 @@
   border: 0;
 }
 
-.members {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.member {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
+/*
+ * 名前・所属などの文字の列。日本語は 1 文字ごとに折り返せるため、操作の列がない表では狭い画面で
+ * 1 文字ずつ折り返すほど縮んでしまう。最小幅を持たせ、収まらないときは表を横にスクロールさせる
+ */
+.textColumn {
+  min-width: 10rem;
 }

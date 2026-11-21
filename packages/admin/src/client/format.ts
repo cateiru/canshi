@@ -4,6 +4,7 @@ import type {
   PackageSize,
   TextureType,
 } from "../catalog/form";
+import type { HouseholdInvitationStatus } from "../models";
 
 const dateTimeFormat = new Intl.DateTimeFormat("ja-JP", {
   timeZone: "Asia/Tokyo",
@@ -36,6 +37,42 @@ export function userRoleLabel(role: string) {
 
 export function householdRoleLabel(role: string) {
   return HOUSEHOLD_ROLE_LABEL[role] ?? role;
+}
+
+// メインアプリの `src/features/cats/domain/labels.ts` と同じ表記にする
+const SEX_LABEL: Record<string, string> = {
+  female: "メス",
+  male: "オス",
+  unknown: "不明",
+};
+
+export function sexLabel(sex: string) {
+  return SEX_LABEL[sex] ?? sex;
+}
+
+/**
+ * 猫の生年月日を、わかっている範囲に合わせて表示する（メインアプリの `formatBirthDate` と同じ表記）。
+ * 年のみ・年月のみのときは、補った月・日を表示しない（例：「2020年」「2020年4月」）
+ */
+export function formatBirthDate(birthDate: string, precision: string) {
+  const [year, month] = birthDate.split("-").map(Number);
+  if (precision === "year") {
+    return `${year}年`;
+  }
+  if (precision === "month") {
+    return `${year}年${month}月`;
+  }
+  return birthDate;
+}
+
+const INVITATION_STATUS_LABEL: Record<HouseholdInvitationStatus, string> = {
+  pending: "未使用",
+  accepted: "使用済み",
+  expired: "期限切れ",
+};
+
+export function invitationStatusLabel(status: HouseholdInvitationStatus) {
+  return INVITATION_STATUS_LABEL[status];
 }
 
 // メインアプリの `src/features/food-products/domain/labels.ts` と同じ表記にする

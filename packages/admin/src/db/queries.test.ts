@@ -5,8 +5,11 @@ import {
   type AdminDb,
   addHouseholdMember,
   deleteUserSessions,
+  getHouseholdDetail,
   getOverview,
+  getUserDetail,
   listHouseholds,
+  listUserOptions,
   listUsers,
   removeHouseholdMember,
   updateUserRole,
@@ -104,6 +107,168 @@ describe("listHouseholds", () => {
         members: [{ userId: "user-1", userName: "たろう", role: "owner" }],
       },
     ]);
+  });
+});
+
+describe("listUserOptions", () => {
+  it("全ユーザーの ID と名前を登録順に返す", async () => {
+    expect(await listUserOptions(db)).toEqual([
+      { id: "user-1", name: "たろう" },
+      { id: "user-2", name: "<script>alert(1)</script>" },
+      { id: "user-3", name: "はなこ" },
+    ]);
+  });
+});
+
+describe("getUserDetail", () => {
+  it("所属する家・有効なセッション・通知の購読を返す", async () => {
+    expect(await getUserDetail(db, "user-1", NOW)).toEqual({
+      id: "user-1",
+      name: "たろう",
+      role: "admin",
+      createdAt: NOW,
+      updatedAt: NOW,
+      households: [
+        {
+          householdId: "household-1",
+          householdName: "わが家",
+          role: "owner",
+          joinedAt: NOW,
+        },
+        {
+          householdId: "household-2",
+          householdName: "実家",
+          role: "owner",
+          joinedAt: new Date((BASE_TIME + 60) * 1000),
+        },
+      ],
+      // 期限切れのセッションは含めず、ログインした日時の新しい順にする
+      sessions: [
+        {
+          id: "session-active-2",
+          deviceName: "不明な端末",
+          createdAt: new Date((BASE_TIME + 60) * 1000),
+          expiresAt: new Date((BASE_TIME + 172_800) * 1000),
+        },
+        {
+          id: "session-active-1",
+          deviceName: "iPhone・Safari",
+          createdAt: NOW,
+          expiresAt: new Date((BASE_TIME + 86_400) * 1000),
+        },
+      ],
+      pushSubscriptions: [
+        {
+          id: "push-1",
+          deviceName: "iPhone・Safari",
+          createdAt: NOW,
+          lastUsedAt: new Date((BASE_TIME + 30) * 1000),
+          failureCount: 2,
+        },
+      ],
+    });
+  });
+
+  it("家・セッション・購読がなければ空の一覧を返す", async () => {
+    expect(await getUserDetail(db, "user-3", NOW)).toMatchObject({
+      name: "はなこ",
+      households: [],
+      sessions: [],
+      pushSubscriptions: [],
+    });
+  });
+
+  it("存在しないユーザーでは null を返す", async () => {
+    expect(await getUserDetail(db, "missing", NOW)).toBeNull();
+  });
+});
+
+describe("getHouseholdDetail", () => {
+  it("メンバー・猫・招待を返す", async () => {
+    expect(await getHouseholdDetail(db, "household-1", NOW)).toEqual({
+      id: "household-1",
+      name: "わが家",
+      createdAt: NOW,
+      updatedAt: NOW,
+      members: [
+        { userId: "user-1", userName: "たろう", role: "owner", joinedAt: NOW },
+        {
+          userId: "user-2",
+          userName: "<script>alert(1)</script>",
+          role: "member",
+          joinedAt: new Date((BASE_TIME + 60) * 1000),
+        },
+      ],
+      cats: [
+        {
+          id: "cat-1",
+          name: "みけ",
+          sex: "female",
+          birthDate: "2020-04-01",
+          birthDatePrecision: "month",
+          memorialDate: null,
+          createdAt: NOW,
+        },
+        {
+          id: "cat-2",
+          name: "くろ",
+          sex: "male",
+          birthDate: null,
+          birthDatePrecision: "day",
+          memorialDate: "2026-09-30",
+          createdAt: new Date((BASE_TIME + 60) * 1000),
+        },
+      ],
+      // 作った日時の新しい順。期限ちょうどの招待は期限切れにする
+      invitations: [
+        {
+          id: "invitation-pending",
+          createdByUserId: "user-1",
+          createdByUserName: "たろう",
+          status: "pending",
+          createdAt: new Date((BASE_TIME + 120) * 1000),
+          expiresAt: new Date((BASE_TIME + 86_400) * 1000),
+          acceptedByUserId: null,
+          acceptedByUserName: null,
+          acceptedAt: null,
+        },
+        {
+          id: "invitation-accepted",
+          createdByUserId: "user-1",
+          createdByUserName: "たろう",
+          status: "accepted",
+          createdAt: NOW,
+          expiresAt: new Date((BASE_TIME + 86_400) * 1000),
+          acceptedByUserId: "user-2",
+          acceptedByUserName: "<script>alert(1)</script>",
+          acceptedAt: new Date((BASE_TIME + 60) * 1000),
+        },
+        {
+          id: "invitation-expired",
+          createdByUserId: "user-1",
+          createdByUserName: "たろう",
+          status: "expired",
+          createdAt: new Date((BASE_TIME - 60) * 1000),
+          expiresAt: NOW,
+          acceptedByUserId: null,
+          acceptedByUserName: null,
+          acceptedAt: null,
+        },
+      ],
+    });
+  });
+
+  it("猫・招待がなければ空の一覧を返す", async () => {
+    expect(await getHouseholdDetail(db, "household-2", NOW)).toMatchObject({
+      name: "実家",
+      members: [{ userId: "user-1", role: "owner" }],
+      cats: [],
+      invitations: [],
+    });
+  });
+
+  it("存在しない家では null を返す", async () => {
+    expect(await getHouseholdDetail(db, "missing", NOW)).toBeNull();
   });
 });
 

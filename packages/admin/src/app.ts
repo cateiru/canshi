@@ -9,9 +9,11 @@ import type {
   ChangeResponse,
   CompleteRequestResponse,
   ErrorResponse,
+  HouseholdDetailResponse,
   HouseholdsResponse,
   Json,
   OverviewResponse,
+  UserDetailResponse,
   UsersResponse,
 } from "./api/types";
 import {
@@ -40,8 +42,11 @@ import { type AdminDb, createAdminDb } from "./db/client";
 import {
   addHouseholdMember,
   deleteUserSessions,
+  getHouseholdDetail,
   getOverview,
+  getUserDetail,
   listHouseholds,
+  listUserOptions,
   listUsers,
   removeHouseholdMember,
   updateUserRole,
@@ -108,6 +113,14 @@ function createApi() {
     return c.json<UsersResponse>({ users: toJson(users) });
   });
 
+  api.get("/users/:userId", async (c) => {
+    const user = await getUserDetail(c.var.db, c.req.param("userId"));
+    if (!user) {
+      return notFound(c, "ユーザーが見つかりませんでした");
+    }
+    return c.json<UserDetailResponse>({ user: toJson(user) });
+  });
+
   // ユーザーのアプリ全体の権限を変える
   api.post("/users/:userId/role", async (c) => {
     const role = await readJsonText(c, "role");
@@ -122,13 +135,21 @@ function createApi() {
   });
 
   api.get("/households", async (c) => {
-    const [households, users] = await Promise.all([
-      listHouseholds(c.var.db),
-      listUsers(c.var.db),
+    const households = await listHouseholds(c.var.db);
+    return c.json<HouseholdsResponse>({ households: toJson(households) });
+  });
+
+  api.get("/households/:householdId", async (c) => {
+    const [household, users] = await Promise.all([
+      getHouseholdDetail(c.var.db, c.req.param("householdId")),
+      listUserOptions(c.var.db),
     ]);
-    return c.json<HouseholdsResponse>({
-      households: toJson(households),
-      users: toJson(users),
+    if (!household) {
+      return notFound(c, "家が見つかりませんでした");
+    }
+    return c.json<HouseholdDetailResponse>({
+      household: toJson(household),
+      users,
     });
   });
 

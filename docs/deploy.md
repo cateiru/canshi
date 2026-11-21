@@ -586,8 +586,9 @@ GitHub Actions からはデプロイしない。`canshi-admin` の Worker を同
      ビルドコマンドに足す必要はない
      `run` を省くと `pnpm deploy` が pnpm 組み込みのコマンドとして扱われて失敗するため、必ず付ける
    - Build watch paths の Include：`packages/admin/*`・`packages/shared/*`・`src/db/schema/*`・
-     `src/db/conditionalInsert.ts`・`pnpm-lock.yaml`・`pnpm-workspace.yaml`。`packages/shared/*` は
-     メインアプリと共通のパッケージ（デザイントークンなど）、`src/db/schema/*`・`src/db/conditionalInsert.ts` は
+     `src/db/conditionalInsert.ts`・`src/features/auth/domain/deviceName.ts`・`pnpm-lock.yaml`・
+     `pnpm-workspace.yaml`。`packages/shared/*` はメインアプリと共通のパッケージ（デザイントークンなど）、
+     `src/db/schema/*`・`src/db/conditionalInsert.ts`・`src/features/auth/domain/deviceName.ts` は
      管理画面が import するメインアプリのファイル。ルートの `package.json` は PR ごとにバージョンを上げるため含めない
    - ダッシュボードの Previews Base には本番の設定をインポートしない（「プレビュー（Worker Previews）」節と同じ理由）
 3. この変更を `main` にマージし、`canshi-admin` のビルドが成功して本番にデプロイされたことを確かめる。

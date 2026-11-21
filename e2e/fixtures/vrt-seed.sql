@@ -59,10 +59,12 @@ INSERT INTO household_members (household_id, user_id, role, created_at)
 VALUES ('vrt-invite-household', 'vrt-inviter', 'owner', strftime('%s', '2024-06-02 00:00:00'));
 
 -- VRT招待者のログインセッション（管理画面の VRT（e2e-admin/vrt.spec.ts）で、ユーザー一覧に
--- 有効なセッションと「すべての端末からログアウト」のボタンを表示する用）。期限は実行日に
--- 関わらず期限内になるよう遠い未来にする。トークンを持つ端末はないため、メインアプリでは使われない
-INSERT INTO sessions (token_hash, id, user_id, expires_at, created_at)
+-- 有効なセッションの数を、ユーザーの詳細にログイン中の端末と「すべての端末からログアウト」の
+-- ボタンを表示する用）。期限は実行日に関わらず期限内になるよう遠い未来にする。トークンを持つ端末はないため、
+-- メインアプリでは使われない
+INSERT INTO sessions (token_hash, id, user_id, user_agent, expires_at, created_at)
 VALUES ('vrt-inviter-session-token-hash', 'vrt-inviter-session', 'vrt-inviter',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
   strftime('%s', '2099-12-31 00:00:00'), strftime('%s', '2024-06-02 00:00:00'));
 
 INSERT INTO household_invitations (id, household_id, token_hash, created_by_user_id, expires_at, created_at)

@@ -20,16 +20,18 @@ react-router が表示するページを決める。Worker を通すため、画
 | パス | 内容 |
 | --- | --- |
 | `/` | ユーザー・家・猫の件数と、家に所属していない猫の数（`pnpm household:link` の実行漏れの検知） |
-| `/users` | ユーザーの一覧（権限・所属する家・有効なログインセッションの数と期限）。ユーザーごとに権限を変えるフォームを、有効なセッションがあるユーザーには「すべての端末からログアウト」ボタンを表示する |
-| `/households` | 家の一覧（メンバーとその権限・猫の数）。家ごとに、まだメンバーでないユーザーを追加するフォームと、オーナー以外のメンバーを外すボタンを表示する |
+| `/users` | ユーザーの一覧（権限・所属する家・有効なログインセッションの数と期限）。表示だけで、操作は名前から開く詳細で行う |
+| `/users/:userId` | ユーザーの詳細（ID・権限・登録日時と更新日時・所属する家とその権限と参加日時・ログイン中の端末（有効なセッションの端末名・ログインした日時・期限）・通知を受け取る端末（Web Push の購読の端末名・登録日時・最後に送れた日時・続けて送れなかった回数））。権限を変えるフォームと、ログイン中の端末があれば「すべての端末からログアウト」ボタンを表示する（ユーザーの操作はこのページでだけ行う）。メールアドレス・セッションのトークン・購読の送り先と鍵は表示しない |
+| `/households` | 家の一覧（メンバーとその権限・猫の数）。表示だけで、操作は名前から開く詳細で行う |
+| `/households/:householdId` | 家の詳細（ID・作成日時と更新日時・メンバーとその権限と参加日時・猫（性別・生年月日・メモリーへ移した日・登録日時）・招待（状態・招待した人・参加したユーザー・作成日時・期限））。まだメンバーでないユーザーを追加するフォームと、オーナー以外のメンバーを外すボタンを表示する（家の操作はこのページでだけ行う）。招待のトークンは表示しない |
 | `/food-products` | 共通のごはん商品の一覧（画像・区分・カロリー・内容量・対象・家に追加された数）。どの家のユーザーも、メインアプリでごはん商品を登録するときに検索して家に追加できる。メーカーごとに折りたたんで表示し（メーカー名のない商品は最後にまとめる）、まとまりごとの検索フォームで、そのメーカーの商品を商品名・検索キーワードで絞り込める（`?manufacturer=<メーカー名>&q=<検索語>`。メーカー名のないまとまりは `manufacturer` を空にする）。検索したまとまりと、登録・更新した商品のまとまりだけを開いて表示する。閉じているまとまりの中身は描かない（商品が数百件あると、パスワードマネージャーの拡張機能が開くたびに DOM 全体を調べ直してページが固まるため） |
 | `/food-products/new` | 共通のごはん商品の登録フォーム |
 | `/food-products/:productId/edit` | 共通のごはん商品の編集フォーム |
 | `/food-product-requests` | 共通のごはん商品のリクエストの一覧。ユーザーがメインアプリで検索して見つからなかったときに送った検索条件を、対応を待っているもの（古い順）と完了にしたもの（新しい順に 50 件）に分けて表示する |
 
 ログアウトさせる・家から外す・商品を削除する・リクエストを完了にする操作は、確認のダイアログを出してから行う。
-書き込みが終わると、結果を表示する URL（`/users?roleChange=updated&user=<ID>`・
-`/households?memberChange=added&household=<ID>&user=<ID>`・`/food-products?catalogChange=created&product=<ID>`・
+書き込みが終わると、結果を表示する URL（`/users/<ID>?roleChange=updated`・`/users/<ID>?loggedOut=1`・
+`/households/<ID>?memberChange=added&user=<ID>`・`/food-products?catalogChange=created&product=<ID>`・
 `/food-product-requests?completion=completed&request=<ID>` など）へ移動する。同じ URL を開けば結果の表示を
 再現できるため、VRT では書き込まずに撮る。
 
@@ -39,9 +41,11 @@ react-router が表示するページを決める。Worker を通すため、画
 | --- | --- |
 | `GET /api/overview` | 概要の件数 |
 | `GET /api/users` | ユーザーの一覧 |
+| `GET /api/users/:userId` | ユーザーの詳細。見つからなければ 404 |
 | `POST /api/users/:userId/role` | JSON の `role`（`admin` または `member`）にユーザーのアプリ全体の権限（`users.role`）を変える。選べない権限なら 400 |
 | `DELETE /api/users/:userId/sessions` | ユーザーのログインセッションをすべて削除する（すべての端末からログアウトさせる） |
-| `GET /api/households` | 家の一覧と、メンバーとして追加する候補（全ユーザー） |
+| `GET /api/households` | 家の一覧 |
+| `GET /api/households/:householdId` | 家の詳細と、メンバーとして追加する候補（全ユーザーの ID と名前）。見つからなければ 404 |
 | `POST /api/households/:householdId/members` | JSON の `userId` のユーザーを家のメンバー（`member`）として追加する。すでにメンバーなら 400 |
 | `DELETE /api/households/:householdId/members/:userId` | ユーザーを家から外す。家にオーナーがいなくならないよう、オーナーは外せない（400。メインアプリでオーナーを移譲してから外す） |
 | `GET /api/food-products` | 共通のごはん商品の一覧（メーカー名・商品名の順） |
@@ -185,8 +189,10 @@ INSERT・DELETE（`household_members` テーブル）、
 D1 の読み書きは、メインアプリの Drizzle スキーマ（リポジトリルートの `src/db/schema`。
 `src/db/schema.ts` から再 export する）を使って Drizzle で行い、SQL を文字列で組み立てない
 （値はすべてバインドパラメーターで渡す）。条件付きの INSERT はメインアプリの
-`src/db/conditionalInsert.ts` の `insertWhere` を使う。どちらも `drizzle-orm` と相対パスだけを
-import するため、Next.js 向けの tsconfig・パスエイリアスには依存しない。
+`src/db/conditionalInsert.ts` の `insertWhere` を使う。セッション・通知の購読の User-Agent は、
+メインアプリの端末一覧と同じ `src/features/auth/domain/deviceName.ts` の `formatDeviceName` で端末名にする。
+どれも `drizzle-orm` と相対パスだけを import する（または何も import しない）ため、Next.js 向けの
+tsconfig・パスエイリアスには依存しない。
 メインアプリでテーブル・列を変更したときは、管理画面のクエリもスキーマに合わせて型が変わるので、
 `pnpm --filter @canshi/admin typecheck`・`test` で確かめること。ごはん商品の入力の規則を変えたときは
 `src/catalog/form.ts` も合わせて更新する。`src/db/queries.test.ts` などはリポジトリ

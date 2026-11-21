@@ -19,14 +19,23 @@ async function open(page: Page, path: string) {
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 }
 
-const PAGES = [
+/** `heading` はページの見出し（省略すると `title`） */
+const PAGES: { title: string; path: string; heading?: string }[] = [
   { title: "概要", path: "/" },
   { title: "ユーザー", path: "/users" },
+  // ログイン中の端末（シードのセッション）と、所属する家を表示する
+  { title: "ユーザーの詳細", path: "/users/vrt-inviter", heading: "VRT招待者" },
   { title: "家", path: "/households" },
+  // メンバー・猫（メモリーへ移した猫を含む）・まだ使われていない招待と、メンバーの追加のフォームを表示する
+  {
+    title: "家の詳細",
+    path: "/households/vrt-household",
+    heading: "VRTの家",
+  },
   { title: "共通のごはん商品", path: "/food-products" },
   { title: "共通のごはん商品を登録する", path: "/food-products/new" },
   { title: "共通のごはん商品のリクエスト", path: "/food-product-requests" },
-] as const;
+];
 
 for (const viewport of [
   { name: "PC", width: 1280, height: 800 },
@@ -42,7 +51,10 @@ for (const viewport of [
       test(`${page.title}の見た目`, async ({ page: browserPage }, testInfo) => {
         await open(browserPage, page.path);
         await expect(
-          browserPage.getByRole("heading", { level: 2, name: page.title }),
+          browserPage.getByRole("heading", {
+            level: 2,
+            name: page.heading ?? page.title,
+          }),
         ).toBeVisible();
         await takeSnapshot(browserPage, testInfo);
       });
@@ -53,7 +65,7 @@ for (const viewport of [
 test("すべての端末からログアウトさせた結果の見た目", async ({
   page,
 }, testInfo) => {
-  await open(page, "/users?loggedOut=vrt-inviter");
+  await open(page, "/users/vrt-inviter?loggedOut=1");
   await expect(page.getByRole("status")).toHaveText(
     "VRT招待者 をすべての端末からログアウトさせました。",
   );
@@ -63,7 +75,7 @@ test("すべての端末からログアウトさせた結果の見た目", async
 test("家にメンバーを追加した結果の見た目", async ({ page }, testInfo) => {
   await open(
     page,
-    "/households?memberChange=added&household=vrt-household&user=vrt-inviter",
+    "/households/vrt-household?memberChange=added&user=vrt-inviter",
   );
   await expect(page.getByRole("status")).toContainText(
     "メンバーに追加しました。",
@@ -76,10 +88,29 @@ test("家にメンバーを追加できなかった結果の見た目", async ({
 }, testInfo) => {
   await open(
     page,
-    "/households?memberChange=add-failed&household=vrt-household&user=vrt-inviter",
+    "/households/vrt-household?memberChange=add-failed&user=vrt-inviter",
   );
   await expect(page.getByRole("alert")).toContainText(
     "メンバーに追加できませんでした",
+  );
+  await takeSnapshot(page, testInfo);
+});
+
+test("ユーザーの権限を変えた結果の見た目", async ({ page }, testInfo) => {
+  await open(page, "/users/vrt-inviter?roleChange=updated");
+  await expect(page.getByRole("status")).toHaveText(
+    "VRT招待者 の権限を一般にしました。",
+  );
+  await takeSnapshot(page, testInfo);
+});
+
+test("家からメンバーを外した結果の見た目", async ({ page }, testInfo) => {
+  await open(
+    page,
+    "/households/vrt-invite-household?memberChange=removed&user=vrt-user",
+  );
+  await expect(page.getByRole("status")).toHaveText(
+    "VRTユーザー を VRT招待元の家 から外しました。",
   );
   await takeSnapshot(page, testInfo);
 });

@@ -59,6 +59,102 @@ export interface AdminHousehold {
   members: HouseholdMember[];
 }
 
+/** 家のメンバーとして追加する候補などに使う、ユーザーの名前 */
+export interface UserOption {
+  id: string;
+  name: string;
+}
+
+/** ログインセッション。トークン（ハッシュ）は持たず、端末一覧と同じ ID（`sessions.id`）で見分ける */
+export interface UserSession {
+  id: string;
+  /** User-Agent から作った端末名（メインアプリの端末一覧と同じ表記） */
+  deviceName: string;
+  /** ログインした日時 */
+  createdAt: Date;
+  expiresAt: Date;
+}
+
+/**
+ * 通知（Web Push）の購読。送り先の URL・鍵は表示に不要で、外に出すと通知を送れてしまうため持たない
+ */
+export interface UserPushSubscription {
+  id: string;
+  deviceName: string;
+  createdAt: Date;
+  /** 最後に通知を送れた日時。まだ送れていなければ null */
+  lastUsedAt: Date | null;
+  /** 続けて送れなかった回数（送れると 0 に戻る） */
+  failureCount: number;
+}
+
+export interface UserHouseholdMembership extends UserMembership {
+  /** 家に加わった日時 */
+  joinedAt: Date;
+}
+
+/** ユーザーの詳細（`/users/:userId`） */
+export interface AdminUserDetail {
+  id: string;
+  name: string;
+  role: string;
+  createdAt: Date;
+  updatedAt: Date;
+  households: UserHouseholdMembership[];
+  /** 有効期限内のログインセッション（ログインした日時の新しい順） */
+  sessions: UserSession[];
+  /** 通知の購読（登録した日時の新しい順） */
+  pushSubscriptions: UserPushSubscription[];
+}
+
+export interface HouseholdMemberDetail extends HouseholdMember {
+  /** 家に加わった日時 */
+  joinedAt: Date;
+}
+
+export interface HouseholdCat {
+  id: string;
+  name: string;
+  sex: string;
+  /** 生年月日（YYYY-MM-DD）。年のみ・年月のみのときは、残りを 1 月・1 日で補ったもの */
+  birthDate: string | null;
+  birthDatePrecision: string;
+  /** メモリー（思い出）へ移した日（YYYY-MM-DD）。移していなければ null */
+  memorialDate: string | null;
+  createdAt: Date;
+}
+
+/** 招待の状態。使われた・期限が切れた・まだ使える */
+export type HouseholdInvitationStatus = "accepted" | "expired" | "pending";
+
+/** 家への招待。URL のトークン（ハッシュ）は持たない */
+export interface HouseholdInvitation {
+  id: string;
+  createdByUserId: string;
+  createdByUserName: string;
+  status: HouseholdInvitationStatus;
+  createdAt: Date;
+  expiresAt: Date;
+  /** 招待で家に参加したユーザー。使われていなければ null */
+  acceptedByUserId: string | null;
+  acceptedByUserName: string | null;
+  acceptedAt: Date | null;
+}
+
+/** 家の詳細（`/households/:householdId`） */
+export interface AdminHouseholdDetail {
+  id: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  /** メンバー（オーナーを先にし、家に加わった順） */
+  members: HouseholdMemberDetail[];
+  /** 猫（登録順） */
+  cats: HouseholdCat[];
+  /** 招待（作った日時の新しい順） */
+  invitations: HouseholdInvitation[];
+}
+
 export interface CatalogFoodProduct extends CatalogFoodProductValues {
   id: string;
   /** 画像の `media_assets.id`。画像がなければ null */
