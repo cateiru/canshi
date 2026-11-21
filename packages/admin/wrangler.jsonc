@@ -1,13 +1,20 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "canshi-admin",
-  "main": "src/index.tsx",
+  "main": "src/index.ts",
   "compatibility_date": "2026-09-06",
   "compatibility_flags": ["nodejs_compat"],
 
-  // CSS（`@canshi/shared` の tokens.css）は文字列として import し、<style> に埋め込む
-  // （src/views/styles.ts）。テストでは vitest.config.ts のプラグインで同じように読み込む
-  "rules": [{ "type": "Text", "globs": ["**/*.css"], "fallthrough": true }],
+  // 画面は React の SPA（src/client/）。`vite build` で dist/client に書き出し、静的アセットとして
+  // 配信する（package.json の dev・deploy・preview は先にビルドする）。すべてのリクエストを Worker が
+  // 受け（src/app.ts）、`/api/*` は API で、それ以外は静的アセットで返す。静的アセットにない
+  // パス（`/users` など）は index.html を返し、SPA の中で表示するページを決める
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
 
   // 本番公開ホスト名。メインアプリ（canshi.app）とは別ホスト名にする。アプリ内では認証しないため、
   // デプロイ前に Zero Trust でこのホスト名の Self-hosted アプリケーションを作り、

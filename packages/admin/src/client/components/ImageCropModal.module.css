@@ -1,0 +1,27 @@
+.canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-base);
+  background: var(--color-surface);
+  cursor: grab;
+  touch-action: none;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition: outline-color var(--transition-base);
+}
+
+.canvas:active {
+  cursor: grabbing;
+}
+
+.canvas:focus-visible {
+  outline-color: var(--color-focus-ring);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

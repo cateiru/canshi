@@ -1,0 +1,52 @@
+/* 画面の中で繰り返し使う、文字と並びの小さな指定 */
+
+/* 一覧の説明 */
+.lead {
+  color: var(--color-ink-muted);
+}
+
+/* 項目がないこと・値がないことを示す */
+.empty,
+.muted {
+  color: var(--color-ink-subtle);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* 表のセルの中で、ID などを名前の下に添える */
+.sub {
+  display: block;
+  color: var(--color-ink-muted);
+}
+
+.code {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 表のセルの中で、入力欄とボタンを横に並べる（行が縦に伸びないよう折り返さない） */
+.inlineForm {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+/* ボタンの文字を縦に折り返させない */
+.inlineForm > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}

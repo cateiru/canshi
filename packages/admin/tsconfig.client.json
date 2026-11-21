@@ -1,0 +1,20 @@
+{
+  // 画面（ブラウザで動く React の SPA）。サーバーと共用の型・規則（src/api・src/models.ts・
+  // src/catalog の一部）は import をたどって含まれるため、Workers の型に依存させないこと
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.client.tsbuildinfo",
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "ES2022"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "types": ["vite/client", "@testing-library/jest-dom/vitest"]
+  },
+  "include": ["src/client"],
+  "exclude": ["node_modules"]
+}

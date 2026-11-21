@@ -1,9 +1,19 @@
-import type { CatalogFoodProduct } from "../db/catalogFoodProducts";
+/**
+ * 共通のごはん商品の一覧のまとめ方と検索。画面（`client/`）で使い、サーバーの型には依存しない
+ * （商品は API の JSON のままでも、サーバーの値でも渡せるよう、使う項目だけを型にする）
+ */
+
+/** 検索・まとめるのに使う商品の項目 */
+type SearchableProduct = {
+  name: string;
+  manufacturer: string | null;
+  searchKeywords: string[];
+};
 
 /** 一覧のメーカーごとのグループ。メーカー名のない商品は `manufacturer` が null のグループにまとめる */
-export type CatalogManufacturerGroup = {
+export type CatalogManufacturerGroup<T extends SearchableProduct> = {
   manufacturer: string | null;
-  products: CatalogFoodProduct[];
+  products: T[];
 };
 
 /** 一覧の検索。`manufacturer` のグループだけを、`keywords` のすべての語を含む商品に絞る */
@@ -47,7 +57,7 @@ export function parseCatalogListSearch(
  * LIKE）に合わせ、英字の大文字・小文字は区別しない
  */
 export function matchesCatalogKeywords(
-  product: CatalogFoodProduct,
+  product: Pick<SearchableProduct, "name" | "searchKeywords">,
   keywords: string[],
 ) {
   const targets = [product.name, ...product.searchKeywords].map((text) =>
@@ -60,10 +70,10 @@ export function matchesCatalogKeywords(
 }
 
 /** メーカーごとにまとめる。グループと商品の並びは受け取った順（メーカー名・商品名の順）のまま */
-export function groupCatalogFoodProducts(
-  products: CatalogFoodProduct[],
-): CatalogManufacturerGroup[] {
-  const groups = new Map<string | null, CatalogFoodProduct[]>();
+export function groupCatalogFoodProducts<T extends SearchableProduct>(
+  products: T[],
+): CatalogManufacturerGroup<T>[] {
+  const groups = new Map<string | null, T[]>();
   for (const product of products) {
     const group = groups.get(product.manufacturer);
     if (group) {

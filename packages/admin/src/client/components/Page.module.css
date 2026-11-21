@@ -1,0 +1,8 @@
+/* ページの見出しと、その右に置く操作（メインアプリの一覧ページの見出しと同じ並び） */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}

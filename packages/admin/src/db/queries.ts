@@ -25,63 +25,27 @@ import {
   sql,
 } from "drizzle-orm";
 import { insertWhere } from "../../../../src/db/conditionalInsert";
+import {
+  type AdminHousehold,
+  type AdminUser,
+  type HouseholdMember,
+  isUserRole,
+  type Overview,
+  type UserMembership,
+} from "../models";
 import type { AdminDb } from "./client";
 import { cats, householdMembers, households, sessions, users } from "./schema";
 
+export type {
+  AdminHousehold,
+  AdminUser,
+  HouseholdMember,
+  Overview,
+  UserMembership,
+  UserRole,
+} from "../models";
+export { isUserRole, USER_ROLES } from "../models";
 export type { AdminDb } from "./client";
-
-export interface Overview {
-  userCount: number;
-  householdCount: number;
-  catCount: number;
-  /** 家に所属していない猫の数。0 でなければ `household:link` の実行漏れの可能性がある */
-  unassignedCatCount: number;
-}
-
-/**
- * ユーザーのアプリ全体の権限（`users.role`）として選べる値。メインアプリのスキーマ
- * （`src/db/schema/users.ts`）の enum と揃える。Drizzle の enum は D1 に CHECK 制約を
- * 作らないため、ここに無い値は書き込む前に断る
- */
-export const USER_ROLES = ["admin", "member"] as const;
-
-export type UserRole = (typeof USER_ROLES)[number];
-
-export function isUserRole(value: unknown): value is UserRole {
-  return USER_ROLES.some((role) => role === value);
-}
-
-export interface UserMembership {
-  householdId: string;
-  householdName: string;
-  role: string;
-}
-
-export interface AdminUser {
-  id: string;
-  name: string;
-  role: string;
-  createdAt: Date;
-  /** 有効期限内のログインセッションの数 */
-  activeSessionCount: number;
-  /** 有効期限内のセッションのうち、最も遅い有効期限 */
-  latestSessionExpiresAt: Date | null;
-  households: UserMembership[];
-}
-
-export interface HouseholdMember {
-  userId: string;
-  userName: string;
-  role: string;
-}
-
-export interface AdminHousehold {
-  id: string;
-  name: string;
-  createdAt: Date;
-  catCount: number;
-  members: HouseholdMember[];
-}
 
 /** 家のメンバーの一覧（オーナーを先にし、家に加わった順） */
 function listMemberships(db: AdminDb) {

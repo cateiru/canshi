@@ -581,6 +581,9 @@ GitHub Actions からはデプロイしない。`canshi-admin` の Worker を同
    - Non-production branch deploy command：`pnpm run preview`（`wrangler preview --ignore-base-config`）
      （Worker Previews への切り替えを求められたら切り替える。**切り替えは元に戻せない**）。
      どちらも `packages/admin/package.json` の scripts で、フラグはリポジトリで管理する。
+     画面（React の SPA）の `vite build` も、この scripts の中で `wrangler deploy`・`wrangler preview` の前に
+     実行する（ビルドしたものを `wrangler.jsonc` の `assets` で静的アセットとしてアップロードする）ため、
+     ビルドコマンドに足す必要はない
      `run` を省くと `pnpm deploy` が pnpm 組み込みのコマンドとして扱われて失敗するため、必ず付ける
    - Build watch paths の Include：`packages/admin/*`・`packages/shared/*`・`src/db/schema/*`・
      `src/db/conditionalInsert.ts`・`pnpm-lock.yaml`・`pnpm-workspace.yaml`。`packages/shared/*` は
