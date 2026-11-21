@@ -1,102 +1,26 @@
 import {
-  Alert,
   Button,
-  Select,
   Table,
   TableActionCell,
   TableActionHeader,
 } from "@canshi/shared/ui";
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
-import type { ChangeResponse, UserJson, UsersResponse } from "../../api/types";
-import { USER_ROLES } from "../../models";
-import { segment, sendJson } from "../api";
+import { useNavigate } from "react-router";
+import type { UserJson, UsersResponse } from "../../api/types";
 import common from "../common.module.css";
-import { ConfirmDialog } from "../components/ConfirmDialog";
 import { Loadable } from "../components/Loadable";
 import { Page } from "../components/Page";
-import { formatDateTime, householdRoleLabel, userRoleLabel } from "../format";
+import { formatDateTime, householdRoleLabel } from "../format";
+import { householdPath, userPath } from "../paths";
+import { RouterLink } from "../RouterLink";
 import { useApi } from "../useApi";
 import table from "./table.module.css";
-
-const ROLE_OPTIONS = USER_ROLES.map((role) => ({
-  value: role,
-  label: userRoleLabel(role),
-}));
-
-/** 直前に行った操作の結果（URL のクエリ `loggedOut`・`roleChange`・`user`） */
-function UsersNotice(props: { users: UserJson[] }) {
-  const [searchParams] = useSearchParams();
-  const loggedOutUser = props.users.find(
-    (user) => user.id === searchParams.get("loggedOut"),
-  );
-  const roleChangeUser = props.users.find(
-    (user) => user.id === searchParams.get("user"),
-  );
-  const roleChange = searchParams.get("roleChange");
-  return (
-    <>
-      {loggedOutUser ? (
-        <Alert color="success" role="status">
-          {loggedOutUser.name} をすべての端末からログアウトさせました。
-        </Alert>
-      ) : null}
-      {roleChangeUser && roleChange === "updated" ? (
-        <Alert color="success" role="status">
-          {roleChangeUser.name} の権限を{userRoleLabel(roleChangeUser.role)}
-          にしました。
-        </Alert>
-      ) : null}
-      {roleChangeUser && roleChange === "update-failed" ? (
-        <Alert color="error" role="alert">
-          {roleChangeUser.name}{" "}
-          の権限を変えられませんでした。選べる権限を選び直してください。
-        </Alert>
-      ) : null}
-    </>
-  );
-}
-
-/** ユーザーの権限を選んで変えるフォーム */
-function RoleForm(props: { user: UserJson; onChanged: (ok: boolean) => void }) {
-  const { user } = props;
-  const [role, setRole] = useState(user.role);
-  const [isPending, setIsPending] = useState(false);
-  return (
-    <form
-      className={common.inlineForm}
-      onSubmit={async (event) => {
-        event.preventDefault();
-        setIsPending(true);
-        try {
-          const result = await sendJson<ChangeResponse>(
-            "POST",
-            `/users/${segment(user.id)}/role`,
-            { role },
-          ).catch(() => ({ ok: false }) as const);
-          props.onChanged(result.ok);
-        } finally {
-          setIsPending(false);
-        }
-      }}
-    >
-      <Select
-        label={`${user.name} の権限`}
-        options={ROLE_OPTIONS}
-        selectedKey={role}
-        onSelectionChange={(key) => {
-          if (typeof key === "string") {
-            setRole(key);
-          }
-        }}
-        className={`${table.compactSelect} ${table.hiddenLabel}`}
-      />
-      <Button type="submit" variant="secondary" isDisabled={isPending}>
-        変更
-      </Button>
-    </form>
-  );
-}
+import {
+  LogoutDialog,
+  UserChangeNotice,
+  UserRoleForm,
+  UserRoleLead,
+} from "./userActions";
 
 function UsersTable(props: {
   users: UserJson[];
@@ -120,12 +44,17 @@ function UsersTable(props: {
         {props.users.map((user) => (
           <tr key={user.id}>
             <th scope="row">
-              <span className={table.name}>{user.name}</span>
+              <RouterLink
+                href={userPath(user.id)}
+                className={`${table.name} ${common.link}`}
+              >
+                {user.name}
+              </RouterLink>
               <code className={common.code}>{user.id}</code>
             </th>
             <td>
               {/* 権限を変えたあとに選び直した値を捨てるよう、今の権限ごとに作り直す */}
-              <RoleForm
+              <UserRoleForm
                 key={user.role}
                 user={user}
                 onChanged={(ok) => props.onRoleChanged(user, ok)}
@@ -138,8 +67,13 @@ function UsersTable(props: {
                 <ul>
                   {user.households.map((household) => (
                     <li key={household.householdId}>
-                      {household.householdName}（
-                      {householdRoleLabel(household.role)}）
+                      <RouterLink
+                        href={householdPath(household.householdId)}
+                        className={common.link}
+                      >
+                        {household.householdName}
+                      </RouterLink>
+                      （{householdRoleLabel(household.role)}）
                     </li>
                   ))}
                 </ul>
@@ -186,13 +120,8 @@ export function UsersPage() {
             <p className={common.empty}>ユーザーはまだいません。</p>
           ) : (
             <>
-              <UsersNotice users={users} />
-              <p className={common.lead}>
-                権限はアプリ全体の権限で、家の中での権限（オーナー・メンバー）とは別です。
-                {userRoleLabel("admin")}
-                にしても、この管理画面に入れるようにはなりません（管理画面に入れるユーザーは
-                Cloudflare Access のポリシーで決まります）。
-              </p>
+              <UserChangeNotice users={users} />
+              <UserRoleLead />
               <UsersTable
                 users={users}
                 onRoleChanged={(user, ok) =>
@@ -207,23 +136,14 @@ export function UsersPage() {
           )
         }
       </Loadable>
-      <ConfirmDialog
-        open={logoutUser !== null}
-        title="すべての端末からログアウトさせる"
-        confirmLabel="ログアウトさせる"
-        variant="danger"
+      <LogoutDialog
+        user={logoutUser}
         onClose={() => setLogoutUser(null)}
-        onConfirm={async () => {
-          if (!logoutUser) {
-            return;
-          }
-          await sendJson("DELETE", `/users/${segment(logoutUser.id)}/sessions`);
+        onLoggedOut={(userId) => {
           setLogoutUser(null);
-          showResult({ loggedOut: logoutUser.id });
+          showResult({ loggedOut: userId });
         }}
-      >
-        <p>{logoutUser?.name} をすべての端末からログアウトさせますか？</p>
-      </ConfirmDialog>
+      />
     </Page>
   );
 }

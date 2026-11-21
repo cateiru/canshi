@@ -3,7 +3,9 @@ import type {
   CatalogFoodProductJson,
   CatalogFoodProductRequestsResponse,
   CatalogFoodProductsResponse,
+  HouseholdDetailResponse,
   HouseholdsResponse,
+  UserDetailResponse,
   UsersResponse,
 } from "./api/types";
 import { createApp } from "./app";
@@ -145,6 +147,68 @@ describe("一覧の API", () => {
   });
 });
 
+describe("詳細の API", () => {
+  it("ユーザーの詳細に、所属する家と通知の購読を返し、トークン・購読の送り先と鍵は返さない", async () => {
+    const response = await request("/api/users/user-1");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    const text = await response.text();
+    for (const secret of [
+      "hash-active-1",
+      "secret-endpoint",
+      "secret-p256dh",
+      "secret-auth",
+    ]) {
+      expect(text).not.toContain(secret);
+    }
+    const { user } = JSON.parse(text) as UserDetailResponse;
+    expect(user).toMatchObject({
+      name: "たろう",
+      households: [
+        { householdName: "わが家", role: "owner" },
+        { householdName: "実家", role: "owner" },
+      ],
+      pushSubscriptions: [{ deviceName: "iPhone・Safari", failureCount: 2 }],
+    });
+    // テスト用データのセッションは実行時の日時では期限切れのため返さない
+    expect(user.sessions).toEqual([]);
+    expect(user.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("家の詳細に、メンバー・猫・招待と、追加の候補のユーザーを返し、招待のトークンは返さない", async () => {
+    const response = await request("/api/households/household-1");
+    expect(response.status).toBe(200);
+    const text = await response.text();
+    expect(text).not.toContain("invitation-hash");
+    const { household, users } = JSON.parse(text) as HouseholdDetailResponse;
+    expect(household).toMatchObject({
+      name: "わが家",
+      members: [
+        { userId: "user-1", role: "owner" },
+        { userId: "user-2", role: "member" },
+      ],
+      cats: [{ name: "みけ" }, { name: "くろ" }],
+    });
+    // 実行時の日時では、使われていない招待はどれも期限切れ
+    expect(
+      household.invitations.map((invitation) => invitation.status),
+    ).toEqual(["expired", "accepted", "expired"]);
+    expect(users).toEqual([
+      { id: "user-1", name: "たろう" },
+      { id: "user-2", name: "<script>alert(1)</script>" },
+      { id: "user-3", name: "はなこ" },
+    ]);
+  });
+
+  it("存在しないユーザー・家は 404 にする", async () => {
+    for (const path of ["/api/users/missing", "/api/households/missing"]) {
+      const response = await request(path);
+      expect(response.status).toBe(404);
+      expect(assetRequests).toEqual([]);
+    }
+  });
+});
+
 describe("すべての端末からログアウトさせる", () => {
   beforeEach(async () => {
     // API は実行時の日時で有効なセッションを数えるため、テスト用データ（2026-10-01 基準）の
@@ -164,6 +228,18 @@ describe("すべての端末からログアウトさせる", () => {
     );
     // 期限切れのセッションしかないユーザー・セッションが無いユーザーは 0
     expect(counts).toEqual({ "user-1": 1, "user-2": 0, "user-3": 0 });
+  });
+
+  it("ユーザーの詳細に有効なセッションを返す", async () => {
+    const { user } = await getJson<UserDetailResponse>("/api/users/user-1");
+    expect(user.sessions).toEqual([
+      {
+        id: expect.any(String),
+        deviceName: "不明な端末",
+        createdAt: expect.any(String),
+        expiresAt: expect.any(String),
+      },
+    ]);
   });
 
   it("ユーザーのセッションをすべて削除する", async () => {

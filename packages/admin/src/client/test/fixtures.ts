@@ -1,6 +1,8 @@
 import type {
   CatalogFoodProductJson,
   CatalogFoodProductsResponse,
+  HouseholdDetailResponse,
+  UserDetailResponse,
   UserJson,
 } from "../../api/types";
 
@@ -60,3 +62,82 @@ export function user(
     ...values,
   };
 }
+
+export const USER_DETAIL: UserDetailResponse = {
+  user: {
+    id: "user-1",
+    name: "たろう",
+    role: "admin",
+    createdAt: "2026-10-01T00:00:00.000Z",
+    updatedAt: "2026-10-02T00:00:00.000Z",
+    households: [
+      {
+        householdId: "household-1",
+        householdName: "わが家",
+        role: "owner",
+        joinedAt: "2026-10-01T00:00:00.000Z",
+      },
+    ],
+    sessions: [
+      {
+        id: "session-1",
+        deviceName: "iPhone・Safari",
+        createdAt: "2026-10-01T00:00:00.000Z",
+        expiresAt: "2026-11-01T00:00:00.000Z",
+      },
+    ],
+    pushSubscriptions: [],
+  },
+};
+
+export const HOUSEHOLD_DETAIL: HouseholdDetailResponse = {
+  household: {
+    id: "household-1",
+    name: "わが家",
+    createdAt: "2026-10-01T00:00:00.000Z",
+    updatedAt: "2026-10-01T00:00:00.000Z",
+    members: [
+      {
+        userId: "user-1",
+        userName: "たろう",
+        role: "owner",
+        joinedAt: "2026-10-01T00:00:00.000Z",
+      },
+      {
+        userId: "user-2",
+        userName: "<script>alert(1)</script>",
+        role: "member",
+        joinedAt: "2026-10-01T00:01:00.000Z",
+      },
+    ],
+    cats: [
+      {
+        id: "cat-1",
+        name: "みけ",
+        sex: "female",
+        birthDate: "2020-04-01",
+        birthDatePrecision: "month",
+        memorialDate: null,
+        createdAt: "2026-10-01T00:00:00.000Z",
+      },
+    ],
+    invitations: [
+      {
+        id: "invitation-1",
+        createdByUserId: "user-1",
+        createdByUserName: "たろう",
+        status: "accepted",
+        createdAt: "2026-10-01T00:00:00.000Z",
+        expiresAt: "2026-10-08T00:00:00.000Z",
+        acceptedByUserId: "user-2",
+        acceptedByUserName: "<script>alert(1)</script>",
+        acceptedAt: "2026-10-01T00:01:00.000Z",
+      },
+    ],
+  },
+  users: [
+    { id: "user-1", name: "たろう" },
+    { id: "user-2", name: "<script>alert(1)</script>" },
+    { id: "user-3", name: "はなこ" },
+  ],
+};

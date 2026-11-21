@@ -4,9 +4,11 @@ import { CatalogFoodProductEditPage } from "./pages/CatalogFoodProductEditPage";
 import { CatalogFoodProductNewPage } from "./pages/CatalogFoodProductNewPage";
 import { CatalogFoodProductRequestsPage } from "./pages/CatalogFoodProductRequestsPage";
 import { CatalogFoodProductsPage } from "./pages/CatalogFoodProductsPage";
+import { HouseholdDetailPage } from "./pages/HouseholdDetailPage";
 import { HouseholdsPage } from "./pages/HouseholdsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { OverviewPage } from "./pages/OverviewPage";
+import { UserDetailPage } from "./pages/UserDetailPage";
 import { UsersPage } from "./pages/UsersPage";
 
 /**
@@ -19,7 +21,12 @@ export function App() {
       <Route element={<Layout />}>
         <Route index element={<OverviewPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="users/:userId" element={<UserDetailPage />} />
         <Route path="households" element={<HouseholdsPage />} />
+        <Route
+          path="households/:householdId"
+          element={<HouseholdDetailPage />}
+        />
         <Route path="food-products" element={<CatalogFoodProductsPage />} />
         <Route
           path="food-products/new"
