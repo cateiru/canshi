@@ -15,6 +15,7 @@ import {
   countUnreadNotifications,
   listPendingNotifications,
   listResolvedNotifications,
+  RESOLVED_NOTIFICATIONS_LIMIT,
 } from "./queries";
 
 // sql.js は D1 と同じ SQLite 方言のテスト用スタブだが、`getDb` は D1Database（`.prepare` を
@@ -199,5 +200,51 @@ describe("通知の家による絞り込み", () => {
       catId: "cat-b",
     });
     expect(pending).toEqual([]);
+  });
+});
+
+describe("対応済みの通知の件数の上限", () => {
+  const userId = "user-1";
+
+  beforeAll(async () => {
+    const SQL = await initSqlJs();
+    db = drizzle(new SQL.Database()) as unknown as ReturnType<typeof getDb>;
+    await migrate(db as unknown as ReturnType<typeof drizzle>, {
+      migrationsFolder: "./drizzle",
+    });
+    await db.insert(users).values({ id: userId, name: "管理者" });
+    await db.insert(households).values({ id: "household-1", name: "わが家" });
+    await db
+      .insert(householdMembers)
+      .values({ householdId: "household-1", userId });
+    await db.insert(cats).values({
+      id: "cat-1",
+      name: "たま",
+      sex: "female",
+      householdId: "household-1",
+    });
+    // 対応した日時（updatedAt）が 1 分ずつ新しくなる対応済みの通知を、上限より 1 件多く作る
+    await db.insert(notifications).values(
+      Array.from({ length: RESOLVED_NOTIFICATIONS_LIMIT + 1 }, (_, index) => ({
+        catId: "cat-1",
+        kind: "weight_measurement" as const,
+        dedupeKey: `dedupe-${index}`,
+        title: "体重測定のお願い",
+        body: "そろそろ体重を測りましょう",
+        url: "/cats/cat-1",
+        dueAt: new Date("2026-09-01T00:00:00.000Z"),
+        status: index % 2 === 0 ? ("done" as const) : ("dismissed" as const),
+        updatedAt: new Date(Date.UTC(2026, 8, 2, 0, index)),
+      })),
+    );
+  });
+
+  it("直近に対応したものから上限の件数までを返し、それより前のものは返さない", async () => {
+    const resolved = await listResolvedNotifications({ userId });
+    expect(resolved).toHaveLength(RESOLVED_NOTIFICATIONS_LIMIT);
+    expect(resolved[0].dedupeKey).toBe(
+      `dedupe-${RESOLVED_NOTIFICATIONS_LIMIT}`,
+    );
+    expect(resolved.some((n) => n.dedupeKey === "dedupe-0")).toBe(false);
   });
 });
