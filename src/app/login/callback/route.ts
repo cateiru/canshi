@@ -86,7 +86,6 @@ export async function GET(request: NextRequest) {
 
   const { token, expiresAt, userId, isNewUser } = await loginWithEmail(
     email,
-    env,
     request.headers.get("user-agent"),
   );
   const response = NextResponse.redirect(

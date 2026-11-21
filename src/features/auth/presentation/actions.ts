@@ -45,7 +45,6 @@ export async function developmentLoginAction(
 
   const { token, expiresAt, userId, isNewUser } = await loginWithEmail(
     email,
-    env,
     (await headers()).get("user-agent"),
   );
   const cookieStore = await cookies();

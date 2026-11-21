@@ -110,9 +110,8 @@ Access のアプリケーションは、ダッシュボードのほか Cloudflar
 - D1 はプレビュー専用の `canshi-preview-db`、R2 はプレビュー専用の `canshi-media-preview` を使う。
   本番のデータには触れない。すべてのブランチのプレビューで同じ DB・バケットを共有する
 - `DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN = "true"`（`[previews.vars]`）で、Cloudflare Access（OIDC）を
-  通さない開発用のログイン（メールアドレスを入力するだけでログインする）を有効にする。
-  `EMAIL_HASH_SALT` が未設定なら開発用の SALT を使う（`src/features/auth/infrastructure/developmentLogin.ts`。
-  SALT は `email` を持たない以前のユーザーを探すときだけ使う）
+  通さない開発用のログイン（メールアドレスを入力するだけでログインする）を有効にする
+  （`src/features/auth/infrastructure/developmentLogin.ts`）
   - **このフラグは `[previews.vars]` にだけ書き、トップレベルの `[vars]` やシークレットには決して設定しない。**
     本番のドメインは Access で保護していないため、本番で有効になると誰でも任意のメールアドレスで
     ログインできてしまう
@@ -196,15 +195,10 @@ pnpm exec wrangler d1 execute DB --remote --config wrangler.preview-migrations.t
 - メールアドレスは正規化（前後の空白を除いて小文字に）して `users.email` に保存し、同じユーザーかどうかも
   この値で判定する（`src/features/auth/infrastructure/users.ts`）。メールアドレスは画面に表示せず、
   本人も変えられない。変更はお問い合わせで受け、`pnpm user:link-email` で設定する（「メールアドレスの変更」節）
-- 以前はメールアドレスをハッシュにして `users.email_hash` に保存していた（#593 で変更）。`email` を
-  持たないユーザーは、ログイン時に SALT（`EMAIL_HASH_SALT`）を使って argon2id でハッシュにした値で探し、
-  見つかればメールアドレスを保存する（「メールアドレスの保存への移行手順」節）。ハッシュの計算に CPU を
-  200 ms 以上使うため、`email` で見つからなかったときだけ計算する（Workers の Paid プランが前提）
+- 以前はメールアドレスをハッシュにして `users.email_hash` に保存していた。#593 で `users.email` に移し、
+  `email_hash` は削除した（「メールアドレスの保存への移行手順」節）
 - 初めてログインしたメールアドレスでは、ユーザーを新しく作る（家には所属しない。家への招待 URL で
   参加する）。ユーザーが 1 件もないときに最初にログインしたユーザーは管理者になる
-- **`EMAIL_HASH_SALT` は、全員の `email` がそろって `email_hash` を削除するまで変えない。** 変えると
-  ハッシュが一致しなくなり、まだログインしていないユーザーが別の新しいユーザーになる。ハッシュの
-  パラメータ（`EMAIL_HASH_PARAMS`）も同じ
 
 設定する値（いずれも `wrangler secret put` で設定する。`ACCESS_DISCOVERY_URL` は機密情報では
 ないが、`wrangler.toml` の `[vars]` にない値はデプロイのたびに消えるため、シークレットにする）:
@@ -214,13 +208,11 @@ pnpm exec wrangler d1 execute DB --remote --config wrangler.preview-migrations.t
 | `ACCESS_DISCOVERY_URL` | SaaS OIDC アプリの OIDC discovery URL（`.../.well-known/openid-configuration`） |
 | `ACCESS_CLIENT_ID` | SaaS OIDC アプリの Client ID |
 | `ACCESS_CLIENT_SECRET` | SaaS OIDC アプリの Client secret |
-| `EMAIL_HASH_SALT` | メールアドレスのハッシュに使う SALT（16 文字以上。`email` を持たない以前のユーザーを探すときだけ使う。移行が済んだら削除する） |
 
 ```sh
 wrangler secret put ACCESS_DISCOVERY_URL
 wrangler secret put ACCESS_CLIENT_ID
 wrangler secret put ACCESS_CLIENT_SECRET
-wrangler secret put EMAIL_HASH_SALT
 ```
 
 `ACCESS_*` のどれかが未設定の本番環境では、ログインボタンを押すとエラーになる（ログインせずに
@@ -241,8 +233,7 @@ Redirect URL は登録したホスト名でしか使えないため、Workers Bu
 では OIDC でログインできない。プレビューでは代わりに開発用のログインを使う（「プレビュー（Worker Previews）」節）。
 
 ローカル開発（`next dev`）では、`ACCESS_*` が未設定なら `/login` が開発用のログイン（Access を
-通さず、入力したメールアドレスでログインする）になる。e2e・VRT もこれを使う。`EMAIL_HASH_SALT` が
-未設定なら開発用の SALT を使う。`.dev.vars` に
+通さず、入力したメールアドレスでログインする）になる。e2e・VRT もこれを使う。`.dev.vars` に
 `ACCESS_*` を設定すれば、ローカルでも Access でのログインを確認できる（Redirect URL に
 `http://localhost:3000/login/callback` を追加する）。開発用のログインは本番ビルドでは使えない
 （`src/features/auth/infrastructure/developmentLogin.ts`）。
@@ -256,13 +247,25 @@ Redirect URL は登録したホスト名でしか使えないため、Workers Bu
 1. `email` 列を追加する（マイグレーション `0069`）。列と一意のインデックスを追加するだけなので、
    デプロイより前に `pnpm db:migrate:remote` で適用する。**新しいコードは `email` 列を読むため、
    適用より先にデプロイすると全ページがエラーになる。**
-2. デプロイすると、`email` を持たないユーザーのセッションは無効になり（`getSessionUser`）、全員が
-   ログアウトする。次にログインしたとき、`email_hash` でユーザーを見つけてメールアドレスを保存する。
-   手作業でセッションを削除する必要はない。
-3. 全員（現状 3 名）がログインし直したら、`email_hash` の列と、ハッシュで探す処理・`EMAIL_HASH_SALT` を
-   削除する（別の PR で行う）。全員がそろったかは次で確かめる（0 になればよい）。
+2. `email` を持たないユーザーのセッションを無効にして、全員をログアウトさせる。次にログインしたとき、
+   `email_hash` でユーザーを見つけてメールアドレスを保存する（#625 で行った）。
+3. 全員（現状 3 名）がログインし直したら、`email_hash` の列（マイグレーション `0070`）と、ハッシュで探す処理・
+   `EMAIL_HASH_SALT` を削除する。手順は次の節。
+
+#### `email_hash` を削除する手順
+
+1. 全員の `email` がそろったことを確かめる（0 になればよい）。残っているユーザーは、`email_hash` を
+   削除するとメールアドレスで見つけられなくなる（`pnpm user:link-email` で設定すれば救える）。
 
         pnpm exec wrangler d1 execute DB --remote --command "SELECT COUNT(*) FROM users WHERE email IS NULL"
+
+2. マージしてデプロイする。新しいコードは `email_hash` を読まない。**旧バージョンは `email_hash` を
+   読むため、`0070` をデプロイより先に適用すると全ページがエラーになる。**
+3. デプロイが済んでから、`pnpm db:migrate:remote` で `0070` を適用する。プレビュー D1 にも
+   `pnpm db:migrate:preview` で適用する。
+4. 使わなくなったシークレットを削除する。
+
+        wrangler secret delete EMAIL_HASH_SALT
 
 ### メールアドレスの変更
 

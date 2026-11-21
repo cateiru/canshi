@@ -90,21 +90,6 @@ describe("createSession / getSessionUser", () => {
     expect(await getSessionUser(token)).toBeNull();
   });
 
-  it("メールアドレスを持たないユーザーのセッションでは null（ログインし直してもらう）", async () => {
-    await db
-      .insert(users)
-      .values({ id: "legacy", name: "以前のユーザー", emailHash: "hash" });
-    const { token } = await createSession("legacy");
-
-    expect(await getSessionUser(token)).toBeNull();
-
-    await db
-      .update(users)
-      .set({ email: "legacy@example.com" })
-      .where(eq(users.id, "legacy"));
-    expect((await getSessionUser(token))?.id).toBe("legacy");
-  });
-
   it("新しくログインすると、同じユーザーの期限切れのセッションを削除する", async () => {
     const expired = await createSession("user-1");
     await db

@@ -19,13 +19,9 @@ export const users = sqliteTable("users", {
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   // ログインに使うメールアドレス（`normalizeEmail` で正規化した値）。同じユーザーかの判定はこの値で行う。
-  // 0069 より前に作られたユーザーは、次にログインする（`email_hash` で見つかる）まで NULL。
-  // NULL のユーザーのセッションは無効にして、ログインし直してもらう（`getSessionUser`）
+  // 以前はハッシュ（`email_hash`）で保存していたため、移行の前からのユーザーのために NULL を許している
+  // （#593。全員分をそろえてから `email_hash` を削除した）
   email: text("email").unique(),
-  // メールアドレスを SALT を使って argon2id でハッシュにした値（`src/features/auth/domain/emailHash.ts`）。
-  // `email` へ移すまでの間だけ、`email` が NULL のユーザーを探すのに使う。新しいユーザーには保存しない。
-  // 全員の `email` がそろったら列ごと削除する（#593）
-  emailHash: text("email_hash").unique(),
   // アプリ全体の権限。家の中での権限（household_members.role）とは別
   role: text("role", { enum: ["admin", "member"] })
     .notNull()
