@@ -258,6 +258,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          FILES_JQ: >-
+            .[] | if .filename == "package.json" and .patch != null
+            and ([.patch | split("\n")[] | select(test("^[-+]"))]
+            | length > 0 and all(test("^[-+]\\s*\"version\":")))
+            then empty else .filename end
         run: |
           set -euo pipefail
           if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
@@ -269,9 +274,11 @@ jobs:
           # 依存関係（Playwright・wrangler・Hono など）・このワークフロー
           PATTERN='^(packages/admin/|packages/shared/|e2e-admin/|e2e/vrt-snapshot\.ts$|e2e/fixtures/vrt-seed\.sql$|playwright\.admin-vrt\.config\.ts$|regconfig\.admin\.json$|drizzle/|src/db/schema/|src/db/conditionalInsert\.ts$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/ci\.yml$|\.github/actions/)'
           # 一覧を先に受け取ってから探す。パイプで grep -q に渡すと、grep が最初の一致で終わったあとも
-          # gh が次のページを書き込もうとして SIGPIPE で失敗し、pipefail で一致なしと判定されてしまう
+          # gh が次のページを書き込もうとして SIGPIPE で失敗し、pipefail で一致なしと判定されてしまう。
+          # リリースノートに合わせて version だけを上げた package.json は、見た目に関わらないため除く
+          # （変更行がすべて "version": の行のときだけ。patch が無い＝差分が大きすぎるときは除かない）
           FILES="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
-            --jq '.[].filename')"
+            --jq "${FILES_JQ}")"
           if grep -qE "$PATTERN" <<<"$FILES"; then
             echo "admin=true" >> "$GITHUB_OUTPUT"
           else
@@ -437,6 +444,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          FILES_JQ: >-
+            .[] | if .filename == "package.json" and .patch != null
+            and ([.patch | split("\n")[] | select(test("^[-+]"))]
+            | length > 0 and all(test("^[-+]\\s*\"version\":")))
+            then empty else .filename end
         run: |
           set -euo pipefail
           if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
@@ -444,9 +456,10 @@ jobs:
             exit 0
           fi
           PATTERN='^(packages/shared/|e2e-shared/|e2e/vrt-snapshot\.ts$|playwright\.shared-vrt\.config\.ts$|regconfig\.shared\.json$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.github/workflows/ci\.yml$|\.github/actions/)'
-          # admin-changes と同じく、一覧を先に受け取ってから探す（SIGPIPE で一致なしと判定されないように）
+          # admin-changes と同じく、一覧を先に受け取ってから探す（SIGPIPE で一致なしと判定されないように）。
+          # version だけを上げた package.json を除くのも admin-changes と同じ
           FILES="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
-            --jq '.[].filename')"
+            --jq "${FILES_JQ}")"
           if grep -qE "$PATTERN" <<<"$FILES"; then
             echo "shared=true" >> "$GITHUB_OUTPUT"
           else
