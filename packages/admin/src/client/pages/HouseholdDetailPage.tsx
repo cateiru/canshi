@@ -27,9 +27,9 @@ import { RouterLink } from "../RouterLink";
 import { useApi } from "../useApi";
 import {
   AddMemberForm,
+  type MemberChange,
   MemberChangeNotice,
   type MemberRemoval,
-  memberCandidates,
   RemoveMemberDialog,
 } from "./householdMemberActions";
 import { NotFoundPage } from "./NotFoundPage";
@@ -51,10 +51,9 @@ function MembersSection(props: {
   onRemove: (removal: MemberRemoval) => void;
 }) {
   const { household } = props;
-  const candidates = memberCandidates(
-    props.users,
-    household.members.map((member) => member.userId),
-  );
+  const memberIds = new Set(household.members.map((member) => member.userId));
+  // まだメンバーでないユーザーを、追加の候補にする
+  const candidates = props.users.filter((user) => !memberIds.has(user.id));
   return (
     <DetailSection title="メンバー">
       {household.members.length === 0 ? (
@@ -88,7 +87,6 @@ function MembersSection(props: {
                       variant="danger"
                       onPress={() =>
                         props.onRemove({
-                          household,
                           userId: member.userId,
                           userName: member.userName,
                         })
@@ -109,7 +107,6 @@ function MembersSection(props: {
           key={candidates.map((user) => user.id).join()}
           household={household}
           candidates={candidates}
-          showLabel
           onAdded={props.onAdded}
         />
       )}
@@ -225,7 +222,7 @@ function InvitationsSection(props: { household: HouseholdDetailJson }) {
   );
 }
 
-/** 家の詳細。メンバーの追加・削除の操作は一覧と同じ */
+/** 家の詳細。メンバーの追加・削除の操作は、詳細でだけ行う */
 export function HouseholdDetailPage() {
   const householdId = useParams().householdId ?? "";
   const navigate = useNavigate();
@@ -244,12 +241,8 @@ export function HouseholdDetailPage() {
     );
   }
 
-  const showResult = (memberChange: string, userId: string) => {
-    const params = new URLSearchParams({
-      memberChange,
-      household: householdId,
-      user: userId,
-    });
+  const showResult = (memberChange: MemberChange, userId: string) => {
+    const params = new URLSearchParams({ memberChange, user: userId });
     navigate(`${householdPath(householdId)}?${params}`);
     reload();
   };
@@ -263,7 +256,7 @@ export function HouseholdDetailPage() {
       <Loadable state={state} reload={reload}>
         {({ household, users }) => (
           <>
-            <MemberChangeNotice households={[household]} users={users} />
+            <MemberChangeNotice household={household} users={users} />
             <DetailSection title="基本情報">
               <DetailFacts>
                 <dt>ID</dt>
@@ -286,17 +279,18 @@ export function HouseholdDetailPage() {
             />
             <CatsSection household={household} />
             <InvitationsSection household={household} />
+            <RemoveMemberDialog
+              household={household}
+              removal={removal}
+              onClose={() => setRemoval(null)}
+              onRemoved={(removed, ok) => {
+                setRemoval(null);
+                showResult(ok ? "removed" : "remove-failed", removed.userId);
+              }}
+            />
           </>
         )}
       </Loadable>
-      <RemoveMemberDialog
-        removal={removal}
-        onClose={() => setRemoval(null)}
-        onRemoved={(removed, ok) => {
-          setRemoval(null);
-          showResult(ok ? "removed" : "remove-failed", removed.userId);
-        }}
-      />
     </Page>
   );
 }

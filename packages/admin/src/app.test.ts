@@ -132,9 +132,8 @@ describe("一覧の API", () => {
     expect(taro?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
-  it("家の一覧に、メンバーと猫の数と、追加の候補のユーザーを返す", async () => {
-    const { households, users } =
-      await getJson<HouseholdsResponse>("/api/households");
+  it("家の一覧に、メンバーと猫の数を返す", async () => {
+    const { households } = await getJson<HouseholdsResponse>("/api/households");
     const home = households.find((household) => household.id === "household-1");
     expect(home).toMatchObject({
       name: "わが家",
@@ -143,7 +142,6 @@ describe("一覧の API", () => {
         { userId: "user-2", role: "member" },
       ],
     });
-    expect(users).toHaveLength(3);
   });
 });
 

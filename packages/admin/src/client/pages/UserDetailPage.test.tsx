@@ -67,9 +67,7 @@ describe("ユーザーの詳細", () => {
     screen.getByRole("button", { name: "変更" }).click();
     await screen.findByText(/^たろう の権限を/);
     expect(sent).toEqual({ role: "admin" });
-    expect(currentLocation()).toBe(
-      "/users/user-1?roleChange=updated&user=user-1",
-    );
+    expect(currentLocation()).toBe("/users/user-1?roleChange=updated");
     // 送ったあとは詳細を読み込み直す
     await waitForLoaded();
     expect(
@@ -96,7 +94,15 @@ describe("ユーザーの詳細", () => {
       "たろう をすべての端末からログアウトさせました。",
     );
     expect(deleted).toBe(true);
-    expect(currentLocation()).toBe("/users/user-1?loggedOut=user-1");
+    expect(currentLocation()).toBe("/users/user-1?loggedOut=1");
+  });
+
+  it("権限を変えられなかった結果を表示する", async () => {
+    stubApi({ "GET /users/user-1": USER_DETAIL });
+    await renderApp("/users/user-1?roleChange=update-failed");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "たろう の権限を変えられませんでした。",
+    );
   });
 
   it("存在しないユーザーは、見つからないことを表示する", async () => {

@@ -135,14 +135,8 @@ function createApi() {
   });
 
   api.get("/households", async (c) => {
-    const [households, users] = await Promise.all([
-      listHouseholds(c.var.db),
-      listUsers(c.var.db),
-    ]);
-    return c.json<HouseholdsResponse>({
-      households: toJson(households),
-      users: toJson(users),
-    });
+    const households = await listHouseholds(c.var.db);
+    return c.json<HouseholdsResponse>({ households: toJson(households) });
   });
 
   api.get("/households/:householdId", async (c) => {

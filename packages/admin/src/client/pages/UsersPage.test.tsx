@@ -1,12 +1,7 @@
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { user } from "../test/fixtures";
-import {
-  currentLocation,
-  renderApp,
-  stubApi,
-  waitForLoaded,
-} from "../test/render";
+import { renderApp, stubApi } from "../test/render";
 
 const USERS = {
   users: [
@@ -15,65 +10,38 @@ const USERS = {
       name: "たろう",
       role: "admin",
       activeSessionCount: 2,
+      households: [
+        { householdId: "household-1", householdName: "わが家", role: "owner" },
+      ],
     }),
     user({ id: "user-2", name: "<script>alert(1)</script>" }),
   ],
 };
 
 describe("ユーザー", () => {
-  it("利用者の入力した名前を文字として表示し、有効なセッションがあるユーザーにだけログアウトのボタンを出す", async () => {
+  it("利用者の入力した名前を文字として表示し、ユーザー・家の詳細へリンクする", async () => {
     stubApi({ "GET /users": USERS });
     await renderApp("/users");
-    expect(screen.getByText("<script>alert(1)</script>")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "<script>alert(1)</script>" }),
+    ).toHaveAttribute("href", "/users/user-2");
     expect(document.querySelector("script")).toBeNull();
-    expect(
-      screen.getAllByRole("button", { name: "すべての端末からログアウト" }),
-    ).toHaveLength(1);
-    // 管理者にしても管理画面に入れるわけではないことを示す
-    expect(
-      screen.getByText(/この管理画面に入れるようにはなりません/),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "たろう" })).toHaveAttribute(
+      "href",
+      "/users/user-1",
+    );
+    expect(screen.getByRole("link", { name: "わが家" })).toHaveAttribute(
+      "href",
+      "/households/household-1",
+    );
+    expect(screen.getByText("管理者")).toBeInTheDocument();
   });
 
-  it("権限を変え、結果を URL のクエリで表示する", async () => {
-    let sent: unknown = null;
-    const fetchMock = stubApi({
-      "GET /users": USERS,
-      "POST /users/user-2/role": (init) => {
-        sent = JSON.parse(String(init?.body));
-        return { status: 200, body: { ok: true } };
-      },
-    });
+  it("一覧では操作せず、権限の変更・ログアウトのボタンを出さない", async () => {
+    stubApi({ "GET /users": USERS });
     await renderApp("/users");
-    const row = screen.getByText("<script>alert(1)</script>").closest("tr");
-    if (!row) {
-      throw new Error("行がありません");
-    }
-    within(row).getByRole("button", { name: "変更" }).click();
-    await screen.findByText(/^<script>alert\(1\)<\/script> の権限を/);
-    expect(sent).toEqual({ role: "member" });
-    expect(currentLocation()).toBe("/users?roleChange=updated&user=user-2");
-    // 送ったあとは一覧を読み込み直す
-    await waitForLoaded();
-    expect(
-      fetchMock.mock.calls.filter(([url]) => String(url) === "/api/users"),
-    ).toHaveLength(2);
-  });
-
-  it("すべての端末からログアウトさせた結果を表示する", async () => {
-    stubApi({ "GET /users": USERS });
-    await renderApp("/users?loggedOut=user-1");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "たろう をすべての端末からログアウトさせました。",
-    );
-  });
-
-  it("権限を変えられなかった結果を表示する", async () => {
-    stubApi({ "GET /users": USERS });
-    await renderApp("/users?roleChange=update-failed&user=user-1");
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "たろう の権限を変えられませんでした。",
-    );
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
   });
 
   it("読み込めなかったときは理由を表示する", async () => {

@@ -10,8 +10,8 @@ import { userRoleLabel } from "../format";
 import table from "./table.module.css";
 
 /**
- * ユーザーの一覧（`/users`）と詳細（`/users/:userId`）で共通の、権限の変更と
- * すべての端末からログアウトさせる操作
+ * ユーザーの詳細（`/users/:userId`）での操作。権限の変更と、すべての端末からログアウトさせる操作は
+ * 詳細でだけ行い、一覧（`/users`）は表示だけにする
  */
 
 type UserSummary = { id: string; name: string; role: string };
@@ -20,6 +20,11 @@ const ROLE_OPTIONS = USER_ROLES.map((role) => ({
   value: role,
   label: userRoleLabel(role),
 }));
+
+/** 操作の結果を表示する、詳細の URL のクエリ */
+export type UserChangeResult =
+  | { roleChange: "updated" | "update-failed" }
+  | { loggedOut: "1" };
 
 /** 権限はアプリ全体の権限で、管理画面に入れるかどうかとは関係しないことの説明 */
 export function UserRoleLead() {
@@ -33,32 +38,26 @@ export function UserRoleLead() {
   );
 }
 
-/** 直前に行った操作の結果（URL のクエリ `loggedOut`・`roleChange`・`user`） */
-export function UserChangeNotice(props: { users: UserSummary[] }) {
+/** 直前に行った操作の結果（URL のクエリ `roleChange`・`loggedOut`） */
+export function UserChangeNotice(props: { user: UserSummary }) {
+  const { user } = props;
   const [searchParams] = useSearchParams();
-  const loggedOutUser = props.users.find(
-    (user) => user.id === searchParams.get("loggedOut"),
-  );
-  const roleChangeUser = props.users.find(
-    (user) => user.id === searchParams.get("user"),
-  );
   const roleChange = searchParams.get("roleChange");
   return (
     <>
-      {loggedOutUser ? (
+      {searchParams.get("loggedOut") === "1" ? (
         <Alert color="success" role="status">
-          {loggedOutUser.name} をすべての端末からログアウトさせました。
+          {user.name} をすべての端末からログアウトさせました。
         </Alert>
       ) : null}
-      {roleChangeUser && roleChange === "updated" ? (
+      {roleChange === "updated" ? (
         <Alert color="success" role="status">
-          {roleChangeUser.name} の権限を{userRoleLabel(roleChangeUser.role)}
-          にしました。
+          {user.name} の権限を{userRoleLabel(user.role)}にしました。
         </Alert>
       ) : null}
-      {roleChangeUser && roleChange === "update-failed" ? (
+      {roleChange === "update-failed" ? (
         <Alert color="error" role="alert">
-          {roleChangeUser.name}{" "}
+          {user.name}{" "}
           の権限を変えられませんでした。選べる権限を選び直してください。
         </Alert>
       ) : null}
@@ -95,6 +94,7 @@ export function UserRoleForm(props: {
         }
       }}
     >
+      {/* 項目名（「権限」）が横にあるため、ラベルは読み上げだけにする */}
       <Select
         label={`${user.name} の権限`}
         options={ROLE_OPTIONS}
@@ -113,29 +113,27 @@ export function UserRoleForm(props: {
   );
 }
 
-/** すべての端末からログアウトさせる前の確認。`user` が null のあいだは閉じている */
+/** すべての端末からログアウトさせる前の確認 */
 export function LogoutDialog(props: {
-  user: { id: string; name: string } | null;
+  user: { id: string; name: string };
+  open: boolean;
   onClose: () => void;
-  onLoggedOut: (userId: string) => void;
+  onLoggedOut: () => void;
 }) {
   const { user } = props;
   return (
     <ConfirmDialog
-      open={user !== null}
+      open={props.open}
       title="すべての端末からログアウトさせる"
       confirmLabel="ログアウトさせる"
       variant="danger"
       onClose={props.onClose}
       onConfirm={async () => {
-        if (!user) {
-          return;
-        }
         await sendJson("DELETE", `/users/${segment(user.id)}/sessions`);
-        props.onLoggedOut(user.id);
+        props.onLoggedOut();
       }}
     >
-      <p>{user?.name} をすべての端末からログアウトさせますか？</p>
+      <p>{user.name} をすべての端末からログアウトさせますか？</p>
     </ConfirmDialog>
   );
 }

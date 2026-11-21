@@ -15,6 +15,7 @@ import { NotFoundPage } from "./NotFoundPage";
 import {
   LogoutDialog,
   UserChangeNotice,
+  type UserChangeResult,
   UserRoleForm,
   UserRoleLead,
 } from "./userActions";
@@ -147,12 +148,12 @@ function PushSubscriptionsSection(props: { user: UserDetailJson }) {
   );
 }
 
-/** ユーザーの詳細。権限の変更とすべての端末からログアウトさせる操作は一覧と同じ */
+/** ユーザーの詳細。権限の変更とすべての端末からログアウトさせる操作は、詳細でだけ行う */
 export function UserDetailPage() {
   const userId = useParams().userId ?? "";
   const navigate = useNavigate();
   const { state, reload } = useApi<UserDetailResponse>(userPath(userId));
-  const [logoutUser, setLogoutUser] = useState<UserDetailJson | null>(null);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
 
   if (
     state.status === "error" &&
@@ -164,8 +165,8 @@ export function UserDetailPage() {
     );
   }
 
-  const showResult = (params: Record<string, string>) => {
-    navigate(`${userPath(userId)}?${new URLSearchParams(params)}`);
+  const showResult = (result: UserChangeResult) => {
+    navigate(`${userPath(userId)}?${new URLSearchParams(result)}`);
     reload();
   };
   const name = state.status === "success" ? state.data.user.name : null;
@@ -178,7 +179,7 @@ export function UserDetailPage() {
       <Loadable state={state} reload={reload}>
         {({ user }) => (
           <>
-            <UserChangeNotice users={[user]} />
+            <UserChangeNotice user={user} />
             <DetailSection title="基本情報">
               <DetailFacts>
                 <dt>ID</dt>
@@ -194,7 +195,6 @@ export function UserDetailPage() {
                     onChanged={(ok) =>
                       showResult({
                         roleChange: ok ? "updated" : "update-failed",
-                        user: user.id,
                       })
                     }
                   />
@@ -207,19 +207,23 @@ export function UserDetailPage() {
               <UserRoleLead />
             </DetailSection>
             <HouseholdsSection user={user} />
-            <SessionsSection user={user} onLogout={() => setLogoutUser(user)} />
+            <SessionsSection
+              user={user}
+              onLogout={() => setIsLogoutOpen(true)}
+            />
             <PushSubscriptionsSection user={user} />
+            <LogoutDialog
+              user={user}
+              open={isLogoutOpen}
+              onClose={() => setIsLogoutOpen(false)}
+              onLoggedOut={() => {
+                setIsLogoutOpen(false);
+                showResult({ loggedOut: "1" });
+              }}
+            />
           </>
         )}
       </Loadable>
-      <LogoutDialog
-        user={logoutUser}
-        onClose={() => setLogoutUser(null)}
-        onLoggedOut={(loggedOutUserId) => {
-          setLogoutUser(null);
-          showResult({ loggedOut: loggedOutUserId });
-        }}
-      />
     </Page>
   );
 }

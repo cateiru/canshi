@@ -43,7 +43,7 @@ describe("家の詳細", () => {
     );
     expect(sent).toEqual({ userId: "user-3" });
     expect(currentLocation()).toBe(
-      "/households/household-1?memberChange=added&household=household-1&user=user-3",
+      "/households/household-1?memberChange=added&user=user-3",
     );
   });
 
@@ -64,6 +64,19 @@ describe("家の詳細", () => {
       "<script>alert(1)</script> を わが家 から外しました。",
     );
     expect(removed).toBe(true);
+    expect(currentLocation()).toBe(
+      "/households/household-1?memberChange=removed&user=user-2",
+    );
+  });
+
+  it("オーナーを外せなかった結果を表示する", async () => {
+    stubApi({ "GET /households/household-1": HOUSEHOLD_DETAIL });
+    await renderApp(
+      "/households/household-1?memberChange=remove-failed&user=user-1",
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "たろう を わが家 から外せませんでした。",
+    );
   });
 
   it("全員がメンバーなら追加のフォームを出さず、猫・招待がなければその旨を表示する", async () => {

@@ -39,8 +39,6 @@ export type HouseholdJson = Json<AdminHousehold>;
 
 export interface HouseholdsResponse {
   households: HouseholdJson[];
-  /** メンバーとして追加する候補（全ユーザー） */
-  users: UserJson[];
 }
 
 export type UserOptionJson = Json<UserOption>;

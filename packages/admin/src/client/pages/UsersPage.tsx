@@ -1,32 +1,15 @@
-import {
-  Button,
-  Table,
-  TableActionCell,
-  TableActionHeader,
-} from "@canshi/shared/ui";
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { Table } from "@canshi/shared/ui";
 import type { UserJson, UsersResponse } from "../../api/types";
 import common from "../common.module.css";
 import { Loadable } from "../components/Loadable";
 import { Page } from "../components/Page";
-import { formatDateTime, householdRoleLabel } from "../format";
+import { formatDateTime, householdRoleLabel, userRoleLabel } from "../format";
 import { householdPath, userPath } from "../paths";
 import { RouterLink } from "../RouterLink";
 import { useApi } from "../useApi";
 import table from "./table.module.css";
-import {
-  LogoutDialog,
-  UserChangeNotice,
-  UserRoleForm,
-  UserRoleLead,
-} from "./userActions";
 
-function UsersTable(props: {
-  users: UserJson[];
-  onRoleChanged: (user: UserJson, ok: boolean) => void;
-  onLogout: (user: UserJson) => void;
-}) {
+function UsersTable(props: { users: UserJson[] }) {
   return (
     <Table>
       <thead>
@@ -37,13 +20,12 @@ function UsersTable(props: {
           <th scope="col">有効なセッション</th>
           <th scope="col">セッションの期限</th>
           <th scope="col">登録日時</th>
-          <TableActionHeader />
         </tr>
       </thead>
       <tbody>
         {props.users.map((user) => (
           <tr key={user.id}>
-            <th scope="row">
+            <th scope="row" className={table.textColumn}>
               <RouterLink
                 href={userPath(user.id)}
                 className={`${table.name} ${common.link}`}
@@ -52,15 +34,8 @@ function UsersTable(props: {
               </RouterLink>
               <code className={common.code}>{user.id}</code>
             </th>
-            <td>
-              {/* 権限を変えたあとに選び直した値を捨てるよう、今の権限ごとに作り直す */}
-              <UserRoleForm
-                key={user.role}
-                user={user}
-                onChanged={(ok) => props.onRoleChanged(user, ok)}
-              />
-            </td>
-            <td>
+            <td className={common.nowrap}>{userRoleLabel(user.role)}</td>
+            <td className={table.textColumn}>
               {user.households.length === 0 ? (
                 <span className={common.empty}>なし</span>
               ) : (
@@ -88,13 +63,6 @@ function UsersTable(props: {
               )}
             </td>
             <td className={common.nowrap}>{formatDateTime(user.createdAt)}</td>
-            <TableActionCell>
-              {user.activeSessionCount > 0 ? (
-                <Button variant="danger" onPress={() => props.onLogout(user)}>
-                  すべての端末からログアウト
-                </Button>
-              ) : null}
-            </TableActionCell>
           </tr>
         ))}
       </tbody>
@@ -102,16 +70,12 @@ function UsersTable(props: {
   );
 }
 
+/**
+ * ユーザーの一覧。表示だけで、権限の変更・すべての端末からログアウトさせる操作は
+ * ユーザーの詳細（`/users/:userId`）で行う
+ */
 export function UsersPage() {
   const { state, reload } = useApi<UsersResponse>("/users");
-  const navigate = useNavigate();
-  const [logoutUser, setLogoutUser] = useState<UserJson | null>(null);
-
-  const showResult = (params: Record<string, string>) => {
-    navigate(`/users?${new URLSearchParams(params)}`);
-    reload();
-  };
-
   return (
     <Page title="ユーザー">
       <Loadable state={state} reload={reload}>
@@ -119,31 +83,10 @@ export function UsersPage() {
           users.length === 0 ? (
             <p className={common.empty}>ユーザーはまだいません。</p>
           ) : (
-            <>
-              <UserChangeNotice users={users} />
-              <UserRoleLead />
-              <UsersTable
-                users={users}
-                onRoleChanged={(user, ok) =>
-                  showResult({
-                    roleChange: ok ? "updated" : "update-failed",
-                    user: user.id,
-                  })
-                }
-                onLogout={setLogoutUser}
-              />
-            </>
+            <UsersTable users={users} />
           )
         }
       </Loadable>
-      <LogoutDialog
-        user={logoutUser}
-        onClose={() => setLogoutUser(null)}
-        onLoggedOut={(userId) => {
-          setLogoutUser(null);
-          showResult({ loggedOut: userId });
-        }}
-      />
     </Page>
   );
 }
