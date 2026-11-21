@@ -108,7 +108,13 @@ export async function listPendingNotifications(
     .orderBy(desc(notifications.dueAt));
 }
 
-/** 対応済み（`done`・`dismissed`）の通知一覧。直近に対応したものから並べる */
+/** 通知センターの「対応済み」に表示する最大件数。これより前に対応した通知は表示しない */
+export const RESOLVED_NOTIFICATIONS_LIMIT = 50;
+
+/**
+ * 対応済み（`done`・`dismissed`）の通知一覧。直近に対応したものから並べ、
+ * `RESOLVED_NOTIFICATIONS_LIMIT` 件までを返す
+ */
 export async function listResolvedNotifications(
   { userId, catId }: NotificationFilter,
   d1?: D1Database,
@@ -126,7 +132,8 @@ export async function listResolvedNotifications(
     .select()
     .from(notifications)
     .where(and(...conditions))
-    .orderBy(desc(notifications.updatedAt));
+    .orderBy(desc(notifications.updatedAt))
+    .limit(RESOLVED_NOTIFICATIONS_LIMIT);
 }
 
 /**
