@@ -87,8 +87,38 @@ UI コンポーネントとデザイントークンの見本を Storybook（`@st
 
 コンポーネントを足したり、見た目の出し分け（props）を足したりしたときは、ストーリーも合わせて追加する。
 
-PR で `packages/shared/`・依存関係（`pnpm-lock.yaml`・`pnpm-workspace.yaml`）・`.github/workflows/ci.yml` を
-変えたときは、CI（`.github/workflows/ci.yml` の `shared-storybook`）が Storybook をビルドし、VRT と同じ
+PR で `packages/shared/`・共通のパッケージの VRT の設定（下の「VRT」）・依存関係（`package.json`・
+`pnpm-lock.yaml`・`pnpm-workspace.yaml`）・`.github/workflows/ci.yml`・`.github/actions/` を変えたときは、
+CI（`.github/workflows/ci.yml` の `shared-storybook`）が Storybook をビルドし、VRT と同じ
 [public-storage-cdk](https://github.com/cateiru/public-storage-cdk) のバケットの
 `canshi/shared-storybook/<PR の先頭のコミット>/` に置いて、URL を PR にコメントする。
 置いたファイルには `auto-expire` タグを付け、180 日後に自動で消す。
+
+コンポーネントの一覧は、メインアプリの開発用ページ（`/dev/components`）ではなく、この Storybook で見る。
+
+## VRT
+
+Storybook のストーリーを Playwright で 1 つずつ撮り、reg-suit で前のコミットと比べる
+（ビジュアルリグレッションテスト）。テストはリポジトリルートの `e2e-shared/vrt.spec.ts`、設定は
+`playwright.shared-vrt.config.ts` と `regconfig.shared.json` にある。
+
+- ビルドした Storybook の `storybook-static/index.json` からストーリーを読むため、ストーリーを足すと
+  自動で撮影の対象になる。実行するたびに見た目が変わるストーリーは、`tags: ["no-vrt"]` を付けて除く。
+- すべてのストーリーをライト・ダークテーマで撮る。コントラスト・アクセントカラー・文字サイズは、
+  それぞれの設定が効く部品のストーリーで代表して撮る（`e2e-shared/vrt.spec.ts` の `ACCENT_STORIES` など）。
+  見た目設定は、ツールバーと同じ globals を URL で渡して切り替える。
+- Select の候補・DropdownMenu のメニューを開いた見た目も撮る。
+- JavaScript のアニメーション（紙吹雪など）は、端末で動きを減らす設定（`prefers-reduced-motion`）にして止める。
+
+メインアプリの VRT（`e2e/vrt.spec.ts`）は画面を撮り、部品だけの見た目はここで撮る。
+
+CI の `vrt-shared` ジョブは、main への push では毎回（どのコミットにも比較のもとになるスナップショットが
+あるように）、PR では上の Storybook の公開と同じファイルを変えたときに実行する。結果は
+`canshi/vrt-shared/<コミット>/` に置き、PR にコメントする。
+
+ローカルではリポジトリルートで次のように実行する（Storybook をビルドしてから撮る）。撮った画像は
+`vrt-screenshots/shared/actual/` に書き出す。
+
+```bash
+pnpm vrt:shared
+```

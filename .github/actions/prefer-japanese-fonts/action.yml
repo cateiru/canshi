@@ -1,7 +1,7 @@
 name: Prefer Japanese fonts for CJK glyphs
 description: >-
   VRT のスクリーンショットで、日本語の漢字が中国語の字形で描画されないようにする
-  （vrt・vrt-admin ジョブで共通）
+  （vrt・vrt-admin・vrt-shared ジョブで共通）
 
 runs:
   using: composite
