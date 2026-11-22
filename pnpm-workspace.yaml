@@ -8,7 +8,7 @@ packages:
 # catalog に入れずに各 package.json に同じ版を書く（packages/shared の devDependencies もルートと揃える）
 # https://pnpm.io/ja/catalogs
 catalog:
-  "@testing-library/jest-dom": ^7.0.1
+  "@testing-library/jest-dom": ^8.0.0
   "@testing-library/react": ^16.3.3
   "@types/node": ^26.0.0
   "@types/react": ^19
