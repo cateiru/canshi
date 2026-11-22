@@ -1,0 +1,37 @@
+.form {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.typeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.typeList > * {
+  min-height: 44px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 出力するボタンは、ほかのフォームの保存ボタンと同じく横長にする */
+.footer {
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * 依頼の結果を読み上げる領域は常に置いておき、文言があるときだけボタンとの間を空ける
+ * （gap にすると、空のときもボタンの下に余白ができる）
+ */
+.message {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.message:not(:empty) {
+  margin-top: var(--space-3);
+}

@@ -85,6 +85,19 @@ VALUES
   ('vrt-feeding-evening', 'vrt-household', '19:00', 0, 0,
     strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
+-- 家の記録の出力（記録の出力ページの VRT 用）。完了したものと、大きすぎて失敗したものを並べる。
+-- zip は R2 に置かないため、ダウンロードはできない（見た目だけ）
+INSERT INTO record_exports (id, household_id, requested_by_user_id, record_types, include_media, status, failure_reason, object_key, size_bytes, created_at, finished_at)
+VALUES
+  ('vrt-record-export-completed', 'vrt-household', 'vrt-user',
+    '["feeding","poop","weight","memo"]', 1, 'completed', NULL,
+    'record_exports/vrt-record-export-completed.zip', 31540,
+    strftime('%s', '2024-06-10 03:00:00'), strftime('%s', '2024-06-10 03:01:00')),
+  ('vrt-record-export-failed', 'vrt-household', 'vrt-user',
+    '["feeding","poop","weight","vomit","water","shampoo","brushing","cleaning","symptom","medication","hospitalVisit","expense","memo"]',
+    1, 'failed', 'too_large', NULL, NULL,
+    strftime('%s', '2024-06-09 03:00:00'), strftime('%s', '2024-06-09 03:05:00'));
+
 INSERT INTO cats (id, name, sex, birth_date, breed, adopted_at, created_at, updated_at)
 VALUES ('vrt-cat-empty', 'VRT空猫', 'unknown', NULL, NULL, NULL,
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));

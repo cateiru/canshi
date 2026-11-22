@@ -38,6 +38,8 @@ export type HelpShortcutTarget =
   | "food-products"
   /** 家ごとのごはんの時間 */
   | "feeding-schedules"
+  /** 家ごとの記録の出力 */
+  | "record-exports"
   /** 通知設定（ログイン中なら出す） */
   | "notification-settings"
   /** 見た目設定（ログイン中なら出す。ログイン前はログイン画面のリンクから開く） */
@@ -97,6 +99,11 @@ export function buildHelpShortcuts(
       return households.map((household) => ({
         href: `/settings/households/${encodeURIComponent(household.id)}/feeding-schedules`,
         label: `${household.name}のごはんの時間`,
+      }));
+    case "record-exports":
+      return households.map((household) => ({
+        href: `/settings/households/${encodeURIComponent(household.id)}/record-exports`,
+        label: `${household.name}の記録の出力`,
       }));
     case "notification-settings":
       return [{ href: "/settings/notifications", label: "通知設定" }];

@@ -1,6 +1,7 @@
 import { EXPENSE_MEDIA_TYPE } from "@/features/expenses/domain/media";
 import { FOOD_PRODUCT_MEDIA_TYPE } from "@/features/food-products/domain/media";
 import { deleteMediaAssetsByRecords } from "@/features/media/infrastructure/storage";
+import { deleteRecordExportObjects } from "@/features/record-exports/infrastructure/storage";
 import type { RemovedHousehold } from "../domain/householdRepository";
 import { HOUSEHOLD_HAS_CATS_MESSAGE } from "../domain/labels";
 import { createHouseholdRepository } from "../infrastructure/householdRepository";
@@ -127,8 +128,8 @@ export async function deleteHousehold(
 }
 
 /**
- * 削除した家のごはん商品・支出記録に付いていた画像を消す。家はもう消えていてやり直せないため、
- * 失敗しても家の削除は成功として扱い、ログだけ残す（R2 に参照されない画像が残る）
+ * 削除した家のごはん商品・支出記録に付いていた画像と、記録の出力の zip を消す。家はもう消えていて
+ * やり直せないため、失敗しても家の削除は成功として扱い、ログだけ残す（R2 に参照されないファイルが残る）
  */
 async function deleteRemovedHouseholdMedia(
   householdId: string,
@@ -143,6 +144,7 @@ async function deleteRemovedHouseholdMedia(
       EXPENSE_MEDIA_TYPE,
       removed.expenseRecordIds,
     );
+    await deleteRecordExportObjects(removed.recordExportObjectKeys);
   } catch (error) {
     console.error(
       `Failed to delete media of the deleted household ${householdId}`,

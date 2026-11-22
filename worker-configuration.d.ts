@@ -6,6 +6,7 @@ interface __BaseEnv_Env {
 	DB: D1Database;
 	ASSETS: Fetcher;
 	NOTIFICATION_WORKFLOW: Workflow<Parameters<import("./src/worker").NotificationWorkflow['run']>[0]['payload']>;
+	RECORD_EXPORT_WORKFLOW: Workflow<Parameters<import("./src/worker").RecordExportWorkflow['run']>[0]['payload']>;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

@@ -14,6 +14,7 @@ import {
   householdMembers,
   households,
   notifications,
+  recordExports,
 } from "@/db/schema";
 import type { HouseholdRepository } from "../domain/householdRepository";
 
@@ -114,7 +115,8 @@ export function createHouseholdRepository(
 
       // 外部キーはすべて ON DELETE no action のため、参照する側から順に消す。猫がいない家だけを
       // 削除するため、猫に紐付く記録（`cat_id` を持つ行）は対象にならない
-      // 結果は文の順に並ぶ。ID を返す支出記録（4 番目）・ごはん商品（7 番目）・家（12 番目）だけを取り出す
+      // 結果は文の順に並ぶ。ID を返す支出記録（4 番目）・ごはん商品（7 番目）・記録の出力（11 番目）・
+      // 家（13 番目）だけを取り出す
       const [
         ,
         ,
@@ -126,6 +128,7 @@ export function createHouseholdRepository(
         ,
         ,
         ,
+        deletedRecordExports,
         ,
         deletedHouseholds,
       ] = await db.batch([
@@ -192,6 +195,12 @@ export function createHouseholdRepository(
           .where(
             and(eq(householdInvitations.householdId, householdId), canRemove),
           ),
+        // 記録の出力。R2 の zip を消すため、オブジェクトキーを返す。処理中の出力も消す
+        // （バッチは出力が消えていれば、作った zip を片付ける）
+        db
+          .delete(recordExports)
+          .where(and(eq(recordExports.householdId, householdId), canRemove))
+          .returning({ objectKey: recordExports.objectKey }),
         // オーナーの行が条件の判定に使われるため、メンバーは家本体の直前に消す
         // （SQLite は消す行を先に決めてから消すため、オーナーの行も含めて 1 文で消せる）
         db
@@ -221,6 +230,9 @@ export function createHouseholdRepository(
       return {
         foodProductIds: deletedFoodProducts.map(({ id }) => id),
         expenseRecordIds: deletedExpenses.map(({ id }) => id),
+        recordExportObjectKeys: deletedRecordExports.flatMap(({ objectKey }) =>
+          objectKey ? [objectKey] : [],
+        ),
       };
     },
 

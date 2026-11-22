@@ -20,8 +20,9 @@ import {
 import { default as handler } from "../.open-next/worker.js";
 
 // `wrangler.toml` の `[[workflows]]` の `class_name` はこのモジュール（`main`）からの
-// export を指す。Workflow の実体は `src/workflows/notification.ts` にある
+// export を指す。Workflow の実体は `src/workflows/notification.ts`・`src/workflows/recordExport.ts` にある
 export { NotificationWorkflow } from "@/workflows/notification";
+export { RecordExportWorkflow } from "@/workflows/recordExport";
 
 // ChatGPT などの外部 AI エージェント向けの MCP サーバー（`/mcp`）と、その OAuth 2.1
 // 認可サーバー。`/mcp`・`/oauth/token`・`/oauth/register`・`/.well-known/oauth-*` は

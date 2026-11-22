@@ -485,6 +485,30 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
   ).toBeVisible();
   await capture(page, "timeline");
 
+  // 記録の出力。記録をつけた後に出力し、出力するボタンと、完了した出力のダウンロードを撮る
+  await page.goto(`/settings/households/${householdId}/record-exports`);
+  const exportButton = page.getByRole("button", { name: "出力する" });
+  await expect(exportButton).toBeEnabled();
+  // 記録の選択と出力するボタンが両方写るよう、ボタンを画面の下端に合わせる
+  await exportButton.evaluate((element) => {
+    const bottom = element.getBoundingClientRect().bottom + window.scrollY;
+    window.scrollTo({
+      top: bottom + 24 - window.innerHeight,
+      behavior: "instant",
+    });
+  });
+  await highlight(exportButton);
+  await capture(page, "record-exports");
+  await exportButton.evaluate((element) => {
+    (element as HTMLElement).style.outline = "";
+  });
+  await exportButton.click();
+  const downloadLink = page.getByRole("link", { name: "ダウンロード" });
+  await expect(downloadLink).toBeVisible({ timeout: 60_000 });
+  await scrollToTop(page.getByRole("heading", { name: "出力したファイル" }));
+  await highlight(downloadLink);
+  await capture(page, "record-exports-download");
+
   // AI との接続の同意画面。本番では Worker が付けるヘッダーを、ここでは自分で付けて開く。
   // setExtraHTTPHeaders だとフォントなどほかのサイトへのリクエストにも付き、CORS で読み込めなく
   // なるため、同意画面へのリクエストだけに付ける。通知の撮影で Service Worker を登録すると、

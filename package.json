@@ -1,6 +1,6 @@
 {
   "name": "canshi",
-  "version": "0.80.7",
+  "version": "0.81.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -50,6 +50,7 @@
     "@noble/hashes": "2.4.0",
     "@react-spring/web": "10.1.2",
     "agents": "^0.33.0",
+    "client-zip": "2.5.1",
     "drizzle-orm": "catalog:",
     "jose": "^6.2.12",
     "next": "16.4.5",

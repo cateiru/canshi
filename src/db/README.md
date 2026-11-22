@@ -138,7 +138,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 家の削除（#483）はオーナーだけができ、猫のいない家だけを削除できる（`removeAsOwner`）
   - 猫の記録は猫の削除に任せ、家の削除では扱わない。家に属する支出記録（論理削除したものと、その履歴・
     猫・通院記録との紐付けを含む）・ごはん商品・プリセット（明細を含む）・ごはんの時間・家についての通知・
-    招待・メンバーを、参照する側から順に 1 つの `db.batch` で物理削除する
+    招待・記録の出力・メンバーを、参照する側から順に 1 つの `db.batch` で物理削除する
   - オーナーであること・猫が 0 件であることは batch のすべての文の WHERE に含め、確認から削除までの間に
     猫が登録されたりオーナーを移譲されたりした場合は、どの文も行を消さない。オーナーの行が判定に使われるため、
     メンバーは家本体の直前に消し、家本体はメンバーと猫が残っていないことを条件に消す
@@ -148,7 +148,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     batch のごはん商品・支出記録の DELETE の `RETURNING` で返した ID と `record_type`（`food_product`・`expense`）で
     決め、共通のごはん商品の画像（`catalog_food_product`）やほかの家の画像は消さない
     （`deleteMediaAssetsByRecords`）。画像の削除に失敗しても家はもう消えているため、ログだけ残して成功として扱う
-    （参照されない画像が残る）
+    （参照されない画像が残る）。記録の出力の zip も、batch の DELETE の `RETURNING` で返したオブジェクトキーで同じく後から消す
 - 家への招待は `household_invitations` に保存する（`src/features/households/application/invitations.ts`）
   - 招待 URL（`/invitations/{トークン}`）のトークンそのものは保存せず、`sessions` と同じく SHA-256 の
     ハッシュ（`token_hash`）だけを持つ。そのため URL を表示できるのは発行したときだけ
@@ -344,6 +344,35 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 終了予定日（`end_date`）を過ぎたもの（自動）。終了予定日の当日はまだ服用中として扱い、「今日」は JST で判定する
   - 「服薬歴に移す」で手動で移したもの。移した日時を `archived_at`（`0051`）に持ち、「服薬予定に戻す」で null に戻す
 - 終了予定日を過ぎたものは `archived_at` を null にしても服薬歴のままになるため、服薬予定に戻すには終了予定日を変更する
+
+## 記録の出力（`record_exports`）
+
+- 家の記録を種類ごとの CSV にし、写真・動画とあわせて zip にまとめたもの（#286、`0070`、`src/features/record-exports`）。
+  家の設定の「記録の出力」（`/settings/households/[householdId]/record-exports`）で、家のメンバーが記録の種類と
+  写真・動画を含めるかを選んで依頼する。家に属し、家のメンバーなら誰でも一覧・ダウンロード・削除できる
+- 依頼すると `pending` の行を作り、出力の ID でバッチ（Cloudflare Workflows の `RecordExportWorkflow`、
+  `src/workflows/recordExport.ts`）を起動する。バッチは `processing` にしてから zip を作り、R2 の
+  `record_exports/{ID}.zip`（`object_key`）に置いて `completed` にする。作れなければ `failed` にし、理由を
+  `failure_reason`（`too_large`・`error`）に持つ
+  - Workflow をバインドしていない環境（`next dev` の `getPlatformProxy`・Worker Previews）では、リクエストの後
+    （`after()`）に同じ処理を実行する。Worker Previews では `waitUntil` の時間の上限があるため、大きな出力は終わらないことがある
+  - 処理中（`pending`・`processing`）の出力は家ごとに 1 件だけ。`household_id` の部分一意インデックス
+    （`status IN ('pending', 'processing')`）と、依頼の INSERT ... SELECT の WHERE（家のメンバーであること・処理中の
+    出力がないこと）で守る
+  - 処理中のまま 1 時間（`RECORD_EXPORT_STALE_AFTER_MS`）を過ぎた出力は、バッチが止まったものとして画面では失敗と
+    表示し、削除できる。次に依頼したときに、同じ batch で `failed` にしてから新しい行を作る
+  - バッチは `processing` の行だけを `completed` にする。書き出している間に出力（家の削除を含む）が削除されたときは、
+    置いた zip を消す。Workflow のやり直しで呼ばれても、完了・失敗した出力は作り直さない
+- 出力するのは家のすべての猫（メモリーへ移した猫も含む）の、削除していない記録（`deleted_at IS NULL`）。支出は家の
+  支出記録。写真・動画は、削除していない記録に添付したものだけを `photos/{CSV の名前}/{記録の ID}-{順番}.{拡張子}` に入れ、
+  CSV の「写真・動画」の列にそのパスを書く
+- `record_types` は出力する記録の種類（`RECORD_EXPORT_TYPES`）の JSON 配列で、`RECORD_EXPORT_TYPES` の順に並べて保存する
+- zip は client-zip で圧縮せずに作り、R2 のマルチパートアップロード（8 MiB ずつ）で少しずつ書き出す。4 GiB を超えるときは
+  client-zip が ZIP64 にする。R2 のパートの数の上限（10,000）で、zip は約 78 GiB までしか置けないため、写真・動画の
+  `size_bytes` から client-zip の `predictLength` で求めた大きさがこれを超えるときは、作らずに `too_large` にする。
+  zip は家のメディアの保存容量には数えない
+- 行の削除では、行を消してから R2 の zip を消す（消せなくても削除は成功として扱う）。処理中の出力は削除できない
+- 自動では削除しない（一覧には新しい 50 件だけを表示する）
 
 ## 画像・動画（`media_assets`）
 

@@ -1,9 +1,11 @@
-/** 家の削除で一緒に削除した、画像を持ちうる行の ID */
+/** 家の削除で一緒に削除した、R2 にファイルを持ちうる行 */
 export type RemovedHousehold = {
   /** 削除したごはん商品の ID（`media_assets.record_type = 'food_product'` の `record_id`） */
   foodProductIds: string[];
   /** 削除した支出記録の ID（論理削除済みのものも含む。`record_type = 'expense'` の `record_id`） */
   expenseRecordIds: string[];
+  /** 削除した記録の出力の zip の R2 のオブジェクトキー */
+  recordExportObjectKeys: string[];
 };
 
 /**
@@ -30,9 +32,9 @@ export interface HouseholdRepository {
   removeSelfAsMember(householdId: string, userId: string): Promise<boolean>;
   /**
    * 家を削除する。家に属する支出記録・ごはん商品・プリセット・ごはんの時間・家についての通知・
-   * 招待・メンバーも同じ batch で削除する。`ownerUserId` がオーナーでない、または家に猫がいれば
-   * 何も削除せずに null。削除できたら、画像を消すために、一緒に削除したごはん商品・支出記録の ID を返す
-   * （画像は R2 にあり batch に含められないため、ここでは削除しない）
+   * 招待・記録の出力・メンバーも同じ batch で削除する。`ownerUserId` がオーナーでない、または家に猫がいれば
+   * 何も削除せずに null。削除できたら、画像・zip を消すために、一緒に削除したごはん商品・支出記録の ID と
+   * 記録の出力の zip のオブジェクトキーを返す（R2 のファイルは batch に含められないため、ここでは削除しない）
    */
   removeAsOwner(
     householdId: string,
