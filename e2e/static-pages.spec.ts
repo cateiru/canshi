@@ -35,6 +35,11 @@ test("ごはん記録の記録方法のヘルプページに両モードの説�
   await expect(
     page.getByRole("heading", { name: "あいまいモード", exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("table", {
+      name: "厳格モードとあいまいモードでできることの比較",
+    }),
+  ).toBeVisible();
 });
 
 test("ごはんプリセットのヘルプページから、家のプリセットの登録・一覧へ進める", async ({

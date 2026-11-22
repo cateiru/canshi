@@ -5,6 +5,10 @@ import {
   LEFTOVER_LEVEL_LABEL,
 } from "@/features/feeding-records/domain/labels";
 import { HelpArticle } from "@/features/help/HelpArticle";
+import {
+  type HelpComparisonRow,
+  HelpComparisonTable,
+} from "@/features/help/HelpComparisonTable";
 import styles from "@/features/help/HelpContent.module.css";
 import { HelpScreenshot } from "@/features/help/HelpScreenshot";
 import { getHelpTopic } from "@/features/help/topics";
@@ -19,6 +23,52 @@ export const metadata: Metadata = {
 const givenAmountLevels = Object.values(GIVEN_AMOUNT_LEVEL_LABEL).join("・");
 const leftoverLevels = Object.values(LEFTOVER_LEVEL_LABEL).join("・");
 
+/** 厳格モード・あいまいモードでできることの星取り表（列は厳格モード・あいまいモードの順） */
+const comparisonRows: HelpComparisonRow[] = [
+  {
+    label: "与えた量の記録",
+    cells: [
+      { available: true, note: "グラム" },
+      { available: true, note: "3段階" },
+    ],
+  },
+  {
+    label: "残した量の記録",
+    cells: [
+      { available: true, note: "グラム" },
+      { available: true, note: "3段階" },
+    ],
+  },
+  {
+    label: "はかりなしで記録",
+    cells: [{ available: false }, { available: true }],
+  },
+  {
+    label: "食べた量の計算",
+    cells: [{ available: true, note: "推定" }, { available: false }],
+  },
+  {
+    label: "カロリーの計算",
+    cells: [{ available: true, note: "推定" }, { available: false }],
+  },
+  {
+    label: "グラフに表示",
+    cells: [{ available: true }, { available: false }],
+  },
+  {
+    label: "ごはんプリセット",
+    cells: [{ available: true }, { available: true }],
+  },
+  {
+    label: "タイムラインで確認",
+    cells: [{ available: true }, { available: true }],
+  },
+  {
+    label: "AI エージェントで確認",
+    cells: [{ available: true }, { available: true }],
+  },
+];
+
 export default function FeedingModesHelpPage() {
   return (
     <HelpArticle
@@ -32,6 +82,14 @@ export default function FeedingModesHelpPage() {
       }
       related={["records/feeding-records", "feeding-presets"]}
     >
+      <Surface title="できることの比較" gap="md">
+        <HelpComparisonTable
+          caption={`${FEEDING_MODE_LABEL.strict}と${FEEDING_MODE_LABEL.approximate}でできることの比較`}
+          columns={[FEEDING_MODE_LABEL.strict, FEEDING_MODE_LABEL.approximate]}
+          rows={comparisonRows}
+        />
+      </Surface>
+
       <Surface title={FEEDING_MODE_LABEL.strict} gap="md">
         <ul className={styles.points}>
           <li>与えた量・残した量をグラム単位で記録します。</li>
