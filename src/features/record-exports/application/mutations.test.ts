@@ -27,7 +27,6 @@ import {
   listRecordExports,
 } from "../infrastructure/queries";
 import type { RecordExportEnv } from "../infrastructure/storage";
-import * as zip from "../infrastructure/zip";
 import { csvText, readZip } from "../testing/readZip";
 import {
   deleteRecordExport,
@@ -42,20 +41,18 @@ vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
 
-vi.mock("../infrastructure/zip", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../infrastructure/zip")>();
-  return { ...actual, fitsInZip: vi.fn(actual.fitsInZip) };
-});
-
 /** R2 の代わり。マルチパートアップロードは、完了したときにパートをつないで置く */
 class FakeBucket {
   readonly objects = new Map<string, Uint8Array>();
   readonly partSizes: number[] = [];
+  /** キーごとの、読んだ回数 */
+  readonly reads = new Map<string, number>();
   aborted = 0;
   /** パートを受け取るたびに呼ぶ（書き出しの途中の出来事を作るため） */
   onUploadPart: (() => Promise<void>) | null = null;
 
   async get(key: string) {
+    this.reads.set(key, (this.reads.get(key) ?? 0) + 1);
     const data = this.objects.get(key);
     if (!data) {
       return null;
@@ -145,7 +142,6 @@ beforeEach(async () => {
     DB: {} as D1Database,
     MEDIA_BUCKET: bucket as unknown as R2Bucket,
   };
-  vi.mocked(zip.fitsInZip).mockClear();
 
   await db.insert(users).values([
     { id: "member", name: "家族" },
@@ -526,7 +522,7 @@ describe("runRecordExport", () => {
     );
   });
 
-  it("大きな動画は 2 回に分けて読み、zip を同じ大きさのパートに分けてアップロードする", async () => {
+  it("大きな動画も 1 回だけ読んで流し込み、zip を同じ大きさのパートに分けてアップロードする", async () => {
     const video = new Uint8Array(17 * 1024 * 1024).map((_, i) => i % 253);
     await seedMedia(
       "poop-2-video",
@@ -549,10 +545,23 @@ describe("runRecordExport", () => {
       ({ name }) => name === "photos/poop_records/poop-2-1.mp4",
     );
     expect(entry?.bytes).toEqual(video);
+    expect(bucket.reads.get("poop_record/poop-2/poop-2-video")).toBe(1);
   });
 
-  it("zip が上限を超えるときは、作らずに失敗（too_large）にする", async () => {
-    vi.mocked(zip.fitsInZip).mockReturnValueOnce(false);
+  it("zip が R2 に置ける大きさを超えるときは、写真・動画を読まずに失敗（too_large）にする", async () => {
+    // 大きさは media_assets.size_bytes から求めるため、R2 には小さなデータを置いて行の大きさだけを大きくする
+    await seedMedia(
+      "poop-2-huge",
+      "poop_record",
+      "poop-2",
+      0,
+      encoder.encode("huge"),
+      "video/mp4",
+    );
+    await db
+      .update(mediaAssets)
+      .set({ sizeBytes: 80 * 1024 * 1024 * 1024 })
+      .where(eq(mediaAssets.id, "poop-2-huge"));
     const id = await requestExport(["poop"], true);
 
     await runRecordExport(id, env);
@@ -563,6 +572,26 @@ describe("runRecordExport", () => {
       objectKey: null,
     });
     expect(bucket.partSizes).toEqual([]);
+    expect(bucket.reads.size).toBe(0);
+  });
+
+  it("4 GiB を超えても R2 に置ける大きさなら、作り始める（ZIP64 にする）", async () => {
+    await seedMedia(
+      "poop-2-large",
+      "poop_record",
+      "poop-2",
+      0,
+      encoder.encode("large"),
+    );
+    await db
+      .update(mediaAssets)
+      .set({ sizeBytes: 5 * 1024 * 1024 * 1024 })
+      .where(eq(mediaAssets.id, "poop-2-large"));
+    const id = await requestExport(["poop"], true);
+
+    await runRecordExport(id, env);
+
+    expect((await getExport(id)).status).toBe("completed");
   });
 
   it("完了した出力は、もう一度呼ばれても作り直さない", async () => {

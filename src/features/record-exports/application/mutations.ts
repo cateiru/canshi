@@ -1,4 +1,3 @@
-import { getNaiveUtcNow } from "@/features/shared/datetime";
 import {
   normalizeRecordExportTypes,
   recordExportObjectKey,
@@ -10,11 +9,12 @@ import { createRecordExportRepository } from "../infrastructure/recordExportRepo
 import {
   deleteRecordExportObjects,
   encodeCsvFiles,
+  fitsInRecordExportArchive,
   getRecordExportEnv,
   type RecordExportEnv,
+  RecordExportTooLargeError,
   writeRecordExportArchive,
 } from "../infrastructure/storage";
-import { fitsInZip, ZipTooLargeError } from "../infrastructure/zip";
 
 /*
  * 記録の出力（ユースケース）。家のメンバーなら誰でも依頼・削除できる。
@@ -56,7 +56,7 @@ export async function requestRecordExport(
  * Workflow を使えない環境ではリクエストの後に呼ぶ。
  *
  * - すでに完了・失敗した出力や、削除された出力は何もしない（Workflow のやり直しで呼ばれても重ねて作らない）
- * - zip の大きさ・ファイル数が上限を超えるときは、やり直しても同じため、例外にせず失敗（`too_large`）にする
+ * - zip が R2 に置ける大きさを超えるときは、やり直しても同じため、例外にせず失敗（`too_large`）にする
  * - それ以外の失敗は例外にする（Workflow はやり直し、やり直しても失敗したら `failRecordExport` を呼ぶ）
  */
 export async function runRecordExport(
@@ -77,14 +77,7 @@ export async function runRecordExport(
     resolved.DB,
   );
   const csvFiles = encodeCsvFiles(contents);
-  const fits = fitsInZip([
-    ...csvFiles.map(({ name, bytes }) => ({
-      name,
-      sizeBytes: bytes.byteLength,
-    })),
-    ...contents.media.map(({ path, sizeBytes }) => ({ name: path, sizeBytes })),
-  ]);
-  if (!fits) {
+  if (!fitsInRecordExportArchive(csvFiles, contents.media)) {
     await repository.markFailed(recordExportId, "too_large");
     return;
   }
@@ -97,11 +90,10 @@ export async function runRecordExport(
       objectKey,
       csvFiles,
       contents.media,
-      // zip の中のファイルの日時は、依頼した日時（日本時間）にする
-      getNaiveUtcNow(recordExport.createdAt),
+      recordExport.createdAt,
     );
   } catch (error) {
-    if (error instanceof ZipTooLargeError) {
+    if (error instanceof RecordExportTooLargeError) {
       await repository.markFailed(recordExportId, "too_large");
       return;
     }

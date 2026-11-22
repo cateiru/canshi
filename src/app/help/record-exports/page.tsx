@@ -105,8 +105,8 @@ export default function RecordExportsHelpPage() {
 
       <Surface title="出力できないとき" gap="md">
         <p>
-          写真・動画が多く、zip ファイルが 4 GB
-          を超えるときは出力できません。写真・動画を含めずに出力するか、記録の種類を分けて出力してください。
+          写真・動画がとても多く、zip
+          ファイルが大きくなりすぎるときは出力できません。写真・動画を含めずに出力するか、記録の種類を分けて出力してください。
         </p>
       </Surface>
     </HelpArticle>

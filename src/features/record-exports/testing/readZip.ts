@@ -1,4 +1,4 @@
-import { crc32 } from "../infrastructure/zip";
+import { crc32 } from "node:zlib";
 
 export type ZipEntry = {
   name: string;
@@ -9,9 +9,13 @@ export type ZipEntry = {
 
 const decoder = new TextDecoder();
 
+/** 汎用フラグの bit 3。CRC と大きさを、ローカルファイルヘッダーではなく中身の後のデータ記述子に書く */
+const FLAG_DATA_DESCRIPTOR = 0x0008;
+
 /**
- * テスト用の zip の読み取り。セントラルディレクトリからファイルを読み、ローカルファイルヘッダーの
- * 名前・大きさ・CRC がセントラルディレクトリと一致することと、中身の CRC も確かめる
+ * テスト用の zip の読み取り（ZIP64 には対応しないため、小さな zip だけを読む）。セントラルディレクトリからファイルを読み、
+ * ローカルファイルヘッダー（データ記述子を使うときはデータ記述子）の名前・大きさ・CRC が
+ * セントラルディレクトリと一致することと、中身の CRC も確かめる
  */
 export function readZip(zip: Uint8Array): ZipEntry[] {
   const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
@@ -36,6 +40,8 @@ export function readZip(zip: Uint8Array): ZipEntry[] {
     const crc = view.getUint32(offset + 16, true);
     const size = view.getUint32(offset + 24, true);
     const nameLength = view.getUint16(offset + 28, true);
+    const extraLength = view.getUint16(offset + 30, true);
+    const commentLength = view.getUint16(offset + 32, true);
     const localOffset = view.getUint32(offset + 42, true);
     const name = decoder.decode(
       zip.subarray(offset + 46, offset + 46 + nameLength),
@@ -45,25 +51,47 @@ export function readZip(zip: Uint8Array): ZipEntry[] {
       throw new Error(`${name} のローカルファイルヘッダーが正しくありません`);
     }
     const localNameLength = view.getUint16(localOffset + 26, true);
+    const localExtraLength = view.getUint16(localOffset + 28, true);
     const localName = decoder.decode(
       zip.subarray(localOffset + 30, localOffset + 30 + localNameLength),
     );
-    if (
-      localName !== name ||
-      view.getUint32(localOffset + 14, true) !== crc ||
-      view.getUint32(localOffset + 22, true) !== size
-    ) {
-      throw new Error(`${name} のローカルファイルヘッダーが一致しません`);
+    if (localName !== name) {
+      throw new Error(`${name} のローカルファイルヘッダーの名前が一致しません`);
     }
-    const dataOffset = localOffset + 30 + localNameLength;
+    const dataOffset = localOffset + 30 + localNameLength + localExtraLength;
     const bytes = zip.subarray(dataOffset, dataOffset + size);
+
+    // データ記述子を使うときは中身の後（署名付き）、使わないときはローカルファイルヘッダーに CRC と大きさがある
+    const [localCrc, localSize] =
+      flags & FLAG_DATA_DESCRIPTOR
+        ? readDataDescriptor(view, dataOffset + size, name)
+        : [
+            view.getUint32(localOffset + 14, true),
+            view.getUint32(localOffset + 22, true),
+          ];
+    if (localCrc !== crc || localSize !== size) {
+      throw new Error(
+        `${name} の CRC・大きさがセントラルディレクトリと一致しません`,
+      );
+    }
     if (crc32(bytes) !== crc) {
-      throw new Error(`${name} の CRC が一致しません`);
+      throw new Error(`${name} の CRC が中身と一致しません`);
     }
     entries.push({ name, bytes, flags, method });
-    offset += 46 + nameLength;
+    offset += 46 + nameLength + extraLength + commentLength;
   }
   return entries;
+}
+
+function readDataDescriptor(
+  view: DataView,
+  offset: number,
+  name: string,
+): [crc: number, size: number] {
+  if (view.getUint32(offset, true) !== 0x08074b50) {
+    throw new Error(`${name} のデータ記述子が見つかりません`);
+  }
+  return [view.getUint32(offset + 4, true), view.getUint32(offset + 12, true)];
 }
 
 /** zip の中の CSV を、BOM を除いた文字列にする */
