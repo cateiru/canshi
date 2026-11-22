@@ -13,17 +13,22 @@ import { GET as callback } from "./route";
 const ORIGIN = "https://canshi.example.com";
 const USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1";
-const CLIENT_ID = "access-client-id";
-const ISSUER = `https://team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/${CLIENT_ID}`;
-const env = {
-  ACCESS_DISCOVERY_URL: `${ISSUER}/.well-known/openid-configuration`,
-  ACCESS_CLIENT_ID: CLIENT_ID,
-  ACCESS_CLIENT_SECRET: "client-secret",
-};
+// `vi.mock` はファイルの先頭に巻き上げられるため、モックが使う値も `vi.hoisted` で先に作る
+const { CLIENT_ID, ISSUER, env } = vi.hoisted(() => {
+  const CLIENT_ID = "access-client-id";
+  const ISSUER = `https://team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/${CLIENT_ID}`;
+  return {
+    CLIENT_ID,
+    ISSUER,
+    env: {
+      ACCESS_DISCOVERY_URL: `${ISSUER}/.well-known/openid-configuration`,
+      ACCESS_CLIENT_ID: CLIENT_ID,
+      ACCESS_CLIENT_SECRET: "client-secret",
+    },
+  };
+});
 
-vi.mock("@opennextjs/cloudflare", () => ({
-  getCloudflareContext: () => ({ env }),
-}));
+vi.mock("cloudflare:workers", () => ({ env }));
 
 const loginWithEmail = vi.fn();
 vi.mock("@/features/auth/application/login", () => ({

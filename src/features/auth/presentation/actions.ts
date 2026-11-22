@@ -1,6 +1,6 @@
 "use server";
 
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { env } from "cloudflare:workers";
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -34,7 +34,6 @@ import { requireUser } from "./session";
 export async function developmentLoginAction(
   formData: FormData,
 ): Promise<void> {
-  const { env } = getCloudflareContext();
   if (!isDevelopmentLoginEnabled(env)) {
     throw new Error("開発用のログインは使えません");
   }

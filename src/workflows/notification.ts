@@ -35,11 +35,11 @@ type NotificationWorkflowParams = Record<string, never>;
 
 /**
  * `29` のスケジュール実行本体。`worker.ts` の `scheduled` ハンドラから 15 分ごとに
- * インスタンスが作られる（`wrangler.toml` の `[triggers]`）。
+ * インスタンスが作られる（`cloudflare.config.ts` の `triggers`）。
  *
- * Workflow のステップはリクエストの外で実行されるため `getCloudflareContext()`
- * （`src/db/client.ts` の `getDb()` が内部で使う）が使えない。そのため、この
- * Workflow だけは自身の `this.env.DB` を明示的に渡す
+ * OpenNext の頃は、Workflow のステップ（リクエストの外）では `getCloudflareContext()`
+ * （`src/db/client.ts` の `getDb()` が内部で使っていた）が使えなかったため、この
+ * Workflow は自身の `this.env.DB` を明示的に渡している
  */
 export class NotificationWorkflow extends WorkflowEntrypoint<
   Env,

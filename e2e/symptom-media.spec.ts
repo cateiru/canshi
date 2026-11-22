@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { createPng } from "../src/features/media/testing/createPng";
 
@@ -20,7 +19,8 @@ test("症状記録に動画と写真を添付できる", async ({ page }) => {
     {
       name: "sample.webm",
       mimeType: "video/webm",
-      buffer: fs.readFileSync(path.join(__dirname, "fixtures/sample.webm")),
+      // package.json の "type": "module" で ESM として読まれ、`__dirname` が無いため import.meta.url から解決する
+      buffer: fs.readFileSync(new URL("fixtures/sample.webm", import.meta.url)),
     },
     {
       name: "symptom.png",

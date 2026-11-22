@@ -4,17 +4,17 @@ import { getOidcConfig } from "./oidc";
 export const DEVELOPMENT_LOGIN_EMAIL = "e2e@example.com";
 
 type DevelopmentLoginEnv = Parameters<typeof getOidcConfig>[0] &
-  Pick<CloudflareEnv, "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN">;
+  Pick<Env, "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN">;
 
 /**
  * 実行時の環境変数 `DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN` が `"true"` か。
- * Worker Previews（`wrangler preview`）の `[previews.vars]` だけで設定し、本番（トップレベルの
- * `[vars]`・シークレット）には決して設定しない。本番のドメインは Cloudflare Access で
+ * Worker Previews（`vinext-cloudflare previews deploy`）の設定（`cloudflare.config.ts` の `isPreview`）だけで設定し、本番の
+ * 変数・シークレットには決して設定しない。本番のドメインは Cloudflare Access で
  * 保護していないため、本番で有効になると誰でも任意のメールアドレスでログインできてしまう
- * （`wrangler.toml`・`docs/deploy.md` の「プレビュー（Worker Previews）」節を参照）
+ * （`cloudflare.config.ts`・`docs/deploy.md` の「プレビュー（Worker Previews）」節を参照）
  */
 export function isDangerousDevelopmentLoginEnabled(
-  env: Pick<CloudflareEnv, "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN">,
+  env: Pick<Env, "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN">,
 ) {
   return env.DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN === "true";
 }
@@ -45,7 +45,7 @@ export function isDevelopmentLoginEnabled(env: DevelopmentLoginEnv) {
  * だけでは切り替えられない）
  */
 export function isDevPagesEnabled(
-  env: Pick<CloudflareEnv, "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN">,
+  env: Pick<Env, "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN">,
 ) {
   return (
     process.env.NODE_ENV !== "production" ||

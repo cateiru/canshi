@@ -1,0 +1,14 @@
+# 本番の D1（`canshi-db`）にマイグレーションを適用するための設定。
+# Worker の設定は `cloudflare.config.ts`（vinext）に移したが、`wrangler d1 migrations apply`・
+# `wrangler d1 execute` は wrangler の設定ファイルしか読まないため、D1 だけをここに残す
+# （`cloudflare.config.ts` の `PRODUCTION_D1` と必ず揃える）。
+# `pnpm db:migrate:local`・`pnpm db:migrate:remote`・`pnpm vrt:seed`・`scripts/d1.mts` から使う。デプロイには使わない
+name = "canshi"
+compatibility_date = "2026-09-06"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "canshi-db"
+# ローカル開発では wrangler / Miniflare がこの値を使わずローカル SQLite で完結する。
+database_id = "1f5e487e-f87e-4896-8190-1ae4f4347ca3"
+migrations_dir = "drizzle"

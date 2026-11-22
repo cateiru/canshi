@@ -31,6 +31,10 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # `Env`・`cloudflare:workers` の型は `cloudflare.config.ts` から生成する（`.cloudflare/types`、Git 管理対象外）
+      - name: Generate Worker types
+        run: pnpm cf-typegen
+
       - name: Type check
         run: pnpm typecheck
 

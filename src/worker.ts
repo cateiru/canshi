@@ -1,4 +1,6 @@
 import OAuthProvider from "@cloudflare/workers-oauth-provider";
+// ページ・Route Handler・Server Action などは vinext のハンドラに渡す
+import handler from "vinext/server/fetch-handler";
 import { withMcpClientId } from "@/features/mcp/infrastructure/clientId";
 import {
   D1KvStore,
@@ -14,12 +16,7 @@ import {
   withMcpAuthorize,
 } from "@/features/mcp/presentation/authorize";
 
-// `.open-next/worker.js` は `opennextjs-cloudflare build`（`pnpm cf:build` 等）で
-// 生成される。ビルド前（`.open-next/` が無いクリーンな環境）は型解決できないため抑制する
-// @ts-expect-error
-import { default as handler } from "../.open-next/worker.js";
-
-// `wrangler.toml` の `[[workflows]]` の `class_name` はこのモジュール（`main`）からの
+// `cloudflare.config.ts` の `exports.NotificationWorkflow` はこのモジュール（`entrypoint`）からの
 // export を指す。Workflow の実体は `src/workflows/notification.ts` にある
 export { NotificationWorkflow } from "@/workflows/notification";
 
@@ -62,7 +59,7 @@ function getOAuthProvider(origin: string) {
       // クライアントの登録は、MCP の 2026-07-28 版で推奨される Client ID Metadata Document
       // （CIMD、クライアントの情報を置いた URL を client_id にする方式）を受け付ける。
       // CIMD に対応していないクライアントのため、Dynamic Client Registration（DCR）も残す。
-      // CIMD の文書の取得には `wrangler.toml` の `global_fetch_strictly_public` が要る
+      // CIMD の文書の取得には `cloudflare.config.ts` の `global_fetch_strictly_public` が要る
       clientIdMetadataDocumentEnabled: true,
       clientRegistrationEndpoint: OAUTH_REGISTER_PATH,
     });
@@ -100,15 +97,23 @@ export default {
           );
         }),
     );
+    // Workflow は Worker Previews ではバインドしない（`cloudflare.config.ts`）。プレビューでは
+    // Cron Triggers も動かないため、ここに来るのは本番だけ
+    const workflow = env.NOTIFICATION_WORKFLOW;
+    if (!workflow) {
+      return;
+    }
     // 同じ scheduledTime での重複実行（cron の at-least-once 配信）は
     // 同じ id での2回目の create() が失敗することで自然に防がれる
     ctx.waitUntil(
-      env.NOTIFICATION_WORKFLOW.create({
-        id: `notification-${controller.scheduledTime}`,
-        params: {},
-      }).catch((error) => {
-        console.error("NotificationWorkflow の起動に失敗しました", error);
-      }),
+      workflow
+        .create({
+          id: `notification-${controller.scheduledTime}`,
+          params: {},
+        })
+        .catch((error) => {
+          console.error("NotificationWorkflow の起動に失敗しました", error);
+        }),
     );
   },
 } satisfies ExportedHandler<Env>;

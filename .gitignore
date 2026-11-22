@@ -7,8 +7,10 @@ packages/*/node_modules
 /.next/
 /out/
 
-# opennext / cloudflare
-/.open-next/
+# vinext / cloudflare
+/.cloudflare/
+/.vinext/
+/dist/
 /.wrangler/
 packages/*/.wrangler/
 

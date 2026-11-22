@@ -1,8 +1,8 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { catalogFoodProducts, mediaAssets } from "@/db/schema";
 import { buildObjectKey } from "@/features/media/domain/objectKey";
+import { getMediaBucket } from "@/features/media/infrastructure/storage";
 import type { CatalogFoodProductRepository } from "../domain/catalogFoodProductRepository";
 import { CATALOG_FOOD_PRODUCT_MEDIA_TYPE } from "../domain/media";
 
@@ -14,9 +14,8 @@ function isProductImage(productId: string) {
 }
 
 /**
- * D1・R2 に保存する `CatalogFoodProductRepository`。MCP は Next.js（OpenNext）の外で動き
- * `getCloudflareContext()` を使えないため、D1・R2 は引数で受け取る。省略すると Next.js の
- * リクエストのものを使う
+ * D1・R2 に保存する `CatalogFoodProductRepository`。D1・R2 は引数で受け取り、省略すると
+ * `cloudflare:workers` の `env` のものを使う（MCP は OpenNext の頃から明示的に渡している）
  */
 export function createCatalogFoodProductRepository(
   d1?: D1Database,
@@ -56,7 +55,7 @@ export function createCatalogFoodProductRepository(
      * 作らずに画像だけを置き、同じ batch の中でその時点の画像の行をすべて削除してから新しい行を追加する
      */
     async replaceImage(productId, image) {
-      const bucket = mediaBucket ?? getCloudflareContext().env.MEDIA_BUCKET;
+      const bucket = mediaBucket ?? getMediaBucket();
       const assetId = crypto.randomUUID();
       const objectKey = buildObjectKey(
         CATALOG_FOOD_PRODUCT_MEDIA_TYPE,

@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { env } from "cloudflare:workers";
 import { notFound } from "next/navigation";
 import { isDevPagesEnabled } from "@/features/auth/infrastructure/developmentLogin";
 
@@ -10,7 +10,6 @@ import { isDevPagesEnabled } from "@/features/auth/infrastructure/developmentLog
 export default function DevLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const { env } = getCloudflareContext();
   if (!isDevPagesEnabled(env)) {
     notFound();
   }

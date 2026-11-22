@@ -38,18 +38,20 @@ vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
 
-// 家の削除で消す画像を確かめるため、R2 の代わりに Map を使う
-const objects = new Map<string, true>();
-const bucket = {
-  delete: vi.fn(async (keys: string | string[]) => {
-    for (const key of Array.isArray(keys) ? keys : [keys]) {
-      objects.delete(key);
-    }
-  }),
-};
-vi.mock("@opennextjs/cloudflare", () => ({
-  getCloudflareContext: () => ({ env: { MEDIA_BUCKET: bucket } }),
-}));
+// 家の削除で消す画像を確かめるため、R2 の代わりに Map を使う。
+// `vi.mock` はファイルの先頭に巻き上げられるため、モックが使う値も `vi.hoisted` で先に作る
+const { objects, bucket } = vi.hoisted(() => {
+  const objects = new Map<string, true>();
+  const bucket = {
+    delete: vi.fn(async (keys: string | string[]) => {
+      for (const key of Array.isArray(keys) ? keys : [keys]) {
+        objects.delete(key);
+      }
+    }),
+  };
+  return { objects, bucket };
+});
+vi.mock("cloudflare:workers", () => ({ env: { MEDIA_BUCKET: bucket } }));
 
 beforeEach(async () => {
   const SQL = await initSqlJs();

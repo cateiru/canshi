@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { env } from "cloudflare:workers";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -36,7 +36,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect(callbackUrl);
   }
 
-  const { env } = getCloudflareContext();
   const developmentLogin = isDevelopmentLoginEnabled(env);
 
   return (

@@ -24,7 +24,7 @@ export const OAUTH_REGISTER_PATH = "/oauth/register";
 
 /**
  * `env.OAUTH_PROVIDER` は `OAuthProvider` が `defaultHandler` を呼ぶ前に注入する値で、
- * `wrangler.toml` には現れず `Env` の生成型にも含まれないため、ここでのみ型を補う
+ * `cloudflare.config.ts` には現れず `Env` の生成型にも含まれないため、ここでのみ型を補う
  */
 type EnvWithOAuth = Env & { OAUTH_PROVIDER: OAuthHelpers };
 

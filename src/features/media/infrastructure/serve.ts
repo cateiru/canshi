@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getMediaBucket } from "./storage";
 
 /**
  * R2 のオブジェクトを HTTP レスポンスとしてストリーミング配信する。
@@ -14,13 +14,12 @@ export async function serveR2Object(
   objectKey: string,
   contentType: string,
 ): Promise<Response> {
-  const { env } = getCloudflareContext();
   const range = parseRangeHeader(request.headers.get("range"));
   const onlyIf = parseConditionalHeaders(request.headers);
 
   let object: R2Object | R2ObjectBody | null;
   try {
-    object = await env.MEDIA_BUCKET.get(objectKey, {
+    object = await getMediaBucket().get(objectKey, {
       ...(range ? { range } : {}),
       ...(onlyIf ? { onlyIf } : {}),
     });

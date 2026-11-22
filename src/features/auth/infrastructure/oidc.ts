@@ -26,7 +26,7 @@ export type OidcConfig = {
 };
 
 type OidcEnv = Pick<
-  CloudflareEnv,
+  Env,
   "ACCESS_DISCOVERY_URL" | "ACCESS_CLIENT_ID" | "ACCESS_CLIENT_SECRET"
 >;
 

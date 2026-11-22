@@ -53,6 +53,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(dirname, "./src"),
+      // Workers のランタイムにしか無いモジュール。Node.js では代わりのモジュールを読む
+      "cloudflare:workers": path.resolve(
+        dirname,
+        "./vitest.cloudflare-workers.ts",
+      ),
     },
   },
   test: {

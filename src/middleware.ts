@@ -3,9 +3,9 @@ import { isPublicPath } from "@/features/auth/domain/publicPaths";
 import { SESSION_COOKIE_NAME } from "@/features/auth/domain/sessionToken";
 import { getSessionUser } from "@/features/auth/infrastructure/sessions";
 
-// Next.js 16 では `proxy.ts`（Node.js ランタイム固定）が推奨だが、OpenNext の
-// Cloudflare 向けビルドでは Node.js ランタイムのミドルウェアが実験的な扱いのため、
-// Edge ランタイムで動く `middleware.ts` を使う。
+// Next.js 16 では `proxy.ts` が推奨だが、OpenNext の Cloudflare 向けビルドでは Node.js ランタイムの
+// ミドルウェアが実験的な扱いだったため `middleware.ts` にしている。vinext ではどちらも Worker の中で動く
+// （`vite build` は middleware が非推奨だと警告する）。
 //
 // ここでは Cookie のセッショントークンが D1 の有効なセッションに対応するかだけを確認し、
 // 猫ごとの認可はページ・Server Action 側で行う（`src/features/auth/presentation/session.ts`）。

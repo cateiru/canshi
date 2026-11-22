@@ -5,7 +5,7 @@ import { checkboxBooleanSchema } from "@/features/shared/checkbox";
 export const NOTIFY_TIME_NONE = "none";
 
 /**
- * 通知はスケジュール実行（`wrangler.toml` の `[triggers]`、15分ごと）のタイミングでしか
+ * 通知はスケジュール実行（`cloudflare.config.ts` の `triggers`、15分ごと）のタイミングでしか
  * 生成・送信されないため、15分刻みの時刻だけを受け付ける
  */
 export const QUARTER_HOUR_TIME_PATTERN = /^([01]\d|2[0-3]):(00|15|30|45)$/;

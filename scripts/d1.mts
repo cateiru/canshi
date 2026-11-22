@@ -69,7 +69,7 @@ function createDb(d1: D1Database) {
 export type ScriptDb = ReturnType<typeof createDb>;
 
 /**
- * メインアプリの D1（`wrangler.toml` の `DB`）に Drizzle でつなぐ。`--local` は `wrangler d1 execute --local` と
+ * メインアプリの D1（`wrangler.migrations.toml` の `DB`）に Drizzle でつなぐ。`--local` は `wrangler d1 execute --local` と
  * 同じローカルの SQLite（`persistTo` は `--persist-to` と同じ。省略時は `.wrangler/state`）を、`--remote` は
  * 本番の D1 を使う（`wrangler login` 済みであること）。使い終わったら `close` を呼ぶ
  */
@@ -85,10 +85,10 @@ export async function openDatabase(target: {
       database_name?: string;
       database_id?: string;
     }[];
-  } = unstable_readConfig({ config: "wrangler.toml" });
+  } = unstable_readConfig({ config: "wrangler.migrations.toml" });
   const binding = config.d1_databases.find((d1) => d1.binding === "DB");
   if (!binding?.database_id) {
-    fail("wrangler.toml に D1 のバインディング DB が見つかりません");
+    fail("wrangler.migrations.toml に D1 のバインディング DB が見つかりません");
   }
 
   // `--remote` ではバインディングに `remote: true` が必要なため、DB だけを持つ設定を一時的に書き出して使う

@@ -120,7 +120,7 @@ PR のレビューコメント（インラインコメント・レビュー本�
   - presentation から `@/db/client`・`@/db/batch`・`drizzle-orm` を import しない。
   - application から DB と presentation を import しない。
   - infrastructure から application・presentation を import しない。
-  - domain から DB・`next`・`react`・`@opennextjs/cloudflare` と、ほかの層を import しない。
+  - domain から DB・`next`・`react`・`cloudflare:workers` と、ほかの層を import しない。
   - overrides は層ごとに対象が重ならないようにする。
 - application の関数（`mutations.ts` など）と queries の関数は、最後の引数で D1 を `d1?: D1Database` として受け取る。
   MCP のツールは `ctx.env.DB` を渡す。画面からは省略してよい。

@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { env as workerEnv } from "cloudflare:workers";
 import { and, eq, inArray, lt } from "drizzle-orm";
 import { chunk, chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
@@ -77,14 +77,24 @@ export type StoreMediaAssetInput = StoreMediaFileInput & {
 };
 
 /**
- * R2 と D1 のバインディング。省略すると `getCloudflareContext()` から取る。
- * Next.js（OpenNext）の外で動く AI との接続（MCP）からは、`getCloudflareContext()` を
- * 使えないため明示的に渡す
+ * R2 と D1 のバインディング。省略すると `cloudflare:workers` の `env` から取る。
+ * AI との接続（MCP）からは、OpenNext の頃（Next.js の外では `getCloudflareContext()` を
+ * 使えなかった）から明示的に渡している
  */
 export type MediaEnv = Pick<Env, "DB" | "MEDIA_BUCKET">;
 
-function getBucket(env?: MediaEnv): R2Bucket {
-  return (env ?? getCloudflareContext().env).MEDIA_BUCKET;
+/**
+ * メディアの R2 バケット。Worker Previews では本番の R2 を共有しないようバインドしない
+ * （`cloudflare.config.ts` の `isPreview`）ため、型の上では無い場合がある
+ */
+export function getMediaBucket(env?: Pick<Env, "MEDIA_BUCKET">): R2Bucket {
+  const bucket = (env ?? workerEnv).MEDIA_BUCKET;
+  if (!bucket) {
+    throw new Error(
+      "R2 のバインディング MEDIA_BUCKET がありません（Worker Previews ではバインドしない）",
+    );
+  }
+  return bucket;
 }
 
 async function readHead(blob: Blob): Promise<Uint8Array> {
@@ -328,7 +338,7 @@ async function storeMediaFile(
     );
   }
 
-  const bucket = getBucket(env);
+  const bucket = getMediaBucket(env);
 
   try {
     // 片方の put だけ成功した場合も catch で両方のキーを片付けるため、両方が完了するまで待つ
@@ -390,7 +400,7 @@ async function storeMediaFile(
  * 共通のごはん商品を家に追加するときに、その画像を家の商品の画像として保存し直すために使う
  */
 export async function readMediaObject(objectKey: string): Promise<Blob | null> {
-  const object = await getBucket().get(objectKey);
+  const object = await getMediaBucket().get(objectKey);
   return object ? object.blob() : null;
 }
 
@@ -418,7 +428,7 @@ export async function deleteMediaAssetRows(
   if (assets.length === 0) {
     return;
   }
-  const bucket = getBucket(env);
+  const bucket = getMediaBucket(env);
   for (const keys of chunk(objectKeysOf(assets), R2_MAX_DELETE_KEYS)) {
     await bucket.delete(keys);
   }

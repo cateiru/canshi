@@ -17,10 +17,7 @@ import {
  */
 export async function loginWithEmail(
   email: string,
-  env: Pick<
-    CloudflareEnv,
-    "EMAIL_HASH_SALT" | "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN"
-  >,
+  env: Pick<Env, "EMAIL_HASH_SALT" | "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN">,
   userAgent: string | null,
 ) {
   const { user, isNewUser } = await findOrCreateLoginUser(
@@ -40,10 +37,7 @@ export async function loginWithEmail(
  */
 async function findOrCreateLoginUser(
   email: string,
-  env: Pick<
-    CloudflareEnv,
-    "EMAIL_HASH_SALT" | "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN"
-  >,
+  env: Pick<Env, "EMAIL_HASH_SALT" | "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN">,
 ) {
   const user = await findUserByEmail(email);
   if (user) {

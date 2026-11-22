@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { env } from "cloudflare:workers";
 import { type NextRequest, NextResponse } from "next/server";
 import { loginWithEmail } from "@/features/auth/application/login";
 import {
@@ -30,7 +30,6 @@ export const dynamic = "force-dynamic";
  * セッションを作る。失敗したときは `/login` に戻し、エラーを表示する
  */
 export async function GET(request: NextRequest) {
-  const { env } = getCloudflareContext();
   const { searchParams, origin } = request.nextUrl;
   const loginState = decodeOidcLoginState(
     request.cookies.get(OIDC_STATE_COOKIE_NAME)?.value,

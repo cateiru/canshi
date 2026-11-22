@@ -1,4 +1,4 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { env } from "cloudflare:workers";
 import { type NextRequest, NextResponse } from "next/server";
 import {
   buildAuthorizationUrl,
@@ -19,7 +19,6 @@ export const dynamic = "force-dynamic";
  * Access でログインすると `/login/callback` に戻る
  */
 export async function GET(request: NextRequest) {
-  const { env } = getCloudflareContext();
   const config = requireOidcConfig(env);
   const discovery = await getOidcDiscoveryDocument(config.discoveryUrl);
 

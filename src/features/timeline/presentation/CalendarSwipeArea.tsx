@@ -10,10 +10,10 @@ import {
   useLayoutEffect,
   useRef,
   useTransition,
-  ViewTransition,
 } from "react";
 import styles from "./CalendarSwipeArea.module.css";
 import { CALENDAR_TRANSITION_TYPE } from "./calendarTransition";
+import { ViewTransition } from "./viewTransition";
 
 /** 月を送るのに必要な横方向の移動量（px） */
 export const SWIPE_THRESHOLD = 60;

@@ -14,7 +14,7 @@ import { TourGuideLoader } from "@/features/tour/presentation/TourGuideLoader";
 import "@/styles/globals.css";
 import styles from "./layout.module.css";
 
-// NotificationBadge が getCloudflareContext() を使うため静的プリレンダリングできない
+// NotificationBadge がリクエストごとに D1 を読むため静的プリレンダリングできない
 export const dynamic = "force-dynamic";
 
 const metadata: Metadata = {

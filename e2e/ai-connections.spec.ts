@@ -21,6 +21,8 @@ async function executeSql(command: string) {
         "execute",
         "DB",
         "--local",
+        "--config",
+        "wrangler.migrations.toml",
         "--persist-to",
         ".wrangler/state",
         "--command",

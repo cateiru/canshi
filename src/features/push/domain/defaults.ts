@@ -9,7 +9,7 @@ export const MAX_PUSH_FAILURE_COUNT = 5;
 export const PUSH_MESSAGE_TTL_SECONDS = 60 * 60 * 24;
 
 /**
- * 通知のスケジュール実行の間隔（分）。`wrangler.toml` の `[triggers]` の
- * `crons`（15 分ごと）と合わせること
+ * 通知のスケジュール実行の間隔（分）。`cloudflare.config.ts` の `triggers` の
+ * `triggers.scheduled`（15 分ごと）と合わせること
  */
 export const PUSH_SCHEDULE_INTERVAL_MINUTES = 15;

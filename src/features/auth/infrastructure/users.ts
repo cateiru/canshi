@@ -20,10 +20,7 @@ export const NEW_USER_NAME = "ユーザー";
  */
 export function hashEmailWithEnv(
   email: string,
-  env: Pick<
-    CloudflareEnv,
-    "EMAIL_HASH_SALT" | "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN"
-  >,
+  env: Pick<Env, "EMAIL_HASH_SALT" | "DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN">,
 ) {
   const salt = getEmailHashSalt(env.EMAIL_HASH_SALT, {
     allowDevelopmentSalt:

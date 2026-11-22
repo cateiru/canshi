@@ -30,6 +30,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
+    // `cloudflare.config.ts` から生成される Worker の型（`Env`・`cloudflare:workers`）。
+    // `vite dev`・`vite build`・`pnpm cf-typegen` で作られる
+    ".cloudflare/types/**/*.ts",
     "**/*.mts"
   ],
   "exclude": ["node_modules", "packages"]

@@ -8,7 +8,7 @@ LP などのパッケージで使う共通の実装を置くパッケージ。
 どのアプリからも使えるよう、特定のフレームワーク（Next.js・Hono）やアプリの実装に依存しないものだけを置く。
 
 - 置く：CSS、React のコンポーネント（React Aria・CSS Modules を使ってよい）、純粋な関数・定数
-- 置かない：Next.js（`next/*`）・Hono・`@opennextjs/cloudflare` に依存するもの、D1・R2 を読み書きするもの、
+- 置かない：Next.js（`next/*`）・Hono・`cloudflare:workers` に依存するもの、D1・R2 を読み書きするもの、
   アプリの実装（`@/*`）を import するもの、業務の規則（各機能の `domain/` に置く）
 
 Next.js などへの依存は Biome の `noRestrictedImports`（`biome.json` の `packages/shared/**` の overrides）で禁止している。
