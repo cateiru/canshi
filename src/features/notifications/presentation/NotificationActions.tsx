@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { addToast, Button } from "@/components/ui";
 import type { NotificationKind } from "@/db/schema";
+import { isCelebrationNotificationKind } from "../domain/celebration";
 import {
   dismissNotificationAction,
   markCleaningNotificationDoneAction,
@@ -34,7 +35,8 @@ type NotificationActionsProps = {
  * 完了と同時に掃除記録を追加する。症状の確認通知は「解消した」（症状記録を解消に更新して完了）と
  * 「まだ続いている」（症状記録はそのままで完了。1ヶ月後に再び確認する）を表示する。
  * 共通のごはん商品のリクエストの完了通知は、知らせるだけで後から対応することがないため、
- * 延期・無視は出さず「完了にする」だけを表示する
+ * 延期・無視は出さず「完了にする」だけを表示する。お祝いの通知（誕生日・節目）も延期・無視は出さず、
+ * 「完了にする」の代わりに「おめでとう」（操作は完了と同じ）だけを表示する
  */
 export function NotificationActions({
   notificationId,
@@ -58,6 +60,20 @@ export function NotificationActions({
       }
       router.refresh();
     });
+  }
+
+  if (isCelebrationNotificationKind(kind)) {
+    return (
+      <div className={styles.actions}>
+        <Button
+          variant="primary"
+          isDisabled={isPending}
+          onPress={() => run(() => markNotificationDoneAction(notificationId))}
+        >
+          おめでとう
+        </Button>
+      </div>
+    );
   }
 
   if (kind === "catalog_request_completed") {
