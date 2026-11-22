@@ -35,6 +35,13 @@ name = "notification-workflow"
 binding = "NOTIFICATION_WORKFLOW"
 class_name = "NotificationWorkflow"
 
+# 記録の出力（#286）のバッチ。家のメンバーが出力を依頼したときに、出力の ID でインスタンスを作る
+# （`src/workflows/recordExport.ts`）
+[[workflows]]
+name = "record-export-workflow"
+binding = "RECORD_EXPORT_WORKFLOW"
+class_name = "RecordExportWorkflow"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "canshi-db"
@@ -68,7 +75,8 @@ deleted_classes = ["CanshiMcp"]
 # プレビューは上の本番の設定（vars・バインディング・シークレット）を引き継がないため、
 # 使うものをここに書き直す。`assets`・`compatibility_*`・`observability` はトップレベルの値が使われる。
 # Cron Triggers はプレビューでは動かない（`scheduled` が呼ばれない）ため、Workflow はバインドしない
-# （本番の Workflow を共有することになるため）。詳細は `docs/deploy.md` の「プレビュー」節
+# （本番の Workflow を共有することになるため）。記録の出力は、Workflow がないときはリクエストの後に
+# 同じ処理を実行する（`src/features/record-exports/presentation/actions.ts`）。詳細は `docs/deploy.md` の「プレビュー」節
 [previews]
 
 [previews.vars]

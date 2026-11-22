@@ -762,6 +762,20 @@ export function FeedingPresetIcon(props: RecordIconProps) {
   );
 }
 
+/** 記録の出力（表のファイルを書き出してダウンロードする） */
+export function RecordExportIcon(props: RecordIconProps) {
+  const sheet = "M6.5 2.5h8l4 4v15h-12Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#b2d3aa" d={sheet} />}>
+      <path d={sheet} />
+      <path d="M14.5 2.5v4h4" />
+      <path d="M9.5 9h5" strokeWidth="1.25" />
+      <path d="M12 12v6m-2.5-2.5L12 18l2.5-2.5" />
+    </RecordIcon>
+  );
+}
+
 export function ReleaseNotesIcon(props: RecordIconProps) {
   const book =
     "M2.5 4.5Q7.5 3 12 6q4.5-3 9.5-1.5V19Q16.5 17.5 12 20q-4.5-2.5-9.5-1Z";

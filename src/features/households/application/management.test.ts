@@ -21,6 +21,7 @@ import {
   pushDeliveries,
   pushSubscriptions,
   recordChangeLogs,
+  recordExports,
   users,
 } from "@/db/schema";
 import { HOUSEHOLD_HAS_CATS_MESSAGE } from "../domain/labels";
@@ -266,6 +267,15 @@ describe("deleteHousehold", () => {
       notificationId: `${householdId}-notification`,
       subscriptionId: "subscription",
     });
+    await db.insert(recordExports).values({
+      id: `${householdId}-export`,
+      householdId,
+      requestedByUserId: "owner",
+      recordTypes: ["expense"],
+      status: "completed",
+      objectKey: `record_exports/${householdId}-export.zip`,
+      sizeBytes: 100,
+    });
   }
 
   async function countRows(householdId: string) {
@@ -331,6 +341,12 @@ describe("deleteHousehold", () => {
             eq(pushDeliveries.notificationId, `${householdId}-notification`),
           ),
       ),
+      recordExports: await count(
+        db
+          .select()
+          .from(recordExports)
+          .where(eq(recordExports.householdId, householdId)),
+      ),
     };
   }
 
@@ -346,6 +362,7 @@ describe("deleteHousehold", () => {
     invitations: 1,
     notifications: 1,
     pushDeliveries: 1,
+    recordExports: 1,
   };
 
   beforeEach(async () => {
@@ -428,6 +445,8 @@ describe("deleteHousehold", () => {
       // 家のごはん商品は共通のごはん商品から追加したもの、という想定。共通のごはん商品の画像は
       // 家の商品とは別の行・オブジェクトで、家を削除しても消さない
       await seedMedia("catalog-image", "catalog_food_product", "catalog-food");
+      // 記録の出力の zip
+      objects.set("record_exports/home-export.zip", true);
     });
 
     const KEPT = [
@@ -442,7 +461,7 @@ describe("deleteHousehold", () => {
       "home-food-image",
     ].sort();
 
-    it("家のごはん商品・支出の画像を、R2 と media_assets の両方から削除する", async () => {
+    it("家のごはん商品・支出の画像と記録の出力の zip を、R2 と DB の両方から削除する", async () => {
       expect(await deleteHousehold("home", "owner")).toEqual({ ok: true });
 
       expect(await mediaIds()).toEqual(KEPT);
@@ -465,7 +484,7 @@ describe("deleteHousehold", () => {
 
       expect((await deleteHousehold("home", "owner")).ok).toBe(false);
       expect(await mediaIds()).toEqual(ALL);
-      expect(objects.size).toBe(ALL.length * 2);
+      expect(objects.size).toBe(ALL.length * 2 + 1);
       expect(bucket.delete).not.toHaveBeenCalled();
     });
 
@@ -504,6 +523,7 @@ describe("deleteHousehold", () => {
       invitations: 0,
       notifications: 0,
       pushDeliveries: 0,
+      recordExports: 0,
     });
     // ほかの家は消さない
     expect(await getHouseholdName("other")).toBe("別の家");

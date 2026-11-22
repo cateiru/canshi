@@ -37,6 +37,8 @@ export const HELP_SCREENSHOT_NAMES = [
   "record-hospital-visits",
   "record-expenses",
   "record-memo",
+  "record-exports",
+  "record-exports-download",
   "notification-settings",
   "cat-notification-settings",
   "login-appearance-link",

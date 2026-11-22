@@ -33,6 +33,7 @@ export * from "./push-deliveries";
 export * from "./push-subscriptions";
 export * from "./push-test-requests";
 export * from "./record-change-logs";
+export * from "./record-exports";
 export * from "./sessions";
 export * from "./shampoo-records";
 export * from "./symptoms";

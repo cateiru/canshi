@@ -23,6 +23,7 @@ const ALL_TARGETS: HelpShortcutTarget[] = [
   "cat-detail",
   "food-products",
   "feeding-schedules",
+  "record-exports",
   "notification-settings",
   "appearance-settings",
   "cat-notification-settings",
@@ -85,6 +86,16 @@ describe("buildHelpShortcuts", () => {
     ).toEqual([
       "/settings/households/household-1/feeding-schedules",
       "/settings/households/household-2/feeding-schedules",
+    ]);
+    expect(buildHelpShortcuts("record-exports", context)).toEqual([
+      {
+        href: "/settings/households/household-1/record-exports",
+        label: "わが家の記録の出力",
+      },
+      {
+        href: "/settings/households/household-2/record-exports",
+        label: "実家の記録の出力",
+      },
     ]);
   });
 

@@ -532,6 +532,18 @@ test("ごはんの時間ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+test("記録の出力ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/households/vrt-household/record-exports");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "記録の出力" }),
+  ).toBeVisible();
+  // フィクスチャの完了した出力と失敗した出力が並ぶ
+  await expect(
+    page.getByRole("region", { name: "出力したファイル" }).getByRole("article"),
+  ).toHaveCount(2);
+  await takeSnapshot(page, testInfo);
+});
+
 test("家の作成ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/households/new");
   await expect(

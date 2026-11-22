@@ -8,7 +8,7 @@ CANSHI の Cloudflare 環境へのデプロイ手順・運用設定をまとめ�
 - ビルド：`@opennextjs/cloudflare` で `next build` の出力を Workers 向けに変換する
 - DB：Cloudflare D1
 - オブジェクトストレージ：Cloudflare R2（写真・動画の本体は非公開バケットに保存）
-- バックグラウンド処理：Cloudflare Workflows（定期通知のスケジュール実行）
+- バックグラウンド処理：Cloudflare Workflows（定期通知のスケジュール実行・記録の出力）
 - 外部アクセス制御：Cloudflare Access（プレビュー URL と管理画面。メインアプリの本番ドメインは
   Access で保護せず、アプリのログインで利用者を制限する）
 - アプリ内のログイン・認可：Cloudflare Access の SaaS OIDC アプリでログインし、D1 に保存する
@@ -121,8 +121,10 @@ Access のアプリケーションは、ダッシュボードのほか Cloudflar
   - 同じフラグで、開発用のページ（`/dev/*`。部品の一覧・メディアのアップロードの確認など）も表示する
     （`isDevPagesEnabled`。本番では 404）
 - Cron Triggers はプレビューでは動かない（`scheduled` が呼ばれない）ため、定期通知の生成・Push の送信・
-  期限切れの OAuth の行の削除は行われない。Workflow（`NOTIFICATION_WORKFLOW`）は本番の Workflow を
-  共有することになるため、バインドしていない
+  期限切れの OAuth の行の削除は行われない。Workflow（`NOTIFICATION_WORKFLOW`・`RECORD_EXPORT_WORKFLOW`）は
+  本番の Workflow を共有することになるため、バインドしていない
+  - 記録の出力は、Workflow がないときはリクエストの後（`waitUntil`）に同じ処理を実行する。時間の上限があるため、
+    写真・動画の多い出力はプレビューでは終わらないことがある（1 時間たつと失敗として表示される）
 - シークレット（VAPID 鍵・OIDC の設定）は設定していない。Push の送信は自動的にスキップされる
 - `assets`・`compatibility_*`・`observability` はトップレベルの値がプレビューにも使われる
 
@@ -171,7 +173,7 @@ pnpm exec wrangler d1 execute DB --remote --config wrangler.preview-migrations.t
 5. 最初のプレビューのビルドのログで、バインディングが次のとおりになっていることを確かめる。
    - `DB` が `canshi-preview-db`、`MEDIA_BUCKET` が `canshi-media-preview` を指している
    - `DANGEROUSLY_ENABLE_DEVELOPMENT_LOGIN` がある
-   - `NOTIFICATION_WORKFLOW` がない
+   - `NOTIFICATION_WORKFLOW`・`RECORD_EXPORT_WORKFLOW` がない
 6. Access を通ったあと、`/login` に「メールアドレス（開発用）」の欄が出て、ログインできることを確かめる。
 
 ローカルから `wrangler preview` を実行するときは、先に `pnpm cf:build` で OpenNext のビルドを作る。

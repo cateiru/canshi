@@ -3,6 +3,7 @@ import {
   FeedingScheduleIcon,
   FoodProductIcon,
   HouseholdIcon,
+  RecordExportIcon,
 } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
 import {
@@ -41,6 +42,7 @@ import { DeleteHouseholdButton } from "@/features/households/presentation/Delete
 import { HouseholdInvitationIssueButton } from "@/features/households/presentation/HouseholdInvitationIssueButton";
 import { HouseholdMemberActionButton } from "@/features/households/presentation/HouseholdMemberActionButton";
 import { HouseholdNameForm } from "@/features/households/presentation/HouseholdNameForm";
+import { recordExportsPath } from "@/features/record-exports/presentation/paths";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -214,6 +216,22 @@ export default async function HouseholdSettingsPage({
                 title="ごはんプリセット一覧"
                 titleAs="h3"
                 description="この家でよく使うごはんの組み合わせと量を登録・編集します。"
+              />
+            </li>
+          </ul>
+        </nav>
+      </Surface>
+
+      <Surface title="記録" titleId="household-records-heading" gap="md">
+        <nav aria-label="記録の設定">
+          <ul className={styles.navList}>
+            <li>
+              <NavCard
+                href={recordExportsPath(household.id)}
+                icon={RecordExportIcon}
+                title="記録の出力"
+                titleAs="h3"
+                description="この家のねこの記録を CSV ファイルに書き出してダウンロードします。"
               />
             </li>
           </ul>

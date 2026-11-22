@@ -8,6 +8,7 @@ import {
   FoodProductIcon,
   HouseholdIcon,
   NotificationSettingsIcon,
+  RecordExportIcon,
   ReleaseNotesIcon,
 } from "@canshi/shared/ui/RecordIcons";
 import type { IconType } from "react-icons";
@@ -114,6 +115,13 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         description: record.summary,
         icon: record.icon,
       })),
+      {
+        slug: "record-exports",
+        title: "記録の出力（CSV）",
+        description:
+          "家の記録を CSV ファイルに書き出し、zip ファイルでダウンロードする方法です。",
+        icon: RecordExportIcon,
+      },
     ],
   },
   {

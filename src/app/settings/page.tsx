@@ -27,7 +27,7 @@ const settings = [
     href: "/settings/households",
     title: "家の設定",
     description:
-      "所属している家の名前やメンバー、ごはん商品・プリセットを管理します。",
+      "所属している家の名前やメンバー、ごはん商品・プリセットを管理し、記録を出力します。",
     icon: HouseholdIcon,
   },
   {
