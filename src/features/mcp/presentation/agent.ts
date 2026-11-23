@@ -256,9 +256,10 @@ export function createCanshiMcpServer(
         "そのラベル bcsLabel が含まれる。" +
         'ごはん記録（type="feeding"）は record.mode で記録方法を表す。' +
         'mode="strict"（厳格モード）は商品ごと（record.items）の与えた量 givenAmountG・' +
-        "残した量 leftoverAmountG をグラム単位で持ち、推定摂取量 estimatedIntakeG・" +
-        "推定カロリー estimatedKcal も計算済み。" +
-        'mode="approximate"（あいまいモード）はグラム単位の値と推定値がすべて null で、' +
+        "残した量 leftoverAmountG を商品の単位 amountUnit（g か ml。ml はスープ・ミルクなど）で持ち、" +
+        "推定摂取量 estimatedIntakeG（同じ単位）・推定カロリー estimatedKcal も計算済み。" +
+        "g と ml の量は足さない（画面では g の商品を食べた量、ml の商品を飲んだ量として分けて表示する）。" +
+        'mode="approximate"（あいまいモード）は量の値と推定値がすべて null で、' +
         "代わりに与えた量 givenAmountLevel（less=少なめ、normal=普通、more=多め）と" +
         "残した量 leftoverLevel（none=完食、little=少し残し、most=ほとんど残し）を持つ。" +
         "それぞれの日本語ラベルは modeLabel・givenAmountLevelLabel・leftoverLevelLabel に含まれる。" +

@@ -9,7 +9,11 @@ import {
   type KeyedLineSeries,
 } from "@/features/shared/KeyedLineLayers";
 import { usePrefersReducedMotion } from "@/features/shared/usePrefersReducedMotion";
-import type { FeedingChartMetric, FeedingChartPoint } from "./chart";
+import {
+  type FeedingChartMetric,
+  type FeedingChartPoint,
+  feedingChartValue,
+} from "./chart";
 
 type FeedingChartCanvasProps = {
   /** 表示する期間に入る日 */
@@ -56,6 +60,15 @@ function IntakeYAxisUnitLabel() {
   );
 }
 
+/** Y軸の縦線の一番上に単位ラベル (ml) を表示するカスタムレイヤー */
+function IntakeMlYAxisUnitLabel() {
+  return (
+    <text x={-30} y={-16} textAnchor="start" style={unitLabelStyle()}>
+      (ml)
+    </text>
+  );
+}
+
 /** Y軸の縦線の一番上に単位ラベル (kcal) を表示するカスタムレイヤー */
 function KcalYAxisUnitLabel() {
   return (
@@ -74,7 +87,7 @@ function formatAxisDateUtc(value: Date): string {
 }
 
 /**
- * 食べた量・カロリーは切り替えて 1 つずつ表示するため、どちらもテーマカラーで描く
+ * 食べた量・飲んだ量・カロリーは切り替えて 1 つずつ表示するため、どれもテーマカラーで描く
  * （体重記録の推移グラフとも揃える）
  */
 const SERIES_COLOR = "var(--color-accent)";
@@ -82,7 +95,6 @@ const SERIES_COLOR = "var(--color-accent)";
 type MetricConfig = {
   seriesId: string;
   step: number;
-  getValue: (point: FeedingChartPoint) => number;
   unitLabelLayer: LineCustomSvgLayer<KeyedLineSeries>;
 };
 
@@ -90,13 +102,16 @@ const METRIC_CONFIG: Record<FeedingChartMetric, MetricConfig> = {
   intake: {
     seriesId: "feedingIntakeG",
     step: 5,
-    getValue: (point) => point.totalIntakeG,
     unitLabelLayer: IntakeYAxisUnitLabel,
+  },
+  intakeMl: {
+    seriesId: "feedingIntakeMl",
+    step: 5,
+    unitLabelLayer: IntakeMlYAxisUnitLabel,
   },
   kcal: {
     seriesId: "feedingKcal",
     step: 5,
-    getValue: (point) => point.totalKcal,
     unitLabelLayer: KcalYAxisUnitLabel,
   },
 };
@@ -164,12 +179,15 @@ export default function FeedingChartCanvas({
   metric,
 }: FeedingChartCanvasProps) {
   const config = METRIC_CONFIG[metric];
+  // 呼び出し側（FeedingChart）で値のある日の点だけに絞っているため、null は来ない
+  const getValue = (point: FeedingChartPoint) =>
+    feedingChartValue(point, metric) ?? 0;
 
   // 点は日ごとの合計なので、日付（occurredAtIso）を key にする
   const toKeyedLineDatum = (point: FeedingChartPoint): KeyedLineDatum => ({
     key: point.occurredAtIso,
     x: new Date(point.occurredAtIso),
-    y: config.getValue(point),
+    y: getValue(point),
   });
   const data: KeyedLineSeries[] = [
     {
@@ -180,7 +198,7 @@ export default function FeedingChartCanvas({
   // Nivo の lines・points は「何番目の点か」で動かすため、日付で描くレイヤーに置き換える
   const keyedLayers = createKeyedLineLayers(allPoints.map(toKeyedLineDatum));
 
-  const values = points.map((point) => config.getValue(point));
+  const values = points.map(getValue);
   const { min: yMin, max: yMax } = computeYDomain(values, config.step);
   const isCompact = useIsCompact();
   const prefersReducedMotion = usePrefersReducedMotion();

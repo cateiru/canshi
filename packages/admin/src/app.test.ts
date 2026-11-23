@@ -522,6 +522,34 @@ describe("共通のごはん商品", () => {
     return id;
   }
 
+  it("量の単位に ml を指定して登録し、一覧で返す", async () => {
+    const response = await sendMultipart(
+      "POST",
+      "/food-products",
+      productForm({
+        amountUnit: "ml",
+        kcalPer100g: "60",
+        packageAmountG: "200",
+      }),
+    );
+    expect(response.status).toBe(201);
+    const { id } = (await response.json()) as { id: string };
+
+    expect(await listProducts()).toEqual([
+      expect.objectContaining({ id, amount_unit: "ml", package_amount_g: 200 }),
+    ]);
+    const { products } =
+      await getJson<CatalogFoodProductsResponse>("/api/food-products");
+    expect(products).toEqual([
+      expect.objectContaining({
+        id,
+        amountUnit: "ml",
+        kcalPer100g: 60,
+        packageSizes: [{ amountG: 200, unit: null }],
+      }),
+    ]);
+  });
+
   it("商品がなければ空の一覧を返す", async () => {
     expect(
       await getJson<CatalogFoodProductsResponse>("/api/food-products"),
@@ -536,6 +564,8 @@ describe("共通のごはん商品", () => {
         id,
         name: "まぐろ味 カリカリ",
         manufacturer: "ねこフード",
+        // 単位を指定しなければ g にする
+        amount_unit: "g",
         kcal_per_100g: 380,
         package_amount_g: 500,
         package_unit: null,
@@ -661,11 +691,11 @@ describe("共通のごはん商品", () => {
     const cases = [
       [
         { packageAmountG: "", packageUnit: "" },
-        "内容量（g）は0より大きい値を入力してください",
+        "内容量は0より大きい値を入力してください",
       ],
       [
         { packageAmountG: ["70", "abc"], packageUnit: ["", ""] },
-        "内容量（g）は0より大きい値を入力してください",
+        "内容量は0より大きい値を入力してください",
       ],
       [
         { packageAmountG: ["70", "70"], packageUnit: ["袋", "1袋"] },
@@ -710,7 +740,7 @@ describe("共通のごはん商品", () => {
     expect(await response.json()).toMatchObject({
       errors: {
         name: "商品名を入力してください",
-        kcalPer100g: "カロリー（kcal/100g）は0より大きい値を入力してください",
+        kcalPer100g: "カロリーは0より大きい値を入力してください",
       },
       input: { manufacturer: "<b>メーカー</b>" },
     });

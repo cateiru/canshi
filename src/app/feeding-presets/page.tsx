@@ -157,7 +157,7 @@ export default async function FeedingPresetsPage({
                               ) : (
                                 <>
                                   {item.givenAmountG}
-                                  <span>g</span>
+                                  <span>{item.amountUnit}</span>
                                 </>
                               )}
                             </dd>

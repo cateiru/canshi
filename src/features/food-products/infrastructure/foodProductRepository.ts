@@ -35,6 +35,7 @@ export function createFoodProductRepository(
               householdId: householdMembers.householdId,
               name: sql`${content.name}`.as("name"),
               manufacturer: sql`${content.manufacturer}`.as("manufacturer"),
+              amountUnit: sql`${content.amountUnit}`.as("amount_unit"),
               kcalPer100g: sql`${content.kcalPer100g}`.as("kcal_per_100g"),
               packageAmountG: sql`${content.packageAmountG}`.as(
                 "package_amount_g",
@@ -87,6 +88,7 @@ export function createFoodProductRepository(
               householdId: householdMembers.householdId,
               name: catalogFoodProducts.name,
               manufacturer: catalogFoodProducts.manufacturer,
+              amountUnit: catalogFoodProducts.amountUnit,
               kcalPer100g: catalogFoodProducts.kcalPer100g,
               packageAmountG: sql`${packageSize.amountG}`.as(
                 "package_amount_g",

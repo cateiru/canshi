@@ -1,6 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { type CatalogFoodProduct, FOOD_PRODUCT_LIFE_STAGES } from "@/db/schema";
+import {
+  type CatalogFoodProduct,
+  FOOD_AMOUNT_UNITS,
+  FOOD_PRODUCT_LIFE_STAGES,
+} from "@/db/schema";
 import { getUserById } from "@/features/auth/infrastructure/users";
 import {
   createCatalogFoodProduct,
@@ -63,10 +67,11 @@ const NOT_ADMIN_ERROR =
 
 const PRODUCT_DESCRIPTION =
   "共通のごはん商品は、すべての家のユーザーが検索し、自分の家のごはん商品として追加できる商品。" +
-  "kcalPer100g（100g あたりのカロリー）は正の数。" +
+  "amountUnit は量の単位（g=フードなど重さで量る商品、ml=スープ・ミルクなど液体の商品。省略すると g）。" +
+  "kcalPer100g（100g あたりのカロリー。amountUnit が ml なら 100ml あたり）は正の数。" +
   `packageSizes は内容量の候補（1〜${MAX_CATALOG_PACKAGE_SIZES} 件、同じ内容量は不可）で、` +
   "家に追加するときに 1 つ選ぶ。先頭の候補が既定になる。" +
-  "amountG は内容量（g、正の数）、unit は内容量の単位（「本」「袋」など、10文字以内。" +
+  "amountG は内容量（amountUnit の単位。g か ml、正の数）、unit は内容量の単位（「本」「袋」など、10文字以内。" +
   "1 本 14g なら amountG=14、unit=本。null なら商品全体の内容量）。" +
   "nutritionType は complete=総合栄養食、general=一般食。" +
   "textureType は dry=ドライ、wet=ウェット、soup=スープ。" +
@@ -93,11 +98,20 @@ const productFields = {
     .nullable()
     .optional()
     .describe("メーカー名（50文字以内）。null を指定すると空にする"),
-  kcalPer100g: z.number().optional().describe("100g あたりのカロリー（kcal）"),
+  amountUnit: z
+    .enum(FOOD_AMOUNT_UNITS)
+    .optional()
+    .describe(
+      "量の単位（g・ml）。カロリーと内容量の候補はこの単位で指定する。登録で省略すると g",
+    ),
+  kcalPer100g: z
+    .number()
+    .optional()
+    .describe("100g（amountUnit が ml なら 100ml）あたりのカロリー（kcal）"),
   packageSizes: z
     .array(
       z.object({
-        amountG: z.number().describe("内容量（g）"),
+        amountG: z.number().describe("内容量（amountUnit の単位。g か ml）"),
         unit: z
           .string()
           .nullable()
@@ -138,6 +152,7 @@ function toCatalogFoodProductSummary(
     id: product.id,
     name: product.name,
     manufacturer: product.manufacturer,
+    amountUnit: product.amountUnit,
     kcalPer100g: product.kcalPer100g,
     packageSizes: catalogPackageSizes(product),
     nutritionType: product.nutritionType,
@@ -153,6 +168,7 @@ function toFormValues(product: CatalogFoodProduct): FormValues {
   return {
     name: product.name,
     manufacturer: toOptionalValue(product.manufacturer),
+    amountUnit: product.amountUnit,
     kcalPer100g: product.kcalPer100g,
     packageSizes: catalogPackageSizes(product),
     nutritionType: product.nutritionType,

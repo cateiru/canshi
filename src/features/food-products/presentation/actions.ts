@@ -35,6 +35,7 @@ function parseFormData(formData: FormData) {
   return foodProductFormSchema.safeParse({
     name: formData.get("name"),
     manufacturer: formData.get("manufacturer"),
+    amountUnit: formData.get("amountUnit"),
     kcalPer100g: formData.get("kcalPer100g"),
     packageAmountG: formData.get("packageAmountG"),
     packageUnit: formData.get("packageUnit"),

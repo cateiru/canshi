@@ -1,3 +1,5 @@
+import type { FoodAmountUnit } from "@/db/schema/food-amount-units";
+
 export function calculateEstimatedIntakeG(
   givenAmountG: number,
   leftoverAmountG: number,
@@ -22,25 +24,56 @@ export function roundKcal(value: number): number {
 }
 
 type FeedingTotalsItem = {
+  /** 商品の量の単位。推定摂取量はこの単位の値 */
+  amountUnit: FoodAmountUnit;
   estimatedIntakeG: number | null;
   estimatedKcal: number | null;
 };
 
 /**
- * 1回の食事の推定摂取量・カロリーの合計。カロリーは小数第二位で四捨五入する。
+ * 1回の食事（またはその日の食事）の推定摂取量・カロリーの合計。カロリーは小数第二位で四捨五入する。
+ * 推定摂取量は g と ml を足さず、g の商品を「食べた量」（`totalIntakeG`）、ml の商品を「飲んだ量」
+ * （`totalIntakeMl`）として単位ごとに足す。その単位の商品がなければ null にする。
  * あいまいモードの記録は推定値を持たない（null）ため、呼び出し側で厳格モードの
  * 記録に限って使うこと
  */
 export function sumFeedingTotals(items: FeedingTotalsItem[]): {
-  totalIntakeG: number;
+  totalIntakeG: number | null;
+  totalIntakeMl: number | null;
   totalKcal: number;
 } {
-  const totals = items.reduce(
-    (totals, item) => ({
-      totalIntakeG: totals.totalIntakeG + (item.estimatedIntakeG ?? 0),
-      totalKcal: totals.totalKcal + (item.estimatedKcal ?? 0),
-    }),
-    { totalIntakeG: 0, totalKcal: 0 },
+  const sumIntake = (unit: FoodAmountUnit) => {
+    const unitItems = items.filter((item) => item.amountUnit === unit);
+    return unitItems.length > 0
+      ? unitItems.reduce(
+          (total, item) => total + (item.estimatedIntakeG ?? 0),
+          0,
+        )
+      : null;
+  };
+  const totalKcal = items.reduce(
+    (total, item) => total + (item.estimatedKcal ?? 0),
+    0,
   );
-  return { ...totals, totalKcal: roundKcal(totals.totalKcal) };
+  return {
+    totalIntakeG: sumIntake("g"),
+    totalIntakeMl: sumIntake("ml"),
+    totalKcal: roundKcal(totalKcal),
+  };
+}
+
+/**
+ * 単位ごとの推定摂取量（`sumFeedingTotals` の結果）を、表示する順（g・ml）に並べる。
+ * その単位の商品がない（null の）ものは含めない
+ */
+export function listIntakeTotals(totals: {
+  totalIntakeG: number | null;
+  totalIntakeMl: number | null;
+}): { unit: FoodAmountUnit; total: number }[] {
+  return (
+    [
+      { unit: "g", total: totals.totalIntakeG },
+      { unit: "ml", total: totals.totalIntakeMl },
+    ] as const
+  ).flatMap(({ unit, total }) => (total == null ? [] : [{ unit, total }]));
 }

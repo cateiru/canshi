@@ -30,7 +30,7 @@ describe("recordExportMediaPath", () => {
 });
 
 describe("feedingCsvFile", () => {
-  it("商品ごとに 1 行にし、モードに合わせて量の列を埋める。カロリーは丸める", () => {
+  it("商品ごとに 1 行にし、モードに合わせて量の列を埋める。量の単位を添え、カロリーは丸める", () => {
     const file = feedingCsvFile([
       {
         id: "f1",
@@ -46,6 +46,7 @@ describe("feedingCsvFile", () => {
             feedingRecordId: "f1",
             foodProductId: "p1",
             productName: "カリカリ",
+            amountUnit: "g",
             givenAmountG: 30,
             leftoverAmountG: 5,
             estimatedIntakeG: 25,
@@ -58,7 +59,8 @@ describe("feedingCsvFile", () => {
             id: "i2",
             feedingRecordId: "f1",
             foodProductId: "p2",
-            productName: "ウェット",
+            productName: "スープ",
+            amountUnit: "ml",
             givenAmountG: 40,
             leftoverAmountG: 0,
             estimatedIntakeG: 40,
@@ -83,6 +85,7 @@ describe("feedingCsvFile", () => {
             feedingRecordId: "f2",
             foodProductId: "p1",
             productName: "カリカリ",
+            amountUnit: "g",
             givenAmountG: null,
             leftoverAmountG: null,
             estimatedIntakeG: null,
@@ -102,6 +105,7 @@ describe("feedingCsvFile", () => {
         "2026-06-01 08:30",
         "厳格モード",
         "カリカリ",
+        "g",
         30,
         5,
         25,
@@ -115,7 +119,8 @@ describe("feedingCsvFile", () => {
         "たま",
         "2026-06-01 08:30",
         "厳格モード",
-        "ウェット",
+        "スープ",
+        "ml",
         40,
         0,
         40,
@@ -130,6 +135,7 @@ describe("feedingCsvFile", () => {
         "2026-06-01 19:00",
         "あいまいモード",
         "カリカリ",
+        "g",
         null,
         null,
         null,

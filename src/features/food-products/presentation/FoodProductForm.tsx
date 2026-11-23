@@ -8,9 +8,15 @@ import {
   FormField,
   FormGroup,
   FormRow,
+  Radio,
+  RadioGroup,
   Select,
 } from "@/components/ui";
 import type { FoodProduct, FoodProductLifeStage } from "@/db/schema";
+import {
+  FOOD_AMOUNT_UNITS,
+  type FoodAmountUnit,
+} from "@/db/schema/food-amount-units";
 import { CAT_BREEDS, matchesBreed } from "@/features/cats/domain/breeds";
 import { HouseholdField } from "@/features/households/presentation/HouseholdField";
 import type { MediaLimits } from "@/features/media/domain/limits";
@@ -18,7 +24,12 @@ import type { MediaAssetView } from "@/features/media/domain/view";
 import { MediaAttachmentField } from "@/features/media/presentation/MediaAttachmentField";
 import { useMediaAttachments } from "@/features/media/presentation/useMediaAttachments";
 import { useMediaFormAction } from "@/features/media/presentation/useMediaFormAction";
-import { LIFE_STAGE_LABEL, TEXTURE_TYPE_LABEL } from "../domain/labels";
+import {
+  AMOUNT_UNIT_LABEL,
+  kcalPer100Unit,
+  LIFE_STAGE_LABEL,
+  TEXTURE_TYPE_LABEL,
+} from "../domain/labels";
 import type { FoodProductFormState } from "./actions";
 import styles from "./FoodProductForm.module.css";
 
@@ -88,6 +99,10 @@ export function FoodProductForm({
   const [householdId, setHouseholdId] = useState(
     defaultHouseholdId ?? households?.[0]?.id ?? "",
   );
+  // カロリー・内容量の見出しを、選んだ単位（g・ml）に合わせて変える
+  const [amountUnit, setAmountUnit] = useState<FoodAmountUnit>(
+    foodProduct?.amountUnit ?? "g",
+  );
   // 商品画像は 1 枚だけ。差し替え時は旧画像を削除する
   const media = useMediaAttachments({
     initial: mediaAssets,
@@ -133,9 +148,30 @@ export function FoodProductForm({
         errorMessage={state.fieldErrors?.manufacturer?.[0]}
       />
 
+      <FormGroup
+        legend="量の単位"
+        description="スープ・ミルクなど量を ml で量る商品は ml を選びます。カロリー・内容量と、ごはん記録の量もこの単位になります。"
+        errorMessage={state.fieldErrors?.amountUnit?.[0]}
+        isDisabled={isPending}
+      >
+        <RadioGroup
+          name="amountUnit"
+          aria-label="量の単位"
+          value={amountUnit}
+          onChange={(value) => setAmountUnit(value as FoodAmountUnit)}
+          optionsClassName={styles.unitOptions}
+        >
+          {FOOD_AMOUNT_UNITS.map((unit) => (
+            <Radio key={unit} value={unit}>
+              {AMOUNT_UNIT_LABEL[unit]}
+            </Radio>
+          ))}
+        </RadioGroup>
+      </FormGroup>
+
       <FormField
         name="kcalPer100g"
-        label="カロリー（kcal/100g）"
+        label={`カロリー（${kcalPer100Unit(amountUnit)}）`}
         type="number"
         inputMode="decimal"
         defaultValue={foodProduct?.kcalPer100g?.toString()}
@@ -146,7 +182,7 @@ export function FoodProductForm({
       <FormRow>
         <FormField
           name="packageAmountG"
-          label="内容量（g）"
+          label={`内容量（${amountUnit}）`}
           type="number"
           inputMode="decimal"
           defaultValue={foodProduct?.packageAmountG?.toString()}

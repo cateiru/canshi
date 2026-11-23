@@ -132,9 +132,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 食べた量・飲んだ量（ml の商品があるときだけ）・カロリーを、項目の数だけ等分して横に並べる */
 .summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
   gap: var(--space-4);
   padding: var(--space-4);
   border-radius: 12px;

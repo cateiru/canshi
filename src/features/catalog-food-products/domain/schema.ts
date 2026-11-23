@@ -10,7 +10,9 @@ export const MAX_CATALOG_SEARCH_KEYWORDS = 20;
 /** 検索キーワード 1 語の文字数の上限（管理画面の `MAX_SEARCH_KEYWORD_LENGTH` と同じ） */
 export const MAX_CATALOG_SEARCH_KEYWORD_LENGTH = 50;
 
-/** 内容量の候補 1 件。g と単位の規則は家のごはん商品の内容量と同じ */
+/**
+ * 内容量の候補 1 件。量と単位の規則は家のごはん商品の内容量と同じ。量は商品の単位（`amountUnit`）で持つ
+ */
 const catalogPackageSizeSchema = z.object({
   amountG: foodProductFormSchema.shape.packageAmountG,
   unit: foodProductFormSchema.shape.packageUnit,

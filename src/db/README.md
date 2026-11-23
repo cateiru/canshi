@@ -238,6 +238,16 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     `src/db/schema/food-products.ts` の `FOOD_PRODUCT_LIFE_STAGES` の順に並べて保存し、検索では `json_each` で絞り込む
   - `target_breed` は `cats.breed` と同じく猫種の候補（`src/features/cats/domain/breeds.ts`）から選ぶか自由に入力し、
     NULL はすべての猫種向けを表す。`manufacturer` も NULL は未入力
+- ごはん商品は量の単位（`amount_unit`、`g`・`ml`、#672・`0071`）を持つ。スープ・ミルクなどの液体を ml で
+  登録できるようにするためのもので、単位を追加する前の商品は `g`
+  - `ml` の商品は、カロリー（`kcal_per_100g`）を 100ml あたり、内容量（`package_amount_g`）を ml で持つ。
+    列名を変えると既存のコード・MCP の引数がすべて変わるため、列名は `g` のままにし、値は商品の単位で持つ
+  - ごはん記録・プリセットの明細の量（`given_amount_g`・`leftover_amount_g`・`estimated_intake_g`）も、
+    列名は `g` のまま商品の単位で持つ。推定カロリーは「量 × 100 単位あたりのカロリー ÷ 100」で、単位によらず同じ式で求める
+  - 明細には単位を写さず、表示するときに商品の単位を読む。g と ml は商品の性質で、変えるのは登録の誤りを
+    直すときのため、過去の記録の量も直した単位で表示する（推定カロリーは保存した値のまま変わらない）
+  - 1 回の食事・1 日の合計は、g の商品を「食べた量」、ml の商品を「飲んだ量」として単位ごとに分けて足す
+    （`src/features/feeding-records/domain/calculations.ts`）。g と ml は足さない
 
 ## 共通のごはん商品（`catalog_food_products`）
 
@@ -276,6 +286,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - 家に追加するときは、R2 から元データを読み出して通常のアップロードと同じ経路（`storeMediaAsset`）で
     家の商品の画像として保存し直す。家の商品の画像の差し替え・削除で共通のごはん商品の画像を消さないよう、
     R2 のオブジェクトは共有しない。保存できなかったときも商品は追加する
+- 量の単位（`amount_unit`、#672・`0071`）は家のごはん商品と同じ意味で、カロリーと内容量の候補はどれもこの単位で持つ。
+  家に追加するときに `food_products.amount_unit` へ写す
 - 内容量は、容量違いの商品を 1 つにまとめるため複数の候補を持てる（#346、`0050`）。`package_sizes` に
   `{ amountG, unit }` の JSON 配列で、管理画面で並べた順に保存する（1〜10 件・同じ g と単位の組み合わせは重複させない）
   - 家に追加するときに候補から 1 つ選び、`food_products.package_amount_g`・`package_unit` に写す。追加の

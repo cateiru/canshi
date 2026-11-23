@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateEstimatedIntakeG,
   calculateEstimatedKcal,
+  listIntakeTotals,
   roundKcal,
   sumFeedingTotals,
 } from "./calculations";
@@ -57,24 +58,67 @@ describe("sumFeedingTotals", () => {
   it("商品ごとの推定摂取量・カロリーを合計する", () => {
     expect(
       sumFeedingTotals([
-        { estimatedIntakeG: 20, estimatedKcal: 60 },
-        { estimatedIntakeG: 10, estimatedKcal: 40 },
+        { amountUnit: "g", estimatedIntakeG: 20, estimatedKcal: 60 },
+        { amountUnit: "g", estimatedIntakeG: 10, estimatedKcal: 40 },
       ]),
-    ).toEqual({ totalIntakeG: 30, totalKcal: 100 });
+    ).toEqual({ totalIntakeG: 30, totalIntakeMl: null, totalKcal: 100 });
+  });
+
+  it("g の商品と ml の商品の量は足さずに分け、カロリーはまとめて足す", () => {
+    expect(
+      sumFeedingTotals([
+        { amountUnit: "g", estimatedIntakeG: 20, estimatedKcal: 60 },
+        { amountUnit: "ml", estimatedIntakeG: 30, estimatedKcal: 15 },
+        { amountUnit: "ml", estimatedIntakeG: 10, estimatedKcal: 5 },
+      ]),
+    ).toEqual({ totalIntakeG: 20, totalIntakeMl: 40, totalKcal: 80 });
+  });
+
+  it("ml の商品だけなら食べた量（g）は null", () => {
+    expect(
+      sumFeedingTotals([
+        { amountUnit: "ml", estimatedIntakeG: 50, estimatedKcal: 30 },
+      ]),
+    ).toEqual({ totalIntakeG: null, totalIntakeMl: 50, totalKcal: 30 });
   });
 
   it("カロリーの合計は小数第二位を四捨五入する", () => {
     expect(
       sumFeedingTotals([
-        { estimatedIntakeG: 3, estimatedKcal: calculateEstimatedKcal(3, 85) },
-        { estimatedIntakeG: 7, estimatedKcal: calculateEstimatedKcal(7, 33) },
+        {
+          amountUnit: "g",
+          estimatedIntakeG: 3,
+          estimatedKcal: calculateEstimatedKcal(3, 85),
+        },
+        {
+          amountUnit: "g",
+          estimatedIntakeG: 7,
+          estimatedKcal: calculateEstimatedKcal(7, 33),
+        },
       ]).totalKcal,
     ).toBe(4.9);
   });
 
   it("推定値を持たない（null の）商品は 0 として扱う", () => {
     expect(
-      sumFeedingTotals([{ estimatedIntakeG: null, estimatedKcal: null }]),
-    ).toEqual({ totalIntakeG: 0, totalKcal: 0 });
+      sumFeedingTotals([
+        { amountUnit: "g", estimatedIntakeG: null, estimatedKcal: null },
+      ]),
+    ).toEqual({ totalIntakeG: 0, totalIntakeMl: null, totalKcal: 0 });
+  });
+});
+
+describe("listIntakeTotals", () => {
+  it("g・ml の順に、その単位の商品があるものだけを並べる", () => {
+    expect(listIntakeTotals({ totalIntakeG: 20, totalIntakeMl: 40 })).toEqual([
+      { unit: "g", total: 20 },
+      { unit: "ml", total: 40 },
+    ]);
+    expect(listIntakeTotals({ totalIntakeG: 0, totalIntakeMl: null })).toEqual([
+      { unit: "g", total: 0 },
+    ]);
+    expect(listIntakeTotals({ totalIntakeG: null, totalIntakeMl: 15 })).toEqual(
+      [{ unit: "ml", total: 15 }],
+    );
   });
 });

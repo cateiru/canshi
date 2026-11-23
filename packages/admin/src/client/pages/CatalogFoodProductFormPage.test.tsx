@@ -40,7 +40,32 @@ describe("共通のごはん商品の登録・編集", () => {
     // 選んだ順ではなく決まった順にする
     expect(body?.getAll("lifeStages")).toEqual(["adult", "senior"]);
     expect(body?.get("nutritionType")).toBe("complete");
+    expect(body?.get("amountUnit")).toBe("g");
     expect(body?.has("image")).toBe(false);
+  });
+
+  it("量の単位に ml を選ぶと、カロリー・内容量を ml で入力して送る", async () => {
+    let sent: FormData | null = null;
+    stubApi({
+      "POST /food-products": (init) => {
+        sent = init?.body as FormData;
+        return { status: 201, body: { id: "new-id" } };
+      },
+    });
+    await renderApp("/food-products/new");
+    fill("商品名", "ねこのミルク");
+    screen.getByRole("radio", { name: "ml（スープ・ミルクなど）" }).click();
+    // 選んだ単位に合わせて見出しが変わる
+    await screen.findByRole("textbox", { name: "カロリー（kcal/100ml）" });
+    fill("カロリー（kcal/100ml）", "60");
+    fill("内容量（ml）", "200");
+    screen.getByRole("button", { name: "登録する" }).click();
+
+    await screen.findByText(/^\/food-products\?/, { selector: "div[hidden]" });
+    const body = sent as FormData | null;
+    expect(body?.get("amountUnit")).toBe("ml");
+    expect(body?.get("kcalPer100g")).toBe("60");
+    expect(body?.getAll("packageAmountG")).toEqual(["200"]);
   });
 
   it("入力に誤りがあれば、サーバーが返したエラーを入力欄ごとに表示する", async () => {

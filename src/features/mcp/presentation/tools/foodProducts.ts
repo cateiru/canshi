@@ -1,6 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { FOOD_PRODUCT_LIFE_STAGES, type FoodProduct } from "@/db/schema";
+import {
+  FOOD_AMOUNT_UNITS,
+  FOOD_PRODUCT_LIFE_STAGES,
+  type FoodProduct,
+} from "@/db/schema";
 import {
   createFoodProduct,
   updateFoodProduct,
@@ -45,7 +49,9 @@ import {
 } from "./imageArgs";
 
 const PRODUCT_DESCRIPTION =
-  "kcalPer100g（100g あたりのカロリー）と packageAmountG（内容量、g）は正の数。" +
+  "amountUnit は量の単位（g=フードなど重さで量る商品、ml=スープ・ミルクなど液体の商品。省略すると g）。" +
+  "kcalPer100g（100g あたりのカロリー。amountUnit が ml なら 100ml あたり）と" +
+  "packageAmountG（内容量。amountUnit の単位で g か ml）は正の数。" +
   "packageUnit は内容量の単位（「本」「袋」など。1 本 14g なら packageAmountG=14、packageUnit=本）。" +
   "nutritionType は complete=総合栄養食、general=一般食。" +
   "textureType は dry=ドライ、wet=ウェット、soup=スープ。" +
@@ -65,8 +71,20 @@ const productFields = {
     .nullable()
     .optional()
     .describe("メーカー名（50文字以内）。null を指定すると空にする"),
-  kcalPer100g: z.number().optional().describe("100g あたりのカロリー（kcal）"),
-  packageAmountG: z.number().optional().describe("内容量（g）"),
+  amountUnit: z
+    .enum(FOOD_AMOUNT_UNITS)
+    .optional()
+    .describe(
+      "量の単位（g・ml）。カロリー・内容量と、ごはんの記録・プリセットの量はこの単位になる。追加で省略すると g",
+    ),
+  kcalPer100g: z
+    .number()
+    .optional()
+    .describe("100g（amountUnit が ml なら 100ml）あたりのカロリー（kcal）"),
+  packageAmountG: z
+    .number()
+    .optional()
+    .describe("内容量（amountUnit の単位。g か ml）"),
   packageUnit: z
     .string()
     .nullable()
@@ -97,6 +115,7 @@ function toFoodProductSummary(product: FoodProduct, hasImage: boolean) {
     householdId: product.householdId,
     name: product.name,
     manufacturer: product.manufacturer,
+    amountUnit: product.amountUnit,
     kcalPer100g: product.kcalPer100g,
     packageAmountG: product.packageAmountG,
     packageUnit: product.packageUnit,
@@ -112,6 +131,7 @@ function toFormValues(product: FoodProduct): FormValues {
   return {
     name: product.name,
     manufacturer: toOptionalValue(product.manufacturer),
+    amountUnit: product.amountUnit,
     kcalPer100g: product.kcalPer100g,
     packageAmountG: product.packageAmountG,
     packageUnit: toOptionalValue(product.packageUnit),

@@ -8,6 +8,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { catalogFoodProducts } from "./catalog-food-products";
+import { FOOD_AMOUNT_UNITS } from "./food-amount-units";
 import { households } from "./households";
 
 /** ごはん商品の対象の猫（キトン・成猫・シニア・療養） */
@@ -37,8 +38,18 @@ export const foodProducts = sqliteTable(
     name: text("name").notNull(),
     /** メーカー名。NULL は未入力 */
     manufacturer: text("manufacturer"),
+    /**
+     * 量の単位（`g`・`ml`）。`ml` の商品は、カロリーを 100ml あたり、内容量を ml で持つ。
+     * 単位を追加する前（`0071`）の商品は `g`
+     */
+    amountUnit: text("amount_unit", { enum: FOOD_AMOUNT_UNITS })
+      .notNull()
+      .default("g"),
+    /** 100g（`amountUnit` が `ml` なら 100ml）あたりのカロリー */
     kcalPer100g: real("kcal_per_100g").notNull(),
-    /** 内容量（g）。`packageUnit` があるときは 1 単位あたり、ないときは商品全体の内容量 */
+    /**
+     * 内容量（`amountUnit` の単位）。`packageUnit` があるときは 1 単位あたり、ないときは商品全体の内容量
+     */
     packageAmountG: real("package_amount_g").notNull(),
     /** 内容量の単位（`本`・`袋`・`パック` など）。NULL は商品全体の内容量を表す */
     packageUnit: text("package_unit"),

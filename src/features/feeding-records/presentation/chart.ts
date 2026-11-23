@@ -1,21 +1,72 @@
-import type { FeedingMode } from "@/db/schema";
+import type { FeedingMode, FoodAmountUnit } from "@/db/schema";
 import { sumFeedingTotals } from "../domain/calculations";
+import { FEEDING_INTAKE_LABEL } from "../domain/labels";
 
 export type FeedingChartPoint = {
   occurredAtIso: string;
-  totalIntakeG: number;
+  /** g の商品の推定摂取量（食べた量）の合計。その日に g の商品がなければ null */
+  totalIntakeG: number | null;
+  /** ml の商品の推定摂取量（飲んだ量）の合計。その日に ml の商品がなければ null */
+  totalIntakeMl: number | null;
   totalKcal: number;
 };
 
 export type FeedingChartPeriod = "1m" | "3m" | "all";
 
-/** グラフに表示する値（食べた量・カロリー）。どちらか一方を切り替えて表示する */
-export type FeedingChartMetric = "intake" | "kcal";
+/**
+ * グラフに表示する値（食べた量・飲んだ量・カロリー）。1 つずつ切り替えて表示する。
+ * 飲んだ量は ml の商品（スープ・ミルクなど）の量で、g の食べた量とは足さない
+ */
+export type FeedingChartMetric = "intake" | "intakeMl" | "kcal";
 
 export const FEEDING_CHART_METRIC_LABEL: Record<FeedingChartMetric, string> = {
-  intake: "食べた量",
+  intake: FEEDING_INTAKE_LABEL.g,
+  intakeMl: FEEDING_INTAKE_LABEL.ml,
   kcal: "カロリー",
 };
+
+const FEEDING_CHART_METRIC_ORDER: FeedingChartMetric[] = [
+  "intake",
+  "intakeMl",
+  "kcal",
+];
+
+/** 点の値。食べた量・飲んだ量は、その日にその単位の商品がなければ null */
+export function feedingChartValue(
+  point: FeedingChartPoint,
+  metric: FeedingChartMetric,
+): number | null {
+  switch (metric) {
+    case "intake":
+      return point.totalIntakeG;
+    case "intakeMl":
+      return point.totalIntakeMl;
+    case "kcal":
+      return point.totalKcal;
+  }
+}
+
+/**
+ * 切り替えて表示できる値。食べた量・飲んだ量は、どれかの日にその単位の商品があるときだけ選べる
+ * （ml の商品を記録していなければ、今までどおり食べた量とカロリーだけを出す）
+ */
+export function availableFeedingChartMetrics(
+  points: FeedingChartPoint[],
+): FeedingChartMetric[] {
+  return FEEDING_CHART_METRIC_ORDER.filter(
+    (metric) =>
+      metric === "kcal" ||
+      points.some((point) => feedingChartValue(point, metric) != null),
+  );
+}
+
+/** 値のある日の点だけにする（食べた量・飲んだ量は、その単位の商品を記録した日だけを描く） */
+export function filterByMetric(
+  points: FeedingChartPoint[],
+  metric: FeedingChartMetric,
+): FeedingChartPoint[] {
+  return points.filter((point) => feedingChartValue(point, metric) != null);
+}
 
 export const FEEDING_CHART_PERIOD_LABEL: Record<FeedingChartPeriod, string> = {
   "1m": "直近1ヶ月",
@@ -31,7 +82,11 @@ const PERIOD_DAYS: Record<Exclude<FeedingChartPeriod, "all">, number> = {
 type FeedingChartRecord = {
   occurredAt: Date;
   mode: FeedingMode;
-  items: { estimatedIntakeG: number | null; estimatedKcal: number | null }[];
+  items: {
+    amountUnit: FoodAmountUnit;
+    estimatedIntakeG: number | null;
+    estimatedKcal: number | null;
+  }[];
 };
 
 /**

@@ -4,6 +4,7 @@ import type {
   ExpenseRecord,
   FeedingRecord,
   FeedingRecordItem,
+  FoodAmountUnit,
   HospitalVisit,
   Medication,
   MedicationDose,
@@ -130,10 +131,17 @@ function yesNo(value: boolean): string {
 
 export type FeedingExportRow = FeedingRecord &
   WithCatName & {
-    items: (FeedingRecordItem & { productName: string })[];
+    items: (FeedingRecordItem & {
+      productName: string;
+      /** 商品の量の単位。量・推定摂取量はこの単位の値 */
+      amountUnit: FoodAmountUnit;
+    })[];
   };
 
-/** ごはん記録。商品ごとに 1 行にし、同じ記録の行は同じ ID にする */
+/**
+ * ごはん記録。商品ごとに 1 行にし、同じ記録の行は同じ ID にする。
+ * 量・推定摂取量は商品の単位（g・ml）の値で、単位の列に書く
+ */
 export function feedingCsvFile(rows: FeedingExportRow[]): CsvFile {
   const columns = [
     "ID",
@@ -141,9 +149,10 @@ export function feedingCsvFile(rows: FeedingExportRow[]): CsvFile {
     "日時",
     "記録方法",
     "商品",
-    "与えた量（g）",
-    "残した量（g）",
-    "推定摂取量（g）",
+    "単位",
+    "与えた量",
+    "残した量",
+    "推定摂取量",
     "推定カロリー（kcal）",
     "与えた量（段階）",
     "残した量（段階）",
@@ -157,11 +166,14 @@ export function feedingCsvFile(rows: FeedingExportRow[]): CsvFile {
       FEEDING_MODE_LABEL[record.mode],
     ];
     if (record.items.length === 0) {
-      return [[...head, null, null, null, null, null, null, null, record.memo]];
+      return [
+        [...head, null, null, null, null, null, null, null, null, record.memo],
+      ];
     }
     return record.items.map((item) => [
       ...head,
       item.productName,
+      item.amountUnit,
       item.givenAmountG,
       item.leftoverAmountG,
       item.estimatedIntakeG,

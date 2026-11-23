@@ -1,4 +1,4 @@
-import { CalorieIcon, FeedingIcon } from "@canshi/shared/ui/RecordIcons";
+import { CalorieIcon } from "@canshi/shared/ui/RecordIcons";
 import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import { TbPencil } from "react-icons/tb";
 import { Badge, ButtonLink, IconButtonLink } from "@/components/ui";
@@ -8,11 +8,16 @@ import {
   EXPENSE_CATEGORY_LABEL,
   formatYen,
 } from "@/features/expenses/domain/labels";
-import { sumFeedingTotals } from "@/features/feeding-records/domain/calculations";
 import {
+  listIntakeTotals,
+  sumFeedingTotals,
+} from "@/features/feeding-records/domain/calculations";
+import {
+  FEEDING_INTAKE_LABEL,
   FEEDING_MODE_LABEL,
   formatFeedingItemAmounts,
 } from "@/features/feeding-records/domain/labels";
+import { FEEDING_INTAKE_ICON } from "@/features/feeding-records/presentation/intakeIcons";
 import { FoodProductImage } from "@/features/food-products/presentation/FoodProductImage";
 import { MediaThumbnailStrip } from "@/features/media/presentation/MediaThumbnailStrip";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/domain/labels";
@@ -190,7 +195,7 @@ function renderBody(
       );
     case "feeding": {
       const { record } = entry;
-      const { totalIntakeG, totalKcal } = sumFeedingTotals(record.items);
+      const totals = sumFeedingTotals(record.items);
       return (
         <div className={styles.body}>
           <ul className={styles.feedingImages}>
@@ -220,17 +225,23 @@ function renderBody(
             </ul>
           ) : (
             <dl className={styles.summary} aria-label="食事の合計（推定）">
-              <div>
-                <dt>
-                  <ScaledIcon icon={FeedingIcon} aria-hidden="true" size={18} />
-                  食べた量
-                  <span className={styles.estimate}>（推定）</span>
-                </dt>
-                <dd>
-                  {totalIntakeG}
-                  <span>g</span>
-                </dd>
-              </div>
+              {listIntakeTotals(totals).map(({ unit, total }) => (
+                <div key={unit}>
+                  <dt>
+                    <ScaledIcon
+                      icon={FEEDING_INTAKE_ICON[unit]}
+                      aria-hidden="true"
+                      size={18}
+                    />
+                    {FEEDING_INTAKE_LABEL[unit]}
+                    <span className={styles.estimate}>（推定）</span>
+                  </dt>
+                  <dd>
+                    {total}
+                    <span>{unit}</span>
+                  </dd>
+                </div>
+              ))}
               <div>
                 <dt>
                   <ScaledIcon icon={CalorieIcon} aria-hidden="true" size={18} />
@@ -238,7 +249,7 @@ function renderBody(
                   <span className={styles.estimate}>（推定）</span>
                 </dt>
                 <dd>
-                  {totalKcal.toFixed(1)}
+                  {totals.totalKcal.toFixed(1)}
                   <span>kcal</span>
                 </dd>
               </div>

@@ -32,6 +32,7 @@ import { CatalogSearchForm } from "@/features/catalog-food-products/presentation
 import { RequestCatalogFoodProductButton } from "@/features/catalog-food-products/presentation/RequestCatalogFoodProductButton";
 import {
   formatFoodProductTarget,
+  kcalPer100Unit,
   NUTRITION_TYPE_LABEL,
   TEXTURE_TYPE_LABEL,
 } from "@/features/food-products/domain/labels";
@@ -206,8 +207,13 @@ export default async function SearchFoodProductsPage({
                       <p className={styles.meta}>
                         {NUTRITION_TYPE_LABEL[item.nutritionType]} ・{" "}
                         {TEXTURE_TYPE_LABEL[item.textureType]} ・{" "}
-                        {item.kcalPer100g}kcal/100g ・{" "}
-                        {packageSizes.map(formatPackageSize).join(" / ")}
+                        {item.kcalPer100g}
+                        {kcalPer100Unit(item.amountUnit)} ・{" "}
+                        {packageSizes
+                          .map((size) =>
+                            formatPackageSize(size, item.amountUnit),
+                          )
+                          .join(" / ")}
                       </p>
                       {target ? (
                         <p className={styles.meta}>対象：{target}</p>
@@ -227,7 +233,7 @@ export default async function SearchFoodProductsPage({
                           productName={item.name}
                           packageSizes={packageSizes.map((size) => ({
                             value: toPackageSizeValue(size),
-                            label: formatPackageSize(size),
+                            label: formatPackageSize(size, item.amountUnit),
                           }))}
                         />
                       )}

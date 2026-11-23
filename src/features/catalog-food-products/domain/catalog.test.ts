@@ -231,6 +231,7 @@ describe("addCatalogFoodProductAction", () => {
     expect(added).toMatchObject({
       name: "子ねこ用 パウチ 100%まぐろ",
       manufacturer: "いなば",
+      amountUnit: "g",
       kcalPer100g: 380,
       packageAmountG: 40,
       packageUnit: "袋",
@@ -397,6 +398,35 @@ describe("addCatalogFoodProductAction", () => {
       packageAmountG: 12.3,
       packageUnit: "本",
       catalogFoodProductId: "multi-size",
+    });
+  });
+
+  it("ml の商品は、量の単位も写して追加する", async () => {
+    await addCatalog({
+      id: "milk",
+      name: "ねこのミルク",
+      textureType: "soup",
+      amountUnit: "ml",
+      kcalPer100g: 60,
+      packageAmountG: 200,
+    });
+    expect(
+      await addCatalogFoodProductAction(
+        "milk",
+        {},
+        addForm({
+          householdId: "household-1",
+          packageSize: toPackageSizeValue({ amountG: 200, unit: null }),
+        }),
+      ),
+    ).toEqual({ redirectTo: "/food-products" });
+    const [added] = await db.select().from(foodProducts);
+    expect(added).toMatchObject({
+      name: "ねこのミルク",
+      amountUnit: "ml",
+      kcalPer100g: 60,
+      packageAmountG: 200,
+      catalogFoodProductId: "milk",
     });
   });
 

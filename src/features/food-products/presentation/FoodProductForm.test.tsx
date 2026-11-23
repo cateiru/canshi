@@ -83,6 +83,79 @@ describe("FoodProductForm", () => {
     expect(formData.get("manufacturer")).toBe("ネスレ");
     expect(formData.getAll("lifeStages")).toEqual(["adult", "senior"]);
     expect(formData.get("targetBreed")).toBe("ペルシャ");
+    // 量の単位は既定で g
+    expect(formData.get("amountUnit")).toBe("g");
+  });
+
+  it("量の単位に ml を選ぶと、カロリー・内容量の見出しを ml にして送る", async () => {
+    const action = vi.fn(
+      async (
+        _state: FoodProductFormState,
+        _formData: FormData,
+      ): Promise<FoodProductFormState> => ({}),
+    );
+
+    render(
+      <FoodProductForm
+        action={action}
+        mediaLimits={DEFAULT_MEDIA_LIMITS}
+        submitLabel="登録する"
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("radio", { name: "ml（スープ・ミルクなど）" }),
+    );
+    fireEvent.change(screen.getByLabelText("商品名"), {
+      target: { value: "ねこのミルク" },
+    });
+    fireEvent.change(screen.getByLabelText("カロリー（kcal/100ml）"), {
+      target: { value: "60" },
+    });
+    fireEvent.change(screen.getByLabelText("内容量（ml）"), {
+      target: { value: "200" },
+    });
+    expect(screen.queryByLabelText("内容量（g）")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "登録する" }));
+
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    const formData = action.mock.calls[0][1];
+    expect(formData.get("amountUnit")).toBe("ml");
+    expect(formData.get("kcalPer100g")).toBe("60");
+    expect(formData.get("packageAmountG")).toBe("200");
+  });
+
+  it("編集では保存済みの量の単位を選んでおく", () => {
+    render(
+      <FoodProductForm
+        action={vi.fn(async () => ({}))}
+        foodProduct={{
+          id: "product-1",
+          householdId: "home",
+          name: "ねこのミルク",
+          manufacturer: null,
+          amountUnit: "ml",
+          kcalPer100g: 60,
+          packageAmountG: 200,
+          packageUnit: null,
+          nutritionType: "general",
+          textureType: "soup",
+          lifeStages: [],
+          targetBreed: null,
+          catalogFoodProductId: null,
+          createdAt: new Date("2026-11-01T00:00:00Z"),
+          updatedAt: new Date("2026-11-01T00:00:00Z"),
+        }}
+        mediaLimits={DEFAULT_MEDIA_LIMITS}
+        submitLabel="更新する"
+      />,
+    );
+
+    expect(
+      screen.getByRole("radio", { name: "ml（スープ・ミルクなど）" }),
+    ).toBeChecked();
+    expect(screen.getByLabelText("カロリー（kcal/100ml）")).toHaveValue(60);
   });
 
   it("最初から選んでおく家を指定したときは、保存後に選んだ家の商品一覧へ移動する", async () => {

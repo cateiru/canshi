@@ -27,6 +27,8 @@ describe("parseCatalogFoodProductForm", () => {
       values: {
         name: "まぐろ",
         manufacturer: null,
+        // 単位の指定がなければ g にする
+        amountUnit: "g",
         kcalPer100g: 40.5,
         // 単位の先頭の「1」は取り除く
         packageSizes: [{ amountG: 14, unit: "本" }],
@@ -40,6 +42,24 @@ describe("parseCatalogFoodProductForm", () => {
       image: null,
       removeImage: true,
     });
+  });
+
+  it("量の単位に ml を選べる", () => {
+    const parsed = parseCatalogFoodProductForm({
+      ...VALID,
+      amountUnit: "ml",
+    });
+    expect(parsed.ok && parsed.values.amountUnit).toBe("ml");
+  });
+
+  it("g・ml 以外の単位は断る", () => {
+    const parsed = parseCatalogFoodProductForm({
+      ...VALID,
+      amountUnit: "kg",
+    });
+    expect(!parsed.ok && parsed.errors.amountUnit).toBe(
+      "単位（g・ml）を選択してください",
+    );
   });
 
   it("対象の猫が 1 つだけでも配列として受け取る", () => {

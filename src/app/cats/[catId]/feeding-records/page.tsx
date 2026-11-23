@@ -14,8 +14,12 @@ import {
 import { getAccessibleCat } from "@/features/auth/presentation/session";
 import { isMemorialCat } from "@/features/cats/domain/memorial";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
-import { sumFeedingTotals } from "@/features/feeding-records/domain/calculations";
 import {
+  listIntakeTotals,
+  sumFeedingTotals,
+} from "@/features/feeding-records/domain/calculations";
+import {
+  FEEDING_INTAKE_LABEL,
   FEEDING_MODE_LABEL,
   formatFeedingItemAmounts,
 } from "@/features/feeding-records/domain/labels";
@@ -24,6 +28,7 @@ import { deleteFeedingRecordAction } from "@/features/feeding-records/presentati
 import { toFeedingChartPoints } from "@/features/feeding-records/presentation/chart";
 import { FeedingChart } from "@/features/feeding-records/presentation/FeedingChart";
 import { groupRecordsByDate } from "@/features/feeding-records/presentation/groupByDate";
+import { FEEDING_INTAKE_ICON } from "@/features/feeding-records/presentation/intakeIcons";
 import { listFoodProductImageUrls } from "@/features/food-products/infrastructure/queries";
 import { FoodProductImage } from "@/features/food-products/presentation/FoodProductImage";
 import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
@@ -168,9 +173,7 @@ export default async function FeedingRecordsPage({
               </div>
               <ul className={styles.dateRecords}>
                 {group.records.map((record) => {
-                  const { totalIntakeG, totalKcal } = sumFeedingTotals(
-                    record.items,
-                  );
+                  const totals = sumFeedingTotals(record.items);
 
                   return (
                     <li key={record.id}>
@@ -261,23 +264,25 @@ export default async function FeedingRecordsPage({
                             className={styles.summary}
                             aria-label="食事の合計（推定）"
                           >
-                            <div>
-                              <dt>
-                                <ScaledIcon
-                                  icon={FeedingIcon}
-                                  aria-hidden="true"
-                                  size={18}
-                                />
-                                食べた量
-                                <span className={styles.estimate}>
-                                  （推定）
-                                </span>
-                              </dt>
-                              <dd>
-                                {totalIntakeG}
-                                <span>g</span>
-                              </dd>
-                            </div>
+                            {listIntakeTotals(totals).map(({ unit, total }) => (
+                              <div key={unit}>
+                                <dt>
+                                  <ScaledIcon
+                                    icon={FEEDING_INTAKE_ICON[unit]}
+                                    aria-hidden="true"
+                                    size={18}
+                                  />
+                                  {FEEDING_INTAKE_LABEL[unit]}
+                                  <span className={styles.estimate}>
+                                    （推定）
+                                  </span>
+                                </dt>
+                                <dd>
+                                  {total}
+                                  <span>{unit}</span>
+                                </dd>
+                              </div>
+                            ))}
                             <div>
                               <dt>
                                 <ScaledIcon
@@ -291,7 +296,7 @@ export default async function FeedingRecordsPage({
                                 </span>
                               </dt>
                               <dd>
-                                {totalKcal.toFixed(1)}
+                                {totals.totalKcal.toFixed(1)}
                                 <span>kcal</span>
                               </dd>
                             </div>

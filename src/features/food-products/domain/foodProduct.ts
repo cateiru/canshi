@@ -12,6 +12,7 @@ export type FoodProductContent = Pick<
   FoodProduct,
   | "name"
   | "manufacturer"
+  | "amountUnit"
   | "kcalPer100g"
   | "packageAmountG"
   | "packageUnit"
@@ -28,6 +29,7 @@ export function toFoodProductContent(
   return {
     name: data.name,
     manufacturer: data.manufacturer,
+    amountUnit: data.amountUnit,
     kcalPer100g: data.kcalPer100g,
     packageAmountG: data.packageAmountG,
     packageUnit: data.packageUnit,

@@ -163,6 +163,9 @@ export function FeedingPresetForm({
       <div className={styles.itemsList}>
         {items.map((item, index) => {
           const itemErrors = state.fieldErrors?.itemErrors?.[index];
+          const selectedFoodProduct = foodProducts.find(
+            (foodProduct) => foodProduct.id === item.foodProductId,
+          );
           return (
             <fieldset
               key={item.key}
@@ -172,11 +175,7 @@ export function FeedingPresetForm({
               <div className={styles.productRow}>
                 <div className={styles.productImage}>
                   <FoodProductImage
-                    name={
-                      foodProducts.find(
-                        (foodProduct) => foodProduct.id === item.foodProductId,
-                      )?.name ?? "商品"
-                    }
+                    name={selectedFoodProduct?.name ?? "商品"}
                     thumbnailUrl={foodProductImageUrls[item.foodProductId]}
                   />
                 </div>
@@ -210,7 +209,8 @@ export function FeedingPresetForm({
               {mode === "strict" ? (
                 <FormField
                   name={`items.${index}.givenAmountG`}
-                  label="与える量（g）"
+                  // 量は商品の単位（g・ml）で入力する。商品が見つからないときは g にする
+                  label={`与える量（${selectedFoodProduct?.amountUnit ?? "g"}）`}
                   type="number"
                   inputMode="decimal"
                   value={item.givenAmountG}

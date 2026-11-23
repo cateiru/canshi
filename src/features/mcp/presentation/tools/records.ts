@@ -1081,8 +1081,14 @@ const feedingItemSchema = z.object({
   foodProductId: z
     .string()
     .describe("ごはん商品の ID（list_food_products で取得できる）"),
-  givenAmountG: z.number().optional().describe("与えた量（g、厳格モード）"),
-  leftoverAmountG: z.number().optional().describe("残した量（g、厳格モード）"),
+  givenAmountG: z
+    .number()
+    .optional()
+    .describe("与えた量（商品の amountUnit の単位。g か ml、厳格モード）"),
+  leftoverAmountG: z
+    .number()
+    .optional()
+    .describe("残した量（商品の amountUnit の単位。g か ml、厳格モード）"),
   givenAmountLevel: z
     .enum(GIVEN_AMOUNT_LEVELS)
     .optional()
@@ -1100,7 +1106,7 @@ const feedingRecordTool = defineRecordTool({
   description:
     "mode（記録方法）と items（商品ごとの量）は追加では必須。" +
     'mode="strict"（厳格モード）では各商品に givenAmountG（与えた量）と leftoverAmountG（残した量）を' +
-    "グラムで指定し、推定摂取量・推定カロリーを計算する。" +
+    "商品の単位（list_food_products の amountUnit。g か ml）で指定し、推定摂取量・推定カロリーを計算する。" +
     'mode="approximate"（あいまいモード）では givenAmountLevel（less=少なめ、normal=普通、more=多め）と' +
     "leftoverLevel（none=完食、little=少し残し、most=ほとんど残し）を指定する。" +
     "商品は猫の家のごはん商品に限る。編集で items を指定すると、商品の明細をすべて置き換える。",

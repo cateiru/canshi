@@ -1,15 +1,23 @@
 import { describe, expect, it } from "vitest";
 import {
+  availableFeedingChartMetrics,
   type FeedingChartPoint,
+  feedingChartValue,
+  filterByMetric,
   filterByPeriod,
   toFeedingChartPoints,
 } from "./chart";
 
-function item(estimatedIntakeG: number, estimatedKcal: number) {
+function item(
+  estimatedIntakeG: number,
+  estimatedKcal: number,
+  amountUnit: "g" | "ml" = "g",
+) {
   return {
     id: "item-1",
     foodProductId: "product-1",
     foodProductName: "テスト商品",
+    amountUnit,
     givenAmountG: estimatedIntakeG,
     leftoverAmountG: 0,
     estimatedIntakeG,
@@ -127,11 +135,13 @@ describe("toFeedingChartPoints", () => {
       {
         occurredAtIso: "2026-09-01T00:00:00.000Z",
         totalIntakeG: 30,
+        totalIntakeMl: null,
         totalKcal: 100,
       },
       {
         occurredAtIso: "2026-09-02T00:00:00.000Z",
         totalIntakeG: 15,
+        totalIntakeMl: null,
         totalKcal: 45,
       },
     ]);
@@ -157,11 +167,13 @@ describe("toFeedingChartPoints", () => {
       {
         occurredAtIso: "2026-09-01T00:00:00.000Z",
         totalIntakeG: 20,
+        totalIntakeMl: null,
         totalKcal: 60,
       },
       {
         occurredAtIso: "2026-09-02T00:00:00.000Z",
         totalIntakeG: 10,
+        totalIntakeMl: null,
         totalKcal: 40,
       },
     ]);
@@ -191,12 +203,24 @@ describe("toFeedingChartPoints", () => {
       {
         mode: "approximate" as const,
         occurredAt: new Date("2026-09-01T18:00:00.000Z"),
-        items: [{ estimatedIntakeG: null, estimatedKcal: null }],
+        items: [
+          {
+            amountUnit: "g" as const,
+            estimatedIntakeG: null,
+            estimatedKcal: null,
+          },
+        ],
       },
       {
         mode: "approximate" as const,
         occurredAt: new Date("2026-09-02T08:00:00.000Z"),
-        items: [{ estimatedIntakeG: null, estimatedKcal: null }],
+        items: [
+          {
+            amountUnit: "g" as const,
+            estimatedIntakeG: null,
+            estimatedKcal: null,
+          },
+        ],
       },
     ];
 
@@ -204,13 +228,89 @@ describe("toFeedingChartPoints", () => {
       {
         occurredAtIso: "2026-09-01T00:00:00.000Z",
         totalIntakeG: 20,
+        totalIntakeMl: null,
         totalKcal: 60,
+      },
+    ]);
+  });
+
+  it("g の商品と ml の商品の量は足さずに分ける。その単位の商品がない日は null", () => {
+    const records = [
+      {
+        mode: "strict" as const,
+        occurredAt: new Date("2026-09-01T08:00:00.000Z"),
+        items: [item(20, 60), item(30, 15, "ml")],
+      },
+      {
+        mode: "strict" as const,
+        occurredAt: new Date("2026-09-02T08:00:00.000Z"),
+        items: [item(50, 25, "ml")],
+      },
+    ];
+
+    expect(toFeedingChartPoints(records)).toEqual([
+      {
+        occurredAtIso: "2026-09-01T00:00:00.000Z",
+        totalIntakeG: 20,
+        totalIntakeMl: 30,
+        totalKcal: 75,
+      },
+      {
+        occurredAtIso: "2026-09-02T00:00:00.000Z",
+        totalIntakeG: null,
+        totalIntakeMl: 50,
+        totalKcal: 25,
       },
     ]);
   });
 
   it("空配列を渡すと空配列を返す", () => {
     expect(toFeedingChartPoints([])).toEqual([]);
+  });
+});
+
+describe("グラフの値の切り替え", () => {
+  const points: FeedingChartPoint[] = [
+    {
+      occurredAtIso: "2026-09-01T00:00:00.000Z",
+      totalIntakeG: 20,
+      totalIntakeMl: null,
+      totalKcal: 60,
+    },
+    {
+      occurredAtIso: "2026-09-02T00:00:00.000Z",
+      totalIntakeG: null,
+      totalIntakeMl: 50,
+      totalKcal: 25,
+    },
+  ];
+
+  it("値はグラフの種類ごとに読む", () => {
+    expect(feedingChartValue(points[0], "intake")).toBe(20);
+    expect(feedingChartValue(points[0], "intakeMl")).toBeNull();
+    expect(feedingChartValue(points[1], "kcal")).toBe(25);
+  });
+
+  it("ml の商品を記録した日があるときだけ飲んだ量を選べる", () => {
+    expect(availableFeedingChartMetrics(points)).toEqual([
+      "intake",
+      "intakeMl",
+      "kcal",
+    ]);
+    expect(availableFeedingChartMetrics([points[0]])).toEqual([
+      "intake",
+      "kcal",
+    ]);
+    expect(availableFeedingChartMetrics([points[1]])).toEqual([
+      "intakeMl",
+      "kcal",
+    ]);
+  });
+
+  it("食べた量・飲んだ量は、その単位の商品を記録した日の点だけにする", () => {
+    expect(filterByMetric(points, "intake")).toEqual([points[0]]);
+    expect(filterByMetric(points, "intakeMl")).toEqual([points[1]]);
+    expect(filterByMetric(points, "kcal")).toEqual(points);
   });
 });
 
@@ -221,26 +321,31 @@ describe("filterByPeriod", () => {
     {
       occurredAtIso: "2025-01-01T00:00:00.000Z",
       totalIntakeG: 10,
+      totalIntakeMl: null,
       totalKcal: 30,
     }, // 全期間のみ
     {
       occurredAtIso: "2026-07-01T00:00:00.000Z",
       totalIntakeG: 20,
+      totalIntakeMl: null,
       totalKcal: 60,
     }, // 3ヶ月より前
     {
       occurredAtIso: "2026-08-05T00:00:00.000Z",
       totalIntakeG: 30,
+      totalIntakeMl: null,
       totalKcal: 90,
     }, // 3ヶ月以内・1ヶ月より前
     {
       occurredAtIso: "2026-09-15T00:00:00.000Z",
       totalIntakeG: 40,
+      totalIntakeMl: null,
       totalKcal: 120,
     }, // 1ヶ月以内
     {
       occurredAtIso: "2026-09-30T00:00:00.000Z",
       totalIntakeG: 50,
+      totalIntakeMl: null,
       totalKcal: 150,
     }, // ちょうど now
   ];

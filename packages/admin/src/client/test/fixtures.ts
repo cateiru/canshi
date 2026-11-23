@@ -11,6 +11,7 @@ export function product(
 ): CatalogFoodProductJson {
   return {
     manufacturer: null,
+    amountUnit: "g",
     kcalPer100g: 380,
     packageSizes: [{ amountG: 500, unit: null }],
     nutritionType: "complete",

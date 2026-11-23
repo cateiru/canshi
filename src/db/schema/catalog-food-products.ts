@@ -6,6 +6,7 @@ import {
   sqliteTable,
   text,
 } from "drizzle-orm/sqlite-core";
+import { FOOD_AMOUNT_UNITS } from "./food-amount-units";
 import type { FoodProductLifeStage } from "./food-products";
 
 /**
@@ -13,7 +14,7 @@ import type { FoodProductLifeStage } from "./food-products";
  * （`food_products` の `package_amount_g`・`package_unit` と同じ意味）
  */
 export type CatalogPackageSize = {
-  /** 内容量（g） */
+  /** 内容量（商品の `amountUnit` の単位。`ml` の商品なら ml） */
   amountG: number;
   /** 内容量の単位（`本`・`袋`・`パック` など）。NULL は商品全体の内容量を表す */
   unit: string | null;
@@ -35,9 +36,17 @@ export const catalogFoodProducts = sqliteTable(
     name: text("name").notNull(),
     /** メーカー名。NULL は未入力 */
     manufacturer: text("manufacturer"),
+    /**
+     * 量の単位（`g`・`ml`、#672）。`food_products.amount_unit` と同じ意味で、家に追加するときに写す。
+     * カロリーと内容量の候補は、どれもこの単位で持つ
+     */
+    amountUnit: text("amount_unit", { enum: FOOD_AMOUNT_UNITS })
+      .notNull()
+      .default("g"),
+    /** 100g（`amountUnit` が `ml` なら 100ml）あたりのカロリー */
     kcalPer100g: real("kcal_per_100g").notNull(),
     /**
-     * 先頭の内容量の候補の内容量（g）。`packageSizes` を追加する前のコードのために残し、
+     * 先頭の内容量の候補の内容量（`amountUnit` の単位）。`packageSizes` を追加する前のコードのために残し、
      * 管理画面は先頭の候補の値を書き続ける。古い管理画面がこの列だけを更新した場合も反映するため、
      * 先頭の候補はこの列から読む（`catalogPackageSizes`）
      */

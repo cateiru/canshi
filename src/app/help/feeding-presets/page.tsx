@@ -51,7 +51,7 @@ export default async function FeedingPresetsHelpPage({
             ごはんを記録する画面の「プリセット」から使いたいプリセットを選ぶと、商品・与えた量・記録方法がプリセットの内容で入力されます。
           </li>
           <li>
-            残した量は毎回変わるため、プリセットには登録しません。プリセットを選ぶと、残した量は「0g」（
+            残した量は毎回変わるため、プリセットには登録しません。プリセットを選ぶと、残した量は「0」（
             {FEEDING_MODE_LABEL.approximate}では「{LEFTOVER_LEVEL_LABEL.none}
             」）で入力されます。
           </li>
