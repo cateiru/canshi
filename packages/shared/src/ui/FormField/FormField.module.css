@@ -10,6 +10,16 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 画面には出さず、読み上げでは入力欄の名前として伝える */
+.labelHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .input {
   min-width: 0;
   min-height: 48px;

@@ -4,10 +4,22 @@
   gap: var(--space-4);
 }
 
-/* 保存ボタンは、ほかのフォームと同じく横長にする */
-.footer {
+/*
+ * 入力欄と保存ボタンを 1 行に並べる。入力欄の下にエラーの文言が出ても、
+ * ボタンが入力欄の高さにそろったままになるよう、上端でそろえる
+ */
+.row {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.field {
+  flex: 1;
+}
+
+.submit {
+  flex-shrink: 0;
 }
 
 /*
