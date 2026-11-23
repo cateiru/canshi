@@ -15,6 +15,35 @@ describe("foodProductFormSchema", () => {
     if (result.success) {
       expect(result.data.kcalPer100g).toBe(380);
       expect(result.data.packageAmountG).toBe(1500);
+      // 量の単位を指定しなければ g にする
+      expect(result.data.amountUnit).toBe("g");
+    }
+  });
+
+  it("量の単位に ml を指定できる。g・ml 以外は失敗する", () => {
+    const values = {
+      name: "ねこのミルク",
+      kcalPer100g: "60",
+      packageAmountG: "200",
+      nutritionType: "general",
+      textureType: "soup",
+    };
+
+    const milk = foodProductFormSchema.safeParse({
+      ...values,
+      amountUnit: "ml",
+    });
+    expect(milk.success && milk.data.amountUnit).toBe("ml");
+
+    const invalid = foodProductFormSchema.safeParse({
+      ...values,
+      amountUnit: "kg",
+    });
+    expect(invalid.success).toBe(false);
+    if (!invalid.success) {
+      expect(invalid.error.flatten().fieldErrors.amountUnit?.[0]).toBe(
+        "単位（g・ml）を選択してください",
+      );
     }
   });
 
@@ -54,7 +83,7 @@ describe("foodProductFormSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.kcalPer100g?.[0]).toBe(
-        "カロリー（kcal/100g）を入力してください",
+        "カロリーを入力してください",
       );
     }
   });

@@ -56,8 +56,12 @@ describe("catalogPackageSizes", () => {
 
 describe("formatPackageSize", () => {
   it("家のごはん商品と同じ表記にする", () => {
-    expect(formatPackageSize({ amountG: 1500, unit: null })).toBe("1.5kg");
-    expect(formatPackageSize({ amountG: 14, unit: "本" })).toBe("14g/本");
+    expect(formatPackageSize({ amountG: 1500, unit: null }, "g")).toBe("1.5kg");
+    expect(formatPackageSize({ amountG: 14, unit: "本" }, "g")).toBe("14g/本");
+  });
+
+  it("ml の商品は ml で表示する", () => {
+    expect(formatPackageSize({ amountG: 200, unit: null }, "ml")).toBe("200ml");
   });
 });
 

@@ -16,6 +16,7 @@ function createFoodProduct(overrides: Partial<FoodProduct>): FoodProduct {
     householdId: "household-1",
     name: "ちゃおちゅーる",
     manufacturer: null,
+    amountUnit: "g",
     kcalPer100g: 40,
     packageAmountG: 14,
     packageUnit: "本",
@@ -90,6 +91,30 @@ describe("FeedingRecordForm", () => {
     ).toHaveAttribute("href", "/help/feeding-modes");
   });
 
+  it("ml の商品は、内容量と与えた量・残した量を ml で表示する", () => {
+    render(
+      <FeedingRecordForm
+        action={action}
+        foodProducts={[
+          createFoodProduct({
+            name: "ねこのミルク",
+            amountUnit: "ml",
+            packageAmountG: 200,
+            packageUnit: null,
+          }),
+        ]}
+        foodProductImageUrls={{}}
+        recentlyUsedFoodProductIds={[]}
+        presets={[]}
+        submitLabel="記録する"
+      />,
+    );
+
+    expect(screen.getByText("内容量: 200ml")).toBeInTheDocument();
+    expect(screen.getByLabelText(/与えた量（ml）/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/残した量（ml）/)).toBeInTheDocument();
+  });
+
   it("あいまいモードに切り替えると、段階での入力欄に置き換わる", () => {
     const { container } = render(
       <FeedingRecordForm
@@ -126,6 +151,7 @@ describe("FeedingRecordForm", () => {
           foodProductId: "food-1",
           foodProductName: "ちゃおちゅーる",
           foodProductImageUrl: null,
+          amountUnit: "g",
           givenAmountG: null,
           givenAmountLevel: "more",
         },

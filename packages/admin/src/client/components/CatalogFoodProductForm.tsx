@@ -5,6 +5,8 @@ import {
   FormField,
   FormGroup,
   IconButton,
+  Radio,
+  RadioGroup,
   Select,
   Textarea,
 } from "@canshi/shared/ui";
@@ -16,6 +18,8 @@ import type {
   CatalogFoodProductSavedResponse,
 } from "../../api/types";
 import {
+  AMOUNT_UNITS,
+  type AmountUnit,
   type CatalogFoodProductErrors,
   type CatalogFoodProductInput,
   LIFE_STAGES,
@@ -30,6 +34,8 @@ import { IMAGE_MAX_EDGE } from "../../catalog/image";
 import { ApiError, segment, sendForm } from "../api";
 import common from "../common.module.css";
 import {
+  AMOUNT_UNIT_LABEL,
+  kcalPer100Unit,
   LIFE_STAGE_LABEL,
   NUTRITION_TYPE_LABEL,
   TEXTURE_TYPE_LABEL,
@@ -60,8 +66,18 @@ function withoutEmptyRows(rows: PackageSizeRow[], nextKey: () => number) {
     : [{ amountG: "", unit: "", key: nextKey() }];
 }
 
-/** 内容量の候補の入力欄。g と単位の行を並べ、メインアプリで家に追加するときにこの中から 1 つ選ぶ */
+/**
+ * 送られた単位を、見出しに使う単位にする。選択肢にない値（古い入力など）は g として表示する
+ * （送るときはそのまま送り、サーバーが断る）
+ */
+function toAmountUnit(value: string): AmountUnit {
+  return value === "ml" ? "ml" : "g";
+}
+
+/** 内容量の候補の入力欄。量と単位の行を並べ、メインアプリで家に追加するときにこの中から 1 つ選ぶ */
 function PackageSizesField(props: {
+  /** 量の単位（入力欄の見出しに使う） */
+  amountUnit: AmountUnit;
   rows: PackageSizeRow[];
   onChange: (rows: PackageSizeRow[]) => void;
   nextKey: () => number;
@@ -85,7 +101,7 @@ function PackageSizesField(props: {
           return (
             <div key={row.key} className={styles.packageSizeRow}>
               <FormField
-                label="内容量（g）"
+                label={`内容量（${props.amountUnit}）`}
                 inputMode="decimal"
                 value={row.amountG}
                 onChange={(amountG) => update(row.key, { amountG })}
@@ -279,6 +295,7 @@ function toFormData(
   const body = new FormData();
   body.set("name", input.name);
   body.set("manufacturer", input.manufacturer);
+  body.set("amountUnit", input.amountUnit);
   body.set("kcalPer100g", input.kcalPer100g);
   for (const row of input.packageSizes) {
     body.append("packageAmountG", row.amountG);
@@ -408,8 +425,27 @@ export function CatalogFoodProductForm(props: {
         errorMessage={errors.manufacturer}
         isDisabled={isPending}
       />
+      <FormGroup
+        legend="量の単位"
+        description="スープ・ミルクなど量を ml で量る商品は ml を選びます。カロリー・内容量もこの単位で入力します。"
+        errorMessage={errors.amountUnit}
+      >
+        <RadioGroup
+          aria-label="量の単位"
+          value={input.amountUnit}
+          onChange={(value) => set("amountUnit", value)}
+          optionsClassName={styles.amountUnits}
+          isDisabled={isPending}
+        >
+          {AMOUNT_UNITS.map((unit) => (
+            <Radio key={unit} value={unit}>
+              {AMOUNT_UNIT_LABEL[unit]}
+            </Radio>
+          ))}
+        </RadioGroup>
+      </FormGroup>
       <FormField
-        label="カロリー（kcal/100g）"
+        label={`カロリー（${kcalPer100Unit(toAmountUnit(input.amountUnit))}）`}
         inputMode="decimal"
         value={input.kcalPer100g}
         onChange={(value) => set("kcalPer100g", value)}
@@ -418,6 +454,7 @@ export function CatalogFoodProductForm(props: {
         isDisabled={isPending}
       />
       <PackageSizesField
+        amountUnit={toAmountUnit(input.amountUnit)}
         rows={rows}
         onChange={setRows}
         nextKey={nextKey}

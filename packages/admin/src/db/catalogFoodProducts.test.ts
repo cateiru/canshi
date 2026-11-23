@@ -15,6 +15,7 @@ import { type AdminDb, createAdminDb } from "./client";
 const VALUES = {
   name: "まぐろ",
   manufacturer: null,
+  amountUnit: "g" as const,
   kcalPer100g: 380,
   packageSizes: [{ amountG: 500, unit: null }],
   nutritionType: "complete" as const,

@@ -3,6 +3,7 @@ import type {
   CleaningRecord,
   ExpenseRecord,
   FeedingMode,
+  FoodAmountUnit,
   GivenAmountLevel,
   HospitalVisit,
   LeftoverLevel,
@@ -112,7 +113,9 @@ export type TimelineFeedingItem = {
   id: string;
   foodProductId: string;
   foodProductName: string;
-  /** グラム単位の量・推定値。あいまいモードの記録では null */
+  /** 商品の量の単位（g・ml）。量・推定摂取量はこの単位の値 */
+  amountUnit: FoodAmountUnit;
+  /** 商品の単位（g・ml）での量・推定値。あいまいモードの記録では null */
   givenAmountG: number | null;
   leftoverAmountG: number | null;
   estimatedIntakeG: number | null;

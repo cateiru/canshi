@@ -270,7 +270,11 @@ async function listFeedingRows(db: Db, householdId: string) {
     feedingRecords.occurredAt,
   );
   const items = await db
-    .select({ item: feedingRecordItems, productName: foodProducts.name })
+    .select({
+      item: feedingRecordItems,
+      productName: foodProducts.name,
+      amountUnit: foodProducts.amountUnit,
+    })
     .from(feedingRecordItems)
     .innerJoin(
       feedingRecords,
@@ -288,11 +292,12 @@ async function listFeedingRows(db: Db, householdId: string) {
     );
   const itemsByRecord = new Map<
     string,
-    ((typeof items)[number]["item"] & { productName: string })[]
+    ((typeof items)[number]["item"] &
+      Pick<(typeof items)[number], "productName" | "amountUnit">)[]
   >();
-  for (const { item, productName } of items) {
+  for (const { item, productName, amountUnit } of items) {
     const list = itemsByRecord.get(item.feedingRecordId) ?? [];
-    list.push({ ...item, productName });
+    list.push({ ...item, productName, amountUnit });
     itemsByRecord.set(item.feedingRecordId, list);
   }
   return records.map((record) => ({

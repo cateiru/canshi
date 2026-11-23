@@ -11,6 +11,7 @@ function product(
     Partial<CatalogFoodProduct>,
 ): CatalogFoodProduct {
   return {
+    amountUnit: "g",
     kcalPer100g: 380,
     packageSizes: [{ amountG: 500, unit: null }],
     nutritionType: "complete",

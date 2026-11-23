@@ -241,6 +241,8 @@ export function FeedingRecordForm({
           const selectedFoodProduct = foodProducts.find(
             (foodProduct) => foodProduct.id === item.foodProductId,
           );
+          // 量は商品の単位（g・ml）で入力する。商品が見つからないときは g にする
+          const amountUnit = selectedFoodProduct?.amountUnit ?? "g";
           return (
             <fieldset
               key={item.key}
@@ -289,7 +291,7 @@ export function FeedingRecordForm({
                 <FormRow>
                   <FormField
                     name={`items.${index}.givenAmountG`}
-                    label="与えた量（g）"
+                    label={`与えた量（${amountUnit}）`}
                     type="number"
                     inputMode="decimal"
                     value={item.givenAmountG}
@@ -301,7 +303,7 @@ export function FeedingRecordForm({
                   />
                   <FormField
                     name={`items.${index}.leftoverAmountG`}
-                    label="残した量（g）"
+                    label={`残した量（${amountUnit}）`}
                     type="number"
                     inputMode="decimal"
                     value={item.leftoverAmountG}

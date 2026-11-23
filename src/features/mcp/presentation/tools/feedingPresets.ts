@@ -35,7 +35,7 @@ import {
 
 const PRESET_DESCRIPTION =
   "プリセットは、ごはんの記録で選ぶ商品と量の組み合わせ。" +
-  'mode="strict"（厳格モード）では各商品に givenAmountG（与える量、g）を、' +
+  'mode="strict"（厳格モード）では各商品に givenAmountG（与える量。商品の amountUnit の単位で g か ml）を、' +
   'mode="approximate"（あいまいモード）では givenAmountLevel（less=少なめ、normal=普通、more=多め）を指定する。' +
   "商品はプリセットの家のごはん商品に限る。";
 
@@ -51,7 +51,9 @@ const presetFields = {
         givenAmountG: z
           .number()
           .optional()
-          .describe("与える量（g、厳格モード）"),
+          .describe(
+            "与える量（商品の amountUnit の単位。g か ml、厳格モード）",
+          ),
         givenAmountLevel: z
           .enum(GIVEN_AMOUNT_LEVELS)
           .optional()

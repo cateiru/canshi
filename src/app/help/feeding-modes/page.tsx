@@ -28,14 +28,14 @@ const comparisonRows: HelpComparisonRow[] = [
   {
     label: "与えた量の記録",
     cells: [
-      { available: true, note: "グラム" },
+      { available: true, note: "g・ml" },
       { available: true, note: "3段階" },
     ],
   },
   {
     label: "残した量の記録",
     cells: [
-      { available: true, note: "グラム" },
+      { available: true, note: "g・ml" },
       { available: true, note: "3段階" },
     ],
   },
@@ -92,11 +92,18 @@ export default function FeedingModesHelpPage() {
 
       <Surface title={FEEDING_MODE_LABEL.strict} gap="md">
         <ul className={styles.points}>
-          <li>与えた量・残した量をグラム単位で記録します。</li>
           <li>
-            登録した商品のカロリーから、食べた量とカロリーを計算して記録します。
+            与えた量・残した量をグラム（g）で記録します。スープやミルクなど、量の単位を
+            ml にした商品は ml で記録します。
           </li>
-          <li>ごはん記録のグラフに食べた量・カロリーの推移が表示されます。</li>
+          <li>
+            登録した商品のカロリーから、食べた量とカロリーを計算して記録します。ml
+            の商品の量は、g の食べた量と分けて「飲んだ量」として計算します。
+          </li>
+          <li>
+            ごはん記録のグラフに食べた量・カロリーの推移が表示されます。ml
+            の商品を記録すると、飲んだ量の推移も表示できます。
+          </li>
         </ul>
       </Surface>
 

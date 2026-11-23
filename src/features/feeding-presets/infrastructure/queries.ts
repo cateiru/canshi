@@ -4,6 +4,7 @@ import { getDb } from "@/db/client";
 import {
   type FeedingMode,
   type FeedingPreset,
+  type FoodAmountUnit,
   feedingPresetItems,
   feedingPresets,
   foodProducts,
@@ -18,7 +19,9 @@ export type FeedingPresetItemWithProduct = {
   foodProductName: string;
   /** 商品画像（サムネイル）の URL。未登録なら null */
   foodProductImageUrl: string | null;
-  /** 与える量（グラム）。あいまいモードのプリセットでは null */
+  /** 商品の量の単位（g・ml）。与える量はこの単位の値 */
+  amountUnit: FoodAmountUnit;
+  /** 与える量（商品の単位。g か ml）。あいまいモードのプリセットでは null */
   givenAmountG: number | null;
   /** 与える量（段階）。厳格モードのプリセットでは null */
   givenAmountLevel: GivenAmountLevel | null;
@@ -70,6 +73,7 @@ async function attachItems(
       presetId: feedingPresetItems.presetId,
       foodProductId: feedingPresetItems.foodProductId,
       foodProductName: foodProducts.name,
+      amountUnit: foodProducts.amountUnit,
       givenAmountG: feedingPresetItems.givenAmountG,
       givenAmountLevel: feedingPresetItems.givenAmountLevel,
       sortOrder: feedingPresetItems.sortOrder,
@@ -99,6 +103,7 @@ async function attachItems(
       foodProductId: row.foodProductId,
       foodProductName: row.foodProductName,
       foodProductImageUrl: imageUrls[row.foodProductId] ?? null,
+      amountUnit: row.amountUnit,
       givenAmountG: row.givenAmountG,
       givenAmountLevel: row.givenAmountLevel,
     });
@@ -200,6 +205,8 @@ export type FeedingPresetItemSummary = {
   presetId: string;
   foodProductId: string;
   foodProductName: string;
+  /** 商品の量の単位（g・ml）。与える量はこの単位の値 */
+  amountUnit: FoodAmountUnit;
   givenAmountG: number | null;
   givenAmountLevel: GivenAmountLevel | null;
 };
@@ -218,6 +225,7 @@ export async function listFeedingPresetItemSummaries(
           presetId: feedingPresetItems.presetId,
           foodProductId: feedingPresetItems.foodProductId,
           foodProductName: foodProducts.name,
+          amountUnit: foodProducts.amountUnit,
           givenAmountG: feedingPresetItems.givenAmountG,
           givenAmountLevel: feedingPresetItems.givenAmountLevel,
         })

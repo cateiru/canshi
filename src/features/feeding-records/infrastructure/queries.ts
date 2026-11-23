@@ -5,6 +5,7 @@ import {
   type FeedingMode,
   type FeedingRecord,
   type FeedingRecordItem,
+  type FoodAmountUnit,
   feedingRecordItems,
   feedingRecords,
   foodProducts,
@@ -16,7 +17,12 @@ export type FeedingRecordItemWithProduct = {
   id: string;
   foodProductId: string;
   foodProductName: string;
-  /** グラム単位の量・推定値。あいまいモードの記録では null */
+  /**
+   * 商品の量の単位（g・ml）。量・推定摂取量はこの単位の値。記録には写さず商品の今の単位を読む
+   * （`src/db/README.md` の「ごはん記録」）
+   */
+  amountUnit: FoodAmountUnit;
+  /** 商品の単位（g・ml）での量・推定値。あいまいモードの記録では null */
   givenAmountG: number | null;
   leftoverAmountG: number | null;
   estimatedIntakeG: number | null;
@@ -55,6 +61,7 @@ async function attachItems(
         feedingRecordId: feedingRecordItems.feedingRecordId,
         foodProductId: feedingRecordItems.foodProductId,
         foodProductName: foodProducts.name,
+        amountUnit: foodProducts.amountUnit,
         givenAmountG: feedingRecordItems.givenAmountG,
         leftoverAmountG: feedingRecordItems.leftoverAmountG,
         estimatedIntakeG: feedingRecordItems.estimatedIntakeG,
@@ -80,6 +87,7 @@ async function attachItems(
       id: row.id,
       foodProductId: row.foodProductId,
       foodProductName: row.foodProductName,
+      amountUnit: row.amountUnit,
       givenAmountG: row.givenAmountG,
       leftoverAmountG: row.leftoverAmountG,
       estimatedIntakeG: row.estimatedIntakeG,

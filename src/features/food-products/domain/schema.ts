@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FOOD_PRODUCT_LIFE_STAGES } from "@/db/schema";
+import { FOOD_AMOUNT_UNITS } from "@/db/schema/food-amount-units";
 
 // FormData から渡る未入力値（空文字・null）を z.coerce.number() が 0 として
 // 解釈してしまわないよう、事前に undefined へ正規化してから必須チェックさせる
@@ -24,17 +25,26 @@ export const foodProductFormSchema = z.object({
       .nullish()
       .transform((value) => value ?? null),
   ),
+  // 量の単位。カロリーは 100g（ml の商品は 100ml）あたり、内容量はこの単位で入力する。
+  // 指定がなければ、単位を追加する前と同じ g にする（AI との接続から単位を省いて登録したときなど）
+  amountUnit: z.preprocess(
+    emptyToUndefined,
+    z
+      .enum(FOOD_AMOUNT_UNITS, { error: "単位（g・ml）を選択してください" })
+      .default("g"),
+  ),
+  // 単位によって「kcal/100g」「kcal/100ml」と変わるため、文言には単位を入れない
   kcalPer100g: z.preprocess(
     emptyToUndefined,
     z.coerce
-      .number({ error: "カロリー（kcal/100g）を入力してください" })
-      .positive("カロリー（kcal/100g）は0より大きい値を入力してください"),
+      .number({ error: "カロリーを入力してください" })
+      .positive("カロリーは0より大きい値を入力してください"),
   ),
   packageAmountG: z.preprocess(
     emptyToUndefined,
     z.coerce
-      .number({ error: "内容量（g）を入力してください" })
-      .positive("内容量（g）は0より大きい値を入力してください"),
+      .number({ error: "内容量を入力してください" })
+      .positive("内容量は0より大きい値を入力してください"),
   ),
   // 未入力は「商品全体の内容量」を表すため null に揃える（undefined だと更新時に
   // 列が更新されず、一度入れた単位を消せなくなる）。「1本」のように数量ごと

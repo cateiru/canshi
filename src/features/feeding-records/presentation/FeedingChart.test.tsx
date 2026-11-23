@@ -31,16 +31,19 @@ const POINTS: FeedingChartPoint[] = [
   {
     occurredAtIso: "2025-01-01T00:00:00.000Z",
     totalIntakeG: 20,
+    totalIntakeMl: null,
     totalKcal: 60,
   },
   {
     occurredAtIso: "2026-08-05T00:00:00.000Z",
     totalIntakeG: 30,
+    totalIntakeMl: null,
     totalKcal: 90,
   },
   {
     occurredAtIso: "2026-09-15T00:00:00.000Z",
     totalIntakeG: 40,
+    totalIntakeMl: null,
     totalKcal: 120,
   },
 ];
@@ -107,11 +110,70 @@ describe("FeedingChart", () => {
     );
   });
 
+  it("ml の商品を記録していなければ、飲んだ量は選べない", () => {
+    render(<FeedingChart points={POINTS} now={NOW} />);
+
+    openChart();
+
+    const group = screen.getByRole("radiogroup", { name: "グラフの種類" });
+    expect(
+      within(group).queryByRole("radio", { name: "飲んだ量" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("ml の商品を記録した日があれば、飲んだ量に切り替えてその日の点だけを渡す", async () => {
+    const points: FeedingChartPoint[] = [
+      ...POINTS,
+      {
+        occurredAtIso: "2026-09-20T00:00:00.000Z",
+        totalIntakeG: null,
+        totalIntakeMl: 50,
+        totalKcal: 30,
+      },
+    ];
+    render(<FeedingChart points={points} now={NOW} />);
+
+    openChart();
+
+    const group = screen.getByRole("radiogroup", { name: "グラフの種類" });
+    fireEvent.click(within(group).getByRole("radio", { name: "飲んだ量" }));
+
+    expect(
+      await screen.findByTestId("chart-canvas-intakeMl"),
+    ).toHaveTextContent("1");
+    expect(
+      screen.getByRole("heading", { name: "飲んだ量（推定）" }),
+    ).toBeInTheDocument();
+  });
+
+  it("ml の商品だけを記録していれば、最初から飲んだ量を表示する", async () => {
+    const points: FeedingChartPoint[] = [
+      {
+        occurredAtIso: "2026-09-20T00:00:00.000Z",
+        totalIntakeG: null,
+        totalIntakeMl: 50,
+        totalKcal: 30,
+      },
+    ];
+    render(<FeedingChart points={points} now={NOW} />);
+
+    openChart();
+
+    expect(
+      await screen.findByTestId("chart-canvas-intakeMl"),
+    ).toHaveTextContent("1");
+    const group = screen.getByRole("radiogroup", { name: "グラフの種類" });
+    expect(
+      within(group).queryByRole("radio", { name: "食べた量" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("選択期間に記録がない場合はメッセージを表示しキャンバスを描画しない", async () => {
     const oldPoints: FeedingChartPoint[] = [
       {
         occurredAtIso: "2026-01-01T00:00:00.000Z",
         totalIntakeG: 20,
+        totalIntakeMl: null,
         totalKcal: 60,
       },
     ];

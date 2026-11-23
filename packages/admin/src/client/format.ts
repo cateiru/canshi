@@ -1,4 +1,5 @@
 import type {
+  AmountUnit,
   LifeStage,
   NutritionType,
   PackageSize,
@@ -94,14 +95,32 @@ export const LIFE_STAGE_LABEL: Record<LifeStage, string> = {
   care: "療養",
 };
 
+// メインアプリの `AMOUNT_UNIT_LABEL` と同じ表記にする
+export const AMOUNT_UNIT_LABEL: Record<AmountUnit, string> = {
+  g: "g（フードなど）",
+  ml: "ml（スープ・ミルクなど）",
+};
+
+/** 1000 以上の内容量を表す単位（メインアプリの `packageAmountParts` と同じ） */
+const LARGE_AMOUNT_UNIT: Record<AmountUnit, string> = {
+  g: "kg",
+  ml: "L",
+};
+
+/** カロリーの単位（「kcal/100g」「kcal/100ml」） */
+export function kcalPer100Unit(amountUnit: AmountUnit) {
+  return `kcal/100${amountUnit}`;
+}
+
 /**
- * メインアプリの `formatPackageAmount` と同じく「14 g/本」「1.5 kg」（1000g 以上は kg）
+ * メインアプリの `formatPackageAmount` と同じく「14 g/本」「1.5 kg」「200 ml」
+ * （1000g 以上は kg、1000ml 以上は L）
  */
-export function formatPackageSize(size: PackageSize) {
+export function formatPackageSize(size: PackageSize, amountUnit: AmountUnit) {
   const amount =
     size.amountG >= 1000
-      ? `${Number((size.amountG / 1000).toPrecision(12))} kg`
-      : `${size.amountG} g`;
+      ? `${Number((size.amountG / 1000).toPrecision(12))} ${LARGE_AMOUNT_UNIT[amountUnit]}`
+      : `${size.amountG} ${amountUnit}`;
   return `${amount}${size.unit ? `/${size.unit}` : ""}`;
 }
 

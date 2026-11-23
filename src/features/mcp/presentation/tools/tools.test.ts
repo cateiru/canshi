@@ -1054,6 +1054,49 @@ describe("ごはん商品", () => {
       kcalPer100g: 90,
     });
   });
+
+  it("量の単位は省略すると g で追加し、編集で省略すると今の単位のまま", async () => {
+    await allow(
+      operations(
+        "foodProduct:read",
+        "foodProduct:create",
+        "foodProduct:update",
+      ),
+    );
+
+    const gram = await call("create_food_product", {
+      householdId: "house-1",
+      ...PRODUCT,
+    });
+    const milk = await call("create_food_product", {
+      householdId: "house-1",
+      ...PRODUCT,
+      name: "ミルク",
+      amountUnit: "ml",
+    });
+    await call("update_food_product", {
+      id: milk.value?.id as string,
+      kcalPer100g: 60,
+    });
+
+    const rows = await db.select().from(foodProducts);
+    expect(rows.find((row) => row.id === gram.value?.id)?.amountUnit).toBe("g");
+    expect(rows.find((row) => row.id === milk.value?.id)).toMatchObject({
+      amountUnit: "ml",
+      kcalPer100g: 60,
+    });
+    expect(
+      (
+        (await call("list_food_products", { householdId: "house-1" }))
+          .value as { foodProducts: { name: string; amountUnit: string }[] }
+      ).foodProducts.map(({ name, amountUnit }) => ({ name, amountUnit })),
+    ).toEqual(
+      expect.arrayContaining([
+        { name: "まぐろ", amountUnit: "g" },
+        { name: "ミルク", amountUnit: "ml" },
+      ]),
+    );
+  });
 });
 
 describe("ごはんのプリセット", () => {
@@ -1209,6 +1252,7 @@ describe("共通のごはん商品", () => {
           id: row.id,
           name: "まぐろ",
           manufacturer: "ねこフード",
+          amountUnit: "g",
           kcalPer100g: 80,
           packageSizes: [
             { amountG: 14, unit: "本" },

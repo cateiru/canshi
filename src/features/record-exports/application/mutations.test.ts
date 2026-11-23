@@ -487,8 +487,8 @@ describe("runRecordExport", () => {
 
     const feedingLines = csvOf(id, "feeding_records.csv").split("\r\n");
     expect(feedingLines.slice(1, 3)).toEqual([
-      "feeding-1,たま,2026-06-01 07:00,厳格モード,カリカリ,10,0,10,35,,,",
-      "feeding-1,たま,2026-06-01 07:00,厳格モード,カリカリ,30,0,30,105,,,",
+      "feeding-1,たま,2026-06-01 07:00,厳格モード,カリカリ,g,10,0,10,35,,,",
+      "feeding-1,たま,2026-06-01 07:00,厳格モード,カリカリ,g,30,0,30,105,,,",
     ]);
     expect(csvOf(id, "expenses.csv").split("\r\n").slice(1, -1)).toEqual([
       "expense-1,2026-06-01,ご飯,2000,たま、くろ,,",

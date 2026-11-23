@@ -1,17 +1,23 @@
 "use client";
 
-import { CalorieIcon, FeedingIcon } from "@canshi/shared/ui/RecordIcons";
+import {
+  CalorieIcon,
+  FeedingIcon,
+  WaterIcon,
+} from "@canshi/shared/ui/RecordIcons";
 import { ScaledIcon } from "@canshi/shared/ui/ScaledIcon";
 import dynamic from "next/dynamic";
 import { type ComponentType, useMemo, useState } from "react";
 import type { IconBaseProps } from "react-icons";
 import { Collapsible, SegmentedControl } from "@/components/ui";
 import {
+  availableFeedingChartMetrics,
   FEEDING_CHART_METRIC_LABEL,
   FEEDING_CHART_PERIOD_LABEL,
   type FeedingChartMetric,
   type FeedingChartPeriod,
   type FeedingChartPoint,
+  filterByMetric,
   filterByPeriod,
 } from "./chart";
 import styles from "./FeedingChart.module.css";
@@ -23,10 +29,9 @@ const FeedingChartCanvas = dynamic(() => import("./FeedingChartCanvas"), {
 
 const PERIOD_ORDER: FeedingChartPeriod[] = ["1m", "3m", "all"];
 
-const METRIC_ORDER: FeedingChartMetric[] = ["intake", "kcal"];
-
 const METRIC_ICON: Record<FeedingChartMetric, ComponentType<IconBaseProps>> = {
   intake: FeedingIcon,
+  intakeMl: WaterIcon,
   kcal: CalorieIcon,
 };
 
@@ -37,12 +42,21 @@ type FeedingChartProps = {
 
 export function FeedingChart({ points, now }: FeedingChartProps) {
   const [period, setPeriod] = useState<FeedingChartPeriod>("3m");
-  // 食べた量とカロリーはほぼ同じ形のグラフになるため、並べずに切り替えて 1 つだけ表示する
-  const [metric, setMetric] = useState<FeedingChartMetric>("intake");
+  // 食べた量とカロリーはほぼ同じ形のグラフになるため、並べずに切り替えて 1 つだけ表示する。
+  // 飲んだ量（ml の商品）は、ml の商品を記録したときだけ選べる
+  const metrics = useMemo(() => availableFeedingChartMetrics(points), [points]);
+  const [selectedMetric, setMetric] = useState<FeedingChartMetric>("intake");
+  // 選べない値（g の商品を記録していないときの食べた量など）が選ばれていたら、先頭の値を表示する
+  const metric = metrics.includes(selectedMetric) ? selectedMetric : metrics[0];
 
+  // 食べた量・飲んだ量は、その単位の商品を記録した日の点だけを描く
+  const metricPoints = useMemo(
+    () => filterByMetric(points, metric),
+    [points, metric],
+  );
   const filtered = useMemo(
-    () => filterByPeriod(points, period, new Date(now)),
-    [points, period, now],
+    () => filterByPeriod(metricPoints, period, new Date(now)),
+    [metricPoints, period, now],
   );
 
   return (
@@ -55,7 +69,7 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
       <div className={styles.header}>
         <SegmentedControl
           size="sm"
-          options={METRIC_ORDER}
+          options={metrics}
           labels={FEEDING_CHART_METRIC_LABEL}
           value={metric}
           onChange={setMetric}
@@ -86,7 +100,7 @@ export function FeedingChart({ points, now }: FeedingChartProps) {
           <div className={styles.canvas}>
             <FeedingChartCanvas
               points={filtered}
-              allPoints={points}
+              allPoints={metricPoints}
               metric={metric}
             />
           </div>

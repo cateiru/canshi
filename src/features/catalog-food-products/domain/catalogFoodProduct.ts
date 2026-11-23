@@ -12,6 +12,7 @@ export type CatalogFoodProductContent = Pick<
   CatalogFoodProduct,
   | "name"
   | "manufacturer"
+  | "amountUnit"
   | "kcalPer100g"
   | "packageAmountG"
   | "packageUnit"
@@ -34,6 +35,7 @@ export function toCatalogFoodProductContent(
   return {
     name: values.name,
     manufacturer: values.manufacturer,
+    amountUnit: values.amountUnit,
     kcalPer100g: values.kcalPer100g,
     packageAmountG: first.amountG,
     packageUnit: first.unit,

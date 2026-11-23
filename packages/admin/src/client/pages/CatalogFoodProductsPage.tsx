@@ -34,6 +34,7 @@ import {
   formatDateTime,
   formatPackageSize,
   formatTarget,
+  kcalPer100Unit,
   NUTRITION_TYPE_LABEL,
   TEXTURE_TYPE_LABEL,
 } from "../format";
@@ -121,14 +122,16 @@ function CatalogFoodProductRow(props: {
         <br />
         {TEXTURE_TYPE_LABEL[product.textureType]}
       </td>
-      <td className={common.num}>{product.kcalPer100g} kcal/100g</td>
+      <td className={common.num}>
+        {product.kcalPer100g} {kcalPer100Unit(product.amountUnit)}
+      </td>
       <td className={common.num}>
         {product.packageSizes.map((size) => (
           <span
             key={`${size.amountG}/${size.unit ?? ""}`}
             className={styles.packageSize}
           >
-            {formatPackageSize(size)}
+            {formatPackageSize(size, product.amountUnit)}
           </span>
         ))}
       </td>

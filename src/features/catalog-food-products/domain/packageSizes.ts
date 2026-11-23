@@ -1,4 +1,8 @@
-import type { CatalogFoodProduct, CatalogPackageSize } from "@/db/schema";
+import type {
+  CatalogFoodProduct,
+  CatalogPackageSize,
+  FoodAmountUnit,
+} from "@/db/schema";
 import { formatPackageAmount } from "@/features/food-products/domain/labels";
 
 /**
@@ -25,11 +29,18 @@ export function catalogPackageSizes(
   ];
 }
 
-/** 内容量の候補の表示用文字列（家のごはん商品と同じく「14g/本」「1500g」） */
-export function formatPackageSize(size: CatalogPackageSize): string {
+/**
+ * 内容量の候補の表示用文字列（家のごはん商品と同じく「14g/本」「1.5kg」「200ml」）。
+ * 候補は商品の単位（`amountUnit`）で持つ
+ */
+export function formatPackageSize(
+  size: CatalogPackageSize,
+  amountUnit: FoodAmountUnit,
+): string {
   return formatPackageAmount({
     packageAmountG: size.amountG,
     packageUnit: size.unit,
+    amountUnit,
   });
 }
 

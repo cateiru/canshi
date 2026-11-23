@@ -7,6 +7,7 @@ import { requireUser } from "@/features/auth/presentation/session";
 import {
   FOOD_PRODUCT_IN_USE_MESSAGE,
   formatFoodProductTarget,
+  kcalPer100Unit,
   NUTRITION_TYPE_LABEL,
   packageAmountParts,
   TEXTURE_TYPE_LABEL,
@@ -144,6 +145,7 @@ export default async function FoodProductsPage({
                   const usage = usages.get(foodProduct.id);
                   const packageAmount = packageAmountParts(
                     foodProduct.packageAmountG,
+                    foodProduct.amountUnit,
                   );
                   return (
                     <li key={foodProduct.id}>
@@ -199,7 +201,9 @@ export default async function FoodProductsPage({
                             <dt>カロリー</dt>
                             <dd>
                               {foodProduct.kcalPer100g}
-                              <span>kcal/100g</span>
+                              <span>
+                                {kcalPer100Unit(foodProduct.amountUnit)}
+                              </span>
                             </dd>
                           </div>
                           <div>

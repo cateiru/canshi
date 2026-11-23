@@ -129,6 +129,7 @@ function toCatalogFoodProduct({
     id: product.id,
     name: product.name,
     manufacturer: product.manufacturer,
+    amountUnit: product.amountUnit,
     kcalPer100g: product.kcalPer100g,
     packageSizes: parsePackageSizes(product),
     nutritionType: product.nutritionType,
@@ -301,6 +302,7 @@ function valueColumns(values: CatalogFoodProductValues) {
   return {
     name: values.name,
     manufacturer: values.manufacturer,
+    amountUnit: values.amountUnit,
     kcalPer100g: values.kcalPer100g,
     packageAmountG: first.amountG,
     packageUnit: first.unit,

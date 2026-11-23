@@ -1,4 +1,8 @@
-import type { FoodProduct, FoodProductLifeStage } from "@/db/schema";
+import type {
+  FoodAmountUnit,
+  FoodProduct,
+  FoodProductLifeStage,
+} from "@/db/schema";
 
 export const NUTRITION_TYPE_LABEL: Record<
   FoodProduct["nutritionType"],
@@ -21,6 +25,31 @@ export const LIFE_STAGE_LABEL: Record<FoodProductLifeStage, string> = {
   care: "療養",
 };
 
+/** 量の単位の選択肢の表示名 */
+export const AMOUNT_UNIT_LABEL: Record<FoodAmountUnit, string> = {
+  g: "g（フードなど）",
+  ml: "ml（スープ・ミルクなど）",
+};
+
+/** カロリーの単位（「kcal/100g」「kcal/100ml」） */
+export function kcalPer100Unit(amountUnit: FoodAmountUnit): string {
+  return `kcal/100${amountUnit}`;
+}
+
+/** 量を単位付きの表示用文字列にする（「30 g」「50 ml」）。量がなければ「- g」 */
+export function formatFoodAmount(
+  amount: number | null,
+  amountUnit: FoodAmountUnit,
+): string {
+  return `${amount ?? "-"} ${amountUnit}`;
+}
+
+/** 1000 以上の内容量を表す単位（1000g は 1kg、1000ml は 1L） */
+const LARGE_AMOUNT_UNIT: Record<FoodAmountUnit, string> = {
+  g: "kg",
+  ml: "L",
+};
+
 /** 商品を使っているもの。使われている商品は削除できない */
 export type FoodProductUsage = "feedingRecord" | "feedingPreset";
 
@@ -31,29 +60,38 @@ export const FOOD_PRODUCT_IN_USE_MESSAGE: Record<FoodProductUsage, string> = {
 };
 
 /**
- * 内容量の数値と単位。1000g 以上は kg にする（1500 → 「1.5」「kg」）。
+ * 内容量の数値と単位。1000g 以上は kg、1000ml 以上は L にする（1500g → 「1.5」「kg」）。
  * 割り算で出る誤差（1100.1 / 1000 = 1.1001000000000001 など）は丸めて消す
  */
-export function packageAmountParts(packageAmountG: number): {
+export function packageAmountParts(
+  packageAmount: number,
+  amountUnit: FoodAmountUnit,
+): {
   value: string;
-  unit: "g" | "kg";
+  unit: string;
 } {
-  if (packageAmountG >= 1000) {
+  if (packageAmount >= 1000) {
     return {
-      value: String(Number((packageAmountG / 1000).toPrecision(12))),
-      unit: "kg",
+      value: String(Number((packageAmount / 1000).toPrecision(12))),
+      unit: LARGE_AMOUNT_UNIT[amountUnit],
     };
   }
-  return { value: String(packageAmountG), unit: "g" };
+  return { value: String(packageAmount), unit: amountUnit };
 }
 
 /**
- * 内容量の表示用文字列。単位があれば「14g/本」、なければ商品全体として「1.5kg」
+ * 内容量の表示用文字列。単位があれば「14g/本」、なければ商品全体として「1.5kg」「200ml」
  */
 export function formatPackageAmount(
-  foodProduct: Pick<FoodProduct, "packageAmountG" | "packageUnit">,
+  foodProduct: Pick<
+    FoodProduct,
+    "packageAmountG" | "packageUnit" | "amountUnit"
+  >,
 ): string {
-  const { value, unit } = packageAmountParts(foodProduct.packageAmountG);
+  const { value, unit } = packageAmountParts(
+    foodProduct.packageAmountG,
+    foodProduct.amountUnit,
+  );
   const amount = `${value}${unit}`;
   return foodProduct.packageUnit
     ? `${amount}/${foodProduct.packageUnit}`

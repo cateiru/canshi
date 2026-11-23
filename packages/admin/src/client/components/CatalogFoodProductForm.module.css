@@ -12,7 +12,7 @@
   gap: var(--space-3);
 }
 
-/* 内容量の候補の行（g・単位・削除ボタン） */
+/* 内容量の候補の行（量・単位・削除ボタン） */
 .packageSizeRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
@@ -35,6 +35,13 @@
 
 .checkboxes {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+/* 量の単位（g・ml）の選択肢を横に並べる */
+.amountUnits {
+  flex-direction: row;
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-4);
 }
