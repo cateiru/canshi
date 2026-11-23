@@ -4,7 +4,7 @@ import { TbPlus } from "react-icons/tb";
 import { Button, FormField } from "@/components/ui";
 import { useSubmitActionState } from "@/features/navigation/useSubmitActionState";
 import type { CreateHouseholdFormState } from "./actions";
-import styles from "./HouseholdNameForm.module.css";
+import styles from "./HouseholdCreateForm.module.css";
 
 type HouseholdCreateFormProps = {
   action: (

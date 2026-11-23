@@ -25,4 +25,12 @@ describe("FormField", () => {
       screen.getByRole("textbox", { name: "病院代（円）" }),
     ).toHaveAccessibleDescription("入力すると支出記録として保存されます。");
   });
+
+  it("isLabelHidden でもラベルを入力欄の名前として読み上げる", () => {
+    render(<FormField label="家の名前" isLabelHidden />);
+
+    expect(
+      screen.getByRole("textbox", { name: "家の名前" }),
+    ).toBeInTheDocument();
+  });
 });
