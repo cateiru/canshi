@@ -1,4 +1,9 @@
-/** アイコンを見分けられる AI のアプリ（MCP クライアント） */
+/**
+ * アイコンを見分けられる AI のアプリ（MCP クライアント）。アプリを足すときは、ドメイン
+ * （`CLIENT_APP_DOMAINS`）のほかに、表示名（`./labels.ts`）とアイコン
+ * （`../presentation/clientIcons.ts`）も足す。まだ見分けられないアプリとの接続は、
+ * 管理画面（`packages/admin`）の「AIとの接続」に、接続先のホストごとに表示される
+ */
 export const MCP_CLIENT_APPS = [
   "openai",
   "claude",

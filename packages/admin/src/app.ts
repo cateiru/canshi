@@ -12,6 +12,7 @@ import type {
   HouseholdDetailResponse,
   HouseholdsResponse,
   Json,
+  McpProvidersResponse,
   OverviewResponse,
   UserDetailResponse,
   UsersResponse,
@@ -39,6 +40,7 @@ import {
   updateCatalogFoodProduct,
 } from "./db/catalogFoodProducts";
 import { type AdminDb, createAdminDb } from "./db/client";
+import { listMcpProviders } from "./db/mcpConnections";
 import {
   addHouseholdMember,
   deleteUserSessions,
@@ -298,6 +300,13 @@ function createApi() {
     }
     return c.json<CompleteRequestResponse>({ result });
   });
+
+  // AI のアプリ（MCP クライアント）のプロバイダーごとの接続の件数
+  api.get("/ai-connections", async (c) =>
+    c.json<McpProvidersResponse>({
+      providers: await listMcpProviders(c.var.db),
+    }),
+  );
 
   return api;
 }

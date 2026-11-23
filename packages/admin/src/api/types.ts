@@ -14,6 +14,7 @@ import type {
   AdminUserDetail,
   CatalogFoodProduct,
   CatalogFoodProductRequest,
+  McpProvider,
   Overview,
   UserOption,
 } from "../models";
@@ -86,6 +87,13 @@ export type CatalogFoodProductRequestJson = Json<CatalogFoodProductRequest>;
 export interface CatalogFoodProductRequestsResponse {
   open: CatalogFoodProductRequestJson[];
   completed: CatalogFoodProductRequestJson[];
+}
+
+export type McpProviderJson = Json<McpProvider>;
+
+export interface McpProvidersResponse {
+  /** アイコンを見分けられるアプリ（接続が無いものも含む）、見分けられないプロバイダーの順 */
+  providers: McpProviderJson[];
 }
 
 /** 権限の変更・メンバーの追加と削除の結果。失敗したときは 400 で返す */

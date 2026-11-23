@@ -13,6 +13,7 @@ const NAV_ITEMS = [
     href: "/food-product-requests",
     label: "リクエスト",
   },
+  { key: "/ai-connections", href: "/ai-connections", label: "AIとの接続" },
 ] as const;
 
 /** 今のパスが属するナビゲーションの項目（登録・編集ページは一覧の項目） */

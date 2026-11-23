@@ -332,6 +332,12 @@ VALUES ('client:vrt-client', '{"clientId":"vrt-client","clientName":"ChatGPT","r
 INSERT INTO mcp_connection_usages (user_id, grant_id, last_used_at)
 VALUES ('vrt-user', 'vrtGrant', 1717290000);
 
+-- 管理画面の「AIとの接続」（packages/admin）で、アイコンを設定していないプロバイダーの表示を撮るための接続。
+-- メインアプリの VRT のユーザー（vrt-user）の設定の一覧に出ないよう、VRT招待者が同意した接続にする
+INSERT INTO oauth_kv_entries (key, value)
+VALUES ('client:vrt-client-agent', '{"clientId":"vrt-client-agent","clientName":"VRT エージェント","redirectUris":["https://agent.example.com/oauth/callback"]}'),
+  ('grant:vrt-inviter:vrtAgentGrant', '{"id":"vrtAgentGrant","clientId":"vrt-client-agent","userId":"vrt-inviter","scope":[],"metadata":{},"encryptedProps":"","createdAt":1717200000,"redirectUri":"https://agent.example.com/oauth/callback"}');
+
 -- ここまでに登録した猫をすべて VRT 用の家に所属させる
 UPDATE cats SET household_id = 'vrt-household' WHERE id LIKE 'vrt-cat-%';
 
