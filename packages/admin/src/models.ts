@@ -4,6 +4,7 @@
  * import しない）
  */
 
+import type { McpClientApp } from "../../../src/features/mcp/domain/clientApp";
 import type { CatalogFoodProductValues } from "./catalog/form";
 
 export interface Overview {
@@ -177,4 +178,26 @@ export interface CatalogFoodProductRequest {
   label: string;
   createdAt: Date;
   completedAt: Date | null;
+}
+
+/**
+ * AI のアプリ（MCP クライアント）のプロバイダーごとの、有効な接続（ユーザーが同意画面で許可した
+ * OAuth の grant）の件数。アイコンを見分けられるアプリ（`app`）は接続が無くても並べ、見分けられない
+ * プロバイダーは接続先（`redirectHost`）ごとに分ける
+ */
+export interface McpProvider {
+  /**
+   * アイコンを見分けられるアプリ（メインアプリの `src/features/mcp/domain/clientApp.ts`）。
+   * 見分けられないプロバイダーなら null
+   */
+  app: McpClientApp | null;
+  /**
+   * 見分けられないプロバイダーの接続先（認可コードの渡し先の、https ならホスト、それ以外は
+   * スキームとホスト）。アプリ（`app`）がある・渡し先が記録されていない接続のまとまりなら null
+   */
+  redirectHost: string | null;
+  /** 有効な接続の数 */
+  connectionCount: number;
+  /** 接続したアプリが名乗った名前（重複を除いて名前順）。自己申告のため、参考として表示する */
+  clientNames: string[];
 }

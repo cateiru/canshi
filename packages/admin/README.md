@@ -28,6 +28,7 @@ react-router が表示するページを決める。Worker を通すため、画
 | `/food-products/new` | 共通のごはん商品の登録フォーム |
 | `/food-products/:productId/edit` | 共通のごはん商品の編集フォーム |
 | `/food-product-requests` | 共通のごはん商品のリクエストの一覧。ユーザーがメインアプリで検索して見つからなかったときに送った検索条件を、対応を待っているもの（古い順）と完了にしたもの（新しい順に 50 件）に分けて表示する |
+| `/ai-connections` | AI のアプリ（MCP クライアント）のプロバイダーごとの、有効な接続の件数（アイコン・プロバイダー・接続件数）。詳しくは下の「AIとの接続」を参照 |
 
 ログアウトさせる・家から外す・商品を削除する・リクエストを完了にする操作は、確認のダイアログを出してから行う。
 書き込みが終わると、結果を表示する URL（`/users/<ID>?roleChange=updated`・`/users/<ID>?loggedOut=1`・
@@ -56,6 +57,7 @@ react-router が表示するページを決める。Worker を通すため、画
 | `GET /api/food-products/:productId/image` | 共通のごはん商品の画像（一覧・編集フォームで表示する） |
 | `GET /api/food-product-requests` | 共通のごはん商品のリクエストの一覧（対応を待っているものと完了にしたもの） |
 | `POST /api/food-product-requests/:requestId/complete` | リクエストを完了にし、リクエストしたユーザーへの通知を作る（Push はメインアプリの次の定期送信で送る）。完了は取り消せない。すでに完了なら `already-completed` を返す |
+| `GET /api/ai-connections` | AI のアプリのプロバイダーごとの接続の件数と、アプリが名乗った名前。grant・クライアントの ID、ユーザー、トークンは返さない |
 
 API の JSON の型は `src/api/types.ts` にあり、画面とサーバーの両方で使う（日時は ISO 8601 の文字列）。
 画面とサーバーで共用するファイル（`src/api/`・`src/models.ts`・`src/catalog/form.ts`・`search.ts`・`image.ts`）は、
@@ -176,6 +178,24 @@ R2 の `catalog_food_product/{商品の ID}/{asset ID}`。メインアプリで�
 参照できるが削除はできない。家に追加するときは、メインアプリが通常のアップロードと同じ経路で家の
 商品の画像として保存し直す（R2 のオブジェクトは共有しない）。
 
+## AIとの接続
+
+`/ai-connections` は、ユーザーがメインアプリの同意画面で AI のアプリ（MCP クライアント）に許可した、有効な
+接続（OAuth の grant）の件数をプロバイダーごとに表示する（`src/db/mcpConnections.ts`）。メインアプリの
+設定の「AIとの接続」（`src/features/mcp/infrastructure/connections.ts`）と同じく、MCP の認可サーバー
+（`@cloudflare/workers-oauth-provider`）が `oauth_kv_entries` に保存した `grant:{userId}:{grantId}`・
+`client:{clientId}` を直接読む。期限の切れた grant・行は数えない。
+
+プロバイダーは、メインアプリのアイコンと同じく、grant に記録された認可コードの渡し先のドメインで見分ける
+（`detectMcpClientApp`）。アイコンを設定済みのアプリ（`MCP_CLIENT_APPS`）は接続が無くても 0 件で並べ、
+見分けられないプロバイダーは「アイコン未設定」として、渡し先のホスト（https 以外はスキームも付ける）ごとに、
+アプリが名乗った名前（自己申告）を添えて接続の多い順に並べる。見分けられないプロバイダーとの接続があるときは、
+メインアプリの次の 3 か所にアプリを足すよう促す。
+
+- `src/features/mcp/domain/clientApp.ts`：`MCP_CLIENT_APPS` と、接続先のドメイン（`CLIENT_APP_DOMAINS`）
+- `src/features/mcp/domain/labels.ts`：表示名（`MCP_CLIENT_APP_LABEL`）
+- `src/features/mcp/presentation/clientIcons.ts`：アイコン（`MCP_CLIENT_APP_ICON`）
+
 ## D1・R2 の参照
 
 メインアプリと同じ D1（`canshi-db`）をバインディング `DB` で、同じ R2（`canshi-media`）を
@@ -184,14 +204,17 @@ R2 の `catalog_food_product/{商品の ID}/{asset ID}`。メインアプリで�
 `role` 列）、ユーザーのセッションを削除する DELETE（`sessions` テーブル）、家のメンバーを追加・削除する
 INSERT・DELETE（`household_members` テーブル）、
 共通のごはん商品を登録・更新・削除する INSERT・UPDATE・DELETE（`catalog_food_products` テーブルと、
-その画像の `media_assets` の行）だけを発行する。R2 は共通のごはん商品の画像の保存・削除だけに使う。
+その画像の `media_assets` の行）だけを発行する。MCP の OAuth のデータ（`oauth_kv_entries` テーブル）は
+読み出すだけで書き込まない。R2 は共通のごはん商品の画像の保存・削除だけに使う。
 
 D1 の読み書きは、メインアプリの Drizzle スキーマ（リポジトリルートの `src/db/schema`。
 `src/db/schema.ts` から再 export する）を使って Drizzle で行い、SQL を文字列で組み立てない
 （値はすべてバインドパラメーターで渡す）。条件付きの INSERT はメインアプリの
 `src/db/conditionalInsert.ts` の `insertWhere` を使う。セッション・通知の購読の User-Agent は、
 メインアプリの端末一覧と同じ `src/features/auth/domain/deviceName.ts` の `formatDeviceName` で端末名にする。
-どれも `drizzle-orm` と相対パスだけを import する（または何も import しない）ため、Next.js 向けの
+AI のアプリの見分け方・表示名・アイコンは、メインアプリの `src/features/mcp/domain/clientApp.ts`・
+`labels.ts`・`src/features/mcp/presentation/clientIcons.ts` を使う（上の「AIとの接続」）。
+どれも `drizzle-orm`・`react-icons` と相対パスだけを import する（または何も import しない）ため、Next.js 向けの
 tsconfig・パスエイリアスには依存しない。
 メインアプリでテーブル・列を変更したときは、管理画面のクエリもスキーマに合わせて型が変わるので、
 `pnpm --filter @canshi/admin typecheck`・`test` で確かめること。ごはん商品の入力の規則を変えたときは

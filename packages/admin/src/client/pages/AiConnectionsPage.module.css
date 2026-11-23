@@ -1,0 +1,18 @@
+/* アイコンの列は、見出し（「アイコン」）の幅まで縮める */
+.iconColumn {
+  width: 1%;
+}
+
+/*
+ * メインアプリの設定の「AIとの接続」と同じアイコンを、列の中央に置く。表のセルは文字を左寄せにする
+ * （`@canshi/shared` の Table）ため、中身を flex で寄せる
+ */
+.icon {
+  display: flex;
+  justify-content: center;
+}
+
+/* 警告の中のファイルのパス。Alert の文字色に合わせる */
+.code {
+  color: inherit;
+}

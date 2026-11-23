@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router";
 import { Layout } from "./components/Layout";
+import { AiConnectionsPage } from "./pages/AiConnectionsPage";
 import { CatalogFoodProductEditPage } from "./pages/CatalogFoodProductEditPage";
 import { CatalogFoodProductNewPage } from "./pages/CatalogFoodProductNewPage";
 import { CatalogFoodProductRequestsPage } from "./pages/CatalogFoodProductRequestsPage";
@@ -40,6 +41,7 @@ export function App() {
           path="food-product-requests"
           element={<CatalogFoodProductRequestsPage />}
         />
+        <Route path="ai-connections" element={<AiConnectionsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

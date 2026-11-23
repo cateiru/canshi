@@ -41,7 +41,8 @@ export interface McpConnection {
  * ライブラリは `cloudflare:workers` に依存し Next.js のバンドルに含められず、
  * `OAuthHelpers.listUserGrants()` を使えないため、同じキー（1.2.4 時点で
  * `grant:{userId}:{grantId}`・`client:{clientId}`）を直接読む。
- * ライブラリを更新したときは、キーの形式が変わっていないか確かめること。
+ * ライブラリを更新したときは、キーの形式が変わっていないか確かめること（管理画面の
+ * `packages/admin/src/db/mcpConnections.ts` も同じキーを読む）。
  * CIMD のクライアントは `client:{clientId}` が無いため、同意したときに grant に残した
  * 名前（`../presentation/authorize.ts`）を使う
  */

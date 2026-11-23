@@ -35,6 +35,8 @@ const PAGES: { title: string; path: string; heading?: string }[] = [
   { title: "共通のごはん商品", path: "/food-products" },
   { title: "共通のごはん商品を登録する", path: "/food-products/new" },
   { title: "共通のごはん商品のリクエスト", path: "/food-product-requests" },
+  // シードの ChatGPT との接続と、アイコンを設定していないプロバイダー（agent.example.com）との接続を表示する
+  { title: "AIとの接続", path: "/ai-connections" },
 ];
 
 for (const viewport of [

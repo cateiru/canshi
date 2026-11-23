@@ -5,6 +5,7 @@ import type {
   CatalogFoodProductsResponse,
   HouseholdDetailResponse,
   HouseholdsResponse,
+  McpProvidersResponse,
   UserDetailResponse,
   UsersResponse,
 } from "./api/types";
@@ -141,6 +142,56 @@ describe("一覧の API", () => {
         { userId: "user-1", userName: "たろう", role: "owner" },
         { userId: "user-2", role: "member" },
       ],
+    });
+  });
+});
+
+describe("AIとの接続の API", () => {
+  it("プロバイダーごとの接続の件数を返し、grant・クライアントの ID とユーザーは返さない", async () => {
+    await env.DB.prepare(
+      "INSERT INTO oauth_kv_entries (key, value) VALUES (?1, ?2), (?3, ?4)",
+    )
+      .bind(
+        "client:secret-client-id",
+        JSON.stringify({
+          clientId: "secret-client-id",
+          clientName: "Agent",
+          clientSecret: "secret-client-secret",
+          redirectUris: ["https://agent.example.com/callback"],
+        }),
+        "grant:user-1:secret-grant-id",
+        JSON.stringify({
+          id: "secret-grant-id",
+          clientId: "secret-client-id",
+          userId: "user-1",
+          scope: [],
+          metadata: {},
+          encryptedProps: "secret-props",
+          createdAt: 1_790_812_800,
+          redirectUri: "https://agent.example.com/callback",
+        }),
+      )
+      .run();
+
+    const response = await request("/api/ai-connections");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    const text = await response.text();
+    expect(text).not.toMatch(/secret|user-1/);
+    const { providers } = JSON.parse(text) as McpProvidersResponse;
+    expect(providers.map((provider) => provider.app)).toEqual([
+      "openai",
+      "claude",
+      "meta",
+      "gemini",
+      "perplexity",
+      null,
+    ]);
+    expect(providers.at(-1)).toEqual({
+      app: null,
+      redirectHost: "agent.example.com",
+      connectionCount: 1,
+      clientNames: ["Agent"],
     });
   });
 });
