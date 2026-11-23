@@ -17,6 +17,11 @@ export type FormFieldProps = TextFieldProps & {
   /** 入力欄の下に添える補足説明。読み上げでも入力欄の説明として伝わる */
   description?: ReactNode;
   placeholder?: string;
+  /**
+   * ラベルを画面に出さず、読み上げ用にだけ残す。見出しなどで何を入力する欄か分かり、
+   * 入力欄とボタンを 1 行に並べたいときに使う
+   */
+  isLabelHidden?: boolean;
 };
 
 export function FormField({
@@ -24,6 +29,7 @@ export function FormField({
   errorMessage,
   description,
   placeholder,
+  isLabelHidden = false,
   className,
   ...props
 }: FormFieldProps) {
@@ -31,7 +37,9 @@ export function FormField({
 
   return (
     <TextField {...props} isInvalid={!!errorMessage} className={classes}>
-      <Label className={styles.label}>{label}</Label>
+      <Label className={isLabelHidden ? styles.labelHidden : styles.label}>
+        {label}
+      </Label>
       <Input className={styles.input} placeholder={placeholder} />
       {description ? <FieldDescription>{description}</FieldDescription> : null}
       {errorMessage ? (

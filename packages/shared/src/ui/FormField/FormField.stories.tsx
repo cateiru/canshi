@@ -21,6 +21,10 @@ export const WithDescription: Story = {
   args: { description: "あとから変更できます。" },
 };
 
+export const LabelHidden: Story = {
+  args: { isLabelHidden: true, defaultValue: "たま" },
+};
+
 export const WithError: Story = {
   args: { errorMessage: "名前を入力してください" },
 };
