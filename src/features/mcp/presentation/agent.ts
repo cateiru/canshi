@@ -48,9 +48,9 @@ export function createCanshiMcpHandler(route: string) {
 /** メッセージに使う、AI との接続の呼び方 */
 const MCP_CALLER: OperationCaller = {
   name: "この接続",
-  settings: "設定の「AIとの接続」",
+  settings: "設定の「外部接続」の「AIとの接続」",
   howToAllow:
-    "CANSHI の設定の「AIとの接続」で、ユーザーに許可してもらってください",
+    "CANSHI の設定の「外部接続」の「AIとの接続」で、ユーザーに許可してもらってください",
 };
 
 function unauthorized(message: string): { error: OperationError } {

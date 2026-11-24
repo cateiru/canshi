@@ -103,7 +103,7 @@ export default async function AiConnectionsHelpPage() {
       <Surface title="接続を管理する" gap="md">
         <ul className={styles.points}>
           <li>
-            設定の「AIとの接続」で、接続しているアプリの一覧と、最後に接続した日時を確認できます。
+            設定の「外部接続」の「AIとの接続」で、接続しているアプリの一覧と、最後に接続した日時を確認できます。
           </li>
           <li>
             「許可する範囲」から、アプリごとに読み取れる情報と許可する操作をあとから変更できます。

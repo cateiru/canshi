@@ -115,7 +115,7 @@ export default async function AuthorizePage({
               />
             </Surface>
             <p className={styles.afterNote}>
-              許可したあとも、設定の「AIとの接続」で範囲の変更や接続の解除ができます。
+              許可したあとも、設定の「外部接続」で範囲の変更や接続の解除ができます。
             </p>
             <div id="consent-actions" className={styles.actions}>
               <Button

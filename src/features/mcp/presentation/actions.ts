@@ -45,7 +45,7 @@ export async function updateMcpPermissionsAction(
   if (!connection) {
     return {
       formError:
-        "接続が見つかりません。解除された可能性があります。設定の「AIとの接続」から確かめてください。",
+        "接続が見つかりません。解除された可能性があります。設定の「外部接続」の「AIとの接続」から確かめてください。",
     };
   }
   if (
