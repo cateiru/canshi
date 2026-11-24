@@ -3,25 +3,37 @@
 import { type FormEvent, startTransition, useActionState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Alert, addToast, Button } from "@/components/ui";
-import type { McpPermissionTree } from "../domain/permissionRules";
-import type { McpPermissionsFormState } from "./actions";
-import styles from "./McpPermissionsForm.module.css";
-import { McpPermissionTreeField } from "./McpPermissionTreeField";
+import type { PermissionTree } from "../domain/permissionRules";
+import styles from "./PermissionsForm.module.css";
+import { PermissionTreeField } from "./PermissionTreeField";
 
-type McpPermissionsFormProps = {
-  action: (
-    state: McpPermissionsFormState,
-    formData: FormData,
-  ) => Promise<McpPermissionsFormState>;
-  tree: McpPermissionTree;
+export type PermissionsFormState = {
+  formError?: string;
 };
 
-const initialState: McpPermissionsFormState = {};
+type PermissionsFormProps = {
+  action: (
+    state: PermissionsFormState,
+    formData: FormData,
+  ) => Promise<PermissionsFormState>;
+  tree: PermissionTree;
+  /** 「このアプリ」のような、範囲を許可する相手の呼び方 */
+  subject: string;
+};
 
-/** 設定の「AIとの接続」で、AI から読み取れる範囲と書き込める範囲を選んで保存するフォーム */
-export function McpPermissionsForm({ action, tree }: McpPermissionsFormProps) {
+const initialState: PermissionsFormState = {};
+
+/**
+ * 設定の「AIとの接続」「APIトークン」で、外部接続から読み取れる範囲と書き込める範囲を選んで
+ * 保存するフォーム
+ */
+export function PermissionsForm({
+  action,
+  tree,
+  subject,
+}: PermissionsFormProps) {
   const [state, formAction, isPending] = useActionState(
-    async (prevState: McpPermissionsFormState, formData: FormData) => {
+    async (prevState: PermissionsFormState, formData: FormData) => {
       const result = await action(prevState, formData);
       if (!result.formError) {
         addToast({
@@ -48,9 +60,10 @@ export function McpPermissionsForm({ action, tree }: McpPermissionsFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      <McpPermissionTreeField
+      <PermissionTreeField
         tree={tree.households}
         catalogOperations={tree.catalogOperations}
+        subject={subject}
       />
       {state.formError ? <Alert color="error">{state.formError}</Alert> : null}
       {tree.households.length > 0 || tree.catalogOperations !== null ? (

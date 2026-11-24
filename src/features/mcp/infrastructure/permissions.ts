@@ -1,22 +1,17 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { cats as catsTable, mcpPermissions } from "@/db/schema";
-import { getUserById } from "@/features/auth/infrastructure/users";
+import { mcpPermissions } from "@/db/schema";
 import {
-  listCatsForUser,
-  listHouseholdsForUser,
-} from "@/features/households/infrastructure/queries";
+  type AccessPermissions,
+  DEFAULT_PERMISSIONS,
+  type PermissionTree,
+} from "@/features/external-access/domain/permissionRules";
 import {
-  buildMcpPermissionTree,
-  DEFAULT_MCP_PERMISSIONS,
-  isMcpCatalogOperation,
-  isMcpHouseholdOperation,
-  isMcpPermissionRecordType,
-  MCP_PERMISSIONS_FIELD_NAME,
-  type McpPermissions,
-  type McpPermissionTree,
-  parseMcpPermissionsInput,
-} from "../domain/permissionRules";
+  getPermissionTree,
+  parsePermissionsFromForm,
+  toAccessPermissions,
+  withoutMemorialCats,
+} from "@/features/external-access/infrastructure/permissions";
 
 /**
  * ユーザーが許可した接続（OAuth のクライアント）の、AI から読み取れる範囲と書き込める範囲。
@@ -28,45 +23,14 @@ export async function getMcpPermissions(
   userId: string,
   clientId: string,
   d1?: D1Database,
-): Promise<McpPermissions> {
+): Promise<AccessPermissions> {
   const db = getDb(d1);
   const [row] = await db
     .select()
     .from(mcpPermissions)
     .where(permissionsKey(userId, clientId))
     .limit(1);
-  if (!row) {
-    return DEFAULT_MCP_PERMISSIONS;
-  }
-  // 保存後に記録の種類・操作が無くなった場合に備えて、知らないものは読み飛ばす
-  return {
-    excludedHouseholdIds: row.excludedHouseholdIds,
-    excludedCatIds: row.excludedCatIds,
-    excludedRecordTypes: filterValues(
-      row.excludedRecordTypes,
-      isMcpPermissionRecordType,
-    ),
-    writableRecordTypes: filterValues(
-      row.writableRecordTypes,
-      isMcpPermissionRecordType,
-    ),
-    householdOperations: filterValues(
-      row.householdOperations,
-      isMcpHouseholdOperation,
-    ),
-    catalogOperations: row.catalogOperations.filter(isMcpCatalogOperation),
-  };
-}
-
-function filterValues<T extends string>(
-  record: Record<string, string[]>,
-  isKnown: (value: unknown) => value is T,
-): Record<string, T[]> {
-  const filtered: Record<string, T[]> = {};
-  for (const [key, values] of Object.entries(record)) {
-    filtered[key] = values.filter(isKnown);
-  }
-  return filtered;
+  return row ? toAccessPermissions(row) : DEFAULT_PERMISSIONS;
 }
 
 /**
@@ -77,27 +41,16 @@ export async function getMcpPermissionTree(
   userId: string,
   clientId: string,
   d1?: D1Database,
-): Promise<McpPermissionTree> {
-  const [permissions, households, cats, user] = await Promise.all([
-    getMcpPermissions(userId, clientId, d1),
-    listHouseholdsForUser(userId, d1),
-    listCatsForUser(userId, d1),
-    getUserById(userId, d1),
-  ]);
-  return {
-    // 猫は登録した順に並べる（`listCatsForUser` は新しい順）
-    households: buildMcpPermissionTree(
-      permissions,
-      households,
-      [...cats].reverse(),
-    ),
-    catalogOperations:
-      user?.role === "admin" ? permissions.catalogOperations : null,
-  };
+): Promise<PermissionTree> {
+  return getPermissionTree(
+    userId,
+    await getMcpPermissions(userId, clientId, d1),
+    d1,
+  );
 }
 
 /**
- * フォーム（`McpPermissionTreeField`）で送られた範囲を、接続の範囲として保存する。
+ * フォーム（`PermissionTreeField`）で送られた範囲を、接続の範囲として保存する。
  * 設定画面と同意画面の両方から使う。ユーザーが所属する家・参照できる猫以外の ID は
  * 保存しない。共通のごはん商品の操作は、ユーザーが admin のときだけ保存する。
  * 送られた値の形が正しくなければ保存せずに false を返す
@@ -108,19 +61,7 @@ export async function saveMcpPermissionsFromForm(
   formData: FormData,
   d1?: D1Database,
 ): Promise<boolean> {
-  const [households, cats, user] = await Promise.all([
-    listHouseholdsForUser(userId, d1),
-    listCatsForUser(userId, d1),
-    getUserById(userId, d1),
-  ]);
-  const permissions = parseMcpPermissionsInput(
-    formData.get(MCP_PERMISSIONS_FIELD_NAME),
-    {
-      householdIds: households.map((household) => household.id),
-      cats,
-      canUseCatalog: user?.role === "admin",
-    },
-  );
+  const permissions = await parsePermissionsFromForm(userId, formData, d1);
   if (!permissions) {
     return false;
   }
@@ -135,20 +76,13 @@ export async function saveMcpPermissionsFromForm(
         target: [mcpPermissions.userId, mcpPermissions.clientId],
         set: values,
       }),
-    // 猫の一覧を読んでから保存するまでの間に猫がメモリーへ移されると、移したときに外した書き込みの
-    // 許可を、古い一覧に基づいて保存し直してしまう（メモリーから戻すと、許可し直していない接続まで
-    // 書き込めるようになる）。保存と同じ batch で、その時点でメモリーへ移している猫のキーを外す
+    // その時点でメモリーへ移している猫のキーを外す（`withoutMemorialCats` 参照）
     db
       .update(mcpPermissions)
       .set({
-        writableRecordTypes: sql`(
-          SELECT json_group_object(entry.key, json(entry.value))
-          FROM json_each(${mcpPermissions.writableRecordTypes}) AS entry
-          WHERE entry.key NOT IN (
-            SELECT ${catsTable.id} FROM ${catsTable}
-            WHERE ${catsTable.memorialDate} IS NOT NULL
-          )
-        )`,
+        writableRecordTypes: withoutMemorialCats(
+          mcpPermissions.writableRecordTypes,
+        ),
       })
       .where(permissionsKey(userId, clientId)),
   ]);

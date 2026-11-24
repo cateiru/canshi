@@ -1,5 +1,4 @@
 // @vitest-environment node
-import type { McpServer } from "@modelcontextprotocol/server";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sql-js";
 import { migrate } from "drizzle-orm/sql-js/migrator";
@@ -35,11 +34,12 @@ import {
   weightRecords,
 } from "@/db/schema";
 import {
-  MCP_PERMISSION_RECORD_TYPES,
-  type McpHouseholdOperation,
+  type HouseholdOperation,
+  PERMISSION_RECORD_TYPES,
 } from "../../domain/permissionRules";
-import type { McpToolContext } from "./context";
+import type { OperationContext } from "./context";
 import { MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
+import type { OperationRegistry, OperationResult } from "./registry";
 
 // `src/features/symptoms/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
 // D1 専用の `db.batch` は順番に実行するだけの簡易実装で補う。商品画像の保存（R2）は
@@ -77,40 +77,35 @@ vi.mock(
   }),
 );
 
-const { registerRecordTools } = await import("./records");
-const { registerFoodProductTools } = await import("./foodProducts");
-const { registerFeedingPresetTools } = await import("./feedingPresets");
-const { registerCatalogFoodProductTools } = await import(
-  "./catalogFoodProducts"
+const { registerOperations } = await import("./index");
+const { getMcpPermissions } = await import(
+  "@/features/mcp/infrastructure/permissions"
 );
-const { registerHouseholdTools } = await import("./households");
-const { registerCatTools } = await import("./cats");
-const { registerFeedingScheduleTools } = await import("./feedingSchedules");
 
-type ToolResult = {
-  content: { type: "text"; text: string }[];
-  isError?: boolean;
-};
-
-// biome-ignore lint/suspicious/noExplicitAny: ツールの引数はツールごとに異なる
-const handlers = new Map<string, (args: any) => Promise<ToolResult>>();
-/** ツールの登録時の設定（annotations など） */
+// biome-ignore lint/suspicious/noExplicitAny: 引数は操作ごとに異なる
+const handlers = new Map<string, (args: any) => Promise<OperationResult>>();
+/** 操作の登録時の設定（annotations など） */
 const configs = new Map<
   string,
   { annotations?: { idempotentHint?: boolean } }
 >();
 
-/** ツールを呼び、結果の JSON か、エラーのメッセージを返す */
+/** 操作を呼び、結果の JSON か、エラーのメッセージと種類を返す */
 async function call(name: string, args: Record<string, unknown> = {}) {
   const handler = handlers.get(name);
   if (!handler) {
-    throw new Error(`ツール ${name} が登録されていません`);
+    throw new Error(`操作 ${name} が登録されていません`);
   }
   const result = await handler(args);
-  const text = result.content[0].text;
-  return result.isError
-    ? { error: text }
-    : { value: JSON.parse(text) as Record<string, unknown> };
+  return "error" in result
+    ? { error: result.error.message, code: result.error.code }
+    : {
+        // 呼び出し元には JSON にして返すため、同じ形にして確かめる
+        value: JSON.parse(JSON.stringify(result.data)) as Record<
+          string,
+          unknown
+        >,
+      };
 }
 
 /** 接続の範囲を保存する。書き込み・操作は指定したものだけを許可する */
@@ -129,13 +124,13 @@ const WRITE_ALL_RECORDS = {
   writableRecordTypes: Object.fromEntries(
     ["cat-1", "cat-2", "cat-3"].map((catId) => [
       catId,
-      [...MCP_PERMISSION_RECORD_TYPES],
+      [...PERMISSION_RECORD_TYPES],
     ]),
   ),
 };
 
 /** ユーザー1 の家すべてで、指定した操作を許可する範囲 */
-function operations(...allowed: McpHouseholdOperation[]) {
+function operations(...allowed: HouseholdOperation[]) {
   return {
     householdOperations: { "house-1": allowed, "house-2": allowed },
   };
@@ -178,31 +173,28 @@ beforeEach(async () => {
 
   handlers.clear();
   configs.clear();
-  const server = {
-    registerTool: (
-      name: string,
-      config: { annotations?: { idempotentHint?: boolean } },
-      handler: (args: unknown) => Promise<ToolResult>,
-    ) => {
+  const registry: OperationRegistry = {
+    register: (name, config, handler) => {
       handlers.set(name, handler);
       configs.set(name, config);
     },
-  } as unknown as McpServer;
-  const ctx: McpToolContext = {
+  };
+  const ctx: OperationContext = {
     env: { DB: {} } as unknown as Env,
     origin: "https://canshi.example.com",
-    resolveConnection: async () => ({
+    caller: {
+      name: "この接続",
+      settings: "設定の「AIとの接続」",
+      howToAllow:
+        "CANSHI の設定の「AIとの接続」で、ユーザーに許可してもらってください",
+    },
+    resolveAccess: async () => ({
       userId: "user-1",
-      clientId: "client-1",
+      actor: { userId: "user-1", mcpClientId: "client-1" },
+      permissions: await getMcpPermissions("user-1", "client-1", ctx.env.DB),
     }),
   };
-  registerRecordTools(server, ctx);
-  registerFoodProductTools(server, ctx);
-  registerFeedingPresetTools(server, ctx);
-  registerCatalogFoodProductTools(server, ctx);
-  registerHouseholdTools(server, ctx);
-  registerCatTools(server, ctx);
-  registerFeedingScheduleTools(server, ctx);
+  registerOperations(registry, ctx);
 
   storeMediaAsset.mockClear();
   deleteMediaAssetRows.mockClear();
@@ -690,9 +682,7 @@ describe("ブラッシングの記録", () => {
   it("書き込みを許可していなければ追加できない", async () => {
     await allow({
       writableRecordTypes: {
-        "cat-1": MCP_PERMISSION_RECORD_TYPES.filter(
-          (type) => type !== "brushing",
-        ),
+        "cat-1": PERMISSION_RECORD_TYPES.filter((type) => type !== "brushing"),
       },
     });
 

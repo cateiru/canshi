@@ -101,8 +101,8 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - アプリの利用者（`users`）と、猫を飼っている「家」（`households`）を表す。家には 1 名以上のユーザー
   （`household_members`、`household_id` + `user_id` の複合主キー）と複数の猫（`cats.household_id`）が所属する
-- ユーザーは所属する家の猫だけを参照・編集できる。ページ・Server Action・Route Handler・MCP のツール
-  （`src/features/mcp/presentation/agent.ts`）は、いずれも `src/features/households/infrastructure/queries.ts` の
+- ユーザーは所属する家の猫だけを参照・編集できる。ページ・Server Action・Route Handler・外部接続（AI との接続）の
+  操作（`src/features/external-access/presentation/operations/`）は、いずれも `src/features/households/infrastructure/queries.ts` の
   `getCatForUser`・`listCatsForUser`・`accessibleCatIdsQuery` で絞り込む（認可の入口は
   `src/features/auth/presentation/session.ts` の `requireUser`・`requireCatAccess`）。MCP のツールはさらに、
   ユーザーが接続ごとに許可した読み取り範囲（`mcp_permissions`）で絞り込む
@@ -255,7 +255,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   管理画面（`packages/admin`）が登録・編集・削除する。列は `food_products` から `household_id` を除き、
   内容量の候補（`package_sizes`）と検索キーワード（`search_keywords`）を足したもの
   - `users.role` が `admin` のユーザーは、AI との接続（MCP）からも検索・登録・編集できる（#363、
-    `src/features/mcp/presentation/tools/catalogFoodProducts.ts`）。接続に許可した操作（`mcp_permissions.catalog_operations`）
+    `src/features/external-access/presentation/operations/catalogFoodProducts.ts`）。接続に許可した操作（`mcp_permissions.catalog_operations`）
     だけを行え、権限はツールが呼ばれるたびに DB で確かめる。画像の登録と削除は管理画面だけで行う
   - 内容量は管理画面と同じく、`package_amount_g`・`package_unit` に先頭の候補を、`package_sizes` に先頭を含む
     すべての候補を書く（`src/features/catalog-food-products/application/mutations.ts`）。入力の規則は管理画面の

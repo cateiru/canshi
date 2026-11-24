@@ -1,15 +1,15 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
-  MCP_PERMISSION_RECORD_TYPES,
-  type McpPermissions,
-  type McpPermissionTreeHousehold,
+  type AccessPermissions,
+  PERMISSION_RECORD_TYPES,
+  type PermissionTreeHousehold,
 } from "../domain/permissionRules";
-import { McpPermissionTreeField } from "./McpPermissionTreeField";
+import { PermissionTreeField } from "./PermissionTreeField";
 
-const allTypes = [...MCP_PERMISSION_RECORD_TYPES];
+const allTypes = [...PERMISSION_RECORD_TYPES];
 
-const tree: McpPermissionTreeHousehold[] = [
+const tree: PermissionTreeHousehold[] = [
   {
     id: "house-1",
     name: "家1",
@@ -46,7 +46,7 @@ const tree: McpPermissionTreeHousehold[] = [
 function renderField(initial = tree, { expand = true } = {}) {
   const { container } = render(
     <form>
-      <McpPermissionTreeField tree={initial} />
+      <PermissionTreeField tree={initial} subject="このアプリ" />
     </form>,
   );
   if (expand) {
@@ -56,12 +56,12 @@ function renderField(initial = tree, { expand = true } = {}) {
     'input[name="mcpPermissions"]',
   );
   return {
-    value: () => JSON.parse(input?.value ?? "null") as McpPermissions,
+    value: () => JSON.parse(input?.value ?? "null") as AccessPermissions,
   };
 }
 
 /** 家の「詳細な設定」と、猫ごとの記録の種類をすべて開く */
-function expandAll(households: McpPermissionTreeHousehold[]) {
+function expandAll(households: PermissionTreeHousehold[]) {
   for (const household of households) {
     fireEvent.click(
       screen.getByRole("button", { name: `${household.name}の詳細な設定` }),
@@ -107,7 +107,7 @@ const NOTHING_WRITABLE = {
   catalogOperations: [],
 };
 
-describe("McpPermissionTreeField", () => {
+describe("PermissionTreeField", () => {
   it("最初は読み取りにすべてチェックが付き、何も外さず、何も書き込めない値を送る", () => {
     const { value } = renderField();
 
@@ -303,9 +303,7 @@ describe("McpPermissionTreeField", () => {
       excludedHouseholdIds: [],
       excludedCatIds: ["cat-1"],
       excludedRecordTypes: {
-        "cat-2": MCP_PERMISSION_RECORD_TYPES.filter(
-          (type) => type !== "weight",
-        ),
+        "cat-2": PERMISSION_RECORD_TYPES.filter((type) => type !== "weight"),
       },
       ...NOTHING_WRITABLE,
     });
@@ -336,7 +334,9 @@ describe("McpPermissionTreeField", () => {
   });
 
   it("家が無いときは、案内だけを表示して値を送らない", () => {
-    const { container } = render(<McpPermissionTreeField tree={[]} />);
+    const { container } = render(
+      <PermissionTreeField tree={[]} subject="このアプリ" />,
+    );
 
     expect(screen.getByText(/所属している家がありません/)).toBeInTheDocument();
     expect(container.querySelector('input[name="mcpPermissions"]')).toBeNull();
@@ -352,9 +352,10 @@ describe("McpPermissionTreeField", () => {
 
   it("共通のごはん商品の操作は、家とは別に、チェックしたものを許可したものとして送る", () => {
     const { container } = render(
-      <McpPermissionTreeField
+      <PermissionTreeField
         tree={tree}
         catalogOperations={["catalogFoodProduct:read"]}
+        subject="このアプリ"
       />,
     );
     const value = () =>
@@ -362,7 +363,7 @@ describe("McpPermissionTreeField", () => {
         container.querySelector<HTMLInputElement>(
           'input[name="mcpPermissions"]',
         )?.value ?? "null",
-      ) as McpPermissions;
+      ) as AccessPermissions;
     const catalog = within(
       screen.getByRole("group", { name: "共通のごはん商品" }),
     );
@@ -390,7 +391,11 @@ describe("McpPermissionTreeField", () => {
 
   it("家が無くても admin なら、共通のごはん商品の操作を選べる", () => {
     const { container } = render(
-      <McpPermissionTreeField tree={[]} catalogOperations={[]} />,
+      <PermissionTreeField
+        tree={[]}
+        catalogOperations={[]}
+        subject="このトークン"
+      />,
     );
 
     expect(screen.getByText(/所属している家がありません/)).toBeInTheDocument();

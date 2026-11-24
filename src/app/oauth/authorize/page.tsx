@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { TbEye, TbUser } from "react-icons/tb";
 import { Alert, Button, Heading } from "@/components/ui";
 import { requireUser } from "@/features/auth/presentation/session";
+import { PermissionTreeField } from "@/features/external-access/presentation/PermissionTreeField";
 import { getMcpPermissionTree } from "@/features/mcp/infrastructure/permissions";
 import { ConsentActionsHint } from "@/features/mcp/presentation/ConsentActionsHint";
 import { getMcpClientIcon } from "@/features/mcp/presentation/clientIcons";
@@ -13,7 +14,6 @@ import {
   formatRedirectUri,
   MCP_CONSENT_HEADER,
 } from "@/features/mcp/presentation/consent";
-import { McpPermissionTreeField } from "@/features/mcp/presentation/McpPermissionTreeField";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
 import styles from "./page.module.css";
@@ -108,9 +108,10 @@ export default async function AuthorizePage({
               <p className={styles.note}>
                 チェックを入れた権限に対してAIが操作できるようになります。
               </p>
-              <McpPermissionTreeField
+              <PermissionTreeField
                 tree={permissionTree.households}
                 catalogOperations={permissionTree.catalogOperations}
+                subject="このアプリ"
               />
             </Surface>
             <p className={styles.afterNote}>

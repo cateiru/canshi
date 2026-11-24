@@ -1,3 +1,4 @@
+export * from "./access-permission-columns";
 export * from "./ai-evaluations";
 export * from "./brushing-records";
 export * from "./catalog-food-product-requests";
