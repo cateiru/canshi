@@ -902,6 +902,36 @@ export function AiConnectionIcon(props: RecordIconProps) {
   );
 }
 
+export function ExternalConnectionIcon(props: RecordIconProps) {
+  const plug = "M5.5 8h13v2.5a6.5 6.5 0 0 1-13 0Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#b7d7ee" d={plug} />}>
+      <path d={plug} />
+      <path d="M9 8V3m6 5V3" />
+      <path d="M12 17v4.5" />
+    </RecordIcon>
+  );
+}
+
+export function ApiTokenIcon(props: RecordIconProps) {
+  // 横向きに描いた鍵（持ち手の中心が原点）を、斜めにして置く
+  const key = "M4.95-1.6H15.6V4.7h-2.9V3.2H9.9V1.6H4.95a5.2 5.2 0 1 1 0-3.2Z";
+  const transform = "translate(7.6 16.4) rotate(-45)";
+
+  return (
+    <RecordIcon
+      {...props}
+      fills={<path fill="#f2d17b" d={key} transform={transform} />}
+    >
+      <g transform={transform}>
+        <path d={key} />
+        <path d="M-2 0h.01" strokeWidth="2" />
+      </g>
+    </RecordIcon>
+  );
+}
+
 export function AddToHomeScreenIcon(props: RecordIconProps) {
   const phone =
     "M8.5 2h7A2.5 2.5 0 0 1 18 4.5v15a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 6 19.5v-15A2.5 2.5 0 0 1 8.5 2Z";
