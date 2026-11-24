@@ -105,12 +105,14 @@ export const CHANGE_HISTORY_DESCRIPTION =
   'changedBy は保存した人で、kind="user" なら userName のユーザーが CANSHI の画面から保存した。' +
   'kind="ai" なら userName のユーザーが接続を許可した AI のアプリ（clientName はアプリが名乗った名前。' +
   "わからなければ null）が保存した。" +
+  'kind="api" なら userName のユーザーが発行した API トークン（tokenName はトークンの名前。' +
+  "削除されていれば null）で保存した。" +
   "履歴を残し始める前に作られた記録には作成の履歴が無く、一度も編集されていなければ空になる。" +
   "削除の履歴は含まない。";
 
 /**
- * 外部接続向けの、記録の作成・編集の履歴。画面と同じく、保存した人の名前と AI のアプリの名前
- * だけを返し、ユーザー・接続の ID とアイコン画像は返さない。履歴が無い記録（`null`）は空の配列にする
+ * 外部接続向けの、記録の作成・編集の履歴。画面と同じく、保存した人の名前と AI のアプリ・API トークンの
+ * 名前だけを返し、ユーザー・接続・トークンの ID とアイコン画像は返さない。履歴が無い記録（`null`）は空の配列にする
  */
 export function toChangeHistorySummary(
   contributions: RecordContributions | null,
@@ -131,6 +133,13 @@ export function toChangeHistorySummary(
 function toChangedBySummary(contributor: RecordContributor) {
   if (contributor.kind === "user") {
     return { kind: "user" as const, userName: contributor.userName };
+  }
+  if (contributor.kind === "api") {
+    return {
+      kind: "api" as const,
+      userName: contributor.userName,
+      tokenName: contributor.tokenName,
+    };
   }
   return {
     kind: "ai" as const,

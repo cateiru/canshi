@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button as AriaButton } from "react-aria-components";
-import { TbRobot } from "react-icons/tb";
+import { TbApi, TbRobot } from "react-icons/tb";
 import { Modal } from "@/components/ui";
 import { MCP_CLIENT_APP_ICON } from "@/features/mcp/presentation/clientIcons";
 import { formatTimestampJst } from "@/features/shared/datetime";
@@ -25,7 +25,8 @@ type RecordContributorsProps = {
 /**
  * 記録を作成・編集した人のアイコンを、半分ほど重ねて並べる。最大 2 名まで表示し、
  * 残りは「+N」にまとめる。名前はツールチップ（title）と読み上げで伝える。
- * AI との接続からの操作は、アプリのアイコン（わからないアプリはロボット）で表示する。
+ * AI との接続からの操作は、アプリのアイコン（わからないアプリはロボット）、API からの操作は
+ * API のアイコンで表示する。
  * アイコンを押すと、作成・編集の履歴をモーダルで表示する
  */
 export function RecordContributors({ contributors }: RecordContributorsProps) {
@@ -143,10 +144,20 @@ function ContributorAvatar({
       />
     );
   }
-  const Icon = contributor.app ? MCP_CLIENT_APP_ICON[contributor.app] : TbRobot;
+  const Icon = externalContributorIcon(contributor);
   return (
     <span role="img" aria-label={label} className={styles.ai}>
       <Icon aria-hidden="true" size="60%" />
     </span>
   );
+}
+
+/** 外部接続（AI との接続・API）からの操作のアイコン */
+function externalContributorIcon(
+  contributor: Exclude<RecordContributor, { kind: "user" }>,
+) {
+  if (contributor.kind === "api") {
+    return TbApi;
+  }
+  return contributor.app ? MCP_CLIENT_APP_ICON[contributor.app] : TbRobot;
 }

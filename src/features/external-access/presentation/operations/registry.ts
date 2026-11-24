@@ -2,7 +2,8 @@ import type { ZodRawShape, z } from "zod";
 
 /**
  * 外部接続（AI との接続・API）から行える操作の型。操作の実装は通信の方式（MCP・HTTP）に依存せず、
- * MCP のツール（`src/features/mcp/presentation/agent.ts`）などから呼ぶ
+ * MCP のツール（`src/features/mcp/presentation/agent.ts`）と API のエンドポイント
+ * （`src/features/api/presentation/app.ts`）の両方から同じものを呼ぶ
  */
 
 /** 操作に失敗した理由の種類。API では HTTP のステータスに対応させる */

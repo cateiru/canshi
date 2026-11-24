@@ -81,7 +81,7 @@ PR のレビューコメント（インラインコメント・レビュー本�
 4 つのディレクトリに分ける。依存してよいのは外側から内側への向きだけ。
 
 - `presentation/`：画面のコンポーネント（`*.tsx`・CSS Modules）、Server Action（`actions.ts`・`*Actions.ts`）、
-  外部接続（MCP のツールなど）の操作（`src/features/external-access/presentation/operations/**`）。ログイン・猫や家を参照できるかの確認、
+  外部接続（MCP のツール・API）の操作（`src/features/external-access/presentation/operations/**`）。ログイン・猫や家を参照できるかの確認、
   フォーム・操作の引数の解析、遷移やエラーの文言を受け持つ。`src/app/**`・`src/components/**` もこの層として扱う。
   application・infrastructure・domain を使ってよい。
 - `application/`：ユースケース（`mutations.ts` など）。見つからない・無効などの判断をし、domain で中身を作って
@@ -134,6 +134,17 @@ PR のレビューコメント（インラインコメント・レビュー本�
   - Push の送信（`push/infrastructure/sendPush.ts`・`sendTestPush.ts`）
   - R2 への保存・配信（`media/infrastructure/storage.ts`・`serve.ts`）と、共通のごはん商品の画像の加工（`image.ts`）
   - プロフィール画像の付け替え（`cats/infrastructure/applyProfileImage.ts`・`users/infrastructure/applyUserIcon.ts`）
+
+## 外部接続（AI との接続・API）
+
+MCP のツールと API（`/api/v1`）のエンドポイントは、同じ操作（`src/features/external-access/presentation/operations/**`）を
+呼ぶ。操作は通信の方式に依存させず、呼んだものの呼び方（「この接続」「このトークン」）は `ctx.caller` を使う。
+
+- API は Hono（`@hono/zod-openapi`）で、エンドポイントの一覧（`src/features/api/domain/routes.ts`）と操作の zod スキーマから、
+  ルーティング・引数の検証・仕様（`/api/v1/openapi.json`）を作る（`src/features/api/presentation/app.ts`）
+- 操作を足したら、`src/features/api/domain/routes.ts` にエンドポイントも足す（すべての操作に 1 つずつあることをテストで
+  確かめている）。操作の説明・エラーのメッセージの操作の名前（`list_cats` など）は、API ではエンドポイントに置き換わる
+- 公開した API のパス・引数・応答の項目を、互換性のない形で変えない。変えるときは新しい版（`/api/v2`）を作る
 
 ## その他
 

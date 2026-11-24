@@ -1,6 +1,7 @@
 import {
   AddToHomeScreenIcon,
   AiConnectionIcon,
+  ApiTokenIcon,
   AppearanceSettingsIcon,
   CatFaceIcon,
   FeedingIcon,
@@ -148,6 +149,13 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         description:
           "ChatGPT などの AI のアプリから、ねこの記録を見たり記録したりする方法です。",
         icon: AiConnectionIcon,
+      },
+      {
+        slug: "api",
+        title: "APIの使い方",
+        description:
+          "自分で作ったプログラムなどから、ねこの記録を読んだり追加したりする方法です。",
+        icon: ApiTokenIcon,
       },
     ],
   },

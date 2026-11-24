@@ -505,6 +505,13 @@
       "when": 1795404536945,
       "tag": "0071_food_amount_unit",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "6",
+      "when": 1795483537583,
+      "tag": "0072_api_tokens",
+      "breakpoints": true
     }
   ]
 }

@@ -41,6 +41,7 @@ export default async function AiConnectionsPage() {
         items={[
           { label: "トップ", href: "/home" },
           { label: "設定", href: "/settings" },
+          { label: "外部接続", href: "/settings/external-connections" },
           { label: "AIとの接続" },
         ]}
       />

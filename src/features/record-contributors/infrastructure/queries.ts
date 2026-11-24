@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
+  apiTokens,
   type RecordChangeLogAction,
   type RecordChangeLogRecordType,
   recordChangeLogs,
@@ -37,6 +38,9 @@ type ContributionRow = {
   action: RecordChangeLogAction;
   userId: string;
   mcpClientId: string | null;
+  apiTokenId: string | null;
+  /** 削除されたトークンなら null */
+  apiTokenName: string | null;
   userName: string;
   iconMediaAssetId: string | null;
   createdAt: Date;
@@ -49,7 +53,8 @@ type ContributionRow = {
  * キーを含めない。
  *
  * - 削除の履歴は含めない（読む記録は削除されていない前提）
- * - 同じユーザーでも、画面からの操作と AI との接続からの操作、接続どうしは別の人として扱う
+ * - 同じユーザーでも、画面からの操作と AI との接続・API からの操作、接続どうし・トークンどうしは
+ *   別の人として扱う
  * - アイコン画像は、見る人（`viewerUserId`）と同じ家にいるユーザーの分だけ返す。家から
  *   外れたユーザーの画像は見る権限がない（`canAccessMediaAsset`）ため
  * - 呼び出し元で、見る人が記録を参照できることを確かめておくこと
@@ -84,12 +89,15 @@ export async function listRecordContributors(
             action: recordChangeLogs.action,
             userId: recordChangeLogs.userId,
             mcpClientId: recordChangeLogs.mcpClientId,
+            apiTokenId: recordChangeLogs.apiTokenId,
+            apiTokenName: apiTokens.name,
             userName: users.name,
             iconMediaAssetId: users.iconMediaAssetId,
             createdAt: recordChangeLogs.createdAt,
           })
           .from(recordChangeLogs)
           .innerJoin(users, eq(recordChangeLogs.userId, users.id))
+          .leftJoin(apiTokens, eq(recordChangeLogs.apiTokenId, apiTokens.id))
           .where(
             and(
               eq(recordChangeLogs.recordType, recordType),
@@ -121,7 +129,12 @@ export async function listRecordContributors(
   for (const row of rows) {
     const key = recordContributorKey(row.recordType, row.recordId);
     const contributions = result.get(key) ?? { contributors: [], history: [] };
-    const contributorKey = `${key}\0${row.userId}\0${row.mcpClientId ?? ""}`;
+    const contributorKey = [
+      key,
+      row.userId,
+      row.mcpClientId ?? "",
+      row.apiTokenId ?? "",
+    ].join("\0");
     let contributorIndex = contributorIndexes.get(contributorKey);
     if (contributorIndex === undefined) {
       contributorIndex = contributions.contributors.length;
@@ -146,6 +159,13 @@ function toRecordContributor(
   visibleIconUserIds: ReadonlySet<string>,
   clientSummaries: ReadonlyMap<string, McpClientSummary>,
 ): RecordContributor {
+  if (row.apiTokenId !== null) {
+    return {
+      kind: "api",
+      userName: row.userName,
+      tokenName: row.apiTokenName,
+    };
+  }
   if (row.mcpClientId === null) {
     return {
       kind: "user",

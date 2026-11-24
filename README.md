@@ -7,7 +7,8 @@
 Cloudflare を利用して簡単にデプロイが可能です。
 
 ChatGPT などの外部 AI エージェントからデータを参照できる MCP サーバーを
-`/mcp` で公開しています（[`src/features/mcp`](src/features/mcp)）。
+`/mcp` で公開しています（[`src/features/mcp`](src/features/mcp)）。自分で作ったプログラムなどから
+トークンで使える API も `/api/v1` で公開しています（[`src/features/api`](src/features/api)）。
 
 ユーザー・家などを確認できる運用者向けの管理画面を
 [`packages/admin`](packages/admin) に同梱しています。メインアプリと管理画面などで共通の実装

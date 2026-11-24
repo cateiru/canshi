@@ -190,7 +190,7 @@ beforeEach(async () => {
     },
     resolveAccess: async () => ({
       userId: "user-1",
-      actor: { userId: "user-1", mcpClientId: "client-1" },
+      actor: { userId: "user-1", mcpClientId: "client-1", apiTokenId: null },
       permissions: await getMcpPermissions("user-1", "client-1", ctx.env.DB),
     }),
   };
