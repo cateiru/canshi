@@ -19,11 +19,11 @@ vi.mock("./actions", () => ({}));
 
 const tree: PermissionTree = { households: [], catalogOperations: [] };
 
-function renderForm(result: ApiTokenFormState = {}) {
+function renderForm(result: ApiTokenFormState = {}, permissionTree = tree) {
   const action = vi.fn(
     async (_state: ApiTokenFormState, _formData: FormData) => result,
   );
-  render(<ApiTokenForm action={action} tree={tree} />);
+  render(<ApiTokenForm action={action} tree={permissionTree} />);
   return action;
 }
 
@@ -88,6 +88,14 @@ describe("ApiTokenForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "閉じる" }));
     expect(navigate).toHaveBeenCalledWith("/settings/api-tokens");
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("家に所属していなければ、案内を表示して発行できないようにする", () => {
+    renderForm({}, { households: [], catalogOperations: null });
+    expect(screen.getByText(/所属している家がありません/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "トークンを発行する" }),
+    ).toBeDisabled();
   });
 
   it("入力の間違いを表示する", async () => {

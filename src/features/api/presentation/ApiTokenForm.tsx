@@ -43,6 +43,9 @@ export function ApiTokenForm({ action, tree }: ApiTokenFormProps) {
     DEFAULT_API_TOKEN_EXPIRATION,
   );
   const navigate = useNavigateAfterSubmit();
+  // 家に所属していないと許可できるものが無く、`PermissionTreeField` は案内だけを表示して範囲を送らない
+  const hasChoices =
+    tree.households.length > 0 || tree.catalogOperations !== null;
 
   // `<form action>` で送ると、送信後の reset で許可する範囲のチェックが戻る。入力の間違いを
   // 直すときに選び直さずに済むよう、action を自分で呼ぶ（`PermissionsForm` と同じ、Issue #527）
@@ -110,7 +113,7 @@ export function ApiTokenForm({ action, tree }: ApiTokenFormProps) {
             type="submit"
             variant="primary"
             leftIcon={TbPlus}
-            isDisabled={isPending || state.issued !== undefined}
+            isDisabled={!hasChoices || isPending || state.issued !== undefined}
           >
             {isPending ? "発行中..." : "トークンを発行する"}
           </Button>
