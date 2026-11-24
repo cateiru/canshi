@@ -338,6 +338,27 @@ INSERT INTO oauth_kv_entries (key, value)
 VALUES ('client:vrt-client-agent', '{"clientId":"vrt-client-agent","clientName":"VRT エージェント","redirectUris":["https://agent.example.com/oauth/callback"]}'),
   ('grant:vrt-inviter:vrtAgentGrant', '{"id":"vrtAgentGrant","clientId":"vrt-client-agent","userId":"vrt-inviter","scope":[],"metadata":{},"encryptedProps":"","createdAt":1717200000,"redirectUri":"https://agent.example.com/oauth/callback"}');
 
+-- API トークン（設定の「APIトークン」の一覧・許可する範囲のページ用）。トークンそのものは保存しないため、
+-- ハッシュは API に使えない適当な値にする。有効期限は、実行日時によらず期限内・期限切れになる固定値にする
+-- - vrt-api-token-active    : 期限内で、使われている
+-- - vrt-api-token-unlimited : 期限なしで、まだ使われていない
+-- - vrt-api-token-expired   : 期限切れ
+INSERT INTO api_tokens (id, user_id, name, token_hash, expires_at, writable_record_types, created_at, updated_at)
+VALUES
+  ('vrt-api-token-active', 'vrt-user', '体重計との連携', 'vrt-api-token-hash-active', strftime('%s', '2099-01-01 00:00:00'),
+    '{"vrt-cat-populated":["weight"]}', strftime('%s', '2024-06-03 00:00:00'), strftime('%s', '2024-06-03 00:00:00')),
+  ('vrt-api-token-unlimited', 'vrt-user', 'バックアップ', 'vrt-api-token-hash-unlimited', NULL,
+    '{}', strftime('%s', '2024-06-02 00:00:00'), strftime('%s', '2024-06-02 00:00:00')),
+  ('vrt-api-token-expired', 'vrt-user', '動作確認', 'vrt-api-token-hash-expired', strftime('%s', '2024-06-02 00:00:00'),
+    '{}', strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
+
+-- API のアクセス履歴。一覧には、トークンごとの最も新しい日時を最終利用日時として表示する
+INSERT INTO api_access_logs (id, api_token_id, method, path, status, ip_address, user_agent, created_at)
+VALUES
+  ('vrt-api-log-1', 'vrt-api-token-active', 'GET', '/api/v1/cats', 200, '192.0.2.1', 'curl/8.0', strftime('%s', '2024-06-05 01:00:00')),
+  ('vrt-api-log-2', 'vrt-api-token-active', 'POST', '/api/v1/cats/vrt-cat-populated/weight-records', 201, '192.0.2.1', 'curl/8.0', strftime('%s', '2024-06-06 01:00:00')),
+  ('vrt-api-log-3', 'vrt-api-token-expired', 'GET', '/api/v1/cats', 200, '192.0.2.1', 'curl/8.0', strftime('%s', '2024-06-01 01:00:00'));
+
 -- ここまでに登録した猫をすべて VRT 用の家に所属させる
 UPDATE cats SET household_id = 'vrt-household' WHERE id LIKE 'vrt-cat-%';
 
@@ -356,7 +377,7 @@ UPDATE feeding_presets SET household_id = 'vrt-household' WHERE id LIKE 'vrt-pre
 -- - vrt-poop-1   : 4 人（2 人まで表示し、残りを「+2」にまとめる。アイコンを押すと編集履歴を表示する、#534）
 -- - vrt-weight-1 : 画面からの操作と ChatGPT からの操作（ユーザーとアプリのアイコンの重なり）
 -- - vrt-vomit-1  : 1 人だけ
--- - vrt-memo-1   : わからないアプリからの操作（ロボットのアイコン）
+-- - vrt-memo-1   : わからないアプリからの操作（ロボットのアイコン）と、API からの操作（API のアイコン）
 INSERT INTO record_change_logs (id, record_type, record_id, action, user_id, mcp_client_id, created_at)
 VALUES
   ('vrt-log-poop-1', 'poop_record', 'vrt-poop-1', 'create', 'vrt-user', NULL, strftime('%s', '2024-06-12 08:00:00')),
@@ -367,3 +388,7 @@ VALUES
   ('vrt-log-weight-2', 'weight_record', 'vrt-weight-1', 'update', 'vrt-user', 'vrt-client', strftime('%s', '2024-06-09 09:00:00')),
   ('vrt-log-vomit-1', 'vomit_record', 'vrt-vomit-1', 'create', 'vrt-user', NULL, strftime('%s', '2024-06-11 07:00:00')),
   ('vrt-log-memo-1', 'memo_record', 'vrt-memo-1', 'create', 'vrt-user', 'vrt-unknown-client', strftime('%s', '2024-06-20 21:00:00'));
+
+INSERT INTO record_change_logs (id, record_type, record_id, action, user_id, api_token_id, created_at)
+VALUES
+  ('vrt-log-memo-2', 'memo_record', 'vrt-memo-1', 'update', 'vrt-user', 'vrt-api-token-active', strftime('%s', '2024-06-20 22:00:00'));
