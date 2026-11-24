@@ -1,7 +1,7 @@
 import {
   AccountSettingsIcon,
-  AiConnectionIcon,
   AppearanceSettingsIcon,
+  ExternalConnectionIcon,
   HelpIcon,
   HouseholdIcon,
   NotificationSettingsIcon,
@@ -44,11 +44,11 @@ const settings = [
     icon: AppearanceSettingsIcon,
   },
   {
-    href: "/settings/ai-connections",
-    title: "AIとの接続",
+    href: "/settings/external-connections",
+    title: "外部接続",
     description:
-      "ChatGPT などの AI のアプリとの接続を確認し、不要な接続を解除します。",
-    icon: AiConnectionIcon,
+      "ChatGPT などの AI のアプリとの接続と、API を使うためのトークンを管理します。",
+    icon: ExternalConnectionIcon,
   },
   {
     href: "/help",
@@ -72,7 +72,7 @@ export default function SettingsPage() {
       />
       <h1>設定</h1>
       <p>
-        アカウントや家、通知、見た目の設定、AIとの接続、アプリのヘルプと更新情報を確認できます。
+        アカウントや家、通知、見た目の設定、外部接続、アプリのヘルプと更新情報を確認できます。
       </p>
 
       <nav aria-label="設定メニュー">
