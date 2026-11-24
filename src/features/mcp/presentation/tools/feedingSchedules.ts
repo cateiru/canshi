@@ -2,8 +2,8 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import type { FeedingSchedule } from "@/db/schema";
 import {
-  isHouseholdOperationAllowedForMcp,
-  type McpHouseholdOperation,
+  type HouseholdOperation,
+  isHouseholdOperationAllowed,
 } from "@/features/external-access/domain/permissionRules";
 import {
   createFeedingSchedule,
@@ -72,7 +72,7 @@ function scheduleNotFoundMessage(id: string) {
  */
 async function resolveSchedule(
   ctx: McpToolContext,
-  operation: McpHouseholdOperation,
+  operation: HouseholdOperation,
   id: string,
 ): Promise<
   { connection: McpConnection; schedule: FeedingSchedule } | { error: string }
@@ -97,11 +97,7 @@ async function resolveSchedule(
     return { error: scheduleNotFoundMessage(id) };
   }
   if (
-    !isHouseholdOperationAllowedForMcp(
-      resolved.permissions,
-      household.id,
-      operation,
-    )
+    !isHouseholdOperationAllowed(resolved.permissions, household.id, operation)
   ) {
     return { error: operationNotAllowedMessage(operation, household.name) };
   }

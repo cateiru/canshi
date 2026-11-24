@@ -3,11 +3,11 @@ import { createMcpHandler } from "agents/mcp/server";
 import { z } from "zod";
 import { getUserById } from "@/features/auth/infrastructure/users";
 import {
-  allowedMcpRecordTypes,
-  isCatAllowedForMcp,
-  isHouseholdAllowedForMcp,
-  MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
-  MCP_HOUSEHOLD_OPERATIONS,
+  ALWAYS_ALLOWED_TIMELINE_TYPES,
+  allowedRecordTypes,
+  HOUSEHOLD_OPERATIONS,
+  isCatAllowed,
+  isHouseholdAllowed,
 } from "@/features/external-access/domain/permissionRules";
 import {
   getCatForUser,
@@ -112,10 +112,10 @@ async function resolveAllowedCat(
     getCatForUser(connection.userId, catId, env.DB),
     getMcpPermissions(connection.userId, connection.clientId, env.DB),
   ]);
-  if (!cat || !isCatAllowedForMcp(permissions, cat)) {
+  if (!cat || !isCatAllowed(permissions, cat)) {
     return null;
   }
-  return { cat, recordTypes: allowedMcpRecordTypes(permissions, cat.id) };
+  return { cat, recordTypes: allowedRecordTypes(permissions, cat.id) };
 }
 
 /**
@@ -157,7 +157,7 @@ export function createCanshiMcpServer(
         "ユーザーが所属している家の一覧を取得する。ごはん商品・プリセット・ごはんの時間は家ごとに登録する。" +
         "role はユーザーの家での役割（owner=オーナー、member=メンバー）。" +
         "operations は、その家でこの接続に許可されている操作" +
-        `（${MCP_HOUSEHOLD_OPERATIONS.join("・")}）。` +
+        `（${HOUSEHOLD_OPERATIONS.join("・")}）。` +
         "cat:update・catNotification:read・catNotification:update はその家の猫について行える。" +
         "ユーザーが読み取りを許可していない家は含まれない。",
       annotations: { readOnlyHint: true },
@@ -173,9 +173,7 @@ export function createCanshiMcpServer(
       ]);
       return jsonResult({
         households: households
-          .filter((household) =>
-            isHouseholdAllowedForMcp(permissions, household.id),
-          )
+          .filter((household) => isHouseholdAllowed(permissions, household.id))
           .map((household) => ({
             id: household.id,
             name: household.name,
@@ -206,7 +204,7 @@ export function createCanshiMcpServer(
       ]);
       return jsonResult({
         cats: cats
-          .filter((cat) => isCatAllowedForMcp(permissions, cat))
+          .filter((cat) => isCatAllowed(permissions, cat))
           .map(toCatSummary),
       });
     },
@@ -304,7 +302,7 @@ export function createCanshiMcpServer(
         {
           date,
           page,
-          types: [...MCP_ALWAYS_ALLOWED_TIMELINE_TYPES, ...allowed.recordTypes],
+          types: [...ALWAYS_ALLOWED_TIMELINE_TYPES, ...allowed.recordTypes],
         },
         env.DB,
       );

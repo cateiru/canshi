@@ -9,7 +9,7 @@ import type { TimelineRecordType } from "@/features/timeline/domain/timelineEntr
  * クライアントのコンポーネントからも使うため、`TIMELINE_RECORD_TYPES`（DB に依存する
  * モジュール）は参照せずに並べる。過不足が無いことはテストで確かめる
  */
-export const MCP_PERMISSION_RECORD_TYPES = [
+export const PERMISSION_RECORD_TYPES = [
   "feeding",
   "poop",
   "weight",
@@ -25,14 +25,13 @@ export const MCP_PERMISSION_RECORD_TYPES = [
   "memo",
 ] as const satisfies readonly TimelineRecordType[];
 
-export type McpPermissionRecordType =
-  (typeof MCP_PERMISSION_RECORD_TYPES)[number];
+export type PermissionRecordType = (typeof PERMISSION_RECORD_TYPES)[number];
 
 /**
  * タイムラインのうち、記録の種類の権限にかかわらず読み取れる記念日の種類
  * （誕生日・お迎え日・メモリーへ移した日。どれも猫のプロフィールから求める）
  */
-export const MCP_ALWAYS_ALLOWED_TIMELINE_TYPES = [
+export const ALWAYS_ALLOWED_TIMELINE_TYPES = [
   "memorial",
   "birthday",
   "adoption",
@@ -43,7 +42,7 @@ export const MCP_ALWAYS_ALLOWED_TIMELINE_TYPES = [
  * 招待、猫のプロフィール・通知の設定、ごはんの時間）。読み取りの範囲とは逆に、許可したものだけを
  * 行える。猫のプロフィール・通知の設定は、その家の猫のうち読み取りを許可している猫だけを扱える
  */
-export const MCP_HOUSEHOLD_OPERATIONS = [
+export const HOUSEHOLD_OPERATIONS = [
   "foodProduct:read",
   "foodProduct:create",
   "foodProduct:update",
@@ -67,12 +66,12 @@ export const MCP_HOUSEHOLD_OPERATIONS = [
   "feedingSchedule:delete",
 ] as const;
 
-export type McpHouseholdOperation = (typeof MCP_HOUSEHOLD_OPERATIONS)[number];
+export type HouseholdOperation = (typeof HOUSEHOLD_OPERATIONS)[number];
 
 /** 設定画面・同意画面に表示する、家ごとの操作のまとまり */
-export const MCP_HOUSEHOLD_OPERATION_GROUPS: {
+export const HOUSEHOLD_OPERATION_GROUPS: {
   label: string;
-  operations: { operation: McpHouseholdOperation; label: string }[];
+  operations: { operation: HouseholdOperation; label: string }[];
 }[] = [
   {
     label: "ごはん商品",
@@ -141,7 +140,7 @@ export const MCP_HOUSEHOLD_OPERATION_GROUPS: {
  * 使い、リクエストにはすべてのユーザーの検索条件が含まれるため、アプリ全体の権限が admin の
  * ユーザーだけが許可できる。家ごとの操作と同じく、許可したものだけを行える
  */
-export const MCP_CATALOG_OPERATIONS = [
+export const CATALOG_OPERATIONS = [
   "catalogFoodProduct:read",
   "catalogFoodProduct:create",
   "catalogFoodProduct:update",
@@ -149,14 +148,14 @@ export const MCP_CATALOG_OPERATIONS = [
   "catalogFoodProductRequest:complete",
 ] as const;
 
-export type McpCatalogOperation = (typeof MCP_CATALOG_OPERATIONS)[number];
+export type CatalogOperation = (typeof CATALOG_OPERATIONS)[number];
 
 /** 設定画面・同意画面に表示する、共通のごはん商品とそのリクエストの操作 */
-export const MCP_CATALOG_OPERATION_GROUPS: {
+export const CATALOG_OPERATION_GROUPS: {
   label: string;
   /** 共通のごはん商品の枠の中で、行の見出しに使う短い名前 */
   shortLabel: string;
-  operations: { operation: McpCatalogOperation; label: string }[];
+  operations: { operation: CatalogOperation; label: string }[];
 }[] = [
   {
     label: "共通のごはん商品",
@@ -185,24 +184,24 @@ export const MCP_CATALOG_OPERATION_GROUPS: {
  * - 記録の書き込み（追加・編集）と、家ごとの操作（ごはん商品・プリセット・家・猫など）、
  *   共通のごはん商品の操作は、許可したものだけを持つ
  */
-export interface McpPermissions {
+export interface AccessPermissions {
   excludedHouseholdIds: string[];
   excludedCatIds: string[];
   /** 猫の ID ごとに、外した記録の種類 */
-  excludedRecordTypes: Record<string, McpPermissionRecordType[]>;
+  excludedRecordTypes: Record<string, PermissionRecordType[]>;
   /** 猫の ID ごとに、書き込み（追加・編集）を許可した記録の種類 */
-  writableRecordTypes: Record<string, McpPermissionRecordType[]>;
-  /** 家の ID ごとに、許可した操作（`MCP_HOUSEHOLD_OPERATIONS`） */
-  householdOperations: Record<string, McpHouseholdOperation[]>;
+  writableRecordTypes: Record<string, PermissionRecordType[]>;
+  /** 家の ID ごとに、許可した操作（`HOUSEHOLD_OPERATIONS`） */
+  householdOperations: Record<string, HouseholdOperation[]>;
   /** 許可した共通のごはん商品の操作。admin のユーザーだけが行える */
-  catalogOperations: McpCatalogOperation[];
+  catalogOperations: CatalogOperation[];
 }
 
 /**
  * 何も外していない（すべて読み取れる）が、書き込みや操作はどれも許可していない状態。
  * 設定を保存していないユーザーはこれになる
  */
-export const DEFAULT_MCP_PERMISSIONS: McpPermissions = {
+export const DEFAULT_PERMISSIONS: AccessPermissions = {
   excludedHouseholdIds: [],
   excludedCatIds: [],
   excludedRecordTypes: {},
@@ -211,63 +210,64 @@ export const DEFAULT_MCP_PERMISSIONS: McpPermissions = {
   catalogOperations: [],
 };
 
-export function isMcpHouseholdOperation(
+export function isHouseholdOperation(
   value: unknown,
-): value is McpHouseholdOperation {
-  return (MCP_HOUSEHOLD_OPERATIONS as readonly unknown[]).includes(value);
+): value is HouseholdOperation {
+  return (HOUSEHOLD_OPERATIONS as readonly unknown[]).includes(value);
 }
 
-export function isMcpCatalogOperation(
-  value: unknown,
-): value is McpCatalogOperation {
-  return (MCP_CATALOG_OPERATIONS as readonly unknown[]).includes(value);
+export function isCatalogOperation(value: unknown): value is CatalogOperation {
+  return (CATALOG_OPERATIONS as readonly unknown[]).includes(value);
 }
 
 /**
  * 共通のごはん商品の操作を行えるか。接続に許可していて、今のユーザーが admin のときに限る。
  * 許可した後に admin でなくなったユーザーの接続では行えない
  */
-export function isCatalogOperationAllowedForMcp(
-  permissions: Pick<McpPermissions, "catalogOperations">,
+export function isCatalogOperationAllowed(
+  permissions: Pick<AccessPermissions, "catalogOperations">,
   role: "admin" | "member",
-  operation: McpCatalogOperation,
+  operation: CatalogOperation,
 ) {
   return role === "admin" && permissions.catalogOperations.includes(operation);
 }
 
 /** 家を読み取れるか。猫と同じく、外した家は読み取れない */
-export function isHouseholdAllowedForMcp(
-  permissions: Pick<McpPermissions, "excludedHouseholdIds">,
+export function isHouseholdAllowed(
+  permissions: Pick<AccessPermissions, "excludedHouseholdIds">,
   householdId: string,
 ) {
   return !permissions.excludedHouseholdIds.includes(householdId);
 }
 
 /** 家ごとの操作を行えるか。読み取りを許可している家に限る */
-export function isHouseholdOperationAllowedForMcp(
-  permissions: McpPermissions,
+export function isHouseholdOperationAllowed(
+  permissions: AccessPermissions,
   householdId: string,
-  operation: McpHouseholdOperation,
+  operation: HouseholdOperation,
 ) {
   return (
-    isHouseholdAllowedForMcp(permissions, householdId) &&
+    isHouseholdAllowed(permissions, householdId) &&
     (permissions.householdOperations[householdId] ?? []).includes(operation)
   );
 }
 
-export function isMcpPermissionRecordType(
+export function isPermissionRecordType(
   value: unknown,
-): value is McpPermissionRecordType {
-  return (MCP_PERMISSION_RECORD_TYPES as readonly unknown[]).includes(value);
+): value is PermissionRecordType {
+  return (PERMISSION_RECORD_TYPES as readonly unknown[]).includes(value);
 }
 
 /**
  * 猫のプロフィールと記録を読み取れるか。家は猫が今いる家で判定するため、外した家へ
  * 引っ越した猫は読み取れなくなる。家を外すと、そのときの家の猫も外したものとして
- * 保存する（`parseMcpPermissionsInput` 参照）ため、外した家から引っ越した猫も読み取れないまま
+ * 保存する（`parsePermissionsInput` 参照）ため、外した家から引っ越した猫も読み取れないまま
  */
-export function isCatAllowedForMcp(
-  permissions: Pick<McpPermissions, "excludedHouseholdIds" | "excludedCatIds">,
+export function isCatAllowed(
+  permissions: Pick<
+    AccessPermissions,
+    "excludedHouseholdIds" | "excludedCatIds"
+  >,
   cat: { id: string; householdId: string | null },
 ) {
   if (cat.householdId === null) {
@@ -279,70 +279,70 @@ export function isCatAllowedForMcp(
   );
 }
 
-/** 猫について読み取れる記録の種類（猫そのものを読み取れるかは `isCatAllowedForMcp` で判定する） */
-export function allowedMcpRecordTypes(
-  permissions: Pick<McpPermissions, "excludedRecordTypes">,
+/** 猫について読み取れる記録の種類（猫そのものを読み取れるかは `isCatAllowed` で判定する） */
+export function allowedRecordTypes(
+  permissions: Pick<AccessPermissions, "excludedRecordTypes">,
   catId: string,
-): McpPermissionRecordType[] {
+): PermissionRecordType[] {
   const excluded = permissions.excludedRecordTypes[catId] ?? [];
-  return MCP_PERMISSION_RECORD_TYPES.filter((type) => !excluded.includes(type));
+  return PERMISSION_RECORD_TYPES.filter((type) => !excluded.includes(type));
 }
 
 /**
  * 猫について書き込める（追加・編集できる）記録の種類。書き込みを許可していて、読み取りも
- * 許可している種類に限る（猫そのものを読み取れるかは `isCatAllowedForMcp` で判定する）
+ * 許可している種類に限る（猫そのものを読み取れるかは `isCatAllowed` で判定する）
  */
-export function writableMcpRecordTypes(
+export function allowedWriteRecordTypes(
   permissions: Pick<
-    McpPermissions,
+    AccessPermissions,
     "excludedRecordTypes" | "writableRecordTypes"
   >,
   catId: string,
-): McpPermissionRecordType[] {
+): PermissionRecordType[] {
   const writable = permissions.writableRecordTypes[catId] ?? [];
-  return allowedMcpRecordTypes(permissions, catId).filter((type) =>
+  return allowedRecordTypes(permissions, catId).filter((type) =>
     writable.includes(type),
   );
 }
 
 /** 設定画面・同意画面に表示する、許可する範囲のチェックの状態 */
-export interface McpPermissionTree {
-  households: McpPermissionTreeHousehold[];
+export interface PermissionTree {
+  households: PermissionTreeHousehold[];
   /**
    * 許可している共通のごはん商品の操作。admin でないユーザーは選べないため null
    * （画面にも表示しない）
    */
-  catalogOperations: McpCatalogOperation[] | null;
+  catalogOperations: CatalogOperation[] | null;
 }
 
 /** 設定画面・同意画面に表示する、家ごとの猫と記録の種類のチェックの状態 */
-export interface McpPermissionTreeHousehold {
+export interface PermissionTreeHousehold {
   id: string;
   name: string;
   checked: boolean;
   /** 許可している家ごとの操作 */
-  operations: McpHouseholdOperation[];
-  cats: McpPermissionTreeCat[];
+  operations: HouseholdOperation[];
+  cats: PermissionTreeCat[];
 }
 
-export interface McpPermissionTreeCat {
+export interface PermissionTreeCat {
   id: string;
   name: string;
   /** メモリーへ移した猫なら true。書き込みは選べない */
   memorial: boolean;
   checked: boolean;
   /** 読み取りのチェックが付いている記録の種類 */
-  checkedRecordTypes: McpPermissionRecordType[];
+  checkedRecordTypes: PermissionRecordType[];
   /** 書き込みのチェックが付いている記録の種類 */
-  writableRecordTypes: McpPermissionRecordType[];
+  writableRecordTypes: PermissionRecordType[];
 }
 
 /**
  * 保存した範囲から、画面に表示するチェックの状態を作る。親のチェックが外れているときは、
  * 子のチェックもすべて外れた状態にする
  */
-export function buildMcpPermissionTree(
-  permissions: McpPermissions,
+export function buildPermissionTree(
+  permissions: AccessPermissions,
   households: { id: string; name: string }[],
   cats: {
     id: string;
@@ -350,7 +350,7 @@ export function buildMcpPermissionTree(
     householdId: string | null;
     memorialDate: string | null;
   }[],
-): McpPermissionTreeHousehold[] {
+): PermissionTreeHousehold[] {
   return households.map((household) => {
     const householdChecked = !permissions.excludedHouseholdIds.includes(
       household.id,
@@ -374,11 +374,11 @@ export function buildMcpPermissionTree(
             memorial,
             checked: catChecked,
             checkedRecordTypes: catChecked
-              ? allowedMcpRecordTypes(permissions, cat.id)
+              ? allowedRecordTypes(permissions, cat.id)
               : [],
             writableRecordTypes:
               catChecked && !memorial
-                ? writableMcpRecordTypes(permissions, cat.id)
+                ? allowedWriteRecordTypes(permissions, cat.id)
                 : [],
           };
         }),
@@ -387,7 +387,7 @@ export function buildMcpPermissionTree(
 }
 
 /** フォームで送る、範囲の値を入れる hidden の input の name */
-export const MCP_PERMISSIONS_FIELD_NAME = "mcpPermissions";
+export const PERMISSIONS_FIELD_NAME = "mcpPermissions";
 
 /** 1 回に保存できる家・猫の数の上限。所属する家・猫に絞り込む前の、不正に大きな値を弾く */
 const MAX_IDS = 1000;
@@ -398,13 +398,13 @@ const recordTypesById = z
   .record(
     idSchema,
     z
-      .array(z.enum(MCP_PERMISSION_RECORD_TYPES))
-      .max(MCP_PERMISSION_RECORD_TYPES.length),
+      .array(z.enum(PERMISSION_RECORD_TYPES))
+      .max(PERMISSION_RECORD_TYPES.length),
   )
   .refine((value) => Object.keys(value).length <= MAX_IDS);
 
 /**
- * フォームで送る値（`McpPermissions` の JSON）の形。書き込みの範囲を選べるようにする前に
+ * フォームで送る値（`AccessPermissions` の JSON）の形。書き込みの範囲を選べるようにする前に
  * 開いた同意画面からは書き込みの範囲が送られないため、省略したときは何も許可しない
  */
 const mcpPermissionsInputSchema = z.object({
@@ -415,15 +415,13 @@ const mcpPermissionsInputSchema = z.object({
   householdOperations: z
     .record(
       idSchema,
-      z
-        .array(z.enum(MCP_HOUSEHOLD_OPERATIONS))
-        .max(MCP_HOUSEHOLD_OPERATIONS.length),
+      z.array(z.enum(HOUSEHOLD_OPERATIONS)).max(HOUSEHOLD_OPERATIONS.length),
     )
     .refine((value) => Object.keys(value).length <= MAX_IDS)
     .default({}),
   catalogOperations: z
-    .array(z.enum(MCP_CATALOG_OPERATIONS))
-    .max(MCP_CATALOG_OPERATIONS.length)
+    .array(z.enum(CATALOG_OPERATIONS))
+    .max(CATALOG_OPERATIONS.length)
     .default([]),
 });
 
@@ -438,7 +436,7 @@ const mcpPermissionsInputSchema = z.object({
  * メモリーへ移した猫の分は保存しない。
  * 共通のごはん商品の操作は、admin のユーザー（`accessible.canUseCatalog`）のときだけ保存する
  */
-export function parseMcpPermissionsInput(
+export function parsePermissionsInput(
   value: FormDataEntryValue | null,
   accessible: {
     householdIds: string[];
@@ -449,7 +447,7 @@ export function parseMcpPermissionsInput(
     }[];
     canUseCatalog: boolean;
   },
-): McpPermissions | null {
+): AccessPermissions | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -479,8 +477,8 @@ export function parseMcpPermissionsInput(
       accessible.cats.some((cat) => cat.id === id),
     ),
   );
-  const excludedRecordTypes: McpPermissions["excludedRecordTypes"] = {};
-  const writableRecordTypes: McpPermissions["writableRecordTypes"] = {};
+  const excludedRecordTypes: AccessPermissions["excludedRecordTypes"] = {};
+  const writableRecordTypes: AccessPermissions["writableRecordTypes"] = {};
   for (const cat of catsInAllowedHouseholds) {
     if (excludedCatIds.includes(cat.id)) {
       continue;
@@ -488,7 +486,7 @@ export function parseMcpPermissionsInput(
     const excluded = parsed.data.excludedRecordTypes[cat.id] ?? [];
     if (excluded.length > 0) {
       // 並び順を揃えて保存する
-      excludedRecordTypes[cat.id] = MCP_PERMISSION_RECORD_TYPES.filter((type) =>
+      excludedRecordTypes[cat.id] = PERMISSION_RECORD_TYPES.filter((type) =>
         excluded.includes(type),
       );
     }
@@ -496,7 +494,7 @@ export function parseMcpPermissionsInput(
     const writable =
       cat.memorialDate != null
         ? []
-        : MCP_PERMISSION_RECORD_TYPES.filter(
+        : PERMISSION_RECORD_TYPES.filter(
             (type) =>
               !excluded.includes(type) &&
               (parsed.data.writableRecordTypes[cat.id] ?? []).includes(type),
@@ -505,12 +503,12 @@ export function parseMcpPermissionsInput(
       writableRecordTypes[cat.id] = writable;
     }
   }
-  const householdOperations: McpPermissions["householdOperations"] = {};
+  const householdOperations: AccessPermissions["householdOperations"] = {};
   for (const householdId of accessible.householdIds) {
     if (excludedHouseholdIds.includes(householdId)) {
       continue;
     }
-    const operations = MCP_HOUSEHOLD_OPERATIONS.filter((operation) =>
+    const operations = HOUSEHOLD_OPERATIONS.filter((operation) =>
       (parsed.data.householdOperations[householdId] ?? []).includes(operation),
     );
     if (operations.length > 0) {
@@ -518,7 +516,7 @@ export function parseMcpPermissionsInput(
     }
   }
   const catalogOperations = accessible.canUseCatalog
-    ? MCP_CATALOG_OPERATIONS.filter((operation) =>
+    ? CATALOG_OPERATIONS.filter((operation) =>
         parsed.data.catalogOperations.includes(operation),
       )
     : [];

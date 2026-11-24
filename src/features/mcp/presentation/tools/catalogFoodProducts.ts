@@ -36,8 +36,8 @@ import {
   listCatalogFoodProductRequests,
 } from "@/features/catalog-food-products/infrastructure/requestQueries";
 import {
-  isCatalogOperationAllowedForMcp,
-  type McpCatalogOperation,
+  type CatalogOperation,
+  isCatalogOperationAllowed,
 } from "@/features/external-access/domain/permissionRules";
 import { MAX_DECODE_PIXELS } from "@/features/media/domain/thumbnailSize";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
@@ -240,7 +240,7 @@ async function saveImage(
  */
 async function resolveCatalogOperation(
   ctx: McpToolContext,
-  operation: McpCatalogOperation,
+  operation: CatalogOperation,
 ): Promise<{ connection: McpConnection } | { error: string }> {
   const resolved = await resolvePermissions(ctx);
   if ("error" in resolved) {
@@ -250,9 +250,7 @@ async function resolveCatalogOperation(
   if (user?.role !== "admin") {
     return { error: NOT_ADMIN_ERROR };
   }
-  if (
-    !isCatalogOperationAllowedForMcp(resolved.permissions, user.role, operation)
-  ) {
+  if (!isCatalogOperationAllowed(resolved.permissions, user.role, operation)) {
     return { error: operationNotAllowedMessage(operation) };
   }
   return resolved;

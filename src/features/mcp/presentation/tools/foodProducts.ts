@@ -5,7 +5,7 @@ import {
   FOOD_PRODUCT_LIFE_STAGES,
   type FoodProduct,
 } from "@/db/schema";
-import { isHouseholdAllowedForMcp } from "@/features/external-access/domain/permissionRules";
+import { isHouseholdAllowed } from "@/features/external-access/domain/permissionRules";
 import {
   createFoodProduct,
   updateFoodProduct,
@@ -321,7 +321,7 @@ export function registerFoodProductTools(
       );
       if (
         !product?.householdId ||
-        !isHouseholdAllowedForMcp(resolved.permissions, product.householdId)
+        !isHouseholdAllowed(resolved.permissions, product.householdId)
       ) {
         return errorResult(notFound);
       }

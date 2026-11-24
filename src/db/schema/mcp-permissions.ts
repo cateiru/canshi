@@ -43,7 +43,7 @@ export const mcpPermissions = sqliteTable(
       .$type<string[]>()
       .notNull()
       .default(sql`'[]'`),
-    // 猫の ID ごとに、外した記録の種類（`MCP_PERMISSION_RECORD_TYPES`）
+    // 猫の ID ごとに、外した記録の種類（`PERMISSION_RECORD_TYPES`）
     excludedRecordTypes: text("excluded_record_types", { mode: "json" })
       .$type<Record<string, string[]>>()
       .notNull()
@@ -54,12 +54,12 @@ export const mcpPermissions = sqliteTable(
       .$type<Record<string, string[]>>()
       .notNull()
       .default(sql`'{}'`),
-    // 家の ID ごとに、許可した操作（`MCP_HOUSEHOLD_OPERATIONS`）
+    // 家の ID ごとに、許可した操作（`HOUSEHOLD_OPERATIONS`）
     householdOperations: text("household_operations", { mode: "json" })
       .$type<Record<string, string[]>>()
       .notNull()
       .default(sql`'{}'`),
-    // 許可した共通のごはん商品の操作（`MCP_CATALOG_OPERATIONS`）。アプリ全体の権限が admin の
+    // 許可した共通のごはん商品の操作（`CATALOG_OPERATIONS`）。アプリ全体の権限が admin の
     // ユーザーだけが許可でき、admin でなくなったユーザーの接続では、許可していても行えない
     catalogOperations: text("catalog_operations", { mode: "json" })
       .$type<string[]>()

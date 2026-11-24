@@ -3,25 +3,25 @@
 import { type FormEvent, startTransition, useActionState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Alert, addToast, Button } from "@/components/ui";
-import type { McpPermissionsFormState } from "@/features/mcp/presentation/actions";
-import type { McpPermissionTree } from "../domain/permissionRules";
+import type { PermissionsFormState } from "@/features/mcp/presentation/actions";
+import type { PermissionTree } from "../domain/permissionRules";
 import styles from "./PermissionsForm.module.css";
-import { McpPermissionTreeField } from "./PermissionTreeField";
+import { PermissionTreeField } from "./PermissionTreeField";
 
-type McpPermissionsFormProps = {
+type PermissionsFormProps = {
   action: (
-    state: McpPermissionsFormState,
+    state: PermissionsFormState,
     formData: FormData,
-  ) => Promise<McpPermissionsFormState>;
-  tree: McpPermissionTree;
+  ) => Promise<PermissionsFormState>;
+  tree: PermissionTree;
 };
 
-const initialState: McpPermissionsFormState = {};
+const initialState: PermissionsFormState = {};
 
 /** 設定の「AIとの接続」で、AI から読み取れる範囲と書き込める範囲を選んで保存するフォーム */
-export function McpPermissionsForm({ action, tree }: McpPermissionsFormProps) {
+export function PermissionsForm({ action, tree }: PermissionsFormProps) {
   const [state, formAction, isPending] = useActionState(
-    async (prevState: McpPermissionsFormState, formData: FormData) => {
+    async (prevState: PermissionsFormState, formData: FormData) => {
       const result = await action(prevState, formData);
       if (!result.formError) {
         addToast({
@@ -48,7 +48,7 @@ export function McpPermissionsForm({ action, tree }: McpPermissionsFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      <McpPermissionTreeField
+      <PermissionTreeField
         tree={tree.households}
         catalogOperations={tree.catalogOperations}
       />

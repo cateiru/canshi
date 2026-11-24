@@ -1,14 +1,14 @@
 import type { Cat, RecordActor } from "@/db/schema";
 import { isMemorialCat } from "@/features/cats/domain/memorial";
 import {
-  isCatAllowedForMcp,
-  isHouseholdAllowedForMcp,
-  isHouseholdOperationAllowedForMcp,
-  type McpCatalogOperation,
-  type McpHouseholdOperation,
-  type McpPermissionRecordType,
-  type McpPermissions,
-  writableMcpRecordTypes,
+  type AccessPermissions,
+  allowedWriteRecordTypes,
+  type CatalogOperation,
+  type HouseholdOperation,
+  isCatAllowed,
+  isHouseholdAllowed,
+  isHouseholdOperationAllowed,
+  type PermissionRecordType,
 } from "@/features/external-access/domain/permissionRules";
 import {
   getCatForUser,
@@ -51,10 +51,7 @@ export function jsonResult(value: unknown) {
 }
 
 /** 許可していない操作をしようとしたときのエラーに使う、操作の名前 */
-const OPERATION_LABEL: Record<
-  McpHouseholdOperation | McpCatalogOperation,
-  string
-> = {
+const OPERATION_LABEL: Record<HouseholdOperation | CatalogOperation, string> = {
   "foodProduct:read": "ごはん商品の読み取り",
   "foodProduct:create": "ごはん商品の追加",
   "foodProduct:update": "ごはん商品の編集",
@@ -87,7 +84,7 @@ const ASK_USER_TO_ALLOW =
   "CANSHI の設定の「AIとの接続」で、ユーザーに許可してもらってください";
 
 export function operationNotAllowedMessage(
-  operation: McpHouseholdOperation | McpCatalogOperation,
+  operation: HouseholdOperation | CatalogOperation,
   householdName?: string,
 ) {
   const target = householdName ? `家「${householdName}」での` : "";
@@ -110,7 +107,7 @@ export function memorialCatMessage(cat: Pick<Cat, "name" | "memorialDate">) {
 }
 
 /** 猫について行う操作のうち、メモリーへ移した猫には行えない（書き換える）操作 */
-const MEMORIAL_BLOCKED_CAT_OPERATIONS: readonly McpHouseholdOperation[] = [
+const MEMORIAL_BLOCKED_CAT_OPERATIONS: readonly HouseholdOperation[] = [
   "cat:update",
   "catNotification:update",
 ];
@@ -119,7 +116,8 @@ const MEMORIAL_BLOCKED_CAT_OPERATIONS: readonly McpHouseholdOperation[] = [
 export async function resolvePermissions(
   ctx: McpToolContext,
 ): Promise<
-  { connection: McpConnection; permissions: McpPermissions } | { error: string }
+  | { connection: McpConnection; permissions: AccessPermissions }
+  | { error: string }
 > {
   const connection = await ctx.resolveConnection();
   if ("error" in connection) {
@@ -141,12 +139,12 @@ export async function resolvePermissions(
 export async function resolveWritableCat(
   ctx: McpToolContext,
   catId: string,
-  recordType: McpPermissionRecordType,
+  recordType: PermissionRecordType,
   recordLabel: string,
 ): Promise<
   | {
       connection: McpConnection;
-      permissions: McpPermissions;
+      permissions: AccessPermissions;
       cat: Cat & { householdId: string };
     }
   | { error: string }
@@ -163,7 +161,7 @@ export async function resolveWritableCat(
   if (
     !cat ||
     cat.householdId === null ||
-    !isCatAllowedForMcp(resolved.permissions, cat)
+    !isCatAllowed(resolved.permissions, cat)
   ) {
     return { error: catNotFoundMessage(catId) };
   }
@@ -171,7 +169,7 @@ export async function resolveWritableCat(
     return { error: memorialCatMessage(cat) };
   }
   if (
-    !writableMcpRecordTypes(resolved.permissions, cat.id).includes(recordType)
+    !allowedWriteRecordTypes(resolved.permissions, cat.id).includes(recordType)
   ) {
     return {
       error:
@@ -193,11 +191,11 @@ export function householdNotFoundMessage(householdId: string) {
 export async function listAllowedHouseholds(
   ctx: McpToolContext,
   userId: string,
-  permissions: McpPermissions,
+  permissions: AccessPermissions,
 ) {
   const households = await listHouseholdsForUser(userId, ctx.env.DB);
   return households.filter((household) =>
-    isHouseholdAllowedForMcp(permissions, household.id),
+    isHouseholdAllowed(permissions, household.id),
   );
 }
 
@@ -208,9 +206,9 @@ export async function listAllowedHouseholds(
  */
 export async function checkHouseholdOperation(
   ctx: McpToolContext,
-  resolved: { connection: McpConnection; permissions: McpPermissions },
+  resolved: { connection: McpConnection; permissions: AccessPermissions },
   householdId: string,
-  operation: McpHouseholdOperation,
+  operation: HouseholdOperation,
 ): Promise<string | null> {
   const households = await listAllowedHouseholds(
     ctx,
@@ -222,11 +220,7 @@ export async function checkHouseholdOperation(
     return householdNotFoundMessage(householdId);
   }
   if (
-    !isHouseholdOperationAllowedForMcp(
-      resolved.permissions,
-      householdId,
-      operation,
-    )
+    !isHouseholdOperationAllowed(resolved.permissions, householdId, operation)
   ) {
     return operationNotAllowedMessage(operation, household.name);
   }
@@ -237,9 +231,10 @@ export async function checkHouseholdOperation(
 export async function resolveHouseholdOperation(
   ctx: McpToolContext,
   householdId: string,
-  operation: McpHouseholdOperation,
+  operation: HouseholdOperation,
 ): Promise<
-  { connection: McpConnection; permissions: McpPermissions } | { error: string }
+  | { connection: McpConnection; permissions: AccessPermissions }
+  | { error: string }
 > {
   const resolved = await resolvePermissions(ctx);
   if ("error" in resolved) {
@@ -263,11 +258,11 @@ export async function resolveHouseholdOperation(
 export async function resolveCatOperation(
   ctx: McpToolContext,
   catId: string,
-  operation: McpHouseholdOperation,
+  operation: HouseholdOperation,
 ): Promise<
   | {
       connection: McpConnection;
-      permissions: McpPermissions;
+      permissions: AccessPermissions;
       cat: Cat & { householdId: string };
     }
   | { error: string }
@@ -284,7 +279,7 @@ export async function resolveCatOperation(
   if (
     !cat ||
     cat.householdId === null ||
-    !isCatAllowedForMcp(resolved.permissions, cat)
+    !isCatAllowed(resolved.permissions, cat)
   ) {
     return { error: catNotFoundMessage(catId) };
   }
@@ -312,7 +307,7 @@ export async function resolveCatOperation(
  */
 export async function resolveHouseholdIdsForOperation(
   ctx: McpToolContext,
-  operation: McpHouseholdOperation,
+  operation: HouseholdOperation,
   householdId: string | undefined,
 ): Promise<{ householdIds: string[] } | { error: string }> {
   const resolved = await resolvePermissions(ctx);
@@ -336,7 +331,7 @@ export async function resolveHouseholdIdsForOperation(
   const householdIds = households
     .map(({ id }) => id)
     .filter((id) =>
-      isHouseholdOperationAllowedForMcp(resolved.permissions, id, operation),
+      isHouseholdOperationAllowed(resolved.permissions, id, operation),
     );
   if (householdIds.length === 0) {
     return { error: operationNotAllowedMessage(operation) };

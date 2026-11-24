@@ -2,8 +2,8 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { type FeedingPreset, GIVEN_AMOUNT_LEVELS } from "@/db/schema";
 import {
-  isHouseholdAllowedForMcp,
-  type McpHouseholdOperation,
+  type HouseholdOperation,
+  isHouseholdAllowed,
 } from "@/features/external-access/domain/permissionRules";
 import {
   createFeedingPreset,
@@ -69,7 +69,7 @@ const presetFields = {
  */
 async function resolvePreset(
   ctx: McpToolContext,
-  operation: McpHouseholdOperation,
+  operation: HouseholdOperation,
   id: string,
 ): Promise<
   | { connection: McpConnection; preset: FeedingPreset; householdId: string }
@@ -85,10 +85,7 @@ async function resolvePreset(
     ctx.env.DB,
   );
   const householdId = preset?.householdId;
-  if (
-    !householdId ||
-    !isHouseholdAllowedForMcp(resolved.permissions, householdId)
-  ) {
+  if (!householdId || !isHouseholdAllowed(resolved.permissions, householdId)) {
     return { error: `id="${id}" のプリセットが見つかりません` };
   }
   const operationError = await checkHouseholdOperation(

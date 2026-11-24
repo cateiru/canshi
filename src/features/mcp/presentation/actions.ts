@@ -25,7 +25,7 @@ export async function revokeMcpConnectionAction(
   revalidatePath("/settings/ai-connections");
 }
 
-export type McpPermissionsFormState = {
+export type PermissionsFormState = {
   formError?: string;
 };
 
@@ -36,9 +36,9 @@ export type McpPermissionsFormState = {
  */
 export async function updateMcpPermissionsAction(
   connectionId: string,
-  _prevState: McpPermissionsFormState,
+  _prevState: PermissionsFormState,
   formData: FormData,
-): Promise<McpPermissionsFormState> {
+): Promise<PermissionsFormState> {
   const user = await requireUser();
   // Server Action の引数はクライアントから任意の値を送れるため、自分の接続であることを確かめる
   const connection =

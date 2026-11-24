@@ -3,15 +3,15 @@ import { getDb } from "@/db/client";
 import { cats as catsTable, mcpPermissions } from "@/db/schema";
 import { getUserById } from "@/features/auth/infrastructure/users";
 import {
-  buildMcpPermissionTree,
-  DEFAULT_MCP_PERMISSIONS,
-  isMcpCatalogOperation,
-  isMcpHouseholdOperation,
-  isMcpPermissionRecordType,
-  MCP_PERMISSIONS_FIELD_NAME,
-  type McpPermissions,
-  type McpPermissionTree,
-  parseMcpPermissionsInput,
+  type AccessPermissions,
+  buildPermissionTree,
+  DEFAULT_PERMISSIONS,
+  isCatalogOperation,
+  isHouseholdOperation,
+  isPermissionRecordType,
+  PERMISSIONS_FIELD_NAME,
+  type PermissionTree,
+  parsePermissionsInput,
 } from "@/features/external-access/domain/permissionRules";
 import {
   listCatsForUser,
@@ -28,7 +28,7 @@ export async function getMcpPermissions(
   userId: string,
   clientId: string,
   d1?: D1Database,
-): Promise<McpPermissions> {
+): Promise<AccessPermissions> {
   const db = getDb(d1);
   const [row] = await db
     .select()
@@ -36,7 +36,7 @@ export async function getMcpPermissions(
     .where(permissionsKey(userId, clientId))
     .limit(1);
   if (!row) {
-    return DEFAULT_MCP_PERMISSIONS;
+    return DEFAULT_PERMISSIONS;
   }
   // 保存後に記録の種類・操作が無くなった場合に備えて、知らないものは読み飛ばす
   return {
@@ -44,17 +44,17 @@ export async function getMcpPermissions(
     excludedCatIds: row.excludedCatIds,
     excludedRecordTypes: filterValues(
       row.excludedRecordTypes,
-      isMcpPermissionRecordType,
+      isPermissionRecordType,
     ),
     writableRecordTypes: filterValues(
       row.writableRecordTypes,
-      isMcpPermissionRecordType,
+      isPermissionRecordType,
     ),
     householdOperations: filterValues(
       row.householdOperations,
-      isMcpHouseholdOperation,
+      isHouseholdOperation,
     ),
-    catalogOperations: row.catalogOperations.filter(isMcpCatalogOperation),
+    catalogOperations: row.catalogOperations.filter(isCatalogOperation),
   };
 }
 
@@ -77,7 +77,7 @@ export async function getMcpPermissionTree(
   userId: string,
   clientId: string,
   d1?: D1Database,
-): Promise<McpPermissionTree> {
+): Promise<PermissionTree> {
   const [permissions, households, cats, user] = await Promise.all([
     getMcpPermissions(userId, clientId, d1),
     listHouseholdsForUser(userId, d1),
@@ -86,7 +86,7 @@ export async function getMcpPermissionTree(
   ]);
   return {
     // 猫は登録した順に並べる（`listCatsForUser` は新しい順）
-    households: buildMcpPermissionTree(
+    households: buildPermissionTree(
       permissions,
       households,
       [...cats].reverse(),
@@ -97,7 +97,7 @@ export async function getMcpPermissionTree(
 }
 
 /**
- * フォーム（`McpPermissionTreeField`）で送られた範囲を、接続の範囲として保存する。
+ * フォーム（`PermissionTreeField`）で送られた範囲を、接続の範囲として保存する。
  * 設定画面と同意画面の両方から使う。ユーザーが所属する家・参照できる猫以外の ID は
  * 保存しない。共通のごはん商品の操作は、ユーザーが admin のときだけ保存する。
  * 送られた値の形が正しくなければ保存せずに false を返す
@@ -113,8 +113,8 @@ export async function saveMcpPermissionsFromForm(
     listCatsForUser(userId, d1),
     getUserById(userId, d1),
   ]);
-  const permissions = parseMcpPermissionsInput(
-    formData.get(MCP_PERMISSIONS_FIELD_NAME),
+  const permissions = parsePermissionsInput(
+    formData.get(PERMISSIONS_FIELD_NAME),
     {
       householdIds: households.map((household) => household.id),
       cats,

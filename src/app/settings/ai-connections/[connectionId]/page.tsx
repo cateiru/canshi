@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { TbEye } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { requireUser } from "@/features/auth/presentation/session";
-import { McpPermissionsForm } from "@/features/external-access/presentation/PermissionsForm";
+import { PermissionsForm } from "@/features/external-access/presentation/PermissionsForm";
 import { getUserMcpConnection } from "@/features/mcp/infrastructure/connections";
 import { getMcpPermissionTree } from "@/features/mcp/infrastructure/permissions";
 import { updateMcpPermissionsAction } from "@/features/mcp/presentation/actions";
@@ -109,7 +109,7 @@ export default async function AiConnectionPage({
         <p className={styles.description}>
           チェックを入れた権限に対してAIが操作できるようになります。
         </p>
-        <McpPermissionsForm
+        <PermissionsForm
           action={updateMcpPermissionsAction.bind(null, connection.id)}
           tree={permissionTree}
         />

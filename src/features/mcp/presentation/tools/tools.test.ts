@@ -35,8 +35,8 @@ import {
   weightRecords,
 } from "@/db/schema";
 import {
-  MCP_PERMISSION_RECORD_TYPES,
-  type McpHouseholdOperation,
+  type HouseholdOperation,
+  PERMISSION_RECORD_TYPES,
 } from "@/features/external-access/domain/permissionRules";
 import type { McpToolContext } from "./context";
 import { MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
@@ -129,13 +129,13 @@ const WRITE_ALL_RECORDS = {
   writableRecordTypes: Object.fromEntries(
     ["cat-1", "cat-2", "cat-3"].map((catId) => [
       catId,
-      [...MCP_PERMISSION_RECORD_TYPES],
+      [...PERMISSION_RECORD_TYPES],
     ]),
   ),
 };
 
 /** ユーザー1 の家すべてで、指定した操作を許可する範囲 */
-function operations(...allowed: McpHouseholdOperation[]) {
+function operations(...allowed: HouseholdOperation[]) {
   return {
     householdOperations: { "house-1": allowed, "house-2": allowed },
   };
@@ -690,9 +690,7 @@ describe("ブラッシングの記録", () => {
   it("書き込みを許可していなければ追加できない", async () => {
     await allow({
       writableRecordTypes: {
-        "cat-1": MCP_PERMISSION_RECORD_TYPES.filter(
-          (type) => type !== "brushing",
-        ),
+        "cat-1": PERMISSION_RECORD_TYPES.filter((type) => type !== "brushing"),
       },
     });
 

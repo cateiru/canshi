@@ -31,11 +31,11 @@ import {
 import { expenseFormSchema } from "@/features/expenses/domain/schema";
 import { getExpenseRecordForCat } from "@/features/expenses/infrastructure/queries";
 import {
-  allowedMcpRecordTypes,
-  isCatAllowedForMcp,
-  type McpPermissionRecordType,
-  type McpPermissions,
-  writableMcpRecordTypes,
+  type AccessPermissions,
+  allowedRecordTypes,
+  allowedWriteRecordTypes,
+  isCatAllowed,
+  type PermissionRecordType,
 } from "@/features/external-access/domain/permissionRules";
 import {
   createFeedingRecord,
@@ -158,7 +158,7 @@ type SaveResult = { id: string } | { error: string };
  * フォームの値に直してから画面と同じ zod スキーマで検証する（`../formValues.ts`）
  */
 type RecordToolDefinition<TData, TExisting> = {
-  recordType: McpPermissionRecordType;
+  recordType: PermissionRecordType;
   /** ツール名の一部（`create_{name}`・`update_{name}`） */
   name: string;
   /** 「うんちの記録」のような、記録の名前 */
@@ -188,7 +188,7 @@ type RecordToolDefinition<TData, TExisting> = {
   create(input: {
     ctx: McpToolContext;
     connection: McpConnection;
-    permissions: McpPermissions;
+    permissions: AccessPermissions;
     cat: WritableCat;
     data: TData;
     args: Record<string, unknown>;
@@ -196,7 +196,7 @@ type RecordToolDefinition<TData, TExisting> = {
   update(input: {
     ctx: McpToolContext;
     connection: McpConnection;
-    permissions: McpPermissions;
+    permissions: AccessPermissions;
     cat: WritableCat;
     id: string;
     data: TData;
@@ -917,7 +917,7 @@ async function listExpenseWritableCatIds(
   ctx: McpToolContext,
   userId: string,
   householdId: string,
-  permissions: McpPermissions,
+  permissions: AccessPermissions,
 ) {
   const cats = await listCatsForUser(userId, ctx.env.DB);
   return cats
@@ -925,8 +925,8 @@ async function listExpenseWritableCatIds(
       (cat) =>
         cat.householdId === householdId &&
         !isMemorialCat(cat) &&
-        isCatAllowedForMcp(permissions, cat) &&
-        writableMcpRecordTypes(permissions, cat.id).includes("expense"),
+        isCatAllowed(permissions, cat) &&
+        allowedWriteRecordTypes(permissions, cat.id).includes("expense"),
     )
     .map((cat) => cat.id);
 }
@@ -939,7 +939,7 @@ async function resolveExpenseCatIds(
   ctx: McpToolContext,
   cat: WritableCat,
   args: Record<string, unknown>,
-  permissions: McpPermissions,
+  permissions: AccessPermissions,
   userId: string,
 ): Promise<{ catIds: string[]; writable: string[] } | { error: string }> {
   const writable = await listExpenseWritableCatIds(
@@ -1547,7 +1547,7 @@ const MEMO_PAGE_SIZE = 50;
 async function resolveReadableCat(
   ctx: McpToolContext,
   catId: string,
-  recordType: McpPermissionRecordType,
+  recordType: PermissionRecordType,
 ): Promise<{ connection: McpConnection } | { error: string }> {
   const connection = await ctx.resolveConnection();
   if ("error" in connection) {
@@ -1559,8 +1559,8 @@ async function resolveReadableCat(
   ]);
   if (
     !cat ||
-    !isCatAllowedForMcp(permissions, cat) ||
-    !allowedMcpRecordTypes(permissions, cat.id).includes(recordType)
+    !isCatAllowed(permissions, cat) ||
+    !allowedRecordTypes(permissions, cat.id).includes(recordType)
   ) {
     return { error: catNotFoundMessage(catId) };
   }

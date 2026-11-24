@@ -6,20 +6,20 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { McpPermissionsFormState } from "@/features/mcp/presentation/actions";
+import type { PermissionsFormState } from "@/features/mcp/presentation/actions";
 import {
-  MCP_PERMISSION_RECORD_TYPES,
-  type McpPermissions,
-  type McpPermissionTree,
+  type AccessPermissions,
+  PERMISSION_RECORD_TYPES,
+  type PermissionTree,
 } from "../domain/permissionRules";
-import { McpPermissionsForm } from "./PermissionsForm";
+import { PermissionsForm } from "./PermissionsForm";
 
 vi.mock("@/components/ui", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/components/ui")>()),
   addToast: vi.fn(),
 }));
 
-const tree: McpPermissionTree = {
+const tree: PermissionTree = {
   households: [
     {
       id: "house-1",
@@ -32,7 +32,7 @@ const tree: McpPermissionTree = {
           name: "たま",
           memorial: false,
           checked: true,
-          checkedRecordTypes: [...MCP_PERMISSION_RECORD_TYPES],
+          checkedRecordTypes: [...PERMISSION_RECORD_TYPES],
           writableRecordTypes: [],
         },
       ],
@@ -41,14 +41,14 @@ const tree: McpPermissionTree = {
   catalogOperations: null,
 };
 
-describe("McpPermissionsForm", () => {
+describe("PermissionsForm", () => {
   // React は action で送ったフォームを送信後に reset し、react-aria の Checkbox は reset で
   // マウント時の値に戻そうとする。保存した後も、選んだチェックのままにする（Issue #527）
   it("保存した後も、選んだチェックの状態のまま表示する", async () => {
     const action = vi.fn(
-      async (_state: McpPermissionsFormState, _formData: FormData) => ({}),
+      async (_state: PermissionsFormState, _formData: FormData) => ({}),
     );
-    render(<McpPermissionsForm action={action} tree={tree} />);
+    render(<PermissionsForm action={action} tree={tree} />);
     const write = screen.getByRole("checkbox", { name: "家1の記録を書く" });
     expect(write).not.toBeChecked();
 
@@ -62,9 +62,9 @@ describe("McpPermissionsForm", () => {
     const formData = action.mock.calls[0]?.[1];
     const sent = JSON.parse(
       String(formData?.get("mcpPermissions")),
-    ) as McpPermissions;
+    ) as AccessPermissions;
     expect(sent.writableRecordTypes["cat-1"]).toEqual([
-      ...MCP_PERMISSION_RECORD_TYPES,
+      ...PERMISSION_RECORD_TYPES,
     ]);
 
     await waitFor(() =>

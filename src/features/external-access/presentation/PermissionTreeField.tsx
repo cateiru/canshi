@@ -13,28 +13,28 @@ import {
   TIMELINE_TYPE_LABEL,
 } from "@/features/timeline/domain/labels";
 import {
-  MCP_CATALOG_OPERATION_GROUPS,
-  MCP_CATALOG_OPERATIONS,
-  MCP_HOUSEHOLD_OPERATION_GROUPS,
-  MCP_HOUSEHOLD_OPERATIONS,
-  MCP_PERMISSION_RECORD_TYPES,
-  MCP_PERMISSIONS_FIELD_NAME,
-  type McpCatalogOperation,
-  type McpHouseholdOperation,
-  type McpPermissionRecordType,
-  type McpPermissions,
-  type McpPermissionTreeHousehold,
+  type AccessPermissions,
+  CATALOG_OPERATION_GROUPS,
+  CATALOG_OPERATIONS,
+  type CatalogOperation,
+  HOUSEHOLD_OPERATION_GROUPS,
+  HOUSEHOLD_OPERATIONS,
+  type HouseholdOperation,
+  PERMISSION_RECORD_TYPES,
+  PERMISSIONS_FIELD_NAME,
+  type PermissionRecordType,
+  type PermissionTreeHousehold,
 } from "../domain/permissionRules";
 import styles from "./PermissionTreeField.module.css";
 
-type McpPermissionTreeFieldProps = {
+type PermissionTreeFieldProps = {
   /** 表示する家・猫と、最初のチェックの状態 */
-  tree: McpPermissionTreeHousehold[];
+  tree: PermissionTreeHousehold[];
   /**
    * 共通のごはん商品の操作の、最初のチェックの状態。admin でないユーザーは選べないため
    * null（省略）にし、項目も表示しない
    */
-  catalogOperations?: McpCatalogOperation[] | null;
+  catalogOperations?: CatalogOperation[] | null;
 };
 
 /**
@@ -44,10 +44,10 @@ type McpPermissionTreeFieldProps = {
 type CheckedState = {
   households: Set<string>;
   cats: Set<string>;
-  records: Map<string, Set<McpPermissionRecordType>>;
-  writes: Map<string, Set<McpPermissionRecordType>>;
-  operations: Map<string, Set<McpHouseholdOperation>>;
-  catalog: Set<McpCatalogOperation>;
+  records: Map<string, Set<PermissionRecordType>>;
+  writes: Map<string, Set<PermissionRecordType>>;
+  operations: Map<string, Set<HouseholdOperation>>;
+  catalog: Set<CatalogOperation>;
 };
 
 /**
@@ -74,10 +74,10 @@ type CheckedState = {
  * 読み取りは外したもの（表示した家・猫だけ）を、書き込み・操作は許可したものを送る。
  * 表示した後に登録された猫などは、読み取れるが書き込めない（`toPermissions` 参照）
  */
-export function McpPermissionTreeField({
+export function PermissionTreeField({
   tree,
   catalogOperations = null,
-}: McpPermissionTreeFieldProps) {
+}: PermissionTreeFieldProps) {
   const [checked, setChecked] = useState(() =>
     initialState(tree, catalogOperations ?? []),
   );
@@ -99,7 +99,7 @@ export function McpPermissionTreeField({
 
   const setCat = (draft: CheckedState, catId: string, value: boolean) => {
     toggle(draft.cats, catId, value);
-    draft.records.set(catId, new Set(value ? MCP_PERMISSION_RECORD_TYPES : []));
+    draft.records.set(catId, new Set(value ? PERMISSION_RECORD_TYPES : []));
     if (!value) {
       draft.writes.set(catId, new Set());
     }
@@ -118,7 +118,7 @@ export function McpPermissionTreeField({
     <div className={styles.field}>
       <input
         type="hidden"
-        name={MCP_PERMISSIONS_FIELD_NAME}
+        name={PERMISSIONS_FIELD_NAME}
         value={JSON.stringify(toPermissions(tree, checked))}
       />
       {tree.length === 0 ? (
@@ -217,7 +217,7 @@ export function McpPermissionTreeField({
                         <span className={styles.sectionLabel}>
                           ごはん商品・家・ねこなどの操作
                         </span>
-                        {MCP_HOUSEHOLD_OPERATION_GROUPS.map((group) => (
+                        {HOUSEHOLD_OPERATION_GROUPS.map((group) => (
                           <fieldset
                             key={group.label}
                             aria-label={`${household.name}の${group.label}`}
@@ -338,7 +338,7 @@ export function McpPermissionTreeField({
           <p className={styles.catalogNote}>
             管理者だけが選べます。すべての家で検索・追加に使う商品と、商品のリクエストを、このアプリから扱えるようにします。
           </p>
-          {MCP_CATALOG_OPERATION_GROUPS.map((group) => (
+          {CATALOG_OPERATION_GROUPS.map((group) => (
             <fieldset
               key={group.label}
               aria-label={group.shortLabel}
@@ -370,12 +370,12 @@ export function McpPermissionTreeField({
 }
 
 type CatPermissionItemProps = {
-  cat: McpPermissionTreeHousehold["cats"][number];
+  cat: PermissionTreeHousehold["cats"][number];
   checked: CheckedState;
   onCatChange: (value: boolean) => void;
   onCatWritesChange: (value: boolean) => void;
-  onReadChange: (type: McpPermissionRecordType, value: boolean) => void;
-  onWriteChange: (type: McpPermissionRecordType, value: boolean) => void;
+  onReadChange: (type: PermissionRecordType, value: boolean) => void;
+  onWriteChange: (type: PermissionRecordType, value: boolean) => void;
 };
 
 /**
@@ -438,7 +438,7 @@ function CatPermissionItem({
         </div>
         <DisclosurePanel>
           <fieldset aria-label={`${cat.name}の記録`} className={styles.records}>
-            {MCP_PERMISSION_RECORD_TYPES.map((type) => {
+            {PERMISSION_RECORD_TYPES.map((type) => {
               const Icon = TIMELINE_TYPE_ICON[type];
               const label = TIMELINE_TYPE_LABEL[type];
               return (
@@ -490,16 +490,16 @@ function CatPermissionItem({
 function setCatWrites(draft: CheckedState, catId: string, value: boolean) {
   if (value) {
     draft.cats.add(catId);
-    draft.records.set(catId, new Set(MCP_PERMISSION_RECORD_TYPES));
+    draft.records.set(catId, new Set(PERMISSION_RECORD_TYPES));
   }
-  draft.writes.set(catId, new Set(value ? MCP_PERMISSION_RECORD_TYPES : []));
+  draft.writes.set(catId, new Set(value ? PERMISSION_RECORD_TYPES : []));
 }
 
 /** 記録の種類の読み取りのチェックを変える。読み取りを外すと、書き込みも外す */
 function setRead(
   draft: CheckedState,
   catId: string,
-  type: McpPermissionRecordType,
+  type: PermissionRecordType,
   value: boolean,
 ) {
   const types = draft.records.get(catId) ?? new Set();
@@ -515,8 +515,8 @@ function copySets<T>(map: Map<string, Set<T>>) {
 }
 
 function initialState(
-  tree: McpPermissionTreeHousehold[],
-  catalogOperations: McpCatalogOperation[],
+  tree: PermissionTreeHousehold[],
+  catalogOperations: CatalogOperation[],
 ): CheckedState {
   const state: CheckedState = {
     households: new Set(),
@@ -544,13 +544,13 @@ function initialState(
 
 function isAllRecordsChecked(state: CheckedState, catId: string) {
   return (
-    (state.records.get(catId)?.size ?? 0) === MCP_PERMISSION_RECORD_TYPES.length
+    (state.records.get(catId)?.size ?? 0) === PERMISSION_RECORD_TYPES.length
   );
 }
 
 function isAllRecordsWritable(state: CheckedState, catId: string) {
   return (
-    (state.writes.get(catId)?.size ?? 0) === MCP_PERMISSION_RECORD_TYPES.length
+    (state.writes.get(catId)?.size ?? 0) === PERMISSION_RECORD_TYPES.length
   );
 }
 
@@ -570,16 +570,16 @@ function toggle<T>(set: Set<T>, value: T, on: boolean) {
  * 共通のごはん商品の操作は家に属さないため、チェックが付いているものをそのまま送る
  */
 export function toPermissions(
-  tree: McpPermissionTreeHousehold[],
+  tree: PermissionTreeHousehold[],
   state: CheckedState,
-): McpPermissions {
-  const permissions: McpPermissions = {
+): AccessPermissions {
+  const permissions: AccessPermissions = {
     excludedHouseholdIds: [],
     excludedCatIds: [],
     excludedRecordTypes: {},
     writableRecordTypes: {},
     householdOperations: {},
-    catalogOperations: MCP_CATALOG_OPERATIONS.filter((operation) =>
+    catalogOperations: CATALOG_OPERATIONS.filter((operation) =>
       state.catalog.has(operation),
     ),
   };
@@ -592,9 +592,7 @@ export function toPermissions(
     const operations = state.operations.get(household.id);
     if (operations && operations.size > 0) {
       permissions.householdOperations[household.id] =
-        MCP_HOUSEHOLD_OPERATIONS.filter((operation) =>
-          operations.has(operation),
-        );
+        HOUSEHOLD_OPERATIONS.filter((operation) => operations.has(operation));
     }
     for (const cat of household.cats) {
       if (!state.cats.has(cat.id)) {
@@ -602,7 +600,7 @@ export function toPermissions(
         continue;
       }
       const types = state.records.get(cat.id);
-      const excluded = MCP_PERMISSION_RECORD_TYPES.filter(
+      const excluded = PERMISSION_RECORD_TYPES.filter(
         (type) => !types?.has(type),
       );
       if (excluded.length > 0) {
@@ -611,7 +609,7 @@ export function toPermissions(
       const writes = state.writes.get(cat.id);
       const writable = cat.memorial
         ? []
-        : MCP_PERMISSION_RECORD_TYPES.filter(
+        : PERMISSION_RECORD_TYPES.filter(
             (type) => types?.has(type) && writes?.has(type),
           );
       if (writable.length > 0) {
