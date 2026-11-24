@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { HelpArticle } from "@/features/help/HelpArticle";
 import { HelpCodeBlock } from "@/features/help/HelpCodeBlock";
 import styles from "@/features/help/HelpContent.module.css";
 import { HelpSteps } from "@/features/help/HelpSteps";
+import { requestOrigin } from "@/features/help/requestOrigin";
 import { getHelpTopic } from "@/features/help/topics";
 import { Surface } from "@/features/shared/Surface";
 
@@ -19,20 +19,8 @@ export const metadata: Metadata = {
  */
 const MCP_API_ROUTE = "/mcp";
 
-/** AI のアプリに登録する URL。固定の公開 URL を持たないため、アクセス先のドメインから組み立てる */
-async function mcpServerUrl() {
-  const requestHeaders = await headers();
-  const host =
-    requestHeaders.get("x-forwarded-host") ??
-    requestHeaders.get("host") ??
-    "localhost:3000";
-  const protocol =
-    requestHeaders.get("x-forwarded-proto") === "http" ? "http" : "https";
-  return `${protocol}://${host}${MCP_API_ROUTE}`;
-}
-
 export default async function AiConnectionsHelpPage() {
-  const url = await mcpServerUrl();
+  const url = `${await requestOrigin()}${MCP_API_ROUTE}`;
 
   return (
     <HelpArticle
