@@ -1,5 +1,6 @@
 import { ApiTokenIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { TbEye, TbPlus } from "react-icons/tb";
 import { Breadcrumb, ButtonLink, Heading } from "@/components/ui";
 import { listApiTokensForUser } from "@/features/api/infrastructure/queries";
@@ -7,6 +8,7 @@ import { ApiTokenExpiry } from "@/features/api/presentation/ApiTokenExpiry";
 import { DeleteApiTokenButton } from "@/features/api/presentation/DeleteApiTokenButton";
 import { API_TOKENS_PATH } from "@/features/api/presentation/paths";
 import { requireUser } from "@/features/auth/presentation/session";
+import { helpHref } from "@/features/help/topics";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -42,7 +44,12 @@ export default async function ApiTokensPage() {
         <RecordPageHeading icon={ApiTokenIcon}>APIトークン</RecordPageHeading>
         <p className={styles.description}>
           API
-          を使うためのトークンを発行し、トークンごとに読み取れる情報と許可する操作を設定できます。
+          を使うためのトークンを発行し、トークンごとに読み取れる情報と許可する操作を設定できます。API
+          の使い方は、
+          <Link href={helpHref("api")} className={styles.link}>
+            ヘルプの「APIの使い方」
+          </Link>
+          を見てください。
         </p>
       </header>
 

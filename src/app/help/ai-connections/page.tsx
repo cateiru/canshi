@@ -32,7 +32,7 @@ export default async function AiConnectionsHelpPage() {
           のアプリと外部のサービスをつなぐしくみ）を使います。
         </p>
       }
-      related={["records"]}
+      related={["records", "api"]}
     >
       <Surface title="接続のしかた" gap="md">
         <HelpSteps

@@ -14,6 +14,11 @@
   color: var(--color-ink-muted);
 }
 
+.link {
+  color: var(--color-accent-strong);
+  text-decoration: underline;
+}
+
 .newAction {
   display: flex;
 }
