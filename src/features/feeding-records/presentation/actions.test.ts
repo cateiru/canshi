@@ -15,7 +15,7 @@ import {
 } from "@/db/schema";
 
 /** 記録を操作した人（履歴の確認以外では中身を問わない） */
-const actor = { userId: "user-1", mcpClientId: null };
+const actor = { userId: "user-1", mcpClientId: null, apiTokenId: null };
 
 // `src/features/symptoms/actions.test.ts` と同様に、`getDb` をテスト用の sql.js に差し替え、
 // D1 専用の `db.batch` は順番に実行するだけの簡易実装で補う

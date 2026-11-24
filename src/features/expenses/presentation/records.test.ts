@@ -26,7 +26,7 @@ import {
 } from "@/db/schema";
 
 /** 記録を操作した人（履歴の確認以外では中身を問わない） */
-const actor = { userId: "user-1", mcpClientId: null };
+const actor = { userId: "user-1", mcpClientId: null, apiTokenId: null };
 
 let db: ReturnType<typeof getDb>;
 let sqlite: Database;

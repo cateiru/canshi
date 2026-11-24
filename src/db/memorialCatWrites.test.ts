@@ -49,7 +49,11 @@ vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
 
-const actor: RecordActor = { userId: "user-1", mcpClientId: null };
+const actor: RecordActor = {
+  userId: "user-1",
+  mcpClientId: null,
+  apiTokenId: null,
+};
 const at = new Date("2026-07-01T08:00:00Z");
 const later = new Date("2026-07-02T08:00:00Z");
 

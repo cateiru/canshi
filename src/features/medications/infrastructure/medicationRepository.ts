@@ -95,7 +95,7 @@ export function createMedicationRepository(
       const [, , , deleted] = await db.batch([
         db.insert(recordChangeLogs).select(
           sql`SELECT lower(hex(randomblob(16))), 'medication_dose', ${medicationDoses.id}, 'delete',
-              ${actor.userId}, ${actor.mcpClientId}, unixepoch()
+              ${actor.userId}, ${actor.mcpClientId}, ${actor.apiTokenId}, unixepoch()
             FROM ${medicationDoses}
             WHERE ${medicationDoses.medicationId} = ${id}
               AND ${medicationDoses.catId} = ${catId}

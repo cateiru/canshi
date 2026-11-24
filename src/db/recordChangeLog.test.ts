@@ -48,8 +48,16 @@ vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
 
-const actor: RecordActor = { userId: "user-1", mcpClientId: null };
-const aiActor: RecordActor = { userId: "user-2", mcpClientId: "client-1" };
+const actor: RecordActor = {
+  userId: "user-1",
+  mcpClientId: null,
+  apiTokenId: null,
+};
+const aiActor: RecordActor = {
+  userId: "user-2",
+  mcpClientId: "client-1",
+  apiTokenId: null,
+};
 const at = new Date("2026-07-01T08:00:00Z");
 
 beforeEach(async () => {
@@ -751,7 +759,7 @@ describe("外部キー", () => {
       createPoopRecordRepository().add(
         "tama",
         content({ occurredAt: at, consistency: "normal" }),
-        { userId: "unknown", mcpClientId: null },
+        { userId: "unknown", mcpClientId: null, apiTokenId: null },
       ),
     ).rejects.toThrow();
 

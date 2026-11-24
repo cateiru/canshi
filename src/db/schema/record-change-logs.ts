@@ -33,11 +33,13 @@ export type RecordChangeLogAction = (typeof RECORD_CHANGE_LOG_ACTIONS)[number];
 
 /**
  * 記録を操作した人。AI との接続（MCP）からの操作では、接続を許可したユーザーと、
- * 接続（OAuth のクライアントの ID）を両方持つ。画面からの操作では `mcpClientId` は null
+ * 接続（OAuth のクライアントの ID）を両方持つ。API からの操作では、トークンを発行したユーザーと
+ * トークンの ID を両方持つ。画面からの操作では `mcpClientId`・`apiTokenId` は null
  */
 export type RecordActor = {
   userId: string;
   mcpClientId: string | null;
+  apiTokenId: string | null;
 };
 
 /**

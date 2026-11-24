@@ -17,7 +17,7 @@ import {
 import { deletePoopRecord, updatePoopRecord } from "./mutations";
 
 /** 記録を操作した人（履歴の確認以外では中身を問わない） */
-const actor = { userId: "user-1", mcpClientId: null };
+const actor = { userId: "user-1", mcpClientId: null, apiTokenId: null };
 
 // `src/features/households/application/management.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;

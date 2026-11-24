@@ -82,7 +82,7 @@ async function resolveAccess(
   return {
     userId,
     // 接続を許可したユーザーと接続の両方を、記録を操作した人として残す
-    actor: { userId, mcpClientId: clientId },
+    actor: { userId, mcpClientId: clientId, apiTokenId: null },
     permissions: await getMcpPermissions(userId, clientId, env.DB),
   };
 }

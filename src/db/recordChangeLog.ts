@@ -40,6 +40,7 @@ export function insertRecordChangeLog(
       action: change.action,
       userId: change.actor.userId,
       mcpClientId: change.actor.mcpClientId,
+      apiTokenId: change.actor.apiTokenId,
     },
     condition,
   );
