@@ -20,7 +20,7 @@ import {
 } from "@/features/external-access/domain/permissionRules";
 import { createApiToken } from "../application/mutations";
 import type { ApiTokenExpiration } from "../domain/apiToken";
-import { handleApiRequest } from "./handler";
+import { handleApiRequest } from "./app";
 
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
@@ -100,6 +100,7 @@ async function call(path: string, options: CallOptions = {}) {
       method,
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
         ...headers,
       },
       body:
@@ -310,7 +311,7 @@ describe("書き込み", () => {
 });
 
 describe("リクエストの誤り", () => {
-  it.each(["[]", "null", "{"])(
+  it.each(["[]", "null", "{", ""])(
     "JSON のオブジェクトでない本文（%s）は 400 にする",
     async (body) => {
       const { token } = await issue({
@@ -364,13 +365,33 @@ describe("リクエストの誤り", () => {
     expect(actual.status).toBe(413);
   });
 
+  it("JSON でない Content-Type の本文は 415 にする", async () => {
+    const { token } = await issue({
+      writableRecordTypes: { "cat-1": ["poop"] },
+    });
+    for (const contentType of [
+      "text/plain",
+      "application/x-www-form-urlencoded",
+    ]) {
+      const result = await call("/cats/cat-1/poop-records", {
+        token,
+        method: "POST",
+        body: { consistency: "soft" },
+        headers: { "Content-Type": contentType },
+      });
+      expect(result.status).toBe(415);
+      expect(result.json.error?.code).toBe("unsupported_media_type");
+    }
+    expect(await db.select().from(poopRecords)).toEqual([]);
+  });
+
   it("存在しないパスは 404、使えないメソッドは 405 にする", async () => {
     const { token } = await issue();
     expect((await call("/unknown", { token })).status).toBe(404);
 
     const result = await call("/cats/cat-1", { token, method: "DELETE" });
     expect(result.status).toBe(405);
-    expect(result.headers.get("Allow")).toBe("GET, PATCH");
+    expect(result.headers.get("Allow")).toBe("GET, HEAD, PATCH");
   });
 
   it("エラーのメッセージの操作の名前は、エンドポイントに置き換える", async () => {

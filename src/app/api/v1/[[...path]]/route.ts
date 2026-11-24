@@ -1,6 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { after } from "next/server";
-import { handleApiRequest } from "@/features/api/presentation/handler";
+import { handleApiRequest } from "@/features/api/presentation/app";
 
 export const dynamic = "force-dynamic";
 

@@ -140,6 +140,8 @@ PR のレビューコメント（インラインコメント・レビュー本�
 MCP のツールと API（`/api/v1`）のエンドポイントは、同じ操作（`src/features/external-access/presentation/operations/**`）を
 呼ぶ。操作は通信の方式に依存させず、呼んだものの呼び方（「この接続」「このトークン」）は `ctx.caller` を使う。
 
+- API は Hono（`@hono/zod-openapi`）で、エンドポイントの一覧（`src/features/api/domain/routes.ts`）と操作の zod スキーマから、
+  ルーティング・引数の検証・仕様（`/api/v1/openapi.json`）を作る（`src/features/api/presentation/app.ts`）
 - 操作を足したら、`src/features/api/domain/routes.ts` にエンドポイントも足す（すべての操作に 1 つずつあることをテストで
   確かめている）。操作の説明・エラーのメッセージの操作の名前（`list_cats` など）は、API ではエンドポイントに置き換わる
 - 公開した API のパス・引数・応答の項目を、互換性のない形で変えない。変えるときは新しい版（`/api/v2`）を作る

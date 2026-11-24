@@ -17,7 +17,7 @@
   "dependencies": {
     "@canshi/shared": "workspace:*",
     "drizzle-orm": "catalog:",
-    "hono": "^4.13.13",
+    "hono": "catalog:",
     "react": "19.3.1",
     "react-aria-components": "catalog:",
     "react-dom": "19.3.1",

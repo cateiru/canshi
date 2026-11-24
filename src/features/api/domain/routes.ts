@@ -1,7 +1,9 @@
 /*
  * API（`/api/v1`）のエンドポイントの一覧。業務の処理は、AI との接続と共通の操作
  * （`src/features/external-access/presentation/operations/`）で、ここでは HTTP のメソッド・パスと
- * 操作の対応だけを持つ。すべての操作に 1 つずつエンドポイントがあることは、テストで確かめる
+ * 操作の対応だけを持つ。ルーティング・引数の検証・仕様（OpenAPI）の生成は、この一覧をもとに
+ * Hono（`@hono/zod-openapi`）で行う（`../presentation/app.ts`）。
+ * すべての操作に 1 つずつエンドポイントがあることは、テストで確かめる
  */
 
 export const API_BASE_PATH = "/api/v1";
@@ -242,63 +244,4 @@ export const API_ROUTES: ApiRoute[] = API_ROUTE_GROUPS.flatMap(
 /** パスの `{catId}` のような部分の名前 */
 export function apiPathParams(path: string): string[] {
   return [...path.matchAll(/\{(\w+)\}/g)].map((match) => match[1]);
-}
-
-export type ApiRouteMatch =
-  | { route: ApiRoute; params: Record<string, string> }
-  /** パスは存在するが、メソッドが違う。`allow` は使えるメソッド */
-  | { route: null; allow: ApiMethod[] };
-
-/** `API_BASE_PATH` より後ろのパス（エンコードされたまま）に合うエンドポイントを探す。無ければ null */
-export function matchApiRoute(
-  method: string,
-  path: string,
-): ApiRouteMatch | null {
-  const segments = path.split("/");
-  const allow: ApiMethod[] = [];
-  for (const route of API_ROUTES) {
-    const params = matchPath(route.path.split("/"), segments);
-    if (!params) {
-      continue;
-    }
-    if (route.method === method) {
-      return { route, params };
-    }
-    allow.push(route.method);
-  }
-  return allow.length > 0 ? { route: null, allow } : null;
-}
-
-function matchPath(
-  pattern: string[],
-  segments: string[],
-): Record<string, string> | null {
-  if (pattern.length !== segments.length) {
-    return null;
-  }
-  const params: Record<string, string> = {};
-  for (const [index, part] of pattern.entries()) {
-    const segment = segments[index];
-    const [name] = apiPathParams(part);
-    if (name === undefined) {
-      if (part !== segment) {
-        return null;
-      }
-      continue;
-    }
-    const value = decodeSegment(segment);
-    if (!value) {
-      return null;
-    }
-    params[name] = value;
-  }
-  return params;
-}
-
-function decodeSegment(segment: string): string | null {
-  try {
-    return decodeURIComponent(segment);
-  } catch {
-    return null;
-  }
 }

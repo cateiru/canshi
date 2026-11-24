@@ -493,11 +493,11 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
 ## API
 
 設定の「外部接続」の「APIトークン」で発行したトークンで使う API を、メインアプリの `/api/v1` で公開している
-（`src/features/api/`）。Next.js の Route Handler（`src/app/api/v1/[[...path]]/route.ts`）で処理し、`/mcp` と違って
-`next dev` でも使える。
+（`src/features/api/`）。Next.js の Route Handler（`src/app/api/v1/[[...path]]/route.ts`）から Hono（`@hono/zod-openapi`、
+`src/features/api/presentation/app.ts`）に渡して処理し、`/mcp` と違って `next dev` でも使える。
 
 - ログインの Cookie ではなくトークンで認証するため、middleware ではセッションを確認しない
-  （`src/features/auth/domain/publicPaths.ts`）。API の仕様（`/api/v1/openapi.json`）はトークンなしで読める
+  （`src/features/auth/domain/publicPaths.ts`）。API の仕様（OpenAPI、`/api/v1/openapi.json`）はトークンなしで読める
 - 本番ドメインは Access で保護していないため、Access のログイン画面を挟まずに到達できる。プレビュー URL は Access で
   保護しているため、プレビューの API を外部から呼ぶことはできない
 - Bot Fight Mode をオンにすると、curl などからのリクエストがブロックされうる（「MCP サーバー」節の「トラブルシューティング」）
