@@ -1,0 +1,15 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.note {
+  color: var(--color-ink-muted);
+}
+
+/* 発行ボタンは、ほかのフォームと同じく横長にする */
+.footer {
+  display: flex;
+  flex-direction: column;
+}
