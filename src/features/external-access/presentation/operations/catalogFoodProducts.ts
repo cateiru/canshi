@@ -1,4 +1,3 @@
-import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import {
   type CatalogFoodProduct,
@@ -43,12 +42,9 @@ import {
   isCatalogOperationAllowed,
 } from "../../domain/permissionRules";
 import {
-  errorResult,
-  jsonResult,
-  type McpConnection,
-  type McpToolContext,
-  operationNotAllowedMessage,
-  resolvePermissions,
+  type OperationAccess,
+  type OperationContext,
+  operationNotAllowedError,
 } from "./context";
 import {
   type FormValues,
@@ -61,6 +57,14 @@ import {
   INVALID_IMAGE_ERROR,
   MAX_IMAGE_BASE64_LENGTH,
 } from "./imageArgs";
+import {
+  errorResult,
+  forbiddenError,
+  jsonResult,
+  notFoundError,
+  type OperationError,
+  type OperationRegistry,
+} from "./registry";
 
 const NOT_ADMIN_ERROR =
   "共通のごはん商品は、CANSHI の管理者のユーザーだけが扱えます";
@@ -187,7 +191,7 @@ function formArgs(args: Record<string, unknown>) {
 
 /**
  * 引数の画像を読み、共通のごはん商品の画像の形（正方形の JPEG）にする。商品を保存する前に
- * 呼び、画像でない・読み込めないときは商品を保存せずに断る。失敗したら AI に返すメッセージ
+ * 呼び、画像でない・読み込めないときは商品を保存せずに断る。失敗したら 結果として返すメッセージ
  */
 function prepareImage(
   value: string | undefined,
@@ -210,12 +214,12 @@ function prepareImage(
 }
 
 /**
- * 商品の画像を差し替える。失敗したら AI に返すメッセージ（商品が見つからないときも含む）。
+ * 商品の画像を差し替える。失敗したら 結果として返すメッセージ（商品が見つからないときも含む）。
  * 商品を保存した後に呼ぶため、R2・D1 の通信エラーなどの想定外の失敗も投げ直さずにメッセージにする
  * （投げ直すと、保存済みの商品の ID を返せず、AI が追加をやり直して商品が重複する）
  */
 async function saveImage(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   productId: string,
   image: CatalogImage,
 ): Promise<string | null> {
@@ -239,19 +243,19 @@ async function saveImage(
  * admin でなくなったユーザーの接続では、許可していても行えない
  */
 async function resolveCatalogOperation(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   operation: CatalogOperation,
-): Promise<{ connection: McpConnection } | { error: string }> {
-  const resolved = await resolvePermissions(ctx);
+): Promise<OperationAccess | { error: OperationError }> {
+  const resolved = await ctx.resolveAccess();
   if ("error" in resolved) {
     return resolved;
   }
-  const user = await getUserById(resolved.connection.userId, ctx.env.DB);
+  const user = await getUserById(resolved.userId, ctx.env.DB);
   if (user?.role !== "admin") {
-    return { error: NOT_ADMIN_ERROR };
+    return { error: forbiddenError(NOT_ADMIN_ERROR) };
   }
   if (!isCatalogOperationAllowed(resolved.permissions, user.role, operation)) {
-    return { error: operationNotAllowedMessage(operation) };
+    return { error: operationNotAllowedError(ctx.caller, operation) };
   }
   return resolved;
 }
@@ -262,11 +266,11 @@ async function resolveCatalogOperation(
  * 扱えるのは admin のユーザーで、接続にその操作を許可しているときに限る。
  * 画像は追加・編集で登録・差し替えできる。画像だけの削除と、商品の削除は管理画面だけで行う
  */
-export function registerCatalogFoodProductTools(
-  server: McpServer,
-  ctx: McpToolContext,
+export function registerCatalogFoodProductOperations(
+  registry: OperationRegistry,
+  ctx: OperationContext,
 ) {
-  server.registerTool(
+  registry.register(
     "list_catalog_food_products",
     {
       title: "共通のごはん商品を検索",
@@ -319,7 +323,7 @@ export function registerCatalogFoodProductTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "create_catalog_food_product",
     {
       title: "共通のごはん商品を追加",
@@ -358,7 +362,7 @@ export function registerCatalogFoodProductTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "update_catalog_food_product",
     {
       title: "共通のごはん商品を編集",
@@ -388,7 +392,9 @@ export function registerCatalogFoodProductTools(
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
-      const notFound = `id="${args.id}" の共通のごはん商品が見つかりません`;
+      const notFound = notFoundError(
+        `id="${args.id}" の共通のごはん商品が見つかりません`,
+      );
       const product = await getCatalogFoodProduct(args.id, ctx.env.DB);
       if (!product) {
         return errorResult(notFound);
@@ -417,7 +423,7 @@ export function registerCatalogFoodProductTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "list_catalog_food_product_requests",
     {
       title: "共通のごはん商品のリクエストを取得",
@@ -464,7 +470,7 @@ export function registerCatalogFoodProductTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "complete_catalog_food_product_request",
     {
       title: "共通のごはん商品のリクエストを完了にする",
@@ -496,7 +502,9 @@ export function registerCatalogFoodProductTools(
       }
       const result = await completeCatalogFoodProductRequest(id, ctx.env.DB);
       if (result === "not-found") {
-        return errorResult(`id="${id}" のリクエストが見つかりません`);
+        return errorResult(
+          notFoundError(`id="${id}" のリクエストが見つかりません`),
+        );
       }
       return jsonResult({
         id,

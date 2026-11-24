@@ -1,4 +1,3 @@
-import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import {
   createHouseholdInvitation,
@@ -16,13 +15,14 @@ import {
   listHouseholdMembers,
   listPendingHouseholdInvitations,
 } from "@/features/households/infrastructure/queries";
+import { type OperationContext, resolveHouseholdOperation } from "./context";
+import { parseFormValues } from "./formValues";
 import {
   errorResult,
+  forbiddenError,
   jsonResult,
-  type McpToolContext,
-  resolveHouseholdOperation,
-} from "./context";
-import { parseFormValues } from "./formValues";
+  type OperationRegistry,
+} from "./registry";
 
 const householdIdField = z
   .string()
@@ -39,8 +39,11 @@ const OWNER_ONLY_DESCRIPTION =
  * 家の名前・メンバー・招待のツールを登録する。扱えるのは、読み取りを許可している家で、
  * その操作を許可している家に限る。家の作成・削除と、家から抜ける・招待を受ける操作は扱わない
  */
-export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
-  server.registerTool(
+export function registerHouseholdOperations(
+  registry: OperationRegistry,
+  ctx: OperationContext,
+) {
+  registry.register(
     "update_household",
     {
       title: "家の名前を変更",
@@ -70,18 +73,18 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
       }
       const result = await renameHousehold(
         householdId,
-        resolved.connection.userId,
+        resolved.userId,
         parsed.data.name,
         ctx.env.DB,
       );
       if (!result.ok) {
-        return errorResult(result.error);
+        return errorResult(forbiddenError(result.error));
       }
       return jsonResult({ id: householdId, name: parsed.data.name });
     },
   );
 
-  server.registerTool(
+  registry.register(
     "list_household_members",
     {
       title: "家のメンバーの一覧を取得",
@@ -107,13 +110,13 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
           name: member.name,
           role: member.role,
           joinedAt: member.joinedAt.toISOString(),
-          isMe: member.userId === resolved.connection.userId,
+          isMe: member.userId === resolved.userId,
         })),
       });
     },
   );
 
-  server.registerTool(
+  registry.register(
     "remove_household_member",
     {
       title: "家のメンバーを外す",
@@ -135,7 +138,7 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
       }
       const result = await removeHouseholdMember(
         householdId,
-        resolved.connection.userId,
+        resolved.userId,
         userId,
         ctx.env.DB,
       );
@@ -146,7 +149,7 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
     },
   );
 
-  server.registerTool(
+  registry.register(
     "transfer_household_ownership",
     {
       title: "家のオーナーを移譲",
@@ -168,7 +171,7 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
       }
       const result = await transferHouseholdOwnership(
         householdId,
-        resolved.connection.userId,
+        resolved.userId,
         userId,
         ctx.env.DB,
       );
@@ -179,7 +182,7 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
     },
   );
 
-  server.registerTool(
+  registry.register(
     "list_household_invitations",
     {
       title: "家への招待の一覧を取得",
@@ -201,12 +204,14 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
       }
       // 画面と同じく、招待の一覧はオーナーにだけ見せる
       const household = await getHouseholdForUser(
-        resolved.connection.userId,
+        resolved.userId,
         householdId,
         ctx.env.DB,
       );
       if (household?.role !== "owner") {
-        return errorResult("招待の一覧を見られるのはオーナーだけです");
+        return errorResult(
+          forbiddenError("招待の一覧を見られるのはオーナーだけです"),
+        );
       }
       const invitations = await listPendingHouseholdInvitations(
         householdId,
@@ -223,7 +228,7 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
     },
   );
 
-  server.registerTool(
+  registry.register(
     "create_household_invitation",
     {
       title: "家への招待 URL を発行",
@@ -245,11 +250,11 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
       }
       const result = await createHouseholdInvitation(
         householdId,
-        resolved.connection.userId,
+        resolved.userId,
         ctx.env.DB,
       );
       if (!result.ok) {
-        return errorResult(result.error);
+        return errorResult(forbiddenError(result.error));
       }
       return jsonResult({
         url: new URL(householdInvitationPath(result.token), ctx.origin).href,
@@ -258,7 +263,7 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
     },
   );
 
-  server.registerTool(
+  registry.register(
     "revoke_household_invitation",
     {
       title: "家への招待を無効化",
@@ -288,7 +293,7 @@ export function registerHouseholdTools(server: McpServer, ctx: McpToolContext) {
       }
       const result = await revokeHouseholdInvitation(
         householdId,
-        resolved.connection.userId,
+        resolved.userId,
         invitationId,
         ctx.env.DB,
       );

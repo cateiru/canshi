@@ -1,4 +1,3 @@
-import type { McpServer } from "@modelcontextprotocol/server";
 import { type ZodRawShape, z } from "zod";
 import {
   BRUSHING_SHED_AMOUNTS,
@@ -49,7 +48,6 @@ import {
   getCatForUser,
   listCatsForUser,
 } from "@/features/households/infrastructure/queries";
-import { getMcpPermissions } from "@/features/mcp/infrastructure/permissions";
 import type { MediaRecordType } from "@/features/media/domain/recordTypes";
 import { MAX_DECODE_PIXELS } from "@/features/media/domain/thumbnailSize";
 import {
@@ -118,19 +116,15 @@ import {
 import { weightRecordFormSchema } from "@/features/weight-records/domain/schema";
 import { getWeightRecordForCat } from "@/features/weight-records/infrastructure/queries";
 import {
-  type AccessPermissions,
   allowedRecordTypes,
   allowedWriteRecordTypes,
   isCatAllowed,
   type PermissionRecordType,
 } from "../../domain/permissionRules";
 import {
-  catNotFoundMessage,
-  errorResult,
-  jsonResult,
-  type McpConnection,
-  type McpToolContext,
-  mcpActor,
+  catNotFoundError,
+  type OperationAccess,
+  type OperationContext,
   resolveWritableCat,
 } from "./context";
 import {
@@ -144,6 +138,14 @@ import {
 } from "./formValues";
 import { decodeImageBase64, MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
 import {
+  conflictError,
+  errorResult,
+  jsonResult,
+  notFoundError,
+  type OperationError,
+  type OperationRegistry,
+} from "./registry";
+import {
   CHANGE_HISTORY_DESCRIPTION,
   toChangeHistorySummary,
 } from "./summaries";
@@ -151,13 +153,13 @@ import {
 /** 書き込む猫。ユーザーが参照でき、この接続からの読み取りも許可している */
 type WritableCat = { id: string; householdId: string; name: string };
 
-type SaveResult = { id: string } | { error: string };
+type SaveResult = { id: string } | { error: string | OperationError };
 
 /**
  * 記録の種類ごとの、追加・編集ツールの定義。引数はフォームの項目名に揃え、
  * フォームの値に直してから画面と同じ zod スキーマで検証する（`../formValues.ts`）
  */
-type RecordToolDefinition<TData, TExisting> = {
+type RecordOperationDefinition<TData, TExisting> = {
   recordType: PermissionRecordType;
   /** ツール名の一部（`create_{name}`・`update_{name}`） */
   name: string;
@@ -186,17 +188,15 @@ type RecordToolDefinition<TData, TExisting> = {
   /** 検証の前に、引数に合わせてフォームの値を整える */
   adjust?(values: FormValues, args: Record<string, unknown>): FormValues;
   create(input: {
-    ctx: McpToolContext;
-    connection: McpConnection;
-    permissions: AccessPermissions;
+    ctx: OperationContext;
+    access: OperationAccess;
     cat: WritableCat;
     data: TData;
     args: Record<string, unknown>;
   }): Promise<SaveResult>;
   update(input: {
-    ctx: McpToolContext;
-    connection: McpConnection;
-    permissions: AccessPermissions;
+    ctx: OperationContext;
+    access: OperationAccess;
     cat: WritableCat;
     id: string;
     data: TData;
@@ -205,8 +205,8 @@ type RecordToolDefinition<TData, TExisting> = {
   }): Promise<SaveResult>;
 };
 
-function defineRecordTool<TData, TExisting>(
-  definition: RecordToolDefinition<TData, TExisting>,
+function defineRecordOperation<TData, TExisting>(
+  definition: RecordOperationDefinition<TData, TExisting>,
 ) {
   return definition;
 }
@@ -238,7 +238,7 @@ function optionalText(label: string, maxLength: number) {
     .describe(`${label}（${maxLength}文字以内）。null を指定すると空にする`);
 }
 
-const RECORD_NOT_FOUND_ERROR = "記録が見つかりませんでした";
+const RECORD_NOT_FOUND_ERROR = notFoundError("記録が見つかりませんでした");
 
 /**
  * 追加の結果をツールの結果にする。ID が null なのは、確認の後、書き込みの前に猫がメモリーへ移され、
@@ -247,7 +247,9 @@ const RECORD_NOT_FOUND_ERROR = "記録が見つかりませんでした";
 function toCreatedResult(cat: WritableCat, id: string | null): SaveResult {
   return id == null
     ? {
-        error: `「${cat.name}」はメモリー（思い出）に移されたため、記録を追加できませんでした`,
+        error: conflictError(
+          `「${cat.name}」はメモリー（思い出）に移されたため、記録を追加できませんでした`,
+        ),
       }
     : { id };
 }
@@ -256,7 +258,7 @@ const COMMON_DESCRIPTION =
   "日時は日本時間で指定する。" +
   "編集では指定した項目だけを変更し、省略した項目は今の値のまま。";
 
-const poopRecordTool = defineRecordTool({
+const poopRecordOperation = defineRecordOperation({
   recordType: "poop",
   mediaRecordType: "poop_record",
   name: "poop_record",
@@ -295,18 +297,18 @@ const poopRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, connection, cat, data }) =>
+  create: async ({ ctx, access, cat, data }) =>
     toCreatedResult(
       cat,
-      await createPoopRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
+      await createPoopRecord(cat.id, data, access.actor, ctx.env.DB),
     ),
-  update: async ({ ctx, connection, cat, id, data }) =>
-    (await updatePoopRecord(cat.id, id, data, mcpActor(connection), ctx.env.DB))
+  update: async ({ ctx, access, cat, id, data }) =>
+    (await updatePoopRecord(cat.id, id, data, access.actor, ctx.env.DB))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
 
-const vomitRecordTool = defineRecordTool({
+const vomitRecordOperation = defineRecordOperation({
   recordType: "vomit",
   mediaRecordType: "vomit_record",
   name: "vomit_record",
@@ -342,24 +344,18 @@ const vomitRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, connection, cat, data }) =>
+  create: async ({ ctx, access, cat, data }) =>
     toCreatedResult(
       cat,
-      await createVomitRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
+      await createVomitRecord(cat.id, data, access.actor, ctx.env.DB),
     ),
-  update: async ({ ctx, connection, cat, id, data }) =>
-    (await updateVomitRecord(
-      cat.id,
-      id,
-      data,
-      mcpActor(connection),
-      ctx.env.DB,
-    ))
+  update: async ({ ctx, access, cat, id, data }) =>
+    (await updateVomitRecord(cat.id, id, data, access.actor, ctx.env.DB))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
 
-const waterRecordTool = defineRecordTool({
+const waterRecordOperation = defineRecordOperation({
   recordType: "water",
   name: "water_record",
   label: "飲水の記録",
@@ -401,24 +397,18 @@ const waterRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, connection, cat, data }) =>
+  create: async ({ ctx, access, cat, data }) =>
     toCreatedResult(
       cat,
-      await createWaterRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
+      await createWaterRecord(cat.id, data, access.actor, ctx.env.DB),
     ),
-  update: async ({ ctx, connection, cat, id, data }) =>
-    (await updateWaterRecord(
-      cat.id,
-      id,
-      data,
-      mcpActor(connection),
-      ctx.env.DB,
-    ))
+  update: async ({ ctx, access, cat, id, data }) =>
+    (await updateWaterRecord(cat.id, id, data, access.actor, ctx.env.DB))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
 
-const weightRecordTool = defineRecordTool({
+const weightRecordOperation = defineRecordOperation({
   recordType: "weight",
   name: "weight_record",
   label: "体重の記録",
@@ -479,24 +469,18 @@ const weightRecordTool = defineRecordTool({
     }
     return values;
   },
-  create: async ({ ctx, connection, cat, data }) =>
+  create: async ({ ctx, access, cat, data }) =>
     toCreatedResult(
       cat,
-      await createWeightRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
+      await createWeightRecord(cat.id, data, access.actor, ctx.env.DB),
     ),
-  update: async ({ ctx, connection, cat, id, data }) =>
-    (await updateWeightRecord(
-      cat.id,
-      id,
-      data,
-      mcpActor(connection),
-      ctx.env.DB,
-    ))
+  update: async ({ ctx, access, cat, id, data }) =>
+    (await updateWeightRecord(cat.id, id, data, access.actor, ctx.env.DB))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
 
-const shampooRecordTool = defineRecordTool({
+const shampooRecordOperation = defineRecordOperation({
   recordType: "shampoo",
   name: "shampoo_record",
   label: "シャンプーの記録",
@@ -519,24 +503,18 @@ const shampooRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, connection, cat, data }) =>
+  create: async ({ ctx, access, cat, data }) =>
     toCreatedResult(
       cat,
-      await createShampooRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
+      await createShampooRecord(cat.id, data, access.actor, ctx.env.DB),
     ),
-  update: async ({ ctx, connection, cat, id, data }) =>
-    (await updateShampooRecord(
-      cat.id,
-      id,
-      data,
-      mcpActor(connection),
-      ctx.env.DB,
-    ))
+  update: async ({ ctx, access, cat, id, data }) =>
+    (await updateShampooRecord(cat.id, id, data, access.actor, ctx.env.DB))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
 
-const brushingRecordTool = defineRecordTool({
+const brushingRecordOperation = defineRecordOperation({
   recordType: "brushing",
   name: "brushing_record",
   label: "ブラッシングの記録",
@@ -582,29 +560,18 @@ const brushingRecordTool = defineRecordTool({
       },
     };
   },
-  create: async ({ ctx, connection, cat, data }) =>
+  create: async ({ ctx, access, cat, data }) =>
     toCreatedResult(
       cat,
-      await createBrushingRecord(
-        cat.id,
-        data,
-        mcpActor(connection),
-        ctx.env.DB,
-      ),
+      await createBrushingRecord(cat.id, data, access.actor, ctx.env.DB),
     ),
-  update: async ({ ctx, connection, cat, id, data }) =>
-    (await updateBrushingRecord(
-      cat.id,
-      id,
-      data,
-      mcpActor(connection),
-      ctx.env.DB,
-    ))
+  update: async ({ ctx, access, cat, id, data }) =>
+    (await updateBrushingRecord(cat.id, id, data, access.actor, ctx.env.DB))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
 
-const cleaningRecordTool = defineRecordTool({
+const cleaningRecordOperation = defineRecordOperation({
   recordType: "cleaning",
   name: "cleaning_record",
   label: "掃除の記録",
@@ -634,7 +601,7 @@ const cleaningRecordTool = defineRecordTool({
       },
     };
   },
-  async create({ ctx, connection, cat, data, args }) {
+  async create({ ctx, access, cat, data, args }) {
     if (typeof args.cleaningTargetId !== "string") {
       return { error: "cleaningTargetId を指定してください" };
     }
@@ -642,30 +609,31 @@ const cleaningRecordTool = defineRecordTool({
       cat.id,
       args.cleaningTargetId,
       data,
-      mcpActor(connection),
+      access.actor,
       ctx.env.DB,
     );
     return id
       ? { id }
       : {
-          error:
+          error: notFoundError(
             "掃除対象が見つかりませんでした。list_cleaning_targets で有効な掃除対象を確かめてください",
+          ),
         };
   },
-  update: async ({ ctx, connection, cat, id, data, existing }) =>
+  update: async ({ ctx, access, cat, id, data, existing }) =>
     (await updateCleaningRecord(
       cat.id,
       existing.cleaningTargetId,
       id,
       data,
-      mcpActor(connection),
+      access.actor,
       ctx.env.DB,
     ))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
 
-const medicationDoseTool = defineRecordTool({
+const medicationDoseOperation = defineRecordOperation({
   recordType: "medicationDose",
   name: "medication_dose",
   label: "投薬の記録",
@@ -702,7 +670,7 @@ const medicationDoseTool = defineRecordTool({
       },
     };
   },
-  async create({ ctx, connection, cat, data, args }) {
+  async create({ ctx, access, cat, data, args }) {
     if (typeof args.medicationId !== "string") {
       return { error: "medicationId を指定してください" };
     }
@@ -710,30 +678,31 @@ const medicationDoseTool = defineRecordTool({
       cat.id,
       args.medicationId,
       data,
-      mcpActor(connection),
+      access.actor,
       ctx.env.DB,
     );
     return id
       ? { id }
       : {
-          error:
+          error: notFoundError(
             "服薬予定が見つかりませんでした。list_medications で服薬予定を確かめてください",
+          ),
         };
   },
-  update: async ({ ctx, connection, cat, id, data, existing }) =>
+  update: async ({ ctx, access, cat, id, data, existing }) =>
     (await updateMedicationDose(
       cat.id,
       existing.medicationId,
       id,
       data,
-      mcpActor(connection),
+      access.actor,
       ctx.env.DB,
     ))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
 
-const symptomTool = defineRecordTool({
+const symptomOperation = defineRecordOperation({
   recordType: "symptom",
   mediaRecordType: "symptom",
   name: "symptom",
@@ -776,13 +745,13 @@ const symptomTool = defineRecordTool({
       },
     };
   },
-  create: ({ ctx, connection, cat, data }) =>
-    createSymptom(cat.id, data, mcpActor(connection), ctx.env.DB),
-  update: ({ ctx, connection, cat, id, data }) =>
-    updateSymptom(cat.id, id, data, mcpActor(connection), ctx.env.DB),
+  create: ({ ctx, access, cat, data }) =>
+    createSymptom(cat.id, data, access.actor, ctx.env.DB),
+  update: ({ ctx, access, cat, id, data }) =>
+    updateSymptom(cat.id, id, data, access.actor, ctx.env.DB),
 });
 
-const hospitalVisitTool = defineRecordTool({
+const hospitalVisitOperation = defineRecordOperation({
   recordType: "hospitalVisit",
   mediaRecordType: "hospital_visit",
   name: "hospital_visit",
@@ -841,13 +810,13 @@ const hospitalVisitTool = defineRecordTool({
       },
     };
   },
-  create: ({ ctx, connection, cat, data }) =>
-    createHospitalVisit(cat, data, mcpActor(connection), ctx.env.DB),
-  update: ({ ctx, connection, cat, id, data }) =>
-    updateHospitalVisit(cat, id, data, mcpActor(connection), ctx.env.DB),
+  create: ({ ctx, access, cat, data }) =>
+    createHospitalVisit(cat, data, access.actor, ctx.env.DB),
+  update: ({ ctx, access, cat, id, data }) =>
+    updateHospitalVisit(cat, id, data, access.actor, ctx.env.DB),
 });
 
-const memoTool = defineRecordTool({
+const memoOperation = defineRecordOperation({
   recordType: "memo",
   mediaRecordType: "memo_record",
   name: "memo",
@@ -898,13 +867,13 @@ const memoTool = defineRecordTool({
     }
     return values;
   },
-  create: async ({ ctx, connection, cat, data }) =>
+  create: async ({ ctx, access, cat, data }) =>
     toCreatedResult(
       cat,
-      await createMemoRecord(cat.id, data, mcpActor(connection), ctx.env.DB),
+      await createMemoRecord(cat.id, data, access.actor, ctx.env.DB),
     ),
-  update: async ({ ctx, connection, cat, id, data }) =>
-    (await updateMemoRecord(cat.id, id, data, mcpActor(connection), ctx.env.DB))
+  update: async ({ ctx, access, cat, id, data }) =>
+    (await updateMemoRecord(cat.id, id, data, access.actor, ctx.env.DB))
       ? { id }
       : { error: RECORD_NOT_FOUND_ERROR },
 });
@@ -914,10 +883,9 @@ const memoTool = defineRecordTool({
  * メモリーへ移した猫には書き込めない
  */
 async function listExpenseWritableCatIds(
-  ctx: McpToolContext,
-  userId: string,
+  ctx: OperationContext,
   householdId: string,
-  permissions: AccessPermissions,
+  { userId, permissions }: OperationAccess,
 ) {
   const cats = await listCatsForUser(userId, ctx.env.DB);
   return cats
@@ -936,28 +904,28 @@ async function listExpenseWritableCatIds(
  * 指定した猫には、記録する猫（`catId`）を必ず含める
  */
 async function resolveExpenseCatIds(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   cat: WritableCat,
   args: Record<string, unknown>,
-  permissions: AccessPermissions,
-  userId: string,
-): Promise<{ catIds: string[]; writable: string[] } | { error: string }> {
+  access: OperationAccess,
+): Promise<
+  { catIds: string[]; writable: string[] } | { error: OperationError }
+> {
   const writable = await listExpenseWritableCatIds(
     ctx,
-    userId,
     cat.householdId,
-    permissions,
+    access,
   );
   const requested = Array.isArray(args.catIds) ? (args.catIds as string[]) : [];
   for (const id of requested) {
     if (!writable.includes(id)) {
-      return { error: catNotFoundMessage(id) };
+      return { error: catNotFoundError(id) };
     }
   }
   return { catIds: [...new Set([cat.id, ...requested])], writable };
 }
 
-const expenseTool = defineRecordTool({
+const expenseOperation = defineRecordOperation({
   recordType: "expense",
   mediaRecordType: "expense",
   name: "expense",
@@ -1010,45 +978,24 @@ const expenseTool = defineRecordTool({
       },
     };
   },
-  async create({ ctx, connection, permissions, cat, data, args }) {
-    const resolved = await resolveExpenseCatIds(
-      ctx,
-      cat,
-      args,
-      permissions,
-      connection.userId,
-    );
+  async create({ ctx, access, cat, data, args }) {
+    const resolved = await resolveExpenseCatIds(ctx, cat, args, access);
     if ("error" in resolved) return resolved;
     const saved = await createExpense(
       cat.householdId,
       { ...data, catIds: resolved.catIds, hospitalVisitIds: [] },
-      mcpActor(connection),
+      access.actor,
       ctx.env.DB,
     );
     return toSaveResult(saved);
   },
-  async update({
-    ctx,
-    connection,
-    permissions,
-    cat,
-    id,
-    data,
-    existing,
-    args,
-  }) {
+  async update({ ctx, access, cat, id, data, existing, args }) {
     if (existing.householdId !== cat.householdId) {
       return { error: RECORD_NOT_FOUND_ERROR };
     }
     let catIds = data.catIds;
     if (Array.isArray(args.catIds)) {
-      const resolved = await resolveExpenseCatIds(
-        ctx,
-        cat,
-        args,
-        permissions,
-        connection.userId,
-      );
+      const resolved = await resolveExpenseCatIds(ctx, cat, args, access);
       if ("error" in resolved) return resolved;
       // この接続から支出を書き込めない猫の紐付けは、外す権限が無いため残す
       const hidden = existing.catIds.filter(
@@ -1060,7 +1007,7 @@ const expenseTool = defineRecordTool({
       cat.householdId,
       id,
       { ...data, catIds },
-      mcpActor(connection),
+      access.actor,
       ctx.env.DB,
     );
     return toSaveResult(saved);
@@ -1099,7 +1046,7 @@ const feedingItemSchema = z.object({
     .describe("残した量（あいまいモード）"),
 });
 
-const feedingRecordTool = defineRecordTool({
+const feedingRecordOperation = defineRecordOperation({
   recordType: "feeding",
   name: "feeding_record",
   label: "ごはんの記録",
@@ -1139,26 +1086,26 @@ const feedingRecordTool = defineRecordTool({
       },
     };
   },
-  create: ({ ctx, connection, cat, data }) =>
-    createFeedingRecord(cat, data, mcpActor(connection), ctx.env.DB),
-  update: ({ ctx, connection, cat, id, data }) =>
-    updateFeedingRecord(cat, id, data, mcpActor(connection), ctx.env.DB),
+  create: ({ ctx, access, cat, data }) =>
+    createFeedingRecord(cat, data, access.actor, ctx.env.DB),
+  update: ({ ctx, access, cat, id, data }) =>
+    updateFeedingRecord(cat, id, data, access.actor, ctx.env.DB),
 });
 
-const RECORD_TOOLS = [
-  feedingRecordTool,
-  poopRecordTool,
-  weightRecordTool,
-  vomitRecordTool,
-  waterRecordTool,
-  shampooRecordTool,
-  brushingRecordTool,
-  cleaningRecordTool,
-  symptomTool,
-  medicationDoseTool,
-  hospitalVisitTool,
-  expenseTool,
-  memoTool,
+const RECORD_OPERATIONS = [
+  feedingRecordOperation,
+  poopRecordOperation,
+  weightRecordOperation,
+  vomitRecordOperation,
+  waterRecordOperation,
+  shampooRecordOperation,
+  brushingRecordOperation,
+  cleaningRecordOperation,
+  symptomOperation,
+  medicationDoseOperation,
+  hospitalVisitOperation,
+  expenseOperation,
+  memoOperation,
 ] as const;
 
 /** 引数のうち、フォームの値に含めるものだけを取り出す */
@@ -1198,7 +1145,7 @@ const TOO_LARGE_IMAGES_ERROR =
   `images の base64 の長さは合計 ${MAX_RECORD_IMAGES_BASE64_LENGTH} 文字までにしてください。` +
   "画像を縮小するか、数回に分けて編集で追加してください";
 
-/** 引数の画像（base64）を読む。読めなければ AI に返すメッセージ */
+/** 引数の画像（base64）を読む。読めなければ 結果として返すメッセージ */
 function decodeImages(
   value: unknown,
 ): { images: Uint8Array<ArrayBuffer>[] } | { error: string } {
@@ -1220,10 +1167,10 @@ function decodeImages(
 
 /**
  * 保存した記録に画像を添付する（画面で添付したときと同じく、記録の後ろに並べる）。
- * 保存できなかった画像があれば、AI に返すメッセージ
+ * 保存できなかった画像があれば、結果として返すメッセージ
  */
 async function attachRecordImages(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   input: {
     recordType: MediaRecordType;
     recordId: string;
@@ -1254,10 +1201,10 @@ async function attachRecordImages(
   return null;
 }
 
-function registerRecordTool<TData, TExisting>(
-  server: McpServer,
-  ctx: McpToolContext,
-  definition: RecordToolDefinition<TData, TExisting>,
+function registerRecordOperation<TData, TExisting>(
+  registry: OperationRegistry,
+  ctx: OperationContext,
+  definition: RecordOperationDefinition<TData, TExisting>,
 ) {
   const { recordType, label, mediaRecordType } = definition;
   const catIdField = z.string().describe("猫の ID（list_cats で取得できる）");
@@ -1271,7 +1218,7 @@ function registerRecordTool<TData, TExisting>(
       }
     : {};
 
-  server.registerTool(
+  registry.register(
     `create_${definition.name}`,
     {
       title: `${label}を追加`,
@@ -1306,8 +1253,7 @@ function registerRecordTool<TData, TExisting>(
       }
       const saved = await definition.create({
         ctx,
-        connection: resolved.connection,
-        permissions: resolved.permissions,
+        access: resolved,
         cat: resolved.cat,
         data: parsed.data,
         args,
@@ -1329,7 +1275,7 @@ function registerRecordTool<TData, TExisting>(
     },
   );
 
-  server.registerTool(
+  registry.register(
     `update_${definition.name}`,
     {
       title: `${label}を編集`,
@@ -1363,7 +1309,9 @@ function registerRecordTool<TData, TExisting>(
       }
       const loaded = await definition.load(ctx.env.DB, catId, id);
       if (!loaded) {
-        return errorResult(`id="${id}" の${label}が見つかりません`);
+        return errorResult(
+          notFoundError(`id="${id}" の${label}が見つかりません`),
+        );
       }
       const values = mergeFormValues(
         loaded.values,
@@ -1378,8 +1326,7 @@ function registerRecordTool<TData, TExisting>(
       }
       const saved = await definition.update({
         ctx,
-        connection: resolved.connection,
-        permissions: resolved.permissions,
+        access: resolved,
         cat: resolved.cat,
         id,
         data: parsed.data,
@@ -1409,16 +1356,19 @@ function registerRecordTool<TData, TExisting>(
  * タイムラインに載らないメモを読むツール（メモの一覧）を登録する。書き込めるのは、接続に書き込みを許可していて、読み取りも許可している
  * 猫・記録の種類に限る（`./context.ts` の `resolveWritableCat`）
  */
-export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
-  for (const definition of RECORD_TOOLS) {
-    registerRecordTool(
-      server,
+export function registerRecordOperations(
+  registry: OperationRegistry,
+  ctx: OperationContext,
+) {
+  for (const definition of RECORD_OPERATIONS) {
+    registerRecordOperation(
+      registry,
       ctx,
-      definition as RecordToolDefinition<unknown, unknown>,
+      definition as RecordOperationDefinition<unknown, unknown>,
     );
   }
 
-  server.registerTool(
+  registry.register(
     "list_cleaning_targets",
     {
       title: "掃除対象の一覧を取得",
@@ -1448,7 +1398,7 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
     },
   );
 
-  server.registerTool(
+  registry.register(
     "list_medications",
     {
       title: "服薬予定の一覧を取得",
@@ -1468,7 +1418,7 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
       const medications = await listMedications(catId, ctx.env.DB);
       const changeHistoryOf = await loadChangeHistories(
         ctx,
-        allowed.connection,
+        allowed.userId,
         "medication",
         medications.map((medication) => medication.id),
       );
@@ -1487,7 +1437,7 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
     },
   );
 
-  server.registerTool(
+  registry.register(
     "list_memos",
     {
       title: "メモの一覧を取得",
@@ -1517,7 +1467,7 @@ export function registerRecordTools(server: McpServer, ctx: McpToolContext) {
       const paged = paginate(records, page ?? 1, MEMO_PAGE_SIZE);
       const changeHistoryOf = await loadChangeHistories(
         ctx,
-        allowed.connection,
+        allowed.userId,
         "memo_record",
         paged.items.map((record) => record.id),
       );
@@ -1545,26 +1495,24 @@ const MEMO_PAGE_SIZE = 50;
  * 存在しない猫と区別しない（`list_timeline` と同じ）
  */
 async function resolveReadableCat(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   catId: string,
   recordType: PermissionRecordType,
-): Promise<{ connection: McpConnection } | { error: string }> {
-  const connection = await ctx.resolveConnection();
-  if ("error" in connection) {
-    return connection;
+): Promise<OperationAccess | { error: OperationError }> {
+  const access = await ctx.resolveAccess();
+  if ("error" in access) {
+    return access;
   }
-  const [cat, permissions] = await Promise.all([
-    getCatForUser(connection.userId, catId, ctx.env.DB),
-    getMcpPermissions(connection.userId, connection.clientId, ctx.env.DB),
-  ]);
+  const { permissions } = access;
+  const cat = await getCatForUser(access.userId, catId, ctx.env.DB);
   if (
     !cat ||
     !isCatAllowed(permissions, cat) ||
     !allowedRecordTypes(permissions, cat.id).includes(recordType)
   ) {
-    return { error: catNotFoundMessage(catId) };
+    return { error: catNotFoundError(catId) };
   }
-  return { connection };
+  return access;
 }
 
 /**
@@ -1572,14 +1520,14 @@ async function resolveReadableCat(
  * 記録を読めることは、呼び出し元で確かめておくこと
  */
 async function loadChangeHistories(
-  ctx: McpToolContext,
-  connection: McpConnection,
+  ctx: OperationContext,
+  userId: string,
   recordType: RecordChangeLogRecordType,
   recordIds: readonly string[],
 ) {
   const contributions = await listRecordContributors(
     recordIds.map((recordId) => ({ recordType, recordId })),
-    connection.userId,
+    userId,
     ctx.env.DB,
   );
   return (recordId: string) =>

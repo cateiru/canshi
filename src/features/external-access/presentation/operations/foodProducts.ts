@@ -1,4 +1,3 @@
-import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import {
   FOOD_AMOUNT_UNITS,
@@ -28,13 +27,10 @@ import {
 import { isHouseholdAllowed } from "../../domain/permissionRules";
 import {
   checkHouseholdOperation,
-  errorResult,
-  householdNotFoundMessage,
-  jsonResult,
-  type McpToolContext,
+  householdNotFoundError,
+  type OperationContext,
   resolveHouseholdIdsForOperation,
   resolveHouseholdOperation,
-  resolvePermissions,
 } from "./context";
 import {
   type FormValues,
@@ -47,6 +43,12 @@ import {
   INVALID_IMAGE_ERROR,
   MAX_IMAGE_BASE64_LENGTH,
 } from "./imageArgs";
+import {
+  errorResult,
+  jsonResult,
+  notFoundError,
+  type OperationRegistry,
+} from "./registry";
 
 const PRODUCT_DESCRIPTION =
   "amountUnit は量の単位（g=フードなど重さで量る商品、ml=スープ・ミルクなど液体の商品。省略すると g）。" +
@@ -150,10 +152,10 @@ function formArgs(args: Record<string, unknown>) {
 
 /**
  * 商品の画像を保存し、それまでの画像を消す（商品の画像は 1 枚）。
- * 失敗したら AI に返すメッセージ
+ * 失敗したら 結果として返すメッセージ
  */
 async function replaceFoodProductImage(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   productId: string,
   image: Uint8Array<ArrayBuffer>,
 ): Promise<string | null> {
@@ -189,11 +191,11 @@ async function replaceFoodProductImage(
  * ごはん商品の読み取り・追加・編集のツールを登録する。扱えるのは、読み取りを許可している家で、
  * その操作を許可している家の商品に限る
  */
-export function registerFoodProductTools(
-  server: McpServer,
-  ctx: McpToolContext,
+export function registerFoodProductOperations(
+  registry: OperationRegistry,
+  ctx: OperationContext,
 ) {
-  server.registerTool(
+  registry.register(
     "list_food_products",
     {
       title: "ごはん商品の一覧を取得",
@@ -236,7 +238,7 @@ export function registerFoodProductTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "create_food_product",
     {
       title: "ごはん商品を追加",
@@ -276,13 +278,13 @@ export function registerFoodProductTools(
       }
       // ユーザーが家のメンバーでなければ追加しない（`createFoodProduct` 参照）
       const id = await createFoodProduct(
-        resolved.connection.userId,
+        resolved.userId,
         args.householdId,
         parsed.data,
         ctx.env.DB,
       );
       if (!id) {
-        return errorResult(householdNotFoundMessage(args.householdId));
+        return errorResult(householdNotFoundError(args.householdId));
       }
       const imageError = image
         ? await replaceFoodProductImage(ctx, id, image)
@@ -291,7 +293,7 @@ export function registerFoodProductTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "update_food_product",
     {
       title: "ごはん商品を編集",
@@ -309,13 +311,15 @@ export function registerFoodProductTools(
       },
     },
     async (args) => {
-      const resolved = await resolvePermissions(ctx);
+      const resolved = await ctx.resolveAccess();
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
-      const notFound = `id="${args.id}" のごはん商品が見つかりません`;
+      const notFound = notFoundError(
+        `id="${args.id}" のごはん商品が見つかりません`,
+      );
       const product = await getFoodProductForUser(
-        resolved.connection.userId,
+        resolved.userId,
         args.id,
         ctx.env.DB,
       );
@@ -348,7 +352,7 @@ export function registerFoodProductTools(
       }
       if (
         !(await updateFoodProduct(
-          resolved.connection.userId,
+          resolved.userId,
           args.id,
           parsed.data,
           ctx.env.DB,

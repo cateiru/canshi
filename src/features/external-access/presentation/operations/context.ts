@@ -4,7 +4,6 @@ import {
   getCatForUser,
   listHouseholdsForUser,
 } from "@/features/households/infrastructure/queries";
-import { getMcpPermissions } from "@/features/mcp/infrastructure/permissions";
 import {
   type AccessPermissions,
   allowedWriteRecordTypes,
@@ -15,39 +14,48 @@ import {
   isHouseholdOperationAllowed,
   type PermissionRecordType,
 } from "../../domain/permissionRules";
+import {
+  conflictError,
+  forbiddenError,
+  notFoundError,
+  type OperationError,
+} from "./registry";
 
-/** ツールを呼んだユーザーと、接続（OAuth のクライアント） */
-export type McpConnection = { userId: string; clientId: string };
+/** 操作を呼んだユーザーと、接続・トークンに許可した範囲 */
+export interface OperationAccess {
+  userId: string;
+  /** 記録を操作した人として残す、ユーザーと接続・トークン */
+  actor: RecordActor;
+  permissions: AccessPermissions;
+}
 
-/** AI との接続からの操作の、記録を操作した人。接続を許可したユーザーと接続の両方を残す */
-export function mcpActor(connection: McpConnection): RecordActor {
-  return { userId: connection.userId, mcpClientId: connection.clientId };
+/** 操作を呼んだもの（AI との接続・API トークン）の呼び方。メッセージに使う */
+export interface OperationCaller {
+  /** 「この接続」のような、呼んだものの名前 */
+  name: string;
+  /** 許可する範囲を変える、設定の場所 */
+  settings: string;
+  /** 許可していない操作をしようとしたときに添える、許可する方法の案内 */
+  howToAllow: string;
 }
 
 /**
- * ツールの実装に渡す、MCP サーバー（`createCanshiMcpServer()`）の環境。Next.js（OpenNext）の
- * 外で動くため、D1・R2 は `getCloudflareContext()` ではなく `env` から明示的に渡す
+ * 操作の実装に渡す環境。MCP は Next.js（OpenNext）の外で動くため、D1・R2 は
+ * `getCloudflareContext()` ではなく `env` から明示的に渡す
  */
-export interface McpToolContext {
-  env: Env;
+export interface OperationContext {
+  env: Pick<Env, "DB" | "MEDIA_BUCKET">;
   /**
-   * MCP サーバーを公開しているオリジン（`https://canshi.example.com` など）。
+   * アプリを公開しているオリジン（`https://canshi.example.com` など）。
    * 招待 URL のように、アプリの URL を返すときに使う
    */
   origin: string;
-  /** ツールを呼んだユーザーと接続を求める。求められなければ AI に返すエラーメッセージ */
-  resolveConnection(): Promise<McpConnection | { error: string }>;
-}
-
-export function errorResult(text: string) {
-  return {
-    content: [{ type: "text" as const, text }],
-    isError: true,
-  };
-}
-
-export function jsonResult(value: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(value) }] };
+  caller: OperationCaller;
+  /**
+   * 操作を呼んだユーザーと範囲を求める。求められなければ、操作の結果として返すエラー。
+   * 操作ごとに呼び、範囲は毎回読み直す（設定の変更がすぐに反映されるようにするため）
+   */
+  resolveAccess(): Promise<OperationAccess | { error: OperationError }>;
 }
 
 /** 許可していない操作をしようとしたときのエラーに使う、操作の名前 */
@@ -80,29 +88,29 @@ const OPERATION_LABEL: Record<HouseholdOperation | CatalogOperation, string> = {
   "catalogFoodProductRequest:complete": "共通のごはん商品のリクエストの完了",
 };
 
-const ASK_USER_TO_ALLOW =
-  "CANSHI の設定の「AIとの接続」で、ユーザーに許可してもらってください";
-
-export function operationNotAllowedMessage(
+export function operationNotAllowedError(
+  caller: OperationCaller,
   operation: HouseholdOperation | CatalogOperation,
   householdName?: string,
-) {
+): OperationError {
   const target = householdName ? `家「${householdName}」での` : "";
-  return (
-    `この接続には${target}「${OPERATION_LABEL[operation]}」が許可されていません。` +
-    ASK_USER_TO_ALLOW
+  return forbiddenError(
+    `${caller.name}には${target}「${OPERATION_LABEL[operation]}」が許可されていません。` +
+      caller.howToAllow,
   );
 }
 
-export function catNotFoundMessage(catId: string) {
-  return `catId="${catId}" の猫が見つかりません`;
+export function catNotFoundError(catId: string): OperationError {
+  return notFoundError(`catId="${catId}" の猫が見つかりません`);
 }
 
-/** メモリーへ移した猫の記録・プロフィール・通知の設定を変えようとしたときの、AI に返すメッセージ */
-export function memorialCatMessage(cat: Pick<Cat, "name" | "memorialDate">) {
-  return (
+/** メモリーへ移した猫の記録・プロフィール・通知の設定を変えようとしたときのエラー */
+function memorialCatError(
+  cat: Pick<Cat, "name" | "memorialDate">,
+): OperationError {
+  return conflictError(
     `「${cat.name}」はメモリー（思い出）に移されているため、記録・プロフィール・通知の設定は変更できません` +
-    `（メモリーへ移した日: ${cat.memorialDate}）。読み取りはこれまでどおりできます`
+      `（メモリーへ移した日: ${cat.memorialDate}）。読み取りはこれまでどおりできます`,
   );
 }
 
@@ -112,84 +120,57 @@ const MEMORIAL_BLOCKED_CAT_OPERATIONS: readonly HouseholdOperation[] = [
   "catNotification:update",
 ];
 
-/** 接続を求め、その接続の範囲を返す。求められなければ AI に返すエラーメッセージ */
-export async function resolvePermissions(
-  ctx: McpToolContext,
-): Promise<
-  | { connection: McpConnection; permissions: AccessPermissions }
-  | { error: string }
-> {
-  const connection = await ctx.resolveConnection();
-  if ("error" in connection) {
-    return connection;
-  }
-  const permissions = await getMcpPermissions(
-    connection.userId,
-    connection.clientId,
-    ctx.env.DB,
-  );
-  return { connection, permissions };
-}
+type CatAccess = OperationAccess & { cat: Cat & { householdId: string } };
 
 /**
- * 記録を書き込む猫を求める。ユーザーが参照でき、この接続からの読み取りを許可している猫で、
+ * 記録を書き込む猫を求める。ユーザーが参照でき、読み取りを許可している猫で、
  * メモリーへ移しておらず、その記録の種類の書き込みも許可しているときに限る。読み取りを許可していない猫は、
  * 存在しない猫と区別しない
  */
 export async function resolveWritableCat(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   catId: string,
   recordType: PermissionRecordType,
   recordLabel: string,
-): Promise<
-  | {
-      connection: McpConnection;
-      permissions: AccessPermissions;
-      cat: Cat & { householdId: string };
-    }
-  | { error: string }
-> {
-  const resolved = await resolvePermissions(ctx);
+): Promise<CatAccess | { error: OperationError }> {
+  const resolved = await ctx.resolveAccess();
   if ("error" in resolved) {
     return resolved;
   }
-  const cat = await getCatForUser(
-    resolved.connection.userId,
-    catId,
-    ctx.env.DB,
-  );
+  const cat = await getCatForUser(resolved.userId, catId, ctx.env.DB);
   if (
     !cat ||
     cat.householdId === null ||
     !isCatAllowed(resolved.permissions, cat)
   ) {
-    return { error: catNotFoundMessage(catId) };
+    return { error: catNotFoundError(catId) };
   }
   if (isMemorialCat(cat)) {
-    return { error: memorialCatMessage(cat) };
+    return { error: memorialCatError(cat) };
   }
   if (
     !allowedWriteRecordTypes(resolved.permissions, cat.id).includes(recordType)
   ) {
     return {
-      error:
-        `この接続には、この猫の${recordLabel}の書き込みが許可されていません。` +
-        ASK_USER_TO_ALLOW,
+      error: forbiddenError(
+        `${ctx.caller.name}には、この猫の${recordLabel}の書き込みが許可されていません。` +
+          ctx.caller.howToAllow,
+      ),
     };
   }
   return { ...resolved, cat: { ...cat, householdId: cat.householdId } };
 }
 
-export function householdNotFoundMessage(householdId: string) {
-  return `householdId="${householdId}" の家が見つかりません`;
+export function householdNotFoundError(householdId: string): OperationError {
+  return notFoundError(`householdId="${householdId}" の家が見つかりません`);
 }
 
 /**
- * ユーザーが所属し、この接続からの読み取りも許可している家の一覧。
+ * ユーザーが所属し、読み取りも許可している家の一覧。
  * 家ごとの操作は、この家でだけ行える
  */
 export async function listAllowedHouseholds(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   userId: string,
   permissions: AccessPermissions,
 ) {
@@ -200,43 +181,40 @@ export async function listAllowedHouseholds(
 }
 
 /**
- * 家で操作を行えるかを確かめ、行えなければ AI に返すエラーメッセージを返す。ユーザーが所属し、
- * この接続からの読み取りを許可している家で、その操作も許可しているときに限る。
+ * 家で操作を行えるかを確かめ、行えなければ結果として返すエラーを返す。ユーザーが所属し、
+ * 読み取りを許可している家で、その操作も許可しているときに限る。
  * 読み取りを許可していない家は、存在しない家と区別しない
  */
 export async function checkHouseholdOperation(
-  ctx: McpToolContext,
-  resolved: { connection: McpConnection; permissions: AccessPermissions },
+  ctx: OperationContext,
+  resolved: Pick<OperationAccess, "userId" | "permissions">,
   householdId: string,
   operation: HouseholdOperation,
-): Promise<string | null> {
+): Promise<OperationError | null> {
   const households = await listAllowedHouseholds(
     ctx,
-    resolved.connection.userId,
+    resolved.userId,
     resolved.permissions,
   );
   const household = households.find(({ id }) => id === householdId);
   if (!household) {
-    return householdNotFoundMessage(householdId);
+    return householdNotFoundError(householdId);
   }
   if (
     !isHouseholdOperationAllowed(resolved.permissions, householdId, operation)
   ) {
-    return operationNotAllowedMessage(operation, household.name);
+    return operationNotAllowedError(ctx.caller, operation, household.name);
   }
   return null;
 }
 
-/** 接続を求め、家で操作を行えるときだけ接続と範囲を返す（`checkHouseholdOperation` 参照） */
+/** 家で操作を行えるときだけ、ユーザーと範囲を返す（`checkHouseholdOperation` 参照） */
 export async function resolveHouseholdOperation(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   householdId: string,
   operation: HouseholdOperation,
-): Promise<
-  | { connection: McpConnection; permissions: AccessPermissions }
-  | { error: string }
-> {
-  const resolved = await resolvePermissions(ctx);
+): Promise<OperationAccess | { error: OperationError }> {
+  const resolved = await ctx.resolveAccess();
   if ("error" in resolved) {
     return resolved;
   }
@@ -250,38 +228,27 @@ export async function resolveHouseholdOperation(
 }
 
 /**
- * 猫について家ごとの操作（猫のプロフィール・通知の設定）を行えるときだけ、接続と範囲、猫を返す。
- * ユーザーが参照でき、この接続からの読み取りも許可している猫で、猫の今の家でその操作も
+ * 猫について家ごとの操作（猫のプロフィール・通知の設定）を行えるときだけ、ユーザーと範囲、猫を返す。
+ * ユーザーが参照でき、読み取りも許可している猫で、猫の今の家でその操作も
  * 許可しているときに限る。メモリーへ移した猫には、書き換える操作（プロフィール・通知の設定の変更）を
  * 行えない。読み取りを許可していない猫は、存在しない猫と区別しない
  */
 export async function resolveCatOperation(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   catId: string,
   operation: HouseholdOperation,
-): Promise<
-  | {
-      connection: McpConnection;
-      permissions: AccessPermissions;
-      cat: Cat & { householdId: string };
-    }
-  | { error: string }
-> {
-  const resolved = await resolvePermissions(ctx);
+): Promise<CatAccess | { error: OperationError }> {
+  const resolved = await ctx.resolveAccess();
   if ("error" in resolved) {
     return resolved;
   }
-  const cat = await getCatForUser(
-    resolved.connection.userId,
-    catId,
-    ctx.env.DB,
-  );
+  const cat = await getCatForUser(resolved.userId, catId, ctx.env.DB);
   if (
     !cat ||
     cat.householdId === null ||
     !isCatAllowed(resolved.permissions, cat)
   ) {
-    return { error: catNotFoundMessage(catId) };
+    return { error: catNotFoundError(catId) };
   }
   const error = await checkHouseholdOperation(
     ctx,
@@ -296,21 +263,21 @@ export async function resolveCatOperation(
     isMemorialCat(cat) &&
     MEMORIAL_BLOCKED_CAT_OPERATIONS.includes(operation)
   ) {
-    return { error: memorialCatMessage(cat) };
+    return { error: memorialCatError(cat) };
   }
   return { ...resolved, cat: { ...cat, householdId: cat.householdId } };
 }
 
 /**
- * 一覧のツールで、操作（読み取り）を許可している家の ID を求める。`householdId` を指定したときは
- * その家だけにする。どの家でも許可していなければ AI に返すエラーメッセージ
+ * 一覧の操作で、読み取りの操作を許可している家の ID を求める。`householdId` を指定したときは
+ * その家だけにする。どの家でも許可していなければ、結果として返すエラー
  */
 export async function resolveHouseholdIdsForOperation(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   operation: HouseholdOperation,
   householdId: string | undefined,
-): Promise<{ householdIds: string[] } | { error: string }> {
-  const resolved = await resolvePermissions(ctx);
+): Promise<{ householdIds: string[] } | { error: OperationError }> {
+  const resolved = await ctx.resolveAccess();
   if ("error" in resolved) {
     return resolved;
   }
@@ -325,7 +292,7 @@ export async function resolveHouseholdIdsForOperation(
   }
   const households = await listAllowedHouseholds(
     ctx,
-    resolved.connection.userId,
+    resolved.userId,
     resolved.permissions,
   );
   const householdIds = households
@@ -334,7 +301,7 @@ export async function resolveHouseholdIdsForOperation(
       isHouseholdOperationAllowed(resolved.permissions, id, operation),
     );
   if (householdIds.length === 0) {
-    return { error: operationNotAllowedMessage(operation) };
+    return { error: operationNotAllowedError(ctx.caller, operation) };
   }
   return { householdIds };
 }

@@ -1,4 +1,3 @@
-import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { CAT_COAT_COLORS, CAT_NEUTER_STATUSES, type Cat } from "@/db/schema";
 import {
@@ -22,9 +21,7 @@ import { saveCatNotificationSettings } from "@/features/notifications/applicatio
 import { catNotificationSettingsFormSchema } from "@/features/notifications/domain/settingsSchema";
 import { getResolvedSettingsForCat } from "@/features/notifications/infrastructure/queries";
 import {
-  errorResult,
-  jsonResult,
-  type McpToolContext,
+  type OperationContext,
   resolveCatOperation,
   resolveHouseholdOperation,
 } from "./context";
@@ -34,6 +31,12 @@ import {
   parseFormValues,
   toCheckboxValue,
 } from "./formValues";
+import {
+  errorResult,
+  jsonResult,
+  notFoundError,
+  type OperationRegistry,
+} from "./registry";
 import { toCatSummary } from "./summaries";
 
 const CAT_DESCRIPTION =
@@ -218,14 +221,17 @@ const notificationFields = {
  * 猫のプロフィール（追加・編集）と、猫ごとの通知の設定のツールを登録する。扱えるのは、
  * 読み取りを許可している家・猫で、猫の家でその操作を許可しているときに限る。猫の削除は扱わない
  */
-export function registerCatTools(server: McpServer, ctx: McpToolContext) {
-  server.registerTool(
+export function registerCatOperations(
+  registry: OperationRegistry,
+  ctx: OperationContext,
+) {
+  registry.register(
     "create_cat",
     {
       title: "猫を追加",
       description:
         "家に猫を 1 匹登録し、登録した猫のプロフィールを返す。name・sex は必須。" +
-        "追加した猫の記録を書き込むには、ユーザーが CANSHI の設定の「AIとの接続」で" +
+        `追加した猫の記録を書き込むには、ユーザーが CANSHI の${ctx.caller.settings}で` +
         "その猫の記録の書き込みを許可する必要がある。" +
         CAT_DESCRIPTION,
       inputSchema: {
@@ -256,25 +262,21 @@ export function registerCatTools(server: McpServer, ctx: McpToolContext) {
         return errorResult(parsed.error);
       }
       const createdId = await createCatForUser(
-        resolved.connection.userId,
+        resolved.userId,
         { ...parsed.data, householdId: args.householdId },
         ctx.env.DB,
       );
       const created =
         createdId &&
-        (await getCatForUser(
-          resolved.connection.userId,
-          createdId,
-          ctx.env.DB,
-        ));
+        (await getCatForUser(resolved.userId, createdId, ctx.env.DB));
       if (!created) {
-        return errorResult(HOUSEHOLD_NOT_ALLOWED_ERROR);
+        return errorResult(notFoundError(HOUSEHOLD_NOT_ALLOWED_ERROR));
       }
       return jsonResult(toCatSummary(created));
     },
   );
 
-  server.registerTool(
+  registry.register(
     "update_cat",
     {
       title: "猫のプロフィールを編集",
@@ -305,21 +307,20 @@ export function registerCatTools(server: McpServer, ctx: McpToolContext) {
       }
       const saved = await updateCatForUser(
         cat.id,
-        resolved.connection.userId,
+        resolved.userId,
         parsed.data,
         ctx.env.DB,
       );
       const updated =
-        saved &&
-        (await getCatForUser(resolved.connection.userId, cat.id, ctx.env.DB));
+        saved && (await getCatForUser(resolved.userId, cat.id, ctx.env.DB));
       if (!updated) {
-        return errorResult("猫が見つかりませんでした");
+        return errorResult(notFoundError("猫が見つかりませんでした"));
       }
       return jsonResult(toCatSummary(updated));
     },
   );
 
-  server.registerTool(
+  registry.register(
     "get_cat_notification_settings",
     {
       title: "猫の通知の設定を取得",
@@ -344,7 +345,7 @@ export function registerCatTools(server: McpServer, ctx: McpToolContext) {
     },
   );
 
-  server.registerTool(
+  registry.register(
     "update_cat_notification_settings",
     {
       title: "猫の通知の設定を変更",
@@ -393,7 +394,9 @@ export function registerCatTools(server: McpServer, ctx: McpToolContext) {
       );
       if (unknownTarget) {
         return errorResult(
-          `cleaningTargetId="${unknownTarget.cleaningTargetId}" の掃除対象が見つかりません`,
+          notFoundError(
+            `cleaningTargetId="${unknownTarget.cleaningTargetId}" の掃除対象が見つかりません`,
+          ),
         );
       }
       const parsed = parseFormValues(
@@ -444,7 +447,7 @@ export function registerCatTools(server: McpServer, ctx: McpToolContext) {
 }
 
 /** 猫の通知の設定を、編集のツールの引数と同じ名前で読む */
-async function readNotificationSettings(ctx: McpToolContext, catId: string) {
+async function readNotificationSettings(ctx: OperationContext, catId: string) {
   const cleaningTargets = await listCleaningTargets(catId, ctx.env.DB);
   const settings = await getResolvedSettingsForCat(
     catId,

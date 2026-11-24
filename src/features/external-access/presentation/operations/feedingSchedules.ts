@@ -1,4 +1,3 @@
-import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import type { FeedingSchedule } from "@/db/schema";
 import {
@@ -20,21 +19,24 @@ import {
   isHouseholdOperationAllowed,
 } from "../../domain/permissionRules";
 import {
-  errorResult,
-  jsonResult,
   listAllowedHouseholds,
-  type McpConnection,
-  type McpToolContext,
-  operationNotAllowedMessage,
+  type OperationContext,
+  operationNotAllowedError,
   resolveHouseholdIdsForOperation,
   resolveHouseholdOperation,
-  resolvePermissions,
 } from "./context";
 import {
   mergeFormValues,
   parseFormValues,
   toCheckboxValue,
 } from "./formValues";
+import {
+  errorResult,
+  jsonResult,
+  notFoundError,
+  type OperationError,
+  type OperationRegistry,
+} from "./registry";
 
 const SCHEDULE_DESCRIPTION =
   "ごはんの時間は家ごとに登録し、その時刻になったときの通知（notifyAtTime）と、" +
@@ -62,57 +64,55 @@ function toScheduleSummary(schedule: FeedingSchedule) {
   };
 }
 
-function scheduleNotFoundMessage(id: string) {
-  return `id="${id}" のごはんの時間が見つかりません`;
+function scheduleNotFoundError(id: string) {
+  return notFoundError(`id="${id}" のごはんの時間が見つかりません`);
 }
 
 /**
  * ユーザーが所属し、読み取りを許可している家のごはんの時間で、その家で操作も許可しているときに
- * ごはんの時間を読む。行えなければ AI に返すエラーメッセージ
+ * ごはんの時間を読む。行えなければ 結果として返すエラー
  */
 async function resolveSchedule(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   operation: HouseholdOperation,
   id: string,
 ): Promise<
-  { connection: McpConnection; schedule: FeedingSchedule } | { error: string }
+  { userId: string; schedule: FeedingSchedule } | { error: OperationError }
 > {
-  const resolved = await resolvePermissions(ctx);
+  const resolved = await ctx.resolveAccess();
   if ("error" in resolved) {
     return resolved;
   }
   const schedule = await getFeedingSchedule(id, ctx.env.DB);
   // ほかの人の家・読み取りを許可していない家のごはんの時間は、存在しないものと区別しない
   const households = schedule
-    ? await listAllowedHouseholds(
-        ctx,
-        resolved.connection.userId,
-        resolved.permissions,
-      )
+    ? await listAllowedHouseholds(ctx, resolved.userId, resolved.permissions)
     : [];
   const household = households.find(
     ({ id: householdId }) => householdId === schedule?.householdId,
   );
   if (!schedule || !household) {
-    return { error: scheduleNotFoundMessage(id) };
+    return { error: scheduleNotFoundError(id) };
   }
   if (
     !isHouseholdOperationAllowed(resolved.permissions, household.id, operation)
   ) {
-    return { error: operationNotAllowedMessage(operation, household.name) };
+    return {
+      error: operationNotAllowedError(ctx.caller, operation, household.name),
+    };
   }
-  return { connection: resolved.connection, schedule };
+  return { userId: resolved.userId, schedule };
 }
 
 /**
  * ごはんの時間の読み取り・追加・編集・削除のツールを登録する。扱えるのは、読み取りを
  * 許可している家で、その操作を許可している家のごはんの時間に限る
  */
-export function registerFeedingScheduleTools(
-  server: McpServer,
-  ctx: McpToolContext,
+export function registerFeedingScheduleOperations(
+  registry: OperationRegistry,
+  ctx: OperationContext,
 ) {
-  server.registerTool(
+  registry.register(
     "list_feeding_schedules",
     {
       title: "ごはんの時間の一覧を取得",
@@ -146,7 +146,7 @@ export function registerFeedingScheduleTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "create_feeding_schedule",
     {
       title: "ごはんの時間を追加",
@@ -193,7 +193,7 @@ export function registerFeedingScheduleTools(
       }
       const result = await createFeedingSchedule(
         args.householdId,
-        resolved.connection.userId,
+        resolved.userId,
         parsed.data,
         ctx.env.DB,
       );
@@ -209,7 +209,7 @@ export function registerFeedingScheduleTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "update_feeding_schedule",
     {
       title: "ごはんの時間の通知の設定を変更",
@@ -258,7 +258,7 @@ export function registerFeedingScheduleTools(
       }
       const result = await updateFeedingScheduleNotify(
         schedule.householdId,
-        resolved.connection.userId,
+        resolved.userId,
         schedule.id,
         parsed.data,
         ctx.env.DB,
@@ -270,7 +270,7 @@ export function registerFeedingScheduleTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "delete_feeding_schedule",
     {
       title: "ごはんの時間を削除",
@@ -295,7 +295,7 @@ export function registerFeedingScheduleTools(
       }
       const result = await deleteFeedingSchedule(
         resolved.schedule.householdId,
-        resolved.connection.userId,
+        resolved.userId,
         id,
         ctx.env.DB,
       );

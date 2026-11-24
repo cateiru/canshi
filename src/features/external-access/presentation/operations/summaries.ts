@@ -109,7 +109,7 @@ export const CHANGE_HISTORY_DESCRIPTION =
   "削除の履歴は含まない。";
 
 /**
- * MCP ツール向けの、記録の作成・編集の履歴。画面と同じく、保存した人の名前と AI のアプリの名前
+ * 外部接続向けの、記録の作成・編集の履歴。画面と同じく、保存した人の名前と AI のアプリの名前
  * だけを返し、ユーザー・接続の ID とアイコン画像は返さない。履歴が無い記録（`null`）は空の配列にする
  */
 export function toChangeHistorySummary(

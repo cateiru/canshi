@@ -1,4 +1,3 @@
-import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { type FeedingPreset, GIVEN_AMOUNT_LEVELS } from "@/db/schema";
 import {
@@ -18,20 +17,23 @@ import {
 } from "../../domain/permissionRules";
 import {
   checkHouseholdOperation,
-  errorResult,
-  householdNotFoundMessage,
-  jsonResult,
-  type McpConnection,
-  type McpToolContext,
+  householdNotFoundError,
+  type OperationContext,
   resolveHouseholdIdsForOperation,
   resolveHouseholdOperation,
-  resolvePermissions,
 } from "./context";
 import {
   type FormValues,
   mergeFormValues,
   parseFormValues,
 } from "./formValues";
+import {
+  errorResult,
+  jsonResult,
+  notFoundError,
+  type OperationError,
+  type OperationRegistry,
+} from "./registry";
 
 const PRESET_DESCRIPTION =
   "プリセットは、ごはんの記録で選ぶ商品と量の組み合わせ。" +
@@ -63,30 +65,34 @@ const presetFields = {
     .optional(),
 };
 
+function presetNotFoundError(id: string) {
+  return notFoundError(`id="${id}" のプリセットが見つかりません`);
+}
+
 /**
  * ユーザーが所属し、読み取りを許可している家のプリセットで、その家で操作も許可しているときに
- * プリセットを読む。行えなければ AI に返すエラーメッセージ
+ * プリセットを読む。行えなければ 結果として返すエラー
  */
 async function resolvePreset(
-  ctx: McpToolContext,
+  ctx: OperationContext,
   operation: HouseholdOperation,
   id: string,
 ): Promise<
-  | { connection: McpConnection; preset: FeedingPreset; householdId: string }
-  | { error: string }
+  | { userId: string; preset: FeedingPreset; householdId: string }
+  | { error: OperationError }
 > {
-  const resolved = await resolvePermissions(ctx);
+  const resolved = await ctx.resolveAccess();
   if ("error" in resolved) {
     return resolved;
   }
   const preset = await getFeedingPresetRowForUser(
-    resolved.connection.userId,
+    resolved.userId,
     id,
     ctx.env.DB,
   );
   const householdId = preset?.householdId;
   if (!householdId || !isHouseholdAllowed(resolved.permissions, householdId)) {
-    return { error: `id="${id}" のプリセットが見つかりません` };
+    return { error: presetNotFoundError(id) };
   }
   const operationError = await checkHouseholdOperation(
     ctx,
@@ -97,7 +103,7 @@ async function resolvePreset(
   if (operationError) {
     return { error: operationError };
   }
-  return { connection: resolved.connection, preset, householdId };
+  return { userId: resolved.userId, preset, householdId };
 }
 
 /** フォームの値に含めない引数を除く */
@@ -110,11 +116,11 @@ function formArgs(args: Record<string, unknown>) {
  * ごはんのプリセットの読み取り・追加・編集・削除のツールを登録する。扱えるのは、読み取りを
  * 許可している家で、その操作を許可している家のプリセットに限る
  */
-export function registerFeedingPresetTools(
-  server: McpServer,
-  ctx: McpToolContext,
+export function registerFeedingPresetOperations(
+  registry: OperationRegistry,
+  ctx: OperationContext,
 ) {
-  server.registerTool(
+  registry.register(
     "list_feeding_presets",
     {
       title: "ごはんのプリセットの一覧を取得",
@@ -162,7 +168,7 @@ export function registerFeedingPresetTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "create_feeding_preset",
     {
       title: "ごはんのプリセットを追加",
@@ -197,13 +203,13 @@ export function registerFeedingPresetTools(
         return errorResult(parsed.error);
       }
       const saved = await createFeedingPreset(
-        resolved.connection.userId,
+        resolved.userId,
         args.householdId,
         parsed.data,
         ctx.env.DB,
       );
       if ("householdError" in saved) {
-        return errorResult(householdNotFoundMessage(args.householdId));
+        return errorResult(householdNotFoundError(args.householdId));
       }
       if ("error" in saved) {
         return errorResult(saved.error);
@@ -212,7 +218,7 @@ export function registerFeedingPresetTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "update_feeding_preset",
     {
       title: "ごはんのプリセットを編集",
@@ -259,7 +265,7 @@ export function registerFeedingPresetTools(
         return errorResult(parsed.error);
       }
       const saved = await updateFeedingPreset(
-        resolved.connection.userId,
+        resolved.userId,
         args.id,
         parsed.data,
         ctx.env.DB,
@@ -273,7 +279,7 @@ export function registerFeedingPresetTools(
     },
   );
 
-  server.registerTool(
+  registry.register(
     "delete_feeding_preset",
     {
       title: "ごはんのプリセットを削除",
@@ -295,10 +301,8 @@ export function registerFeedingPresetTools(
       if ("error" in resolved) {
         return errorResult(resolved.error);
       }
-      if (
-        !(await deleteFeedingPreset(resolved.connection.userId, id, ctx.env.DB))
-      ) {
-        return errorResult(`id="${id}" のプリセットが見つかりません`);
+      if (!(await deleteFeedingPreset(resolved.userId, id, ctx.env.DB))) {
+        return errorResult(presetNotFoundError(id));
       }
       return jsonResult({ id, deleted: true });
     },
