@@ -49,6 +49,7 @@ export type RecordActor = {
  * - 記録のテーブルが複数あるため、`record_type` と `record_id` で指し、外部キーにはしない
  * - `user_id` は外部キーで、ユーザーを物理削除すると履歴を残せないため、ユーザーの物理削除を防ぐ
  * - `mcp_client_id` の接続は `oauth_kv_entries` にあるため外部キーにせず、接続を解除しても残す
+ * - `api_token_id` のトークン（`api_tokens`）を削除しても残せるよう、外部キーにはしない
  */
 export const recordChangeLogs = sqliteTable(
   "record_change_logs",
@@ -65,6 +66,7 @@ export const recordChangeLogs = sqliteTable(
       .notNull()
       .references(() => users.id),
     mcpClientId: text("mcp_client_id"),
+    apiTokenId: text("api_token_id"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
