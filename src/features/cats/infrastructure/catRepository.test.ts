@@ -6,6 +6,7 @@ import initSqlJs from "sql.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import {
+  apiTokens,
   cats,
   feedingRecordItems,
   feedingRecords,
@@ -189,6 +190,28 @@ describe("memorializeForMember", () => {
     expect(
       rows.find((row) => row.clientId === "client-a")?.excludedRecordTypes,
     ).toEqual({ tama: ["poop"] });
+  });
+
+  it("すべてのユーザーの API トークンからも、この猫への書き込みの許可だけを外す", async () => {
+    await db.insert(apiTokens).values({
+      id: "token-a",
+      userId: "owner",
+      name: "トークン",
+      tokenHash: "hash",
+      excludedRecordTypes: { tama: ["poop"] },
+      writableRecordTypes: { tama: ["feeding"], kuro: ["weight"] },
+    });
+
+    await createCatRepository().memorializeForMember(
+      "owner",
+      "tama",
+      "2026-07-10",
+    );
+
+    const [token] = await db.select().from(apiTokens);
+    expect(token.writableRecordTypes).toEqual({ kuro: ["weight"] });
+    // 読み取りの範囲は変えない
+    expect(token.excludedRecordTypes).toEqual({ tama: ["poop"] });
   });
 
   it("記録できる猫がいなくなった家の、ごはんの時間の通知を閉じる", async () => {
