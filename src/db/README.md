@@ -69,16 +69,18 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - 記録テーブル（論理削除と同じ 14 テーブル）の作成・編集・論理削除は、操作した人と日時を `record_change_logs`（`0064`）に
   1 行ずつ残す
   - 画面では、タイムラインと記録の一覧で、記録を作成・編集した人のアイコンを表示する（#529、
-    `src/features/record-contributors`）。削除の行は使わず、ユーザーと接続（`user_id`・`mcp_client_id`）の組ごとに
+    `src/features/record-contributors`）。削除の行は使わず、ユーザーと接続・トークン（`user_id`・`mcp_client_id`・`api_token_id`）の組ごとに
     最初に操作した順で並べる。家から外れたユーザーのアイコン画像は見る権限がないため返さない。AI との接続の操作は、
-    接続の名前・アプリのアイコンを `oauth_kv_entries` から求め、`mcp_client_id` そのものは画面に渡さない
-  - AI との接続（MCP）では、`list_timeline`・`list_memos`・`list_medications` の記録に、作成・編集の履歴
-    （`changeHistory`）を添える（#537）。保存した人の名前・AI のアプリの名前と日時、作成か編集かだけを返し、
-    ユーザー・接続の ID とアイコン画像は返さない。削除の行は使わない
+    接続の名前・アプリのアイコンを `oauth_kv_entries` から、API の操作は、トークンの名前を `api_tokens` から求め、
+    `mcp_client_id`・`api_token_id` そのものは画面に渡さない
+  - 外部接続（AI との接続・API）では、`list_timeline`・`list_memos`・`list_medications` の記録に、作成・編集の履歴
+    （`changeHistory`）を添える（#537）。保存した人の名前・AI のアプリの名前・API トークンの名前と日時、作成か編集か
+    だけを返し、ユーザー・接続・トークンの ID とアイコン画像は返さない。削除の行は使わない
   - 記録の 1 回の保存につき 1 行で、編集した人を全員残す。`record_type`（`media_assets.record_type` と同じ単数形）と
     `record_id` で記録を指す。テーブルが複数あるため、記録への外部キーにはしない
-  - 操作した人は `user_id` と `mcp_client_id`（`RecordActor`）で持つ。AI との接続（MCP）からの操作では、接続を許可した
-    ユーザーと接続（OAuth のクライアントの ID）の両方を残し、画面からの操作では `mcp_client_id` は NULL
+  - 操作した人は `user_id` と `mcp_client_id`・`api_token_id`（`RecordActor`）で持つ。AI との接続（MCP）からの操作では、
+    接続を許可したユーザーと接続（OAuth のクライアントの ID）の両方を、API からの操作では、トークンを発行した
+    ユーザーとトークンの両方を残す。画面からの操作では `mcp_client_id`・`api_token_id` は NULL
   - `0064` より前に作られた記録に行はない（作成者が分からないため、後から埋めない）
   - 記録を書き込むクエリを追加するときは、`src/db/recordChangeLog.ts` の `insertRecordChangeLog` を同じ `db.batch` に
     並べ、書き込みと同じ条件を渡す。書き込みが断られたときに履歴だけが残らないようにするため。論理削除の後は
@@ -92,6 +94,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   - ユーザーの物理削除は `user_id` の外部キーで防がれる。退会を作るときは、ユーザーを論理削除して履歴を残すことを想定する
   - 接続の解除では行を消さない。接続は `oauth_kv_entries` にあるため `mcp_client_id` は外部キーにしておらず、解除後も
     どの接続の操作だったかが残る。`mcp_client_id` は URL などでクライアントに渡さない
+  - API トークンの削除でも行を消さない。`api_token_id` は、トークンを削除した後も残せるよう外部キーにしていない
 
 - 日付のみを表す列（生年月日・お迎え日など時刻を持たない情報）は `text` 型で ISO8601 の日付文字列（`YYYY-MM-DD`）として保持する
   - 生年月日（`cats.birth_date`）は年のみ・年月のみの入力も受け付ける。その場合も未入力の月・日を 1月・1日で補完した `YYYY-MM-DD` で保持し、わかっている範囲は `cats.birth_date_precision`（`year`・`month`・`day`）で別に持つ。年齢・誕生日の判定は補完した日付をそのまま使い、表示やフォームの初期値だけが精度を参照する
@@ -101,11 +104,11 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - アプリの利用者（`users`）と、猫を飼っている「家」（`households`）を表す。家には 1 名以上のユーザー
   （`household_members`、`household_id` + `user_id` の複合主キー）と複数の猫（`cats.household_id`）が所属する
-- ユーザーは所属する家の猫だけを参照・編集できる。ページ・Server Action・Route Handler・MCP のツール
-  （`src/features/mcp/presentation/agent.ts`）は、いずれも `src/features/households/infrastructure/queries.ts` の
+- ユーザーは所属する家の猫だけを参照・編集できる。ページ・Server Action・Route Handler・外部接続（AI との接続・API）の
+  操作（`src/features/external-access/presentation/operations/`）は、いずれも `src/features/households/infrastructure/queries.ts` の
   `getCatForUser`・`listCatsForUser`・`accessibleCatIdsQuery` で絞り込む（認可の入口は
-  `src/features/auth/presentation/session.ts` の `requireUser`・`requireCatAccess`）。MCP のツールはさらに、
-  ユーザーが接続ごとに許可した読み取り範囲（`mcp_permissions`）で絞り込む
+  `src/features/auth/presentation/session.ts` の `requireUser`・`requireCatAccess`）。外部接続の操作はさらに、
+  ユーザーが接続・トークンごとに許可した範囲（`mcp_permissions`・`api_tokens`）で絞り込む
   - 猫に紐付くテーブル（記録・通知など）は `cat_id` 経由で家に紐付くため、家の列は持たない
   - 支出記録は猫ではなく家に属するため `expense_records.household_id` を持つ（「支出記録」の節を参照）
   - ごはん商品・ごはんプリセットも猫ではなく家に属するため `food_products.household_id`・
@@ -200,7 +203,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
     - 家のメンバーであることは、今は記録の文の中では確かめない（画面・MCP の確認だけ。ごはん記録は猫が確認した
       時点の家にいることを確かめる）
   - メモリーへ移す文（`memorializeForMember`）と同じ batch で、その猫の未対応の通知を `dismissed` にし、すべてのユーザーの
-    `mcp_permissions.writable_record_types` からその猫のキーを `json_remove` で外す。記録できる猫がいなくなった家の
+    `mcp_permissions.writable_record_types`・`api_tokens.writable_record_types` からその猫のキーを `json_remove` で外す。記録できる猫がいなくなった家の
     ごはんの時間の通知も閉じる。メモリーから戻しても、閉じた通知・外した書き込みの許可は戻さない
   - 通知の生成はメモリーへ移した猫を対象にせず、家のごはんの時間の通知もメモリーへ移した猫だけの家には作らない
   - タイムラインは `memorial_date` の日に記念日のエントリ（`memorial`）を出し、それより後の記録・記念日を含めない
@@ -255,7 +258,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   管理画面（`packages/admin`）が登録・編集・削除する。列は `food_products` から `household_id` を除き、
   内容量の候補（`package_sizes`）と検索キーワード（`search_keywords`）を足したもの
   - `users.role` が `admin` のユーザーは、AI との接続（MCP）からも検索・登録・編集できる（#363、
-    `src/features/mcp/presentation/tools/catalogFoodProducts.ts`）。接続に許可した操作（`mcp_permissions.catalog_operations`）
+    `src/features/external-access/presentation/operations/catalogFoodProducts.ts`）。接続に許可した操作（`mcp_permissions.catalog_operations`）
     だけを行え、権限はツールが呼ばれるたびに DB で確かめる。画像の登録と削除は管理画面だけで行う
   - 内容量は管理画面と同じく、`package_amount_g`・`package_unit` に先頭の候補を、`package_sizes` に先頭を含む
     すべての候補を書く（`src/features/catalog-food-products/application/mutations.ts`）。入力の規則は管理画面の
@@ -460,8 +463,11 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 - キー・値の形式はライブラリが決めるため、アプリのコードから直接読み書きしない
 - `expires_at` を過ぎた行は無いものとして扱い、定期実行で削除する
 
-## AI との接続の読み取り範囲（`mcp_permissions`）
+## AI との接続の許可する範囲（`mcp_permissions`）
 
+- 範囲の列は API トークン（`api_tokens`）と共通で、`src/db/schema/access-permission-columns.ts` の
+  `accessPermissionColumns` にまとめる。範囲の規則と、設定画面・同意画面・トークンの発行画面で共通のチェックボックスの部品は
+  `src/features/external-access` に置く
 - MCP のツールから読み取れる家・猫・記録の種類を、ユーザーが許可した接続ごとに 1 行で持つ
   （`user_id` + `client_id` の複合主キー）。範囲はトークン（OAuth の `props`）には持たせず、ツールが
   呼ばれるたびに読む（`src/features/mcp/infrastructure/permissions.ts`）。設定の「AIとの接続」の接続ごとのページ
@@ -502,6 +508,22 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
   行も消す。同じクライアントにもう一度同意したときや grant の期限が切れたときは、ライブラリや定期実行が grant
   だけを消すため、grant が無くなった行は定期実行で消す（`purgeOrphanedMcpConnectionUsages`）
 - 導入前から使っている接続や、接続してからまだ使っていない接続には行が無く、「記録がありません」と表示する
+
+## API トークンとアクセス履歴（`api_tokens`・`api_access_logs`）
+
+- API（`/api/v1`、`src/features/api`）のトークンを、発行したユーザーごとに持つ（`0072`）。`sessions`・
+  `household_invitations` と同じく、トークンそのものは保存せず SHA-256 のハッシュ（`token_hash`）だけを持つため、
+  トークンを表示できるのは発行したときだけ
+  - 許可する範囲は `mcp_permissions` と同じ列（`accessPermissionColumns`）で持ち、リクエストごとにトークンと一緒に
+    読む。発行した後から変えられる
+  - `expires_at` を過ぎたトークンは使えない。NULL は期限なし。期限が切れた行も、ユーザーが削除するまで残す
+- API へのアクセスは `api_access_logs` に 1 行ずつ残す。メソッド・パス（クエリは残さない）・応答のステータス・IP アドレス
+  （`CF-Connecting-IP`）・User-Agent を持つ
+  - 残すのは、使えるトークンで認証できたリクエストだけ。応答の後に記録し、失敗しても応答には影響させない
+  - 画面では、トークンを最後に使った日時（トークンごとの `created_at` の最大値）だけに使う
+  - トークンを削除するときは、その履歴も同じ batch で消す。応答の後に記録するため、INSERT の WHERE でトークンが
+    残っていることを確かめ、削除の後に履歴が残らないようにする
+  - 古い履歴を自動で消す処理は持たない
 
 ## AI 評価結果（`ai_evaluations`）
 

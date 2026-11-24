@@ -81,8 +81,8 @@ PR のレビューコメント（インラインコメント・レビュー本�
 4 つのディレクトリに分ける。依存してよいのは外側から内側への向きだけ。
 
 - `presentation/`：画面のコンポーネント（`*.tsx`・CSS Modules）、Server Action（`actions.ts`・`*Actions.ts`）、
-  MCP のツール（`src/features/mcp/presentation/tools/**`）。ログイン・猫や家を参照できるかの確認、
-  フォーム・ツールの引数の解析、遷移やエラーの文言を受け持つ。`src/app/**`・`src/components/**` もこの層として扱う。
+  外部接続（MCP のツール・API）の操作（`src/features/external-access/presentation/operations/**`）。ログイン・猫や家を参照できるかの確認、
+  フォーム・操作の引数の解析、遷移やエラーの文言を受け持つ。`src/app/**`・`src/components/**` もこの層として扱う。
   application・infrastructure・domain を使ってよい。
 - `application/`：ユースケース（`mutations.ts` など）。見つからない・無効などの判断をし、domain で中身を作って
   infrastructure のリポジトリで保存する。domain・infrastructure を使ってよい。
@@ -110,7 +110,7 @@ PR のレビューコメント（インラインコメント・レビュー本�
   書き込みの直前に変わりうる条件も、リポジトリの文の中で確かめる（`addForMember`・`renameAsOwner` など）。
 - 記録（`src/db/README.md` の 14 テーブル）を書き込むリポジトリのメソッドは、操作した人（`RecordActor`）を受け取り、
   `src/db/recordChangeLog.ts` の `insertRecordChangeLog` を同じ batch に並べて履歴を残す。presentation で画面なら
-  `userActor(user)`、MCP なら `mcpActor(connection)` を作って渡す。
+  `userActor(user)` を、外部接続の操作なら `OperationAccess` の `actor` を渡す。
 - 読み取りはリポジトリに入れず、`infrastructure/queries.ts` に画面・MCP 向けの関数として置く。presentation は
   読み取りでは queries を直接使ってよい。リポジトリに分けた書き込みは、必ず application を通す。
 
@@ -123,9 +123,9 @@ PR のレビューコメント（インラインコメント・レビュー本�
   - domain から DB・`next`・`react`・`@opennextjs/cloudflare` と、ほかの層を import しない。
   - overrides は層ごとに対象が重ならないようにする。
 - application の関数（`mutations.ts` など）と queries の関数は、最後の引数で D1 を `d1?: D1Database` として受け取る。
-  MCP のツールは `ctx.env.DB` を渡す。画面からは省略してよい。
+  外部接続の操作は `ctx.env.DB` を渡す。画面からは省略してよい。
   画像（R2）の削除を伴う関数（`deleteCatForUser` など）は、今は画面からだけ使うため受け取らない。
-- 認可（`requireCatAccess`、MCP の権限の確認）は、presentation で行う。application の関数には確認済みの ID を渡す。
+- 認可（`requireCatAccess`、外部接続の権限の確認）は、presentation で行う。application の関数には確認済みの ID を渡す。
   ただし、確認から書き込みまでの間に家から外された場合に備えて、リポジトリの文の中でも所属を確かめる場合がある
   （`createFoodProduct` など）。
 - 次の処理は技術的な処理として infrastructure に置いたまま、リポジトリには分けていない。presentation から直接使ってよい。
@@ -134,6 +134,15 @@ PR のレビューコメント（インラインコメント・レビュー本�
   - Push の送信（`push/infrastructure/sendPush.ts`・`sendTestPush.ts`）
   - R2 への保存・配信（`media/infrastructure/storage.ts`・`serve.ts`）と、共通のごはん商品の画像の加工（`image.ts`）
   - プロフィール画像の付け替え（`cats/infrastructure/applyProfileImage.ts`・`users/infrastructure/applyUserIcon.ts`）
+
+## 外部接続（AI との接続・API）
+
+MCP のツールと API（`/api/v1`）のエンドポイントは、同じ操作（`src/features/external-access/presentation/operations/**`）を
+呼ぶ。操作は通信の方式に依存させず、呼んだものの呼び方（「この接続」「このトークン」）は `ctx.caller` を使う。
+
+- 操作を足したら、`src/features/api/domain/routes.ts` にエンドポイントも足す（すべての操作に 1 つずつあることをテストで
+  確かめている）。操作の説明・エラーのメッセージの操作の名前（`list_cats` など）は、API ではエンドポイントに置き換わる
+- 公開した API のパス・引数・応答の項目を、互換性のない形で変えない。変えるときは新しい版（`/api/v2`）を作る
 
 ## その他
 

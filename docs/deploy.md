@@ -490,6 +490,24 @@ Bot Fight Mode が ChatGPT からのリクエストをブロックしている**
   - **Pro プラン以上**: Super Bot Fight Mode に切り替え、
     `/mcp`・`/oauth/*`・`/.well-known/oauth*` にスキップルールを追加する
 
+## API
+
+設定の「外部接続」の「APIトークン」で発行したトークンで使う API を、メインアプリの `/api/v1` で公開している
+（`src/features/api/`）。Next.js の Route Handler（`src/app/api/v1/[[...path]]/route.ts`）で処理し、`/mcp` と違って
+`next dev` でも使える。
+
+- ログインの Cookie ではなくトークンで認証するため、middleware ではセッションを確認しない
+  （`src/features/auth/domain/publicPaths.ts`）。API の仕様（`/api/v1/openapi.json`）はトークンなしで読める
+- 本番ドメインは Access で保護していないため、Access のログイン画面を挟まずに到達できる。プレビュー URL は Access で
+  保護しているため、プレビューの API を外部から呼ぶことはできない
+- Bot Fight Mode をオンにすると、curl などからのリクエストがブロックされうる（「MCP サーバー」節の「トラブルシューティング」）
+- アクセスの履歴（`api_access_logs`）は、トークンを削除するまで残る。調べるときは D1 を直接読む
+
+  ```sh
+  pnpm wrangler d1 execute DB --remote --command \
+    "SELECT created_at, method, path, status, ip_address, user_agent FROM api_access_logs WHERE api_token_id = '<トークンの ID>' ORDER BY created_at DESC LIMIT 100"
+  ```
+
 ## 管理画面
 
 運用者向けの管理画面を、メインアプリとは別の Cloudflare Workers（`packages/admin/`、Worker 名

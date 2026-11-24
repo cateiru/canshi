@@ -399,6 +399,130 @@ test.describe("アカウント設定", () => {
   });
 });
 
+test("外部接続ページの見た目", async ({ page }, testInfo) => {
+  await page.goto("/settings/external-connections");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "外部接続" }),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
+// 発行したトークンのダイアログを撮るときは実際にトークンを発行するため、一覧の撮影と重ならないよう
+// 直列にし、撮影後に発行したトークンを削除して元に戻す
+test.describe("APIトークン", () => {
+  test.describe.configure({ mode: "serial" });
+
+  test("APIトークンページの見た目", async ({ page }, testInfo) => {
+    await page.goto("/settings/api-tokens");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "APIトークン" }),
+    ).toBeVisible();
+    // フィクスチャの、期限内・期限なし・期限切れのトークンが並ぶ
+    await expect(page.getByRole("region", { name: /^トークン「/ })).toHaveCount(
+      3,
+    );
+    await takeSnapshot(page, testInfo);
+  });
+
+  test("APIトークンの削除のダイアログの見た目", async ({ page }, testInfo) => {
+    await page.goto("/settings/api-tokens");
+    const dialog = page.getByRole("dialog", {
+      name: "トークンを削除しますか？",
+    });
+    await expect(async () => {
+      if (!(await dialog.isVisible())) {
+        await page
+          .getByRole("region", { name: "トークン「体重計との連携」" })
+          .getByRole("button", { name: "削除" })
+          .click();
+      }
+      await expect(dialog).toBeVisible({ timeout: 1_000 });
+    }).toPass();
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+
+  test("APIトークンの許可する範囲ページの見た目", async ({
+    page,
+  }, testInfo) => {
+    await page.goto("/settings/api-tokens/vrt-api-token-active");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "体重計との連携" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+
+  test("APIトークンの発行ページの見た目", async ({ page }, testInfo) => {
+    await page.goto("/settings/api-tokens/new");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "APIトークンを発行する" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+
+  /** 発行ページで、有効期限に「期限なし」を選ぶ */
+  async function selectUnlimited(page: Page) {
+    await page.goto("/settings/api-tokens/new");
+    const option = page.getByRole("option", { name: "期限なし" });
+    // ハイドレーションの前に押すと開かないため、開くまで押し直す
+    await expect(async () => {
+      if (!(await option.isVisible())) {
+        await page.getByRole("button", { name: /有効期限/ }).click();
+      }
+      await expect(option).toBeVisible({ timeout: 1_000 });
+    }).toPass();
+    await option.click();
+    await expect(
+      page.getByText("期限なしのトークンは、削除するまで使い続けられます"),
+    ).toBeVisible();
+  }
+
+  test("APIトークンの発行ページ（期限なしを選んだケース）の見た目", async ({
+    page,
+  }, testInfo) => {
+    await selectUnlimited(page);
+    // 選んだ後に有効期限の欄に残るフォーカスとホバーの表示を外す
+    await page.getByRole("button", { name: /有効期限/ }).blur();
+    await page.mouse.move(0, 0);
+    await takeSnapshot(page, testInfo);
+  });
+
+  test("発行したAPIトークンのダイアログの見た目", async ({
+    page,
+  }, testInfo) => {
+    const tokenName = "VRTのAPIトークン";
+    await selectUnlimited(page);
+    await fillAndKeep(page.getByLabel("トークンの名前"), tokenName);
+    await page.getByRole("button", { name: "トークンを発行する" }).click();
+    const dialog = page.getByRole("dialog", { name: "トークンを発行しました" });
+    const tokenField = dialog.getByRole("textbox", { name: "API トークン" });
+    await expect(tokenField).toHaveValue(/^canshi_/);
+
+    try {
+      // トークンは発行のたびに変わるため、固定の値に置き換えて撮る
+      await tokenField.evaluate((element: HTMLInputElement) => {
+        element.value = "canshi_vrt-api-token";
+      });
+      await takeSnapshot(page, testInfo, { fullPage: false });
+    } finally {
+      await dialog.getByRole("button", { name: "閉じる" }).click();
+      const issued = page.getByRole("region", {
+        name: `トークン「${tokenName}」`,
+      });
+      const deleteDialog = page.getByRole("dialog", {
+        name: "トークンを削除しますか？",
+      });
+      await expect(async () => {
+        if (!(await deleteDialog.isVisible())) {
+          await issued.getByRole("button", { name: "削除" }).click();
+        }
+        await expect(deleteDialog).toBeVisible({ timeout: 1_000 });
+      }).toPass();
+      await deleteDialog.getByRole("button", { name: "削除する" }).click();
+      await expect(issued).toHaveCount(0);
+    }
+  });
+});
+
 test("AIとの接続ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/ai-connections");
   await expect(
