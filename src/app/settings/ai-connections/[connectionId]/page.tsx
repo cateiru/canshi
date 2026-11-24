@@ -4,12 +4,12 @@ import { notFound } from "next/navigation";
 import { TbEye } from "react-icons/tb";
 import { Breadcrumb } from "@/components/ui";
 import { requireUser } from "@/features/auth/presentation/session";
+import { PermissionsForm } from "@/features/external-access/presentation/PermissionsForm";
 import { getUserMcpConnection } from "@/features/mcp/infrastructure/connections";
 import { getMcpPermissionTree } from "@/features/mcp/infrastructure/permissions";
 import { updateMcpPermissionsAction } from "@/features/mcp/presentation/actions";
 import { getMcpClientIcon } from "@/features/mcp/presentation/clientIcons";
 import { formatRedirectUri } from "@/features/mcp/presentation/consent";
-import { McpPermissionsForm } from "@/features/mcp/presentation/McpPermissionsForm";
 import { formatDateTimeUtc, getNaiveUtcNow } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import { Surface } from "@/features/shared/Surface";
@@ -66,6 +66,7 @@ export default async function AiConnectionPage({
         items={[
           { label: "トップ", href: "/home" },
           { label: "設定", href: "/settings" },
+          { label: "外部接続", href: "/settings/external-connections" },
           { label: "AIとの接続", href: "/settings/ai-connections" },
           { label: clientName },
         ]}
@@ -109,9 +110,10 @@ export default async function AiConnectionPage({
         <p className={styles.description}>
           チェックを入れた権限に対してAIが操作できるようになります。
         </p>
-        <McpPermissionsForm
+        <PermissionsForm
           action={updateMcpPermissionsAction.bind(null, connection.id)}
           tree={permissionTree}
+          subject="このアプリ"
         />
       </Surface>
     </main>

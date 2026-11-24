@@ -2,6 +2,7 @@ import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { deleteRecordChangeLogsOf } from "@/db/recordChangeLog";
 import {
+  apiTokens,
   brushingRecords,
   cats,
   cleaningRecords,
@@ -140,7 +141,7 @@ export function createCatRepository(d1?: D1Database): CatRepository {
               isMemorial,
             ),
           ),
-        // AI との接続からは書き込めないよう、どのユーザーの接続でも書き込みの許可を外す。
+        // AI との接続・API からは書き込めないよう、どのユーザーの接続・トークンでも書き込みの許可を外す。
         // 読み取りの許可は変えない。メモリーから戻しても許可は戻さない
         db
           .update(mcpPermissions)
@@ -152,6 +153,20 @@ export function createCatRepository(d1?: D1Database): CatRepository {
             and(
               isNotNull(
                 sql`json_type(${mcpPermissions.writableRecordTypes}, ${catKeyPath})`,
+              ),
+              isMemorial,
+            ),
+          ),
+        db
+          .update(apiTokens)
+          .set({
+            writableRecordTypes: sql`json_remove(${apiTokens.writableRecordTypes}, ${catKeyPath})`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              isNotNull(
+                sql`json_type(${apiTokens.writableRecordTypes}, ${catKeyPath})`,
               ),
               isMemorial,
             ),

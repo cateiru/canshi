@@ -534,6 +534,13 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
   await capture(page, "ai-consent");
   await page.unroute(isConsentPage);
 
+  await page.goto("/settings/api-tokens/new");
+  await expect(
+    page.getByRole("button", { name: "トークンを発行する" }),
+  ).toBeVisible();
+  await page.getByLabel("トークンの名前").fill("体重計との連携");
+  await capture(page, "api-token-new");
+
   // 通知。next dev では Service Worker を登録しないため、通知の設定の確認が終わるよう自分で登録する
   await page.goto("/settings/notifications");
   await page.evaluate(() => navigator.serviceWorker.register("/sw.js"));

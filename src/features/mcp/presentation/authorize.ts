@@ -6,7 +6,7 @@ import {
 } from "@cloudflare/workers-oauth-provider";
 import { SESSION_COOKIE_NAME } from "@/features/auth/domain/sessionToken";
 import { getSessionUser } from "@/features/auth/infrastructure/sessions";
-import { MCP_PERMISSIONS_FIELD_NAME } from "../domain/permissionRules";
+import { PERMISSIONS_FIELD_NAME } from "@/features/external-access/domain/permissionRules";
 import type { McpProps } from "../domain/props";
 import { saveMcpPermissionsFromForm } from "../infrastructure/permissions";
 import { encodeMcpConsentRequest, MCP_CONSENT_HEADER } from "./consent";
@@ -181,7 +181,7 @@ async function handleAuthorizePost(
   // ツールが呼ばれるたびに読む（`../infrastructure/permissions.ts`）。範囲の項目が無いフォーム
   // （範囲の選択を追加する前に開いた同意画面）からの送信では、今の範囲のままにする
   if (
-    formData.has(MCP_PERMISSIONS_FIELD_NAME) &&
+    formData.has(PERMISSIONS_FIELD_NAME) &&
     !(await saveMcpPermissionsFromForm(
       user.id,
       authRequest.clientId,

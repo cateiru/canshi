@@ -86,7 +86,9 @@ function MemorializeCatForm({
         </li>
         <li>このねこのお知らせは届かなくなります</li>
         <li>タイムラインは、選んだ日までを表示します</li>
-        <li>AI との接続から、このねこの記録を書き込めなくなります</li>
+        <li>
+          外部接続（AIとの接続・API）から、このねこの記録を書き込めなくなります
+        </li>
       </ul>
       <p>あとからメモリーから戻すこともできます。</p>
       <form action={formAction} className={styles.form}>
@@ -148,8 +150,7 @@ export function RestoreCatFromMemorialButton({
         <ul className={styles.list}>
           <li>メモリーへ移したときに閉じたお知らせは、戻りません</li>
           <li>
-            AI
-            との接続の書き込みの許可は戻りません。必要なら「AIとの接続」で許可し直してください
+            外部接続（AIとの接続・API）の書き込みの許可は戻りません。必要なら設定の「外部接続」で許可し直してください
           </li>
         </ul>
         <form

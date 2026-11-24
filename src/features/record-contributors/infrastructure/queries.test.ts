@@ -5,6 +5,7 @@ import initSqlJs from "sql.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getDb } from "@/db/client";
 import {
+  apiTokens,
   householdMembers,
   households,
   type NewRecordChangeLog,
@@ -12,6 +13,10 @@ import {
   users,
 } from "@/db/schema";
 import { D1KvStore } from "@/features/mcp/infrastructure/d1KvStore";
+import {
+  formatRecordContributorLabel,
+  type RecordContributions,
+} from "../domain/contributor";
 import { listRecordContributors, recordContributorKey } from "./queries";
 
 let db: ReturnType<typeof getDb>;
@@ -124,6 +129,57 @@ describe("listRecordContributors", () => {
         ],
       ]),
     );
+  });
+
+  it("API からの操作は、画面からの操作とも別に、トークンごとに返す", async () => {
+    await db.insert(apiTokens).values({
+      id: "token-1",
+      userId: "member",
+      name: "体重計",
+      tokenHash: "hash-1",
+    });
+    await insertLogs([
+      {
+        recordId: "record-1",
+        action: "create",
+        userId: "member",
+        apiTokenId: "token-1",
+        createdAt: new Date("2026-07-01T00:00:00Z"),
+      },
+      {
+        recordId: "record-1",
+        action: "update",
+        userId: "member",
+        createdAt: new Date("2026-07-02T00:00:00Z"),
+      },
+      {
+        recordId: "record-1",
+        action: "update",
+        userId: "member",
+        apiTokenId: "deleted-token",
+        createdAt: new Date("2026-07-03T00:00:00Z"),
+      },
+    ]);
+
+    const result = await listRecordContributors(
+      [{ recordType: "poop_record", recordId: "record-1" }],
+      "viewer",
+      d1,
+    );
+
+    const { contributors } = result.get(
+      recordContributorKey("poop_record", "record-1"),
+    ) as RecordContributions;
+    expect(contributors).toEqual([
+      { kind: "api", userName: "家族", tokenName: "体重計" },
+      { kind: "user", userName: "家族", iconMediaAssetId: "icon-asset" },
+      { kind: "api", userName: "家族", tokenName: null },
+    ]);
+    expect(contributors.map(formatRecordContributorLabel)).toEqual([
+      "体重計（家族のAPIトークン）",
+      "家族",
+      "削除されたトークン（家族のAPIトークン）",
+    ]);
   });
 
   it("同じ秒の操作は追加した順にする", async () => {

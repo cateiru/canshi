@@ -20,11 +20,17 @@ const PUBLIC_PATH_PREFIXES = [
  */
 const PUBLIC_PAGE_PATHS = ["/help", "/settings/appearance"];
 
+/**
+ * ログインのセッションではなく API トークンで認証するパス（そのパスと、その下のパス）。
+ * 認証は `src/features/api/presentation/handler.ts` で行う
+ */
+const TOKEN_AUTH_PATHS = ["/api/v1"];
+
 /** middleware（`src/middleware.ts`）でセッションを確認しないパスかどうか */
 export function isPublicPath(pathname: string) {
   return (
     PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
-    PUBLIC_PAGE_PATHS.some(
+    [...PUBLIC_PAGE_PATHS, ...TOKEN_AUTH_PATHS].some(
       (path) => pathname === path || pathname.startsWith(`${path}/`),
     )
   );

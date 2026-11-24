@@ -902,6 +902,31 @@ export function AiConnectionIcon(props: RecordIconProps) {
   );
 }
 
+export function ExternalConnectionIcon(props: RecordIconProps) {
+  const plug = "M5.5 8h13v2.5a6.5 6.5 0 0 1-13 0Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#b7d7ee" d={plug} />}>
+      <path d={plug} />
+      <path d="M9 8V3m6 5V3" />
+      <path d="M12 17v4.5" />
+    </RecordIcon>
+  );
+}
+
+export function ApiTokenIcon(props: RecordIconProps) {
+  const bow = "M8 3a5 5 0 1 1 0 10 5 5 0 0 1 0-10Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#f2d17b" d={bow} />}>
+      <path d={bow} />
+      <path d="M8 8h.01" strokeWidth="2.5" />
+      <path d="m11.5 11.5 9 9" />
+      <path d="m18 18 2.25-2.25M14.75 14.75 17 12.5" />
+    </RecordIcon>
+  );
+}
+
 export function AddToHomeScreenIcon(props: RecordIconProps) {
   const phone =
     "M8.5 2h7A2.5 2.5 0 0 1 18 4.5v15a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 6 19.5v-15A2.5 2.5 0 0 1 8.5 2Z";

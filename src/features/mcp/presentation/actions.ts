@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/features/auth/presentation/session";
+import type { PermissionsFormState } from "@/features/external-access/presentation/PermissionsForm";
 import {
   getUserMcpConnection,
   revokeUserMcpConnection,
@@ -25,10 +26,6 @@ export async function revokeMcpConnectionAction(
   revalidatePath("/settings/ai-connections");
 }
 
-export type McpPermissionsFormState = {
-  formError?: string;
-};
-
 /**
  * ログイン中のユーザーの接続の 1 つについて、AI から読み取れる範囲と許可する操作を保存する。
  * 接続済みのアプリには、次のツールの呼び出しから反映される。
@@ -36,9 +33,9 @@ export type McpPermissionsFormState = {
  */
 export async function updateMcpPermissionsAction(
   connectionId: string,
-  _prevState: McpPermissionsFormState,
+  _prevState: PermissionsFormState,
   formData: FormData,
-): Promise<McpPermissionsFormState> {
+): Promise<PermissionsFormState> {
   const user = await requireUser();
   // Server Action の引数はクライアントから任意の値を送れるため、自分の接続であることを確かめる
   const connection =
@@ -48,7 +45,7 @@ export async function updateMcpPermissionsAction(
   if (!connection) {
     return {
       formError:
-        "接続が見つかりません。解除された可能性があります。設定の「AIとの接続」から確かめてください。",
+        "接続が見つかりません。解除された可能性があります。設定の「外部接続」の「AIとの接続」から確かめてください。",
     };
   }
   if (

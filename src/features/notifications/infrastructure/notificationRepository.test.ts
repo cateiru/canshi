@@ -138,10 +138,12 @@ describe("メモリーへ移した猫の通知", () => {
     await repository.completeWithCleaningRecord("sora-cleaning", now, {
       userId: "user-1",
       mcpClientId: null,
+      apiTokenId: null,
     });
     await repository.completeWithCleaningRecord("tama-cleaning", now, {
       userId: "user-1",
       mcpClientId: null,
+      apiTokenId: null,
     });
 
     expect(

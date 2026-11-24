@@ -4,9 +4,9 @@ import type { McpClientApp } from "@/features/mcp/domain/clientApp";
 /**
  * 記録を作成・編集した人（読み取りのモデル）。記録の履歴（`record_change_logs`）から、
  * 操作した人ごとに 1 件にまとめる。画面からの操作はユーザー、AI との接続（MCP）からの操作は
- * 接続ごとに AI のアプリとして扱う。
+ * 接続ごとに AI のアプリ、API からの操作はトークンごとに扱う。
  *
- * Client Component へ渡すため、接続（OAuth のクライアント）の ID は持たせない
+ * Client Component へ渡すため、接続（OAuth のクライアント）・トークンの ID は持たせない
  */
 export type RecordContributor =
   | {
@@ -23,10 +23,20 @@ export type RecordContributor =
       clientName: string | null;
       /** アイコンを見分けられるアプリ。わからなければ null */
       app: McpClientApp | null;
+    }
+  | {
+      kind: "api";
+      /** トークンを発行したユーザーの名前 */
+      userName: string;
+      /** トークンの名前。削除されたトークンなら null */
+      tokenName: string | null;
     };
 
 /** アプリの名前がわからないときの表示 */
 const UNNAMED_AI_APP = "AIのアプリ";
+
+/** 削除されたトークンの表示 */
+const DELETED_API_TOKEN = "削除されたトークン";
 
 /** 作成・編集した人の名前（ツールチップ・読み上げ用） */
 export function formatRecordContributorLabel(
@@ -34,6 +44,9 @@ export function formatRecordContributorLabel(
 ): string {
   if (contributor.kind === "user") {
     return contributor.userName;
+  }
+  if (contributor.kind === "api") {
+    return `${contributor.tokenName ?? DELETED_API_TOKEN}（${contributor.userName}のAPIトークン）`;
   }
   return `${contributor.clientName ?? UNNAMED_AI_APP}（${contributor.userName}が接続）`;
 }

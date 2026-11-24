@@ -44,6 +44,7 @@ export const HELP_SCREENSHOT_NAMES = [
   "login-appearance-link",
   "appearance-settings",
   "ai-consent",
+  "api-token-new",
   "install-banner-ios",
   "install-banner-android",
 ] as const;

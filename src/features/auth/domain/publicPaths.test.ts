@@ -15,6 +15,9 @@ describe("isPublicPath", () => {
     "/help/feeding-modes",
     "/help/records/poop-records",
     "/settings/appearance",
+    // API トークンで認証する
+    "/api/v1",
+    "/api/v1/cats/cat-1/timeline",
   ])("%s はログインなしで取得できる", (pathname) => {
     expect(isPublicPath(pathname)).toBe(true);
   });
@@ -28,6 +31,8 @@ describe("isPublicPath", () => {
     "/settings/account",
     "/settings/appearance-other",
     "/api/auth/session",
+    "/api/v10",
+    "/api",
     "/api/media",
     "/api/media/uploads",
     "/media/asset-1",

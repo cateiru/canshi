@@ -14,9 +14,9 @@ import {
   users,
 } from "@/db/schema";
 import {
-  DEFAULT_MCP_PERMISSIONS,
-  isCatAllowedForMcp,
-} from "../domain/permissionRules";
+  DEFAULT_PERMISSIONS,
+  isCatAllowed,
+} from "@/features/external-access/domain/permissionRules";
 import {
   deleteMcpPermissions,
   getMcpPermissions,
@@ -118,7 +118,7 @@ function form(value: unknown) {
 describe("getMcpPermissions", () => {
   it("保存していない接続は、何も外していないが、書き込みはどれも許可していない状態を返す", async () => {
     expect(await getMcpPermissions("user-1", "client-1")).toEqual(
-      DEFAULT_MCP_PERMISSIONS,
+      DEFAULT_PERMISSIONS,
     );
   });
 
@@ -195,15 +195,15 @@ describe("saveMcpPermissionsFromForm", () => {
       ),
     ).toBe(true);
     expect(await getMcpPermissions("user-1", "client-1")).toEqual({
-      ...DEFAULT_MCP_PERMISSIONS,
+      ...DEFAULT_PERMISSIONS,
       excludedHouseholdIds: ["house-1"],
     });
     // ほかのユーザーの範囲・同じユーザーのほかの接続の範囲には影響しない
     expect(await getMcpPermissions("user-2", "client-1")).toEqual(
-      DEFAULT_MCP_PERMISSIONS,
+      DEFAULT_PERMISSIONS,
     );
     expect(await getMcpPermissions("user-1", "client-2")).toEqual(
-      DEFAULT_MCP_PERMISSIONS,
+      DEFAULT_PERMISSIONS,
     );
   });
 
@@ -252,10 +252,10 @@ describe("saveMcpPermissionsFromForm", () => {
 
     const permissions = await getMcpPermissions("user-1", "client-1");
     expect(
-      isCatAllowedForMcp(permissions, { id: "cat-1", householdId: "house-2" }),
+      isCatAllowed(permissions, { id: "cat-1", householdId: "house-2" }),
     ).toBe(false);
     expect(
-      isCatAllowedForMcp(permissions, { id: "cat-3", householdId: "house-2" }),
+      isCatAllowed(permissions, { id: "cat-3", householdId: "house-2" }),
     ).toBe(true);
   });
 
@@ -299,7 +299,7 @@ describe("deleteMcpPermissions", () => {
     await deleteMcpPermissions("user-1", "client-1");
 
     expect(await getMcpPermissions("user-1", "client-1")).toEqual(
-      DEFAULT_MCP_PERMISSIONS,
+      DEFAULT_PERMISSIONS,
     );
     expect(
       (await getMcpPermissions("user-1", "client-2")).excludedCatIds,
