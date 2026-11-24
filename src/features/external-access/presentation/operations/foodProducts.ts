@@ -5,7 +5,6 @@ import {
   FOOD_PRODUCT_LIFE_STAGES,
   type FoodProduct,
 } from "@/db/schema";
-import { isHouseholdAllowed } from "@/features/external-access/domain/permissionRules";
 import {
   createFoodProduct,
   updateFoodProduct,
@@ -26,12 +25,7 @@ import {
   MediaUploadError,
   storeMediaAsset,
 } from "@/features/media/infrastructure/storage";
-import {
-  type FormValues,
-  mergeFormValues,
-  parseFormValues,
-  toOptionalValue,
-} from "../formValues";
+import { isHouseholdAllowed } from "../../domain/permissionRules";
 import {
   checkHouseholdOperation,
   errorResult,
@@ -42,6 +36,12 @@ import {
   resolveHouseholdOperation,
   resolvePermissions,
 } from "./context";
+import {
+  type FormValues,
+  mergeFormValues,
+  parseFormValues,
+  toOptionalValue,
+} from "./formValues";
 import {
   decodeImageBase64,
   INVALID_IMAGE_ERROR,

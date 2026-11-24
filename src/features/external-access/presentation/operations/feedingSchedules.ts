@@ -2,10 +2,6 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import type { FeedingSchedule } from "@/db/schema";
 import {
-  type HouseholdOperation,
-  isHouseholdOperationAllowed,
-} from "@/features/external-access/domain/permissionRules";
-import {
   createFeedingSchedule,
   deleteFeedingSchedule,
   updateFeedingScheduleNotify,
@@ -20,10 +16,9 @@ import {
   listFeedingSchedulesByHouseholdIds,
 } from "@/features/feeding-schedules/infrastructure/queries";
 import {
-  mergeFormValues,
-  parseFormValues,
-  toCheckboxValue,
-} from "../formValues";
+  type HouseholdOperation,
+  isHouseholdOperationAllowed,
+} from "../../domain/permissionRules";
 import {
   errorResult,
   jsonResult,
@@ -35,6 +30,11 @@ import {
   resolveHouseholdOperation,
   resolvePermissions,
 } from "./context";
+import {
+  mergeFormValues,
+  parseFormValues,
+  toCheckboxValue,
+} from "./formValues";
 
 const SCHEDULE_DESCRIPTION =
   "ごはんの時間は家ごとに登録し、その時刻になったときの通知（notifyAtTime）と、" +

@@ -2,10 +2,6 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { type FeedingPreset, GIVEN_AMOUNT_LEVELS } from "@/db/schema";
 import {
-  type HouseholdOperation,
-  isHouseholdAllowed,
-} from "@/features/external-access/domain/permissionRules";
-import {
   createFeedingPreset,
   deleteFeedingPreset,
   updateFeedingPreset,
@@ -17,10 +13,9 @@ import {
   listFeedingPresetsByHouseholdIds,
 } from "@/features/feeding-presets/infrastructure/queries";
 import {
-  type FormValues,
-  mergeFormValues,
-  parseFormValues,
-} from "../formValues";
+  type HouseholdOperation,
+  isHouseholdAllowed,
+} from "../../domain/permissionRules";
 import {
   checkHouseholdOperation,
   errorResult,
@@ -32,6 +27,11 @@ import {
   resolveHouseholdOperation,
   resolvePermissions,
 } from "./context";
+import {
+  type FormValues,
+  mergeFormValues,
+  parseFormValues,
+} from "./formValues";
 
 const PRESET_DESCRIPTION =
   "プリセットは、ごはんの記録で選ぶ商品と量の組み合わせ。" +

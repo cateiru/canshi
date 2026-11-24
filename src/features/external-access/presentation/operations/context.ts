@@ -1,6 +1,11 @@
 import type { Cat, RecordActor } from "@/db/schema";
 import { isMemorialCat } from "@/features/cats/domain/memorial";
 import {
+  getCatForUser,
+  listHouseholdsForUser,
+} from "@/features/households/infrastructure/queries";
+import { getMcpPermissions } from "@/features/mcp/infrastructure/permissions";
+import {
   type AccessPermissions,
   allowedWriteRecordTypes,
   type CatalogOperation,
@@ -9,12 +14,7 @@ import {
   isHouseholdAllowed,
   isHouseholdOperationAllowed,
   type PermissionRecordType,
-} from "@/features/external-access/domain/permissionRules";
-import {
-  getCatForUser,
-  listHouseholdsForUser,
-} from "@/features/households/infrastructure/queries";
-import { getMcpPermissions } from "../../infrastructure/permissions";
+} from "../../domain/permissionRules";
 
 /** ツールを呼んだユーザーと、接続（OAuth のクライアント） */
 export type McpConnection = { userId: string; clientId: string };

@@ -16,13 +16,13 @@ import {
   listHouseholdMembers,
   listPendingHouseholdInvitations,
 } from "@/features/households/infrastructure/queries";
-import { parseFormValues } from "../formValues";
 import {
   errorResult,
   jsonResult,
   type McpToolContext,
   resolveHouseholdOperation,
 } from "./context";
+import { parseFormValues } from "./formValues";
 
 const householdIdField = z
   .string()

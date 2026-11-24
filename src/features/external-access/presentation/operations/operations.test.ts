@@ -37,7 +37,7 @@ import {
 import {
   type HouseholdOperation,
   PERMISSION_RECORD_TYPES,
-} from "@/features/external-access/domain/permissionRules";
+} from "../../domain/permissionRules";
 import type { McpToolContext } from "./context";
 import { MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
 

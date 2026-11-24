@@ -35,19 +35,13 @@ import {
   CATALOG_REQUEST_LIST_LIMIT,
   listCatalogFoodProductRequests,
 } from "@/features/catalog-food-products/infrastructure/requestQueries";
-import {
-  type CatalogOperation,
-  isCatalogOperationAllowed,
-} from "@/features/external-access/domain/permissionRules";
 import { MAX_DECODE_PIXELS } from "@/features/media/domain/thumbnailSize";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
 import { MediaUploadError } from "@/features/media/infrastructure/storage";
 import {
-  type FormValues,
-  mergeFormValues,
-  parseFormValues,
-  toOptionalValue,
-} from "../formValues";
+  type CatalogOperation,
+  isCatalogOperationAllowed,
+} from "../../domain/permissionRules";
 import {
   errorResult,
   jsonResult,
@@ -56,6 +50,12 @@ import {
   operationNotAllowedMessage,
   resolvePermissions,
 } from "./context";
+import {
+  type FormValues,
+  mergeFormValues,
+  parseFormValues,
+  toOptionalValue,
+} from "./formValues";
 import {
   decodeImageBase64,
   INVALID_IMAGE_ERROR,

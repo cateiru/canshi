@@ -31,13 +31,6 @@ import {
 import { expenseFormSchema } from "@/features/expenses/domain/schema";
 import { getExpenseRecordForCat } from "@/features/expenses/infrastructure/queries";
 import {
-  type AccessPermissions,
-  allowedRecordTypes,
-  allowedWriteRecordTypes,
-  isCatAllowed,
-  type PermissionRecordType,
-} from "@/features/external-access/domain/permissionRules";
-import {
   createFeedingRecord,
   updateFeedingRecord,
 } from "@/features/feeding-records/application/mutations";
@@ -56,6 +49,7 @@ import {
   getCatForUser,
   listCatsForUser,
 } from "@/features/households/infrastructure/queries";
+import { getMcpPermissions } from "@/features/mcp/infrastructure/permissions";
 import type { MediaRecordType } from "@/features/media/domain/recordTypes";
 import { MAX_DECODE_PIXELS } from "@/features/media/domain/thumbnailSize";
 import {
@@ -123,20 +117,13 @@ import {
 } from "@/features/weight-records/application/mutations";
 import { weightRecordFormSchema } from "@/features/weight-records/domain/schema";
 import { getWeightRecordForCat } from "@/features/weight-records/infrastructure/queries";
-import { getMcpPermissions } from "../../infrastructure/permissions";
 import {
-  dateTimeValues,
-  type FormValues,
-  mergeFormValues,
-  nowDateTimeValues,
-  parseFormValues,
-  toCheckboxValue,
-  toOptionalValue,
-} from "../formValues";
-import {
-  CHANGE_HISTORY_DESCRIPTION,
-  toChangeHistorySummary,
-} from "../summaries";
+  type AccessPermissions,
+  allowedRecordTypes,
+  allowedWriteRecordTypes,
+  isCatAllowed,
+  type PermissionRecordType,
+} from "../../domain/permissionRules";
 import {
   catNotFoundMessage,
   errorResult,
@@ -146,7 +133,20 @@ import {
   mcpActor,
   resolveWritableCat,
 } from "./context";
+import {
+  dateTimeValues,
+  type FormValues,
+  mergeFormValues,
+  nowDateTimeValues,
+  parseFormValues,
+  toCheckboxValue,
+  toOptionalValue,
+} from "./formValues";
 import { decodeImageBase64, MAX_IMAGE_BASE64_LENGTH } from "./imageArgs";
+import {
+  CHANGE_HISTORY_DESCRIPTION,
+  toChangeHistorySummary,
+} from "./summaries";
 
 /** 書き込む猫。ユーザーが参照でき、この接続からの読み取りも許可している */
 type WritableCat = { id: string; householdId: string; name: string };

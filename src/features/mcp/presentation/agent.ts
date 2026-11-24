@@ -9,6 +9,23 @@ import {
   isCatAllowed,
   isHouseholdAllowed,
 } from "@/features/external-access/domain/permissionRules";
+import { registerCatalogFoodProductTools } from "@/features/external-access/presentation/operations/catalogFoodProducts";
+import { registerCatTools } from "@/features/external-access/presentation/operations/cats";
+import {
+  errorResult,
+  jsonResult,
+  type McpToolContext,
+} from "@/features/external-access/presentation/operations/context";
+import { registerFeedingPresetTools } from "@/features/external-access/presentation/operations/feedingPresets";
+import { registerFeedingScheduleTools } from "@/features/external-access/presentation/operations/feedingSchedules";
+import { registerFoodProductTools } from "@/features/external-access/presentation/operations/foodProducts";
+import { registerHouseholdTools } from "@/features/external-access/presentation/operations/households";
+import { registerRecordTools } from "@/features/external-access/presentation/operations/records";
+import {
+  CHANGE_HISTORY_DESCRIPTION,
+  toCatSummary,
+  toTimelineEntrySummary,
+} from "@/features/external-access/presentation/operations/summaries";
 import {
   getCatForUser,
   listCatsForUser,
@@ -28,19 +45,6 @@ import {
   MISSING_USER_ERROR_MESSAGE,
 } from "../domain/props";
 import { getMcpPermissions } from "../infrastructure/permissions";
-import {
-  CHANGE_HISTORY_DESCRIPTION,
-  toCatSummary,
-  toTimelineEntrySummary,
-} from "./summaries";
-import { registerCatalogFoodProductTools } from "./tools/catalogFoodProducts";
-import { registerCatTools } from "./tools/cats";
-import { errorResult, jsonResult, type McpToolContext } from "./tools/context";
-import { registerFeedingPresetTools } from "./tools/feedingPresets";
-import { registerFeedingScheduleTools } from "./tools/feedingSchedules";
-import { registerFoodProductTools } from "./tools/foodProducts";
-import { registerHouseholdTools } from "./tools/households";
-import { registerRecordTools } from "./tools/records";
 
 /** 猫のプロフィールを返すツールの説明に添える、生年月日の精度の補足 */
 const BIRTH_DATE_PRECISION_DESCRIPTION =
