@@ -3,10 +3,13 @@
 import { type FormEvent, startTransition, useActionState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Alert, addToast, Button } from "@/components/ui";
-import type { PermissionsFormState } from "@/features/mcp/presentation/actions";
 import type { PermissionTree } from "../domain/permissionRules";
 import styles from "./PermissionsForm.module.css";
 import { PermissionTreeField } from "./PermissionTreeField";
+
+export type PermissionsFormState = {
+  formError?: string;
+};
 
 type PermissionsFormProps = {
   action: (
@@ -14,12 +17,21 @@ type PermissionsFormProps = {
     formData: FormData,
   ) => Promise<PermissionsFormState>;
   tree: PermissionTree;
+  /** 「このアプリ」のような、範囲を許可する相手の呼び方 */
+  subject: string;
 };
 
 const initialState: PermissionsFormState = {};
 
-/** 設定の「AIとの接続」で、AI から読み取れる範囲と書き込める範囲を選んで保存するフォーム */
-export function PermissionsForm({ action, tree }: PermissionsFormProps) {
+/**
+ * 設定の「AIとの接続」「APIトークン」で、外部接続から読み取れる範囲と書き込める範囲を選んで
+ * 保存するフォーム
+ */
+export function PermissionsForm({
+  action,
+  tree,
+  subject,
+}: PermissionsFormProps) {
   const [state, formAction, isPending] = useActionState(
     async (prevState: PermissionsFormState, formData: FormData) => {
       const result = await action(prevState, formData);
@@ -51,6 +63,7 @@ export function PermissionsForm({ action, tree }: PermissionsFormProps) {
       <PermissionTreeField
         tree={tree.households}
         catalogOperations={tree.catalogOperations}
+        subject={subject}
       />
       {state.formError ? <Alert color="error">{state.formError}</Alert> : null}
       {tree.households.length > 0 || tree.catalogOperations !== null ? (

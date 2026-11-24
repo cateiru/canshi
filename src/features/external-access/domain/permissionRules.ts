@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { TimelineRecordType } from "@/features/timeline/domain/timelineEntry";
 
 /**
- * AI との接続（MCP）で読み取りを許可するかを選べる記録の種類。タイムラインの記録の種類
+ * 外部接続（AI との接続・API トークン）で読み取りを許可するかを選べる記録の種類。タイムラインの記録の種類
  * から、誕生日・お迎え日・メモリーへ移した日（猫のプロフィールから求める記念日）を
  * 除いたもの。記念日はプロフィールと同じく、猫を許可していれば読み取れる。
  *
@@ -38,7 +38,7 @@ export const ALWAYS_ALLOWED_TIMELINE_TYPES = [
 ] as const satisfies readonly TimelineRecordType[];
 
 /**
- * AI との接続に家ごとに許可するかを選べる操作（ごはん商品・プリセット、家の名前・メンバー・
+ * 外部接続に家ごとに許可するかを選べる操作（ごはん商品・プリセット、家の名前・メンバー・
  * 招待、猫のプロフィール・通知の設定、ごはんの時間）。読み取りの範囲とは逆に、許可したものだけを
  * 行える。猫のプロフィール・通知の設定は、その家の猫のうち読み取りを許可している猫だけを扱える
  */
@@ -135,7 +135,7 @@ export const HOUSEHOLD_OPERATION_GROUPS: {
 ];
 
 /**
- * AI との接続に許可するかを選べる、共通のごはん商品（`catalog_food_products`）と、そのリクエスト
+ * 外部接続に許可するかを選べる、共通のごはん商品（`catalog_food_products`）と、そのリクエスト
  * （`catalog_food_product_requests`）の操作。共通のごはん商品はすべての家のユーザーが検索・追加に
  * 使い、リクエストにはすべてのユーザーの検索条件が含まれるため、アプリ全体の権限が admin の
  * ユーザーだけが許可できる。家ごとの操作と同じく、許可したものだけを行える
@@ -177,7 +177,7 @@ export const CATALOG_OPERATION_GROUPS: {
 ];
 
 /**
- * AI との接続から読み取れる範囲と、書き込める範囲（`src/db/schema/mcp-permissions.ts` 参照）。
+ * 外部接続から読み取れる範囲と、書き込める範囲（`src/db/schema/access-permission-columns.ts` 参照）。
  *
  * - 読み取りは、家・猫・記録の種類のうち外したもの（拒否）だけを持ち、ここに無いものは
  *   すべて読み取れる

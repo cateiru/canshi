@@ -46,7 +46,7 @@ const tree: PermissionTreeHousehold[] = [
 function renderField(initial = tree, { expand = true } = {}) {
   const { container } = render(
     <form>
-      <PermissionTreeField tree={initial} />
+      <PermissionTreeField tree={initial} subject="このアプリ" />
     </form>,
   );
   if (expand) {
@@ -334,7 +334,9 @@ describe("PermissionTreeField", () => {
   });
 
   it("家が無いときは、案内だけを表示して値を送らない", () => {
-    const { container } = render(<PermissionTreeField tree={[]} />);
+    const { container } = render(
+      <PermissionTreeField tree={[]} subject="このアプリ" />,
+    );
 
     expect(screen.getByText(/所属している家がありません/)).toBeInTheDocument();
     expect(container.querySelector('input[name="mcpPermissions"]')).toBeNull();
@@ -353,6 +355,7 @@ describe("PermissionTreeField", () => {
       <PermissionTreeField
         tree={tree}
         catalogOperations={["catalogFoodProduct:read"]}
+        subject="このアプリ"
       />,
     );
     const value = () =>
@@ -388,7 +391,11 @@ describe("PermissionTreeField", () => {
 
   it("家が無くても admin なら、共通のごはん商品の操作を選べる", () => {
     const { container } = render(
-      <PermissionTreeField tree={[]} catalogOperations={[]} />,
+      <PermissionTreeField
+        tree={[]}
+        catalogOperations={[]}
+        subject="このトークン"
+      />,
     );
 
     expect(screen.getByText(/所属している家がありません/)).toBeInTheDocument();

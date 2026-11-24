@@ -35,6 +35,8 @@ type PermissionTreeFieldProps = {
    * null（省略）にし、項目も表示しない
    */
   catalogOperations?: CatalogOperation[] | null;
+  /** 「このアプリ」のような、範囲を許可する相手の呼び方 */
+  subject: string;
 };
 
 /**
@@ -51,11 +53,11 @@ type CheckedState = {
 };
 
 /**
- * AI との接続から読み取れる範囲と書き込める範囲を、家 → 猫 → 記録の種類の階層の
+ * 外部接続（AI との接続・API トークン）から読み取れる範囲と書き込める範囲を、家 → 猫 → 記録の種類の階層の
  * チェックボックスで選ぶフォームの項目。記録の種類ごとに「読む」「書く」（追加・編集）を、
  * 家ごとにごはん商品・プリセット・家・猫などの操作を選ぶ。admin のユーザーには、家とは別に
  * 共通のごはん商品の操作も表示する。送信ボタンは持たず、選んだ範囲を hidden の
- * input（`mcpPermissions`）に JSON で入れる。設定画面（Server Action）と同意画面
+ * input（`PERMISSIONS_FIELD_NAME`）に JSON で入れる。設定画面・トークンの発行（Server Action）と同意画面
  * （Worker への POST）で共通に使う。
  *
  * チェックボックスの数が多いため、家と猫の行には記録の「読む」「書く」をまとめて選ぶチェックボックス
@@ -77,6 +79,7 @@ type CheckedState = {
 export function PermissionTreeField({
   tree,
   catalogOperations = null,
+  subject,
 }: PermissionTreeFieldProps) {
   const [checked, setChecked] = useState(() =>
     initialState(tree, catalogOperations ?? []),
@@ -336,7 +339,8 @@ export function PermissionTreeField({
             共通のごはん商品
           </span>
           <p className={styles.catalogNote}>
-            管理者だけが選べます。すべての家で検索・追加に使う商品と、商品のリクエストを、このアプリから扱えるようにします。
+            管理者だけが選べます。すべての家で検索・追加に使う商品と、商品のリクエストを、
+            {subject}から扱えるようにします。
           </p>
           {CATALOG_OPERATION_GROUPS.map((group) => (
             <fieldset

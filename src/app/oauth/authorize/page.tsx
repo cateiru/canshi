@@ -111,6 +111,7 @@ export default async function AuthorizePage({
               <PermissionTreeField
                 tree={permissionTree.households}
                 catalogOperations={permissionTree.catalogOperations}
+                subject="このアプリ"
               />
             </Surface>
             <p className={styles.afterNote}>

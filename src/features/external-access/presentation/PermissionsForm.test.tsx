@@ -6,13 +6,12 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { PermissionsFormState } from "@/features/mcp/presentation/actions";
 import {
   type AccessPermissions,
   PERMISSION_RECORD_TYPES,
   type PermissionTree,
 } from "../domain/permissionRules";
-import { PermissionsForm } from "./PermissionsForm";
+import { PermissionsForm, type PermissionsFormState } from "./PermissionsForm";
 
 vi.mock("@/components/ui", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/components/ui")>()),
@@ -48,7 +47,9 @@ describe("PermissionsForm", () => {
     const action = vi.fn(
       async (_state: PermissionsFormState, _formData: FormData) => ({}),
     );
-    render(<PermissionsForm action={action} tree={tree} />);
+    render(
+      <PermissionsForm action={action} tree={tree} subject="このアプリ" />,
+    );
     const write = screen.getByRole("checkbox", { name: "家1の記録を書く" });
     expect(write).not.toBeChecked();
 

@@ -112,6 +112,7 @@ export default async function AiConnectionPage({
         <PermissionsForm
           action={updateMcpPermissionsAction.bind(null, connection.id)}
           tree={permissionTree}
+          subject="このアプリ"
         />
       </Surface>
     </main>

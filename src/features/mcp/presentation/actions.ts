@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/features/auth/presentation/session";
+import type { PermissionsFormState } from "@/features/external-access/presentation/PermissionsForm";
 import {
   getUserMcpConnection,
   revokeUserMcpConnection,
@@ -24,10 +25,6 @@ export async function revokeMcpConnectionAction(
   await revokeUserMcpConnection(user.id, connectionId);
   revalidatePath("/settings/ai-connections");
 }
-
-export type PermissionsFormState = {
-  formError?: string;
-};
 
 /**
  * ログイン中のユーザーの接続の 1 つについて、AI から読み取れる範囲と許可する操作を保存する。
