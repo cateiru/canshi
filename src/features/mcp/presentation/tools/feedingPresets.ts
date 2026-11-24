@@ -2,6 +2,10 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { type FeedingPreset, GIVEN_AMOUNT_LEVELS } from "@/db/schema";
 import {
+  isHouseholdAllowedForMcp,
+  type McpHouseholdOperation,
+} from "@/features/external-access/domain/permissionRules";
+import {
   createFeedingPreset,
   deleteFeedingPreset,
   updateFeedingPreset,
@@ -12,10 +16,6 @@ import {
   listFeedingPresetItemSummaries,
   listFeedingPresetsByHouseholdIds,
 } from "@/features/feeding-presets/infrastructure/queries";
-import {
-  isHouseholdAllowedForMcp,
-  type McpHouseholdOperation,
-} from "../../domain/permissionRules";
 import {
   type FormValues,
   mergeFormValues,

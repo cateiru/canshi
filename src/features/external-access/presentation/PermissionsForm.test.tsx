@@ -6,13 +6,13 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { McpPermissionsFormState } from "@/features/mcp/presentation/actions";
 import {
   MCP_PERMISSION_RECORD_TYPES,
   type McpPermissions,
   type McpPermissionTree,
 } from "../domain/permissionRules";
-import type { McpPermissionsFormState } from "./actions";
-import { McpPermissionsForm } from "./McpPermissionsForm";
+import { McpPermissionsForm } from "./PermissionsForm";
 
 vi.mock("@/components/ui", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/components/ui")>()),

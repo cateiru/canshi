@@ -3,10 +3,6 @@ import { getDb } from "@/db/client";
 import { cats as catsTable, mcpPermissions } from "@/db/schema";
 import { getUserById } from "@/features/auth/infrastructure/users";
 import {
-  listCatsForUser,
-  listHouseholdsForUser,
-} from "@/features/households/infrastructure/queries";
-import {
   buildMcpPermissionTree,
   DEFAULT_MCP_PERMISSIONS,
   isMcpCatalogOperation,
@@ -16,7 +12,11 @@ import {
   type McpPermissions,
   type McpPermissionTree,
   parseMcpPermissionsInput,
-} from "../domain/permissionRules";
+} from "@/features/external-access/domain/permissionRules";
+import {
+  listCatsForUser,
+  listHouseholdsForUser,
+} from "@/features/households/infrastructure/queries";
 
 /**
  * ユーザーが許可した接続（OAuth のクライアント）の、AI から読み取れる範囲と書き込める範囲。

@@ -25,7 +25,7 @@ import {
   type McpPermissions,
   type McpPermissionTreeHousehold,
 } from "../domain/permissionRules";
-import styles from "./McpPermissionTreeField.module.css";
+import styles from "./PermissionTreeField.module.css";
 
 type McpPermissionTreeFieldProps = {
   /** 表示する家・猫と、最初のチェックの状態 */

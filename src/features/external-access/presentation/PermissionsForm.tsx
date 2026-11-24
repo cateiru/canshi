@@ -3,10 +3,10 @@
 import { type FormEvent, startTransition, useActionState } from "react";
 import { TbCheck } from "react-icons/tb";
 import { Alert, addToast, Button } from "@/components/ui";
+import type { McpPermissionsFormState } from "@/features/mcp/presentation/actions";
 import type { McpPermissionTree } from "../domain/permissionRules";
-import type { McpPermissionsFormState } from "./actions";
-import styles from "./McpPermissionsForm.module.css";
-import { McpPermissionTreeField } from "./McpPermissionTreeField";
+import styles from "./PermissionsForm.module.css";
+import { McpPermissionTreeField } from "./PermissionTreeField";
 
 type McpPermissionsFormProps = {
   action: (

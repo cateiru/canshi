@@ -6,7 +6,7 @@ import {
 } from "@cloudflare/workers-oauth-provider";
 import { SESSION_COOKIE_NAME } from "@/features/auth/domain/sessionToken";
 import { getSessionUser } from "@/features/auth/infrastructure/sessions";
-import { MCP_PERMISSIONS_FIELD_NAME } from "../domain/permissionRules";
+import { MCP_PERMISSIONS_FIELD_NAME } from "@/features/external-access/domain/permissionRules";
 import type { McpProps } from "../domain/props";
 import { saveMcpPermissionsFromForm } from "../infrastructure/permissions";
 import { encodeMcpConsentRequest, MCP_CONSENT_HEADER } from "./consent";

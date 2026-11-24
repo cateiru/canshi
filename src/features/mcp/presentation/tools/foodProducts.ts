@@ -5,6 +5,7 @@ import {
   FOOD_PRODUCT_LIFE_STAGES,
   type FoodProduct,
 } from "@/db/schema";
+import { isHouseholdAllowedForMcp } from "@/features/external-access/domain/permissionRules";
 import {
   createFoodProduct,
   updateFoodProduct,
@@ -25,7 +26,6 @@ import {
   MediaUploadError,
   storeMediaAsset,
 } from "@/features/media/infrastructure/storage";
-import { isHouseholdAllowedForMcp } from "../../domain/permissionRules";
 import {
   type FormValues,
   mergeFormValues,

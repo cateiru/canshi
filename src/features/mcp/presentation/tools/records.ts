@@ -31,6 +31,13 @@ import {
 import { expenseFormSchema } from "@/features/expenses/domain/schema";
 import { getExpenseRecordForCat } from "@/features/expenses/infrastructure/queries";
 import {
+  allowedMcpRecordTypes,
+  isCatAllowedForMcp,
+  type McpPermissionRecordType,
+  type McpPermissions,
+  writableMcpRecordTypes,
+} from "@/features/external-access/domain/permissionRules";
+import {
   createFeedingRecord,
   updateFeedingRecord,
 } from "@/features/feeding-records/application/mutations";
@@ -116,13 +123,6 @@ import {
 } from "@/features/weight-records/application/mutations";
 import { weightRecordFormSchema } from "@/features/weight-records/domain/schema";
 import { getWeightRecordForCat } from "@/features/weight-records/infrastructure/queries";
-import {
-  allowedMcpRecordTypes,
-  isCatAllowedForMcp,
-  type McpPermissionRecordType,
-  type McpPermissions,
-  writableMcpRecordTypes,
-} from "../../domain/permissionRules";
 import { getMcpPermissions } from "../../infrastructure/permissions";
 import {
   dateTimeValues,

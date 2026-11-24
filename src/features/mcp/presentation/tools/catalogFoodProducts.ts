@@ -35,13 +35,13 @@ import {
   CATALOG_REQUEST_LIST_LIMIT,
   listCatalogFoodProductRequests,
 } from "@/features/catalog-food-products/infrastructure/requestQueries";
-import { MAX_DECODE_PIXELS } from "@/features/media/domain/thumbnailSize";
-import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
-import { MediaUploadError } from "@/features/media/infrastructure/storage";
 import {
   isCatalogOperationAllowedForMcp,
   type McpCatalogOperation,
-} from "../../domain/permissionRules";
+} from "@/features/external-access/domain/permissionRules";
+import { MAX_DECODE_PIXELS } from "@/features/media/domain/thumbnailSize";
+import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
+import { MediaUploadError } from "@/features/media/infrastructure/storage";
 import {
   type FormValues,
   mergeFormValues,

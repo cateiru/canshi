@@ -5,7 +5,7 @@ import {
   type McpPermissions,
   type McpPermissionTreeHousehold,
 } from "../domain/permissionRules";
-import { McpPermissionTreeField } from "./McpPermissionTreeField";
+import { McpPermissionTreeField } from "./PermissionTreeField";
 
 const allTypes = [...MCP_PERMISSION_RECORD_TYPES];
 

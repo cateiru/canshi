@@ -2,6 +2,10 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import type { FeedingSchedule } from "@/db/schema";
 import {
+  isHouseholdOperationAllowedForMcp,
+  type McpHouseholdOperation,
+} from "@/features/external-access/domain/permissionRules";
+import {
   createFeedingSchedule,
   deleteFeedingSchedule,
   updateFeedingScheduleNotify,
@@ -15,10 +19,6 @@ import {
   getFeedingScheduleByTime,
   listFeedingSchedulesByHouseholdIds,
 } from "@/features/feeding-schedules/infrastructure/queries";
-import {
-  isHouseholdOperationAllowedForMcp,
-  type McpHouseholdOperation,
-} from "../../domain/permissionRules";
 import {
   mergeFormValues,
   parseFormValues,

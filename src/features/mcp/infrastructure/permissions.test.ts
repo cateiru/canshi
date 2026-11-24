@@ -16,7 +16,7 @@ import {
 import {
   DEFAULT_MCP_PERMISSIONS,
   isCatAllowedForMcp,
-} from "../domain/permissionRules";
+} from "@/features/external-access/domain/permissionRules";
 import {
   deleteMcpPermissions,
   getMcpPermissions,

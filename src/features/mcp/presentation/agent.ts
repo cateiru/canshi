@@ -3,6 +3,13 @@ import { createMcpHandler } from "agents/mcp/server";
 import { z } from "zod";
 import { getUserById } from "@/features/auth/infrastructure/users";
 import {
+  allowedMcpRecordTypes,
+  isCatAllowedForMcp,
+  isHouseholdAllowedForMcp,
+  MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
+  MCP_HOUSEHOLD_OPERATIONS,
+} from "@/features/external-access/domain/permissionRules";
+import {
   getCatForUser,
   listCatsForUser,
   listHouseholdsForUser,
@@ -13,13 +20,6 @@ import {
 } from "@/features/record-contributors/infrastructure/queries";
 import { getTimelineRecordChangeLogType } from "@/features/timeline/domain/timelineEntry";
 import { listTimelineForMonth } from "@/features/timeline/infrastructure/queries";
-import {
-  allowedMcpRecordTypes,
-  isCatAllowedForMcp,
-  isHouseholdAllowedForMcp,
-  MCP_ALWAYS_ALLOWED_TIMELINE_TYPES,
-  MCP_HOUSEHOLD_OPERATIONS,
-} from "../domain/permissionRules";
 import {
   getClientIdFromProps,
   getUserIdFromProps,
