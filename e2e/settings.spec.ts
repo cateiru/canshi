@@ -23,7 +23,7 @@ for (const viewport of [
       { name: "家の設定", path: "/settings/households" },
       { name: "通知設定", path: "/settings/notifications" },
       { name: "見た目設定", path: "/settings/appearance" },
-      { name: "AIとの接続", path: "/settings/ai-connections" },
+      { name: "外部接続", path: "/settings/external-connections" },
       { name: "更新情報", path: "/release-notes" },
     ]) {
       await page
@@ -49,6 +49,28 @@ for (const viewport of [
     await expect(page).toHaveURL("/settings");
   });
 }
+
+test("外部接続から、AIとの接続・APIトークンへ移動して戻れる", async ({
+  page,
+}) => {
+  await page.goto("/settings/external-connections");
+  for (const { name, path } of [
+    { name: "AIとの接続", path: "/settings/ai-connections" },
+    { name: "APIトークン", path: "/settings/api-tokens" },
+  ]) {
+    await page
+      .getByRole("navigation", { name: "外部接続のメニュー" })
+      .getByRole("link", { name: new RegExp(name) })
+      .click();
+    await expect(page).toHaveURL(path);
+    await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "パンくずリスト" })
+      .getByRole("link", { name: "外部接続", exact: true })
+      .click();
+    await expect(page).toHaveURL("/settings/external-connections");
+  }
+});
 
 test("以前のプロフィール設定・ログイン設定の URL を開くと、アカウント設定の対応するページへ移る", async ({
   page,
