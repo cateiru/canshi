@@ -1,6 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { expect, type Locator, test } from "@playwright/test";
+import { expect as baseExpect, type Locator, test } from "@playwright/test";
 import { fillAndKeep } from "./helpers";
+
+// dev サーバーでは、はじめて開くページ・呼ぶ API のコンパイルに時間がかかるため、既定（5 秒）より長く待つ
+const expect = baseExpect.configure({ timeout: 30_000 });
 
 const TOKEN_NAME = "E2EのAPIトークン";
 
@@ -43,14 +46,15 @@ test("API トークンを発行して API を呼び、許可する範囲を変�
   page,
   request,
 }) => {
+  // ページを続けて開くため、コンパイルを待つと既定の制限時間（30 秒）を超えることがある
+  test.setTimeout(120_000);
   await page.goto("/settings/external-connections");
   await page
     .getByRole("navigation", { name: "外部接続のメニュー" })
     .getByRole("link", { name: /APIトークン/ })
     .click();
   await page.getByRole("link", { name: "トークンを発行する" }).click();
-  // dev サーバーでは、はじめて開くページのコンパイルに時間がかかる
-  await expect(page).toHaveURL("/settings/api-tokens/new", { timeout: 30_000 });
+  await expect(page).toHaveURL("/settings/api-tokens/new");
 
   // 期限なしを選ぶと警告を出す
   const expiration = page.getByRole("button", { name: /有効期限/ });

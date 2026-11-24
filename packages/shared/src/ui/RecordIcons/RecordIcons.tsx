@@ -915,14 +915,19 @@ export function ExternalConnectionIcon(props: RecordIconProps) {
 }
 
 export function ApiTokenIcon(props: RecordIconProps) {
-  const bow = "M8 3a5 5 0 1 1 0 10 5 5 0 0 1 0-10Z";
+  // 横向きに描いた鍵（持ち手の中心が原点）を、斜めにして置く
+  const key = "M4.95-1.6H15.6V4.7h-2.9V3.2H9.9V1.6H4.95a5.2 5.2 0 1 1 0-3.2Z";
+  const transform = "translate(7.6 16.4) rotate(-45)";
 
   return (
-    <RecordIcon {...props} fills={<path fill="#f2d17b" d={bow} />}>
-      <path d={bow} />
-      <path d="M8 8h.01" strokeWidth="2.5" />
-      <path d="m11.5 11.5 9 9" />
-      <path d="m18 18 2.25-2.25M14.75 14.75 17 12.5" />
+    <RecordIcon
+      {...props}
+      fills={<path fill="#f2d17b" d={key} transform={transform} />}
+    >
+      <g transform={transform}>
+        <path d={key} />
+        <path d="M-2 0h.01" strokeWidth="2" />
+      </g>
     </RecordIcon>
   );
 }
