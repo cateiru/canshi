@@ -4,6 +4,9 @@ import { TIME_STRING_PATTERN } from "@/features/shared/datetime";
 
 export const MEMO_CONTENT_MAX_LENGTH = 2000;
 
+/** 1 つのメモに付けられるラベルの数 */
+export const MEMO_LABELS_MAX = 20;
+
 /**
  * 「日付を残す」を外したときは日付・時刻の欄を送らないため、日付・時刻は
  * 日付を残すときだけ検証する
@@ -21,10 +24,21 @@ export const memoRecordFormSchema = z
         MEMO_CONTENT_MAX_LENGTH,
         `メモは${MEMO_CONTENT_MAX_LENGTH}文字以内で入力してください`,
       ),
+    labelIds: z
+      .array(z.string().min(1).max(200), {
+        error: "ラベルの指定が正しくありません",
+      })
+      .transform((ids) => [...new Set(ids)])
+      .refine(
+        (ids) => ids.length <= MEMO_LABELS_MAX,
+        `ラベルは${MEMO_LABELS_MAX}個まで付けられます`,
+      )
+      .default([]),
   })
   .transform((data, ctx) => {
+    const { content, labelIds } = data;
     if (!data.hasDate) {
-      return { content: data.content, recordedDate: null, recordedTime: null };
+      return { content, labelIds, recordedDate: null, recordedTime: null };
     }
     const date = z.string().date().safeParse(data.recordedDate);
     if (!date.success) {
@@ -49,7 +63,8 @@ export const memoRecordFormSchema = z
       return z.NEVER;
     }
     return {
-      content: data.content,
+      content,
+      labelIds,
       recordedDate: date.data,
       recordedTime: time.data,
     };
@@ -58,5 +73,8 @@ export const memoRecordFormSchema = z
 export type MemoRecordFormInput = z.infer<typeof memoRecordFormSchema>;
 
 export type MemoRecordFormFieldErrors = Partial<
-  Record<"hasDate" | "recordedDate" | "recordedTime" | "content", string[]>
+  Record<
+    "hasDate" | "recordedDate" | "recordedTime" | "content" | "labelIds",
+    string[]
+  >
 >;

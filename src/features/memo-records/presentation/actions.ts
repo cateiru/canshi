@@ -13,6 +13,7 @@ import {
   deleteMemoRecord,
   updateMemoRecord,
 } from "../application/mutations";
+import { MEMO_LABEL_NOT_FOUND_ERROR } from "../domain/labels";
 import { MEMO_RECORD_MEDIA_TYPE } from "../domain/media";
 import {
   type MemoRecordFormFieldErrors,
@@ -34,6 +35,7 @@ function parseFormData(formData: FormData) {
     recordedDate: formData.get("recordedDate"),
     recordedTime: formData.get("recordedTime"),
     content: formData.get("content"),
+    labelIds: formData.getAll("labelIds"),
   });
 }
 
@@ -42,24 +44,32 @@ export async function createMemoRecordAction(
   _prevState: MemoRecordFormState,
   formData: FormData,
 ): Promise<MemoRecordFormState> {
-  const { user } = await requireWritableCatAccess(catId);
+  const { user, cat } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const id = await createMemoRecord(catId, parsed.data, userActor(user));
-  if (id == null) {
+  // ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照）
+  const saved = await createMemoRecord(
+    { id: catId, householdId: cat.householdId as string },
+    parsed.data,
+    userActor(user),
+  );
+  if ("failure" in saved) {
+    if (saved.failure === "labelNotFound") {
+      return { fieldErrors: { labelIds: [MEMO_LABEL_NOT_FOUND_ERROR] } };
+    }
     redirectFromMemorialCat(catId);
   }
 
   const mediaError = await syncRecordMediaFromForm(
     MEMO_RECORD_MEDIA_TYPE,
-    id,
+    saved.id,
     formData,
   );
-  return { savedRecordId: id, formError: mediaError };
+  return { savedRecordId: saved.id, formError: mediaError };
 }
 
 export async function updateMemoRecordAction(
@@ -68,15 +78,23 @@ export async function updateMemoRecordAction(
   _prevState: MemoRecordFormState,
   formData: FormData,
 ): Promise<MemoRecordFormState> {
-  const { user } = await requireWritableCatAccess(catId);
+  const { user, cat } = await requireWritableCatAccess(catId);
   const parsed = parseFormData(formData);
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  if (!(await updateMemoRecord(catId, id, parsed.data, userActor(user)))) {
-    return { formError: "記録が見つかりませんでした" };
+  const saved = await updateMemoRecord(
+    { id: catId, householdId: cat.householdId as string },
+    id,
+    parsed.data,
+    userActor(user),
+  );
+  if ("failure" in saved) {
+    return saved.failure === "labelNotFound"
+      ? { fieldErrors: { labelIds: [MEMO_LABEL_NOT_FOUND_ERROR] } }
+      : { formError: "記録が見つかりませんでした" };
   }
 
   const mediaError = await syncRecordMediaFromForm(

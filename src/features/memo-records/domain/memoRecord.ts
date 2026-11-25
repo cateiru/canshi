@@ -6,7 +6,10 @@ import type { MemoRecordFormInput } from "./schema";
 export type { MemoRecord };
 
 /** 記録の中身。ID・猫・作成日時など、保存のたびに変わらない項目を除いたもの */
-export type MemoRecordContent = Pick<MemoRecord, "recordedAt" | "content">;
+export type MemoRecordContent = Pick<MemoRecord, "recordedAt" | "content"> & {
+  /** 付けるラベル（重複なし）。猫の家のラベルに限る */
+  labelIds: string[];
+};
 
 /** 入力から記録の中身を作る */
 export function toMemoRecordContent(
@@ -18,5 +21,6 @@ export function toMemoRecordContent(
         ? combineDateTimeUtc(data.recordedDate, data.recordedTime)
         : null,
     content: data.content,
+    labelIds: data.labelIds,
   };
 }

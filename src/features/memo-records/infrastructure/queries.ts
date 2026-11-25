@@ -1,17 +1,37 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { type MemoRecord, memoRecords } from "@/db/schema";
+import { type MemoRecord, memoRecordLabels, memoRecords } from "@/db/schema";
 
 /**
  * 猫のメモを、日付を残さないメモ（新しく作った順）、日付を残したメモ（新しい日付順）の
  * 順に返す。日付は日本時間の時計の数字をそのまま UTC として保存し、作成日時は実際の
- * UTC のため、両者を混ぜて並べると 9 時間ずれる。そのため日付の有無でまとめて並べる
+ * UTC のため、両者を混ぜて並べると 9 時間ずれる。そのため日付の有無でまとめて並べる。
+ * `labelId` を渡すと、そのラベルが付いたメモに絞り込む
  */
-export async function listMemoRecords(catId: string, d1?: D1Database) {
-  return getDb(d1)
+export async function listMemoRecords(
+  catId: string,
+  { labelId }: { labelId?: string } = {},
+  d1?: D1Database,
+) {
+  const db = getDb(d1);
+  return db
     .select()
     .from(memoRecords)
-    .where(and(eq(memoRecords.catId, catId), isNull(memoRecords.deletedAt)))
+    .where(
+      and(
+        eq(memoRecords.catId, catId),
+        isNull(memoRecords.deletedAt),
+        labelId === undefined
+          ? undefined
+          : inArray(
+              memoRecords.id,
+              db
+                .select({ id: memoRecordLabels.memoRecordId })
+                .from(memoRecordLabels)
+                .where(eq(memoRecordLabels.memoLabelId, labelId)),
+            ),
+      ),
+    )
     .orderBy(
       sql`${memoRecords.recordedAt} is not null`,
       desc(memoRecords.recordedAt),
