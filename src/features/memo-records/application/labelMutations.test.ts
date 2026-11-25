@@ -21,17 +21,22 @@ import {
   listMemoLabelsWithCount,
 } from "../infrastructure/labelQueries";
 import { createMemoLabelRepository } from "../infrastructure/memoLabelRepository";
+import { listMemoRecords } from "../infrastructure/queries";
 import {
   createMemoLabel,
   deleteMemoLabel,
   updateMemoLabel,
 } from "./labelMutations";
+import { createMemoRecord, updateMemoRecord } from "./mutations";
 
 // `src/features/households/application/management.test.ts` と同様に `getDb` をテスト用の sql.js に差し替える
 let db: ReturnType<typeof getDb>;
 vi.mock("@/db/client", () => ({
   getDb: () => db,
 }));
+
+const actor = { userId: "owner", mcpClientId: null, apiTokenId: null };
+const tama = { id: "tama", householdId: "home" };
 
 beforeEach(async () => {
   const SQL = await initSqlJs();
@@ -84,19 +89,25 @@ beforeEach(async () => {
   ]);
 });
 
-async function addMemo(labelIds: string[], catId = "tama") {
-  const [memo] = await db
-    .insert(memoRecords)
-    .values({ catId, content: "メモ" })
-    .returning();
-  if (labelIds.length > 0) {
-    await db
-      .insert(memoRecordLabels)
-      .values(
-        labelIds.map((memoLabelId) => ({ memoRecordId: memo.id, memoLabelId })),
-      );
-  }
-  return memo.id;
+type LabelInput = string | { id: string | null; name: string };
+
+/** `labels` は画面で付けたラベル。文字だけを渡すと、新しく入力したラベルにする */
+function memoInput(labelIds: string[], labels: LabelInput[] = []) {
+  return {
+    content: "メモ",
+    labelIds,
+    labels: labels.map((label) =>
+      typeof label === "string" ? { id: null, name: label } : label,
+    ),
+    recordedDate: null,
+    recordedTime: null,
+  };
+}
+
+async function addMemo(labelIds: string[], cat = tama) {
+  const saved = await createMemoRecord(cat, memoInput(labelIds), actor);
+  if (!("id" in saved)) throw new Error("メモを追加できなかった");
+  return saved.id;
 }
 
 async function labelIdsOf(memoRecordId: string) {
@@ -184,9 +195,7 @@ describe("ラベルの削除", () => {
     expect(await deleteMemoLabel("owner", "care")).toBe("inUse");
     expect(await labelIdsOf(id)).toEqual(["care"]);
 
-    await db
-      .delete(memoRecordLabels)
-      .where(eq(memoRecordLabels.memoRecordId, id));
+    await updateMemoRecord(tama, id, memoInput([]), actor);
     expect(await deleteMemoLabel("owner", "care")).toBe("deleted");
   });
 
@@ -206,7 +215,7 @@ describe("ラベルの削除", () => {
 
   it("削除していないメモにも付いているラベルは、削除したメモの紐付けも残す", async () => {
     const deletedId = await addMemo(["care"]);
-    await addMemo(["care"], "kuro");
+    await addMemo(["care"], { id: "kuro", householdId: "home" });
     await db
       .update(memoRecords)
       .set({ deletedAt: new Date() })
@@ -235,17 +244,184 @@ describe("ラベルの削除", () => {
   });
 });
 
+describe("メモに付けるラベル", () => {
+  it("追加・編集したメモのラベルを、選んだものに置き換える", async () => {
+    const id = await addMemo(["hospital", "care"]);
+    expect(await labelIdsOf(id)).toEqual(["care", "hospital"]);
+
+    await updateMemoRecord(tama, id, memoInput(["hospital"]), actor);
+    expect(await labelIdsOf(id)).toEqual(["hospital"]);
+  });
+
+  it("名前で指定したラベルは、家にあるものを使い、なければ作って付ける", async () => {
+    const saved = await createMemoRecord(
+      tama,
+      memoInput([], ["病院", "性格", "別の家"]),
+      actor,
+    );
+    if (!("id" in saved)) throw new Error("メモを追加できなかった");
+
+    // 「別の家」は別の家のラベルの名前だが、その家のラベルは使わない
+    const labels = await listMemoLabels("home");
+    expect(labels.map(({ name }) => name).sort()).toEqual(
+      ["お手入れ", "病院", "性格", "別の家"].sort(),
+    );
+    expect(await labelIdsOf(saved.id)).not.toContain("other-label");
+    const names = (await listMemoLabelsByRecordIds([saved.id]))
+      .get(saved.id)
+      ?.map(({ name }) => name);
+    expect(names?.sort()).toEqual(["病院", "性格", "別の家"].sort());
+
+    // 編集でも同じように作り、同じ名前のラベルは増やさない
+    await updateMemoRecord(
+      tama,
+      saved.id,
+      memoInput(["care"], ["性格", "大事"]),
+      actor,
+    );
+    expect(
+      (await listMemoLabelsByRecordIds([saved.id]))
+        .get(saved.id)
+        ?.map(({ name }) => name)
+        .sort(),
+    ).toEqual(["お手入れ", "性格", "大事"].sort());
+    expect(await listMemoLabels("home")).toHaveLength(5);
+  });
+
+  it("画面を開いた後に名前が変わったラベルは、元の名前で作り直さず、そのラベルのまま付ける", async () => {
+    const id = await addMemo(["care"]);
+    await updateMemoLabel("owner", "care", { name: "ケア" });
+
+    await updateMemoRecord(
+      tama,
+      id,
+      memoInput([], [{ id: "care", name: "お手入れ" }]),
+      actor,
+    );
+
+    expect(await labelIdsOf(id)).toEqual(["care"]);
+    expect((await listMemoLabels("home")).map(({ name }) => name)).toEqual([
+      "ケア",
+      "病院",
+    ]);
+  });
+
+  it("画面を開いた後に削除されたラベル・別の家のラベルは、名前で付ける", async () => {
+    await deleteMemoLabel("owner", "care");
+
+    const saved = await createMemoRecord(
+      tama,
+      memoInput(
+        [],
+        [
+          { id: "care", name: "お手入れ" },
+          { id: "other-label", name: "別の家" },
+          { id: "hospital", name: "病院" },
+        ],
+      ),
+      actor,
+    );
+    if (!("id" in saved)) throw new Error("メモを追加できなかった");
+
+    const labels =
+      (await listMemoLabelsByRecordIds([saved.id])).get(saved.id) ?? [];
+    expect(labels.map(({ name }) => name).sort()).toEqual(
+      ["お手入れ", "別の家", "病院"].sort(),
+    );
+    const labelIds = labels.map(({ id }) => id);
+    expect(labelIds).toContain("hospital");
+    expect(labelIds).not.toContain("other-label");
+    expect(await listMemoLabels("other")).toHaveLength(1);
+  });
+
+  it("メモを保存できなかったときは、名前で指定したラベルも作らない", async () => {
+    const id = await addMemo([]);
+    expect(
+      await updateMemoRecord(
+        { id: "kuro", householdId: "home" },
+        id,
+        memoInput([], ["性格"]),
+        actor,
+      ),
+    ).toEqual({ failure: "rejected" });
+    await db
+      .update(cats)
+      .set({ memorialDate: "2026-11-20" })
+      .where(eq(cats.id, "tama"));
+    for (const save of [
+      createMemoRecord(tama, memoInput([], ["性格"]), actor),
+      updateMemoRecord(tama, id, memoInput([], ["性格"]), actor),
+    ]) {
+      expect(await save).toEqual({ failure: "rejected" });
+    }
+
+    expect(await listMemoLabels("home")).toHaveLength(2);
+  });
+
+  it("別の家のラベル・存在しないラベルは付けられず、メモも保存しない", async () => {
+    for (const labelId of ["other-label", "unknown"]) {
+      expect(
+        await createMemoRecord(tama, memoInput(["care", labelId]), actor),
+      ).toEqual({ failure: "labelNotFound" });
+    }
+    expect(await db.select().from(memoRecords)).toEqual([]);
+
+    const id = await addMemo(["care"]);
+    expect(
+      await updateMemoRecord(tama, id, memoInput(["other-label"]), actor),
+    ).toEqual({ failure: "labelNotFound" });
+    expect(await labelIdsOf(id)).toEqual(["care"]);
+  });
+
+  it("確認の後に猫がメモリーへ移されたメモは、ラベルも変えない", async () => {
+    const id = await addMemo(["care"]);
+    await db
+      .update(cats)
+      .set({ memorialDate: "2026-11-20" })
+      .where(eq(cats.id, "tama"));
+
+    expect(
+      await updateMemoRecord(tama, id, memoInput(["hospital"]), actor),
+    ).toEqual({ failure: "rejected" });
+    expect(await labelIdsOf(id)).toEqual(["care"]);
+    expect(
+      await createMemoRecord(tama, memoInput(["hospital"]), actor),
+    ).toEqual({ failure: "rejected" });
+    expect(await db.select().from(memoRecordLabels)).toHaveLength(1);
+  });
+
+  it("別の猫のメモのラベルは変えない", async () => {
+    const id = await addMemo(["care"]);
+
+    expect(
+      await updateMemoRecord(
+        { id: "kuro", householdId: "home" },
+        id,
+        memoInput(["hospital"]),
+        actor,
+      ),
+    ).toEqual({ failure: "rejected" });
+    expect(await labelIdsOf(id)).toEqual(["care"]);
+  });
+});
+
 describe("ラベルの読み取り", () => {
-  it("猫のメモに付いているラベル・付いているメモの数を返す", async () => {
-    await addMemo(["care"]);
-    await addMemo(["care", "hospital"]);
+  it("ラベルで絞り込んだメモと、猫のメモに付いているラベル・付いているメモの数を返す", async () => {
+    const careId = await addMemo(["care"]);
+    const bothId = await addMemo(["care", "hospital"]);
     await addMemo([]);
-    await addMemo(["care"], "kuro");
+    await addMemo(["care"], { id: "kuro", householdId: "home" });
     const deletedId = await addMemo(["hospital"]);
     await db
       .update(memoRecords)
       .set({ deletedAt: new Date() })
       .where(eq(memoRecords.id, deletedId));
+
+    const ids = async (labelId?: string) =>
+      (await listMemoRecords("tama", { labelId })).map(({ id }) => id).sort();
+    expect(await ids("care")).toEqual([careId, bothId].sort());
+    expect(await ids("hospital")).toEqual([bothId]);
+    expect(await ids()).toHaveLength(3);
 
     expect((await listMemoLabelsUsedByCat("tama")).map(({ id }) => id)).toEqual(
       ["care", "hospital"],

@@ -69,6 +69,7 @@ import {
   MEMO_CONTENT_MAX_LENGTH,
   memoRecordFormSchema,
 } from "@/features/memo-records/domain/schema";
+import { listMemoLabelsByRecordIds } from "@/features/memo-records/infrastructure/labelQueries";
 import {
   getMemoRecordForCat,
   listMemoRecords,
@@ -816,6 +817,9 @@ const hospitalVisitOperation = defineRecordOperation({
     updateHospitalVisit(cat, id, data, access.actor, ctx.env.DB),
 });
 
+const MEMO_LABEL_IDS_ERROR =
+  "labelIds に、この猫の家のラベルではないものが含まれています";
+
 const memoOperation = defineRecordOperation({
   recordType: "memo",
   mediaRecordType: "memo_record",
@@ -845,9 +849,11 @@ const memoOperation = defineRecordOperation({
   async load(d1, catId, id) {
     const row = await getMemoRecordForCat(catId, id, d1);
     if (!row) return null;
+    const labels = await listMemoLabelsByRecordIds([id], d1);
     return {
       existing: null,
       values: {
+        labelIds: (labels.get(id) ?? []).map((label) => label.id),
         hasDate: toCheckboxValue(row.recordedAt != null),
         // 日付を残さないメモに日付を残すときは、指定しなかった日付・時刻を今の日時にする
         ...(row.recordedAt
@@ -867,15 +873,33 @@ const memoOperation = defineRecordOperation({
     }
     return values;
   },
-  create: async ({ ctx, access, cat, data }) =>
-    toCreatedResult(
+  async create({ ctx, access, cat, data }) {
+    const saved = await createMemoRecord(cat, data, access.actor, ctx.env.DB);
+    if ("id" in saved) {
+      return saved;
+    }
+    return saved.failure === "labelNotFound"
+      ? { error: MEMO_LABEL_IDS_ERROR }
+      : toCreatedResult(cat, null);
+  },
+  async update({ ctx, access, cat, id, data }) {
+    const saved = await updateMemoRecord(
       cat,
-      await createMemoRecord(cat.id, data, access.actor, ctx.env.DB),
-    ),
-  update: async ({ ctx, access, cat, id, data }) =>
-    (await updateMemoRecord(cat.id, id, data, access.actor, ctx.env.DB))
-      ? { id }
-      : { error: RECORD_NOT_FOUND_ERROR },
+      id,
+      data,
+      access.actor,
+      ctx.env.DB,
+    );
+    if ("id" in saved) {
+      return saved;
+    }
+    return {
+      error:
+        saved.failure === "labelNotFound"
+          ? MEMO_LABEL_IDS_ERROR
+          : RECORD_NOT_FOUND_ERROR,
+    };
+  },
 });
 
 /**
@@ -1463,7 +1487,7 @@ export function registerRecordOperations(
       if ("error" in allowed) {
         return errorResult(allowed.error);
       }
-      const records = await listMemoRecords(catId, ctx.env.DB);
+      const records = await listMemoRecords(catId, {}, ctx.env.DB);
       const paged = paginate(records, page ?? 1, MEMO_PAGE_SIZE);
       const changeHistoryOf = await loadChangeHistories(
         ctx,

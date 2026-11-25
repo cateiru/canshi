@@ -6,13 +6,13 @@ import type { MemoRecordContent } from "./memoRecord";
  * 実装は `../infrastructure/memoRecordRepository.ts`
  */
 export interface MemoRecordRepository {
-  /** 記録を追加し、その ID を返す。猫がメモリーへ移されていれば追加せず null */
+  /** 記録をラベルごと（まだないラベルは作って）追加し、その ID を返す。猫がメモリーへ移されていれば追加せず null */
   add(
     catId: string,
     content: MemoRecordContent,
     actor: RecordActor,
   ): Promise<string | null>;
-  /** 記録を書き換える。見つからない・猫がメモリーへ移されていれば false */
+  /** 記録を書き換え、ラベルを（まだないラベルは作って）付け直す。見つからない・猫がメモリーへ移されていれば false */
   update(
     catId: string,
     id: string,

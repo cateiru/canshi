@@ -173,7 +173,7 @@ describe("猫の記録（同じ形のリポジトリ）", () => {
     {
       recordType: "memo_record",
       repository: createMemoRecordRepository,
-      values: { content: "メモ" },
+      values: { content: "メモ", labelIds: [], labelNames: [] },
     },
   ] as const;
 

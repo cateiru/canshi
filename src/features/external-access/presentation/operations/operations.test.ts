@@ -24,6 +24,8 @@ import {
   mcpPermissions,
   medicationDoses,
   medications,
+  memoLabels,
+  memoRecordLabels,
   memoRecords,
   notificationSettings,
   notifications,
@@ -762,6 +764,30 @@ describe("メモ", () => {
 
     const [cleared] = await db.select().from(memoRecords);
     expect(cleared.recordedAt).toBeNull();
+  });
+
+  it("メモを編集しても、付いているラベルは外さない", async () => {
+    await allow(WRITE_ALL_RECORDS);
+    await db
+      .insert(memoLabels)
+      .values({ id: "label-care", householdId: "house-1", name: "お手入れ" });
+    await db
+      .insert(memoRecords)
+      .values({ id: "memo-1", catId: "cat-1", content: "メモ" });
+    await db
+      .insert(memoRecordLabels)
+      .values({ memoRecordId: "memo-1", memoLabelId: "label-care" });
+
+    await call("update_memo", {
+      catId: "cat-1",
+      id: "memo-1",
+      content: "本文だけ",
+    });
+
+    expect((await db.select().from(memoRecords))[0].content).toBe("本文だけ");
+    expect(await db.select().from(memoRecordLabels)).toEqual([
+      { memoRecordId: "memo-1", memoLabelId: "label-care" },
+    ]);
   });
 
   it("一覧は日付を残さないメモを先に、日付を残したメモを新しい順に返す", async () => {
