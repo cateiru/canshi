@@ -64,7 +64,7 @@ test("記録を選んで出力し、zip をダウンロード・削除できる"
     "weight_records.csv",
     "memo_records.csv",
   ]);
-  expect(csvText(entries[1]).split("\r\n")[0]).toBe("ID,ねこ,日時,メモ");
+  expect(csvText(entries[1]).split("\r\n")[0]).toBe("ID,ねこ,日時,ラベル,メモ");
 
   const label = await item.getAttribute("aria-label");
   await item.getByRole("button", { name: /を削除する$/ }).click();
