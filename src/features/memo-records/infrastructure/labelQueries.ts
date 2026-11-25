@@ -82,6 +82,31 @@ export async function getMemoLabelForUser(
   return row?.label ?? null;
 }
 
+/** ユーザーが所属する家の、名前が一致するラベル。なければ null */
+export async function getMemoLabelByNameForUser(
+  userId: string,
+  householdId: string,
+  name: string,
+  d1?: D1Database,
+): Promise<MemoLabel | null> {
+  const [row] = await getDb(d1)
+    .select({ label: memoLabels })
+    .from(memoLabels)
+    .innerJoin(
+      householdMembers,
+      eq(memoLabels.householdId, householdMembers.householdId),
+    )
+    .where(
+      and(
+        eq(memoLabels.householdId, householdId),
+        eq(memoLabels.name, name),
+        eq(householdMembers.userId, userId),
+      ),
+    )
+    .limit(1);
+  return row?.label ?? null;
+}
+
 /** 猫のメモ（削除したものを除く）に付いているラベルの一覧。作った順 */
 export async function listMemoLabelsUsedByCat(
   catId: string,
