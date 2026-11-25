@@ -186,6 +186,12 @@ describe("TagInput", () => {
     expect(submitted()).toEqual(["病院:2", "お手入れ:4"]);
   });
 
+  it("無効なときは、ほかの入力欄と同じくフォームに送らない", () => {
+    const { submitted } = setup({ value: ["病院"], isDisabled: true });
+
+    expect(submitted()).toEqual([]);
+  });
+
   it("エラーを表示していても、直してフォームを送信し直せる", () => {
     const { input, onSubmit } = setup({
       value: ["お手入れ"],
