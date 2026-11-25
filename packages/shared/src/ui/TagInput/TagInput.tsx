@@ -253,7 +253,8 @@ export function TagInput({
           {errorMessage}
         </p>
       ) : null}
-      <p role="status" className={styles.srOnly}>
+      {/* 候補を開いている間、ComboBox は入力欄と候補の外を読み上げから隠すため、隠さないようにする */}
+      <p role="status" data-live-announcer="true" className={styles.srOnly}>
         {announcement}
       </p>
     </div>
