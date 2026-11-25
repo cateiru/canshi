@@ -14,6 +14,9 @@ import {
   foodProducts,
   households,
   mediaAssets,
+  memoLabels,
+  memoRecordLabels,
+  memoRecords,
   poopRecords,
   weightRecords,
 } from "@/db/schema";
@@ -92,6 +95,59 @@ describe("listTimelineForMonth", () => {
     expect(result.hasMore).toBe(false);
     expect(result.entries[1].media).toHaveLength(1);
     expect(result.entries[1].media[0].id).toBe(media.id);
+  });
+
+  it("メモは、付いているラベルを作った順に添える", async () => {
+    await db
+      .insert(households)
+      .values({ id: "timeline-memo-home", name: "メモの家" });
+    const [cat] = await db
+      .insert(cats)
+      .values({ name: "くろ", sex: "male", householdId: "timeline-memo-home" })
+      .returning();
+    const [labeled, unlabeled] = await db
+      .insert(memoRecords)
+      .values([
+        {
+          catId: cat.id,
+          recordedAt: new Date("2026-05-20T00:00:00.000Z"),
+          content: "ラベルあり",
+        },
+        {
+          catId: cat.id,
+          recordedAt: new Date("2026-05-19T00:00:00.000Z"),
+          content: "ラベルなし",
+        },
+      ])
+      .returning();
+    const labels = [
+      { id: "timeline-label-1", name: "病院", color: "red" as const },
+      { id: "timeline-label-2", name: "大事", color: "blue" as const },
+    ];
+    await db.insert(memoLabels).values(
+      labels.map((label, index) => ({
+        ...label,
+        householdId: "timeline-memo-home",
+        createdAt: new Date(Date.UTC(2026, 4, index + 1)),
+      })),
+    );
+    await db
+      .insert(memoRecordLabels)
+      .values(
+        labels.map(({ id }) => ({ memoRecordId: labeled.id, memoLabelId: id })),
+      );
+
+    const { entries } = await listTimelineForMonth(cat.id, 2026, 5);
+
+    expect(
+      entries.map((entry) => [
+        entry.id,
+        entry.type === "memo" && entry.record.labels,
+      ]),
+    ).toEqual([
+      [labeled.id, labels],
+      [unlabeled.id, []],
+    ]);
   });
 
   it("支出は、猫に関連付いた猫の家の支出だけを含める", async () => {

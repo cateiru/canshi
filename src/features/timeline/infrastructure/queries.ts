@@ -30,6 +30,7 @@ import {
   mediaRecordKey,
 } from "@/features/media/infrastructure/queries";
 import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/domain/media";
+import { listMemoLabelsByRecordIds } from "@/features/memo-records/infrastructure/labelQueries";
 import { POOP_RECORD_MEDIA_TYPE } from "@/features/poop-records/domain/media";
 import { splitDateTimeUtc } from "@/features/shared/datetime";
 import { shiftYm, type YearMonth } from "@/features/shared/yearMonth";
@@ -345,6 +346,10 @@ async function fetchMemoEntries(
       ),
     )
     .orderBy(desc(memoRecords.recordedAt));
+  const labelsByRecordId = await listMemoLabelsByRecordIds(
+    rows.map((record) => record.id),
+    d1,
+  );
 
   return rows.flatMap((record) => {
     const { recordedAt } = record;
@@ -357,7 +362,11 @@ async function fetchMemoEntries(
         type: "memo",
         occurredAt: recordedAt,
         media: [],
-        record: { ...record, recordedAt },
+        record: {
+          ...record,
+          recordedAt,
+          labels: labelsByRecordId.get(record.id) ?? [],
+        },
       },
     ];
   });
