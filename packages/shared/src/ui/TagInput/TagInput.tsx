@@ -251,6 +251,7 @@ export function TagInput({
               type="hidden"
               name={name}
               value={getFormValue(tag)}
+              disabled={isDisabled}
             />
           ))
         : null}
