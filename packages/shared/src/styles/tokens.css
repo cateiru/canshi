@@ -80,17 +80,6 @@
   --color-record-expense: #8a6508;
   --color-record-memo: #4b5563;
 
-  /* メモのラベルの色。ラベルの点と枠に使い、面には背景色と混ぜて薄く敷く（文字は --color-ink） */
-  --color-label-gray: #57606a;
-  --color-label-red: #c0352b;
-  --color-label-orange: #b8560c;
-  --color-label-yellow: #8a6a00;
-  --color-label-green: #1f7a3a;
-  --color-label-teal: #0d7474;
-  --color-label-blue: #1f62b0;
-  --color-label-purple: #7042b8;
-  --color-label-pink: #b5326f;
-
   /*
    * 枠線・補助テキストの割合。コントラストを上げる設定で下のブロックが上書きする。
    * 下の --color-border などはこの割合と --color-ink / --color-bg から :root で計算されるため、
@@ -222,16 +211,6 @@
   --color-record-hospital-visit: #f472b6;
   --color-record-expense: #d9b44a;
   --color-record-memo: #cbd5e1;
-
-  --color-label-gray: #b4bac6;
-  --color-label-red: #ff8a80;
-  --color-label-orange: #ffab66;
-  --color-label-yellow: #e6c65c;
-  --color-label-green: #7ddc92;
-  --color-label-teal: #5fd6cf;
-  --color-label-blue: #7cb8ff;
-  --color-label-purple: #c3a2ff;
-  --color-label-pink: #ff9bc6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -269,16 +248,6 @@
     --color-record-hospital-visit: #f472b6;
     --color-record-expense: #d9b44a;
     --color-record-memo: #cbd5e1;
-
-    --color-label-gray: #b4bac6;
-    --color-label-red: #ff8a80;
-    --color-label-orange: #ffab66;
-    --color-label-yellow: #e6c65c;
-    --color-label-green: #7ddc92;
-    --color-label-teal: #5fd6cf;
-    --color-label-blue: #7cb8ff;
-    --color-label-purple: #c3a2ff;
-    --color-label-pink: #ff9bc6;
   }
 }
 
