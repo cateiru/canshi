@@ -130,7 +130,17 @@ test("メモにラベルを付けて絞り込み、使わなくなったラベ�
   ).toHaveCount(0);
   await inUseDialog.getByRole("button", { name: "閉じる" }).click();
 
-  // 名前を変えると、メモに付いているラベルの名前も変わる
+  // 名前を変えると、メモに付いているラベルの名前も変わる。先にほかの画面でメモの編集を開いておく
+  const editingPage = await page.context().newPage();
+  await editingPage.goto(listUrl);
+  await editingPage
+    .getByRole("article")
+    .filter({ hasText: "ラベルありのメモ" })
+    .getByRole("link", { name: "編集する" })
+    .click();
+  await expect(
+    editingPage.getByRole("button", { name: `「${labelName}」を外す` }),
+  ).toBeVisible();
   const editDialog = await openDialog(
     page,
     `「${labelName}」を編集する`,
@@ -144,6 +154,21 @@ test("メモにラベルを付けて絞り込み、使わなくなったラベ�
   await expect(
     page.getByRole("button", { name: `「${renamedLabel}」を編集する` }),
   ).toBeVisible();
+
+  // 名前を変える前に開いた編集の画面から保存しても、元の名前のラベルには戻らない
+  await editingPage.getByRole("button", { name: "更新する" }).click();
+  await expect(editingPage).toHaveURL(listUrl);
+  await expect(
+    editingPage.getByRole("article").getByText(renamedLabel),
+  ).toBeVisible();
+  await editingPage.close();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: `「${renamedLabel}」を編集する` }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: `「${labelName}」を編集する` }),
+  ).toHaveCount(0);
 
   // メモからラベルを外す
   await page.goto(listUrl);
