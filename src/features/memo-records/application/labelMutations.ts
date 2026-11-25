@@ -1,5 +1,9 @@
 import type { MemoLabelFormInput } from "../domain/labelSchema";
 import { toMemoLabelContent } from "../domain/memoLabel";
+import {
+  getMemoLabelByNameForUser,
+  getMemoLabelForUser,
+} from "../infrastructure/labelQueries";
 import { createMemoLabelRepository } from "../infrastructure/memoLabelRepository";
 
 /*
@@ -22,16 +26,20 @@ export async function createMemoLabel(
   data: MemoLabelFormInput,
   d1?: D1Database,
 ): Promise<SaveMemoLabelResult> {
-  const repository = createMemoLabelRepository(d1);
   const content = toMemoLabelContent(data);
-  const id = await repository.addForMember(userId, householdId, content);
+  const id = await createMemoLabelRepository(d1).addForMember(
+    userId,
+    householdId,
+    content,
+  );
   if (id != null) {
     return { id };
   }
-  const sameName = await repository.findByNameForMember(
+  const sameName = await getMemoLabelByNameForUser(
     userId,
     householdId,
     content.name,
+    d1,
   );
   return { failure: sameName ? "duplicateName" : "notFound" };
 }
@@ -45,11 +53,15 @@ export async function updateMemoLabel(
   data: MemoLabelFormInput,
   d1?: D1Database,
 ): Promise<SaveMemoLabelResult> {
-  const repository = createMemoLabelRepository(d1);
-  if (await repository.updateForMember(userId, id, toMemoLabelContent(data))) {
+  const updated = await createMemoLabelRepository(d1).updateForMember(
+    userId,
+    id,
+    toMemoLabelContent(data),
+  );
+  if (updated) {
     return { id };
   }
-  const label = await repository.findForMember(userId, id);
+  const label = await getMemoLabelForUser(userId, id, d1);
   return { failure: label ? "duplicateName" : "notFound" };
 }
 
@@ -62,10 +74,9 @@ export async function deleteMemoLabel(
   id: string,
   d1?: D1Database,
 ): Promise<"deleted" | "notFound" | "inUse"> {
-  const repository = createMemoLabelRepository(d1);
-  if (await repository.removeUnusedForMember(userId, id)) {
+  if (await createMemoLabelRepository(d1).removeUnusedForMember(userId, id)) {
     return "deleted";
   }
-  const label = await repository.findForMember(userId, id);
+  const label = await getMemoLabelForUser(userId, id, d1);
   return label ? "inUse" : "notFound";
 }
