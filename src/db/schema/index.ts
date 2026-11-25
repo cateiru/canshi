@@ -26,6 +26,7 @@ export * from "./mcp-permissions";
 export * from "./media-assets";
 export * from "./medication-doses";
 export * from "./medications";
+export * from "./memo-labels";
 export * from "./memo-records";
 export * from "./notification-kinds";
 export * from "./notification-preferences";
