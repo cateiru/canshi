@@ -66,8 +66,8 @@ export default async function MemoLabelsPage({ params }: MemoLabelsPageProps) {
       ) : (
         <Surface>
           <ul className={styles.labels} aria-label="メモのラベル">
-            {labels.map(({ id, name, color, memoCount }) => {
-              const label = { id, name, color };
+            {labels.map(({ id, name, memoCount }) => {
+              const label = { id, name };
               return (
                 <li key={id} className={styles.label}>
                   <div className={styles.labelInfo}>

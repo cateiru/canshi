@@ -112,7 +112,7 @@ describe("removeForUser", () => {
   it("メモ（論理削除したものも含む）をラベルの紐付けごと物理削除し、ラベルは残す", async () => {
     await db
       .insert(memoLabels)
-      .values({ id: "label", householdId: "home", name: "大事", color: "red" });
+      .values({ id: "label", householdId: "home", name: "大事" });
     await db.insert(memoRecords).values([
       { id: "tama-memo", catId: "tama", content: "メモ" },
       {

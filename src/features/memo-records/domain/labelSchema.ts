@@ -1,9 +1,8 @@
 import { z } from "zod";
-import { MEMO_LABEL_COLORS } from "@/db/schema";
 
 export const MEMO_LABEL_NAME_MAX_LENGTH = 30;
 
-/** ラベルの名前と色の入力。画面のフォームと外部接続の操作で共通 */
+/** ラベルの入力。画面のフォームと外部接続の操作で共通 */
 export const memoLabelFormSchema = z.object({
   name: z
     .string({ error: "ラベルの名前を入力してください" })
@@ -13,7 +12,6 @@ export const memoLabelFormSchema = z.object({
       MEMO_LABEL_NAME_MAX_LENGTH,
       `ラベルの名前は${MEMO_LABEL_NAME_MAX_LENGTH}文字以内で入力してください`,
     ),
-  color: z.enum(MEMO_LABEL_COLORS, { error: "色を選択してください" }),
 });
 
 export type MemoLabelFormInput = z.infer<typeof memoLabelFormSchema>;

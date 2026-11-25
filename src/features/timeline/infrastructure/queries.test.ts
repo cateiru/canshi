@@ -121,8 +121,8 @@ describe("listTimelineForMonth", () => {
       ])
       .returning();
     const labels = [
-      { id: "timeline-label-1", name: "病院", color: "red" as const },
-      { id: "timeline-label-2", name: "大事", color: "blue" as const },
+      { id: "timeline-label-1", name: "病院" },
+      { id: "timeline-label-2", name: "大事" },
     ];
     await db.insert(memoLabels).values(
       labels.map((label, index) => ({

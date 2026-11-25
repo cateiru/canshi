@@ -1,64 +1,17 @@
-/*
- * ラベルの色は点と枠で示し、面には背景色と混ぜて薄く敷く。文字は色を変えず、どの色でも読めるようにする
- */
 .chip {
-  --memo-label-color: var(--color-label-gray);
-
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   min-width: 0;
   max-width: 100%;
-  padding: 1px var(--space-3) 1px var(--space-2);
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--memo-label-color) 70%, var(--color-bg));
+  padding: 1px var(--space-3);
+  border: var(--border-width) solid var(--color-border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--memo-label-color) 12%, var(--color-bg));
+  background: var(--color-bg);
   color: var(--color-ink);
   font-size: var(--text-xs);
   font-weight: var(--font-weight-bold);
   line-height: 1.8;
   overflow-wrap: anywhere;
-}
-
-.dot {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--memo-label-color);
-}
-
-.chip[data-color="red"] {
-  --memo-label-color: var(--color-label-red);
-}
-
-.chip[data-color="orange"] {
-  --memo-label-color: var(--color-label-orange);
-}
-
-.chip[data-color="yellow"] {
-  --memo-label-color: var(--color-label-yellow);
-}
-
-.chip[data-color="green"] {
-  --memo-label-color: var(--color-label-green);
-}
-
-.chip[data-color="teal"] {
-  --memo-label-color: var(--color-label-teal);
-}
-
-.chip[data-color="blue"] {
-  --memo-label-color: var(--color-label-blue);
-}
-
-.chip[data-color="purple"] {
-  --memo-label-color: var(--color-label-purple);
-}
-
-.chip[data-color="pink"] {
-  --memo-label-color: var(--color-label-pink);
 }
 
 /* 並び。1 つずつの大きさは中身に合わせ、入り切らなければ折り返す */
@@ -102,5 +55,5 @@
 }
 
 .link:hover .chip {
-  background: color-mix(in srgb, var(--memo-label-color) 22%, var(--color-bg));
+  background: color-mix(in srgb, var(--color-ink) 7%, var(--color-bg));
 }

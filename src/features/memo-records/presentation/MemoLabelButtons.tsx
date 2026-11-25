@@ -18,7 +18,7 @@ type SaveAction = (
   input: MemoLabelFormInput,
 ) => Promise<SaveMemoLabelActionResult>;
 
-/** ラベルを追加するボタン。モーダルで名前と色を入力する */
+/** ラベルを追加するボタン。モーダルで名前を入力する */
 export function AddMemoLabelButton({ action }: { action: SaveAction }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -50,7 +50,7 @@ export function AddMemoLabelButton({ action }: { action: SaveAction }) {
   );
 }
 
-/** ラベルの名前と色を編集するボタン */
+/** ラベルの名前を編集するボタン */
 export function EditMemoLabelButton({
   label,
   action,

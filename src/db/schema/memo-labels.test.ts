@@ -33,8 +33,8 @@ describe("memo_labels・memo_record_labels テーブル", () => {
     const labels = await db
       .insert(memoLabels)
       .values([
-        { householdId: "house-1", name: "お手入れ", color: "blue" },
-        { householdId: "house-1", name: "大事", color: "red" },
+        { householdId: "house-1", name: "お手入れ" },
+        { householdId: "house-1", name: "大事" },
       ])
       .returning();
     const links = labels.map((label) => ({
@@ -50,16 +50,14 @@ describe("memo_labels・memo_record_labels テーブル", () => {
   it("同じ家に同じ名前のラベルは作れず、別の家には作れる", async () => {
     await db
       .insert(memoLabels)
-      .values({ householdId: "house-1", name: "病院", color: "red" });
+      .values({ householdId: "house-1", name: "病院" });
 
     await expect(
-      db
-        .insert(memoLabels)
-        .values({ householdId: "house-1", name: "病院", color: "blue" }),
+      db.insert(memoLabels).values({ householdId: "house-1", name: "病院" }),
     ).rejects.toThrow();
     await db
       .insert(memoLabels)
-      .values({ householdId: "house-2", name: "病院", color: "blue" });
+      .values({ householdId: "house-2", name: "病院" });
 
     expect(await db.select().from(memoLabels)).toHaveLength(2);
   });

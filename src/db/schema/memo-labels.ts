@@ -10,21 +10,6 @@ import {
 import { households } from "./households";
 import { memoRecords } from "./memo-records";
 
-/** メモのラベルの色。値の見た目は tokens.css の `--color-label-*` で決める */
-export const MEMO_LABEL_COLORS = [
-  "gray",
-  "red",
-  "orange",
-  "yellow",
-  "green",
-  "teal",
-  "blue",
-  "purple",
-  "pink",
-] as const;
-
-export type MemoLabelColor = (typeof MEMO_LABEL_COLORS)[number];
-
 /**
  * メモに付けるラベル。家（`household_id`）に属し、その家のどの猫のメモにも使い回せる。
  * 1 つのメモに複数のラベルを付けられる（`memo_record_labels`）
@@ -40,7 +25,6 @@ export const memoLabels = sqliteTable(
       .notNull()
       .references(() => households.id),
     name: text("name").notNull(),
-    color: text("color", { enum: MEMO_LABEL_COLORS }).notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

@@ -2,7 +2,6 @@ CREATE TABLE `memo_labels` (
 	`id` text PRIMARY KEY NOT NULL,
 	`household_id` text NOT NULL,
 	`name` text NOT NULL,
-	`color` text NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`household_id`) REFERENCES `households`(`id`) ON UPDATE no action ON DELETE no action

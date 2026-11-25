@@ -274,14 +274,12 @@ async function seedRecords() {
       id: "label-care",
       householdId: "home",
       name: "お手入れ",
-      color: "blue",
       createdAt: new Date("2026-06-01T00:00:00Z"),
     },
     {
       id: "label-important",
       householdId: "home",
       name: "大事",
-      color: "red",
       createdAt: new Date("2026-06-02T00:00:00Z"),
     },
   ]);

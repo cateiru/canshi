@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { MemoLabelsField } from "./MemoLabelsField";
 
 const labels = [
-  { id: "care", name: "お手入れ", color: "blue" as const },
-  { id: "hospital", name: "病院", color: "red" as const },
+  { id: "care", name: "お手入れ" },
+  { id: "hospital", name: "病院" },
 ];
 
 describe("MemoLabelsField", () => {

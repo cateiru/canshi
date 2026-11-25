@@ -274,13 +274,13 @@ VALUES ('vrt-memo-2', 'vrt-cat-populated', '好きなおもちゃは羽根のつ
 
 -- メモのラベル: 2 つ付いたメモと 1 つ付いたメモを用意し、付いていないラベルも 1 つ残す
 -- （ラベルの管理ページで、削除できるラベルとできないラベルの両方のダイアログを撮る）
-INSERT INTO memo_labels (id, household_id, name, color, created_at, updated_at)
+INSERT INTO memo_labels (id, household_id, name, created_at, updated_at)
 VALUES
-  ('vrt-memo-label-care', 'vrt-household', 'お手入れ', 'blue',
+  ('vrt-memo-label-care', 'vrt-household', 'お手入れ',
     strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00')),
-  ('vrt-memo-label-like', 'vrt-household', '好きなもの', 'pink',
+  ('vrt-memo-label-like', 'vrt-household', '好きなもの',
     strftime('%s', '2024-06-02 00:00:00'), strftime('%s', '2024-06-02 00:00:00')),
-  ('vrt-memo-label-hospital', 'vrt-household', '病院', 'green',
+  ('vrt-memo-label-hospital', 'vrt-household', '病院',
     strftime('%s', '2024-06-03 00:00:00'), strftime('%s', '2024-06-03 00:00:00'));
 
 INSERT INTO memo_record_labels (memo_record_id, memo_label_id)

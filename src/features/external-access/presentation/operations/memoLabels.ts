@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MEMO_LABEL_COLORS, type MemoLabel } from "@/db/schema";
+import type { MemoLabel } from "@/db/schema";
 import {
   createMemoLabel,
   deleteMemoLabel,
@@ -41,14 +41,9 @@ import {
 const labelFields = {
   name: z
     .string()
-    .optional()
     .describe(
       `ラベルの名前（${MEMO_LABEL_NAME_MAX_LENGTH}文字以内）。同じ家に同じ名前のラベルは作れない`,
     ),
-  color: z
-    .enum(MEMO_LABEL_COLORS)
-    .optional()
-    .describe("ラベルの色。追加で省略すると gray"),
 };
 
 function labelNotFoundError(id: string) {
@@ -129,7 +124,6 @@ export function registerMemoLabelOperations(
           id: label.id,
           householdId: label.householdId,
           name: label.name,
-          color: label.color,
           memoCount: label.memoCount,
         })),
       });
@@ -141,7 +135,7 @@ export function registerMemoLabelOperations(
     {
       title: "メモのラベルを追加",
       description:
-        "家にメモのラベルを 1 件追加し、追加したラベルの ID を返す。name は必須。" +
+        "家にメモのラベルを 1 件追加し、追加したラベルの ID を返す。" +
         "ラベルはその家のすべての猫のメモに付けられる。",
       inputSchema: {
         householdId: z
@@ -162,7 +156,7 @@ export function registerMemoLabelOperations(
       }
       const parsed = parseFormValues(
         memoLabelFormSchema,
-        mergeFormValues({ color: "gray" }, args),
+        mergeFormValues({}, args),
       );
       if ("error" in parsed) {
         return errorResult(parsed.error);
@@ -189,8 +183,7 @@ export function registerMemoLabelOperations(
     {
       title: "メモのラベルを編集",
       description:
-        "メモのラベルを 1 件編集する。指定した項目だけを変更し、省略した項目は今の値のまま。" +
-        "ラベルが付いているすべてのメモの表示が変わる。",
+        "メモのラベルの名前を変更する。ラベルが付いているすべてのメモの表示が変わる。",
       inputSchema: {
         id: z.string().describe("ラベルの ID（list_memo_labels で取得できる）"),
         ...labelFields,
@@ -208,10 +201,7 @@ export function registerMemoLabelOperations(
       }
       const parsed = parseFormValues(
         memoLabelFormSchema,
-        mergeFormValues(
-          { name: resolved.label.name, color: resolved.label.color },
-          args,
-        ),
+        mergeFormValues({}, args),
       );
       if ("error" in parsed) {
         return errorResult(parsed.error);

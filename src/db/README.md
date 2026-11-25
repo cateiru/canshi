@@ -367,8 +367,7 @@ Cloudflare D1（SQLite 互換）上で Drizzle ORM を使う際に、以降の�
 
 - メモを分類するラベル（`memo_labels`、`0073`）は、ごはん商品・プリセットと同じく家（`household_id`）に属し、その家の
   どの猫のメモにも使い回せる。猫を飼う家は登録後は変えられないため、メモとラベルの家が食い違うことはない
-  - 名前は家の中で一意（`household_id` + `name` の一意インデックス）。色は `MEMO_LABEL_COLORS` から選び、見た目は
-    `packages/shared/src/styles/tokens.css` の `--color-label-*` で決める
+  - 名前は家の中で一意（`household_id` + `name` の一意インデックス）
   - 家のメンバーなら誰でも追加・編集・削除できる。所属は書き込みの文の中でも確かめる
 - メモとラベルは `memo_record_labels`（`memo_record_id` + `memo_label_id` の複合主キー）で多対多に紐付ける
   - メモの保存では、紐付けをすべて消してから入れ直す文を、メモの文・履歴の文と同じ batch に並べ、同じ条件を付ける。

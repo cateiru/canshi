@@ -84,7 +84,6 @@ export function createMemoLabelRepository(
               id: sql`${crypto.randomUUID()}`.as("id"),
               householdId: householdMembers.householdId,
               name: sql`${content.name}`.as("name"),
-              color: sql`${content.color}`.as("color"),
               createdAt: sql`(unixepoch())`.as("created_at"),
               updatedAt: sql`(unixepoch())`.as("updated_at"),
             })

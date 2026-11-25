@@ -77,17 +77,15 @@ beforeEach(async () => {
       id: "care",
       householdId: "home",
       name: "お手入れ",
-      color: "blue",
       createdAt: new Date("2026-11-01T00:00:00Z"),
     },
     {
       id: "hospital",
       householdId: "home",
       name: "病院",
-      color: "red",
       createdAt: new Date("2026-11-02T00:00:00Z"),
     },
-    { id: "other-label", householdId: "other", name: "別の家", color: "gray" },
+    { id: "other-label", householdId: "other", name: "別の家" },
   ]);
 });
 
@@ -115,7 +113,6 @@ describe("ラベルの追加", () => {
   it("家のメンバーがラベルを追加できる", async () => {
     const saved = await createMemoLabel("owner", "home", {
       name: "性格",
-      color: "pink",
     });
 
     expect(saved).toEqual({ id: expect.any(String) });
@@ -127,51 +124,50 @@ describe("ラベルの追加", () => {
   });
 
   it("同じ家に同じ名前のラベルは追加できない。別の家のラベルとは重なってよい", async () => {
-    expect(
-      await createMemoLabel("owner", "home", { name: "病院", color: "gray" }),
-    ).toEqual({ failure: "duplicateName" });
-    expect(
-      await createMemoLabel("owner", "home", { name: "別の家", color: "gray" }),
-    ).toEqual({ id: expect.any(String) });
+    expect(await createMemoLabel("owner", "home", { name: "病院" })).toEqual({
+      failure: "duplicateName",
+    });
+    expect(await createMemoLabel("owner", "home", { name: "別の家" })).toEqual({
+      id: expect.any(String),
+    });
   });
 
   it("メンバーでない家には追加できず、同じ名前のラベルがあるかもわからない", async () => {
     for (const name of ["性格", "別の家"]) {
-      expect(
-        await createMemoLabel("owner", "other", { name, color: "gray" }),
-      ).toEqual({ failure: "notFound" });
+      expect(await createMemoLabel("owner", "other", { name })).toEqual({
+        failure: "notFound",
+      });
     }
     expect(await listMemoLabels("other")).toHaveLength(1);
   });
 });
 
 describe("ラベルの編集", () => {
-  it("名前と色を変えられる（名前を変えずに色だけも変えられる）", async () => {
-    expect(
-      await updateMemoLabel("owner", "care", { name: "ケア", color: "teal" }),
-    ).toEqual({ id: "care" });
-    expect(
-      await updateMemoLabel("owner", "care", { name: "ケア", color: "green" }),
-    ).toEqual({ id: "care" });
+  it("名前を変えられる（今と同じ名前でも保存できる）", async () => {
+    expect(await updateMemoLabel("owner", "care", { name: "ケア" })).toEqual({
+      id: "care",
+    });
+    expect(await updateMemoLabel("owner", "care", { name: "ケア" })).toEqual({
+      id: "care",
+    });
     expect((await listMemoLabels("home"))[0]).toEqual({
       id: "care",
       name: "ケア",
-      color: "green",
     });
   });
 
   it("同じ家の別のラベルと同じ名前にはできない", async () => {
-    expect(
-      await updateMemoLabel("owner", "care", { name: "病院", color: "teal" }),
-    ).toEqual({ failure: "duplicateName" });
+    expect(await updateMemoLabel("owner", "care", { name: "病院" })).toEqual({
+      failure: "duplicateName",
+    });
     expect((await listMemoLabels("home"))[0].name).toBe("お手入れ");
   });
 
   it("メンバーでない家のラベルは、存在しないラベルと区別せずに断る", async () => {
     for (const id of ["other-label", "unknown"]) {
-      expect(
-        await updateMemoLabel("owner", id, { name: "変更", color: "teal" }),
-      ).toEqual({ failure: "notFound" });
+      expect(await updateMemoLabel("owner", id, { name: "変更" })).toEqual({
+        failure: "notFound",
+      });
     }
     expect((await listMemoLabels("other"))[0].name).toBe("別の家");
   });

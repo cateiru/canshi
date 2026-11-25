@@ -1,19 +1,15 @@
 "use client";
 
 import { type FormEvent, useState, useTransition } from "react";
-import { Label, Radio, RadioGroup } from "react-aria-components";
 import { TbCheck } from "react-icons/tb";
 import { Alert, Button, FormField, Modal } from "@/components/ui";
-import { MEMO_LABEL_COLORS, type MemoLabelColor } from "@/db/schema";
 import {
   MEMO_LABEL_NAME_MAX_LENGTH,
   type MemoLabelFormFieldErrors,
   type MemoLabelFormInput,
 } from "../domain/labelSchema";
-import { MEMO_LABEL_COLOR_LABEL } from "../domain/labels";
 import type { MemoLabelView } from "../domain/memoLabel";
 import type { SaveMemoLabelActionResult } from "./labelActions";
-import { MemoLabelChip } from "./MemoLabelChip";
 import styles from "./MemoLabelFormModal.module.css";
 
 type MemoLabelFormProps = {
@@ -55,7 +51,6 @@ function MemoLabelForm({
   onClose,
 }: MemoLabelFormProps) {
   const [name, setName] = useState(label?.name ?? "");
-  const [color, setColor] = useState<MemoLabelColor>(label?.color ?? "gray");
   const [fieldErrors, setFieldErrors] = useState<MemoLabelFormFieldErrors>({});
   const [formError, setFormError] = useState<string>();
   const [isPending, startTransition] = useTransition();
@@ -65,7 +60,7 @@ function MemoLabelForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     startTransition(async () => {
-      const result = await action({ name, color });
+      const result = await action({ name });
       if ("label" in result) {
         onSaved(result.label);
         return;
@@ -87,23 +82,6 @@ function MemoLabelForm({
         errorMessage={fieldErrors.name?.[0]}
         isRequired
       />
-      <RadioGroup
-        className={styles.colors}
-        orientation="horizontal"
-        value={color}
-        onChange={(value) => setColor(value as MemoLabelColor)}
-      >
-        <Label className={styles.colorsLabel}>色</Label>
-        <div className={styles.colorOptions}>
-          {MEMO_LABEL_COLORS.map((value) => (
-            <Radio key={value} value={value} className={styles.colorOption}>
-              <MemoLabelChip
-                label={{ name: MEMO_LABEL_COLOR_LABEL[value], color: value }}
-              />
-            </Radio>
-          ))}
-        </div>
-      </RadioGroup>
       <div className={styles.actions}>
         <Button
           type="submit"

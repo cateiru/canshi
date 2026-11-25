@@ -19,7 +19,6 @@ export async function listMemoLabels(
     .select({
       id: memoLabels.id,
       name: memoLabels.name,
-      color: memoLabels.color,
     })
     .from(memoLabels)
     .where(eq(memoLabels.householdId, householdId))
@@ -92,7 +91,6 @@ export async function listMemoLabelsUsedByCat(
     .selectDistinct({
       id: memoLabels.id,
       name: memoLabels.name,
-      color: memoLabels.color,
       // SELECT DISTINCT の並び順に使うため、列に含める
       createdAt: memoLabels.createdAt,
     })
@@ -123,7 +121,6 @@ export async function listMemoLabelsByRecordIds(
         memoRecordId: memoRecordLabels.memoRecordId,
         id: memoLabels.id,
         name: memoLabels.name,
-        color: memoLabels.color,
       })
       .from(memoRecordLabels)
       .innerJoin(memoLabels, eq(memoLabels.id, memoRecordLabels.memoLabelId))

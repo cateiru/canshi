@@ -2398,28 +2398,24 @@ describe("メモのラベル", () => {
         id: "label-care",
         householdId: "house-1",
         name: "お手入れ",
-        color: "blue",
         createdAt: new Date("2026-11-01T00:00:00Z"),
       },
       {
         id: "label-hospital",
         householdId: "house-1",
         name: "病院",
-        color: "red",
         createdAt: new Date("2026-11-02T00:00:00Z"),
       },
       {
         id: "label-house-2",
         householdId: "house-2",
         name: "家2のラベル",
-        color: "gray",
         createdAt: new Date("2026-11-03T00:00:00Z"),
       },
       {
         id: "label-house-3",
         householdId: "house-3",
         name: "ほかの人の家のラベル",
-        color: "gray",
       },
     ]);
   });
@@ -2464,14 +2460,12 @@ describe("メモのラベル", () => {
           id: "label-care",
           householdId: "house-1",
           name: "お手入れ",
-          color: "blue",
           memoCount: 1,
         },
         {
           id: "label-hospital",
           householdId: "house-1",
           name: "病院",
-          color: "red",
           memoCount: 0,
         },
       ],
@@ -2481,7 +2475,7 @@ describe("メモのラベル", () => {
     ).toBe("not_found");
   });
 
-  it("ラベルを追加でき、色を省略するとグレーにする。同じ名前のラベルは追加できない", async () => {
+  it("ラベルを追加できる。同じ名前のラベルは追加できない", async () => {
     await allow(ALL_LABEL_OPERATIONS);
 
     const created = await call("create_memo_label", {
@@ -2495,7 +2489,6 @@ describe("メモのラベル", () => {
     expect(label).toMatchObject({
       householdId: "house-1",
       name: "性格",
-      color: "gray",
     });
 
     expect(
@@ -2507,16 +2500,16 @@ describe("メモのラベル", () => {
     ).toBe("invalid_request");
   });
 
-  it("ラベルを編集でき、省略した項目は今の値のままにする", async () => {
+  it("ラベルの名前を変えられる", async () => {
     await allow(ALL_LABEL_OPERATIONS);
 
-    await call("update_memo_label", { id: "label-care", color: "teal" });
+    await call("update_memo_label", { id: "label-care", name: "ケア" });
 
     const [label] = await db
       .select()
       .from(memoLabels)
       .where(eq(memoLabels.id, "label-care"));
-    expect(label).toMatchObject({ name: "お手入れ", color: "teal" });
+    expect(label).toMatchObject({ name: "ケア" });
     expect(
       (await call("update_memo_label", { id: "label-care", name: "病院" }))
         .code,
@@ -2596,7 +2589,7 @@ describe("メモのラベル", () => {
   });
 
   it("メモの一覧・タイムラインにラベルを添え、一覧はラベルで絞り込める", async () => {
-    const careLabel = { id: "label-care", name: "お手入れ", color: "blue" };
+    const careLabel = { id: "label-care", name: "お手入れ" };
     await db.insert(memoRecords).values([
       {
         id: "memo-labeled",

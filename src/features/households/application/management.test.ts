@@ -248,9 +248,7 @@ describe("deleteHousehold", () => {
     await db
       .insert(feedingSchedules)
       .values({ id: `${householdId}-schedule`, householdId, time: "07:00" });
-    await db
-      .insert(memoLabels)
-      .values({ householdId, name: "お手入れ", color: "blue" });
+    await db.insert(memoLabels).values({ householdId, name: "お手入れ" });
     await db.insert(householdInvitations).values({
       householdId,
       tokenHash: `${householdId}-token`,

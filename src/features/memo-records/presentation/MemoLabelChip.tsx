@@ -3,17 +3,12 @@ import type { MemoLabelView } from "../domain/memoLabel";
 import styles from "./MemoLabelChip.module.css";
 
 type MemoLabelChipProps = {
-  label: Pick<MemoLabelView, "name" | "color">;
+  label: Pick<MemoLabelView, "name">;
 };
 
-/** メモのラベル 1 つの表示。色は点・枠・面で示し、名前は文字で出す */
+/** メモのラベル 1 つの表示 */
 export function MemoLabelChip({ label }: MemoLabelChipProps) {
-  return (
-    <span className={styles.chip} data-color={label.color}>
-      <span className={styles.dot} aria-hidden="true" />
-      {label.name}
-    </span>
-  );
+  return <span className={styles.chip}>{label.name}</span>;
 }
 
 type MemoLabelListProps = {
