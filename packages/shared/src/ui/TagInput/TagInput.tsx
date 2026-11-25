@@ -66,6 +66,8 @@ export function TagInput({
   const [inputValue, setInputValue] = useState("");
   // タグを付け外ししたことを読み上げる文
   const [announcement, setAnnouncement] = useState("");
+  // 候補の幅。ComboBox の既定では文字の入力の幅になり、タグと同じ行に並ぶと狭くなるため、枠の幅に揃える
+  const [menuWidth, setMenuWidth] = useState<number>();
   // × をキーボードで押したときに、次にフォーカスするタグの位置
   const focusIndexAfterRemove = useRef<number | null>(null);
 
@@ -205,6 +207,11 @@ export function TagInput({
               addTag(key.slice(SUGGESTION_ID_PREFIX.length));
             }
           }}
+          onOpenChange={(isOpen) => {
+            if (isOpen) {
+              setMenuWidth(controlRef.current?.offsetWidth);
+            }
+          }}
           allowsCustomValue
           menuTrigger="focus"
           isInvalid={!!errorMessage}
@@ -218,7 +225,11 @@ export function TagInput({
             maxLength={maxLength}
             enterKeyHint="done"
           />
-          <Popover triggerRef={controlRef} className={styles.popover}>
+          <Popover
+            triggerRef={controlRef}
+            className={styles.popover}
+            style={{ width: menuWidth }}
+          >
             <ListBox className={styles.listbox}>
               {(option: (typeof options)[number]) => (
                 <ListBoxOption id={option.id} label={option.label} />

@@ -106,7 +106,7 @@
 
 /* 残りの幅に広げる。幅が足りなければ次の行に送る */
 .comboBox {
-  flex: 1 1 120px;
+  flex: 1 1 96px;
   min-width: 0;
 }
 
@@ -124,7 +124,6 @@
 }
 
 .popover {
-  width: var(--trigger-width);
   border: var(--border-width) solid var(--color-border);
   border-radius: 8px;
   background-color: var(--color-bg);
