@@ -66,10 +66,8 @@ export default async function EditMemoRecordPage({
         action={updateMemoRecordAction.bind(null, catId, memoRecord.id)}
         catId={catId}
         memoRecord={memoRecord}
-        labelSuggestions={labels.map((label) => label.name)}
-        initialLabelNames={labelsByRecordId
-          .get(memoRecord.id)
-          ?.map((label) => label.name)}
+        householdLabels={labels}
+        initialLabels={labelsByRecordId.get(memoRecord.id)}
         mediaAssets={mediaAssets.map(toMediaAssetView)}
         mediaLimits={resolveMediaLimits()}
         submitLabel="更新する"

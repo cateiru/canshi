@@ -1,5 +1,8 @@
 import type { RecordActor } from "@/db/schema";
-import { toMemoRecordContent } from "../domain/memoRecord";
+import {
+  type MemoRecordContent,
+  toMemoRecordContent,
+} from "../domain/memoRecord";
 import type { MemoRecordFormInput } from "../domain/schema";
 import { listMemoLabels } from "../infrastructure/labelQueries";
 import { createMemoRecordRepository } from "../infrastructure/memoRecordRepository";
@@ -20,35 +23,34 @@ export type SaveMemoRecordResult =
   | { id: string }
   | { failure: SaveMemoRecordFailure };
 
-/** ID で指定したラベルがすべて猫の家のラベルであれば true */
-async function areLabelsInHousehold(
+/** 入力から記録の中身を作る。`labelIds` に猫の家のラベルではないものがあれば null */
+async function toContent(
   householdId: string,
-  labelIds: string[],
+  data: MemoRecordFormInput,
   d1?: D1Database,
-): Promise<boolean> {
-  if (labelIds.length === 0) {
-    return true;
-  }
-  const labels = await listMemoLabels(householdId, d1);
-  const householdLabelIds = new Set(labels.map(({ id }) => id));
-  return labelIds.every((id) => householdLabelIds.has(id));
+): Promise<MemoRecordContent | null> {
+  const usesIds =
+    data.labelIds.length > 0 || data.labels.some(({ id }) => id != null);
+  const householdLabelIds = new Set(
+    usesIds ? (await listMemoLabels(householdId, d1)).map(({ id }) => id) : [],
+  );
+  return data.labelIds.every((id) => householdLabelIds.has(id))
+    ? toMemoRecordContent(data, householdLabelIds)
+    : null;
 }
 
-/** 記録を追加する。ID で指定したラベルは猫の家のものに限り、名前で指定したラベルはなければ作る */
+/** 記録を追加する。`labelIds` は猫の家のラベルに限り、画面で付けた `labels` のうち家にないラベルは作る */
 export async function createMemoRecord(
   cat: MemoRecordCat,
   data: MemoRecordFormInput,
   actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveMemoRecordResult> {
-  if (!(await areLabelsInHousehold(cat.householdId, data.labelIds, d1))) {
+  const content = await toContent(cat.householdId, data, d1);
+  if (!content) {
     return { failure: "labelNotFound" };
   }
-  const id = await createMemoRecordRepository(d1).add(
-    cat.id,
-    toMemoRecordContent(data),
-    actor,
-  );
+  const id = await createMemoRecordRepository(d1).add(cat.id, content, actor);
   return id == null ? { failure: "rejected" } : { id };
 }
 
@@ -60,13 +62,14 @@ export async function updateMemoRecord(
   actor: RecordActor,
   d1?: D1Database,
 ): Promise<SaveMemoRecordResult> {
-  if (!(await areLabelsInHousehold(cat.householdId, data.labelIds, d1))) {
+  const content = await toContent(cat.householdId, data, d1);
+  if (!content) {
     return { failure: "labelNotFound" };
   }
   const updated = await createMemoRecordRepository(d1).update(
     cat.id,
     id,
-    toMemoRecordContent(data),
+    content,
     actor,
   );
   return updated ? { id } : { failure: "rejected" };

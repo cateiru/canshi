@@ -29,13 +29,22 @@ export type MemoRecordFormState = MediaFormState & {
   fieldErrors?: MemoRecordFormFieldErrors;
 };
 
+/** TagInput が送るラベル（`MemoRecordForm` 参照）を読む。読めなければ null（入力の検証でエラーになる） */
+function parseLabel(value: FormDataEntryValue): unknown {
+  try {
+    return JSON.parse(String(value));
+  } catch {
+    return null;
+  }
+}
+
 function parseFormData(formData: FormData) {
   return memoRecordFormSchema.safeParse({
     hasDate: formData.get("hasDate"),
     recordedDate: formData.get("recordedDate"),
     recordedTime: formData.get("recordedTime"),
     content: formData.get("content"),
-    labelNames: formData.getAll("labelNames"),
+    labels: formData.getAll("labels").map(parseLabel),
   });
 }
 
@@ -59,7 +68,7 @@ export async function createMemoRecordAction(
   );
   if ("failure" in saved) {
     if (saved.failure === "labelNotFound") {
-      return { fieldErrors: { labelNames: [MEMO_LABEL_NOT_FOUND_ERROR] } };
+      return { fieldErrors: { labels: [MEMO_LABEL_NOT_FOUND_ERROR] } };
     }
     redirectFromMemorialCat(catId);
   }
@@ -93,7 +102,7 @@ export async function updateMemoRecordAction(
   );
   if ("failure" in saved) {
     return saved.failure === "labelNotFound"
-      ? { fieldErrors: { labelNames: [MEMO_LABEL_NOT_FOUND_ERROR] } }
+      ? { fieldErrors: { labels: [MEMO_LABEL_NOT_FOUND_ERROR] } }
       : { formError: "記録が見つかりませんでした" };
   }
 

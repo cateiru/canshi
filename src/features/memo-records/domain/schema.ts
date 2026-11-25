@@ -8,21 +8,24 @@ export const MEMO_CONTENT_MAX_LENGTH = 2000;
 /** 1 つのメモに付けられるラベルの数 */
 export const MEMO_LABELS_MAX = 20;
 
-/** ラベルの ID・名前の並び。重複を除き、付けられる数までに限る */
-function labelListSchema(item: z.ZodType<string>) {
-  return z
-    .array(item, { error: "ラベルの指定が正しくありません" })
-    .transform((values) => [...new Set(values)])
-    .refine(
-      (values) => values.length <= MEMO_LABELS_MAX,
-      `ラベルは${MEMO_LABELS_MAX}個まで付けられます`,
-    )
-    .default([]);
-}
+const LABELS_ERROR = "ラベルの指定が正しくありません";
+
+const LABELS_MAX_ERROR = `ラベルは${MEMO_LABELS_MAX}個まで付けられます`;
+
+const labelIdSchema = z.string().min(1).max(200);
 
 /**
- * ラベルは ID（`labelIds`、外部接続の操作）か名前（`labelNames`、画面のフォーム）で指定する。
- * 名前で指定したラベルがまだなければ、メモの保存と同時に作る。
+ * 画面のフォームで付けたラベル。`id` は、画面を開いたときに家にあったラベルの ID
+ * （新しく入力したラベルなら null）
+ */
+const selectedLabelSchema = z.object(
+  { id: labelIdSchema.nullable(), name: memoLabelNameSchema },
+  { error: LABELS_ERROR },
+);
+
+/**
+ * ラベルは、外部接続の操作では家にあるラベルの ID（`labelIds`）で、画面のフォームでは
+ * `labels` で指定する（付け方は `./memoRecord.ts` の `resolveMemoLabels` 参照）。
  *
  * 「日付を残す」を外したときは日付・時刻の欄を送らないため、日付・時刻は
  * 日付を残すときだけ検証する
@@ -40,12 +43,19 @@ export const memoRecordFormSchema = z
         MEMO_CONTENT_MAX_LENGTH,
         `メモは${MEMO_CONTENT_MAX_LENGTH}文字以内で入力してください`,
       ),
-    labelIds: labelListSchema(z.string().min(1).max(200)),
-    labelNames: labelListSchema(memoLabelNameSchema),
+    labelIds: z
+      .array(labelIdSchema, { error: LABELS_ERROR })
+      .transform((ids) => [...new Set(ids)])
+      .refine((ids) => ids.length <= MEMO_LABELS_MAX, LABELS_MAX_ERROR)
+      .default([]),
+    labels: z
+      .array(selectedLabelSchema, { error: LABELS_ERROR })
+      .max(MEMO_LABELS_MAX, LABELS_MAX_ERROR)
+      .default([]),
   })
   .transform((data, ctx) => {
-    const { content, labelIds, labelNames } = data;
-    const common = { content, labelIds, labelNames };
+    const { content, labelIds, labels } = data;
+    const common = { content, labelIds, labels };
     if (!data.hasDate) {
       return { ...common, recordedDate: null, recordedTime: null };
     }
@@ -87,7 +97,7 @@ export type MemoRecordFormFieldErrors = Partial<
     | "recordedTime"
     | "content"
     | "labelIds"
-    | "labelNames",
+    | "labels",
     string[]
   >
 >;

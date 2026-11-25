@@ -13,9 +13,31 @@ export type MemoRecordContent = Pick<MemoRecord, "recordedAt" | "content"> & {
   labelNames: string[];
 };
 
-/** 入力から記録の中身を作る */
+/**
+ * 入力のラベルを、ID で付けるものと、名前で付けるもの（なければ作る）に分ける。
+ * 画面で付けた既存のラベルは、画面を開いた後に名前が変わっていてもそのラベルのままになるよう、ID で付ける。
+ * 画面を開いた後に削除されていれば（猫の家のラベルになければ）、新しく入力したラベルと同じく名前で付ける
+ */
+export function resolveMemoLabels(
+  { labelIds, labels }: Pick<MemoRecordFormInput, "labelIds" | "labels">,
+  householdLabelIds: ReadonlySet<string>,
+): Pick<MemoRecordContent, "labelIds" | "labelNames"> {
+  const ids = new Set(labelIds);
+  const names = new Set<string>();
+  for (const { id, name } of labels) {
+    if (id != null && householdLabelIds.has(id)) {
+      ids.add(id);
+    } else {
+      names.add(name);
+    }
+  }
+  return { labelIds: [...ids], labelNames: [...names] };
+}
+
+/** 入力から記録の中身を作る。`householdLabelIds` は猫の家のラベルの ID */
 export function toMemoRecordContent(
   data: MemoRecordFormInput,
+  householdLabelIds: ReadonlySet<string>,
 ): MemoRecordContent {
   return {
     recordedAt:
@@ -23,7 +45,6 @@ export function toMemoRecordContent(
         ? combineDateTimeUtc(data.recordedDate, data.recordedTime)
         : null,
     content: data.content,
-    labelIds: data.labelIds,
-    labelNames: data.labelNames,
+    ...resolveMemoLabels(data, householdLabelIds),
   };
 }

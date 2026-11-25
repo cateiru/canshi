@@ -89,11 +89,16 @@ beforeEach(async () => {
   ]);
 });
 
-function memoInput(labelIds: string[], labelNames: string[] = []) {
+type LabelInput = string | { id: string | null; name: string };
+
+/** `labels` は画面で付けたラベル。文字だけを渡すと、新しく入力したラベルにする */
+function memoInput(labelIds: string[], labels: LabelInput[] = []) {
   return {
     content: "メモ",
     labelIds,
-    labelNames,
+    labels: labels.map((label) =>
+      typeof label === "string" ? { id: null, name: label } : label,
+    ),
     recordedDate: null,
     recordedTime: null,
   };
@@ -281,6 +286,52 @@ describe("メモに付けるラベル", () => {
         .sort(),
     ).toEqual(["お手入れ", "性格", "大事"].sort());
     expect(await listMemoLabels("home")).toHaveLength(5);
+  });
+
+  it("画面を開いた後に名前が変わったラベルは、元の名前で作り直さず、そのラベルのまま付ける", async () => {
+    const id = await addMemo(["care"]);
+    await updateMemoLabel("owner", "care", { name: "ケア" });
+
+    await updateMemoRecord(
+      tama,
+      id,
+      memoInput([], [{ id: "care", name: "お手入れ" }]),
+      actor,
+    );
+
+    expect(await labelIdsOf(id)).toEqual(["care"]);
+    expect((await listMemoLabels("home")).map(({ name }) => name)).toEqual([
+      "ケア",
+      "病院",
+    ]);
+  });
+
+  it("画面を開いた後に削除されたラベル・別の家のラベルは、名前で付ける", async () => {
+    await deleteMemoLabel("owner", "care");
+
+    const saved = await createMemoRecord(
+      tama,
+      memoInput(
+        [],
+        [
+          { id: "care", name: "お手入れ" },
+          { id: "other-label", name: "別の家" },
+          { id: "hospital", name: "病院" },
+        ],
+      ),
+      actor,
+    );
+    if (!("id" in saved)) throw new Error("メモを追加できなかった");
+
+    const labels =
+      (await listMemoLabelsByRecordIds([saved.id])).get(saved.id) ?? [];
+    expect(labels.map(({ name }) => name).sort()).toEqual(
+      ["お手入れ", "別の家", "病院"].sort(),
+    );
+    const labelIds = labels.map(({ id }) => id);
+    expect(labelIds).toContain("hospital");
+    expect(labelIds).not.toContain("other-label");
+    expect(await listMemoLabels("other")).toHaveLength(1);
   });
 
   it("メモを保存できなかったときは、名前で指定したラベルも作らない", async () => {

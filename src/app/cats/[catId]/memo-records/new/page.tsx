@@ -54,7 +54,7 @@ export default async function NewMemoRecordPage({
         catId={catId}
         action={createMemoRecordAction.bind(null, catId)}
         updateAction={updateMemoRecordAction.bind(null, catId)}
-        labelSuggestions={labels.map((label) => label.name)}
+        householdLabels={labels}
         mediaLimits={resolveMediaLimits()}
         submitLabel="記録する"
       />
