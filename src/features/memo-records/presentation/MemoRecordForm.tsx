@@ -16,7 +16,12 @@ import { MediaAttachmentField } from "@/features/media/presentation/MediaAttachm
 import { useMediaAttachments } from "@/features/media/presentation/useMediaAttachments";
 import { useMediaFormAction } from "@/features/media/presentation/useMediaFormAction";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
+import type { MemoLabelFormInput } from "../domain/labelSchema";
+import type { MemoLabelView } from "../domain/memoLabel";
 import type { MemoRecordFormState } from "./actions";
+import type { SaveMemoLabelActionResult } from "./labelActions";
+import { MemoLabelFormModal } from "./MemoLabelFormModal";
+import { MemoLabelsField } from "./MemoLabelsField";
 import styles from "./MemoRecordForm.module.css";
 
 type FormAction = (
@@ -37,6 +42,14 @@ type MemoRecordFormProps = {
     formData: FormData,
   ) => Promise<MemoRecordFormState>;
   memoRecord?: MemoRecord;
+  /** 選べるラベル（猫の家のラベル） */
+  labels: MemoLabelView[];
+  /** 編集するメモに付いているラベル */
+  initialLabelIds?: string[];
+  /** 猫の家に新しいラベルを追加する Action */
+  createLabelAction: (
+    input: MemoLabelFormInput,
+  ) => Promise<SaveMemoLabelActionResult>;
   mediaAssets?: MediaAssetView[];
   mediaLimits: MediaLimits;
   submitLabel: string;
@@ -49,6 +62,9 @@ export function MemoRecordForm({
   action,
   updateAction,
   memoRecord,
+  labels,
+  initialLabelIds,
+  createLabelAction,
   mediaAssets,
   mediaLimits,
   submitLabel,
@@ -76,64 +92,104 @@ export function MemoRecordForm({
     ? splitDateTimeUtc(memoRecord.recordedAt)
     : getLocalNowParts(now);
 
+  // このフォームから追加したラベルは、一覧を取り直さずに選択肢の最後に足す
+  const [addedLabels, setAddedLabels] = useState<MemoLabelView[]>([]);
+  const [selectedLabelIds, setSelectedLabelIds] = useState<ReadonlySet<string>>(
+    () => new Set(initialLabelIds),
+  );
+  const [isAddingLabel, setIsAddingLabel] = useState(false);
+  const toggleLabel = (id: string, isSelected: boolean) =>
+    setSelectedLabelIds((current) => {
+      const next = new Set(current);
+      if (isSelected) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+
   return (
-    <form action={formAction} className={styles.form}>
-      <Textarea
-        name="content"
-        label="メモ"
-        rows={6}
-        defaultValue={memoRecord?.content ?? ""}
-        errorMessage={state.fieldErrors?.content?.[0]}
-        isRequired
+    <>
+      <form action={formAction} className={styles.form}>
+        <Textarea
+          name="content"
+          label="メモ"
+          rows={6}
+          defaultValue={memoRecord?.content ?? ""}
+          errorMessage={state.fieldErrors?.content?.[0]}
+          isRequired
+        />
+
+        <MemoLabelsField
+          labels={[...labels, ...addedLabels]}
+          selectedIds={selectedLabelIds}
+          onToggle={toggleLabel}
+          onAdd={() => setIsAddingLabel(true)}
+          isDisabled={isPending}
+          errorMessage={state.fieldErrors?.labelIds?.[0]}
+        />
+
+        <MediaAttachmentField
+          controller={media}
+          label="画像"
+          isDisabled={isPending}
+        />
+
+        <Checkbox name="hasDate" isSelected={hasDate} onChange={setHasDate}>
+          日付を残す
+        </Checkbox>
+
+        {hasDate ? (
+          <FormRow>
+            <FormField
+              name="recordedDate"
+              label="日付"
+              type="date"
+              defaultValue={defaultDate}
+              errorMessage={state.fieldErrors?.recordedDate?.[0]}
+              isRequired
+            />
+            <FormField
+              name="recordedTime"
+              label="時刻"
+              type="time"
+              defaultValue={defaultTime}
+              errorMessage={state.fieldErrors?.recordedTime?.[0]}
+              isRequired
+            />
+          </FormRow>
+        ) : (
+          <p className={styles.note}>
+            日付を残さないメモは、タイムラインには表示されません。
+          </p>
+        )}
+
+        {state.formError ? (
+          <p className={styles.errorMessage}>{state.formError}</p>
+        ) : null}
+
+        <Button
+          type="submit"
+          variant="primary"
+          isDisabled={isPending}
+          leftIcon={TbCheck}
+        >
+          {isPending ? "保存中..." : submitLabel}
+        </Button>
+      </form>
+
+      {/* フォームが入れ子にならないよう、メモのフォームの外に置く */}
+      <MemoLabelFormModal
+        open={isAddingLabel}
+        action={createLabelAction}
+        onSaved={(label) => {
+          setIsAddingLabel(false);
+          setAddedLabels((current) => [...current, label]);
+          toggleLabel(label.id, true);
+        }}
+        onClose={() => setIsAddingLabel(false)}
       />
-
-      <MediaAttachmentField
-        controller={media}
-        label="画像"
-        isDisabled={isPending}
-      />
-
-      <Checkbox name="hasDate" isSelected={hasDate} onChange={setHasDate}>
-        日付を残す
-      </Checkbox>
-
-      {hasDate ? (
-        <FormRow>
-          <FormField
-            name="recordedDate"
-            label="日付"
-            type="date"
-            defaultValue={defaultDate}
-            errorMessage={state.fieldErrors?.recordedDate?.[0]}
-            isRequired
-          />
-          <FormField
-            name="recordedTime"
-            label="時刻"
-            type="time"
-            defaultValue={defaultTime}
-            errorMessage={state.fieldErrors?.recordedTime?.[0]}
-            isRequired
-          />
-        </FormRow>
-      ) : (
-        <p className={styles.note}>
-          日付を残さないメモは、タイムラインには表示されません。
-        </p>
-      )}
-
-      {state.formError ? (
-        <p className={styles.errorMessage}>{state.formError}</p>
-      ) : null}
-
-      <Button
-        type="submit"
-        variant="primary"
-        isDisabled={isPending}
-        leftIcon={TbCheck}
-      >
-        {isPending ? "保存中..." : submitLabel}
-      </Button>
-    </form>
+    </>
   );
 }

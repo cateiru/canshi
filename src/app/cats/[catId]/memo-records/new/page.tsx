@@ -4,10 +4,12 @@ import { Breadcrumb } from "@/components/ui";
 import { getWritableCat } from "@/features/auth/presentation/session";
 import { catPageMetadata } from "@/features/cats/presentation/catPageMetadata";
 import { resolveMediaLimits } from "@/features/media/domain/limits";
+import { listMemoLabels } from "@/features/memo-records/infrastructure/labelQueries";
 import {
   createMemoRecordAction,
   updateMemoRecordAction,
 } from "@/features/memo-records/presentation/actions";
+import { createMemoLabelAction } from "@/features/memo-records/presentation/labelActions";
 import { MemoRecordForm } from "@/features/memo-records/presentation/MemoRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../page.module.css";
@@ -31,6 +33,9 @@ export default async function NewMemoRecordPage({
   if (!cat) {
     notFound();
   }
+  // アクセスできる猫は家に所属している（`getCatForUser` 参照）
+  const householdId = cat.householdId as string;
+  const labels = await listMemoLabels(householdId);
 
   return (
     <main className={styles.main}>
@@ -51,6 +56,8 @@ export default async function NewMemoRecordPage({
         catId={catId}
         action={createMemoRecordAction.bind(null, catId)}
         updateAction={updateMemoRecordAction.bind(null, catId)}
+        labels={labels}
+        createLabelAction={createMemoLabelAction.bind(null, householdId)}
         mediaLimits={resolveMediaLimits()}
         submitLabel="記録する"
       />

@@ -7,8 +7,13 @@ import { resolveMediaLimits } from "@/features/media/domain/limits";
 import { toMediaAssetView } from "@/features/media/domain/view";
 import { listMediaAssetsByRecord } from "@/features/media/infrastructure/queries";
 import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/domain/media";
+import {
+  listMemoLabels,
+  listMemoLabelsByRecordIds,
+} from "@/features/memo-records/infrastructure/labelQueries";
 import { getMemoRecordById } from "@/features/memo-records/infrastructure/queries";
 import { updateMemoRecordAction } from "@/features/memo-records/presentation/actions";
+import { createMemoLabelAction } from "@/features/memo-records/presentation/labelActions";
 import { MemoRecordForm } from "@/features/memo-records/presentation/MemoRecordForm";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "../../page.module.css";
@@ -36,10 +41,13 @@ export default async function EditMemoRecordPage({
     notFound();
   }
 
-  const mediaAssets = await listMediaAssetsByRecord(
-    MEMO_RECORD_MEDIA_TYPE,
-    memoRecord.id,
-  );
+  // アクセスできる猫は家に所属している（`getCatForUser` 参照）
+  const householdId = cat.householdId as string;
+  const [mediaAssets, labels, labelsByRecordId] = await Promise.all([
+    listMediaAssetsByRecord(MEMO_RECORD_MEDIA_TYPE, memoRecord.id),
+    listMemoLabels(householdId),
+    listMemoLabelsByRecordIds([memoRecord.id]),
+  ]);
 
   return (
     <main className={styles.main}>
@@ -60,6 +68,11 @@ export default async function EditMemoRecordPage({
         action={updateMemoRecordAction.bind(null, catId, memoRecord.id)}
         catId={catId}
         memoRecord={memoRecord}
+        labels={labels}
+        initialLabelIds={labelsByRecordId
+          .get(memoRecord.id)
+          ?.map((label) => label.id)}
+        createLabelAction={createMemoLabelAction.bind(null, householdId)}
         mediaAssets={mediaAssets.map(toMediaAssetView)}
         mediaLimits={resolveMediaLimits()}
         submitLabel="更新する"
