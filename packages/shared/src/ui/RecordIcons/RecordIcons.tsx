@@ -762,6 +762,26 @@ export function FeedingPresetIcon(props: RecordIconProps) {
   );
 }
 
+/** メモのラベル（穴の開いた札） */
+export function MemoLabelIcon(props: RecordIconProps) {
+  const tag =
+    "M2.5 5a2.5 2.5 0 0 1 2.5-2.5h6.5a2.5 2.5 0 0 1 1.77.73l7.5 7.5a2.5 2.5 0 0 1 0 3.54l-6.5 6.5a2.5 2.5 0 0 1-3.54 0l-7.5-7.5A2.5 2.5 0 0 1 2.5 11.5Z";
+
+  return (
+    <RecordIcon {...props} fills={<path fill="#f2d17b" d={tag} />}>
+      <path d={tag} />
+      <circle
+        className={styles.foregroundFill}
+        fill="#fff4df"
+        cx="7.25"
+        cy="7.25"
+        r="1.75"
+      />
+      <path d="m11.5 15.5 4-4m-1.5 6 2-2" strokeWidth="1.25" />
+    </RecordIcon>
+  );
+}
+
 /** 記録の出力（表のファイルを書き出してダウンロードする） */
 export function RecordExportIcon(props: RecordIconProps) {
   const sheet = "M6.5 2.5h8l4 4v15h-12Z";
