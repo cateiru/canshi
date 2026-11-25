@@ -106,7 +106,7 @@ export function MemoRecordForm({
         suggestions={labelSuggestions}
         placeholder="入力して追加"
         maxLength={MEMO_LABEL_NAME_MAX_LENGTH}
-        description="入力して Enter を押すと追加できます。"
+        description="入力して Enter を押すか、候補から選ぶと追加できます。"
         errorMessage={state.fieldErrors?.labelNames?.[0]}
         isDisabled={isPending}
       />
