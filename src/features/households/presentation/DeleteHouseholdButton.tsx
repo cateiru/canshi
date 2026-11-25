@@ -50,7 +50,7 @@ export function DeleteHouseholdButton({
       </Button>
       <Modal open={open} title="家の削除" onClose={close}>
         <p>
-          {`「${householdName}」を削除しますか？この家の支出記録・ごはん商品・ごはんプリセット・ごはんの時間・招待もすべて削除され、メンバー全員がこの家を見られなくなります。この操作は取り消せません。`}
+          {`「${householdName}」を削除しますか？この家の支出記録・ごはん商品・ごはんプリセット・ごはんの時間・メモのラベル・招待もすべて削除され、メンバー全員がこの家を見られなくなります。この操作は取り消せません。`}
         </p>
         <form
           className={styles.form}

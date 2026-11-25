@@ -1,0 +1,57 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.colors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.colorsLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 色の選択肢。ラベルの見た目のまま並べ、狭い画面では折り返す */
+.colorOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* 押しやすさのため 44px の高さを確保し、選択中は外側に輪を描く */
+.colorOption {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 2px transparent;
+  cursor: pointer;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  transition:
+    box-shadow var(--transition-base),
+    outline-color var(--transition-base);
+}
+
+.colorOption[data-hovered]:not([data-selected]) {
+  box-shadow: inset 0 0 0 2px var(--color-border);
+}
+
+.colorOption[data-selected] {
+  box-shadow: inset 0 0 0 2px var(--color-ink);
+}
+
+.colorOption[data-focus-visible] {
+  outline-color: var(--color-focus-ring);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

@@ -3,6 +3,7 @@ import {
   FeedingScheduleIcon,
   FoodProductIcon,
   HouseholdIcon,
+  MemoLabelIcon,
   RecordExportIcon,
 } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
@@ -42,6 +43,7 @@ import { DeleteHouseholdButton } from "@/features/households/presentation/Delete
 import { HouseholdInvitationIssueButton } from "@/features/households/presentation/HouseholdInvitationIssueButton";
 import { HouseholdMemberActionButton } from "@/features/households/presentation/HouseholdMemberActionButton";
 import { HouseholdNameForm } from "@/features/households/presentation/HouseholdNameForm";
+import { memoLabelsPath } from "@/features/memo-records/presentation/paths";
 import { recordExportsPath } from "@/features/record-exports/presentation/paths";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -227,6 +229,15 @@ export default async function HouseholdSettingsPage({
           <ul className={styles.navList}>
             <li>
               <NavCard
+                href={memoLabelsPath(household.id)}
+                icon={MemoLabelIcon}
+                title="メモのラベル"
+                titleAs="h3"
+                description="この家のねこのメモに付けるラベルを登録・編集します。"
+              />
+            </li>
+            <li>
+              <NavCard
                 href={recordExportsPath(household.id)}
                 icon={RecordExportIcon}
                 title="記録の出力"
@@ -304,7 +315,7 @@ export default async function HouseholdSettingsPage({
           <p className={styles.note}>
             {catCount > 0
               ? HOUSEHOLD_HAS_CATS_MESSAGE
-              : "家を削除すると、この家の支出記録・ごはん商品・ごはんプリセット・ごはんの時間・招待もすべて削除されます。"}
+              : "家を削除すると、この家の支出記録・ごはん商品・ごはんプリセット・ごはんの時間・メモのラベル・招待もすべて削除されます。"}
           </p>
           <div>
             <DeleteHouseholdButton
