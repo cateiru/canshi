@@ -477,6 +477,20 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
     page.getByRole("textbox", { name: "メモ" }),
     "窓辺で日向ぼっこするのがお気に入り",
   );
+  // ラベルを作ると、そのまま選んだ状態になる
+  await page.getByRole("button", { name: "新しいラベル" }).click();
+  const labelDialog = page.getByRole("dialog", { name: "ラベルの追加" });
+  await fillAndKeep(
+    labelDialog.getByRole("textbox", { name: "名前" }),
+    "好きなもの",
+  );
+  await labelDialog.getByText("ピンク", { exact: true }).click();
+  await labelDialog.getByRole("button", { name: "追加する" }).click();
+  await expect(
+    page.getByRole("button", { name: "好きなもの", pressed: true }),
+  ).toBeVisible();
+  // 押した場所にあるボタンにホバーの見た目が付かないようにする
+  await page.mouse.move(0, 0);
   await capture(page, "record-memo");
 
   await page.goto(`${catPath}/timeline`);

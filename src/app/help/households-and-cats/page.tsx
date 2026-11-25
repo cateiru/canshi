@@ -56,6 +56,7 @@ export default function HouseholdsAndCatsHelpPage() {
           <li>ごはんプリセット（よくあげるごはんの組み合わせ）</li>
           <li>ごはんの時間（ごはんのお知らせの時間）</li>
           <li>支出記録（ごはん代や病院代など）</li>
+          <li>メモのラベル（ねこのメモを分類するラベル）</li>
         </ul>
       </Surface>
 
