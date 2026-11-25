@@ -304,7 +304,7 @@ export default async function HouseholdSettingsPage({
           <p className={styles.note}>
             {catCount > 0
               ? HOUSEHOLD_HAS_CATS_MESSAGE
-              : "家を削除すると、この家の支出記録・ごはん商品・ごはんプリセット・ごはんの時間・招待もすべて削除されます。"}
+              : "家を削除すると、この家の支出記録・ごはん商品・ごはんプリセット・ごはんの時間・メモのラベル・招待もすべて削除されます。"}
           </p>
           <div>
             <DeleteHouseholdButton
