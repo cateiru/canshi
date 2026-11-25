@@ -542,18 +542,19 @@ export function expenseCsvFile(
   );
 }
 
-/** メモ。日付を残さないメモは日時を空にする */
+/** メモ。日付を残さないメモは日時を空にし、ラベルは関連するねこと同じく「、」で区切る */
 export function memoCsvFile(
-  rows: (MemoRecord & WithCatName)[],
+  rows: (MemoRecord & WithCatName & { labelNames: string[] })[],
   mediaPaths: ExportMediaPaths | undefined,
 ): CsvFile {
   return csvFile(
     RECORD_EXPORT_FILE_BASE_NAMES.memo,
-    ["ID", "ねこ", "日時", "メモ"],
+    ["ID", "ねこ", "日時", "ラベル", "メモ"],
     rows.map((record) => [
       record.id,
       record.catName,
       dateTime(record.recordedAt),
+      record.labelNames.join("、"),
       record.content,
     ]),
     { paths: mediaPaths, recordIds: rows.map(({ id }) => id) },

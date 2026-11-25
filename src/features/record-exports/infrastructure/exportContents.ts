@@ -16,6 +16,8 @@ import {
   mediaAssets,
   medicationDoses,
   medications,
+  memoLabels,
+  memoRecordLabels,
   memoRecords,
   poopRecords,
   shampooRecords,
@@ -228,18 +230,7 @@ async function loadCsvFiles(
         expenseCsvFile(await listExpenseRows(db, householdId), mediaPaths),
       ];
     case "memo":
-      return [
-        memoCsvFile(
-          await listCatRecords(
-            db,
-            memoRecords,
-            householdId,
-            // 日付を残さないメモ（NULL）は最後に並べる
-            sql`${memoRecords.recordedAt} IS NULL, ${memoRecords.recordedAt}`,
-          ),
-          mediaPaths,
-        ),
-      ];
+      return [memoCsvFile(await listMemoRows(db, householdId), mediaPaths)];
   }
 }
 
@@ -303,6 +294,36 @@ async function listFeedingRows(db: Db, householdId: string) {
   return records.map((record) => ({
     ...record,
     items: itemsByRecord.get(record.id) ?? [],
+  }));
+}
+
+async function listMemoRows(db: Db, householdId: string) {
+  const records = await listCatRecords(
+    db,
+    memoRecords,
+    householdId,
+    // 日付を残さないメモ（NULL）は最後に並べる
+    sql`${memoRecords.recordedAt} IS NULL, ${memoRecords.recordedAt}`,
+  );
+  // 画面と同じく、ラベルは作った順に並べる
+  const labels = await db
+    .select({
+      memoRecordId: memoRecordLabels.memoRecordId,
+      name: memoLabels.name,
+    })
+    .from(memoRecordLabels)
+    .innerJoin(memoLabels, eq(memoLabels.id, memoRecordLabels.memoLabelId))
+    .where(eq(memoLabels.householdId, householdId))
+    .orderBy(asc(memoLabels.createdAt), asc(memoLabels.name));
+  const namesByRecord = new Map<string, string[]>();
+  for (const { memoRecordId, name } of labels) {
+    const list = namesByRecord.get(memoRecordId) ?? [];
+    list.push(name);
+    namesByRecord.set(memoRecordId, list);
+  }
+  return records.map((record) => ({
+    ...record,
+    labelNames: namesByRecord.get(record.id) ?? [],
   }));
 }
 

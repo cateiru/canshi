@@ -329,11 +329,18 @@ describe("そのほかの記録", () => {
           catName: "たま",
           recordedAt: null,
           content: "好きなおもちゃ",
+          labelNames: ["好きなもの", "大事"],
           ...timestamps,
         },
       ],
       undefined,
     );
-    expect(file.rows[0]).toEqual(["n1", "たま", null, "好きなおもちゃ"]);
+    expect(file.rows[0]).toEqual([
+      "n1",
+      "たま",
+      null,
+      "好きなもの、大事",
+      "好きなおもちゃ",
+    ]);
   });
 });

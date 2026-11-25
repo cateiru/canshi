@@ -16,6 +16,8 @@ import {
   householdMembers,
   households,
   mediaAssets,
+  memoLabels,
+  memoRecordLabels,
   memoRecords,
   poopRecords,
   recordExports,
@@ -267,6 +269,24 @@ async function seedRecords() {
       content: "日付なし",
     },
   ]);
+  await db.insert(memoLabels).values([
+    {
+      id: "label-care",
+      householdId: "home",
+      name: "お手入れ",
+      createdAt: new Date("2026-06-01T00:00:00Z"),
+    },
+    {
+      id: "label-important",
+      householdId: "home",
+      name: "大事",
+      createdAt: new Date("2026-06-02T00:00:00Z"),
+    },
+  ]);
+  await db.insert(memoRecordLabels).values([
+    { memoRecordId: "memo-dated", memoLabelId: "label-important" },
+    { memoRecordId: "memo-dated", memoLabelId: "label-care" },
+  ]);
 
   await seedMedia("poop-1-a", "poop_record", "poop-1", 1, encoder.encode("b"));
   await seedMedia("poop-1-b", "poop_record", "poop-1", 0, encoder.encode("a"));
@@ -494,8 +514,8 @@ describe("runRecordExport", () => {
       "expense-1,2026-06-01,ご飯,2000,たま、くろ,,",
     ]);
     expect(csvOf(id, "memo_records.csv").split("\r\n").slice(1, -1)).toEqual([
-      "memo-dated,たま,2026-06-05 10:00,日付あり",
-      "memo-undated,たま,,日付なし",
+      "memo-dated,たま,2026-06-05 10:00,お手入れ、大事,日付あり",
+      "memo-undated,たま,,,日付なし",
     ]);
   });
 
