@@ -17,6 +17,7 @@ import {
   householdMembers,
   households,
   mediaAssets,
+  memoLabels,
   notifications,
   pushDeliveries,
   pushSubscriptions,
@@ -247,6 +248,9 @@ describe("deleteHousehold", () => {
     await db
       .insert(feedingSchedules)
       .values({ id: `${householdId}-schedule`, householdId, time: "07:00" });
+    await db
+      .insert(memoLabels)
+      .values({ householdId, name: "お手入れ", color: "blue" });
     await db.insert(householdInvitations).values({
       householdId,
       tokenHash: `${householdId}-token`,
@@ -321,6 +325,12 @@ describe("deleteHousehold", () => {
           .from(feedingSchedules)
           .where(eq(feedingSchedules.householdId, householdId)),
       ),
+      memoLabels: await count(
+        db
+          .select()
+          .from(memoLabels)
+          .where(eq(memoLabels.householdId, householdId)),
+      ),
       invitations: await count(
         db
           .select()
@@ -359,6 +369,7 @@ describe("deleteHousehold", () => {
     presets: 1,
     presetItems: 1,
     schedules: 1,
+    memoLabels: 1,
     invitations: 1,
     notifications: 1,
     pushDeliveries: 1,
@@ -520,6 +531,7 @@ describe("deleteHousehold", () => {
       presets: 0,
       presetItems: 0,
       schedules: 0,
+      memoLabels: 0,
       invitations: 0,
       notifications: 0,
       pushDeliveries: 0,

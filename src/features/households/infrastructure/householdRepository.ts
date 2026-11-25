@@ -13,6 +13,7 @@ import {
   householdInvitations,
   householdMembers,
   households,
+  memoLabels,
   notifications,
   recordExports,
 } from "@/db/schema";
@@ -115,8 +116,8 @@ export function createHouseholdRepository(
 
       // 外部キーはすべて ON DELETE no action のため、参照する側から順に消す。猫がいない家だけを
       // 削除するため、猫に紐付く記録（`cat_id` を持つ行）は対象にならない
-      // 結果は文の順に並ぶ。ID を返す支出記録（4 番目）・ごはん商品（7 番目）・記録の出力（11 番目）・
-      // 家（13 番目）だけを取り出す
+      // 結果は文の順に並ぶ。ID を返す支出記録（4 番目）・ごはん商品（7 番目）・記録の出力（12 番目）・
+      // 家（14 番目）だけを取り出す
       const [
         ,
         ,
@@ -125,6 +126,7 @@ export function createHouseholdRepository(
         ,
         ,
         deletedFoodProducts,
+        ,
         ,
         ,
         ,
@@ -186,6 +188,10 @@ export function createHouseholdRepository(
         db
           .delete(feedingSchedules)
           .where(and(eq(feedingSchedules.householdId, householdId), canRemove)),
+        // メモのラベル。メモとの紐付けは、猫がいない（メモがない）ため残っていない
+        db
+          .delete(memoLabels)
+          .where(and(eq(memoLabels.householdId, householdId), canRemove)),
         // 家についての通知（ごはんの時間など）。送信の記録（push_deliveries）は ON DELETE CASCADE で消える
         db
           .delete(notifications)
