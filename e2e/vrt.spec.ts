@@ -656,6 +656,72 @@ test("ごはんの時間ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+test.describe("メモのラベルページ", () => {
+  const MEMO_LABELS_PATH = "/settings/households/vrt-household/memo-labels";
+
+  test("見た目", async ({ page }, testInfo) => {
+    await page.goto(MEMO_LABELS_PATH);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "メモのラベル" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+
+  // ハイドレーション前に押すと反応しないため、モーダルが開くまで押し直す
+  async function openDialog(page: Page, buttonName: string, title: string) {
+    const dialog = page.getByRole("dialog", { name: title });
+    await page.goto(MEMO_LABELS_PATH);
+    await expect(async () => {
+      if (!(await dialog.isVisible())) {
+        await page.getByRole("button", { name: buttonName }).click();
+      }
+      await expect(dialog).toBeVisible({ timeout: 1_000 });
+    }).toPass();
+    return dialog;
+  }
+
+  test("追加のモーダルの見た目", async ({ page }, testInfo) => {
+    await openDialog(page, "ラベルを追加する", "ラベルの追加");
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+
+  test("編集のモーダルの見た目", async ({ page }, testInfo) => {
+    const dialog = await openDialog(
+      page,
+      "「お手入れ」を編集する",
+      "ラベルの編集",
+    );
+    await expect(dialog.getByRole("textbox", { name: "名前" })).toHaveValue(
+      "お手入れ",
+    );
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+
+  test("メモに付いているラベルの削除ダイアログの見た目", async ({
+    page,
+  }, testInfo) => {
+    const dialog = await openDialog(
+      page,
+      "「好きなもの」を削除する",
+      "ラベルの削除",
+    );
+    await expect(
+      dialog.getByText("このラベルは2件のメモに付いているため削除できません。"),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+
+  test("メモに付いていないラベルの削除ダイアログの見た目", async ({
+    page,
+  }, testInfo) => {
+    const dialog = await openDialog(page, "「病院」を削除する", "ラベルの削除");
+    await expect(
+      dialog.getByRole("button", { name: "削除する" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+});
+
 test("記録の出力ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/households/vrt-household/record-exports");
   await expect(

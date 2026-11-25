@@ -273,6 +273,7 @@ VALUES ('vrt-memo-2', 'vrt-cat-populated', '好きなおもちゃは羽根のつ
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
 -- メモのラベル: 2 つ付いたメモと 1 つ付いたメモを用意し、付いていないラベルも 1 つ残す
+-- （ラベルの管理ページで、削除できるラベルとできないラベルの両方のダイアログを撮る）
 INSERT INTO memo_labels (id, household_id, name, created_at, updated_at)
 VALUES
   ('vrt-memo-label-care', 'vrt-household', 'お手入れ',
