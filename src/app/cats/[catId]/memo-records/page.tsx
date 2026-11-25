@@ -5,6 +5,7 @@ import { TbClock, TbClockOff, TbPencil, TbPlus } from "react-icons/tb";
 import {
   Breadcrumb,
   ButtonLink,
+  FilterTabs,
   IconButtonLink,
   Pagination,
   RecordCard,
@@ -17,17 +18,20 @@ import { toMediaAssetView } from "@/features/media/domain/view";
 import { listMediaAssetsByRecords } from "@/features/media/infrastructure/queries";
 import { MediaGallery } from "@/features/media/presentation/MediaGallery";
 import { MEMO_RECORD_MEDIA_TYPE } from "@/features/memo-records/domain/media";
+import {
+  listMemoLabels,
+  listMemoLabelsByRecordIds,
+  listMemoLabelsUsedByCat,
+} from "@/features/memo-records/infrastructure/labelQueries";
 import { listMemoRecords } from "@/features/memo-records/infrastructure/queries";
 import { deleteMemoRecordAction } from "@/features/memo-records/presentation/actions";
+import { MemoLabelList } from "@/features/memo-records/presentation/MemoLabelChip";
+import { memoRecordsHref } from "@/features/memo-records/presentation/paths";
 import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
 import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
 import { formatDateTimeUtc } from "@/features/shared/datetime";
-import {
-  buildPageHref,
-  paginate,
-  parsePageParam,
-} from "@/features/shared/pagination";
+import { paginate, parsePageParam } from "@/features/shared/pagination";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
 import styles from "./page.module.css";
 
@@ -37,9 +41,16 @@ export const generateMetadata = catPageMetadata(
   (catName) => `${catName}のメモ`,
 );
 
+/** 絞り込まないときの、絞り込みの選択肢のキー */
+const ALL_LABELS_KEY = "all";
+
 type MemoRecordsPageProps = {
   params: Promise<{ catId: string }>;
-  searchParams: Promise<{ page?: string | string[] }>;
+  searchParams: Promise<{
+    page?: string | string[];
+    /** 絞り込むラベルの ID */
+    label?: string | string[];
+  }>;
 };
 
 export default async function MemoRecordsPage({
@@ -55,21 +66,34 @@ export default async function MemoRecordsPage({
   // メモリーへ移した猫は、記録を見返すだけにする（追加・編集・削除の導線を出さない）
   const readOnly = isMemorialCat(cat);
 
-  const records = await listMemoRecords(catId);
-  const { page: pageParam } = await searchParams;
+  // アクセスできる猫は家に所属している（`getCatForUser` 参照）
+  const householdId = cat.householdId as string;
+  const { page: pageParam, label: labelParam } = await searchParams;
+  const [householdLabels, usedLabels] = await Promise.all([
+    listMemoLabels(householdId),
+    listMemoLabelsUsedByCat(catId),
+  ]);
+  // 削除されたラベルや別の家のラベルが指定されたときは絞り込まない
+  const filterLabel = householdLabels.find((label) => label.id === labelParam);
+  // 絞り込みの選択肢は、このねこのメモに付いているラベルだけにする。絞り込み中のラベルは、
+  // 付いたメモがなくなっても選択肢に残す
+  const usedLabelIds = new Set(usedLabels.map((label) => label.id));
+  const filterLabels = householdLabels.filter(
+    (label) => usedLabelIds.has(label.id) || label.id === filterLabel?.id,
+  );
+  const records = await listMemoRecords(catId, { labelId: filterLabel?.id });
   const {
     items: pagedRecords,
     page,
     totalPages,
   } = paginate(records, parsePageParam(pageParam));
-  const contributorsByRecordId = await loadRecordContributors(
-    "memo_record",
-    pagedRecords.map((record) => record.id),
-  );
-  const mediaByRecordId = await listMediaAssetsByRecords(
-    MEMO_RECORD_MEDIA_TYPE,
-    pagedRecords.map((record) => record.id),
-  );
+  const recordIds = pagedRecords.map((record) => record.id);
+  const [contributorsByRecordId, mediaByRecordId, labelsByRecordId] =
+    await Promise.all([
+      loadRecordContributors("memo_record", recordIds),
+      listMediaAssetsByRecords(MEMO_RECORD_MEDIA_TYPE, recordIds),
+      listMemoLabelsByRecordIds(recordIds),
+    ]);
 
   return (
     <main className={styles.main}>
@@ -96,7 +120,30 @@ export default async function MemoRecordsPage({
         )}
       </div>
 
-      {records.length === 0 ? (
+      {filterLabels.length > 0 ? (
+        <FilterTabs
+          aria-label="ラベルでの絞り込み"
+          selectedKey={filterLabel?.id ?? ALL_LABELS_KEY}
+          items={[
+            {
+              key: ALL_LABELS_KEY,
+              href: memoRecordsHref(catId),
+              label: "すべて",
+            },
+            ...filterLabels.map((label) => ({
+              key: label.id,
+              href: memoRecordsHref(catId, { labelId: label.id }),
+              label: label.name,
+            })),
+          ]}
+        />
+      ) : null}
+
+      {records.length === 0 && filterLabel ? (
+        <RecordEmptyState icon={MemoIcon}>
+          「{filterLabel.name}」のラベルが付いたメモはありません。
+        </RecordEmptyState>
+      ) : records.length === 0 ? (
         <RecordEmptyState
           icon={MemoIcon}
           actions={
@@ -175,6 +222,12 @@ export default async function MemoRecordsPage({
                   </div>
                 </div>
 
+                <MemoLabelList
+                  labels={labelsByRecordId.get(record.id) ?? []}
+                  getHref={(labelId) => memoRecordsHref(catId, { labelId })}
+                  className={styles.labels}
+                />
+
                 <p className={styles.content}>{record.content}</p>
 
                 <div className={styles.media}>
@@ -195,7 +248,7 @@ export default async function MemoRecordsPage({
         page={page}
         totalPages={totalPages}
         getHref={(target) =>
-          buildPageHref(`/cats/${catId}/memo-records`, target)
+          memoRecordsHref(catId, { labelId: filterLabel?.id, page: target })
         }
       />
     </main>

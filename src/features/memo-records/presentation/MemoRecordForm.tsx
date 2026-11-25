@@ -7,6 +7,7 @@ import {
   Checkbox,
   FormField,
   FormRow,
+  TagInput,
   Textarea,
 } from "@/components/ui";
 import type { MemoRecord } from "@/db/schema";
@@ -16,6 +17,8 @@ import { MediaAttachmentField } from "@/features/media/presentation/MediaAttachm
 import { useMediaAttachments } from "@/features/media/presentation/useMediaAttachments";
 import { useMediaFormAction } from "@/features/media/presentation/useMediaFormAction";
 import { getLocalNowParts, splitDateTimeUtc } from "@/features/shared/datetime";
+import { MEMO_LABEL_NAME_MAX_LENGTH } from "../domain/labelSchema";
+import type { MemoLabelView } from "../domain/memoLabel";
 import type { MemoRecordFormState } from "./actions";
 import styles from "./MemoRecordForm.module.css";
 
@@ -37,6 +40,10 @@ type MemoRecordFormProps = {
     formData: FormData,
   ) => Promise<MemoRecordFormState>;
   memoRecord?: MemoRecord;
+  /** 入力の候補にするラベル（猫の家のラベル） */
+  householdLabels: MemoLabelView[];
+  /** 編集するメモに付いているラベル */
+  initialLabels?: MemoLabelView[];
   mediaAssets?: MediaAssetView[];
   mediaLimits: MediaLimits;
   submitLabel: string;
@@ -49,6 +56,8 @@ export function MemoRecordForm({
   action,
   updateAction,
   memoRecord,
+  householdLabels,
+  initialLabels = [],
   mediaAssets,
   mediaLimits,
   submitLabel,
@@ -76,6 +85,13 @@ export function MemoRecordForm({
     ? splitDateTimeUtc(memoRecord.recordedAt)
     : getLocalNowParts(now);
 
+  const [labelNames, setLabelNames] = useState<string[]>(() =>
+    initialLabels.map(({ name }) => name),
+  );
+  const labelIdByName = new Map(
+    [...householdLabels, ...initialLabels].map(({ id, name }) => [name, id]),
+  );
+
   return (
     <form action={formAction} className={styles.form}>
       <Textarea
@@ -85,6 +101,26 @@ export function MemoRecordForm({
         defaultValue={memoRecord?.content ?? ""}
         errorMessage={state.fieldErrors?.content?.[0]}
         isRequired
+      />
+
+      {/*
+       * 付け外しは状態で持ち、hidden の input で送るため、フォームのリセットで消えない。
+       * 開いている間にほかの画面で名前を変えられても元のラベルが付くよう、既存のラベルは ID も送る
+       */}
+      <TagInput
+        label="ラベル"
+        name="labels"
+        getFormValue={(name) =>
+          JSON.stringify({ id: labelIdByName.get(name) ?? null, name })
+        }
+        value={labelNames}
+        onChange={setLabelNames}
+        suggestions={householdLabels.map(({ name }) => name)}
+        placeholder="入力して追加"
+        maxLength={MEMO_LABEL_NAME_MAX_LENGTH}
+        description="入力して Enter を押すか、候補から選ぶと追加できます。"
+        errorMessage={state.fieldErrors?.labels?.[0]}
+        isDisabled={isPending}
       />
 
       <MediaAttachmentField
