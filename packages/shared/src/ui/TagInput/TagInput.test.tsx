@@ -71,6 +71,14 @@ describe("TagInput", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("変換を確定する Enter では、候補を閉じない", () => {
+    const { input, type } = setup({ suggestions: ["病院", "好きなもの"] });
+
+    type("病院");
+    fireEvent.keyDown(input, { key: "Enter", keyCode: 229 });
+    expect(optionNames()).toEqual(["病院"]);
+  });
+
   it("空・空白だけ・付いているタグと同じ文字では、タグを付けない", () => {
     const { input, type, onChange } = setup({ value: ["病院"] });
 

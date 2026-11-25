@@ -116,13 +116,14 @@ export function TagInput({
 
   // Enter をフォームの送信や ComboBox の確定に使わせず、入力した文字をタグにする
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    // 変換中の Enter・Backspace は変換の操作に使う。Safari は変換を確定する Enter を、
-    // 変換が終わった後の keyCode 229 のキー入力として送る
-    if (
-      event.target !== inputRef.current ||
-      event.nativeEvent.isComposing ||
-      event.keyCode === 229
-    ) {
+    if (event.target !== inputRef.current) {
+      return;
+    }
+    // 変換中の Enter・Backspace などは変換の操作に使い、ComboBox にも渡さない（渡すと、Safari で変換を
+    // 確定したときに候補が閉じる）。Safari は変換を確定する Enter を、変換が終わった後の
+    // keyCode 229 のキー入力として送る
+    if (event.nativeEvent.isComposing || event.keyCode === 229) {
+      event.stopPropagation();
       return;
     }
     if (event.key === "Enter") {
