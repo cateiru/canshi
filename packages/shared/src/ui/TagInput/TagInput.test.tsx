@@ -168,6 +168,18 @@ describe("TagInput", () => {
     expect(submitted()).toEqual(["お手入れ"]);
   });
 
+  it("エラーを表示していても、直してフォームを送信し直せる", () => {
+    const { input, onSubmit } = setup({
+      value: ["お手入れ"],
+      errorMessage: "多すぎます",
+    });
+
+    expect((input as HTMLInputElement).validity.valid).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
   it("説明とエラーを入力欄に関連付ける", () => {
     const { input } = setup({
       description: "複数付けられます",

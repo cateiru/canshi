@@ -215,6 +215,8 @@ export function TagInput({
           allowsCustomValue
           menuTrigger="focus"
           isInvalid={!!errorMessage}
+          // エラーは呼び出し側の検証の結果のため、ブラウザの検証にはせず、直した後の送信を止めない
+          validationBehavior="aria"
           isDisabled={isDisabled}
         >
           <Input
