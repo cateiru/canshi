@@ -1418,6 +1418,31 @@ for (const { label, path, heading } of FLAT_RECORD_LISTS) {
   });
 }
 
+test("メモ一覧（ラベルで絞り込んだケース）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${CAT}/memo-records`);
+  await page
+    .getByRole("navigation", { name: "ラベルでの絞り込み" })
+    .getByRole("link", { name: "お手入れ" })
+    .click();
+  await expect(page).toHaveURL(/\?label=vrt-memo-label-care$/);
+  await expect(page.getByRole("article")).toHaveCount(1);
+  // クリックしたままだと、選択中の項目にホバーの色が付く
+  await page.mouse.move(0, 0);
+  await takeSnapshot(page, testInfo);
+});
+
+test("メモ一覧（絞り込んだラベルのメモがないケース）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${CAT}/memo-records?label=vrt-memo-label-hospital`);
+  await expect(
+    page.getByText("「病院」のラベルが付いたメモはありません。"),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 // 記録一覧は 1 ページに 50 件までを表示し、それより多いときは一覧の下にページ送りを出す。
 // BUSY_CAT の水の記録（51 件）で、1 ページ目（「次のページ」だけ）と最後のページ
 // （「前のページ」だけ）を撮る
@@ -1686,6 +1711,28 @@ test.describe("記録追加ページ（日付欄あり）", () => {
     await expect(
       page.locator("label", { hasText: "日付を残す" }),
     ).not.toHaveAttribute("data-hovered");
+    await takeSnapshot(page, testInfo);
+  });
+
+  // ラベルを付け、候補を開いた状態。保存はしないため、フィクスチャのデータは変わらない
+  test("メモ追加ページ（ラベルの入力）の見た目", async ({ page }, testInfo) => {
+    await page.goto(`/cats/${EMPTY_CAT}/memo-records/new`);
+    const input = page.getByRole("combobox", { name: "ラベル" });
+    // 候補を開いている間は、入力欄と候補のほかが読み上げから隠れる
+    const tag = page.getByRole("button", {
+      name: "「好きなもの」を外す",
+      includeHidden: true,
+    });
+    // ハイドレーション前に入力すると反応しないため、タグが付くまでやり直す
+    await expect(async () => {
+      if (!(await tag.isVisible())) {
+        await input.fill("好きなもの");
+        await input.press("Enter");
+      }
+      await expect(tag).toBeVisible({ timeout: 1_000 });
+    }).toPass();
+    await input.fill("病");
+    await expect(page.getByRole("option")).toHaveText(["病院", "「病」を追加"]);
     await takeSnapshot(page, testInfo);
   });
 
