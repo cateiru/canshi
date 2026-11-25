@@ -1,4 +1,4 @@
-import type { MemoLabel, MemoLabelContent } from "./memoLabel";
+import type { MemoLabelContent } from "./memoLabel";
 
 /**
  * メモのラベルの保存先。書き込みは、ユーザーがラベルの家のメンバーであることを
@@ -6,14 +6,6 @@ import type { MemoLabel, MemoLabelContent } from "./memoLabel";
  * 実装は `../infrastructure/memoLabelRepository.ts`
  */
 export interface MemoLabelRepository {
-  /** ユーザーが所属する家のラベルであれば返す */
-  findForMember(userId: string, id: string): Promise<MemoLabel | null>;
-  /** ユーザーが所属する家の、名前が一致するラベルであれば返す */
-  findByNameForMember(
-    userId: string,
-    householdId: string,
-    name: string,
-  ): Promise<MemoLabel | null>;
   /** 家にラベルを追加し、その ID を返す。ユーザーが家のメンバーでない・同じ名前のラベルがあれば null */
   addForMember(
     userId: string,

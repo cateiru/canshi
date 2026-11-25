@@ -47,30 +47,6 @@ export function createMemoLabelRepository(
     );
 
   return {
-    async findForMember(userId, id) {
-      const [row] = await db
-        .select()
-        .from(memoLabels)
-        .where(ofMember(userId, id))
-        .limit(1);
-      return row ?? null;
-    },
-
-    async findByNameForMember(userId, householdId, name) {
-      const [row] = await db
-        .select()
-        .from(memoLabels)
-        .where(
-          and(
-            eq(memoLabels.householdId, householdId),
-            eq(memoLabels.name, name),
-            isHouseholdMemberCondition(memoLabels.householdId, userId),
-          ),
-        )
-        .limit(1);
-      return row ?? null;
-    },
-
     async addForMember(userId, householdId, content) {
       // 判定と登録の間に家から外された場合に登録が通らないよう、INSERT ... SELECT で
       // 登録先の家のメンバーの行があるときだけ 1 文で挿入する（`createFoodProduct` と同じ）。
