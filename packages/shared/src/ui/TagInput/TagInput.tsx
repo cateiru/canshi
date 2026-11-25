@@ -25,6 +25,8 @@ export type TagInputProps = {
    * 入力し忘れたものとして一緒に送る
    */
   name?: string;
+  /** フォームに送る値を、タグの文字から作る。省略すると、タグの文字をそのまま送る */
+  getFormValue?: (tag: string) => string;
   placeholder?: string;
   /** 1 つのタグの文字数の上限 */
   maxLength?: number;
@@ -49,6 +51,7 @@ export function TagInput({
   onChange,
   suggestions = [],
   name,
+  getFormValue = (tag) => tag,
   placeholder,
   maxLength,
   description,
@@ -243,7 +246,12 @@ export function TagInput({
       </div>
       {name
         ? submittedTags.map((tag) => (
-            <input key={tag} type="hidden" name={name} value={tag} />
+            <input
+              key={tag}
+              type="hidden"
+              name={name}
+              value={getFormValue(tag)}
+            />
           ))
         : null}
       {description ? (

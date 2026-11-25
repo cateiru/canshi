@@ -176,6 +176,16 @@ describe("TagInput", () => {
     expect(submitted()).toEqual(["お手入れ"]);
   });
 
+  it("フォームに送る値を、タグの文字から作れる", () => {
+    const { type, submitted } = setup({
+      value: ["病院"],
+      getFormValue: (tag) => `${tag}:${tag.length}`,
+    });
+
+    type("お手入れ");
+    expect(submitted()).toEqual(["病院:2", "お手入れ:4"]);
+  });
+
   it("エラーを表示していても、直してフォームを送信し直せる", () => {
     const { input, onSubmit } = setup({
       value: ["お手入れ"],
