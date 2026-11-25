@@ -1,11 +1,27 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { fillAndKeep, openCatRegistration } from "./helpers";
 
-// メモにラベルを付け外しでき、一覧をラベルで絞り込めることを検証する
-test("メモにラベルを付けて絞り込み、外せる", async ({ page }) => {
+/** モーダルを開くボタンを押す。ハイドレーション前に押すと反応しないため、開くまで押し直す */
+async function openDialog(page: Page, buttonName: string, title: string) {
+  const dialog = page.getByRole("dialog", { name: title });
+  await expect(async () => {
+    if (!(await dialog.isVisible())) {
+      await page.getByRole("button", { name: buttonName }).click();
+    }
+    await expect(dialog).toBeVisible({ timeout: 1_000 });
+  }).toPass();
+  return dialog;
+}
+
+// メモにラベルを付け、一覧をラベルで絞り込めること、付いているラベルは削除できず、
+// 付いていないラベルだけを削除できることを検証する
+test("メモにラベルを付けて絞り込み、使わなくなったラベルを削除できる", async ({
+  page,
+}) => {
   const suffix = Date.now();
   const catName = `テスト猫-${suffix}`;
   const labelName = `ラベル-${suffix}`;
+  const renamedLabel = `変更後-${suffix}`;
 
   await openCatRegistration(page);
   await page.getByLabel("名前").fill(catName);
@@ -68,6 +84,92 @@ test("メモにラベルを付けて絞り込み、外せる", async ({ page }) 
   await expect(page.getByRole("article")).toHaveCount(1);
   await expect(page.getByText("ラベルありのメモ")).toBeVisible();
 
+  // 同じ名前のラベルは作れず、入力した名前も消えない
+  await page.getByRole("link", { name: "ラベルの管理" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "メモのラベル" }),
+  ).toBeVisible();
+  const duplicateDialog = await openDialog(
+    page,
+    "ラベルを追加する",
+    "ラベルの追加",
+  );
+  const duplicateName = duplicateDialog.getByRole("textbox", { name: "名前" });
+  await fillAndKeep(duplicateName, labelName);
+  await duplicateDialog.getByRole("button", { name: "追加する" }).click();
+  await expect(
+    duplicateDialog.getByText("同じ名前のラベルがあります"),
+  ).toBeVisible();
+  await expect(duplicateName).toHaveValue(labelName);
+  // エラーの後でも、名前を直せば追加できる
+  await duplicateName.fill(`${labelName}-2`);
+  await duplicateDialog.getByRole("button", { name: "追加する" }).click();
+  await expect(duplicateDialog).toBeHidden();
+  const unusedDialog = await openDialog(
+    page,
+    `「${labelName}-2」を削除する`,
+    "ラベルの削除",
+  );
+  await unusedDialog.getByRole("button", { name: "削除する" }).click();
+  await expect(unusedDialog).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: `「${labelName}-2」を削除する` }),
+  ).toHaveCount(0);
+
+  // メモに付いているラベルは削除できない
+  const inUseDialog = await openDialog(
+    page,
+    `「${labelName}」を削除する`,
+    "ラベルの削除",
+  );
+  await expect(
+    inUseDialog.getByText("1件のメモに付いているため削除できません"),
+  ).toBeVisible();
+  await expect(
+    inUseDialog.getByRole("button", { name: "削除する" }),
+  ).toHaveCount(0);
+  await inUseDialog.getByRole("button", { name: "閉じる" }).click();
+
+  // 名前を変えると、メモに付いているラベルの名前も変わる。先にほかの画面でメモの編集を開いておく
+  const editingPage = await page.context().newPage();
+  await editingPage.goto(listUrl);
+  await editingPage
+    .getByRole("article")
+    .filter({ hasText: "ラベルありのメモ" })
+    .getByRole("link", { name: "編集する" })
+    .click();
+  await expect(
+    editingPage.getByRole("button", { name: `「${labelName}」を外す` }),
+  ).toBeVisible();
+  const editDialog = await openDialog(
+    page,
+    `「${labelName}」を編集する`,
+    "ラベルの編集",
+  );
+  await fillAndKeep(
+    editDialog.getByRole("textbox", { name: "名前" }),
+    renamedLabel,
+  );
+  await editDialog.getByRole("button", { name: "更新する" }).click();
+  await expect(
+    page.getByRole("button", { name: `「${renamedLabel}」を編集する` }),
+  ).toBeVisible();
+
+  // 名前を変える前に開いた編集の画面から保存しても、元の名前のラベルには戻らない
+  await editingPage.getByRole("button", { name: "更新する" }).click();
+  await expect(editingPage).toHaveURL(listUrl);
+  await expect(
+    editingPage.getByRole("article").getByText(renamedLabel),
+  ).toBeVisible();
+  await editingPage.close();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: `「${renamedLabel}」を編集する` }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: `「${labelName}」を編集する` }),
+  ).toHaveCount(0);
+
   // メモからラベルを外す
   await page.goto(listUrl);
   await page
@@ -76,7 +178,7 @@ test("メモにラベルを付けて絞り込み、外せる", async ({ page }) 
     .getByRole("link", { name: "編集する" })
     .click();
   const removeButton = page.getByRole("button", {
-    name: `「${labelName}」を外す`,
+    name: `「${renamedLabel}」を外す`,
   });
   await expect(removeButton).toBeVisible();
   await expect(async () => {
@@ -88,7 +190,19 @@ test("メモにラベルを付けて絞り込み、外せる", async ({ page }) 
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page).toHaveURL(listUrl);
   await expect(page.getByRole("article")).toHaveCount(2);
-  await expect(page.getByText(labelName)).toHaveCount(0);
+  await expect(page.getByText(renamedLabel)).toHaveCount(0);
+
+  // どのメモにも付いていないラベルは削除できる
+  await page.getByRole("link", { name: "ラベルの管理" }).click();
+  const deleteDialog = await openDialog(
+    page,
+    `「${renamedLabel}」を削除する`,
+    "ラベルの削除",
+  );
+  await deleteDialog.getByRole("button", { name: "削除する" }).click();
+  await expect(
+    page.getByRole("button", { name: `「${renamedLabel}」を編集する` }),
+  ).toHaveCount(0);
 
   await page.goto("/cats");
   await page.getByRole("heading", { name: catName }).click();
