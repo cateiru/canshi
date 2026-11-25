@@ -189,3 +189,71 @@ test("メモにラベルを付けて絞り込み、使わなくなったラベ�
     .click();
   await expect(page).toHaveURL(/\/cats$/);
 });
+
+// 変換の操作を Chromium の DevTools Protocol で再現し、変換を確定する Enter ではラベルを付けず、
+// 確定した後の Enter で付けることを検証する
+test("日本語の変換中の操作ではラベルを付け外ししない", async ({ page }) => {
+  const catName = `テスト猫-${Date.now()}`;
+  await openCatRegistration(page);
+  await page.getByLabel("名前").fill(catName);
+  await page.getByRole("button", { name: "登録する" }).click();
+  await expect(page.getByRole("heading", { name: catName })).toBeVisible();
+  await page.getByRole("link", { name: "メモ", exact: true }).click();
+  await page.getByRole("link", { name: "記録する" }).click();
+  await expect(page).toHaveURL(/memo-records\/new$/);
+
+  const cdp = await page.context().newCDPSession(page);
+  const compose = (text: string) =>
+    cdp.send("Input.imeSetComposition", {
+      text,
+      selectionStart: text.length,
+      selectionEnd: text.length,
+    });
+  // 変換中のキー入力は、どのキーでも keyCode が 229 になる
+  const pressWhileComposing = async (key: string) => {
+    const event = { key, code: key, windowsVirtualKeyCode: 229 };
+    await cdp.send("Input.dispatchKeyEvent", { type: "rawKeyDown", ...event });
+    await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", ...event });
+  };
+  const labelInput = page.getByRole("combobox", { name: "ラベル" });
+  const tags = page.getByRole("button", {
+    name: /を外す$/,
+    includeHidden: true,
+  });
+
+  // ハイドレーション前は入力しても反応しないため、タグが付くまでやり直す
+  await expect(async () => {
+    if ((await tags.count()) === 0) {
+      await labelInput.fill("お手入れ");
+      await labelInput.press("Enter");
+    }
+    await expect(tags).toHaveCount(1, { timeout: 1_000 });
+  }).toPass();
+
+  await labelInput.focus();
+  await compose("びょういん");
+  await compose("病院");
+  for (const key of ["ArrowDown", "Backspace", "Enter"]) {
+    await pressWhileComposing(key);
+  }
+  await expect(labelInput).toHaveValue("病院");
+  await expect(tags).toHaveCount(1);
+  await cdp.send("Input.insertText", { text: "病院" });
+  await expect(labelInput).toHaveValue("病院");
+  await expect(tags).toHaveCount(1);
+
+  await labelInput.press("Enter");
+  await expect(labelInput).toHaveValue("");
+  await expect(tags).toHaveCount(2);
+  await expect(page).toHaveURL(/memo-records\/new$/);
+
+  await page.goto("/cats");
+  await page.getByRole("heading", { name: catName }).click();
+  await page.getByRole("button", { name: "削除する" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(catName);
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "削除する" })
+    .click();
+  await expect(page).toHaveURL(/\/cats$/);
+});
