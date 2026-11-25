@@ -101,7 +101,20 @@ test("メモにラベルを付けて絞り込み、使わなくなったラベ�
     duplicateDialog.getByText("同じ名前のラベルがあります"),
   ).toBeVisible();
   await expect(duplicateName).toHaveValue(labelName);
-  await duplicateDialog.getByRole("button", { name: "キャンセル" }).click();
+  // エラーの後でも、名前を直せば追加できる
+  await duplicateName.fill(`${labelName}-2`);
+  await duplicateDialog.getByRole("button", { name: "追加する" }).click();
+  await expect(duplicateDialog).toBeHidden();
+  const unusedDialog = await openDialog(
+    page,
+    `「${labelName}-2」を削除する`,
+    "ラベルの削除",
+  );
+  await unusedDialog.getByRole("button", { name: "削除する" }).click();
+  await expect(unusedDialog).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: `「${labelName}-2」を削除する` }),
+  ).toHaveCount(0);
 
   // メモに付いているラベルは削除できない
   const inUseDialog = await openDialog(
