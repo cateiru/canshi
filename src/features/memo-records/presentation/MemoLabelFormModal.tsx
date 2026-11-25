@@ -73,11 +73,16 @@ function MemoLabelForm({
       <FormField
         label="名前"
         value={name}
-        onChange={setName}
+        onChange={(value) => {
+          setName(value);
+          setFieldErrors({});
+        }}
         maxLength={MEMO_LABEL_NAME_MAX_LENGTH}
         placeholder="病院"
         errorMessage={fieldErrors.name?.[0]}
         isRequired
+        // サーバーのエラーをブラウザの検証にすると、直した後の送信が止まるため
+        validationBehavior="aria"
       />
       <div className={styles.actions}>
         <Button

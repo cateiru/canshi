@@ -60,4 +60,37 @@ describe("MemoLabelFormModal", () => {
     expect(screen.getByRole("textbox", { name: "名前" })).toHaveValue("病院");
     expect(onSaved).not.toHaveBeenCalled();
   });
+
+  it("保存できなかった後に名前を直すと、エラーを消し、もう一度保存できる", async () => {
+    const { action } = renderModal({
+      fieldErrors: { name: ["同じ名前のラベルがあります"] },
+    });
+    const input = screen.getByRole("textbox", { name: "名前" });
+
+    fireEvent.change(input, { target: { value: "病院" } });
+    fireEvent.click(screen.getByRole("button", { name: "追加する" }));
+    await screen.findByText("同じ名前のラベルがあります");
+    fireEvent.change(input, { target: { value: "動物病院" } });
+    expect(screen.queryByText("同じ名前のラベルがあります")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "追加する" }));
+
+    await waitFor(() =>
+      expect(action).toHaveBeenLastCalledWith({ name: "動物病院" }),
+    );
+  });
+
+  it("エラーを表示したままでも、もう一度保存できる", async () => {
+    const { action } = renderModal({
+      fieldErrors: { name: ["同じ名前のラベルがあります"] },
+    });
+
+    fireEvent.change(screen.getByRole("textbox", { name: "名前" }), {
+      target: { value: "病院" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "追加する" }));
+    await screen.findByText("同じ名前のラベルがあります");
+    fireEvent.click(screen.getByRole("button", { name: "追加する" }));
+
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(2));
+  });
 });
