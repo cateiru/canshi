@@ -25,10 +25,7 @@ type MemoLabelFormModalProps = MemoLabelFormProps & {
   open: boolean;
 };
 
-/**
- * メモのラベルを追加・編集するモーダル。
- * メモのフォームからも開くため、フォームの入れ子にならないよう、メモの `<form>` の外に置くこと
- */
+/** メモのラベルを追加・編集するモーダル */
 export function MemoLabelFormModal({
   open,
   ...formProps

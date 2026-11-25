@@ -35,7 +35,7 @@ function parseFormData(formData: FormData) {
     recordedDate: formData.get("recordedDate"),
     recordedTime: formData.get("recordedTime"),
     content: formData.get("content"),
-    labelIds: formData.getAll("labelIds"),
+    labelNames: formData.getAll("labelNames"),
   });
 }
 
@@ -59,7 +59,7 @@ export async function createMemoRecordAction(
   );
   if ("failure" in saved) {
     if (saved.failure === "labelNotFound") {
-      return { fieldErrors: { labelIds: [MEMO_LABEL_NOT_FOUND_ERROR] } };
+      return { fieldErrors: { labelNames: [MEMO_LABEL_NOT_FOUND_ERROR] } };
     }
     redirectFromMemorialCat(catId);
   }
@@ -93,7 +93,7 @@ export async function updateMemoRecordAction(
   );
   if ("failure" in saved) {
     return saved.failure === "labelNotFound"
-      ? { fieldErrors: { labelIds: [MEMO_LABEL_NOT_FOUND_ERROR] } }
+      ? { fieldErrors: { labelNames: [MEMO_LABEL_NOT_FOUND_ERROR] } }
       : { formError: "記録が見つかりませんでした" };
   }
 
