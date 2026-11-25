@@ -67,6 +67,7 @@ import {
 } from "@/features/memo-records/application/mutations";
 import {
   MEMO_CONTENT_MAX_LENGTH,
+  MEMO_LABELS_MAX,
   memoRecordFormSchema,
 } from "@/features/memo-records/domain/schema";
 import { listMemoLabelsByRecordIds } from "@/features/memo-records/infrastructure/labelQueries";
@@ -831,12 +832,18 @@ const memoOperation = defineRecordOperation({
     "（list_memos では読める）。追加で hasDate を省略すると日付を残す。" +
     "日付を残さないメモの編集で recordedDate・recordedTime を指定すると、日付を残すメモにする" +
     "（片方だけを指定したときは、もう片方を今の日時にする）。" +
+    "labelIds はメモに付けるラベルの ID（list_memo_labels で取得できる）で、猫の家のラベルに限る。" +
+    "編集で指定すると、今のラベルをすべて置き換える（空の配列ですべて外す）。" +
     "メモの ID は list_memos でも取得できる。",
   fields: {
     content: z
       .string()
       .optional()
       .describe(`メモの本文（${MEMO_CONTENT_MAX_LENGTH}文字以内）`),
+    labelIds: z
+      .array(z.string())
+      .optional()
+      .describe(`メモに付けるラベルの ID（${MEMO_LABELS_MAX}個まで）`),
     hasDate: z.boolean().optional().describe("日付を残すか"),
     recordedDate: dateField("日付"),
     recordedTime: timeField("時刻"),
@@ -1469,6 +1476,7 @@ export function registerRecordOperations(
         "猫のメモの一覧を取得する。日付を残さないメモ（recordedAt が null）はタイムライン" +
         "（list_timeline）に載らないため、メモを読むときはこのツールを使う。" +
         "日付を残さないメモ（新しく作った順）、日付を残したメモ（recordedAt の新しい順）の順に並ぶ。" +
+        "labels はメモに付いているラベル。labelId を指定すると、そのラベルが付いたメモに絞り込む。" +
         `1 ページは ${MEMO_PAGE_SIZE} 件で、hasMore が true なら次のページがある。` +
         CHANGE_HISTORY_DESCRIPTION,
       inputSchema: {
@@ -1479,15 +1487,19 @@ export function registerRecordOperations(
           .min(1)
           .optional()
           .describe("ページ番号（1始まり、省略時は1）"),
+        labelId: z
+          .string()
+          .optional()
+          .describe("絞り込むラベルの ID（list_memo_labels で取得できる）"),
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ catId, page }) => {
+    async ({ catId, page, labelId }) => {
       const allowed = await resolveReadableCat(ctx, catId, "memo");
       if ("error" in allowed) {
         return errorResult(allowed.error);
       }
-      const records = await listMemoRecords(catId, {}, ctx.env.DB);
+      const records = await listMemoRecords(catId, { labelId }, ctx.env.DB);
       const paged = paginate(records, page ?? 1, MEMO_PAGE_SIZE);
       const changeHistoryOf = await loadChangeHistories(
         ctx,
@@ -1495,11 +1507,16 @@ export function registerRecordOperations(
         "memo_record",
         paged.items.map((record) => record.id),
       );
+      const labelsByRecordId = await listMemoLabelsByRecordIds(
+        paged.items.map((record) => record.id),
+        ctx.env.DB,
+      );
       return jsonResult({
         memos: paged.items.map((record) => ({
           id: record.id,
           recordedAt: record.recordedAt,
           content: record.content,
+          labels: labelsByRecordId.get(record.id) ?? [],
           createdAt: record.createdAt,
           updatedAt: record.updatedAt,
           changeHistory: changeHistoryOf(record.id),

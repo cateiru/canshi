@@ -2,6 +2,7 @@ import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
 import { chunkForBoundParameters } from "@/db/batch";
 import { getDb } from "@/db/client";
 import {
+  householdMembers,
   type MemoLabel,
   memoLabels,
   memoRecordLabels,
@@ -62,6 +63,24 @@ export async function listMemoLabelsWithCount(
     );
   }
   return rows;
+}
+
+/** ユーザーが所属する家のラベル。存在しない・別の家のラベルなら null */
+export async function getMemoLabelForUser(
+  userId: string,
+  id: string,
+  d1?: D1Database,
+): Promise<MemoLabel | null> {
+  const [row] = await getDb(d1)
+    .select({ label: memoLabels })
+    .from(memoLabels)
+    .innerJoin(
+      householdMembers,
+      eq(memoLabels.householdId, householdMembers.householdId),
+    )
+    .where(and(eq(memoLabels.id, id), eq(householdMembers.userId, userId)))
+    .limit(1);
+  return row?.label ?? null;
 }
 
 /** 猫のメモ（削除したものを除く）に付いているラベルの一覧。作った順 */

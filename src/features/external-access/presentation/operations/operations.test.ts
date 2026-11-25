@@ -24,6 +24,8 @@ import {
   mcpPermissions,
   medicationDoses,
   medications,
+  memoLabels,
+  memoRecordLabels,
   memoRecords,
   notificationSettings,
   notifications,
@@ -2379,5 +2381,258 @@ describe("メモリーへ移した猫", () => {
     ).toBeDefined();
     const [cat] = await db.select().from(cats).where(eq(cats.id, "cat-1"));
     expect(cat.name).toBe("たま");
+  });
+});
+
+describe("メモのラベル", () => {
+  const ALL_LABEL_OPERATIONS = operations(
+    "memoLabel:read",
+    "memoLabel:create",
+    "memoLabel:update",
+    "memoLabel:delete",
+  );
+
+  beforeEach(async () => {
+    await db.insert(memoLabels).values([
+      {
+        id: "label-care",
+        householdId: "house-1",
+        name: "お手入れ",
+        color: "blue",
+        createdAt: new Date("2026-11-01T00:00:00Z"),
+      },
+      {
+        id: "label-hospital",
+        householdId: "house-1",
+        name: "病院",
+        color: "red",
+        createdAt: new Date("2026-11-02T00:00:00Z"),
+      },
+      {
+        id: "label-house-2",
+        householdId: "house-2",
+        name: "家2のラベル",
+        color: "gray",
+        createdAt: new Date("2026-11-03T00:00:00Z"),
+      },
+      {
+        id: "label-house-3",
+        householdId: "house-3",
+        name: "ほかの人の家のラベル",
+        color: "gray",
+      },
+    ]);
+  });
+
+  async function labelIdsOf(memoId: string) {
+    const rows = await db
+      .select()
+      .from(memoRecordLabels)
+      .where(eq(memoRecordLabels.memoRecordId, memoId));
+    return rows.map((row) => row.memoLabelId).sort();
+  }
+
+  it("操作を許可していなければ、一覧・追加・編集・削除のどれもできない", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    for (const [name, args] of [
+      ["list_memo_labels", {}],
+      ["create_memo_label", { householdId: "house-1", name: "性格" }],
+      ["update_memo_label", { id: "label-care", name: "性格" }],
+      ["delete_memo_label", { id: "label-care" }],
+    ] as const) {
+      expect((await call(name, args)).code).toBe("forbidden");
+    }
+    expect(await db.select().from(memoLabels)).toHaveLength(4);
+  });
+
+  it("許可した家のラベルの一覧を、付いているメモの数とともに返す", async () => {
+    await allow({
+      ...ALL_LABEL_OPERATIONS,
+      excludedHouseholdIds: ["house-2"],
+    });
+    await db
+      .insert(memoRecords)
+      .values({ id: "memo-1", catId: "cat-1", content: "メモ" });
+    await db
+      .insert(memoRecordLabels)
+      .values({ memoRecordId: "memo-1", memoLabelId: "label-care" });
+
+    expect((await call("list_memo_labels")).value).toEqual({
+      memoLabels: [
+        {
+          id: "label-care",
+          householdId: "house-1",
+          name: "お手入れ",
+          color: "blue",
+          memoCount: 1,
+        },
+        {
+          id: "label-hospital",
+          householdId: "house-1",
+          name: "病院",
+          color: "red",
+          memoCount: 0,
+        },
+      ],
+    });
+    expect(
+      (await call("list_memo_labels", { householdId: "house-3" })).code,
+    ).toBe("not_found");
+  });
+
+  it("ラベルを追加でき、色を省略するとグレーにする。同じ名前のラベルは追加できない", async () => {
+    await allow(ALL_LABEL_OPERATIONS);
+
+    const created = await call("create_memo_label", {
+      householdId: "house-1",
+      name: " 性格 ",
+    });
+    const [label] = await db
+      .select()
+      .from(memoLabels)
+      .where(eq(memoLabels.id, created.value?.id as string));
+    expect(label).toMatchObject({
+      householdId: "house-1",
+      name: "性格",
+      color: "gray",
+    });
+
+    expect(
+      await call("create_memo_label", { householdId: "house-1", name: "病院" }),
+    ).toEqual({ error: "同じ名前のラベルがあります", code: "conflict" });
+    expect(
+      (await call("create_memo_label", { householdId: "house-1", name: " " }))
+        .code,
+    ).toBe("invalid_request");
+  });
+
+  it("ラベルを編集でき、省略した項目は今の値のままにする", async () => {
+    await allow(ALL_LABEL_OPERATIONS);
+
+    await call("update_memo_label", { id: "label-care", color: "teal" });
+
+    const [label] = await db
+      .select()
+      .from(memoLabels)
+      .where(eq(memoLabels.id, "label-care"));
+    expect(label).toMatchObject({ name: "お手入れ", color: "teal" });
+    expect(
+      (await call("update_memo_label", { id: "label-care", name: "病院" }))
+        .code,
+    ).toBe("conflict");
+    // 所属していない家のラベルは、存在しないラベルと区別しない
+    for (const id of ["label-house-3", "unknown"]) {
+      expect(await call("update_memo_label", { id, name: "変更" })).toEqual({
+        error: `id="${id}" のラベルが見つかりません`,
+        code: "not_found",
+      });
+    }
+  });
+
+  it("メモに付いていないラベルだけを削除できる", async () => {
+    await allow({ ...ALL_LABEL_OPERATIONS, ...WRITE_ALL_RECORDS });
+    const memo = await call("create_memo", {
+      catId: "cat-1",
+      content: "メモ",
+      labelIds: ["label-care"],
+    });
+
+    const result = await call("delete_memo_label", { id: "label-care" });
+    expect(result.code).toBe("conflict");
+    expect(result.error).toContain("メモに付いているため削除できません");
+
+    await call("update_memo", {
+      catId: "cat-1",
+      id: memo.value?.id,
+      labelIds: [],
+    });
+    expect(await call("delete_memo_label", { id: "label-care" })).toEqual({
+      value: { id: "label-care", deleted: true },
+    });
+    expect(
+      (await call("delete_memo_label", { id: "label-house-3" })).code,
+    ).toBe("not_found");
+  });
+
+  it("メモにラベルを付けて追加・編集でき、編集で省略すると今のラベルのままにする", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    const created = await call("create_memo", {
+      catId: "cat-1",
+      content: "メモ",
+      labelIds: ["label-care", "label-hospital"],
+    });
+    const id = created.value?.id as string;
+    expect(await labelIdsOf(id)).toEqual(["label-care", "label-hospital"]);
+
+    await call("update_memo", { catId: "cat-1", id, content: "本文だけ" });
+    expect(await labelIdsOf(id)).toEqual(["label-care", "label-hospital"]);
+
+    await call("update_memo", {
+      catId: "cat-1",
+      id,
+      labelIds: ["label-hospital"],
+    });
+    expect(await labelIdsOf(id)).toEqual(["label-hospital"]);
+  });
+
+  it("猫の家のものではないラベルは、所属する別の家のものでも付けられない", async () => {
+    await allow(WRITE_ALL_RECORDS);
+
+    for (const labelId of ["label-house-2", "label-house-3", "unknown"]) {
+      expect(
+        await call("create_memo", {
+          catId: "cat-1",
+          content: "メモ",
+          labelIds: [labelId],
+        }),
+      ).toEqual({
+        error: "labelIds に、この猫の家のラベルではないものが含まれています",
+        code: "invalid_request",
+      });
+    }
+    expect(await db.select().from(memoRecords)).toEqual([]);
+  });
+
+  it("メモの一覧・タイムラインにラベルを添え、一覧はラベルで絞り込める", async () => {
+    const careLabel = { id: "label-care", name: "お手入れ", color: "blue" };
+    await db.insert(memoRecords).values([
+      {
+        id: "memo-labeled",
+        catId: "cat-1",
+        recordedAt: new Date("2026-11-10T08:00:00.000Z"),
+        content: "ラベルあり",
+      },
+      { id: "memo-unlabeled", catId: "cat-1", content: "ラベルなし" },
+    ]);
+    await db
+      .insert(memoRecordLabels)
+      .values({ memoRecordId: "memo-labeled", memoLabelId: "label-care" });
+
+    const all = await call("list_memos", { catId: "cat-1" });
+    expect(all.value?.memos).toMatchObject([
+      { id: "memo-unlabeled", labels: [] },
+      { id: "memo-labeled", labels: [careLabel] },
+    ]);
+
+    const filtered = await call("list_memos", {
+      catId: "cat-1",
+      labelId: "label-care",
+    });
+    expect(filtered.value?.memos).toMatchObject([{ id: "memo-labeled" }]);
+    expect(
+      (await call("list_memos", { catId: "cat-1", labelId: "label-hospital" }))
+        .value?.memos,
+    ).toEqual([]);
+
+    const timeline = await call("list_timeline", {
+      catId: "cat-1",
+      year: 2026,
+      month: 11,
+    });
+    expect(timeline.value?.entries).toMatchObject([
+      { id: "memo-labeled", record: { labels: [careLabel] } },
+    ]);
   });
 });
