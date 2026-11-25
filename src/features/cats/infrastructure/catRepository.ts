@@ -16,6 +16,7 @@ import {
   mcpPermissions,
   medicationDoses,
   medications,
+  memoRecordLabels,
   memoRecords,
   notificationSettings,
   notifications,
@@ -325,6 +326,18 @@ export function createCatRepository(d1?: D1Database): CatRepository {
         db.delete(waterRecords).where(eq(waterRecords.catId, id)),
         db.delete(shampooRecords).where(eq(shampooRecords.catId, id)),
         db.delete(brushingRecords).where(eq(brushingRecords.catId, id)),
+        // メモに付けたラベルの紐付けも、メモより先に消す。ラベルそのものは家に属するため残す
+        db
+          .delete(memoRecordLabels)
+          .where(
+            inArray(
+              memoRecordLabels.memoRecordId,
+              db
+                .select({ id: memoRecords.id })
+                .from(memoRecords)
+                .where(eq(memoRecords.catId, id)),
+            ),
+          ),
         db.delete(memoRecords).where(eq(memoRecords.catId, id)),
         // cleaning_records は cats・cleaning_targets の双方を参照するため、
         // cleaning_targets より先に削除する
