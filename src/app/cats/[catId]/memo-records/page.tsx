@@ -26,7 +26,10 @@ import {
 import { listMemoRecords } from "@/features/memo-records/infrastructure/queries";
 import { deleteMemoRecordAction } from "@/features/memo-records/presentation/actions";
 import { MemoLabelList } from "@/features/memo-records/presentation/MemoLabelChip";
-import { memoRecordsHref } from "@/features/memo-records/presentation/paths";
+import {
+  memoLabelsPath,
+  memoRecordsHref,
+} from "@/features/memo-records/presentation/paths";
 import { loadRecordContributors } from "@/features/record-contributors/presentation/load";
 import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
 import { DeleteRecordButton } from "@/features/shared/DeleteRecordButton";
@@ -109,14 +112,19 @@ export default async function MemoRecordsPage({
       <div className={styles.header}>
         <RecordPageHeading icon={MemoIcon}>{cat.name}のメモ</RecordPageHeading>
         {readOnly ? null : (
-          <ButtonLink
-            href={`/cats/${catId}/memo-records/new`}
-            variant="primary"
-            className={styles.createButton}
-            leftIcon={TbPlus}
-          >
-            記録する
-          </ButtonLink>
+          <div className={styles.headerActions}>
+            <ButtonLink href={memoLabelsPath(householdId)} variant="secondary">
+              ラベルの管理
+            </ButtonLink>
+            <ButtonLink
+              href={`/cats/${catId}/memo-records/new`}
+              variant="primary"
+              className={styles.createButton}
+              leftIcon={TbPlus}
+            >
+              記録する
+            </ButtonLink>
+          </div>
         )}
       </div>
 

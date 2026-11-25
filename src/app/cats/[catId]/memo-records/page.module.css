@@ -11,6 +11,13 @@
   flex-wrap: wrap;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 .main .createButton {
   flex-shrink: 0;
 }

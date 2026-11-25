@@ -3,6 +3,7 @@ import {
   FeedingScheduleIcon,
   FoodProductIcon,
   HouseholdIcon,
+  MemoLabelIcon,
   RecordExportIcon,
 } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata } from "next";
@@ -42,6 +43,7 @@ import { DeleteHouseholdButton } from "@/features/households/presentation/Delete
 import { HouseholdInvitationIssueButton } from "@/features/households/presentation/HouseholdInvitationIssueButton";
 import { HouseholdMemberActionButton } from "@/features/households/presentation/HouseholdMemberActionButton";
 import { HouseholdNameForm } from "@/features/households/presentation/HouseholdNameForm";
+import { memoLabelsPath } from "@/features/memo-records/presentation/paths";
 import { recordExportsPath } from "@/features/record-exports/presentation/paths";
 import { getNaiveUtcNow, splitDateTimeUtc } from "@/features/shared/datetime";
 import { RecordPageHeading } from "@/features/shared/RecordPageHeading";
@@ -225,6 +227,15 @@ export default async function HouseholdSettingsPage({
       <Surface title="記録" titleId="household-records-heading" gap="md">
         <nav aria-label="記録の設定">
           <ul className={styles.navList}>
+            <li>
+              <NavCard
+                href={memoLabelsPath(household.id)}
+                icon={MemoLabelIcon}
+                title="メモのラベル"
+                titleAs="h3"
+                description="この家のねこのメモに付けるラベルを登録・編集します。"
+              />
+            </li>
             <li>
               <NavCard
                 href={recordExportsPath(household.id)}

@@ -1,3 +1,8 @@
+/** 家のメモのラベルを管理するページ */
+export function memoLabelsPath(householdId: string): string {
+  return `/settings/households/${householdId}/memo-labels`;
+}
+
 /** 猫のメモの一覧。`labelId` を渡すと、そのラベルが付いたメモに絞り込む */
 export function memoRecordsHref(
   catId: string,
