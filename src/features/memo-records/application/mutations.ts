@@ -20,7 +20,7 @@ export type SaveMemoRecordResult =
   | { id: string }
   | { failure: SaveMemoRecordFailure };
 
-/** ラベルがすべて猫の家のラベルであれば true */
+/** ID で指定したラベルがすべて猫の家のラベルであれば true */
 async function areLabelsInHousehold(
   householdId: string,
   labelIds: string[],
@@ -34,7 +34,7 @@ async function areLabelsInHousehold(
   return labelIds.every((id) => householdLabelIds.has(id));
 }
 
-/** 記録を追加する。ラベルは猫の家のラベルに限る */
+/** 記録を追加する。ID で指定したラベルは猫の家のものに限り、名前で指定したラベルはなければ作る */
 export async function createMemoRecord(
   cat: MemoRecordCat,
   data: MemoRecordFormInput,
@@ -52,7 +52,7 @@ export async function createMemoRecord(
   return id == null ? { failure: "rejected" } : { id };
 }
 
-/** 猫の記録を更新し、ラベルを付け直す。ラベルは猫の家のラベルに限る */
+/** 猫の記録を更新し、ラベルを付け直す。ラベルの扱いは `createMemoRecord` と同じ */
 export async function updateMemoRecord(
   cat: MemoRecordCat,
   id: string,

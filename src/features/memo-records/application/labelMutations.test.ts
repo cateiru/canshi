@@ -89,10 +89,11 @@ beforeEach(async () => {
   ]);
 });
 
-function memoInput(labelIds: string[]) {
+function memoInput(labelIds: string[], labelNames: string[] = []) {
   return {
     content: "メモ",
     labelIds,
+    labelNames,
     recordedDate: null,
     recordedTime: null,
   };
@@ -245,6 +246,65 @@ describe("メモに付けるラベル", () => {
 
     await updateMemoRecord(tama, id, memoInput(["hospital"]), actor);
     expect(await labelIdsOf(id)).toEqual(["hospital"]);
+  });
+
+  it("名前で指定したラベルは、家にあるものを使い、なければ作って付ける", async () => {
+    const saved = await createMemoRecord(
+      tama,
+      memoInput([], ["病院", "性格", "別の家"]),
+      actor,
+    );
+    if (!("id" in saved)) throw new Error("メモを追加できなかった");
+
+    // 「別の家」は別の家のラベルの名前だが、その家のラベルは使わない
+    const labels = await listMemoLabels("home");
+    expect(labels.map(({ name }) => name).sort()).toEqual(
+      ["お手入れ", "病院", "性格", "別の家"].sort(),
+    );
+    expect(await labelIdsOf(saved.id)).not.toContain("other-label");
+    const names = (await listMemoLabelsByRecordIds([saved.id]))
+      .get(saved.id)
+      ?.map(({ name }) => name);
+    expect(names?.sort()).toEqual(["病院", "性格", "別の家"].sort());
+
+    // 編集でも同じように作り、同じ名前のラベルは増やさない
+    await updateMemoRecord(
+      tama,
+      saved.id,
+      memoInput(["care"], ["性格", "大事"]),
+      actor,
+    );
+    expect(
+      (await listMemoLabelsByRecordIds([saved.id]))
+        .get(saved.id)
+        ?.map(({ name }) => name)
+        .sort(),
+    ).toEqual(["お手入れ", "性格", "大事"].sort());
+    expect(await listMemoLabels("home")).toHaveLength(5);
+  });
+
+  it("メモを保存できなかったときは、名前で指定したラベルも作らない", async () => {
+    const id = await addMemo([]);
+    expect(
+      await updateMemoRecord(
+        { id: "kuro", householdId: "home" },
+        id,
+        memoInput([], ["性格"]),
+        actor,
+      ),
+    ).toEqual({ failure: "rejected" });
+    await db
+      .update(cats)
+      .set({ memorialDate: "2026-11-20" })
+      .where(eq(cats.id, "tama"));
+    for (const save of [
+      createMemoRecord(tama, memoInput([], ["性格"]), actor),
+      updateMemoRecord(tama, id, memoInput([], ["性格"]), actor),
+    ]) {
+      expect(await save).toEqual({ failure: "rejected" });
+    }
+
+    expect(await listMemoLabels("home")).toHaveLength(2);
   });
 
   it("別の家のラベル・存在しないラベルは付けられず、メモも保存しない", async () => {

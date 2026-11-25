@@ -7,8 +7,10 @@ export type { MemoRecord };
 
 /** 記録の中身。ID・猫・作成日時など、保存のたびに変わらない項目を除いたもの */
 export type MemoRecordContent = Pick<MemoRecord, "recordedAt" | "content"> & {
-  /** 付けるラベル（重複なし）。猫の家のラベルに限る */
+  /** 付けるラベルの ID（重複なし）。猫の家のラベルに限る */
   labelIds: string[];
+  /** 付けるラベルの名前（重複なし）。猫の家にまだないラベルは、保存と同時に作る */
+  labelNames: string[];
 };
 
 /** 入力から記録の中身を作る */
@@ -22,5 +24,6 @@ export function toMemoRecordContent(
         : null,
     content: data.content,
     labelIds: data.labelIds,
+    labelNames: data.labelNames,
   };
 }

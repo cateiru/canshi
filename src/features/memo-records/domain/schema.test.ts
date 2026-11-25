@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MEMO_LABEL_NAME_MAX_LENGTH } from "./labelSchema";
 import { MEMO_LABELS_MAX, memoRecordFormSchema } from "./schema";
 
 describe("memoRecordFormSchema", () => {
@@ -12,6 +13,7 @@ describe("memoRecordFormSchema", () => {
     expect(result.success && result.data).toEqual({
       content: "爪を切った",
       labelIds: [],
+      labelNames: [],
       recordedDate: "2026-10-31",
       recordedTime: "08:00",
     });
@@ -27,6 +29,7 @@ describe("memoRecordFormSchema", () => {
     expect(result.success && result.data).toEqual({
       content: "好きなおもちゃはねずみ",
       labelIds: [],
+      labelNames: [],
       recordedDate: null,
       recordedTime: null,
     });
@@ -53,6 +56,31 @@ describe("memoRecordFormSchema", () => {
     });
     expect(parse("a").success).toBe(false);
     expect(parse([""]).success).toBe(false);
+  });
+
+  it("ラベルの名前は、前後の空白と重複を除いて返し、空・長すぎると失敗する", () => {
+    const parse = (labelNames: unknown) =>
+      memoRecordFormSchema.safeParse({
+        hasDate: null,
+        recordedDate: null,
+        recordedTime: null,
+        content: "メモ",
+        labelNames,
+      });
+
+    expect(parse(["病院", " 病院 ", "お手入れ"]).data?.labelNames).toEqual([
+      "病院",
+      "お手入れ",
+    ]);
+    expect(parse([" "]).success).toBe(false);
+    expect(
+      parse(["あ".repeat(MEMO_LABEL_NAME_MAX_LENGTH + 1)]).error?.flatten()
+        .fieldErrors,
+    ).toEqual({
+      labelNames: [
+        `ラベルの名前は${MEMO_LABEL_NAME_MAX_LENGTH}文字以内で入力してください`,
+      ],
+    });
   });
 
   it("日付を残すときは、日付・時刻の形式が不正だと失敗する", () => {
