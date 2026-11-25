@@ -1780,22 +1780,25 @@ test.describe("記録追加ページ（日付欄あり）", () => {
     await takeSnapshot(page, testInfo);
   });
 
-  // ラベルを選んだ状態。保存はしないため、フィクスチャのデータは変わらない
-  test("メモ追加ページ（ラベルを選んだ状態）の見た目", async ({
-    page,
-  }, testInfo) => {
+  // ラベルを付け、候補を開いた状態。保存はしないため、フィクスチャのデータは変わらない
+  test("メモ追加ページ（ラベルの入力）の見た目", async ({ page }, testInfo) => {
     await page.goto(`/cats/${EMPTY_CAT}/memo-records/new`);
-    const label = page.getByRole("button", { name: "好きなもの" });
+    const input = page.getByRole("combobox", { name: "ラベル" });
+    // 候補を開いている間は、入力欄と候補のほかが読み上げから隠れる
+    const tag = page.getByRole("button", {
+      name: "「好きなもの」を外す",
+      includeHidden: true,
+    });
+    // ハイドレーション前に入力すると反応しないため、タグが付くまでやり直す
     await expect(async () => {
-      if ((await label.getAttribute("aria-pressed")) !== "true") {
-        await label.click();
+      if (!(await tag.isVisible())) {
+        await input.fill("好きなもの");
+        await input.press("Enter");
       }
-      await expect(label).toHaveAttribute("aria-pressed", "true", {
-        timeout: 1_000,
-      });
+      await expect(tag).toBeVisible({ timeout: 1_000 });
     }).toPass();
-    await page.mouse.move(0, 0);
-    await expect(label).not.toHaveAttribute("data-hovered");
+    await input.fill("病");
+    await expect(page.getByRole("option")).toHaveText(["病院", "「病」を追加"]);
     await takeSnapshot(page, testInfo);
   });
 

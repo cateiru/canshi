@@ -33,28 +33,42 @@ test("メモにラベルを付けて絞り込み、使わなくなったラベ�
   ).toBeVisible();
   const listUrl = page.url();
 
-  // メモのフォームから作ったラベルは、選んだ状態になる
+  // まだないラベルは、入力して Enter で付けると、メモの保存と同時に作られる
   await page.getByRole("link", { name: "記録する" }).click();
   await expect(page).toHaveURL(/memo-records\/new$/);
-  const addDialog = await openDialog(page, "新しいラベル", "ラベルの追加");
-  await fillAndKeep(
-    addDialog.getByRole("textbox", { name: "名前" }),
-    labelName,
-  );
-  await addDialog.getByText("緑", { exact: true }).click();
-  await addDialog.getByRole("button", { name: "追加する" }).click();
-  await expect(addDialog).toBeHidden();
-  await expect(
-    page.getByRole("button", { name: labelName, pressed: true }),
-  ).toBeVisible();
+  const labelInput = page.getByRole("combobox", { name: "ラベル" });
+  // 候補を開いている間は、入力欄と候補のほかが読み上げから隠れるため、includeHidden で探す
+  const tagButton = (name: string) =>
+    page.getByRole("button", {
+      name: `「${name}」を外す`,
+      includeHidden: true,
+    });
+  for (const name of ["付け間違い", labelName]) {
+    await fillAndKeep(labelInput, name);
+    await labelInput.press("Enter");
+    await expect(tagButton(name)).toBeVisible();
+    await expect(labelInput).toHaveValue("");
+  }
+  // 候補を開いたままでも、× で外せる
+  await tagButton("付け間違い").click();
+  await expect(tagButton("付け間違い")).toHaveCount(0);
+  await expect(page).toHaveURL(/memo-records\/new$/);
   await page.getByRole("textbox", { name: "メモ" }).fill("ラベルありのメモ");
   await page.getByRole("button", { name: "記録する" }).click();
   await expect(page).toHaveURL(listUrl);
   await expect(page.getByRole("article").getByText(labelName)).toBeVisible();
 
-  // ラベルを付けないメモも作り、絞り込めることを確かめる
+  // 家にあるラベルは候補に出る。選ばずにラベルを付けないメモも作り、絞り込めることを確かめる
   await page.getByRole("link", { name: "記録する" }).click();
   await expect(page).toHaveURL(/memo-records\/new$/);
+  await expect(async () => {
+    await labelInput.fill(labelName);
+    await expect(
+      page.getByRole("option", { name: labelName, exact: true }),
+    ).toBeVisible({ timeout: 1_000 });
+  }).toPass();
+  await labelInput.fill("");
+  await labelInput.press("Escape");
   await fillAndKeep(
     page.getByRole("textbox", { name: "メモ" }),
     "ラベルなしのメモ",
@@ -125,16 +139,15 @@ test("メモにラベルを付けて絞り込み、使わなくなったラベ�
     .filter({ hasText: "ラベルありのメモ" })
     .getByRole("link", { name: "編集する" })
     .click();
-  const selectedLabel = page.getByRole("button", {
-    name: renamedLabel,
-    pressed: true,
+  const removeButton = page.getByRole("button", {
+    name: `「${renamedLabel}」を外す`,
   });
-  await expect(selectedLabel).toBeVisible();
+  await expect(removeButton).toBeVisible();
   await expect(async () => {
-    if (await selectedLabel.isVisible()) {
-      await selectedLabel.click();
+    if (await removeButton.isVisible()) {
+      await removeButton.click();
     }
-    await expect(selectedLabel).toBeHidden({ timeout: 1_000 });
+    await expect(removeButton).toBeHidden({ timeout: 1_000 });
   }).toPass();
   await page.getByRole("button", { name: "更新する" }).click();
   await expect(page).toHaveURL(listUrl);
