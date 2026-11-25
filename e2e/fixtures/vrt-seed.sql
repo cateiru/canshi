@@ -272,6 +272,23 @@ INSERT INTO memo_records (id, cat_id, content, created_at, updated_at)
 VALUES ('vrt-memo-2', 'vrt-cat-populated', '好きなおもちゃは羽根のついたじゃらし。',
   strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00'));
 
+-- メモのラベル: 2 つ付いたメモと 1 つ付いたメモを用意し、付いていないラベルも 1 つ残す
+-- （ラベルの管理ページで、削除できるラベルとできないラベルの両方のダイアログを撮る）
+INSERT INTO memo_labels (id, household_id, name, color, created_at, updated_at)
+VALUES
+  ('vrt-memo-label-care', 'vrt-household', 'お手入れ', 'blue',
+    strftime('%s', '2024-06-01 00:00:00'), strftime('%s', '2024-06-01 00:00:00')),
+  ('vrt-memo-label-like', 'vrt-household', '好きなもの', 'pink',
+    strftime('%s', '2024-06-02 00:00:00'), strftime('%s', '2024-06-02 00:00:00')),
+  ('vrt-memo-label-hospital', 'vrt-household', '病院', 'green',
+    strftime('%s', '2024-06-03 00:00:00'), strftime('%s', '2024-06-03 00:00:00'));
+
+INSERT INTO memo_record_labels (memo_record_id, memo_label_id)
+VALUES
+  ('vrt-memo-1', 'vrt-memo-label-care'),
+  ('vrt-memo-1', 'vrt-memo-label-like'),
+  ('vrt-memo-2', 'vrt-memo-label-like');
+
 -- vrt-cat-busy: 水の記録を 1 ページの表示件数（50 件）より 1 件多い 51 件登録する（記録一覧の
 -- ページングの表示用。1 ページ目は 50 件、2 ページ目は 1 件になる）。2024-01-01 から 1 日 1 件で、
 -- タイムラインの VRT で撮る月（2024-06）とその前後の月にかからないようにする
