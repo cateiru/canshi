@@ -477,6 +477,19 @@ test("ヘルプのスクリーンショットを撮る", async ({ page, browser 
     page.getByRole("textbox", { name: "メモ" }),
     "窓辺で日向ぼっこするのがお気に入り",
   );
+  const labelInput = page.getByRole("combobox", { name: "ラベル" });
+  for (const label of ["好きなもの", "おうち"]) {
+    await labelInput.fill(label);
+    await labelInput.press("Enter");
+    // 候補を開いている間は、入力欄と候補のほかが読み上げから隠れる
+    await expect(
+      page.getByRole("button", {
+        name: `「${label}」を外す`,
+        includeHidden: true,
+      }),
+    ).toBeVisible();
+  }
+  await labelInput.press("Escape");
   await capture(page, "record-memo");
 
   await page.goto(`${catPath}/timeline`);

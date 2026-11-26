@@ -117,6 +117,15 @@ export const API_ROUTE_GROUPS: ApiRouteGroup[] = [
     ],
   },
   {
+    label: "メモのラベル",
+    routes: [
+      get("/memo-labels", "list_memo_labels", "メモのラベルの一覧を取得"),
+      create("/memo-labels", "create_memo_label", "メモのラベルを追加"),
+      update("/memo-labels/{id}", "update_memo_label", "メモのラベルを編集"),
+      remove("/memo-labels/{id}", "delete_memo_label", "メモのラベルを削除"),
+    ],
+  },
+  {
     label: "家",
     routes: [
       get("/households", "list_households", "家の一覧を取得"),

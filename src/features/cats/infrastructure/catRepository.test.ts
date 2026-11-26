@@ -14,6 +14,9 @@ import {
   householdMembers,
   households,
   mcpPermissions,
+  memoLabels,
+  memoRecordLabels,
+  memoRecords,
   notifications,
   users,
 } from "@/db/schema";
@@ -104,6 +107,38 @@ describe("removeForUser", () => {
         (item) => item.feedingRecordId,
       ),
     ).toEqual(["kuro-meal"]);
+  });
+
+  it("メモ（論理削除したものも含む）をラベルの紐付けごと物理削除し、ラベルは残す", async () => {
+    await db
+      .insert(memoLabels)
+      .values({ id: "label", householdId: "home", name: "大事" });
+    await db.insert(memoRecords).values([
+      { id: "tama-memo", catId: "tama", content: "メモ" },
+      {
+        id: "tama-deleted-memo",
+        catId: "tama",
+        content: "削除したメモ",
+        deletedAt: new Date("2026-07-02T00:00:00Z"),
+      },
+      { id: "kuro-memo", catId: "kuro", content: "メモ" },
+    ]);
+    await db.insert(memoRecordLabels).values(
+      ["tama-memo", "tama-deleted-memo", "kuro-memo"].map((memoRecordId) => ({
+        memoRecordId,
+        memoLabelId: "label",
+      })),
+    );
+
+    await createCatRepository().removeForUser("owner", "tama");
+
+    expect(
+      (await db.select().from(memoRecords)).map((record) => record.id),
+    ).toEqual(["kuro-memo"]);
+    expect(await db.select().from(memoRecordLabels)).toEqual([
+      { memoRecordId: "kuro-memo", memoLabelId: "label" },
+    ]);
+    expect(await db.select().from(memoLabels)).toHaveLength(1);
   });
 });
 

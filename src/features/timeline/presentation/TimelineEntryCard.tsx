@@ -20,6 +20,7 @@ import {
 import { FEEDING_INTAKE_ICON } from "@/features/feeding-records/presentation/intakeIcons";
 import { FoodProductImage } from "@/features/food-products/presentation/FoodProductImage";
 import { MediaThumbnailStrip } from "@/features/media/presentation/MediaThumbnailStrip";
+import { MemoLabelList } from "@/features/memo-records/presentation/MemoLabelChip";
 import { CONSISTENCY_LABEL } from "@/features/poop-records/domain/labels";
 import type { RecordContributions } from "@/features/record-contributors/domain/contributor";
 import { RecordContributors } from "@/features/record-contributors/presentation/RecordContributors";
@@ -404,6 +405,7 @@ function renderBody(
     case "memo":
       return (
         <div className={styles.body}>
+          <MemoLabelList labels={entry.record.labels} />
           <p className={styles.memoContent}>{entry.record.content}</p>
         </div>
       );

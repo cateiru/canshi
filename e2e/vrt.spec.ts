@@ -656,6 +656,72 @@ test("ごはんの時間ページの見た目", async ({ page }, testInfo) => {
   await takeSnapshot(page, testInfo);
 });
 
+test.describe("メモのラベルページ", () => {
+  const MEMO_LABELS_PATH = "/settings/households/vrt-household/memo-labels";
+
+  test("見た目", async ({ page }, testInfo) => {
+    await page.goto(MEMO_LABELS_PATH);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "メモのラベル" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo);
+  });
+
+  // ハイドレーション前に押すと反応しないため、モーダルが開くまで押し直す
+  async function openDialog(page: Page, buttonName: string, title: string) {
+    const dialog = page.getByRole("dialog", { name: title });
+    await page.goto(MEMO_LABELS_PATH);
+    await expect(async () => {
+      if (!(await dialog.isVisible())) {
+        await page.getByRole("button", { name: buttonName }).click();
+      }
+      await expect(dialog).toBeVisible({ timeout: 1_000 });
+    }).toPass();
+    return dialog;
+  }
+
+  test("追加のモーダルの見た目", async ({ page }, testInfo) => {
+    await openDialog(page, "ラベルを追加する", "ラベルの追加");
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+
+  test("編集のモーダルの見た目", async ({ page }, testInfo) => {
+    const dialog = await openDialog(
+      page,
+      "「お手入れ」を編集する",
+      "ラベルの編集",
+    );
+    await expect(dialog.getByRole("textbox", { name: "名前" })).toHaveValue(
+      "お手入れ",
+    );
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+
+  test("メモに付いているラベルの削除ダイアログの見た目", async ({
+    page,
+  }, testInfo) => {
+    const dialog = await openDialog(
+      page,
+      "「好きなもの」を削除する",
+      "ラベルの削除",
+    );
+    await expect(
+      dialog.getByText("このラベルは2件のメモに付いているため削除できません。"),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+
+  test("メモに付いていないラベルの削除ダイアログの見た目", async ({
+    page,
+  }, testInfo) => {
+    const dialog = await openDialog(page, "「病院」を削除する", "ラベルの削除");
+    await expect(
+      dialog.getByRole("button", { name: "削除する" }),
+    ).toBeVisible();
+    await takeSnapshot(page, testInfo, { fullPage: false });
+  });
+});
+
 test("記録の出力ページの見た目", async ({ page }, testInfo) => {
   await page.goto("/settings/households/vrt-household/record-exports");
   await expect(
@@ -1418,6 +1484,31 @@ for (const { label, path, heading } of FLAT_RECORD_LISTS) {
   });
 }
 
+test("メモ一覧（ラベルで絞り込んだケース）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${CAT}/memo-records`);
+  await page
+    .getByRole("navigation", { name: "ラベルでの絞り込み" })
+    .getByRole("link", { name: "お手入れ" })
+    .click();
+  await expect(page).toHaveURL(/\?label=vrt-memo-label-care$/);
+  await expect(page.getByRole("article")).toHaveCount(1);
+  // クリックしたままだと、選択中の項目にホバーの色が付く
+  await page.mouse.move(0, 0);
+  await takeSnapshot(page, testInfo);
+});
+
+test("メモ一覧（絞り込んだラベルのメモがないケース）の見た目", async ({
+  page,
+}, testInfo) => {
+  await page.goto(`/cats/${CAT}/memo-records?label=vrt-memo-label-hospital`);
+  await expect(
+    page.getByText("「病院」のラベルが付いたメモはありません。"),
+  ).toBeVisible();
+  await takeSnapshot(page, testInfo);
+});
+
 // 記録一覧は 1 ページに 50 件までを表示し、それより多いときは一覧の下にページ送りを出す。
 // BUSY_CAT の水の記録（51 件）で、1 ページ目（「次のページ」だけ）と最後のページ
 // （「前のページ」だけ）を撮る
@@ -1686,6 +1777,28 @@ test.describe("記録追加ページ（日付欄あり）", () => {
     await expect(
       page.locator("label", { hasText: "日付を残す" }),
     ).not.toHaveAttribute("data-hovered");
+    await takeSnapshot(page, testInfo);
+  });
+
+  // ラベルを付け、候補を開いた状態。保存はしないため、フィクスチャのデータは変わらない
+  test("メモ追加ページ（ラベルの入力）の見た目", async ({ page }, testInfo) => {
+    await page.goto(`/cats/${EMPTY_CAT}/memo-records/new`);
+    const input = page.getByRole("combobox", { name: "ラベル" });
+    // 候補を開いている間は、入力欄と候補のほかが読み上げから隠れる
+    const tag = page.getByRole("button", {
+      name: "「好きなもの」を外す",
+      includeHidden: true,
+    });
+    // ハイドレーション前に入力すると反応しないため、タグが付くまでやり直す
+    await expect(async () => {
+      if (!(await tag.isVisible())) {
+        await input.fill("好きなもの");
+        await input.press("Enter");
+      }
+      await expect(tag).toBeVisible({ timeout: 1_000 });
+    }).toPass();
+    await input.fill("病");
+    await expect(page.getByRole("option")).toHaveText(["病院", "「病」を追加"]);
     await takeSnapshot(page, testInfo);
   });
 

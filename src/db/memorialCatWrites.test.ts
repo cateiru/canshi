@@ -155,7 +155,7 @@ describe("同じ形の記録のリポジトリ", () => {
     {
       name: "メモ",
       repository: createMemoRecordRepository,
-      values: { content: "メモ" },
+      values: { content: "メモ", labelIds: [], labelNames: [] },
     },
   ] as const;
 

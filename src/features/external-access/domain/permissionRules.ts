@@ -39,7 +39,7 @@ export const ALWAYS_ALLOWED_TIMELINE_TYPES = [
 
 /**
  * 外部接続に家ごとに許可するかを選べる操作（ごはん商品・プリセット、家の名前・メンバー・
- * 招待、猫のプロフィール・通知の設定、ごはんの時間）。読み取りの範囲とは逆に、許可したものだけを
+ * 招待、猫のプロフィール・通知の設定、ごはんの時間、メモのラベル）。読み取りの範囲とは逆に、許可したものだけを
  * 行える。猫のプロフィール・通知の設定は、その家の猫のうち読み取りを許可している猫だけを扱える
  */
 export const HOUSEHOLD_OPERATIONS = [
@@ -64,6 +64,10 @@ export const HOUSEHOLD_OPERATIONS = [
   "feedingSchedule:create",
   "feedingSchedule:update",
   "feedingSchedule:delete",
+  "memoLabel:read",
+  "memoLabel:create",
+  "memoLabel:update",
+  "memoLabel:delete",
 ] as const;
 
 export type HouseholdOperation = (typeof HOUSEHOLD_OPERATIONS)[number];
@@ -97,6 +101,15 @@ export const HOUSEHOLD_OPERATION_GROUPS: {
       { operation: "feedingSchedule:create", label: "追加" },
       { operation: "feedingSchedule:update", label: "編集" },
       { operation: "feedingSchedule:delete", label: "削除" },
+    ],
+  },
+  {
+    label: "メモのラベル",
+    operations: [
+      { operation: "memoLabel:read", label: "読む" },
+      { operation: "memoLabel:create", label: "追加" },
+      { operation: "memoLabel:update", label: "編集" },
+      { operation: "memoLabel:delete", label: "削除" },
     ],
   },
   {

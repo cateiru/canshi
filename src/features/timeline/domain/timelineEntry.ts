@@ -18,6 +18,7 @@ import type {
   WeightRecord,
 } from "@/db/schema";
 import type { MediaAssetView } from "@/features/media/domain/view";
+import type { MemoLabelView } from "@/features/memo-records/domain/memoLabel";
 import type {
   TimelineAdoptionRecord,
   TimelineBirthdayRecord,
@@ -134,6 +135,12 @@ export type TimelineFeedingRecord = {
   items: TimelineFeedingItem[];
 };
 
+/** メモの記録。日付を残したものだけがタイムラインに載る */
+export type TimelineMemoRecord = MemoRecord & {
+  recordedAt: Date;
+  labels: MemoLabelView[];
+};
+
 export type TimelineEntry =
   | TimelineEntryOf<"memorial", TimelineMemorialRecord>
   | TimelineEntryOf<"birthday", TimelineBirthdayRecord>
@@ -153,4 +160,4 @@ export type TimelineEntry =
     >
   | TimelineEntryOf<"hospitalVisit", HospitalVisit>
   | TimelineEntryOf<"expense", ExpenseRecord>
-  | TimelineEntryOf<"memo", MemoRecord & { recordedAt: Date }>;
+  | TimelineEntryOf<"memo", TimelineMemoRecord>;

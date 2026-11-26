@@ -1,6 +1,10 @@
 import type { RecordActor } from "@/db/schema";
-import { toMemoRecordContent } from "../domain/memoRecord";
+import {
+  type MemoRecordContent,
+  toMemoRecordContent,
+} from "../domain/memoRecord";
 import type { MemoRecordFormInput } from "../domain/schema";
+import { listMemoLabels } from "../infrastructure/labelQueries";
 import { createMemoRecordRepository } from "../infrastructure/memoRecordRepository";
 
 /*
@@ -9,34 +13,66 @@ import { createMemoRecordRepository } from "../infrastructure/memoRecordReposito
  * `getCloudflareContext()` を使えないため、D1 は引数で受け取る
  */
 
-/** 記録を追加し、その ID を返す。猫がメモリーへ移されていれば追加せず null */
+/** メモの猫。ユーザーがアクセスできる猫は、家に所属している（`getCatForUser` 参照） */
+type MemoRecordCat = { id: string; householdId: string };
+
+/** 保存できなかった理由。`rejected` は、記録が見つからない・猫がメモリーへ移された */
+export type SaveMemoRecordFailure = "labelNotFound" | "rejected";
+
+export type SaveMemoRecordResult =
+  | { id: string }
+  | { failure: SaveMemoRecordFailure };
+
+/** 入力から記録の中身を作る。`labelIds` に猫の家のラベルではないものがあれば null */
+async function toContent(
+  householdId: string,
+  data: MemoRecordFormInput,
+  d1?: D1Database,
+): Promise<MemoRecordContent | null> {
+  const usesIds =
+    data.labelIds.length > 0 || data.labels.some(({ id }) => id != null);
+  const householdLabelIds = new Set(
+    usesIds ? (await listMemoLabels(householdId, d1)).map(({ id }) => id) : [],
+  );
+  return data.labelIds.every((id) => householdLabelIds.has(id))
+    ? toMemoRecordContent(data, householdLabelIds)
+    : null;
+}
+
+/** 記録を追加する。`labelIds` は猫の家のラベルに限り、画面で付けた `labels` のうち家にないラベルは作る */
 export async function createMemoRecord(
-  catId: string,
+  cat: MemoRecordCat,
   data: MemoRecordFormInput,
   actor: RecordActor,
   d1?: D1Database,
-): Promise<string | null> {
-  return createMemoRecordRepository(d1).add(
-    catId,
-    toMemoRecordContent(data),
-    actor,
-  );
+): Promise<SaveMemoRecordResult> {
+  const content = await toContent(cat.householdId, data, d1);
+  if (!content) {
+    return { failure: "labelNotFound" };
+  }
+  const id = await createMemoRecordRepository(d1).add(cat.id, content, actor);
+  return id == null ? { failure: "rejected" } : { id };
 }
 
-/** 猫の記録を更新する。見つからない・猫がメモリーへ移されていれば false */
+/** 猫の記録を更新し、ラベルを付け直す。ラベルの扱いは `createMemoRecord` と同じ */
 export async function updateMemoRecord(
-  catId: string,
+  cat: MemoRecordCat,
   id: string,
   data: MemoRecordFormInput,
   actor: RecordActor,
   d1?: D1Database,
-): Promise<boolean> {
-  return createMemoRecordRepository(d1).update(
-    catId,
+): Promise<SaveMemoRecordResult> {
+  const content = await toContent(cat.householdId, data, d1);
+  if (!content) {
+    return { failure: "labelNotFound" };
+  }
+  const updated = await createMemoRecordRepository(d1).update(
+    cat.id,
     id,
-    toMemoRecordContent(data),
+    content,
     actor,
   );
+  return updated ? { id } : { failure: "rejected" };
 }
 
 /**

@@ -1,10 +1,32 @@
 import { z } from "zod";
 import { checkboxBooleanSchema } from "@/features/shared/checkbox";
 import { TIME_STRING_PATTERN } from "@/features/shared/datetime";
+import { memoLabelNameSchema } from "./labelSchema";
 
 export const MEMO_CONTENT_MAX_LENGTH = 2000;
 
+/** 1 つのメモに付けられるラベルの数 */
+export const MEMO_LABELS_MAX = 20;
+
+const LABELS_ERROR = "ラベルの指定が正しくありません";
+
+const LABELS_MAX_ERROR = `ラベルは${MEMO_LABELS_MAX}個まで付けられます`;
+
+const labelIdSchema = z.string().min(1).max(200);
+
 /**
+ * 画面のフォームで付けたラベル。`id` は、画面を開いたときに家にあったラベルの ID
+ * （新しく入力したラベルなら null）
+ */
+const selectedLabelSchema = z.object(
+  { id: labelIdSchema.nullable(), name: memoLabelNameSchema },
+  { error: LABELS_ERROR },
+);
+
+/**
+ * ラベルは、外部接続の操作では家にあるラベルの ID（`labelIds`）で、画面のフォームでは
+ * `labels` で指定する（付け方は `./memoRecord.ts` の `resolveMemoLabels` 参照）。
+ *
  * 「日付を残す」を外したときは日付・時刻の欄を送らないため、日付・時刻は
  * 日付を残すときだけ検証する
  */
@@ -21,10 +43,21 @@ export const memoRecordFormSchema = z
         MEMO_CONTENT_MAX_LENGTH,
         `メモは${MEMO_CONTENT_MAX_LENGTH}文字以内で入力してください`,
       ),
+    labelIds: z
+      .array(labelIdSchema, { error: LABELS_ERROR })
+      .transform((ids) => [...new Set(ids)])
+      .refine((ids) => ids.length <= MEMO_LABELS_MAX, LABELS_MAX_ERROR)
+      .default([]),
+    labels: z
+      .array(selectedLabelSchema, { error: LABELS_ERROR })
+      .max(MEMO_LABELS_MAX, LABELS_MAX_ERROR)
+      .default([]),
   })
   .transform((data, ctx) => {
+    const { content, labelIds, labels } = data;
+    const common = { content, labelIds, labels };
     if (!data.hasDate) {
-      return { content: data.content, recordedDate: null, recordedTime: null };
+      return { ...common, recordedDate: null, recordedTime: null };
     }
     const date = z.string().date().safeParse(data.recordedDate);
     if (!date.success) {
@@ -49,7 +82,7 @@ export const memoRecordFormSchema = z
       return z.NEVER;
     }
     return {
-      content: data.content,
+      ...common,
       recordedDate: date.data,
       recordedTime: time.data,
     };
@@ -58,5 +91,13 @@ export const memoRecordFormSchema = z
 export type MemoRecordFormInput = z.infer<typeof memoRecordFormSchema>;
 
 export type MemoRecordFormFieldErrors = Partial<
-  Record<"hasDate" | "recordedDate" | "recordedTime" | "content", string[]>
+  Record<
+    | "hasDate"
+    | "recordedDate"
+    | "recordedTime"
+    | "content"
+    | "labelIds"
+    | "labels",
+    string[]
+  >
 >;
