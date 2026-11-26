@@ -33,5 +33,6 @@ export * from "./Select/Select";
 export * from "./Slider/Slider";
 export * from "./Table/Table";
 export * from "./Tabs/Tabs";
+export * from "./TagInput/TagInput";
 export * from "./Textarea/Textarea";
 export * from "./Toast/Toast";
