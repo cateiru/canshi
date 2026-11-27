@@ -9,10 +9,12 @@
 
 /* 猫耳の装飾: `___^__^___` を模して、左上の枠線上に耳を2つ配置する */
 /* border だけで輪郭を作ると頂点に向かって線が細くなるため、SVG の stroke で均一な太さにする */
+/* SVG の中で 1 つ目の耳は x = space-1 から始まる。角の丸みが終わる位置（radius-base）に耳の付け根を合わせ、
+   曲がっている枠線の上に耳が浮かないようにする */
 .ears {
   position: absolute;
   top: calc(-1 * var(--space-2));
-  left: 0;
+  left: calc(var(--radius-base) - var(--space-1));
   width: 28px;
   height: var(--space-2);
   overflow: visible;

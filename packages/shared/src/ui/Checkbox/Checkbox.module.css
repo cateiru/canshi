@@ -18,7 +18,8 @@
   width: calc(18px * var(--font-scale));
   height: calc(18px * var(--font-scale));
   border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-base);
+  /* 基礎の角丸（radius-base）では 18px の枠がほぼ円になり、ラジオボタンと見分けにくいため小さくする */
+  border-radius: calc(var(--radius-base) / 2);
   background-color: var(--color-bg);
   outline: var(--focus-ring-width) solid transparent;
   outline-offset: var(--focus-ring-offset);
