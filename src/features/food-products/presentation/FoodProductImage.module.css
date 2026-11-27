@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-base);
   object-fit: cover;
   background-color: var(--color-bg);
   vertical-align: middle;

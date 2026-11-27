@@ -57,7 +57,8 @@
   bottom: var(--space-1);
   display: inline-flex;
   padding: 2px;
-  border-radius: var(--radius-base);
+  /* 角丸の基礎値のサムネイルの 4px 内側に置くため、半分にして角を同心にする（基礎値ではほぼ円になる） */
+  border-radius: calc(var(--radius-base) / 2);
   background-color: var(--color-ink);
   color: var(--color-bg);
   font-size: var(--text-sm);
@@ -91,7 +92,8 @@
   top: var(--space-1);
   right: var(--space-1);
   padding: 0 var(--space-1);
-  border-radius: var(--radius-base);
+  /* 角丸の基礎値のサムネイルの 4px 内側に置くため、半分にして角を同心にする（基礎値ではほぼ円になる） */
+  border-radius: calc(var(--radius-base) / 2);
   background-color: var(--color-accent);
   color: var(--color-on-accent);
   font-size: var(--text-xs);

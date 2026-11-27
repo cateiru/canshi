@@ -21,7 +21,7 @@
   width: 100%;
   max-width: 100%;
   border: var(--border-width) solid var(--color-border-input);
-  border-radius: 8px;
+  border-radius: var(--radius-base);
   /* 右端の候補ボタンに文字が重ならないよう余白を取る */
   padding: var(--space-2) calc(44px + var(--space-1)) var(--space-2)
     var(--space-3);
@@ -63,7 +63,7 @@
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-base);
   padding: 0;
   background: transparent;
   cursor: pointer;
@@ -95,7 +95,7 @@
 .popover {
   width: var(--trigger-width);
   border: var(--border-width) solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-base);
   background-color: var(--color-bg);
   box-shadow: 0 4px 12px var(--color-shadow);
   overflow: hidden;

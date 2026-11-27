@@ -8,7 +8,7 @@
 .select > button {
   min-height: 48px;
   border-color: var(--color-border-input);
-  border-radius: 8px;
+  border-radius: var(--radius-base);
   font-size: var(--text-input);
 }
 
