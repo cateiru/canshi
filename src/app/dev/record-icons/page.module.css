@@ -33,7 +33,7 @@
   gap: var(--space-1);
   min-width: 0;
   padding: var(--space-2);
-  border-radius: calc(var(--radius-base) * 2);
+  border-radius: var(--radius-base);
   background-color: color-mix(in srgb, var(--color-ink) 4%, var(--color-bg));
 }
 
