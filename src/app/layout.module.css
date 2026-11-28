@@ -1,3 +1,16 @@
+/*
+ * ヘッダー・本文・フッター。html の scrollbar-gutter: stable で右に空けたスクロールバーの分だけ
+ * 右へ広げ、スクロールバーを右の余白の中に収めて、中身を画面の中央に置く（tokens.css の
+ * --scrollbar-overlap）。広げた分は body の overflow-x: clip で切り取る（globals.css）。
+ * スクロールバーの幅は <head> のスクリプトが測る
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-right: calc(-1 * var(--scrollbar-overlap));
+}
+
 .content {
   display: flex;
   flex-direction: column;
