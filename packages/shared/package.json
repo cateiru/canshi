@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./styles/tokens.css": "./src/styles/tokens.css",
+    "./styles/scrollbarWidth": "./src/styles/scrollbarWidth.ts",
     "./ui": "./src/ui/index.ts",
     "./ui/RecordIcons": "./src/ui/RecordIcons/RecordIcons.tsx",
     "./ui/ScaledIcon": "./src/ui/ScaledIcon/ScaledIcon.tsx",
