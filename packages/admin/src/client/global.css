@@ -21,8 +21,22 @@
 
 html {
   background-color: var(--color-bg);
-  /* スクロールバーが出たり消えたりしても横幅を変えない（メインアプリの globals.css と同じ） */
+  /*
+   * スクロールバーが出たり消えたりしても横幅を変えない。空けた分で中身が左に寄らないよう、
+   * #root をスクロールバーの分だけ右へ広げ、body の端で切り取る（メインアプリの globals.css・
+   * layout.module.css の .page と同じ）
+   */
   scrollbar-gutter: stable;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: clip;
+}
+
+/* 広げる幅は tokens.css の --scrollbar-overlap。スクロールバーの幅は main.tsx で測る */
+#root {
+  margin-right: calc(-1 * var(--scrollbar-overlap));
 }
 
 body {
