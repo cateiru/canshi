@@ -233,7 +233,7 @@ catalogs:
       version: 5.1.1
     wrangler:
       specifier: ^4.135.0
-      version: 4.167.0
+      version: 4.168.0
 
 importers:
 
@@ -326,7 +326,7 @@ importers:
         version: 2.4.0
       '@opennextjs/cloudflare':
         specifier: 1.20.17
-        version: 1.20.17(next@16.4.5(@babel/core@8.0.6)(@opentelemetry/api@1.10.0)(@playwright/test@1.65.1)(@types/node@26.6.10)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(supports-color@10.2.2)(wrangler@4.167.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))))
+        version: 1.20.17(next@16.4.5(@babel/core@8.0.6)(@opentelemetry/api@1.10.0)(@playwright/test@1.65.1)(@types/node@26.6.10)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(supports-color@10.2.2)(wrangler@4.168.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))))
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.65.1
@@ -383,7 +383,7 @@ importers:
         version: 5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))
       wrangler:
         specifier: 'catalog:'
-        version: 4.167.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1)))
+        version: 4.168.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1)))
 
   packages/admin:
     dependencies:
@@ -450,7 +450,7 @@ importers:
         version: 5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))
       wrangler:
         specifier: 'catalog:'
-        version: 4.167.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1)))
+        version: 4.168.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1)))
 
   packages/shared:
     dependencies:
@@ -4211,8 +4211,8 @@ packages:
     resolution: {integrity: sha512-I9jwMn07Sy/IwOj3zVkVik2JTvgpaykDZEigL6Rx6N9LbMywwUSMtxET+7lVoDLLd3O3IXwJwvuuns8UB/HeAg==}
     engines: {node: '>=4'}
 
-  miniflare@5.20261123.0-beta:
-    resolution: {integrity: sha512-ObCOK12WQjUw2yWJH8olMzDSkXaj8xlmZkfJp0MU7y/gnvfv9cBGj9o075ywFeBCBoKopRy8J9Ci3Sh4cquoxg==}
+  miniflare@5.20261123.1-beta:
+    resolution: {integrity: sha512-o2a+xv6Ug144FgUJm7ciSWMiI7R0OH0svGCfqb1+6l9cUfZebc6YMWIK43PeyzWr3x6BLq2j4O9i8BsKk055oA==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       kerberos: ^2.0.0
@@ -5228,8 +5228,8 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  wrangler@4.167.0:
-    resolution: {integrity: sha512-9P1rSUpjH96RSIEntUjkycglR5m3WcwwYRjPqbf9VN83Wizhk5s7J+Q3g5eUZGGTgtPhv763KZ4hw3jFnUjlTg==}
+  wrangler@4.168.0:
+    resolution: {integrity: sha512-CqxlSPbapKwhH2moKcJlWCYqzB/Gk93rKQcul0KioLLYDKgJpuwuddE5rminAgDkI0YyEjzw4MoCasojog4lJw==}
     engines: {node: '>=22.12.0'}
     hasBin: true
     peerDependencies:
@@ -7124,7 +7124,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@opennextjs/cloudflare@1.20.17(next@16.4.5(@babel/core@8.0.6)(@opentelemetry/api@1.10.0)(@playwright/test@1.65.1)(@types/node@26.6.10)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(supports-color@10.2.2)(wrangler@4.167.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))))':
+  '@opennextjs/cloudflare@1.20.17(next@16.4.5(@babel/core@8.0.6)(@opentelemetry/api@1.10.0)(@playwright/test@1.65.1)(@types/node@26.6.10)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(supports-color@10.2.2)(wrangler@4.168.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))))':
     dependencies:
       '@ast-grep/napi': 0.45.3
       '@dotenvx/dotenvx': 2.38.0
@@ -7137,7 +7137,7 @@ snapshots:
       next: 16.4.5(@babel/core@8.0.6)(@opentelemetry/api@1.10.0)(@playwright/test@1.65.1)(@types/node@26.6.10)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       resolve.exports: 2.0.4
       ts-tqdm: 0.8.6
-      wrangler: 4.167.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1)))
+      wrangler: 4.168.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1)))
       yargs: 18.2.0
     transitivePeerDependencies:
       - diff
@@ -9064,7 +9064,7 @@ snapshots:
 
   min-indent@1.0.1: {}
 
-  miniflare@5.20261123.0-beta(@types/node@26.6.10):
+  miniflare@5.20261123.1-beta(@types/node@26.6.10):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       sharp: 0.35.5(@types/node@26.6.10)
@@ -10113,7 +10113,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20261123.1
       '@cloudflare/workerd-windows-64': 1.20261123.1
 
-  wrangler@4.167.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))):
+  wrangler@4.168.0(@types/node@26.6.10)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.10)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.10)(esbuild@0.28.2)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.1
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261123.1)
@@ -10123,7 +10123,7 @@ snapshots:
       cloudflare: 5.2.0
       devtools-protocol: 0.0.1182435
       esbuild: 0.28.2
-      miniflare: 5.20261123.0-beta(@types/node@26.6.10)
+      miniflare: 5.20261123.1-beta(@types/node@26.6.10)
       path-to-regexp: 6.3.0
       undici: 7.30.2
       unenv: 2.0.0-rc.24
