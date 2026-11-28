@@ -21,6 +21,8 @@
 
 html {
   background-color: var(--color-bg);
+  /* スクロールバーが出たり消えたりしても横幅を変えない（メインアプリの globals.css と同じ） */
+  scrollbar-gutter: stable;
 }
 
 body {
