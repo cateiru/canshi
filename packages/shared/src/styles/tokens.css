@@ -160,6 +160,15 @@
   --space-8: 32px;
   --space-10: 40px;
 
+  /*
+   * スクロールバーの下へ広げる幅。html の scrollbar-gutter: stable で右に空けたスクロールバーの分だけ、
+   * ページの中身・ダイアログの背景などを右へ広げ、スクロールバーをページの右の余白（--space-4）の中に
+   * 収めて、中身を画面の中央に置くために使う。--scrollbar-width は
+   * @canshi/shared/styles/scrollbarWidth が入れる（スクロールバーが中身に重なる環境では 0px）。
+   * ズームを小さくしてスクロールバーが余白より太くなったときは、中身に重ならないよう余白の分で止める
+   */
+  --scrollbar-overlap: min(var(--scrollbar-width, 0px), var(--space-4));
+
   /* Shape */
   --radius-base: 8px;
   --border-width: 1px;

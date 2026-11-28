@@ -1,3 +1,4 @@
+import { watchScrollbarWidthScript } from "@canshi/shared/styles/scrollbarWidth";
 import { SettingsIcon } from "@canshi/shared/ui/RecordIcons";
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
@@ -79,35 +80,49 @@ export default async function RootLayout({
   ]);
 
   return (
+    // <head> のスクリプトが style に --scrollbar-width を入れるため、style の違いは警告しない
     <html
       lang="ja"
       data-theme={theme}
       data-accent={accent}
       data-contrast={contrast}
       data-font-size={fontSize}
+      suppressHydrationWarning
     >
+      <head>
+        {/* スクロールバーの分だけページの中身を広げる幅（layout.module.css の .page）を、最初の描画の前に測る */}
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: 自前の固定の文字列で、利用者の入力を含まない
+          dangerouslySetInnerHTML={{ __html: watchScrollbarWidthScript }}
+        />
+      </head>
       <body>
         <div className={styles.statusBarEdge} aria-hidden="true" />
         <NavigationProgress />
-        <header className={styles.header}>
-          {/* 未ログイン（`/login`）では通知・設定へのリンクを出さない */}
-          {user ? (
-            <>
-              <NotificationBadge userId={user.id} className={styles.iconLink} />
-              <IconButtonLink
-                href="/settings"
-                icon={SettingsIcon}
-                className={styles.iconLink}
-                aria-label="設定"
-                title="設定"
-              />
-            </>
-          ) : null}
-        </header>
-        {/* はじめてログインした直後はウェルカムモーダルを、はじめてガイドの途中は今のステップの案内を出す */}
-        {user ? <TourGuideLoader /> : null}
-        <div className={styles.content}>{children}</div>
-        <Footer />
+        <div className={styles.page}>
+          <header className={styles.header}>
+            {/* 未ログイン（`/login`）では通知・設定へのリンクを出さない */}
+            {user ? (
+              <>
+                <NotificationBadge
+                  userId={user.id}
+                  className={styles.iconLink}
+                />
+                <IconButtonLink
+                  href="/settings"
+                  icon={SettingsIcon}
+                  className={styles.iconLink}
+                  aria-label="設定"
+                  title="設定"
+                />
+              </>
+            ) : null}
+          </header>
+          {/* はじめてログインした直後はウェルカムモーダルを、はじめてガイドの途中は今のステップの案内を出す */}
+          {user ? <TourGuideLoader /> : null}
+          <div className={styles.content}>{children}</div>
+          <Footer />
+        </div>
         {/* ホーム画面から開いていないときに、画面の下に追加を勧める */}
         <InstallAppBanner />
         <ToastRegionRoot />

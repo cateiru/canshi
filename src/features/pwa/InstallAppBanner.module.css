@@ -5,9 +5,13 @@
   margin-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
 }
 
+/*
+ * 画面に固定する要素はスクロールバーを除いた幅を基準に置かれるため、ページの中身と同じく
+ * スクロールバーの分を足した幅で中央・横幅を決める（tokens.css の --scrollbar-overlap）
+ */
 .banner {
   position: fixed;
-  left: 50%;
+  left: calc((100% + var(--scrollbar-overlap)) / 2);
   bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   /* 内容より手前、モーダルの overlay（z-index: 100）・トースト（z-index: 200）より奥に重ねる */
@@ -21,7 +25,7 @@
   align-items: center;
   column-gap: var(--space-3);
   row-gap: var(--space-2);
-  width: min(560px, calc(100% - var(--space-4) * 2));
+  width: min(560px, calc(100% + var(--scrollbar-overlap) - var(--space-4) * 2));
   padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
   border-radius: 16px;
   /* はじめてガイドと同じ、アクセント色の淡い面にする。下の内容と重なるため不透明にする */

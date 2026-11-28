@@ -1,6 +1,11 @@
 .overlay {
   position: fixed;
   inset: 0;
+  /*
+   * ページの中身と同じく、スクロールバーの分だけ右へ広げ、ダイアログを画面の中央に置く
+   * （tokens.css の --scrollbar-overlap）
+   */
+  right: calc(-1 * var(--scrollbar-overlap));
   display: flex;
   align-items: center;
   justify-content: center;

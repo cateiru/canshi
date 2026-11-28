@@ -4,12 +4,31 @@ html {
   height: 100%;
   /* iOS のオーバースクロールで見える領域もテーマの背景色にする */
   background-color: var(--color-bg);
+  /*
+   * スクロールバーが場所を取る環境（Windows の PC など）では、ページの長さが変わってスクロールバーが
+   * 出たり消えたりするたびに横幅が変わり、中身が左右にずれる。スクロールできないページでも
+   * スクロールバーの分の幅を空けておき、ページを移ったり折りたたみを開いたりしても横幅を変えない。
+   * スクロールバーが中身に重なる環境（スマートフォン・macOS の既定）では何も変わらない。
+   * 空けた分で中身が左に寄らないよう、ページの中身（layout.module.css の .page）を
+   * スクロールバーの分だけ右へ広げ、スクロールバーを右の余白の中に収める
+   */
+  scrollbar-gutter: stable;
 }
 
-html,
-body {
-  max-width: 100vw;
+/*
+ * max-width: 100vw は付けない。html に scrollbar-gutter: stable があると、Chrome では 100vw が
+ * スクロールバーの分を除いた幅になり、スクロールできるページでは横幅がさらに 1 本分狭くなる
+ */
+html {
   overflow-x: hidden;
+}
+
+/*
+ * スクロールバーの下へ広げたページの中身（layout.module.css の .page）を、body の端で切り取る。
+ * hidden にすると body がスクロールできる箱になり、広げた分だけ横にずらせてしまうため、clip にする
+ */
+body {
+  overflow-x: clip;
 }
 
 body {
